@@ -11,17 +11,17 @@ class ArrayStack
     static const int builtinSize = 8;
 
 public:
-    ArrayStack(CompAllocator alloc, int initialSize = builtinSize) : m_alloc(alloc)
+    ArrayStack(CompAllocator alloc, int initialCapacity = builtinSize) : m_alloc(alloc)
     {
-        if (initialSize > builtinSize)
+        if (initialCapacity > builtinSize)
         {
-            maxIndex = initialSize;
-            data     = new (alloc) T[initialSize];
+            maxIndex = initialCapacity;
+            data     = m_alloc.allocate<T>(initialCapacity);
         }
         else
         {
             maxIndex = builtinSize;
-            data     = builtinData;
+            data     = reinterpret_cast<T*>(builtinData);
         }
 
         tosIndex = 0;
@@ -56,37 +56,12 @@ public:
         // and copy over
         T* oldData = data;
         noway_assert(maxIndex * 2 > maxIndex);
-        data = new (m_alloc) T[maxIndex * 2];
+        data = m_alloc.allocate<T>(maxIndex * 2);
         for (int i = 0; i < maxIndex; i++)
         {
             data[i] = oldData[i];
         }
         maxIndex *= 2;
-    }
-
-    // reverse the top N in the stack
-    void ReverseTop(int number)
-    {
-        if (number < 2)
-        {
-            return;
-        }
-
-        assert(number <= tosIndex);
-
-        int start  = tosIndex - number;
-        int offset = 0;
-        while (offset < number / 2)
-        {
-            T   temp;
-            int index        = start + offset;
-            int otherIndex   = tosIndex - 1 - offset;
-            temp             = data[index];
-            data[index]      = data[otherIndex];
-            data[otherIndex] = temp;
-
-            offset++;
-        }
     }
 
     T Pop()
@@ -127,6 +102,11 @@ public:
         return tosIndex;
     }
 
+    bool Empty()
+    {
+        return tosIndex == 0;
+    }
+
     // return the bottom of the stack
     T Bottom()
     {
@@ -136,6 +116,13 @@ public:
 
     // return the i'th from the bottom
     T Bottom(int indx)
+    {
+        assert(tosIndex > indx);
+        return data[indx];
+    }
+
+    // return a reference to the i'th from the bottom
+    T BottomRef(int indx)
     {
         assert(tosIndex > indx);
         return data[indx];
@@ -152,5 +139,5 @@ private:
     int           maxIndex;
     T*            data;
     // initial allocation
-    T builtinData[builtinSize];
+    char builtinData[builtinSize * sizeof(T)];
 };

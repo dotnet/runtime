@@ -1295,10 +1295,6 @@ struct DfsBlockEntry
     DfsStackState dfsStackState; // The pre/post traversal action for this entry
     BasicBlock*   dfsBlock;      // The corresponding block for the action
 
-    DfsBlockEntry() : dfsStackState(DSS_Invalid), dfsBlock(nullptr)
-    {
-    }
-
     DfsBlockEntry(DfsStackState state, BasicBlock* basicBlock) : dfsStackState(state), dfsBlock(basicBlock)
     {
     }
@@ -1388,12 +1384,6 @@ class AllSuccessorEnumerator
     AllSuccessorIterPosition m_pos;
 
 public:
-    // Needed only because ArrayStack is broken - its built-in storage is such
-    // that it default constructs elements that do not actually exist.
-    AllSuccessorEnumerator() : m_block(nullptr), m_pos()
-    {
-    }
-
     // Constructs an enumerator of all `block`'s successors.
     AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block), m_pos(comp, block)
     {

@@ -47,7 +47,7 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrSt
                 GenTreePtrStack* stack = nullptr;
                 curSsaName->Lookup(lclNum, &stack);
                 stack->Pop();
-                if (stack->Height() == 0)
+                if (stack->Empty())
                 {
                     curSsaName->Remove(lclNum);
                 }

@@ -4969,7 +4969,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     unsigned propFlags = (tree->gtOp.gtOp1->gtFlags & GTF_ALL_EFFECT);
     tree->gtFlags |= propFlags;
 
-    while (stack.Height() > 0)
+    while (!stack.Empty())
     {
         tree = stack.Pop();
         propFlags |= (tree->gtOp.gtOp1->gtFlags & GTF_ALL_EFFECT);
@@ -9681,7 +9681,7 @@ GenTree* Compiler::fgMorphBlkNode(GenTree* tree, bool isDest)
 #endif
         lastComma->gtOp.gtOp2 = effectiveValAddr;
 
-        while (commas.Height() > 0)
+        while (!commas.Empty())
         {
             GenTree* comma = commas.Pop();
             comma->gtType  = TYP_BYREF;
@@ -13512,7 +13512,7 @@ DONE_MORPHING_CHILDREN:
                 // For example, if we made the ADDR(IND(x)) == x transformation, we may be able to
                 // get rid of some of the the IND flags on the COMMA nodes (e.g., GTF_GLOB_REF).
 
-                while (commas.Height() > 0)
+                while (!commas.Empty())
                 {
                     GenTree* comma = commas.Pop();
                     comma->gtType  = op1->gtType;
@@ -17849,18 +17849,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         INDEBUG(bool m_consumed;)
 
     public:
-        // TODO-Cleanup: This is only needed because ArrayStack initializes its storage incorrectly.
-        Value()
-            : m_node(nullptr)
-            , m_lclNum(BAD_VAR_NUM)
-            , m_offset(0)
-            , m_address(false)
-#ifdef DEBUG
-            , m_consumed(false)
-#endif // DEBUG
-        {
-        }
-
         // Produce an unknown value associated with the specified node.
         Value(GenTree* node)
             : m_node(node)
@@ -18096,7 +18084,7 @@ public:
         }
 
         PopValue();
-        assert(m_valueStack.Height() == 0);
+        assert(m_valueStack.Empty());
 
 #ifdef DEBUG
         if (m_compiler->verbose)

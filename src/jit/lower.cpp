@@ -1969,7 +1969,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         }
     }
 
-    if (putargs.Height() > 0)
+    if (!putargs.Empty())
     {
         firstPutArgStk = putargs.Bottom();
     }
