@@ -8,15 +8,5 @@ namespace System
     internal static class CoreLib
     {
         public const string Name = "System.Private.CoreLib";
-
-        public static string FixupCoreLibName(string strToFixup)
-        {
-            if (!string.IsNullOrEmpty(strToFixup))
-            {
-                strToFixup = strToFixup.Replace("mscorlib", System.CoreLib.Name);
-            }
-
-            return strToFixup;
-        }
     }
 }
