@@ -206,8 +206,8 @@ namespace System.Resources
                     if (resMgrHeaderVersion == ResourceManager.HeaderVersionNumber)
                     {
                         br.ReadInt32();  // We don't want the number of bytes to skip.
-                        readerTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
-                        resSetTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
+                        readerTypeName = br.ReadString();
+                        resSetTypeName = br.ReadString();
                     }
                     else if (resMgrHeaderVersion > ResourceManager.HeaderVersionNumber)
                     {
@@ -218,8 +218,8 @@ namespace System.Resources
                         int numBytesToSkip = br.ReadInt32();
                         long endPosition = br.BaseStream.Position + numBytesToSkip;
 
-                        readerTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
-                        resSetTypeName = System.CoreLib.FixupCoreLibName(br.ReadString());
+                        readerTypeName = br.ReadString();
+                        resSetTypeName = br.ReadString();
 
                         br.BaseStream.Seek(endPosition, SeekOrigin.Begin);
                     }
@@ -242,8 +242,7 @@ namespace System.Resources
                     }
                     else
                     {
-                        // we do not want to use partial binding here.
-                        Type readerType = Type.GetType(readerTypeName, true);
+                        Type readerType = Type.GetType(readerTypeName, throwOnError: true);
                         object[] args = new object[1];
                         args[0] = store;
                         IResourceReader reader = (IResourceReader)Activator.CreateInstance(readerType, args);
@@ -439,17 +438,16 @@ namespace System.Resources
             // Ignore the actual version of the ResourceReader and 
             // RuntimeResourceSet classes.  Let those classes deal with
             // versioning themselves.
-            AssemblyName mscorlib = new AssemblyName(ResourceManager.MscorlibName);
 
             if (readerTypeName != null)
             {
-                if (!ResourceManager.CompareNames(readerTypeName, ResourceManager.ResReaderTypeName, mscorlib))
+                if (!ResourceManager.IsDefaultType(readerTypeName, ResourceManager.ResReaderTypeName))
                     return false;
             }
 
             if (resSetTypeName != null)
             {
-                if (!ResourceManager.CompareNames(resSetTypeName, ResourceManager.ResSetTypeName, mscorlib))
+                if (!ResourceManager.IsDefaultType(resSetTypeName, ResourceManager.ResSetTypeName))
                     return false;
             }
 
