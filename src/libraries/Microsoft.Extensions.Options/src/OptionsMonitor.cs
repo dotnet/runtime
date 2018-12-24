@@ -11,11 +11,12 @@ namespace Microsoft.Extensions.Options
     /// Implementation of IOptionsMonitor.
     /// </summary>
     /// <typeparam name="TOptions"></typeparam>
-    public class OptionsMonitor<TOptions> : IOptionsMonitor<TOptions> where TOptions : class, new()
+    public class OptionsMonitor<TOptions> : IOptionsMonitor<TOptions>, IDisposable where TOptions : class, new()
     {
         private readonly IOptionsMonitorCache<TOptions> _cache;
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly IEnumerable<IOptionsChangeTokenSource<TOptions>> _sources;
+        private readonly List<IDisposable> _registrations = new List<IDisposable>();
         internal event Action<TOptions, string> _onChange;
 
         /// <summary>
@@ -32,10 +33,12 @@ namespace Microsoft.Extensions.Options
 
             foreach (var source in _sources)
             {
-                ChangeToken.OnChange<string>(
-                    () => source.GetChangeToken(),
-                    (name) => InvokeChanged(name),
-                    source.Name);
+                var registration = ChangeToken.OnChange(
+                      () => source.GetChangeToken(),
+                      (name) => InvokeChanged(name),
+                      source.Name);
+
+                _registrations.Add(registration);
             }
         }
 
@@ -77,6 +80,20 @@ namespace Microsoft.Extensions.Options
             var disposable = new ChangeTrackerDisposable(this, listener);
             _onChange += disposable.OnChange;
             return disposable;
+        }
+
+        /// <summary>
+        /// Removes all change registration subscriptions.
+        /// </summary>
+        public void Dispose()
+        {
+            // Remove all subscriptions to the change tokens
+            foreach (var registration in _registrations)
+            {
+                registration.Dispose();
+            }
+
+            _registrations.Clear();
         }
 
         internal class ChangeTrackerDisposable : IDisposable
