@@ -6033,8 +6033,8 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
 
     // Slow helper is the default
     CorInfoHelpFunc helper = CORINFO_HELP_NEWFAST;
-    bool hasFinalizer = pMT->HasFinalizer();
-    bool isComObjectType = pMT->IsComObjectType();
+    BOOL hasFinalizer = pMT->HasFinalizer();
+    BOOL isComObjectType = pMT->IsComObjectType();
 
     if (pHasSideEffects != nullptr)
     {
@@ -6051,7 +6051,7 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
         else
 #endif
         {
-            *pHasSideEffects = hasFinalizer;
+            *pHasSideEffects = !!hasFinalizer;
         }
     }
 
