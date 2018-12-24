@@ -5,7 +5,7 @@
     <AssemblyName>System.Net.Http</AssemblyName>
     <WindowsRID>win</WindowsRID>
     <!-- Suppress warnings for type conflicts between SR in partial facade and mscorlib -->
-    <NoWarn>$(NoWarn);0436</NoWarn>
+    <NoWarn>$(NoWarn);0436;CS1573</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>

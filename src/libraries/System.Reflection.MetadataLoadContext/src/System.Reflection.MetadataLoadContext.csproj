@@ -4,6 +4,7 @@
     <AssemblyName>System.Reflection.MetadataLoadContext</AssemblyName>
     <RootNamespace>System.Reflection</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
 
     <!-- Only the netcoreapp version supports the new reflection apis (IsSZArray, etc.) -->
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
