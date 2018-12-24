@@ -427,7 +427,6 @@
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\DebugProvider.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
