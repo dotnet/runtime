@@ -6,6 +6,7 @@
     <Configurations>netfx-Debug;netfx-Release</Configurations>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <ClsCompliant>false</ClsCompliant>
   </PropertyGroup>
   <ItemGroup>

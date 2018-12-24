@@ -3,6 +3,7 @@
     <AssemblyName>System.Net.Ping</AssemblyName>
     <ProjectGuid>{85FD05E8-A4B1-4B89-ABED-33AFD200CABD}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">

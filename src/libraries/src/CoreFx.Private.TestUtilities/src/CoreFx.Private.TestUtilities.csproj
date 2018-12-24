@@ -6,6 +6,7 @@
     <ClsCompliant>false</ClsCompliant>
     <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
     <NoWarn Condition="'$(TargetGroup)' == 'netstandard'">$(NoWarn);CS3021</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">Test Utilities are not supported on this platform</GeneratePlatformNotSupportedAssemblyMessage>

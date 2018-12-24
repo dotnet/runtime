@@ -476,8 +476,6 @@
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
     <!-- Set the documentation output file globally. -->
     <DocumentationFile Condition="'$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <!-- We ignore all documentation related warnings. -->
-    <NoWarn>$(NoWarn);1573;1591</NoWarn>
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->

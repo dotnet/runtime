@@ -3,7 +3,7 @@
     <ProjectGuid>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <NoWarn>CS3016;CA5351;$(NoWarn)</NoWarn>
+    <NoWarn>CS1573;CS3016;CA5351;$(NoWarn)</NoWarn>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1\AsnXml.targets"/>
