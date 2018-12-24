@@ -398,12 +398,8 @@ UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
     }
     else
     {
-#if defined(_TARGET_AMD64_)
         assert(func->startLoc != nullptr);
         offset = func->startLoc->GetFuncletPrologOffset(genEmitter);
-#else
-        offset = 0; // TODO ???
-#endif
     }
 
     return offset;
