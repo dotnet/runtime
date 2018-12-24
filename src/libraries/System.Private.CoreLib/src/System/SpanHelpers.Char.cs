@@ -5,10 +5,9 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using System.Runtime.Intrinsics.X86;
 
-#if !netstandard
 using Internal.Runtime.CompilerServices;
-#endif
 
 #if BIT64
 using nuint = System.UInt64;
@@ -822,12 +821,20 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateFirstFoundChar(ulong match)
         {
-            unchecked
+            // TODO: Arm variants
+            if (Bmi1.X64.IsSupported)
             {
-                // Flag least significant power of two bit
-                var powerOfTwoFlag = match ^ (match - 1);
-                // Shift all powers of two into the high byte and extract
-                return (int)((powerOfTwoFlag * XorPowerOfTwoToHighChar) >> 49);
+                return (int)(Bmi1.X64.TrailingZeroCount(match) >> 4);
+            }
+            else
+            {
+                unchecked
+                {
+                    // Flag least significant power of two bit
+                    var powerOfTwoFlag = match ^ (match - 1);
+                    // Shift all powers of two into the high byte and extract
+                    return (int)((powerOfTwoFlag * XorPowerOfTwoToHighChar) >> 49);
+                }
             }
         }
 
@@ -859,14 +866,22 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundChar(ulong match)
         {
-            // Find the most significant char that has its highest bit set
-            int index = 3;
-            while ((long)match > 0)
+            // TODO: Arm variants
+            if (Lzcnt.X64.IsSupported)
             {
-                match = match << 16;
-                index--;
+                return 3 - (int)(Lzcnt.X64.LeadingZeroCount(match) >> 4);
             }
-            return index;
+            else
+            {
+                // Find the most significant char that has its highest bit set
+                int index = 3;
+                while ((long)match > 0)
+                {
+                    match = match << 16;
+                    index--;
+                }
+                return index;
+            }
         }
     }
 }
