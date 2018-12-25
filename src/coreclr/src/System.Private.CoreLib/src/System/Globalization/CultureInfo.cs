@@ -495,23 +495,26 @@ namespace System.Globalization
             {
                 if (null == _parent)
                 {
+                    CultureInfo culture = null;
                     string parentName = _cultureData.SPARENT;
 
                     if (string.IsNullOrEmpty(parentName))
                     {
-                        _parent = InvariantCulture;
+                        culture = InvariantCulture;
                     }
                     else
                     {
-                        _parent = CreateCultureInfoNoThrow(parentName, _cultureData.UseUserOverride);
-                        if (_parent == null)
+                        culture = CreateCultureInfoNoThrow(parentName, _cultureData.UseUserOverride);
+                        if (culture == null)
                         {
                             // For whatever reason our IPARENT or SPARENT wasn't correct, so use invariant
                             // We can't allow ourselves to fail.  In case of custom cultures the parent of the
                             // current custom culture isn't installed.
-                            _parent = InvariantCulture;
+                            culture = InvariantCulture;
                         }
                     }
+
+                    Interlocked.CompareExchange<CultureInfo>(ref _parent, culture, null);
                 }
                 return _parent;
             }
