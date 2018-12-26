@@ -90,10 +90,6 @@ if(WIN32)
 endif(WIN32)
 
 # Features - please keep them alphabetically sorted
-if (FEATURE_APPDOMAIN_RESOURCE_MONITORING)
-  add_definitions(-DFEATURE_APPDOMAIN_RESOURCE_MONITORING)
-endif(FEATURE_APPDOMAIN_RESOURCE_MONITORING)
-
 if(WIN32)
   add_definitions(-DFEATURE_APPX)
   if(NOT CLR_CMAKE_TARGET_ARCH_I386)

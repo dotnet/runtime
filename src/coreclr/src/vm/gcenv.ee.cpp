@@ -48,7 +48,6 @@ VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr
     SyncBlockCache::GetSyncBlockCache()->GCWeakPtrScan(scanProc, lp1, lp2);
 }
 
-
 //EE can perform post stack scanning action, while the
 // user threads are still suspended
 VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
@@ -1084,6 +1083,24 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
+    if (strcmp(key, "GCSegmentSize") == 0)
+    {
+        *value = g_pConfig->GetSegmentSize();
+        return true;
+    }
+
+    if (strcmp(key, "GCgen0size") == 0)
+    {
+        *value = g_pConfig->GetGCgen0size();
+        return true;
+    }
+
+    if (strcmp(key, "GCLOHThreshold") == 0)
+    {
+        *value = g_pConfig->GetGCLOHThreshold();
+        return true;
+    }
+
     WCHAR configKey[MaxConfigKeyLength];
     if (MultiByteToWideChar(CP_ACP, 0, key, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
     {
@@ -1091,10 +1108,33 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
         return false;
     }
 
+    // There is no ConfigULONGLONGInfo, and the GC uses 64 bit values for things like GCHeapAffinitizeMask, 
+    // so have to fake it with getting the string and converting to uint64_t
     if (CLRConfig::IsConfigOptionSpecified(configKey))
     {
-        CLRConfig::ConfigDWORDInfo info { configKey , 0, CLRConfig::EEConfig_default };
-        *value = CLRConfig::GetConfigValue(info);
+        CLRConfig::ConfigStringInfo info { configKey, CLRConfig::EEConfig_default };
+        LPWSTR out = CLRConfig::GetConfigValue(info);
+        if (!out)
+        {
+            // config not found
+            CLRConfig::FreeConfigString(out);
+            return false;
+        }
+
+        wchar_t *end;
+        uint64_t result;
+        errno = 0;
+        result = _wcstoui64(out, &end, 16);
+        // errno is ERANGE if the number is out of range, and end is set to pvalue if
+        // no valid conversion exists.
+        if (errno == ERANGE || end == out)
+        {
+            CLRConfig::FreeConfigString(out);
+            return false;
+        }
+
+        *value = static_cast<int64_t>(result);
+        CLRConfig::FreeConfigString(out);
         return true;
     }
 
@@ -1501,4 +1541,13 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
             DACNotify::DoGCNotification(gea);
         }
     }
+}
+
+void GCToEEInterface::VerifySyncTableEntry()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef VERIFY_HEAP
+    SyncBlockCache::GetSyncBlockCache()->VerifySyncTableEntry();
+#endif // VERIFY_HEAP
 }

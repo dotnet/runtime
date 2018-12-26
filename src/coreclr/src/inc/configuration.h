@@ -31,6 +31,12 @@ public:
     //    - The default value passed in
     static DWORD GetKnobDWORDValue(LPCWSTR name, DWORD defaultValue);
 
+    // Unfortunately our traditional config system insists on interpreting numbers as 32-bit so intepret the config
+    // in the traditional way separately if you need to.
+    //
+    // Returns value for name if found in config.
+    static ULONGLONG GetKnobULONGLONGValue(LPCWSTR name);
+
     // Returns (in priority order):
     //    - The value of the ConfigStringInfo if it's set
     //    - The value of the ConfigurationKnob (searched by name) if it's set

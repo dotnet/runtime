@@ -264,6 +264,11 @@ void GCToCLREventSink::FireBGC1stConEnd()
     FireEtwBGC1stConEnd(GetClrInstanceId());
 }
 
+void GCToCLREventSink::FireBGC1stSweepEnd(uint32_t genNumber)
+{    
+    FireEtwBGC1stSweepEnd(genNumber, GetClrInstanceId());
+}
+
 void GCToCLREventSink::FireBGC2ndNonConBegin()
 {
     FireEtwBGC2ndNonConBegin(GetClrInstanceId());
