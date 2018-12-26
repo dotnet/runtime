@@ -416,6 +416,7 @@ nomac:GarbageCollectionPrivate:::BGC1stConEnd
 nomac:GarbageCollectionPrivate:::BGC2ndNonConBegin
 nomac:GarbageCollectionPrivate:::BGC2ndNonConEnd
 nomac:GarbageCollectionPrivate:::BGC2ndConBegin
+nomac:GarbageCollectionPrivate:::BGC1stSweepEnd
 nomac:GarbageCollectionPrivate:::BGC2ndConEnd
 nomac:GarbageCollectionPrivate:::BGCPlanEnd
 nomac:GarbageCollectionPrivate:::BGCSweepEnd

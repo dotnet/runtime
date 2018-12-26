@@ -72,6 +72,8 @@ public:
 
     bool AnalyzeSurvivorsRequested(int condemnedGeneration);
     void AnalyzeSurvivorsFinished(int condemnedGeneration);
+
+    void VerifySyncTableEntry();
 };
 
 } // namespace standalone

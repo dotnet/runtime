@@ -615,7 +615,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     orArray->m_NumComponents = cElements;
 
     if (bAllocateInLargeHeap || 
-        (totalSize >= LARGE_OBJECT_SIZE))
+        (totalSize >= g_pConfig->GetGCLOHThreshold()))
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
     }
@@ -790,7 +790,8 @@ OBJECTREF   FastAllocatePrimitiveArray(MethodTable* pMT, DWORD cElements, BOOL b
     else 
     {
         ArrayTypeDesc *pArrayR8TypeDesc = g_pPredefinedArrayTypes[ELEMENT_TYPE_R8];
-        if (DATA_ALIGNMENT < sizeof(double) && pArrayR8TypeDesc != NULL && pMT == pArrayR8TypeDesc->GetMethodTable() && totalSize < LARGE_OBJECT_SIZE - MIN_OBJECT_SIZE) 
+        if (DATA_ALIGNMENT < sizeof(double) && pArrayR8TypeDesc != NULL && pMT == pArrayR8TypeDesc->GetMethodTable() && 
+            (totalSize < g_pConfig->GetGCLOHThreshold() - MIN_OBJECT_SIZE))
         {
             // Creation of an array of doubles, not in the large object heap.
             // We want to align the doubles to 8 byte boundaries, but the GC gives us pointers aligned
@@ -825,7 +826,7 @@ OBJECTREF   FastAllocatePrimitiveArray(MethodTable* pMT, DWORD cElements, BOOL b
         else
         {
             orObject = (ArrayBase*) Alloc(totalSize, FALSE, FALSE);
-            bPublish = (totalSize >= LARGE_OBJECT_SIZE);
+            bPublish = (totalSize >= g_pConfig->GetGCLOHThreshold());
         }
     }
 
@@ -1038,7 +1039,7 @@ STRINGREF SlowAllocateString( DWORD cchStringLength )
     orObject->SetMethodTable( g_pStringClass );
     orObject->SetStringLength( cchStringLength );
 
-    if (ObjectSize >= LARGE_OBJECT_SIZE)
+    if (ObjectSize >= g_pConfig->GetGCLOHThreshold())
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
     }
@@ -1169,8 +1170,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
         // verify zero'd memory (at least for sync block)
         _ASSERTE( orObject->HasEmptySyncBlockInfo() );
 
-
-        if ((baseSize >= LARGE_OBJECT_SIZE))
+        if ((baseSize >= g_pConfig->GetGCLOHThreshold()))
         {
             orObject->SetMethodTableForLargeObject(pMT);
             GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);

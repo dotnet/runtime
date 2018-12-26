@@ -4276,6 +4276,7 @@
                             <opcode name="SetGCHandle" message="$(string.PrivatePublisher.SetGCHandleOpcodeMessage)" symbol="CLR_PRIVATEGC_SETGCHANDLE_OPCODE" value="42"> </opcode>
                             <opcode name="DestroyGCHandle" message="$(string.PrivatePublisher.DestroyGCHandleOpcodeMessage)" symbol="CLR_PRIVATEGC_DESTROYGCHANDLE_OPCODE" value="43"> </opcode>
                             <opcode name="PinPlugAtGCTime" message="$(string.PrivatePublisher.PinPlugAtGCTimeOpcodeMessage)" symbol="CLR_PRIVATEGC_PINGCPLUG_OPCODE" value="44"> </opcode>
+                            <opcode name="BGC1stSweepEnd" message="$(string.PrivatePublisher.BGC1stSweepEndOpcodeMessage)" symbol="CLR_PRIVATEGC_BGC1STSWEEPEND_OPCODE" value="45"> </opcode>
                         </opcodes>
                     </task>
 
@@ -4826,6 +4827,18 @@
                                 <IsAlloc> %2 </IsAlloc>
                                 <ClrInstanceID> %3 </ClrInstanceID>
                             </GCFullNotify_V1>
+                        </UserData>
+                    </template>
+
+                    <template tid="BGC1stSweepEnd">
+                        <data name="GenNumber" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <BGC1stSweepEnd xmlns="myNs">
+                                <GenNumber> %1 </GenNumber>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </BGC1stSweepEnd>
                         </UserData>
                     </template>
 
@@ -5493,6 +5506,11 @@
                            keywords ="GCPrivateKeyword"  opcode="GCFullNotify"
                            task="GarbageCollectionPrivate"
                            symbol="GCFullNotify_V1" message="$(string.PrivatePublisher.GCFullNotify_V1EventMessage)"/>
+
+                    <event value="26" version="0" level="win:Informational"  template="BGC1stSweepEnd"
+                           keywords ="GCPrivateKeyword"  opcode="BGC1stSweepEnd"
+                           task="GarbageCollectionPrivate"
+                           symbol="BGC1stSweepEnd" message="$(string.PrivatePublisher.BGC1stSweepEndEventMessage)"/>
 
                     <!--Private events from other components in CLR, starting value 80-->
                     <event value="80" version="0" level="win:Informational"  template="Startup"
@@ -6503,6 +6521,7 @@
                 <string id="PrivatePublisher.BGC2ndNonConBeginEventMessage" value="ClrInstanceID=%1"/>
                 <string id="PrivatePublisher.BGC2ndNonConEndEventMessage" value="ClrInstanceID=%1"/>
                 <string id="PrivatePublisher.BGC2ndConBeginEventMessage" value="ClrInstanceID=%1"/>
+                <string id="PrivatePublisher.BGC1stSweepEndEventMessage" value="GenNumber=%1;ClrInstanceID=%2"/>                
                 <string id="PrivatePublisher.BGC2ndConEndEventMessage" value="ClrInstanceID=%1"/>
                 <string id="PrivatePublisher.BGCPlanEndEventMessage" value="ClrInstanceID=%1"/>
                 <string id="PrivatePublisher.BGCSweepEndEventMessage" value="ClrInstanceID=%1"/>
@@ -7019,6 +7038,7 @@
                 <string id="PrivatePublisher.BGC1stConEndOpcodeMessage" value="BGC1stConStop" />
                 <string id="PrivatePublisher.BGC2ndNonConEndOpcodeMessage" value="BGC2ndNonConStop" />
                 <string id="PrivatePublisher.BGC2ndConBeginOpcodeMessage" value="BGC2ndConStart" />
+                <string id="PrivatePublisher.BGC1stSweepEndOpcodeMessage" value="BGC1stSweepEnd" />                
                 <string id="PrivatePublisher.BGC2ndConEndOpcodeMessage" value="BGC2ndConStop" />
                 <string id="PrivatePublisher.BGCPlanEndOpcodeMessage" value="BGCPlanStop" />
                 <string id="PrivatePublisher.BGCSweepEndOpcodeMessage" value="BGCSweepStop" />

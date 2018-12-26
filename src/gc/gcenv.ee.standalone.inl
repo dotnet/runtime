@@ -317,4 +317,10 @@ inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
     g_theGCToCLR->AnalyzeSurvivorsFinished(condemnedGeneration);
 }
 
+inline void GCToEEInterface::VerifySyncTableEntry()
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->VerifySyncTableEntry();
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__

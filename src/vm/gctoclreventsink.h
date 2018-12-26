@@ -65,6 +65,7 @@ public:
     void FireBGCBegin();
     void FireBGC1stNonConEnd();
     void FireBGC1stConEnd();
+    void FireBGC1stSweepEnd(uint32_t genNumber);
     void FireBGC2ndNonConBegin();
     void FireBGC2ndNonConEnd();
     void FireBGC2ndConBegin();

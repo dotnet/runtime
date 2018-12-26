@@ -94,6 +94,8 @@ public:
 
     static bool AnalyzeSurvivorsRequested(int condemnedGeneration);
     static void AnalyzeSurvivorsFinished(int condemnedGeneration);
+
+    static void VerifySyncTableEntry();
 };
 
 #endif // __GCENV_EE_H__
