@@ -93,7 +93,7 @@ public:
 
     void SetSuspensionPending(bool fSuspensionPending);
     
-    void SetYieldProcessorScalingFactor(uint32_t yieldProcessorScalingFactor);
+    void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor);
 
     void SetWaitForGCEvent();
     void ResetWaitForGCEvent();
@@ -108,8 +108,7 @@ public:
     Object*  AllocLHeap (size_t size, uint32_t flags);
     Object* Alloc (gc_alloc_context* acontext, size_t size, uint32_t flags);
 
-    void FixAllocContext (gc_alloc_context* acontext,
-                                            bool lockp, void* arg, void *heap);
+    void FixAllocContext (gc_alloc_context* acontext, void* arg, void *heap);
 
     Object* GetContainingObject(void *pInteriorPtr, bool fCollectedGenOnly);
 

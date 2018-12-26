@@ -79,6 +79,17 @@ DWORD Configuration::GetKnobDWORDValue(LPCWSTR name, DWORD defaultValue)
     return defaultValue;
 }
 
+ULONGLONG Configuration::GetKnobULONGLONGValue(LPCWSTR name)
+{
+    LPCWSTR knobValue = GetConfigurationValue(name);
+    if (knobValue != nullptr)
+    {
+        return _wcstoui64(knobValue, nullptr, 0);
+    }
+
+    return 0;
+}
+
 LPCWSTR Configuration::GetKnobStringValue(LPCWSTR name, const CLRConfig::ConfigStringInfo& stringInfo)
 {
     LPCWSTR value = CLRConfig::GetConfigValue(stringInfo);

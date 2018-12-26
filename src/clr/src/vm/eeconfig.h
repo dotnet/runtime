@@ -613,9 +613,11 @@ public:
 #endif //_DEBUG
     int     GetGCForceCompact()             const {LIMITED_METHOD_CONTRACT; return iGCForceCompact; }
     int     GetGCRetainVM ()                const {LIMITED_METHOD_CONTRACT; return iGCHoardVM;}
+    DWORD   GetGCLOHThreshold()             const {LIMITED_METHOD_CONTRACT; return iGCLOHThreshold;}
     int     GetGCLOHCompactionMode()        const {LIMITED_METHOD_CONTRACT; return iGCLOHCompactionMode;}
     int     GetGCHeapCount()                const {LIMITED_METHOD_CONTRACT; return iGCHeapCount;}
     int     GetGCNoAffinitize ()            const {LIMITED_METHOD_CONTRACT; return iGCNoAffinitize;}
+    size_t  GetGCAffinityMask()             const {LIMITED_METHOD_CONTRACT; return iGCAffinityMask;}
 
 #ifdef GCTRIMCOMMIT
 
@@ -919,8 +921,10 @@ private: //----------------------------------------------------------------
     int  iGCForceCompact;
     int  iGCHoardVM;
     int  iGCLOHCompactionMode;
+    DWORD iGCLOHThreshold;
     int  iGCHeapCount;
     int  iGCNoAffinitize;
+    size_t  iGCAffinityMask;
 
 #ifdef GCTRIMCOMMIT
 

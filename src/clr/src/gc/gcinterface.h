@@ -718,7 +718,7 @@ public:
 
     // "Fixes" an allocation context by binding its allocation pointer to a
     // location on the heap.
-    virtual void FixAllocContext(gc_alloc_context* acontext, bool lockp, void* arg, void* heap) = 0;
+    virtual void FixAllocContext(gc_alloc_context* acontext, void* arg, void* heap) = 0;
 
     // Gets the total survived size plus the total allocated bytes on the heap.
     virtual size_t GetCurrentObjSize() = 0;
@@ -733,7 +733,7 @@ public:
     virtual void SetSuspensionPending(bool fSuspensionPending) = 0;
 
     // Tells the GC how many YieldProcessor calls are equal to one scaled yield processor call.
-    virtual void SetYieldProcessorScalingFactor(uint32_t yieldProcessorScalingFactor) = 0;
+    virtual void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor) = 0;
 
     /*
     ============================================================================

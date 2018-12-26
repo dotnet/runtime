@@ -615,11 +615,6 @@ void GCHeap::SetSuspensionPending(bool fSuspensionPending)
     }
 }
 
-void GCHeap::SetYieldProcessorScalingFactor(uint32_t yieldProcessorScalingFactor)
-{
-    g_yieldProcessorScalingFactor = yieldProcessorScalingFactor;
-}
-
 void GCHeap::ControlEvents(GCEventKeyword keyword, GCEventLevel level)
 {
     GCEventStatus::Set(GCEventProvider_Default, keyword, level);
