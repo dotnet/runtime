@@ -52,6 +52,7 @@ struct fgm_history
     }
 };
 
+// These values should be in sync with the GC_REASONs (in eventtrace.h) used for ETW.
 // TODO : it would be easier to make this an ORed value
 enum gc_reason
 {
@@ -67,6 +68,8 @@ enum gc_reason
     reason_lowmemory_blocking = 9,
     reason_induced_compacting = 10,
     reason_lowmemory_host = 11,
+    reason_pm_full_gc = 12, // provisional mode requested to trigger full GC
+    reason_lowmemory_host_blocking = 13,
     reason_max
 };
 

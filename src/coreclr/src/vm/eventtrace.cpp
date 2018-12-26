@@ -4427,6 +4427,10 @@ extern "C"
 
         BOOLEAN bIsRundownTraceHandle = (context->RegistrationHandle==Microsoft_Windows_DotNETRuntimeRundownHandle);
 
+        GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
+        GCEventLevel level = static_cast<GCEventLevel>(Level);
+        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
+
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.
         CallbackProviderIndex providerIndex = DotNETRuntime;
