@@ -963,6 +963,17 @@ mono_fconv_u8 (double v)
 }
 
 guint64
+mono_fconv_u8_2 (double v)
+{
+	// Separate from mono_fconv_u8 to avoid duplicate JIT icall.
+	//
+	// When there are duplicates, there is single instancing
+	// against function address that breaks stuff. For example,
+	// wrappers are only produced for one of them, breaking FullAOT.
+	return mono_fconv_u8 (v);
+}
+
+guint64
 mono_rconv_u8 (float v)
 {
 	return (guint64)v;
@@ -983,6 +994,17 @@ mono_fconv_u4 (double v)
 	if (mono_isinf (v) || mono_isnan (v))
 		return 0;
 	return (guint32)v;
+}
+
+guint32
+mono_fconv_u4_2 (double v)
+{
+	// Separate from mono_fconv_u4 to avoid duplicate JIT icall.
+	//
+	// When there are duplicates, there is single instancing
+	// against function address that breaks stuff. For example,
+	// wrappers are only produced for one of them, breaking FullAOT.
+	return mono_fconv_u4 (v);
 }
 
 gint64
