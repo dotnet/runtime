@@ -15,8 +15,6 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
 
-MONO_BEGIN_DECLS
-
 /*
 >>>> WARNING WARNING WARNING <<<<
 
@@ -157,7 +155,5 @@ mono_threads_exit_no_safepoints_region (const char *func);
 		if (mono_threads_are_safepoints_enabled ())			\
 			mono_threads_exit_no_safepoints_region (__func__);	\
 	} while (0)
-
-MONO_END_DECLS
 
 #endif /* __MONO_LOGGER_H__ */
