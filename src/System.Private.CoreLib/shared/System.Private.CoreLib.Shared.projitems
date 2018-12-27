@@ -180,6 +180,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\DefaultBinder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\ConditionalAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debug.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerBrowsableAttribute.cs" />
