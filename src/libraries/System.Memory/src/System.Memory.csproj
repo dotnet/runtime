@@ -28,7 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Common or Common-branched source files -->
-    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Collections\HashHelpers.cs</Link>
     </Compile>
   </ItemGroup>
