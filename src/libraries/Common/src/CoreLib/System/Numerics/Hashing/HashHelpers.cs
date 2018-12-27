@@ -4,8 +4,6 @@
 
 namespace System.Numerics.Hashing
 {
-    // Please change the corresponding file in corefx if this is changed.
-
     internal static class HashHelpers
     {
         public static readonly int RandomSeed = new Random().Next(int.MinValue, int.MaxValue);
