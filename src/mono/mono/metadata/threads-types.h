@@ -109,40 +109,7 @@ mono_thread_create_internal_handle (MonoDomain *domain, T func, gpointer arg, Mo
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func);
 
 ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThreadObjectHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_Thread_Thread_internal (MonoThreadObjectHandle this_obj, MonoObjectHandle start, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThreadHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_handle, int ms, MonoError *error);
-
-ICALL_EXPORT
-gint32
-ves_icall_System_Threading_Thread_GetDomainID (MonoError *error);
-
-ICALL_EXPORT
-MonoStringHandle ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
 void ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj, MonoString *name);
-
-ICALL_EXPORT
-int ves_icall_System_Threading_Thread_GetPriority (MonoThreadObjectHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_SetPriority (MonoThreadObjectHandle this_obj, int priority, MonoError *error);
 
 ICALL_EXPORT
 MonoObject* ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoInternalThread *this_obj);
@@ -155,21 +122,6 @@ MonoObject* ves_icall_System_Threading_Thread_GetCachedCurrentUICulture (MonoInt
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Thread_SetCachedCurrentUICulture (MonoThread *this_obj, MonoObject *culture);
-
-ICALL_EXPORT
-MonoThreadObjectHandle ves_icall_System_Threading_Thread_GetCurrentThread (MonoError *error);
-
-ICALL_EXPORT
-gint32 ves_icall_System_Threading_WaitHandle_Wait_internal(gpointer *handles, gint32 numhandles, MonoBoolean waitall, gint32 ms, MonoError *error);
-
-ICALL_EXPORT
-gint32 ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal, gpointer toWait, gint32 ms, MonoError *error);
-
-ICALL_EXPORT
-MonoArrayHandle ves_icall_System_Threading_Thread_ByteArrayToRootDomain (MonoArrayHandle arr, MonoError *error);
-
-ICALL_EXPORT
-MonoArrayHandle ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArrayHandle arr, MonoError *error);
 
 ICALL_EXPORT
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int(gint32 *location);
@@ -248,35 +200,6 @@ gint32 ves_icall_System_Threading_Interlocked_Decrement_Int(gint32 *location);
 
 ICALL_EXPORT
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_Abort (MonoInternalThreadHandle thread_handle, MonoObjectHandle state, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_ResetAbort (MonoThreadObjectHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-MonoObjectHandle
-ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThreadObjectHandle thread, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_Suspend (MonoThreadObjectHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_Resume (MonoThreadObjectHandle thread_handle, MonoError *error);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_ClrState (MonoInternalThreadHandle thread, guint32 state, MonoError *error);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_SetState (MonoInternalThreadHandle thread_handle, guint32 state, MonoError *error);
-
-ICALL_EXPORT
-guint32 ves_icall_System_Threading_Thread_GetState (MonoInternalThreadHandle thread_handle, MonoError *error);
 
 ICALL_EXPORT
 gint8 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr);
@@ -377,24 +300,10 @@ void ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value);
 ICALL_EXPORT
 void ves_icall_System_Threading_Thread_MemoryBarrier (void);
 
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_Interrupt_internal (MonoThreadObjectHandle thread_handle, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_SpinWait_nop (MonoError *error);
-
 void
 mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error);
 void
 mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error);
-
-ICALL_EXPORT
-void ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContextHandle ctx, MonoError *error);
-
-ICALL_EXPORT
-void ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContextHandle ctx, MonoError *error);
 
 MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
 

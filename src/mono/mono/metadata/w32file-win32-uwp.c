@@ -11,6 +11,7 @@
 #include <windows.h>
 #include "mono/metadata/w32file-win32-internals.h"
 #include "mono/metadata/w32subset.h"
+#include "icall-decl.h"
 
 #if !HAVE_API_SUPPORT_WIN32_MOVE_FILE && HAVE_API_SUPPORT_WIN32_MOVE_FILE_EX
 gboolean

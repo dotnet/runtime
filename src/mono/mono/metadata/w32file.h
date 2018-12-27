@@ -122,26 +122,8 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_RemoveDirectory (const gunichar2 *path, gint32 *error);
 
 ICALL_EXPORT
-gpointer
-ves_icall_System_IO_MonoIO_FindFirstFile (const gunichar2 *path_with_pattern,
-					  MonoStringHandleOut file_name,
-					  gint32 *file_attr,
-					  gint32 *ioerror,
-					  MonoError *error);
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_IO_MonoIO_FindNextFile (gpointer hnd,
-					 MonoStringHandleOut file_name,
-					 gint32 *file_attr,
-					 gint32 *ioerror,
-					 MonoError *error);
-ICALL_EXPORT
 MonoBoolean
 ves_icall_System_IO_MonoIO_FindCloseFile (gpointer hnd);
-
-ICALL_EXPORT
-MonoStringHandle
-ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error, MonoError *error);
 
 ICALL_EXPORT
 MonoBoolean
@@ -184,18 +166,6 @@ ICALL_EXPORT
 MonoBoolean
 ves_icall_System_IO_MonoIO_Close (gpointer handle, gint32 *error);
 
-ICALL_EXPORT
-gint32
-ves_icall_System_IO_MonoIO_Read (gpointer handle, MonoArrayHandle dest,
-				 gint32 dest_offset, gint32 count,
-				 gint32 *io_error,
-				 MonoError *error);
-ICALL_EXPORT
-gint32
-ves_icall_System_IO_MonoIO_Write (gpointer handle, MonoArrayHandle src,
-				  gint32 src_offset, gint32 count,
-				  gint32 *io_error,
-				  MonoError *error);
 ICALL_EXPORT
 gint64
 ves_icall_System_IO_MonoIO_Seek (gpointer handle, gint64 offset, gint32 origin,
@@ -253,10 +223,6 @@ ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar (void);
 ICALL_EXPORT
 gunichar2
 ves_icall_System_IO_MonoIO_get_PathSeparator (void);
-
-ICALL_EXPORT
-MonoArrayHandle
-ves_icall_System_IO_MonoIO_get_InvalidPathChars (MonoError *error);
 
 ICALL_EXPORT
 void ves_icall_System_IO_MonoIO_Lock (gpointer handle, gint64 position,

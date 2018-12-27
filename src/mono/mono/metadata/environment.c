@@ -20,11 +20,10 @@
 #include <mono/metadata/handle.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/w32api.h>
-#include "environment-internal.h"
-
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
 #endif
+#include "icall-decl.h"
 
 static gint32 exitcode=0;
 

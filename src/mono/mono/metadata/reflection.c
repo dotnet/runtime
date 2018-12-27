@@ -49,6 +49,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
+#include "icall-decl.h"
 
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error);

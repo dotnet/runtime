@@ -13,6 +13,7 @@
 #include <windows.h>
 #include <winbase.h>
 #include "object-internals.h"
+#include "icall-decl.h"
 
 void
 mono_w32semaphore_init (void)

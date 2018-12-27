@@ -29,6 +29,7 @@
 #include <execinfo.h>
 #endif
 #include "class-init.h"
+#include "icall-decl.h"
 
 static MonoUnhandledExceptionFunc unhandled_exception_hook = NULL;
 static gpointer unhandled_exception_hook_data = NULL;

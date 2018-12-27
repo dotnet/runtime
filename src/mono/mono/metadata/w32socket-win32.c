@@ -24,6 +24,7 @@
 
 #include "utils/w32api.h"
 #include "utils/mono-os-wait.h"
+#include "icall-decl.h"
 
 #define LOGDEBUG(...)  
 

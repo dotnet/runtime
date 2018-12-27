@@ -25,6 +25,7 @@
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/utils/checked-build.h"
+#include "icall-decl.h"
 
 typedef struct {
 	char *p;

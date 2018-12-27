@@ -17,6 +17,7 @@
 #include "mono/metadata/handle.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/metadata/w32handle.h"
+#include "icall-decl.h"
 
 #define MAX_PATH 260
 

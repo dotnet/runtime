@@ -29,10 +29,6 @@ void
 mono_w32event_reset (gpointer handle);
 
 ICALL_EXPORT
-gpointer
-ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoStringHandle name, gint32 *err, MonoError *error);
-
-ICALL_EXPORT
 gboolean
 ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle);
 
@@ -43,10 +39,6 @@ ves_icall_System_Threading_Events_ResetEvent_internal (gpointer handle);
 ICALL_EXPORT
 void
 ves_icall_System_Threading_Events_CloseEvent_internal (gpointer handle);
-
-ICALL_EXPORT
-gpointer
-ves_icall_System_Threading_Events_OpenEvent_internal (MonoStringHandle name, gint32 rights, gint32 *err, MonoError *error);
 
 typedef struct MonoW32HandleNamedEvent MonoW32HandleNamedEvent;
 

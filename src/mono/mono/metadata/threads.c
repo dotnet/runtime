@@ -84,6 +84,8 @@ extern int tkill (pid_t tid, int signal);
 #endif
 #endif
 
+#include "icall-decl.h"
+
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
 #define THREAD_DEBUG(a)
 /*#define THREAD_WAIT_DEBUG(a) do { a; } while (0)*/

@@ -552,11 +552,6 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 MonoObject* mono_marshal_get_type_object (MonoClass *klass);
 
 ICALL_EXPORT
-void
-ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArrayHandle src, gint32 start_index,
-		gpointer dest, gint32 length, gconstpointer managed_source_addr, MonoError *error);
-
-ICALL_EXPORT
 guint32 
 ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void);
 

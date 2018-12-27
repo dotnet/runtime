@@ -37,6 +37,7 @@
 #if defined(__APPLE__)
 #include <CoreFoundation/CoreFoundation.h>
 #endif
+#include "icall-decl.h"
 
 #undef DEBUG
 

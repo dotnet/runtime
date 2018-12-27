@@ -14,7 +14,7 @@
 #include <winbase.h>
 #include <mono/metadata/handle.h>
 #include <mono/utils/mono-error-internals.h>
-
+#include "icall-decl.h"
 
 void
 mono_w32mutex_init (void)

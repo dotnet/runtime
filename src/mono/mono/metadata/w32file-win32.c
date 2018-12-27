@@ -12,6 +12,7 @@
 #include <windows.h>
 #include "mono/metadata/w32file-win32-internals.h"
 #include "mono/metadata/w32subset.h"
+#include "icall-decl.h"
 
 void
 mono_w32file_init (void)

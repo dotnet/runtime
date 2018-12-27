@@ -41,9 +41,6 @@ ICALL_EXPORT
 void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this_obj, MonoString *locale);
 
 ICALL_EXPORT
-MonoStringHandle ves_icall_System_Globalization_CultureInfo_get_current_locale_name (MonoError *error);
-
-ICALL_EXPORT
 MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this_obj, gint lcid);
 
 ICALL_EXPORT
@@ -72,20 +69,5 @@ ves_icall_System_Globalization_CompareInfo_internal_index (const gunichar2 *sour
 	gint32 count, const gunichar2 *value, int value_length, MonoBoolean first);
 
 #define MONO_LOCALE_INVARIANT (0x007F)
-
-ICALL_EXPORT
-MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this_obj, MonoCultureInfo *cult);
-
-ICALL_EXPORT
-MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this_obj, MonoCultureInfo *cult);
-
-ICALL_EXPORT
-gunichar2 ves_icall_System_Char_InternalToUpper_Comp (gunichar2 c, MonoCultureInfo *cult);
-
-ICALL_EXPORT
-gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureInfo *cult);
-
-ICALL_EXPORT
-void ves_icall_System_Text_Normalization_load_normalization_resource (guint8 **argProps, guint8** argMappedChars, guint8** argCharMapIndex, guint8** argHelperIndex, guint8** argMapIdxToComposite, guint8** argCombiningClass, MonoError *error);
 
 #endif /* _MONO_METADATA_FILEIO_H_ */

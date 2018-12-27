@@ -18,6 +18,7 @@
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-threads.h"
 #include "mono/metadata/w32handle.h"
+#include "icall-decl.h"
 
 #define MAX_PATH 260
 

@@ -46,6 +46,7 @@
 #include <mono/metadata/class-private-definition.h>
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
+#include "icall-decl.h"
 
 static GENERATE_GET_CLASS_WITH_CACHE (marshal_as_attribute, "System.Runtime.InteropServices", "MarshalAsAttribute");
 static GENERATE_GET_CLASS_WITH_CACHE (module_builder, "System.Reflection.Emit", "ModuleBuilder");

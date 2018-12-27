@@ -1633,14 +1633,6 @@ ICALL_EXPORT
 MonoReflectionEvent *
 ves_icall_TypeBuilder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb);
 
-ICALL_EXPORT
-MonoArrayHandle
-ves_icall_SignatureHelper_get_signature_local (MonoReflectionSigHelperHandle sig, MonoError *error);
-
-ICALL_EXPORT
-MonoArrayHandle
-ves_icall_SignatureHelper_get_signature_field (MonoReflectionSigHelperHandle sig, MonoError *error);
-
 MonoReflectionMarshalAsAttributeHandle
 mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec, MonoError *error);
 
@@ -1967,10 +1959,6 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 char *
 mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc);
 
-ICALL_EXPORT
-MonoStringHandle
-ves_icall_Mono_Runtime_GetNativeStackTrace (MonoExceptionHandle exc, MonoError *erro);
-
 char *
 mono_exception_get_managed_backtrace (MonoException *exc);
 
@@ -2125,20 +2113,6 @@ int
 mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc);
 
 ICALL_EXPORT
-MonoReflectionMethodHandle
-ves_icall_MonoMethod_MakeGenericMethod_impl (MonoReflectionMethodHandle rmethod, MonoArrayHandle types, MonoError *error);
-
-ICALL_EXPORT
-gint32
-ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, MonoBoolean create_open_instance, MonoError *error);
-
-ICALL_EXPORT
-gint32
-ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilderHandle mb,
-					MonoReflectionMethodHandle method,
-					MonoArrayHandle opt_param_types,
-					MonoError *error);
-ICALL_EXPORT
 void
 ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, gpointer file);
 
@@ -2148,44 +2122,11 @@ ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb);
 
 ICALL_EXPORT
 void
-ves_icall_ModuleBuilder_RegisterToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, guint32 token, MonoError *error);
-
-ICALL_EXPORT
-MonoObjectHandle
-ves_icall_ModuleBuilder_GetRegisteredToken (MonoReflectionModuleBuilderHandle mb, guint32 token, MonoError *error);
-
-ICALL_EXPORT
-void
 ves_icall_AssemblyBuilder_basic_init (MonoReflectionAssemblyBuilder *assemblyb);
-
-ICALL_EXPORT
-void
-ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes (MonoReflectionAssemblyBuilderHandle assemblyb, MonoError *error);
 
 ICALL_EXPORT
 MonoArray*
 ves_icall_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues);
-
-ICALL_EXPORT
-void
-ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethodHandle mb, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_EnumBuilder_setup_enum_type (MonoReflectionTypeHandle enumtype,
-				       MonoReflectionTypeHandle t,
-				       MonoError *error);
-ICALL_EXPORT
-void
-ves_icall_ModuleBuilder_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *error);
-
-ICALL_EXPORT
-guint32
-ves_icall_ModuleBuilder_getUSIndex (MonoReflectionModuleBuilderHandle module, MonoStringHandle str, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_ModuleBuilder_set_wrappers_type (MonoReflectionModuleBuilderHandle moduleb, MonoReflectionTypeHandle type, MonoError *error);
 
 MonoAssembly*
 mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
