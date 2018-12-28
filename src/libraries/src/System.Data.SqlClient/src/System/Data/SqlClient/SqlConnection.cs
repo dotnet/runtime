@@ -1472,7 +1472,7 @@ namespace System.Data.SqlClient
                 throw ADP.InvalidArgumentLength(nameof(newSecurePassword), TdsEnums.MAXLEN_NEWPASSWORD);
             }
 
-            SqlConnectionPoolKey key = new SqlConnectionPoolKey(connectionString, credential: null, accessToken: null);
+            SqlConnectionPoolKey key = new SqlConnectionPoolKey(connectionString, credential, accessToken: null);
 
             SqlConnectionString connectionOptions = SqlConnectionFactory.FindSqlConnectionOptions(key);
 
@@ -1510,7 +1510,7 @@ namespace System.Data.SqlClient
                 if (con != null)
                     con.Dispose();
             }
-            SqlConnectionPoolKey key = new SqlConnectionPoolKey(connectionString, credential: null, accessToken: null);
+            SqlConnectionPoolKey key = new SqlConnectionPoolKey(connectionString, credential, accessToken: null);
 
             SqlConnectionFactory.SingletonInstance.ClearPool(key);
         }
