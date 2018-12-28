@@ -3,100 +3,66 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
-using Microsoft.Win32.SafeHandles;
+using System.Text;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
-        private static readonly int s_readBufferSize = GetReadDirRBufferSize();
-
         internal enum NodeType : int
         {
-            DT_UNKNOWN  =  0,
-            DT_FIFO     =  1,
-            DT_CHR      =  2,
-            DT_DIR      =  4,
-            DT_BLK      =  6,
-            DT_REG      =  8,
-            DT_LNK      = 10,
-            DT_SOCK     = 12,
-            DT_WHT      = 14
+            DT_UNKNOWN = 0,
+            DT_FIFO = 1,
+            DT_CHR = 2,
+            DT_DIR = 4,
+            DT_BLK = 6,
+            DT_REG = 8,
+            DT_LNK = 10,
+            DT_SOCK = 12,
+            DT_WHT = 14
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct InternalDirectoryEntry
+        internal unsafe struct DirectoryEntry
         {
-            internal IntPtr     Name;
-            internal int        NameLength;
-            internal NodeType   InodeType;
-        }
+            internal byte* Name;
+            internal int NameLength;
+            internal NodeType InodeType;
+            internal const int NameBufferSize = 256;
 
-        internal struct DirectoryEntry
-        {
-            internal NodeType   InodeType;
-            internal string     InodeName;
+            internal ReadOnlySpan<char> GetName(Span<char> buffer)
+            {
+                Debug.Assert(buffer.Length >= Encoding.UTF8.GetMaxCharCount(NameBufferSize - 1), "should have enough space for the max file name");
+                Debug.Assert(Name != null, "should not have a null name");
+
+                ReadOnlySpan<byte> nameBytes = (NameLength == -1)
+                    // In this case the struct was allocated via struct dirent *readdir(DIR *dirp);
+                    ? new ReadOnlySpan<byte>(Name, new ReadOnlySpan<byte>(Name, NameBufferSize - 1).IndexOf<byte>(0))
+                    : new ReadOnlySpan<byte>(Name, NameLength);
+
+                Debug.Assert(nameBytes.Length > 0, "we shouldn't have gotten a garbage value from the OS");
+                if (nameBytes.Length == 0)
+                    return buffer.Slice(0, 0);
+
+                int charCount = Encoding.UTF8.GetChars(nameBytes, buffer);
+                ReadOnlySpan<char> value = buffer.Slice(0, charCount);
+                Debug.Assert(NameLength != -1 || !value.Contains('\0'), "should not have embedded nulls if we parsed the end of string");
+                return value;
+            }
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenDir", SetLastError = true)]
-        internal static extern Microsoft.Win32.SafeHandles.SafeDirectoryHandle OpenDir(string path);
+        internal static extern IntPtr OpenDir(string path);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetReadDirRBufferSize", SetLastError = false)]
         internal static extern int GetReadDirRBufferSize();
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR", SetLastError = false)]
-        private static extern unsafe int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, out InternalDirectoryEntry outputEntry);
+        internal static extern unsafe int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, out DirectoryEntry outputEntry);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]
         internal static extern int CloseDir(IntPtr dir);
-
-        // The calling pattern for ReadDir is described in src/Native/System.Native/pal_readdir.cpp
-        internal static int ReadDir(SafeDirectoryHandle dir, out DirectoryEntry outputEntry)
-        {
-            bool addedRef = false;
-            try
-            {
-                // We avoid a native string copy into InternalDirectoryEntry.
-                // - If the platform suppors reading into a buffer, the data is read directly into the buffer. The
-                //   data can be read as long as the buffer is valid.
-                // - If the platform does not support reading into a buffer, the information returned in
-                //   InternalDirectoryEntry points to native memory owned by the SafeDirectoryHandle. The data is only
-                //   valid until the next call to CloseDir/ReadDir. We extend the reference until we have copied all data
-                //   to ensure it does not become invalid by a CloseDir; and we copy the data so our caller does not
-                //   use the native memory held by the SafeDirectoryHandle.
-                dir.DangerousAddRef(ref addedRef);
-
-                unsafe
-                {
-                    // s_readBufferSize is zero when the native implementation does not support reading into a buffer.
-                    byte* buffer = stackalloc byte[s_readBufferSize];
-                    InternalDirectoryEntry temp;
-                    int ret = ReadDirR(dir.DangerousGetHandle(), buffer, s_readBufferSize, out temp);
-                    // We copy data into DirectoryEntry to ensure there are no dangling references.
-                    outputEntry = ret == 0 ?
-                                new DirectoryEntry() { InodeName = GetDirectoryEntryName(temp), InodeType = temp.InodeType } : 
-                                default(DirectoryEntry);
-
-                    return ret;
-                }
-            }
-            finally
-            {
-                if (addedRef)
-                {
-                    dir.DangerousRelease();
-                }
-            }
-        }
-
-        private static unsafe string GetDirectoryEntryName(InternalDirectoryEntry dirEnt)
-        {
-            if (dirEnt.NameLength == -1)
-                return Marshal.PtrToStringAnsi(dirEnt.Name);
-            else
-                return Marshal.PtrToStringAnsi(dirEnt.Name, dirEnt.NameLength);
-        }
     }
 }
