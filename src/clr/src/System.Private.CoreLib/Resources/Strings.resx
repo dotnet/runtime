@@ -2270,7 +2270,7 @@
     <value>Could not find the ending brace.</value>
   </data>
   <data name="Format_GuidHexPrefix" xml:space="preserve">
-    <value>Expected hex 0x in '{0}'.</value>
+    <value>Expected 0x prefix.</value>
   </data>
   <data name="Format_GuidInvalidChar" xml:space="preserve">
     <value>Guid string should only contain hexadecimal characters.</value>
