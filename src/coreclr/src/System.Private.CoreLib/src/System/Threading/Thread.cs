@@ -131,14 +131,6 @@ namespace System.Threading
 #pragma warning restore 414
 #pragma warning restore 169
 
-
-        // Do not move! Order of above fields needs to be preserved for alignment
-        // with native code
-        // See code:#threadCultureInfo
-        [ThreadStatic]
-        internal static CultureInfo m_CurrentCulture;
-        [ThreadStatic]
-        internal static CultureInfo m_CurrentUICulture;
         [ThreadStatic]
         private static Thread t_currentThread;
 
@@ -423,7 +415,7 @@ namespace System.Threading
                 // If you add more pre-conditions to this method, check to see if you also need to 
                 // add them to CultureInfo.DefaultThreadCurrentUICulture.set.
 
-                if (m_CurrentUICulture == null && m_CurrentCulture == null)
+                if (CultureInfo.s_currentThreadUICulture == null && CultureInfo.s_currentThreadCulture == null)
                     nativeInitCultureAccessors();
 
                 CultureInfo.CurrentUICulture = value;
@@ -456,7 +448,7 @@ namespace System.Threading
                 // If you add more pre-conditions to this method, check to see if you also need to 
                 // add them to CultureInfo.DefaultThreadCurrentCulture.set.
 
-                if (m_CurrentCulture == null && m_CurrentUICulture == null)
+                if (CultureInfo.s_currentThreadUICulture == null && CultureInfo.s_currentThreadCulture == null)
                     nativeInitCultureAccessors();
                 
                 CultureInfo.CurrentCulture = value;

@@ -223,7 +223,7 @@ namespace System.Globalization
                 // Fast path for a regular CultureInfo
                 if (provider is CultureInfo cultureProvider && !cultureProvider._isInherited)
                 {
-                    return cultureProvider.numInfo ?? cultureProvider.NumberFormat;
+                    return cultureProvider._numInfo ?? cultureProvider.NumberFormat;
                 }
 
                 return
@@ -409,7 +409,7 @@ namespace System.Globalization
                 System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
-                    NumberFormatInfo info = culture.numInfo;
+                    NumberFormatInfo info = culture._numInfo;
                     if (info != null)
                     {
                         return info;

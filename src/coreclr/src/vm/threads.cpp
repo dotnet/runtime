@@ -8624,12 +8624,12 @@ void Thread::InitCultureAccessors()
     GCX_COOP();
 
     if (managedThreadCurrentCulture == NULL) {
-        managedThreadCurrentCulture = MscorlibBinder::GetField(FIELD__THREAD__CULTURE);
+        managedThreadCurrentCulture = MscorlibBinder::GetField(FIELD__CULTURE_INFO__CULTURE);
         pCurrentCulture = (OBJECTREF*)pThread->GetStaticFieldAddress(managedThreadCurrentCulture);
     }
 
     if (managedThreadCurrentUICulture == NULL) {
-        managedThreadCurrentUICulture = MscorlibBinder::GetField(FIELD__THREAD__UI_CULTURE);
+        managedThreadCurrentUICulture = MscorlibBinder::GetField(FIELD__CULTURE_INFO__UI_CULTURE);
         pCurrentCulture = (OBJECTREF*)pThread->GetStaticFieldAddress(managedThreadCurrentUICulture);
     }
 }

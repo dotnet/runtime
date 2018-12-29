@@ -369,7 +369,7 @@ namespace System.Globalization
                 System.Globalization.CultureInfo culture = System.Globalization.CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
-                    DateTimeFormatInfo info = culture.dateTimeInfo;
+                    DateTimeFormatInfo info = culture._dateTimeInfo;
                     if (info != null)
                     {
                         return info;
