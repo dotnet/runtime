@@ -4429,7 +4429,7 @@ extern "C"
 
         GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
         GCEventLevel level = static_cast<GCEventLevel>(Level);
-        GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
+        GCHeapUtilities::RecordEventStateChange(!!bIsPublicTraceHandle, keywords, level);
 
         // EventPipeEtwCallback contains some GC eventing functionality shared between EventPipe and ETW.
         // Eventually, we'll want to merge these two codepaths whenever we can.
