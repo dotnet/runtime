@@ -889,21 +889,16 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(name));
 
 #if FEATURE_APPX
-            if (ApplicationModel.IsUap)
+            if (_bUsingModernResourceManagement)
             {
-                // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
+                // If the caller explicitly passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
                 // null it out, so that we re-compute it.  If we use modern resource lookup, we may end up getting a "better"
                 // match, since CultureInfo objects can't represent all the different languages the AppX resource model supports.
-                // For classic resources, this causes us to ignore the languages list and instead use the older Win32 behavior,
-                // which is the design choice we've made. (See the call a little later to GetCurrentUICultureNoAppX()).
                 if (object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
                 {
                     culture = null;
                 }
-            }
 
-            if (_bUsingModernResourceManagement)
-            {
                 if (_PRIonAppXInitialized == false)
                 {
                     // Always throw if we did not fully succeed in initializing the WinRT Resource Manager.
@@ -924,8 +919,6 @@ namespace System.Resources
             {
                 if (culture == null)
                 {
-                    // When running inside AppX we want to ignore the languages list when trying to come up with our CurrentUICulture.
-                    // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
                     culture = CultureInfo.CurrentUICulture;
                 }
 
@@ -997,24 +990,9 @@ namespace System.Resources
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
 
-#if FEATURE_APPX
-            if (ApplicationModel.IsUap)
-            {
-                // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
-                // null it out, so that we re-compute it based on the Win32 value and not the AppX language list value.
-                // (See the call a little later to GetCurrentUICultureNoAppX()).
-                if (object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
-                {
-                    culture = null;
-                }
-            }
-#endif
-
             if (null == culture)
             {
-                // When running inside AppX we want to ignore the languages list when trying to come up with our CurrentUICulture.
-                // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
-                culture = CultureInfo.GetCurrentUICultureNoAppX();
+                culture = CultureInfo.CurrentUICulture;
             }
 
             ResourceSet last = GetFirstResourceSet(culture);
