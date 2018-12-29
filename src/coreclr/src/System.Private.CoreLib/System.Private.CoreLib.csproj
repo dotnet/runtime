@@ -331,7 +331,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Timer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Volatile.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.cs" />
