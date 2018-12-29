@@ -216,6 +216,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendricalCalculationsHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ChineseLunisolarCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.cs" />
@@ -882,6 +883,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Win32.cs" Condition="'$(EnableWinRT)' != 'true' and '$(EnableDummyGlobalizationImplementation)' != 'true'" />
@@ -989,6 +991,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />

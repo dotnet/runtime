@@ -1397,11 +1397,11 @@ class CultureInfoBaseObject : public Object
     friend class MscorlibBinder;
 
 private:
-    OBJECTREF compareInfo;
-    OBJECTREF textInfo;
-    OBJECTREF numInfo;
-    OBJECTREF dateTimeInfo;
-    OBJECTREF calendar;
+    OBJECTREF _compareInfo;
+    OBJECTREF _textInfo;
+    OBJECTREF _numInfo;
+    OBJECTREF _dateTimeInfo;
+    OBJECTREF _calendar;
     OBJECTREF _cultureData;
     OBJECTREF _consoleFallbackCulture;
     STRINGREF _name;                       // "real" name - en-US, de-DE_phoneb or fj-FJ
@@ -1410,7 +1410,6 @@ private:
     CULTUREINFOBASEREF _parent;
     CLR_BOOL _isReadOnly;
     CLR_BOOL _isInherited;
-    CLR_BOOL _useUserOverride;
 
 public:
     CULTUREINFOBASEREF GetParent()
