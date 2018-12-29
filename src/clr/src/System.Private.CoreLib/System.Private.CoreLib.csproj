@@ -166,7 +166,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Environment.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
@@ -417,7 +416,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
   </ItemGroup>
@@ -425,7 +423,6 @@
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.Windows.cs" />
