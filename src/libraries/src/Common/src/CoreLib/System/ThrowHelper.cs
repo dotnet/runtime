@@ -414,6 +414,8 @@ namespace System
         {
             switch (resource)
             {
+                case ExceptionResource.Argument_InvalidArgumentForComparison:
+                    return SR.Argument_InvalidArgumentForComparison;
                 case ExceptionResource.ArgumentOutOfRange_Index:
                     return SR.ArgumentOutOfRange_Index;
                 case ExceptionResource.ArgumentOutOfRange_Count:
@@ -572,6 +574,7 @@ namespace System
     // 
     internal enum ExceptionResource
     {
+        Argument_InvalidArgumentForComparison,
         ArgumentOutOfRange_Index,
         ArgumentOutOfRange_Count,
         Arg_ArrayPlusOffTooSmall,
