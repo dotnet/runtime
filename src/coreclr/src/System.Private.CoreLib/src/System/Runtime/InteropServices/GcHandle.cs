@@ -59,7 +59,7 @@ namespace System.Runtime.InteropServices
         {
             // Make sure the type parameter is within the valid range for the enum.
             if ((uint)type > (uint)MaxHandleType)
-                ThrowArgumentOutOfRangeException_ArgumentOutOfRange_Enum();
+                ThrowHelper.ThrowArgumentOutOfRangeException_ArgumentOutOfRange_Enum();
 
             IntPtr handle = InternalAlloc(value, type);
 
@@ -268,24 +268,14 @@ namespace System.Runtime.InteropServices
         {
             // Check if the handle was never initialized or was freed.
             if (m_handle == IntPtr.Zero)
-                ThrowInvalidOperationException_HandleIsNotInitialized();
+                ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
         }
 
         private static void ValidateHandle(IntPtr handle)
         {
             // Check if the handle was never initialized or was freed.
             if (handle == IntPtr.Zero)
-                ThrowInvalidOperationException_HandleIsNotInitialized();
-        }
-
-        private static void ThrowArgumentOutOfRangeException_ArgumentOutOfRange_Enum()
-        {
-            throw ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.type, ExceptionResource.ArgumentOutOfRange_Enum);
-        }
-
-        private static void ThrowInvalidOperationException_HandleIsNotInitialized()
-        {
-            throw ThrowHelper.GetInvalidOperationException(ExceptionResource.InvalidOperation_HandleIsNotInitialized);
+                ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
         }
     }
 }
