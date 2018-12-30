@@ -122,7 +122,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\DictionaryEntry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ArraySortHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Dictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IAsyncEnumerable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IAsyncEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ICollection.cs" />

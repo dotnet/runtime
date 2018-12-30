@@ -134,9 +134,9 @@
     <Compile Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DefaultBinder.CanConvert.cs" />
