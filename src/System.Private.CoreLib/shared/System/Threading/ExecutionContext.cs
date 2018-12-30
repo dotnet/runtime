@@ -57,10 +57,16 @@ namespace System.Threading
         public static ExecutionContext Capture()
         {
             ExecutionContext executionContext = Thread.CurrentThread.ExecutionContext;
-            return
-                executionContext == null ? Default :
-                executionContext.m_isFlowSuppressed ? null :
-                executionContext;
+            if (executionContext == null)
+            {
+                executionContext = Default;
+            }
+            else if (executionContext.m_isFlowSuppressed)
+            {
+                executionContext = null;
+            }
+
+            return executionContext;
         }
 
         private ExecutionContext ShallowClone(bool isFlowSuppressed)
