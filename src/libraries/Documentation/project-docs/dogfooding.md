@@ -86,17 +86,17 @@ this, there are two options you can take.
 This is the default case for applications - running against an installed .NET Core
 runtime.
 
-0. You still need to install the prerequisite .NET Core SDK from above.
-1. Also, install the specific .NET Core runtime you require:
+1. You still need to install the prerequisite .NET Core SDK from above.
+2. Optionally, install the specific .NET Core runtime you require:
     - https://github.com/dotnet/core-setup#daily-builds
-    - Remember the version number you picked, you'll need it below
-2. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App
+3. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App
 
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
-    <RuntimeFrameworkVersion>3.0.0-preview-27225-1</RuntimeFrameworkVersion> <!-- modify build in this line -->
+    <!-- modify version in this line with one reported by `dotnet --info` under ".NET Core runtimes installed" -> Microsoft.NETCore.App -->
+    <RuntimeFrameworkVersion>3.0.0-preview-27225-1</RuntimeFrameworkVersion>
   </PropertyGroup>
 ```
 
@@ -109,15 +109,17 @@ $ dotnet run
 
 In this case, the .NET Core runtime will be published along with your application.
 
-0. You still need to install the prerequisite .NET Core SDK from above.
-1. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App *and*
+1. You still need to install the prerequisite .NET Core SDK from above.
+2. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App *and*
 make it self-contained
 
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
-    <RuntimeFrameworkVersion>3.0.0-preview-27218-01</RuntimeFrameworkVersion> <!-- modify build in this line -->
+    <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET Core runtimes installed" -> Microsoft.NETCore.App -->
+    <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.NETCore.App -->
+    <RuntimeFrameworkVersion>3.0.0-preview-27218-01</RuntimeFrameworkVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier> <!-- make self-contained -->
   </PropertyGroup>
 ```
