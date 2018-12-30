@@ -402,9 +402,16 @@ namespace System.Threading
             loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
         }
 
-        public ThreadPoolWorkQueueThreadLocals EnsureCurrentThreadHasQueue() =>
-            ThreadPoolWorkQueueThreadLocals.threadLocals ??
-            (ThreadPoolWorkQueueThreadLocals.threadLocals = new ThreadPoolWorkQueueThreadLocals(this));
+        public ThreadPoolWorkQueueThreadLocals GetOrCreateThreadLocals() =>
+            ThreadPoolWorkQueueThreadLocals.threadLocals ?? CreateThreadLocals();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private ThreadPoolWorkQueueThreadLocals CreateThreadLocals()
+        {
+            Debug.Assert(ThreadPoolWorkQueueThreadLocals.threadLocals == null);
+
+            return (ThreadPoolWorkQueueThreadLocals.threadLocals = new ThreadPoolWorkQueueThreadLocals(this));
+        }
 
         internal void EnsureThreadRequested()
         {
@@ -545,7 +552,7 @@ namespace System.Threading
                 //
                 // Use operate on workQueue local to try block so it can be enregistered 
                 ThreadPoolWorkQueue workQueue = outerWorkQueue;
-                ThreadPoolWorkQueueThreadLocals tl = workQueue.EnsureCurrentThreadHasQueue();
+                ThreadPoolWorkQueueThreadLocals tl = workQueue.GetOrCreateThreadLocals();
                 Thread currentThread = tl.currentThread;
 
                 // Start on clean ExecutionContext and SynchronizationContext
