@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     public abstract partial class Comparer<T> : IComparer, IComparer<T>
     {
         // public static Comparer<T> Default is runtime-specific
@@ -56,7 +54,7 @@ namespace System.Collections.Generic
     // means another generic instantiation, which can be costly esp.
     // for value types.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
     public sealed partial class GenericComparer<T> : Comparer<T> where T : IComparable<T>
     {
@@ -80,7 +78,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
     public sealed partial class NullableComparer<T> : Comparer<T?> where T : struct, IComparable<T>
     {
@@ -104,7 +102,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
     public sealed partial class ObjectComparer<T> : Comparer<T>
     {
