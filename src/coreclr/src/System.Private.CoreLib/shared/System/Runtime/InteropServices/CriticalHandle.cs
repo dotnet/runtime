@@ -127,7 +127,7 @@ using System.IO;
 namespace System.Runtime.InteropServices
 {
     // This class should not be serializable - it's a handle
-    public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
+    public abstract partial class CriticalHandle : CriticalFinalizerObject, IDisposable
     {
         // ! Do not add or rearrange fields as the EE depends on this layout.
         //------------------------------------------------------------------
@@ -138,7 +138,6 @@ namespace System.Runtime.InteropServices
         protected CriticalHandle(IntPtr invalidHandleValue)
         {
             handle = invalidHandleValue;
-            _isClosed = false;
         }
 
         ~CriticalHandle()
@@ -155,21 +154,9 @@ namespace System.Runtime.InteropServices
             if (IsInvalid)
                 return;
 
-            // Save last error from P/Invoke in case the implementation of
-            // ReleaseHandle trashes it (important because this ReleaseHandle could
-            // occur implicitly as part of unmarshaling another P/Invoke).
-            int lastError = Marshal.GetLastWin32Error();
-
-            if (!ReleaseHandle())
-                FireCustomerDebugProbe();
-
-            Marshal.SetLastWin32Error(lastError);
-
+            ReleaseHandleCore();
             GC.SuppressFinalize(this);
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void FireCustomerDebugProbe();
 
         protected void SetHandle(IntPtr handle)
         {
