@@ -45,13 +45,7 @@
 ** 
 ===========================================================*/
 
-using System;
-using System.Reflection;
-using System.Threading;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Runtime.ConstrainedExecution;
-using System.IO;
 
 /*
   Problems addressed by the CriticalHandle class:
@@ -154,7 +148,15 @@ namespace System.Runtime.InteropServices
             if (IsInvalid)
                 return;
 
-            ReleaseHandleCore();
+            // Save last error from P/Invoke in case the implementation of
+            // ReleaseHandle trashes it (important because this ReleaseHandle could
+            // occur implicitly as part of unmarshaling another P/Invoke).
+            int lastError = Marshal.GetLastWin32Error();
+
+            if (!ReleaseHandle())
+                ReleaseHandleFailed();
+
+            Marshal.SetLastWin32Error(lastError);
             GC.SuppressFinalize(this);
         }
 
@@ -211,7 +213,7 @@ namespace System.Runtime.InteropServices
         // you can deal with the failure and still free the handle).
         // The boolean returned should be true for success and false if a
         // catastrophic error occurred and you wish to trigger a diagnostic for
-        // debugging purposes (the SafeHandleCriticalFailure MDA).
+        // debugging purposes.
         protected abstract bool ReleaseHandle();
     }
 }
