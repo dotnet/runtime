@@ -449,7 +449,6 @@ FCFuncEnd()
 #endif
 
 FCFuncStart(gMdUtf8String)
-    FCFuncElement("EqualsCaseSensitive", MdUtf8String::EqualsCaseSensitive)
     QCFuncElement("EqualsCaseInsensitive", MdUtf8String::EqualsCaseInsensitive)
     QCFuncElement("HashCaseInsensitive", MdUtf8String::HashCaseInsensitive)
 FCFuncEnd()
