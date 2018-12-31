@@ -164,7 +164,7 @@ namespace System
 
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
-                    m_name = new MdUtf8String((void*)pUtf8Name, cUtf8Name);
+                    m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
                     m_listType = listType;
                     m_nameHash = 0;
 
@@ -4808,42 +4808,21 @@ namespace System
     #region Library
     internal readonly unsafe struct MdUtf8String
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool EqualsCaseSensitive(void* szLhs, void* szRhs, int cSz);
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe uint HashCaseInsensitive(void* sz, int cSz);
 
-        private static int GetUtf8StringByteLength(void* pUtf8String)
-        {
-            int len = 0;
-
-            unsafe
-            {
-                byte* pItr = (byte*)pUtf8String;
-
-                while (*pItr != 0)
-                {
-                    len++;
-                    pItr++;
-                }
-            }
-
-            return len;
-        }
-
-        private readonly void* m_pStringHeap;        // This is the raw UTF8 string.
+        private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;
 
         internal MdUtf8String(void* pStringHeap)
         {
-            m_pStringHeap = pStringHeap;
+            m_pStringHeap = (byte*)pStringHeap;
             if (pStringHeap != null)
             {
-                m_StringHeapByteLength = GetUtf8StringByteLength(pStringHeap);
+                m_StringHeapByteLength = StubHelpers.StubHelpers.strlen((sbyte*)pStringHeap);
             }
             else
             {
@@ -4851,36 +4830,36 @@ namespace System
             }
         }
 
-        internal unsafe MdUtf8String(void* pUtf8String, int cUtf8String)
+        internal unsafe MdUtf8String(byte* pUtf8String, int cUtf8String)
         {
             m_pStringHeap = pUtf8String;
             m_StringHeapByteLength = cUtf8String;
         }
 
+        // Very common called version of the Equals pair
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal unsafe bool Equals(MdUtf8String s)
         {
-            if (m_pStringHeap == null)
+            if (s.m_StringHeapByteLength != m_StringHeapByteLength)
             {
-                return s.m_StringHeapByteLength == 0;
+                return false;
             }
-            if ((s.m_StringHeapByteLength == m_StringHeapByteLength) && (m_StringHeapByteLength != 0))
+            else
             {
-                return EqualsCaseSensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
+                return SpanHelpers.SequenceEqual<byte>(ref *s.m_pStringHeap, ref *m_pStringHeap, m_StringHeapByteLength);
             }
-            return false;
         }
 
         internal unsafe bool EqualsCaseInsensitive(MdUtf8String s)
         {
-            if (m_pStringHeap == null)
+            if (s.m_StringHeapByteLength != m_StringHeapByteLength)
             {
-                return s.m_StringHeapByteLength == 0;
+                return false;
             }
-            if ((s.m_StringHeapByteLength == m_StringHeapByteLength) && (m_StringHeapByteLength != 0))
+            else
             {
-                return EqualsCaseInsensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
+                return (m_StringHeapByteLength == 0) || EqualsCaseInsensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
             }
-            return false;
         }
 
         internal unsafe uint HashCaseInsensitive()
@@ -4889,27 +4868,7 @@ namespace System
         }
 
         public override string ToString()
-        {
-            unsafe
-            {
-                byte* buf = stackalloc byte[m_StringHeapByteLength];
-                byte* pItr = (byte*)m_pStringHeap;
-
-                for (int currentPos = 0; currentPos < m_StringHeapByteLength; currentPos++)
-                {
-                    buf[currentPos] = *pItr;
-                    pItr++;
-                }
-
-                if (m_StringHeapByteLength == 0)
-                    return "";
-
-                int cResult = Encoding.UTF8.GetCharCount(buf, m_StringHeapByteLength);
-                char* result = stackalloc char[cResult];
-                Encoding.UTF8.GetChars(buf, m_StringHeapByteLength, result, cResult);
-                return new string(result, 0, cResult);
-            }
-        }
+            => Encoding.UTF8.GetString(new ReadOnlySpan<byte>(m_pStringHeap, m_StringHeapByteLength));
     }
     #endregion
 }
