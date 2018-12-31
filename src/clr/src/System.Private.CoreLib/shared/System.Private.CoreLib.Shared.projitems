@@ -550,6 +550,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\Consistency.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\ReliabilityContractAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionNotification.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\HandleProcessCorruptedStateExceptionsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\BestFitMappingAttribute.cs" />

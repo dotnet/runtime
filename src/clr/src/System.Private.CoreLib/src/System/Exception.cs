@@ -11,26 +11,20 @@
 **
 =============================================================================*/
 
+using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+
 namespace System
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Serialization;
-    using System.Runtime.Versioning;
-    using System.Diagnostics;
-    using System.Security;
-    using System.IO;
-    using System.Text;
-    using System.Reflection;
-    using System.Collections;
-    using System.Globalization;
-
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Exception : ISerializable
     {
-        private void Init()
+        public Exception()
         {
             _message = null;
             _stackTrace = null;
@@ -46,14 +40,9 @@ namespace System
             _ipForWatsonBuckets = UIntPtr.Zero;
         }
 
-        public Exception()
-        {
-            Init();
-        }
-
         public Exception(string message)
+            : this()
         {
-            Init();
             _message = message;
         }
 
@@ -63,8 +52,8 @@ namespace System
         // is thrown
         // 
         public Exception(string message, Exception innerException)
+            : this()
         {
-            Init();
             _message = message;
             _innerException = innerException;
         }
@@ -274,25 +263,18 @@ namespace System
         {
             get
             {
-                return GetTargetSiteInternal();
-            }
-        }
+                if (_exceptionMethod != null)
+                {
+                    return _exceptionMethod;
+                }
+                if (_stackTrace == null)
+                {
+                    return null;
+                }
 
-
-        // this function is provided as a private helper to avoid the security demand
-        private MethodBase GetTargetSiteInternal()
-        {
-            if (_exceptionMethod != null)
-            {
+                _exceptionMethod = GetExceptionMethodFromStackTrace();
                 return _exceptionMethod;
             }
-            if (_stackTrace == null)
-            {
-                return null;
-            }
-            
-            _exceptionMethod = GetExceptionMethodFromStackTrace();
-            return _exceptionMethod;
         }
 
         // Returns the stack trace as a string.  If no stack trace is
@@ -527,32 +509,7 @@ namespace System
         // for a small duration but that sounds reasonable considering
         // such scenarios are going to be extremely rare, where timing
         // matches precisely.
-        [OptionalField]
-        private static object s_EDILock = new object();
-
-        internal UIntPtr IPForWatsonBuckets
-        {
-            get
-            {
-                return _ipForWatsonBuckets;
-            }
-        }
-
-        internal object WatsonBuckets
-        {
-            get
-            {
-                return _watsonBuckets;
-            }
-        }
-
-        internal string RemoteStackTrace
-        {
-            get
-            {
-                return _remoteStackTraceString;
-            }
-        }
+        private static readonly object s_DispatchStateLock = new object();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void PrepareForForeignExceptionRaise();
@@ -593,14 +550,9 @@ namespace System
             }
         }
 
-        internal void GetStackTracesDeepCopy(out object currentStackTrace, out object dynamicMethodArray)
-        {
-            GetStackTracesDeepCopy(this, out currentStackTrace, out dynamicMethodArray);
-        }
-
         // This is invoked by ExceptionDispatchInfo.Throw to restore the exception stack trace, corresponding to the original throw of the
         // exception, just before the exception is "rethrown".
-        internal void RestoreExceptionDispatchInfo(System.Runtime.ExceptionServices.ExceptionDispatchInfo exceptionDispatchInfo)
+        internal void RestoreDispatchState(in DispatchState dispatchState)
         {
             bool fCanProcessException = !(IsImmutableAgileException(this));
             // Restore only for non-preallocated exceptions
@@ -622,25 +574,25 @@ namespace System
                     //
                     // Since deep copying can throw on OOM, try to get the copies
                     // outside the lock.
-                    object _stackTraceCopy = (exceptionDispatchInfo.BinaryStackTraceArray == null) ? null : DeepCopyStackTrace(exceptionDispatchInfo.BinaryStackTraceArray);
-                    object _dynamicMethodsCopy = (exceptionDispatchInfo.DynamicMethodArray == null) ? null : DeepCopyDynamicMethods(exceptionDispatchInfo.DynamicMethodArray);
+                    object _stackTraceCopy = (dispatchState.StackTrace == null) ? null : DeepCopyStackTrace(dispatchState.StackTrace);
+                    object _dynamicMethodsCopy = (dispatchState.DynamicMethods == null) ? null : DeepCopyDynamicMethods(dispatchState.DynamicMethods);
 
                     // Finally, restore the information. 
                     //
                     // Since EDI can be created at various points during exception dispatch (e.g. at various frames on the stack) for the same exception instance,
                     // they can have different data to be restored. Thus, to ensure atomicity of restoration from each EDI, perform the restore under a lock.
-                    lock (Exception.s_EDILock)
+                    lock (s_DispatchStateLock)
                     {
-                        _watsonBuckets = exceptionDispatchInfo.WatsonBuckets;
-                        _ipForWatsonBuckets = exceptionDispatchInfo.IPForWatsonBuckets;
-                        _remoteStackTraceString = exceptionDispatchInfo.RemoteStackTrace;
+                        _watsonBuckets = dispatchState.WatsonBuckets;
+                        _ipForWatsonBuckets = dispatchState.IpForWatsonBuckets;
+                        _remoteStackTraceString = dispatchState.RemoteStackTrace;
                         SaveStackTracesFromDeepCopy(this, _stackTraceCopy, _dynamicMethodsCopy);
                     }
                     _stackTraceString = null;
 
                     // Marks the TES state to indicate we have restored foreign exception
                     // dispatch information.
-                    Exception.PrepareForForeignExceptionRaise();
+                    PrepareForForeignExceptionRaise();
                 }
             }
         }
@@ -745,6 +697,36 @@ namespace System
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg);
+
+        internal readonly struct DispatchState
+        {
+            public readonly object StackTrace;
+            public readonly object DynamicMethods;
+            public readonly string RemoteStackTrace;
+            public readonly UIntPtr IpForWatsonBuckets;
+            public readonly object WatsonBuckets;
+
+            public DispatchState(
+                object stackTrace,
+                object dynamicMethods,
+                string remoteStackTrace,
+                UIntPtr ipForWatsonBuckets,
+                object watsonBuckets)
+            {
+                StackTrace = stackTrace;
+                DynamicMethods = dynamicMethods;
+                RemoteStackTrace = remoteStackTrace;
+                IpForWatsonBuckets = ipForWatsonBuckets;
+                WatsonBuckets = watsonBuckets;
+            }
+        }
+
+        internal DispatchState CaptureDispatchState()
+        {
+            GetStackTracesDeepCopy(this, out object stackTrace, out object dynamicMethods);
+
+            return new DispatchState(stackTrace, dynamicMethods,
+                _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);
+        }
     }
 }
-
