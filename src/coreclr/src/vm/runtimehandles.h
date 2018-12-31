@@ -106,8 +106,6 @@ public:
 
 class MdUtf8String {
 public:
-    static FCDECL3(FC_BOOL_RET, EqualsCaseSensitive, LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes);
-
     static
     BOOL QCALLTYPE EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes);
 

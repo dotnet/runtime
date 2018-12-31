@@ -31,25 +31,6 @@
 #include "eventtrace.h"
 #include "invokeutil.h"
 
-
-FCIMPL3(FC_BOOL_RET, MdUtf8String::EqualsCaseSensitive, LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(szLhs));
-        PRECONDITION(CheckPointer(szRhs));
-    }
-    CONTRACTL_END;
-
-    // Important: the string in pSsz isn't null terminated so the length must be used
-    // when performing operations on the string.
-
-    // At this point, both the left and right strings are guaranteed to have the
-    // same length.
-    FC_RETURN_BOOL(strncmp(szLhs, szRhs, stringNumBytes) == 0);
-}
-FCIMPLEND
-
 BOOL QCALLTYPE MdUtf8String::EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
     QCALL_CONTRACT;
