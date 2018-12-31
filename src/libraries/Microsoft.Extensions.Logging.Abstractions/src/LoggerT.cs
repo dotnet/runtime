@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -25,7 +26,7 @@ namespace Microsoft.Extensions.Logging
                 throw new ArgumentNullException(nameof(factory));
             }
 
-            _logger = factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(typeof(T)));
+            _logger = factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(typeof(T), includeGenericParameters: false, nestedTypeDelimiter: '.'));
         }
 
         IDisposable ILogger.BeginScope<TState>(TState state)
