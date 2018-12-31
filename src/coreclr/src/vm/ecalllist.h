@@ -188,7 +188,7 @@ FCFuncStart(gSafeHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gCriticalHandleFuncs)
-    FCFuncElement("FireCustomerDebugProbe", CriticalHandle::FireCustomerDebugProbe)
+    FCFuncElement("ReleaseHandleFailed", CriticalHandle::FireCustomerDebugProbe)
 FCFuncEnd()
 
 FCFuncStart(gTypedReferenceFuncs)
