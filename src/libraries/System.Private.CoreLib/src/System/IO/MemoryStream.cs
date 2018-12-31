@@ -150,11 +150,7 @@ namespace System.IO
 
             if (value > _capacity)
             {
-                int newCapacity = value;
-                if (newCapacity < 256)
-                {
-                    newCapacity = 256;
-                }
+                int newCapacity = Math.Max(value, 256);
 
                 // We are ok with this overflowing since the next statement will deal
                 // with the cases where _capacity*2 overflows.
@@ -167,7 +163,7 @@ namespace System.IO
                 // And we want to give the user the value that they asked for
                 if ((uint)(_capacity * 2) > Array.MaxByteArrayLength)
                 {
-                    newCapacity = value > Array.MaxByteArrayLength ? value : Array.MaxByteArrayLength;
+                    newCapacity = Math.Max(value, Array.MaxByteArrayLength);
                 }
 
                 Capacity = newCapacity;
