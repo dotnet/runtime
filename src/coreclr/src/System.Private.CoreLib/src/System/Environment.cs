@@ -186,7 +186,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern string[] GetCommandLineArgsNative();
 
-        private static string[] s_CommandLineArgs = null;
+        private static string[] s_CommandLineArgs;
         private static void SetCommandLineArgs(string[] cmdLineArgs)
         {
             s_CommandLineArgs = cmdLineArgs;
@@ -272,39 +272,52 @@ namespace System
         }
 
 #if !FEATURE_PAL
-        private static Lazy<bool> s_IsWindows8OrAbove = new Lazy<bool>(() => 
+        internal static bool IsWindows8OrAbove => WindowsVersion.IsWindows8OrAbove;
+
+        // Seperate type so a .cctor is not created for Enviroment which then would be triggered during startup
+        private static class WindowsVersion
         {
-            unsafe
+            // Cache the value in readonly static that can be optimized out by the JIT
+            internal readonly static bool IsWindows8OrAbove = GetIsWindows8OrAbove();
+
+            private static bool GetIsWindows8OrAbove()
             {
-                ulong conditionMask = Win32Native.VerSetConditionMask(0, Win32Native.VER_MAJORVERSION, Win32Native.VER_GREATER_EQUAL);
-                conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_MINORVERSION, Win32Native.VER_GREATER_EQUAL);
-                conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMAJOR, Win32Native.VER_GREATER_EQUAL);
-                conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMINOR, Win32Native.VER_GREATER_EQUAL);
+                bool isWindows8OrAbove;
+                unsafe
+                {
+                    ulong conditionMask = Win32Native.VerSetConditionMask(0, Win32Native.VER_MAJORVERSION, Win32Native.VER_GREATER_EQUAL);
+                    conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_MINORVERSION, Win32Native.VER_GREATER_EQUAL);
+                    conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMAJOR, Win32Native.VER_GREATER_EQUAL);
+                    conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMINOR, Win32Native.VER_GREATER_EQUAL);
 
-                // Windows 8 version is 6.2
-                var version = new Win32Native.OSVERSIONINFOEX();
-                version.dwOSVersionInfoSize = sizeof(Win32Native.OSVERSIONINFOEX);
-                version.dwMajorVersion = 6;
-                version.dwMinorVersion = 2;
-                version.wServicePackMajor = 0;
-                version.wServicePackMinor = 0;
+                    // Windows 8 version is 6.2
+                    var version = new Win32Native.OSVERSIONINFOEX();
+                    version.dwOSVersionInfoSize = sizeof(Win32Native.OSVERSIONINFOEX);
+                    version.dwMajorVersion = 6;
+                    version.dwMinorVersion = 2;
+                    version.wServicePackMajor = 0;
+                    version.wServicePackMinor = 0;
 
-                return Win32Native.VerifyVersionInfoW(ref version,
-                           Win32Native.VER_MAJORVERSION | Win32Native.VER_MINORVERSION | Win32Native.VER_SERVICEPACKMAJOR | Win32Native.VER_SERVICEPACKMINOR,
-                           conditionMask);
+                    isWindows8OrAbove = Win32Native.VerifyVersionInfoW(ref version,
+                               Win32Native.VER_MAJORVERSION | Win32Native.VER_MINORVERSION | Win32Native.VER_SERVICEPACKMAJOR | Win32Native.VER_SERVICEPACKMINOR,
+                               conditionMask);
+                }
+
+                return isWindows8OrAbove;
             }
-        });
-        internal static bool IsWindows8OrAbove => s_IsWindows8OrAbove.Value;
+        }
 #endif
-        
-#if FEATURE_COMINTEROP
-        // Does the current version of Windows have Windows Runtime suppport?
-        private static Lazy<bool> s_IsWinRTSupported = new Lazy<bool>(() =>
-        {
-            return WinRTSupported();
-        });
 
-        internal static bool IsWinRTSupported => s_IsWinRTSupported.Value;
+#if FEATURE_COMINTEROP
+        // Seperate type so a .cctor is not created for Enviroment which then would be triggered during startup
+        private static class WinRT
+        {
+            // Cache the value in readonly static that can be optimized out by the JIT
+            public readonly static bool IsSupported = WinRTSupported();
+        }
+
+        // Does the current version of Windows have Windows Runtime suppport?
+        internal static bool IsWinRTSupported => WinRT.IsSupported;
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
