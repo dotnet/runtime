@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>Logging abstractions for Microsoft.Extensions.Logging.
@@ -16,6 +16,7 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</Description>
 
   <ItemGroup>
     <Compile Include="../../shared/*.cs" />
+    <Compile Include="../../../Shared/src/TypeNameHelper/TypeNameHelper.cs" />
   </ItemGroup>
 
 </Project>
