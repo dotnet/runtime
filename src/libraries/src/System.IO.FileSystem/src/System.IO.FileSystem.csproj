@@ -271,7 +271,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.Span.cs">
       <Link>Common\Interop\Unix\Interop.Stat.Span.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReadDir.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.ReadDir.cs">
       <Link>Common\Interop\Unix\Interop.ReadDir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Link.cs">
