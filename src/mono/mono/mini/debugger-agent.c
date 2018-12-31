@@ -255,6 +255,7 @@ struct _DebuggerTlsData {
 
 	// The state that the debugger expects the thread to be in
 	MonoDebuggerThreadState thread_state;
+	MonoStopwatch step_time;
 };
 
 typedef struct {
@@ -371,7 +372,8 @@ typedef enum {
 	CMD_THREAD_GET_INFO = 4,
 	CMD_THREAD_GET_ID = 5,
 	CMD_THREAD_GET_TID = 6,
-	CMD_THREAD_SET_IP = 7
+	CMD_THREAD_SET_IP = 7,
+	CMD_THREAD_ELAPSED_TIME = 8
 } CmdThread;
 
 typedef enum {
@@ -3011,6 +3013,7 @@ suspend_current (void)
 	tls->context.valid = FALSE;
 	tls->async_state.valid = FALSE;
 	invalidate_frames (tls);
+	mono_stopwatch_start (&tls->step_time);
 }
 
 static void
@@ -3757,6 +3760,10 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			break;
 		case EVENT_KIND_BREAKPOINT:
 		case EVENT_KIND_STEP: {
+			DebuggerTlsData *tls;
+			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
+			g_assert (tls);
+			mono_stopwatch_stop (&tls->step_time);
 			MonoMethod *method = (MonoMethod *)arg;
 
 			buffer_add_methodid (&buf, domain, method);
@@ -3786,8 +3793,13 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			keepalive_obj = ei->exc;
 			break;
 		}
-		case EVENT_KIND_USER_BREAK:
+		case EVENT_KIND_USER_BREAK: {
+			DebuggerTlsData *tls;
+			tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
+			g_assert (tls);
+			mono_stopwatch_stop (&tls->step_time);
 			break;
+		}
 		case EVENT_KIND_USER_LOG: {
 			EventInfo *ei = (EventInfo *)arg;
 			buffer_add_int (&buf, ei->level);
@@ -3969,6 +3981,7 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	/* 
 	 * suspend_vm () could have missed this thread, so wait for a resume.
 	 */
+	
 	suspend_current ();
 }
 
@@ -8676,6 +8689,15 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		} else {
 			MONO_CONTEXT_SET_IP (&tls->restore_state.ctx, (guint8*)tls->frames [0]->de.ji->code_start + sp.native_offset);
 		}
+		break;
+	}
+	case CMD_THREAD_ELAPSED_TIME: {
+		DebuggerTlsData *tls;
+		mono_loader_lock ();
+		tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, thread);
+		mono_loader_unlock ();
+		g_assert (tls);
+		buffer_add_long (buf, (long)mono_stopwatch_elapsed_ms (&tls->step_time));
 		break;
 	}
 	default:
