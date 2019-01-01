@@ -1609,9 +1609,6 @@
   <data name="ArgumentNull_Key" xml:space="preserve">
     <value>Key cannot be null.</value>
   </data>
-  <data name="ArgumentNull_Obj" xml:space="preserve">
-    <value>Object cannot be null.</value>
-  </data>
   <data name="ArgumentNull_Path" xml:space="preserve">
     <value>Path cannot be null.</value>
   </data>
