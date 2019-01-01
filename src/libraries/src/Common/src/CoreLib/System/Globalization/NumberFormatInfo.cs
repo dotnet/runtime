@@ -316,8 +316,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(CurrencyGroupSizes),
-                        SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(CurrencyGroupSizes));
                 }
                 VerifyWritable();
 
@@ -339,8 +338,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(NumberGroupSizes),
-                        SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(NumberGroupSizes));
                 }
                 VerifyWritable();
 
@@ -361,8 +359,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(PercentGroupSizes),
-                        SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(PercentGroupSizes));
                 }
                 VerifyWritable();
                 int[] inputSizes = (int[])value.Clone();
