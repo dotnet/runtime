@@ -739,7 +739,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
 
                 if (pAddr == NULL)
                 {
-                    COMPlusThrow(kArgumentNullException, W("ArgumentNull_Generic"));
+                    COMPlusThrow(kArgumentNullException);
                 }
             }
 
@@ -961,7 +961,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
 
                     if (o1 == NULL)
                     {
-                        COMPlusThrow(kArgumentException, W("ArgumentNull_Obj"));
+                        COMPlusThrow(kArgumentNullException);
                     }
 
 
@@ -997,7 +997,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     OBJECTREF* op1 = (OBJECTREF*)ArgSlotToPtr(*pArgument);
                     if (op1 == NULL)
                     {
-                        COMPlusThrow(kArgumentException, W("ArgumentNull_Obj"));
+                        COMPlusThrow(kArgumentNullException);
                     }
                     OBJECTREF o1 = *op1;
 
@@ -1018,7 +1018,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
 
                     if (o1 == NULL)
                     {
-                        COMPlusThrow(kArgumentException, W("ArgumentNull_Obj"));
+                        COMPlusThrow(kArgumentNullException);
                     }
 
                     _ASSERTE(o1->GetMethodTable()->IsValueType());
@@ -1663,7 +1663,7 @@ void BoxFuncEvalThisParameter(DebuggerEval *pDE,
 
                         if (pAddr == NULL)
                         {
-                            COMPlusThrow(kArgumentNullException, W("ArgumentNull_Generic"));
+                            COMPlusThrow(kArgumentNullException);
                         }
                     }
 
@@ -1694,7 +1694,7 @@ void BoxFuncEvalThisParameter(DebuggerEval *pDE,
                 *pObjectRefArg = typeHandle.GetMethodTable()->Box(pAddr);
                 if (Nullable::IsNullableType(typeHandle.GetMethodTable()) && (*pObjectRefArg == NULL))
                 {
-                    COMPlusThrow(kArgumentNullException, W("ArgumentNull_Obj"));
+                    COMPlusThrow(kArgumentNullException);
                 }
                 GCPROTECT_END();
 
@@ -1890,7 +1890,7 @@ void BoxFuncEvalArguments(DebuggerEval *pDE,
 
                 if (pAddr == NULL)
                 {
-                    COMPlusThrow(kArgumentNullException, W("ArgumentNull_Generic"));
+                    COMPlusThrow(kArgumentNullException);
                 }
             }
 
@@ -1984,7 +1984,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
         //
         if ((argData[0].argHome.kind == RAK_NONE) && (argData[0].argAddr == NULL))
         {
-            COMPlusThrow(kArgumentNullException, W("ArgumentNull_Generic"));
+            COMPlusThrow(kArgumentNullException);
         }
 
         //
@@ -2056,7 +2056,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
         //
         if (objRef == NULL)
         {
-            COMPlusThrow(kArgumentNullException, W("ArgumentNull_Obj"));
+            COMPlusThrow(kArgumentNullException);
         }
 
         //
@@ -2226,7 +2226,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
 
                 if (pAddr == NULL)
                 {
-                    COMPlusThrow(kArgumentNullException, W("ArgumentNull_Generic"));
+                    COMPlusThrow(kArgumentNullException);
                 }
 
                 *pDest = *pAddr;
