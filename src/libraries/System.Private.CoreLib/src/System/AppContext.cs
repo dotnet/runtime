@@ -70,7 +70,7 @@ namespace System
 
         public static event System.EventHandler ProcessExit;
 
-        private static void OnProcessExit()
+        internal static void OnProcessExit()
         {
             AssemblyLoadContext.OnProcessExit();
 
