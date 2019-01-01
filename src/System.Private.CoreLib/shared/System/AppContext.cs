@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
@@ -13,18 +11,11 @@ using System.Threading;
 
 namespace System
 {
-    public static class AppContext
+    public static partial class AppContext
     {
         private static readonly Dictionary<string, object> s_dataStore = new Dictionary<string, object>();
         private static Dictionary<string, bool> s_switches;
-
-        internal static unsafe void Setup(char** pNames, char** pValues, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
-            }
-        }
+        private static string s_defaultBaseDirectory;
 
         public static string BaseDirectory
         {
@@ -32,15 +23,8 @@ namespace System
             {
                 // The value of APP_CONTEXT_BASE_DIRECTORY key has to be a string and it is not allowed to be any other type. 
                 // Otherwise the caller will get invalid cast exception
-                string baseDirectory = (string)GetData("APP_CONTEXT_BASE_DIRECTORY");
-                if (baseDirectory != null)
-                    return baseDirectory;
-
-                // Fallback path for hosts that do not set APP_CONTEXT_BASE_DIRECTORY explicitly
-                string directory = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                if (directory != null && !PathInternal.EndsInDirectorySeparator(directory))
-                    directory += Path.DirectorySeparatorChar;
-                return directory;
+                return (string)GetData("APP_CONTEXT_BASE_DIRECTORY") ??
+                    (s_defaultBaseDirectory ?? (s_defaultBaseDirectory = GetBaseDirectoryCore()));
             }
         }
 
@@ -116,10 +100,9 @@ namespace System
             }
 
             string value = GetData(switchName) as string;
-            if (value != null)
+            if (value != null && bool.TryParse(value, out isEnabled))
             {
-                if (bool.TryParse(value, out isEnabled))
-                    return true;
+               return true;
             }
 
             isEnabled = false;
