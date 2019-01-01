@@ -324,26 +324,6 @@ namespace Microsoft.Reflection
     }
 }
 
-// Defining some no-ops in PCL builds
-#if ES_BUILD_PCL
-namespace System.Security
-{
-    class SuppressUnmanagedCodeSecurityAttribute : Attribute { }
-
-    enum SecurityAction { Demand }
-}
-
-namespace System.Security.Permissions
-{
-    class HostProtectionAttribute : Attribute { public bool MayLeakOnAbort { get; set; } }
-    class PermissionSetAttribute : Attribute
-    { 
-        public PermissionSetAttribute(System.Security.SecurityAction action) { }
-        public bool Unrestricted { get; set; }
-    }
-}
-#endif
-
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Win32
 {
