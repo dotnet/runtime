@@ -444,7 +444,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value == calendar)
                 {
@@ -1842,8 +1842,7 @@ namespace System.Globalization
         {
             if (dtfi == null)
             {
-                throw new ArgumentNullException(nameof(dtfi),
-                    SR.ArgumentNull_Obj);
+                throw new ArgumentNullException(nameof(dtfi));
             }
             if (dtfi.IsReadOnly)
             {
