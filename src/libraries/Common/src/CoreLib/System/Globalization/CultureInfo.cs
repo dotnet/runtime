@@ -983,7 +983,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 VerifyWritable();
                 _numInfo = value;
@@ -1016,7 +1016,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 VerifyWritable();
                 _dateTimeInfo = value;
@@ -1097,7 +1097,6 @@ namespace System.Globalization
         **Returns:
         **Arguments:
         **Exceptions:
-        **  ArgumentNull_Obj if the set value is null.
         ============================================================================*/
         public virtual Calendar Calendar
         {
