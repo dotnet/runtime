@@ -484,7 +484,7 @@ INT32 QCALLTYPE COMModule::GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule,
     BEGIN_QCALL;
     
     if (!pMeth)  
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_Obj"));
+        COMPlusThrow(kArgumentNullException);
 
     // Otherwise, we want to return memberref token.
     if (pMeth->IsArray())
