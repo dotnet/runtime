@@ -1852,7 +1852,7 @@ namespace System.Globalization
 
                         // It worked, remember the list
                         CalendarId[] temp = new CalendarId[count];
-                        Array.Copy(calendars, temp, count);
+                        Array.Copy(calendars, 0, temp, 0, count);
 
                         // Want 1st calendar to be default
                         // Prior to Vista the enumeration didn't have default calendar first
