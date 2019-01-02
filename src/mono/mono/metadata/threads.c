@@ -1687,8 +1687,7 @@ ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error)
 
 	MonoInternalThread * const thread = mono_thread_internal_current ();
 
-	// Allocate handle outside of the loop.
-	MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, NULL);
+	HANDLE_LOOP_PREPARE;
 
 	while (TRUE) {
 		gboolean alerted = FALSE;
@@ -1702,9 +1701,20 @@ ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error)
 		if (!alerted)
 			return;
 
-		if (mono_thread_execute_interruption (&exc))
+		SETUP_ICALL_FRAME;
+
+		MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, NULL);
+
+		const gboolean interrupt = mono_thread_execute_interruption (&exc);
+
+		if (interrupt)
 			mono_set_pending_exception_handle (exc);
-		else if (ms == MONO_INFINITE_WAIT) // FIXME: !MONO_INFINITE_WAIT
+
+		CLEAR_ICALL_FRAME;
+
+		if (interrupt)
+			return;
+		if (ms == MONO_INFINITE_WAIT) // FIXME: !MONO_INFINITE_WAIT
 			continue;
 		return;
 	}
@@ -2143,10 +2153,10 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 
 	MonoW32HandleWaitRet ret;
 
-	// Allocate handle outside of the loop.
-	MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, NULL);
+	HANDLE_LOOP_PREPARE;
 
 	for (;;) {
+
 #ifdef HOST_WIN32
 		MONO_ENTER_GC_SAFE;
 		DWORD const wait_result = (numhandles != 1)
@@ -2162,10 +2172,19 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 		if (ret != MONO_W32HANDLE_WAIT_RET_ALERTED)
 			break;
 
-		if (mono_thread_execute_interruption (&exc)) {
+		SETUP_ICALL_FRAME;
+
+		MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, NULL);
+
+		const gboolean interrupt = mono_thread_execute_interruption (&exc);
+
+		if (interrupt)
 			mono_error_set_exception_handle (error, exc);
+
+		CLEAR_ICALL_FRAME;
+
+		if (interrupt)
 			break;
-		}
 
 		if (timeout != MONO_INFINITE_WAIT) {
 			gint64 const elapsed = mono_msec_ticks () - start;

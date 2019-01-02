@@ -206,6 +206,8 @@ Icall macros
 	CLEAR_ICALL_FRAME;			\
 	} while (0)
 
+#define HANDLE_LOOP_PREPARE MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current ()
+
 // Return a non-pointer or non-managed pointer, e.g. gboolean.
 #define HANDLE_FUNCTION_RETURN_VAL(VAL)		\
 	CLEAR_ICALL_FRAME;			\
