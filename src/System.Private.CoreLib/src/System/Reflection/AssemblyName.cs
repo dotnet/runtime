@@ -365,13 +365,13 @@ namespace System.Reflection
             if (publicKey != null)
             {
                 _publicKey = new byte[publicKey.Length];
-                Array.Copy(publicKey, _publicKey, publicKey.Length);
+                Array.Copy(publicKey, 0, _publicKey, 0, publicKey.Length);
             }
 
             if (publicKeyToken != null)
             {
                 _publicKeyToken = new byte[publicKeyToken.Length];
-                Array.Copy(publicKeyToken, _publicKeyToken, publicKeyToken.Length);
+                Array.Copy(publicKeyToken, 0, _publicKeyToken, 0, publicKeyToken.Length);
             }
 
             if (version != null)
