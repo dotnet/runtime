@@ -24,6 +24,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/gc-internals.h>
+#include "icall-decl.h"
 
 /* This function is redirected to String.CreateString ()
    by mono_marshal_get_native_wrapper () */

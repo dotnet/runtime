@@ -3091,3 +3091,11 @@ mono_class_from_mono_type_handle (MonoReflectionTypeHandle reftype)
 {
 	return mono_class_from_mono_type_internal (MONO_HANDLE_RAW (reftype)->type);
 }
+
+// This is called by calls, it will return NULL and set pending exception (in wrapper) on failure.
+MonoReflectionTypeHandle
+mono_type_from_handle_impl (MonoType *handle, MonoError *error)
+{
+	mono_class_init_internal (mono_class_from_mono_type_internal (handle));
+	return mono_type_get_object_handle (mono_domain_get (), handle, error);
+}

@@ -456,7 +456,7 @@ MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
 ICALL_EXPORT MONO_HANDLE_TYPE_RAWPOINTER (rettype)				\
 func ( MONO_HANDLE_FOREACH_ARG_RAWPOINTER_ ## n argtypes)
 
-// Implement ves_icall_foo_raw over ves_icall_foo.
+// Implement ves_icall_foo over ves_icall_foo_impl.
 //
 // Raw pointers are converted to/from handles and the rest is passed through.
 // The in/out/inout-ness of parameters must be correct. (unlike MONO_HANDLE_IMPLEMENT)
