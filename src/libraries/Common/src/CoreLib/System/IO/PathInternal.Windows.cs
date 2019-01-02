@@ -375,7 +375,7 @@ namespace System.IO
             if (normalized)
                 return path;
 
-            StringBuilder builder = new StringBuilder(path.Length);
+            StringBuilder builder = StringBuilderCache.Acquire(path.Length);
 
             int start = 0;
             if (IsDirectorySeparator(path[start]))
@@ -404,7 +404,7 @@ namespace System.IO
                 builder.Append(current);
             }
 
-            return builder.ToString();
+            return StringBuilderCache.GetStringAndRelease(builder);
         }
 
         /// <summary>
