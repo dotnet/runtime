@@ -1695,19 +1695,6 @@ FCIMPL1(Object*, StubHelpers::AllocateInternal, EnregisteredTypeHandle pRegister
 }
 FCIMPLEND
 
-FCIMPL1(int, StubHelpers::AnsiStrlen, __in_z char* pszStr)
-{
-    FCALL_CONTRACT;
-
-    size_t len = strlen(pszStr);
-
-    // the length should have been checked earlier (see StubHelpers.CheckStringLength)
-    _ASSERTE(FitsInI4(len));
-
-    return (int)len;
-}
-FCIMPLEND
-
 FCIMPL3(void, StubHelpers::MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)
 {
     FCALL_CONTRACT;
