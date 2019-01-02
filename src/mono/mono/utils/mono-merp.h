@@ -51,6 +51,8 @@ gboolean mono_merp_enabled (void);
 gboolean
 mono_merp_invoke (const intptr_t crashed_pid, const char *signal, const char *dump_file, MonoStackHash *hashes);
 
+void
+mono_merp_add_annotation (const char *key, const char *value);
 
 #endif // TARGET_OSX
 

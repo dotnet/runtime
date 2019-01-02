@@ -5710,6 +5710,19 @@ ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (MonoError *error)
 }
 
 void
+ves_icall_Mono_Runtime_AnnotateMicrosoftTelemetry (const char *key, const char *value, MonoError *error)
+{
+#if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
+	if (!mono_merp_enabled ())
+		g_error ("Cannot add attributes to telemetry without enabling subsystem");
+	mono_merp_add_annotation (key, value);
+#else
+	// Icall has platform check in managed too.
+	g_assert_not_reached ();
+#endif
+}
+
+void
 ves_icall_Mono_Runtime_EnableMicrosoftTelemetry (const char *appBundleID, const char *appSignature, const char *appVersion, const char *merpGUIPath, const char *eventType, const char *appPath, const char *configDir, MonoError *error)
 {
 #if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)

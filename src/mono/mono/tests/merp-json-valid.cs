@@ -38,6 +38,10 @@ class C
 
 		m.Invoke(null, m_params);	
 
+		var add_method = monoType.GetMethod("AnnotateMicrosoftTelemetry", BindingFlags.NonPublic | BindingFlags.Static);
+		var add_params = new object[] { "sessionId", "12345" };
+		add_method.Invoke(null, add_params);
+
 		try {
 			throw new Exception ("");
 		} catch (Exception exc) {
