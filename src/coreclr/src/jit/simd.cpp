@@ -2354,12 +2354,19 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 {
     assert(featureSIMD);
 
-    // Exit early if we are either not in one of the SIMD types or if the method
-    // is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
-    if (!isSIMDClass(clsHnd) || ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) == 0))
+    // Exit early if we are not in one of the SIMD types.
+    if (!isSIMDClass(clsHnd))
     {
         return nullptr;
     }
+
+#ifdef FEATURE_CORECLR
+    // For coreclr, we also exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
+    if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) == 0)
+    {
+        return nullptr;
+    }
+#endif // FEATURE_CORECLR
 
     // Get base type and intrinsic Id
     var_types                baseType = TYP_UNKNOWN;
