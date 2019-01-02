@@ -1178,7 +1178,6 @@ namespace System.StubHelpers
 
                 case BackPropAction.StringBuilderAnsi:
                     {
-                        sbyte* ptr = (sbyte*)pNativeHome.ToPointer();
                         int length;
                         if (pNativeHome == IntPtr.Zero)
                         {
@@ -1189,14 +1188,23 @@ namespace System.StubHelpers
                             length = string.strlen((byte*)pNativeHome);
                         }
 
-                        ((StringBuilder)pManagedHome).ReplaceBufferAnsiInternal(ptr, length);
+                        ((StringBuilder)pManagedHome).ReplaceBufferAnsiInternal((sbyte*)pNativeHome, length);
                         break;
                     }
 
                 case BackPropAction.StringBuilderUnicode:
                     {
-                        char* ptr = (char*)pNativeHome.ToPointer();
-                        ((StringBuilder)pManagedHome).ReplaceBufferInternal(ptr, Win32Native.lstrlenW(pNativeHome));
+                        int length;
+                        if (pNativeHome == IntPtr.Zero)
+                        {
+                            length = 0;
+                        }
+                        else
+                        {
+                            length = string.wcslen((char*)pNativeHome);
+                        }
+
+                        ((StringBuilder)pManagedHome).ReplaceBufferInternal((char*)pNativeHome, length);
                         break;
                     }
 
