@@ -21,11 +21,6 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
-    public sealed class PlatformHandler_HttpClientTest : HttpClientTest
-    {
-        protected override bool UseSocketsHttpHandler => false;
-    }
-
     public sealed class PlatformHandler_DiagnosticsTest : DiagnosticsTest
     {
         protected override bool UseSocketsHttpHandler => false;

@@ -2490,6 +2490,37 @@ namespace System.Net.Http.Functional.Tests
                 }
             });
         }
-#endregion
+        #endregion
+
+        [Fact]
+        public async Task SendAsync_UserAgent_CorrectlyWritten()
+        {
+            string userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.18 Safari/537.36";
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = CreateHttpClient())
+                {
+                    var message = new HttpRequestMessage(HttpMethod.Get, uri);
+                    message.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+                    (await client.SendAsync(message).ConfigureAwait(false)).Dispose();
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                Assert.Contains($"User-Agent: {userAgent}", headers);
+            }));
+        }
+
+        [Fact]
+        public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
+        {
+            string invalidUri = $"http://{Guid.NewGuid().ToString("N")}";
+            using (HttpClient client = CreateHttpClient())
+            {
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(invalidUri));
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(invalidUri));
+            }
+        }
     }
 }
