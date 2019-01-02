@@ -45,8 +45,6 @@ GetSystemInfo
 LocalAlloc
 LocalReAlloc
 LocalFree
-lstrlenA
-lstrlenW
 MetaDataGetDispenser
 MultiByteToWideChar
 OpenEventW

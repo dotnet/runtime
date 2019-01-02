@@ -1318,7 +1318,7 @@ CAssemblyName::Init(LPCTSTR pszAssemblyName, ASSEMBLYMETADATA *pamd)
     if (pszAssemblyName) 
     {
         hr = SetProperty(ASM_NAME_NAME, (LPTSTR) pszAssemblyName, 
-            (lstrlenW(pszAssemblyName)+1) * sizeof(TCHAR));
+            (DWORD)((wcslen(pszAssemblyName)+1) * sizeof(TCHAR)));
         if (FAILED(hr))
             goto exit;
     }

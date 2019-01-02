@@ -404,7 +404,7 @@ wchar_t* formatMethodDesc(MethodDesc* pMD,
     }
 
     buff[bufSize - 1] = W('\0');    // this will guarantee the buffer is also NULL-terminated
-    if(_snwprintf_s( &buff[lstrlenW(buff)] , bufSize -lstrlenW(buff) - 1, _TRUNCATE, W("::%S"), pMD->GetName()) < 0)
+    if(_snwprintf_s( &buff[wcslen(buff)] , bufSize - wcslen(buff) - 1, _TRUNCATE, W("::%S"), pMD->GetName()) < 0)
     {
         return NULL;
     }
@@ -412,8 +412,8 @@ wchar_t* formatMethodDesc(MethodDesc* pMD,
 #ifdef _DEBUG
     if (pMD->m_pszDebugMethodSignature)
     {
-        if(_snwprintf_s(&buff[lstrlenW(buff)],
-                      bufSize -lstrlenW(buff) - 1,
+        if(_snwprintf_s(&buff[wcslen(buff)],
+                      bufSize - wcslen(buff) - 1,
                       _TRUNCATE,
                       W(" %S"),
                       pMD->m_pszDebugMethodSignature) < 0)
@@ -424,7 +424,7 @@ wchar_t* formatMethodDesc(MethodDesc* pMD,
     }
 #endif
 
-    if(_snwprintf_s(&buff[lstrlenW(buff)], bufSize -lstrlenW(buff) - 1, _TRUNCATE, W("(%x)"), (size_t)pMD) < 0)
+    if(_snwprintf_s(&buff[wcslen(buff)], bufSize - wcslen(buff) - 1, _TRUNCATE, W("(%x)"), (size_t)pMD) < 0)
     {
         return NULL;
     }
@@ -483,7 +483,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
                 return(0);
             }
 
-            buffPtr += lstrlenW(buffPtr);
+            buffPtr += wcslen(buffPtr);
 
             const wchar_t* kind = W("RETADDR ");
 
@@ -526,7 +526,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
                 return(0);
             }
 
-            buffPtr += lstrlenW(buffPtr);
+            buffPtr += wcslen(buffPtr);
 
             if (ftn != 0)
             {
@@ -536,12 +536,12 @@ int dumpStack(BYTE* topOfStack, unsigned len)
                     return(0);
                 }
 
-                buffPtr += lstrlenW(buffPtr);
+                buffPtr += wcslen(buffPtr);
             }
             else
             {
                 wcsncpy_s(buffPtr, nLen - (buffPtr - buff), W("<UNKNOWN FTN>"), _TRUNCATE);
-                buffPtr += lstrlenW(buffPtr);
+                buffPtr += wcslen(buffPtr);
             }
 
             if (whereCalled != 0)
@@ -551,11 +551,11 @@ int dumpStack(BYTE* topOfStack, unsigned len)
                     return(0);
                 }
 
-                buffPtr += lstrlenW(buffPtr);
+                buffPtr += wcslen(buffPtr);
             }
 
             wcsncpy_s(buffPtr, nLen - (buffPtr - buff), W("\n"), _TRUNCATE);
-            buffPtr += lstrlenW(buffPtr);
+            buffPtr += wcslen(buffPtr);
             WszOutputDebugString(buff);
         }
 
@@ -568,14 +568,14 @@ int dumpStack(BYTE* topOfStack, unsigned len)
                 return(0);
             }
 
-            buffPtr += lstrlenW(buffPtr);
+            buffPtr += wcslen(buffPtr);
 
             if( formatMethodTable(pMT, buffPtr, static_cast<DWORD>(buff+ nLen -buffPtr-1)) == NULL)
             {
                 return(0);
             }
 
-            buffPtr += lstrlenW(buffPtr);
+            buffPtr += wcslen(buffPtr);
 
             wcsncpy_s(buffPtr, nLen - (buffPtr - buff), W("\n"), _TRUNCATE);
             WszOutputDebugString(buff);
@@ -903,8 +903,8 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
 
         if (pCBD->withAppDomain)
         {
-            if(_snwprintf_s(&buff[lstrlenW(buff)],
-                          nLen -lstrlenW(buff) - 1,
+            if(_snwprintf_s(&buff[wcslen(buff)],
+                          nLen - wcslen(buff) - 1,
                           _TRUNCATE,
                           W("{[%3.3x] %s} "),
                           pCF->GetAppDomain()->GetId().m_dwId,
@@ -920,7 +920,7 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
 
         if (clsName != 0)
         {
-            if(_snwprintf_s(&buff[lstrlenW(buff)], nLen -lstrlenW(buff) - 1, _TRUNCATE, W("%S::"), clsName) < 0)
+            if(_snwprintf_s(&buff[wcslen(buff)], nLen - wcslen(buff) - 1, _TRUNCATE, W("%S::"), clsName) < 0)
             {
                 return SWA_CONTINUE;
             }
@@ -930,8 +930,8 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
         // But this routine is diagnostic aid, not customer-reachable so we won't bother to plug.
         AllocMemTracker dummyAmTracker;
 
-        int buffLen = _snwprintf_s(&buff[lstrlenW(buff)],
-                      nLen -lstrlenW(buff) - 1,
+        int buffLen = _snwprintf_s(&buff[wcslen(buff)],
+                      nLen - wcslen(buff) - 1,
                       _TRUNCATE,
                       W("%S %S  "),
                       pMD->GetName(),
@@ -952,8 +952,8 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
 
             TADDR start = pCF->GetCodeInfo()->GetStartAddress();
 
-            if(_snwprintf_s(&buff[lstrlenW(buff)],
-                          nLen -lstrlenW(buff) - 1,
+            if(_snwprintf_s(&buff[wcslen(buff)],
+                          nLen - wcslen(buff) - 1,
                           _TRUNCATE,
                           W("JIT ESP:%X MethStart:%X EIP:%X(rel %X)"),
                           (size_t)GetRegdisplaySP(regs),
@@ -968,7 +968,7 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
         else
         {
 
-            if(_snwprintf_s(&buff[lstrlenW(buff)], nLen -lstrlenW(buff) - 1, _TRUNCATE, W("EE implemented")) < 0)
+            if(_snwprintf_s(&buff[wcslen(buff)], nLen - wcslen(buff) - 1, _TRUNCATE, W("EE implemented")) < 0)
             {
                 return SWA_CONTINUE;
             }
@@ -979,8 +979,8 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
     {
         Frame* frame = pCF->GetFrame();
 
-        if(_snwprintf_s(&buff[lstrlenW(buff)],
-                      nLen -lstrlenW(buff) - 1,
+        if(_snwprintf_s(&buff[wcslen(buff)],
+                      nLen - wcslen(buff) - 1,
                       _TRUNCATE,
                       W("EE Frame is") LFMT_ADDR,
                       (size_t)DBG_ADDR(frame)) < 0)

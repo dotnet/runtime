@@ -330,7 +330,7 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
                 // native image for this WinRT assembly.
                 // The WinRT team has said that WinMDs will have the same simple name as the filename.
                 // 
-                IfFailGo(pAssemblyDefName->SetProperty(ASM_NAME_NAME, wszFileNameStripped, (lstrlenW(wszFileNameStripped) + 1) * sizeof(WCHAR)));
+                IfFailGo(pAssemblyDefName->SetProperty(ASM_NAME_NAME, wszFileNameStripped, (DWORD)((wcslen(wszFileNameStripped) + 1) * sizeof(WCHAR))));
 
                 NewHolder<CoreBindResult> pBindResult(new CoreBindResult());
                 StackSString sAssemblyPath(pResource->GetPath());

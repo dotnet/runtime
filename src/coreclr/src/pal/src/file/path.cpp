@@ -869,11 +869,11 @@ DWORD FILEGetDirectoryFromFullPathA( LPCSTR lpFullPath,
                      DWORD  nBufferLength,
                      LPSTR  lpBuffer )
 {
-    int    full_len, dir_len, i;
+    size_t full_len, dir_len, i;
     LPCSTR lpDirEnd;
     DWORD  dwRetLength;
 
-    full_len = lstrlenA( lpFullPath );
+    full_len = strlen( lpFullPath );
 
     /* look for the first path separator backwards */
     lpDirEnd = lpFullPath + full_len - 1;
@@ -886,7 +886,7 @@ DWORD FILEGetDirectoryFromFullPathA( LPCSTR lpFullPath,
     {
         dwRetLength = 0;
     }
-    else if (static_cast<DWORD>(dir_len) >= nBufferLength)
+    else if (dir_len >= nBufferLength)
     {
         dwRetLength = dir_len + 1; /* +1 for NULL char */
     }

@@ -180,7 +180,6 @@ endif(PAL_CMAKE_PLATFORM_ARCH_ARM)
 set(SOURCES
   cruntime/file.cpp
   cruntime/filecrt.cpp
-  cruntime/lstr.cpp
   cruntime/malloc.cpp
   cruntime/math.cpp
   cruntime/mbstring.cpp
