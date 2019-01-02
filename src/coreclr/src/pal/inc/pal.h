@@ -3132,24 +3132,6 @@ DebugBreak(
        VOID);
 
 PALIMPORT
-int
-PALAPI
-lstrlenA(
-     IN LPCSTR lpString);
-
-PALIMPORT
-int
-PALAPI
-lstrlenW(
-     IN LPCWSTR lpString);
-
-#ifdef UNICODE
-#define lstrlen lstrlenW
-#else
-#define lstrlen lstrlenA
-#endif
-
-PALIMPORT
 DWORD
 PALAPI
 GetEnvironmentVariableW(

@@ -46,11 +46,11 @@ STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch)
     LPCWSTR lpFound = NULL;
 
     RIPMSG(lpStart && IS_VALID_STRING_PTRW(lpStart, -1), "StrRChrW: caller passed bad lpStart");
-    RIPMSG(!lpEnd || lpEnd <= lpStart + lstrlenW(lpStart), "StrRChrW: caller passed bad lpEnd");
+    RIPMSG(!lpEnd || lpEnd <= lpStart + wcslen(lpStart), "StrRChrW: caller passed bad lpEnd");
     // don't need to check for NULL lpStart
 
     if (!lpEnd)
-        lpEnd = lpStart + lstrlenW(lpStart);
+        lpEnd = lpStart + wcslen(lpStart);
 
     for ( ; lpStart < lpEnd; lpStart++)
     {
@@ -206,7 +206,7 @@ LPCWSTR GetPCEnd(LPCWSTR lpszStart)
     }
     if (!lpszEnd)
     {
-        lpszEnd = lpszStart + lstrlenW(lpszStart);
+        lpszEnd = lpszStart + wcslen(lpszStart);
     }
 
     return lpszEnd;
@@ -439,9 +439,9 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
                 pszT = PathAddBackslashW(szTemp);
                 if (pszT)
                 {
-                    int iRemaining = (int)(ARRAYSIZE(szTemp) - (pszT - szTemp));
+                    size_t iRemaining = ARRAYSIZE(szTemp) - (pszT - szTemp);
 
-                    if (lstrlenW(lpszFile) < iRemaining)
+                    if (wcslen(lpszFile) < iRemaining)
                     {
                         StringCchCopyNW(pszT, iRemaining, lpszFile, iRemaining);
                     }
@@ -527,7 +527,7 @@ STDAPI_(LPWSTR) PathAddBackslashW(LPWSTR lpszPath)
 
     if (lpszPath)
     {
-        int    ichPath = lstrlenW(lpszPath);
+        size_t ichPath = wcslen(lpszPath);
         LPWSTR lpszEnd = lpszPath + ichPath;
 
         if (ichPath)

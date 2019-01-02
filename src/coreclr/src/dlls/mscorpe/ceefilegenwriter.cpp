@@ -460,7 +460,7 @@ HRESULT CeeFileGenWriter::setOutputFileName(__in LPWSTR fileName)
 {
     if (m_outputFileName)
         delete[] m_outputFileName;
-    int len = lstrlenW(fileName) + 1;
+    size_t len = wcslen(fileName) + 1;
     m_outputFileName = (LPWSTR)new (nothrow) WCHAR[len];
     TESTANDRETURN(m_outputFileName!=NULL, E_OUTOFMEMORY);
     wcscpy_s(m_outputFileName, len, fileName);
@@ -471,7 +471,7 @@ HRESULT CeeFileGenWriter::setResourceFileName(__in LPWSTR fileName)
 {
     if (m_resourceFileName)
         delete[] m_resourceFileName;
-    int len = lstrlenW(fileName) + 1;
+    size_t len = wcslen(fileName) + 1;
     m_resourceFileName = (LPWSTR)new (nothrow) WCHAR[len];
     TESTANDRETURN(m_resourceFileName!=NULL, E_OUTOFMEMORY);
     wcscpy_s(m_resourceFileName, len, fileName);
@@ -482,7 +482,7 @@ HRESULT CeeFileGenWriter::setLibraryName(__in LPWSTR libraryName)
 {
     if (m_libraryName)
         delete[] m_libraryName;
-    int len = lstrlenW(libraryName) + 1;
+    size_t len = wcslen(libraryName) + 1;
     m_libraryName = (LPWSTR)new (nothrow) WCHAR[len];
     TESTANDRETURN(m_libraryName != NULL, E_OUTOFMEMORY);
     wcscpy_s(m_libraryName, len, libraryName);

@@ -50,7 +50,7 @@ BOOL GetCurrentDir(WCHAR* szwCurrentDir)
     }
 
     // now strip the file name from the full path to get the current path
-    nCount = lstrlenW(szwReturnedPath) - lstrlenW(szwFileName);
+    nCount = wcslen(szwReturnedPath) - wcslen(szwFileName);
     memset(szwCurrentDir, 0, sizeof(WCHAR)*(_MAX_DIR+1));
     wcsncpy(szwCurrentDir, szwReturnedPath, nCount - 1);
 
