@@ -18,7 +18,7 @@ resources:
     image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544
 
   - container: musl_x64_build_image
-    image: microsoft/dotnet-buildtools-prereqs:alpine-3.6-e2521f8-20180716231200
+    image: microsoft/dotnet-buildtools-prereqs:alpine-3.6-WithNode-f4d3fe3-20181220200247
 
   - container: centos7_x64_build_image
     image: microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424
@@ -202,9 +202,7 @@ jobs:
       dependsOn:
       - build_Linux_arm_release
       - build_Linux_arm64_release
-      # TODO: depend on musl job once the glibc container issue is fixed
-      # https://dnceng.visualstudio.com/internal/_workitems/edit/109
-      # - build_Linux_musl_x64_release
+      - build_Linux_musl_x64_release
       - build_Linux_rhel6_x64_release
       - build_Linux_rhel7_x64_release
       - build_Linux_x64_release
