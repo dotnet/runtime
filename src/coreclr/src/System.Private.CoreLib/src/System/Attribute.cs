@@ -310,7 +310,7 @@ namespace System
 
                 Attribute[] temp = ret;
                 ret = CreateAttributeArrayHelper(type, temp.Length + count);
-                Array.Copy(temp, ret, temp.Length);
+                Array.Copy(temp, 0, ret, 0, temp.Length);
 
                 int offset = temp.Length;
 

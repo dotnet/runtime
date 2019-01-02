@@ -1505,7 +1505,7 @@ namespace System.Runtime.InteropServices
             if (objects != null)
             {
                 result = new T[objects.Length];
-                Array.Copy(objects, result, objects.Length);
+                Array.Copy(objects, 0, result, 0, objects.Length);
             }
 
             return result;

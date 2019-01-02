@@ -365,7 +365,7 @@ namespace System.Reflection
 
             ParameterInfo[] ret = new ParameterInfo[m_parameters.Length];
 
-            Array.Copy(m_parameters, ret, m_parameters.Length);
+            Array.Copy(m_parameters, 0, ret, 0, m_parameters.Length);
 
             return ret;
         }
