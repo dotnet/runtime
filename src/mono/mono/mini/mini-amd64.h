@@ -380,12 +380,6 @@ typedef struct {
 
 #endif
 
-/*
- * some icalls like mono_array_new_va needs to be called using a different 
- * calling convention.
- */
-#define MONO_ARCH_VARARG_ICALLS 1
-
 #if !defined( HOST_WIN32 ) && !defined(__HAIKU__) && defined (HAVE_SIGACTION)
 
 #define MONO_ARCH_USE_SIGACTION 1

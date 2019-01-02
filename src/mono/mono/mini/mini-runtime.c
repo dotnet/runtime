@@ -4823,6 +4823,7 @@ register_icalls (void)
 	register_icall (mono_array_new_2, "mono_array_new_2", "object ptr int int", FALSE);
 	register_icall (mono_array_new_3, "mono_array_new_3", "object ptr int int int", FALSE);
 	register_icall (mono_array_new_4, "mono_array_new_4", "object ptr int int int int", FALSE);
+	register_icall (mono_array_new_n_icall, "mono_array_new_n_icall", "object ptr int ptr", FALSE);
 	register_icall (mono_get_native_calli_wrapper, "mono_get_native_calli_wrapper", "ptr ptr ptr ptr", FALSE);
 	register_icall (mono_resume_unwind, "mono_resume_unwind", "void ptr", TRUE);
 	register_icall (mono_gsharedvt_constrained_call, "mono_gsharedvt_constrained_call", "object ptr ptr ptr ptr ptr", FALSE);

@@ -53,7 +53,8 @@ G_EXTERN_C guint64 mono_lshr_un (guint64 a, gint32 shamt);
 
 G_EXTERN_C gint64 mono_lshr (gint64 a, gint32 shamt);
 
-G_EXTERN_C MonoArray *mono_array_new_va (MonoMethod *cm, ...);
+// For param_count > 4.
+G_EXTERN_C MonoArray *mono_array_new_n_icall (MonoMethod *cm, gint32 param_count, intptr_t *params);
 
 G_EXTERN_C MonoArray *mono_array_new_1 (MonoMethod *cm, guint32 length);
 

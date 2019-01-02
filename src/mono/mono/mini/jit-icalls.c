@@ -690,51 +690,38 @@ mono_fload_r4_arg (double val)
 #endif
 
 MonoArray *
-mono_array_new_va (MonoMethod *cm, ...)
+mono_array_new_n_icall (MonoMethod *cm, gint32 pcount, intptr_t *params)
 {
 	ERROR_DECL (error);
-	MonoArray *arr;
-	MonoDomain *domain = mono_domain_get ();
-	va_list ap;
-	uintptr_t *lengths;
-	intptr_t *lower_bounds;
-	int pcount;
-	int rank;
-	int i, d;
+	g_assert (cm);
+	g_assert (pcount);
+	g_assert (params);
+	intptr_t *lower_bounds = NULL;
 
-	pcount = mono_method_signature_internal (cm)->param_count;
-	rank = m_class_get_rank (cm->klass);
+	const int pcount_sig = mono_method_signature_internal (cm)->param_count;
+	const int rank = m_class_get_rank (cm->klass);
+	g_assert (pcount == pcount_sig);
+	g_assert (rank == pcount || rank * 2 == pcount);
 
-	va_start (ap, cm);
-	
-	lengths = g_newa (uintptr_t, pcount);
-	for (i = 0; i < pcount; ++i)
-		lengths [i] = d = va_arg(ap, int);
+	uintptr_t *lengths = (uintptr_t*)params;
 
 	if (rank == pcount) {
 		/* Only lengths provided. */
 		if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
 			lower_bounds = g_newa (intptr_t, rank);
 			memset (lower_bounds, 0, sizeof (intptr_t) * rank);
-		} else {
-			lower_bounds = NULL;
 		}
 	} else {
 		g_assert (pcount == (rank * 2));
 		/* lower bounds are first. */
-		lower_bounds = (intptr_t*)lengths;
+		lower_bounds = params;
 		lengths += rank;
 	}
-	va_end(ap);
 
-	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, error);
+	MonoArray *arr = mono_array_new_full_checked (mono_domain_get (),
+		cm->klass, lengths, lower_bounds, error);
 
-	if (!mono_error_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-
-	return arr;
+	return mono_error_set_pending_exception (error) ? NULL : arr;
 }
 
 /* Specialized version of mono_array_new_va () which avoids varargs */

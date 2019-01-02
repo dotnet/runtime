@@ -268,6 +268,7 @@ TESTS_CS_SRC=		\
 	create-instance.cs	\
 	bug-2907.cs		\
 	$(ARRAY_COOP_CS)	\
+	array-12193.cs		\
 	array-init.cs		\
 	arraylist.cs		\
 	assembly-load-remap.cs	\

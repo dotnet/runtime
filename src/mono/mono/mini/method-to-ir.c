@@ -3589,24 +3589,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	return obj;
 }
 
-static MonoInst*
-handle_array_new (MonoCompile *cfg, int rank, MonoInst **sp, guchar *ip)
-{
-	MonoJitICallInfo *info;
-
-	/* Need to register the icall so it gets an icall wrapper */
-	info = mono_get_array_new_va_icall (rank);
-
-	cfg->flags |= MONO_CFG_HAS_VARARGS;
-
-	/* mono_array_new_va () needs a vararg calling convention */
-	cfg->exception_message = g_strdup ("array-new");
-	cfg->disable_llvm = TRUE;
-
-	/* FIXME: This uses info->sig, but it should use the signature of the wrapper */
-	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, sp);
-}
-
 /*
  * handle_constrained_gsharedvt_call:
  *
@@ -5924,6 +5906,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		   guint inline_offset, gboolean is_virtual_call)
 {
 	ERROR_DECL (error);
+	// Buffer to hold parameters to mono_new_array, instead of varargs.
+	MonoInst *array_new_localalloc_ins = NULL;
 	MonoInst *ins, **sp, **stack_start;
 	MonoBasicBlock *tblock = NULL;
 	MonoBasicBlock *init_localsbb = NULL, *init_localsbb2 = NULL;
@@ -8569,18 +8553,42 @@ calli_end:
 			if (mini_class_is_system_array (cmethod->klass)) {
 				*sp = emit_get_rgctx_method (cfg, context_used,
 											 cmethod, MONO_RGCTX_INFO_METHOD);
-
-				/* Avoid varargs in the common case */
-				if (fsig->param_count == 1)
-					alloc = mono_emit_jit_icall (cfg, mono_array_new_1, sp);
-				else if (fsig->param_count == 2)
-					alloc = mono_emit_jit_icall (cfg, mono_array_new_2, sp);
-				else if (fsig->param_count == 3)
-					alloc = mono_emit_jit_icall (cfg, mono_array_new_3, sp);
-				else if (fsig->param_count == 4)
-					alloc = mono_emit_jit_icall (cfg, mono_array_new_4, sp);
-				else
-					alloc = handle_array_new (cfg, fsig->param_count, sp, ip);
+				/* Optimize the common cases */
+				gpointer function = NULL;
+				int n = fsig->param_count;
+				switch (n) {
+				case 1: function = (gpointer)mono_array_new_1;
+					break;
+				case 2: function = (gpointer)mono_array_new_2;
+					break;
+				case 3: function = (gpointer)mono_array_new_3;
+					break;
+				case 4: function = (gpointer)mono_array_new_4;
+					break;
+				default:
+					// FIXME Maximum value of param_count? Realistically 64. Fits in imm?
+					if  (!array_new_localalloc_ins) {
+						MONO_INST_NEW (cfg, array_new_localalloc_ins, OP_LOCALLOC_IMM);
+						array_new_localalloc_ins->dreg = alloc_preg (cfg);
+						cfg->flags |= MONO_CFG_HAS_ALLOCA;
+						MONO_ADD_INS (init_localsbb, array_new_localalloc_ins);
+					}
+					array_new_localalloc_ins->inst_imm = MAX (array_new_localalloc_ins->inst_imm, n * sizeof (target_mgreg_t));
+					int dreg = array_new_localalloc_ins->dreg;
+					for (int i = 0; i < n; ++i) {
+						NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, dreg, i * sizeof (target_mgreg_t), sp [i + 1]->dreg);
+						MONO_ADD_INS (cfg->cbb, ins);
+					}
+					EMIT_NEW_ICONST (cfg, ins, n);
+					sp [1] = ins;
+					EMIT_NEW_UNALU (cfg, ins, OP_MOVE, alloc_preg (cfg), dreg);
+					ins->type = STACK_PTR;
+					sp [2] = ins;
+					// FIXME Adjust sp by n - 3? Attempts failed.
+					function = (gpointer)mono_array_new_n_icall;
+					break;
+				}
+				alloc = mono_emit_jit_icall (cfg, function, sp);
 			} else if (cmethod->string_ctor) {
 				g_assert (!context_used);
 				g_assert (!vtable_arg);
@@ -12492,7 +12500,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	g_free (live_range_start_bb);
 	g_free (live_range_end_bb);
 }
-
 
 /**
  * FIXME:

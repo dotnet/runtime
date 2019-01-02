@@ -538,12 +538,6 @@ void MONO_SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler);
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler) ;
 gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 
-#ifdef MONO_ARCH_VARARG_ICALLS
-#define ARCH_VARARG_ICALLS 1
-#else
-#define ARCH_VARARG_ICALLS 0
-#endif
-
 #if defined (HOST_WASM)
 
 #define MONO_RETURN_ADDRESS_N(N) NULL

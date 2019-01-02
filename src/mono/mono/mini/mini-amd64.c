@@ -3082,9 +3082,8 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 							near_call = TRUE;
 					}
 					else {
-						/* See the comment in mono_codegen () */
-						if ((info->name [0] != 'v') || (strstr (info->name, "ves_array_new_va_") == NULL && strstr (info->name, "ves_array_element_address_") == NULL))
-							near_call = TRUE;
+						/* ?See the comment in mono_codegen ()? */
+						near_call = TRUE;
 					}
 				}
 				else if ((((guint64)data) >> 32) == 0) {

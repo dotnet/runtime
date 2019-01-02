@@ -8708,8 +8708,8 @@ mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSi
 		jit_icall_hash_addr = g_hash_table_new (NULL, NULL);
 	}
 
-	if (g_hash_table_lookup (jit_icall_hash_name, name)) {
-		g_warning ("jit icall already defined \"%s\"\n", name);
+	if ((info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name))) {
+		g_warning ("jit icall already defined \"%s\" \"%s\" %p %p\n", name, info->name, func, info->func);
 		g_assert_not_reached ();
 	}
 
