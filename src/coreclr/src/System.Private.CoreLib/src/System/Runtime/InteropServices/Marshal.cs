@@ -178,8 +178,7 @@ namespace System.Runtime.InteropServices
                 return string.Empty;
             }
 
-            byte* pByte = (byte*)ptr.ToPointer();
-            return Encoding.UTF8.GetString(pByte, byteLen);
+            return Encoding.UTF8.GetString((byte*)ptr, byteLen);
         }
 
         public static int SizeOf(object structure)
@@ -971,10 +970,11 @@ namespace System.Runtime.InteropServices
                 return IntPtr.Zero;
             }
 
-            int nb = (s.Length + 1) * SystemMaxDBCSCharSize;
+            long lnb = (s.Length + 1) * (long)SystemMaxDBCSCharSize;
+            int nb = (int)lnb;
 
             // Overflow checking
-            if (nb < s.Length)
+            if (nb != lnb)
             {
                 throw new ArgumentOutOfRangeException(nameof(s));
             }
@@ -1224,10 +1224,11 @@ namespace System.Runtime.InteropServices
                 return IntPtr.Zero;
             }
 
-            int nb = (s.Length + 1) * SystemMaxDBCSCharSize;
+            long lnb = (s.Length + 1) * (long)SystemMaxDBCSCharSize;
+            int nb = (int)lnb;
 
             // Overflow checking
-            if (nb < s.Length)
+            if (nb != lnb)
             {
                 throw new ArgumentOutOfRangeException(nameof(s));
             }
