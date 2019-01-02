@@ -4090,11 +4090,11 @@ namespace System.Diagnostics.Tracing
                 if (!s_EventSourceShutdownRegistered)
                 {
                     s_EventSourceShutdownRegistered = true;
-#if CORECLR || ES_BUILD_PN
-                    AppContext.ProcessExit += DisposeOnShutdown;
-#else
+#if ES_BUILD_STANDALONE
                     AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
                     AppDomain.CurrentDomain.DomainUnload += DisposeOnShutdown;
+#else
+                    AppContext.ProcessExit += DisposeOnShutdown;
 #endif
                 }
 
