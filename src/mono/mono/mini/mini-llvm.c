@@ -163,7 +163,6 @@ typedef struct {
 	gboolean *unreachable;
 	gboolean llvm_only;
 	gboolean has_got_access;
-	gboolean is_linkonce;
 	gboolean emit_dummy_arg;
 	int this_arg_pindex, rgctx_arg_pindex;
 	LLVMValueRef imt_rgctx_loc;
@@ -7235,7 +7234,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 {
 	EmitContext *ctx;
 	char *method_name;
-	gboolean is_linkonce = FALSE;
 	int i;
 
 	if (cfg->skip)
@@ -7281,24 +7279,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		ctx->module = &aot_module;
 
 		method_name = NULL;
-		/*
-		 * Allow the linker to discard duplicate copies of wrappers, generic instances etc. by using the 'linkonce'
-		 * linkage for them. This requires the following:
-		 * - the method needs to have a unique mangled name
-		 * - llvmonly mode, since the code in aot-runtime.c would initialize got slots in the wrong aot image etc.
-		 */
-		is_linkonce = ctx->module->llvm_only && ctx->module->static_link && mono_aot_can_dedup (cfg->method) && FALSE;
-		if (is_linkonce) {
-			method_name = mono_aot_get_mangled_method_name (cfg->method);
-			if (!method_name)
-				is_linkonce = FALSE;
-			/*
-			if (method_name)
-				printf ("%s %s\n", mono_method_full_name (cfg->method, 1), method_name);
-			else
-				printf ("%s\n", mono_method_full_name (cfg->method, 1));
-			*/
-		}
 		if (!method_name)
 			method_name = mono_aot_get_method_name (cfg);
 		cfg->llvm_method_name = g_strdup (method_name);
@@ -7308,7 +7288,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		method_name = mono_method_full_name (cfg->method, TRUE);
 	}
 	ctx->method_name = method_name;
-	ctx->is_linkonce = is_linkonce;
 
 #if LLVM_API_VERSION > 100
 	if (cfg->compile_aot)
@@ -7428,10 +7407,6 @@ emit_method_inner (EmitContext *ctx)
 		if (!cfg->llvm_only && ctx->module->external_symbols) {
 			LLVMSetLinkage (method, LLVMExternalLinkage);
 			LLVMSetVisibility (method, LLVMHiddenVisibility);
-		}
-		if (ctx->is_linkonce) {
-			LLVMSetLinkage (method, LLVMLinkOnceAnyLinkage);
-			LLVMSetVisibility (method, LLVMDefaultVisibility);
 		}
 	} else {
 #if LLVM_API_VERSION > 100
@@ -7790,17 +7765,10 @@ emit_method_inner (EmitContext *ctx)
 		}
 		if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
 			needs_init = FALSE;
-		if (needs_init) {
-			/*
-			 * linkonce methods shouldn't have initialization,
-			 * because they might belong to assemblies which
-			 * haven't been loaded yet.
-			 */
-			g_assert (!ctx->is_linkonce);
+		if (needs_init)
 			emit_init_method (ctx);
-		} else {
+		else
 			LLVMBuildBr (ctx->builder, ctx->inited_bb);
-		}
 	}
 
 	if (cfg->llvm_only) {
