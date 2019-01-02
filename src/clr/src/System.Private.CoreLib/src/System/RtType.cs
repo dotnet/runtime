@@ -4819,15 +4819,17 @@ namespace System
 
         internal MdUtf8String(void* pStringHeap)
         {
-            m_pStringHeap = (byte*)pStringHeap;
+            byte* pStringBytes = (byte*)pStringHeap;
             if (pStringHeap != null)
             {
-                m_StringHeapByteLength = StubHelpers.StubHelpers.strlen((sbyte*)pStringHeap);
+                m_StringHeapByteLength = string.strlen(pStringBytes);
             }
             else
             {
                 m_StringHeapByteLength = 0;
             }
+
+            m_pStringHeap = pStringBytes;
         }
 
         internal unsafe MdUtf8String(byte* pUtf8String, int cUtf8String)

@@ -163,11 +163,7 @@ namespace System
             if (pb == null)
                 return Empty;
 
-            int numBytes = new ReadOnlySpan<byte>((byte*)value, int.MaxValue).IndexOf<byte>(0);
-
-            // Check for overflow
-            if (numBytes < 0)
-                throw new ArgumentException(SR.Arg_MustBeNullTerminatedString);
+            int numBytes = strlen((byte*)value);
 
             return CreateStringForSByteConstructor(pb, numBytes);
         }
@@ -653,6 +649,25 @@ namespace System
 #endif
 
             return count;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe int strlen(byte* ptr)
+        {
+            // IndexOf processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
+            int length = SpanHelpers.IndexOf(ref *ptr, (byte)'\0', int.MaxValue);
+            if (length < 0)
+            {
+                ThrowMustBeNullTerminatedString();
+            }
+
+            return length;
+        }
+
+        private static void ThrowMustBeNullTerminatedString()
+        {
+            throw new ArgumentException(SR.Arg_MustBeNullTerminatedString);
         }
 
         //

@@ -162,8 +162,10 @@ namespace System.StubHelpers
         {
             if (IntPtr.Zero == cstr)
                 return null;
-            int nbBytes = StubHelpers.strlen((sbyte*)cstr);
-            return string.CreateStringFromEncoding((byte*)cstr, nbBytes, Encoding.UTF8);
+
+            byte* pBytes = (byte*)cstr;
+            int nbBytes = string.strlen(pBytes);
+            return string.CreateStringFromEncoding(pBytes, nbBytes, Encoding.UTF8);
         }
 
         internal static void ClearNative(IntPtr pNative)
@@ -203,8 +205,9 @@ namespace System.StubHelpers
             if (pNative == IntPtr.Zero)
                 return;
 
-            int nbBytes = StubHelpers.strlen((sbyte*)pNative);
-            sb.ReplaceBufferUtf8Internal(new Span<byte>((byte*)pNative, nbBytes));
+            byte* pBytes = (byte*)pNative;
+            int nbBytes = string.strlen(pBytes);
+            sb.ReplaceBufferUtf8Internal(new Span<byte>(pBytes, nbBytes));
         }
     }
 
@@ -1188,7 +1191,17 @@ namespace System.StubHelpers
                 case BackPropAction.StringBuilderAnsi:
                     {
                         sbyte* ptr = (sbyte*)pNativeHome.ToPointer();
-                        ((StringBuilder)pManagedHome).ReplaceBufferAnsiInternal(ptr, Win32Native.lstrlenA(pNativeHome));
+                        int length;
+                        if (pNativeHome == IntPtr.Zero)
+                        {
+                            length = 0;
+                        }
+                        else
+                        {
+                            length = string.strlen((byte*)pNativeHome);
+                        }
+
+                        ((StringBuilder)pManagedHome).ReplaceBufferAnsiInternal(ptr, length);
                         break;
                     }
 
@@ -1720,9 +1733,6 @@ namespace System.StubHelpers
                 throw new MarshalDirectiveException(SR.Marshaler_StringTooLong);
             }
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int strlen(sbyte* ptr);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement pCleanupWorkList);

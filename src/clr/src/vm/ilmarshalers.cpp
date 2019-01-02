@@ -629,8 +629,8 @@ void ILUTF8BufferMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
     if (IsIn(m_dwMarshalFlags) || IsCLRToNative(m_dwMarshalFlags))
     {
         EmitLoadNativeValue(pslILEmit);
-        // static int System.StubHelpers.StubHelpers.strlen(sbyte* ptr)
-        pslILEmit->EmitCALL(METHOD__STUBHELPERS__STRLEN, 1, 1);
+        // static int System.String.strlen(byte* ptr)
+        pslILEmit->EmitCALL(METHOD__STRING__STRLEN, 1, 1);
     }
     else
     {
@@ -1034,8 +1034,8 @@ void ILCSTRBufferMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
     if (IsIn(m_dwMarshalFlags) || IsCLRToNative(m_dwMarshalFlags))
     {
         EmitLoadNativeValue(pslILEmit);
-        // static int System.StubHelpers.StubHelpers.strlen(sbyte* ptr)
-        pslILEmit->EmitCALL(METHOD__STUBHELPERS__STRLEN, 1, 1);
+        // static int System.String.strlen(byte* ptr)
+        pslILEmit->EmitCALL(METHOD__STRING__STRLEN, 1, 1);
     }
     else
     {
@@ -1063,8 +1063,8 @@ void ILCSTRBufferMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEm
     EmitLoadNativeValue(pslILEmit);
 
     pslILEmit->EmitDUP();
-    // static int System.StubHelpers.StubHelpers.strlen(sbyte* ptr)
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__STRLEN, 1, 1);
+    // static int System.String.strlen(byte* ptr)
+    pslILEmit->EmitCALL(METHOD__STRING__STRLEN, 1, 1);
     
     // void System.Text.StringBuilder.ReplaceBuffer(sbyte* newBuffer, int newLength);
     pslILEmit->EmitCALL(METHOD__STRING_BUILDER__REPLACE_BUFFER_ANSI_INTERNAL, 3, 0);
