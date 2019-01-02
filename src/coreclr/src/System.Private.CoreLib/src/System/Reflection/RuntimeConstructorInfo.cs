@@ -260,7 +260,7 @@ namespace System.Reflection
                 return parameters;
 
             ParameterInfo[] ret = new ParameterInfo[parameters.Length];
-            Array.Copy(parameters, ret, parameters.Length);
+            Array.Copy(parameters, 0, ret, 0, parameters.Length);
             return ret;
         }
 

@@ -3416,7 +3416,7 @@ namespace System
             // Make a copy since we can't hand out the same array since users can modify them
             string[] retVal = new string[ret.Length];
 
-            Array.Copy(ret, retVal, ret.Length);
+            Array.Copy(ret, 0, retVal, 0, ret.Length);
 
             return retVal;
         }
