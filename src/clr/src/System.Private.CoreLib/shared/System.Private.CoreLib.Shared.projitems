@@ -41,6 +41,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\AssemblyLoadEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AssemblyLoadEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AsyncCallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Attribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AttributeTargets.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AttributeUsageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\BadImageFormatException.cs" />
