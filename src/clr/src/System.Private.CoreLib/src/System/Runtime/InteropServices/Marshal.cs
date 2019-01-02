@@ -1729,13 +1729,13 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
-        public static void ZeroFreeCoTaskMemUnicode(IntPtr s)
+        public static unsafe void ZeroFreeCoTaskMemUnicode(IntPtr s)
         {
             if (s == IntPtr.Zero)
             {
                 return;
             }
-            RuntimeImports.RhZeroMemory(s, (UIntPtr)(Win32Native.lstrlenW(s) * 2));
+            RuntimeImports.RhZeroMemory(s, (UIntPtr)(string.wcslen((char*)s) * 2));
             FreeCoTaskMem(s);
         }
 
@@ -1779,13 +1779,13 @@ namespace System.Runtime.InteropServices
             FreeHGlobal(s);
         }
 
-        public static void ZeroFreeGlobalAllocUnicode(IntPtr s)
+        public static unsafe void ZeroFreeGlobalAllocUnicode(IntPtr s)
         {
             if (s == IntPtr.Zero)
             {
                 return;
             }
-            RuntimeImports.RhZeroMemory(s, (UIntPtr)(Win32Native.lstrlenW(s) * 2));
+            RuntimeImports.RhZeroMemory(s, (UIntPtr)(string.wcslen((char*)s) * 2));
             FreeHGlobal(s);
         }
 

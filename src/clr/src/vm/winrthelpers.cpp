@@ -157,8 +157,8 @@ GetBindableWinRTName(
     sNamespaceAndType.AppendUTF8(szNameSpace);
     sNamespaceAndType.Append(W("."));
     sNamespaceAndType.AppendUTF8(szTypeName);
-    
-    pIAssemblyName->SetProperty(ASM_NAME_NAME, sNamespaceAndType.GetUnicode(), (lstrlenW(sNamespaceAndType.GetUnicode()) + 1) * sizeof(WCHAR));
-    
+
+    pIAssemblyName->SetProperty(ASM_NAME_NAME, sNamespaceAndType.GetUnicode(), (sNamespaceAndType.GetCount() + 1) * sizeof(WCHAR));
+
     return hr;
 }

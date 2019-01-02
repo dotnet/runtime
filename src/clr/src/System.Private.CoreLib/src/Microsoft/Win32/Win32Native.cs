@@ -185,9 +185,6 @@ namespace Microsoft.Win32
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static extern unsafe bool VirtualFree(void* address, UIntPtr numBytes, int pageFreeMode);
 
-        [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode, ExactSpelling = true, EntryPoint = "lstrlenW")]
-        internal static extern int lstrlenW(IntPtr ptr);
-
         [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode)]
         internal static extern IntPtr SysAllocStringLen(string src, int len);  // BSTR
 
