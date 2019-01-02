@@ -1491,7 +1491,7 @@ mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
 	type = type_from_stack_type (ins);
 
 	/* inlining can result in deeper stacks */ 
-	if (cfg->inlined_method || slot >= cfg->header->max_stack)
+	if (cfg->inline_depth || slot >= cfg->header->max_stack)
 		return mono_compile_create_var (cfg, type, OP_LOCAL);
 
 	pos = ins->type - 1 + slot * STACK_MAX;
@@ -4416,7 +4416,6 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	MonoMethodHeader *cheader;
 	MonoBasicBlock *ebblock, *sbblock;
 	int i, costs;
-	MonoMethod *prev_inlined_method;
 	MonoInst **prev_locals, **prev_args;
 	MonoType **prev_arg_types;
 	guint prev_real_offset;
@@ -4491,7 +4490,6 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 	prev_args = cfg->args;
 	prev_arg_types = cfg->arg_types;
-	prev_inlined_method = cfg->inlined_method;
 	prev_ret_var_set = cfg->ret_var_set;
 	prev_real_offset = cfg->real_offset;
 	prev_cbb_hash = cfg->cbb_hash;
@@ -4504,7 +4502,6 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	prev_generic_context = cfg->generic_context;
 	prev_disable_inline = cfg->disable_inline;
 
-	cfg->inlined_method = cmethod;
 	cfg->ret_var_set = FALSE;
 	cfg->inline_depth ++;
 
@@ -4515,7 +4512,6 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 	ret_var_set = cfg->ret_var_set;
 
-	cfg->inlined_method = prev_inlined_method;
 	cfg->real_offset = prev_real_offset;
 	cfg->cbb_hash = prev_cbb_hash;
 	cfg->cil_offset_to_bb = prev_cil_offset_to_bb;
