@@ -12,7 +12,7 @@ The .NET Core project uses multiple licenses for the various project repositorie
 
 - The [MIT License](https://opensource.org/licenses/MIT) is used by most repositories for [code](https://github.com/dotnet/coreclr/). 
 - The  [Apache 2 License](https://opensource.org/licenses/Apache-2.0) is also used by some projects for [code](https://github.com/dotnet/roslyn/). 
-- The [Creative Commons Attribution 4.0 International Public License (CC-BY)](https://creativecommons.org/licenses/by/4.0/) license is used for [documentation](https://github.com/dotnet/docs/) and [swag](https://github.com/dotnet/swag). 
+- The [Creative Commons Attribution 4.0 International Public License (CC-BY)](https://creativecommons.org/licenses/by/4.0/) is used for [documentation](https://github.com/dotnet/docs/) and [swag](https://github.com/dotnet/swag). 
 
 Binary License
 --------------
