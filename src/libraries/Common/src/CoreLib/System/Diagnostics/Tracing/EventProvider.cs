@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
-#if !CORECLR && !ES_BUILD_PN
+#if ES_BUILD_STANDALONE
 using System.Security.Permissions;
 #endif
 #if CORECLR && PLATFORM_WINDOWS
