@@ -290,7 +290,7 @@ namespace System.Diagnostics.Tracing
 
         private static string BuildTraceFileName()
         {
-            return GetAppName() + "." + Win32Native.GetCurrentProcessId() + NetPerfFileExtension;
+            return GetAppName() + "." + Win32Native.GetCurrentProcessId().ToString() + NetPerfFileExtension;
         }
 
         private static string GetAppName()
