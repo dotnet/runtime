@@ -146,7 +146,7 @@ exit /b 1
 :: Regenerate the VS solution
 
 pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %__nativeWindowsDir% %__VSVersion% %__BuildArch%
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" "%__nativeWindowsDir%" %__VSVersion% %__BuildArch%
 popd
 
 :CheckForProj
@@ -177,7 +177,7 @@ set "__LinkArgs=%__LinkArgs% /APPCONTAINER"
 set "__appContainer=true"
 
 pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %__nativeWindowsDir% %__VSVersion% %__BuildArch%
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" "%__nativeWindowsDir%" %__VSVersion% %__BuildArch%
 popd
 
 if not exist "%__IntermediatesDir%\install.vcxproj" goto :Failure
@@ -198,8 +198,8 @@ IF ERRORLEVEL 1 (
 )
 
 :: Copy results to native_aot since packaging expects a copy there too
-mkdir %__artifactsDir%\bin\native\%__outConfig%-aot
-copy %__artifactsDir%\bin\native\%__outConfig%\* %__artifactsDir%\bin\native\%__outConfig%-aot\
+mkdir "%__artifactsDir%\bin\native\%__outConfig%-aot"
+copy "%__artifactsDir%\bin\native\%__outConfig%\*" "%__artifactsDir%\bin\native\%__outConfig%-aot"
 
 exit /B 0
 
