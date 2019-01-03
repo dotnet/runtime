@@ -1,0 +1,61 @@
+parameters:
+  displayName: ''
+  condition: ''
+  archType: ''
+  osGroup: ''
+  buildConfig: ''
+  isExternal: ''
+  creator: ''
+  publishTestResults: ''
+  helixAccessToken: ''
+  helixBuild: ''
+  helixSource: ''
+  helixQueues: ''
+  helixType: ''
+  scenarios: ''
+  timeoutInMinutes: ''
+
+steps:
+- ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+  - powershell: eng\common\msbuild.ps1 -ci tests\helixpublishwitharcade.proj /maxcpucount
+    displayName: ${{ parameters.displayName }}
+    ${{ if ne(parameters.condition, '') }}:
+      condition: ${{ parameters.condition }}
+    env:
+      __BuildArch: ${{ parameters.archType }}
+      __BuildOS: ${{ parameters.osGroup }}
+      __BuildType: ${{ parameters.buildConfig }}
+      _IsExternal: ${{ parameters.isExternal }}
+      _Creator: ${{ parameters.creator }}
+      _PublishTestResults: ${{ parameters.publishTestResults }}
+      _HelixAccessToken: ${{ parameters.helixAccessToken }}
+      _HelixBuild: ${{ parameters.helixBuild }}
+      _HelixSource: ${{ parameters.helixSource }}
+      _HelixTargetQueues: ${{ parameters.helixQueues }}
+      _HelixType: ${{ parameters.helixType }}
+      _Scenarios: ${{ parameters.scenarios }}
+      _TimeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      ${{ if eq(parameters.publishTestResults, 'true') }}:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+- ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+  - script: ./eng/common/msbuild.sh --ci tests/helixpublishwitharcade.proj /maxcpucount
+    displayName: ${{ parameters.displayName }}
+    ${{ if ne(parameters.condition, '') }}:
+      condition: ${{ parameters.condition }}
+    env:
+      __BuildArch: ${{ parameters.archType }}
+      __BuildOS: ${{ parameters.osGroup }}
+      __BuildType: ${{ parameters.buildConfig }}
+      _IsExternal: ${{ parameters.isExternal }}
+      _Creator: ${{ parameters.creator }}
+      _PublishTestResults: ${{ parameters.publishTestResults }}
+      _HelixAccessToken: ${{ parameters.helixAccessToken }}
+      _HelixBuild: ${{ parameters.helixBuild }}
+      _HelixSource: ${{ parameters.helixSource }}
+      _HelixTargetQueues: ${{ parameters.helixQueues }}
+      _HelixType: ${{ parameters.helixType }}
+      _Scenarios: ${{ parameters.scenarios }}
+      _TimeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      ${{ if eq(parameters.publishTestResults, 'true') }}:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)

@@ -32,12 +32,12 @@ jobs:
       name: ${{ format('testbuild_pri{0}_r2r_{1}_{2}_{3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('Test Pri{0} R2R {1} {2} {3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+
     ${{ if eq(parameters.crossgen, 'false') }}:
       helixType: ${{ format('test/functional/cli/pri{0}', parameters.priority) }}
     ${{ if eq(parameters.crossgen, 'true') }}:
       helixType: ${{ format('test/functional/r2r/cli/pri{0}', parameters.priority) }}
-
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:
     # Map template parameters to command line arguments
@@ -58,20 +58,6 @@ jobs:
     - ${{ if eq(parameters.crossgen, 'false') }}:
       - name: crossgenArg
         value: ''
-    - ${{ if ne(parameters.scenarios, '') }}:
-      - name: scenariosArg
-        value: ${{ format('/p:Scenarios=\"{0}\"', parameters.scenarios) }}
-    - ${{ if eq(parameters.scenarios, '') }}:
-      - name: scenariosArg
-        value: ''
-    - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-      - name: helixTargetQueuesArg
-        value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesPublic) }}
-    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      - name: helixTargetQueuesArg
-        value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesInternal) }}
-    - name: commonMSBuildArgs
-      value: ${{ format('/maxcpucount /p:__BuildOS={0} /p:__BuildArch={1} /p:__BuildType={2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
 
     # TODO: Enable crossgen in build-test.sh. It currently doesn't
     # accept a crossgen arg, so disable the macos/linux crossgen test
@@ -110,7 +96,7 @@ jobs:
           artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
           targetPath: $(Build.SourcesDirectory)\bin\Product\Windows_NT.$(archType).$(buildConfigUpper)
 
-      
+
     # Build tests
     # TODO: enable crossgen in build-test.sh
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
@@ -121,26 +107,31 @@ jobs:
         displayName: Build tests
 
 
-    # Send tests to helix
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
-      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixpublishwitharcade.proj $(commonMSBuildArgs) $(scenariosArg) $(helixTargetQueuesArg)
-        displayName: Send test jobs to Helix
-        env:
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            # Access token variable for internal project
-            HelixAccessToken: $(DotNet-HelixApi-Access)
-          ${{ if eq(variables['System.TeamProject'], 'public') }}:
-            # Access token variable for public project
-            HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
-          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: .\Tools\dotnetcli\dotnet msbuild tests\helixpublishwitharcade.proj $(commonMSBuildArgs) $(scenariosArg) $(helixTargetQueuesArg)
-        displayName: Send test jobs to Helix
-        env:
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            # Access token variable for internal project
-            HelixAccessToken: $(DotNet-HelixApi-Access)
-          ${{ if eq(variables['System.TeamProject'], 'public') }}:
-            # Access token variable for public project
-            HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
-          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    # Send tests to Helix
+    - template: /eng/send-to-helix-step.yml
+      parameters:
+        displayName: Send tests to Helix
+        buildConfig: ${{ parameters.buildConfig }}
+        archType: ${{ parameters.archType }}
+        osGroup: ${{ parameters.osGroup }}
+
+        helixBuild: $(Build.BuildNumber)
+        helixSource: $(_HelixSource)
+        helixType: $(_HelixType)
+
+        publishTestResults: true
+        # TODO: see if this amount is enough for all individual jobs to finish
+        # TODO: consider passing this value as a parameter to a test job
+        timeoutInMinutes: 30
+
+        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          isExternal: false
+          # Access token variable for internal project
+          helixAccessToken: $(DotNet-HelixApi-Access)
+          helixQueues: ${{ parameters.helixQueuesInternal }}
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          isExternal: true
+          creator: $(Build.RequestedForId)
+          helixQueues: ${{ parameters.helixQueuesPublic }}
+
+        scenarios: ${{ parameters.scenarios }}
