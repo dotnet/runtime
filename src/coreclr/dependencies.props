@@ -44,7 +44,6 @@
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.4</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
     <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
-    <VCRuntimeVersion>2.0.0</VCRuntimeVersion>
     
     <!-- Scenario tests install this version of Microsoft.NetCore.App, then patch coreclr binaries via xcopy. At the moment it is
          updated manually whenever breaking changes require it to move forward, but it would be nice if we could update it automatically
