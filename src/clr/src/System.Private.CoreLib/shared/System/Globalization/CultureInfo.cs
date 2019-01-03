@@ -113,19 +113,19 @@ namespace System.Globalization
         private static volatile CultureInfo s_DefaultThreadCurrentCulture;
 
         [ThreadStatic]
-        internal static CultureInfo s_currentThreadCulture;
+        private static CultureInfo s_currentThreadCulture;
         [ThreadStatic]
-        internal static CultureInfo s_currentThreadUICulture;
+        private static CultureInfo s_currentThreadUICulture;
 
-        internal static AsyncLocal<CultureInfo> s_asyncLocalCurrentCulture; 
-        internal static AsyncLocal<CultureInfo> s_asyncLocalCurrentUICulture;
+        private static AsyncLocal<CultureInfo> s_asyncLocalCurrentCulture;
+        private static AsyncLocal<CultureInfo> s_asyncLocalCurrentUICulture;
 
-        internal static void AsyncLocalSetCurrentCulture(AsyncLocalValueChangedArgs<CultureInfo> args)
+        private static void AsyncLocalSetCurrentCulture(AsyncLocalValueChangedArgs<CultureInfo> args)
         {
             s_currentThreadCulture = args.CurrentValue;
         }
 
-        internal static void AsyncLocalSetCurrentUICulture(AsyncLocalValueChangedArgs<CultureInfo> args)
+        private static void AsyncLocalSetCurrentUICulture(AsyncLocalValueChangedArgs<CultureInfo> args)
         {
             s_currentThreadUICulture = args.CurrentValue;
         }
@@ -269,15 +269,14 @@ namespace System.Globalization
         // We do this to try to return the system UI language and the default user languages
         // This method will fallback if this fails (like Invariant)
         //
-        // TODO: It would appear that this is only ever called with userOveride = true
-        // and this method only has one caller.  Can we fold it into the caller?
-        private static CultureInfo GetCultureByName(string name, bool userOverride)
+        private static CultureInfo GetCultureByName(string name)
         {
             CultureInfo ci = null;
             // Try to get our culture
             try
             {
-                ci = userOverride ? new CultureInfo(name) : CultureInfo.GetCultureInfo(name);
+                ci = new CultureInfo(name);
+                ci._isReadOnly = true;
             }
             catch (ArgumentException)
             {
@@ -542,12 +541,6 @@ namespace System.Globalization
                 // this one will set s_currentThreadUICulture too
                 s_asyncLocalCurrentUICulture.Value = value;
             }
-        }
-
-        internal static void ResetThreadCulture()
-        {
-            s_currentThreadCulture = null;
-            s_currentThreadUICulture = null;
         }
 
         internal static CultureInfo UserDefaultUICulture => s_userDefaultUICulture ?? InitializeUserDefaultUICulture();

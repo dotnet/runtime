@@ -1506,15 +1506,6 @@ public:
     OBJECTREF GetDelegate()                   { LIMITED_METHOD_CONTRACT; return m_Delegate; }
     void      SetDelegate(OBJECTREF delegate);
 
-    CULTUREINFOBASEREF GetCurrentUserCulture();
-    CULTUREINFOBASEREF GetCurrentUICulture();
-    OBJECTREF GetManagedThreadCulture(BOOL bUICulture);
-    void ResetManagedThreadCulture(BOOL bUICulture);
-    void ResetCurrentUserCulture();
-    void ResetCurrentUICulture();
-
-
-
     OBJECTREF GetSynchronizationContext()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1525,13 +1516,6 @@ public:
     // created first.  InitExisting is our "constructor" for the pathway where an
     // existing physical thread is later exposed.
     void      InitExisting();
-
-    void ResetCulture()
-    {
-        LIMITED_METHOD_CONTRACT;
-        ResetCurrentUserCulture();
-        ResetCurrentUICulture();
-    }
 
     void ResetName()
     {
