@@ -3,17 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertNameToStrW")]
-        internal static extern unsafe int CertNameToStr(
-            int dwCertEncodingType,
-            void* pName,
-            int dwStrType,
-            char* psz,
-            int csz);
+        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern unsafe SafeCertContextHandle CertCreateCertificateContext(
+            MsgEncodingType dwCertEncodingType,
+            void* pbCertEncoded,
+            int cbCertEncoded);
     }
 }

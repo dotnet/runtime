@@ -9,7 +9,12 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptMsgClose(IntPtr hCryptMsg);
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct CRYPT_ATTRIBUTE
+        {
+            internal IntPtr pszObjId;
+            internal int cValue;
+            internal DATA_BLOB* rgValue;
+        }
     }
 }

@@ -5,7 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-using HeapAllocFlags = Interop.Heap.HeapAllocFlags;
+using HeapAllocFlags = Interop.Kernel32.HeapAllocFlags;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -15,7 +15,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal static SafeHeapAllocHandle Alloc(int size)
         {
-            SafeHeapAllocHandle result = Interop.Heap.HeapAlloc(s_hHeap, HeapAllocFlags.None, size);
+            SafeHeapAllocHandle result = Interop.Kernel32.HeapAlloc(s_hHeap, HeapAllocFlags.None, size);
             if (result.IsInvalid)
             {
                 result.SetHandleAsInvalid();
@@ -47,13 +47,13 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 #endif
-            bool success = Interop.Heap.HeapFree(s_hHeap, HeapAllocFlags.None, handle);
+            bool success = Interop.Kernel32.HeapFree(s_hHeap, HeapAllocFlags.None, handle);
             return success;
         }
 
 #if DEBUG
         private int _size;
 #endif
-        private static readonly IntPtr s_hHeap = Interop.Heap.GetProcessHeap();
+        private static readonly IntPtr s_hHeap = Interop.Kernel32.GetProcessHeap();
     }
 }
