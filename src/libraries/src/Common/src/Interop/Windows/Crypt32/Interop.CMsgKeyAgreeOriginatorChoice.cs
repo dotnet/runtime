@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.InteropServices;
-
 internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptMsgClose(IntPtr hCryptMsg);
+        internal enum CMsgKeyAgreeOriginatorChoice : int
+        {
+            CMSG_KEY_AGREE_ORIGINATOR_CERT = 1,
+            CMSG_KEY_AGREE_ORIGINATOR_PUBLIC_KEY = 2,
+        }
     }
 }
