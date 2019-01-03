@@ -81,13 +81,13 @@ stub_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExcept
 }
 
 static gboolean
-stub_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip)
+stub_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
 {
 	g_assert_not_reached ();
 }
 
 static gboolean
-stub_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip)
+stub_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
 {
 	g_assert_not_reached ();
 	return FALSE;

@@ -147,7 +147,7 @@ typedef struct {
 	/* Frame to resume execution at */
 	InterpFrame *handler_frame;
 	/* IP to resume execution at */
-	gpointer handler_ip;
+	guint16 *handler_ip;
 	/* Clause that we are resuming to */
 	MonoJitExceptionInfo *handler_ei;
 } ThreadContext;
