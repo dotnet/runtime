@@ -107,8 +107,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
                          BOOL            fThrowOnFileNotFound,
                          CoreBindResult *pResult,
                          BOOL fNgenExplicitBind /* = FALSE */,
-                         BOOL fExplicitBindToNativeImage /* = FALSE */,
-                         StackCrawlMark *pCallerStackMark /* = NULL */)
+                         BOOL fExplicitBindToNativeImage /* = FALSE */)
 {
     CONTRACTL
     {
