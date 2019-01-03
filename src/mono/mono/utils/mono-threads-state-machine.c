@@ -538,7 +538,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be == 1", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
-		if (mono_atomic_cas_i32 (&info->thread_state, STATE_BLOCKING_SUSPEND_REQUESTED, raw_state) != raw_state)
+		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_SUSPEND_REQUESTED, suspend_count, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("PULSE", info, raw_state, STATE_BLOCKING_SUSPEND_REQUESTED, no_safepoints, -1);
 		return PulseInitAsyncPulse; // Pulse worked and caller must do async pulse, thread pulses in BLOCKING
@@ -590,6 +590,8 @@ retry_state_change:
 		return FALSE; //let self suspend wait
 
 	case STATE_ASYNC_SUSPEND_REQUESTED:
+		if (!(suspend_count > 0))
+			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		/* Don't expect to see no_safepoints, ever, with async */
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE in ASYNC_SUSPEND_REQUESTED with FINISH_ASYNC_SUSPEND");
@@ -598,6 +600,8 @@ retry_state_change:
 		trace_state_change_sigsafe ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_ASYNC_SUSPENDED, FALSE, 0, "");
 		return TRUE; //Async suspend worked, now wait for resume
 	case STATE_BLOCKING_SUSPEND_REQUESTED:
+		if (!(suspend_count > 0))
+			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
 		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_ASYNC_SUSPENDED, suspend_count, FALSE), raw_state) != raw_state)
