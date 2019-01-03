@@ -7,13 +7,27 @@
   <Import Project="..\dir.props" />
 
   <PropertyGroup>
+    <HelixArchitecture>$(BuildArch)</HelixArchitecture>
+    <HelixConfiguration>$(BuildType)</HelixConfiguration>
+
+    <IsExternal>$(_IsExternal)</IsExternal>
+    <IsExternal Condition=" '$(IsExternal)' == '' ">true</IsExternal>
+
+    <Creator Condition=" '$(IsExternal)' == 'true' ">$(_Creator)</Creator>
+    <HelixAccessToken Condition=" '$(IsExternal)' != 'true' ">$(_HelixAccessToken)</HelixAccessToken>
+    <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
+
+    <EnableAzurePipelinesReporter>$(_PublishTestResults)</EnableAzurePipelinesReporter>
+    <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>
+
+    <HelixBuild>$(_HelixBuild)</HelixBuild>
     <HelixSource>$(_HelixSource)</HelixSource>
     <HelixType>$(_HelixType)</HelixType>
-    <HelixBuild>$(BUILD_BUILDNUMBER)</HelixBuild>
 
-    <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' != 'false' ">true</EnableAzurePipelinesReporter>
+    <TimeoutInMinutes>$(_TimeoutInMinutes)</TimeoutInMinutes>
+    <TimeoutInMinutes Condition=" '$(TimeoutInMinutes)' == '' ">5</TimeoutInMinutes>
+
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
-    <TimeoutInSeconds Condition=" '$(TimeoutInSeconds)' == '' ">1000</TimeoutInSeconds>
     <CoreRootDirectory>$(TestWorkingDir)\Tests\Core_Root</CoreRootDirectory>
   </PropertyGroup>
 
@@ -32,23 +46,21 @@
     <XUnitWrapperDlls Include="$(TestWorkingDir)\**\*.XUnitWrapper.dll" />
   </ItemGroup>
 
-  <Target Name="CopyRunnerScript" BeforeTargets="SubmitTestsToHelix">
+  <Target Name="CopyRunnerScriptToCoreRootDirectory" BeforeTargets="SubmitTestsToHelix">
     <Copy SourceFiles="$(MSBuildThisFileDirectory)\runtest_helix.py" DestinationFolder="$(CoreRootDirectory)" />
   </Target>
 
   <Target Name="SubmitTestsToHelix">
     <ItemGroup>
-      <Scenarios Include="$(Scenarios.Split(','))" />
+      <Scenarios Include="$(_Scenarios.Split(','))" />
       <ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <Properties>Scenario=%(Scenarios.Identity)</Properties>
+        <Properties>Scenario=%(_Scenarios.Identity)</Properties>
       </ProjectsToBuild>
     </ItemGroup>
-
     <PropertyGroup>
       <BuildInParallel>false</BuildInParallel>
       <BuildInParallel Condition=" '@(ProjectsToBuild->Count())' > '1' ">true</BuildInParallel>
     </PropertyGroup>
-
     <MSBuild Projects="@(ProjectsToBuild)" Targets="Test" BuildInParallel="$(BuildInParallel)" StopOnFirstFailure="false" UnloadProjectsOnCompletion="true" />
   </Target>
 
@@ -64,11 +76,11 @@
       <TestRunNamePrefix Condition=" '$(Scenario)' != '' ">$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
     </PropertyGroup>
     <ItemGroup>
-      <HelixWorkItem Include="@(XUnitWrapperDlls->'%(FileName)'->Replace('.XUnitWrapper', ''))" >
+      <HelixWorkItem Include="@(XUnitWrapperDlls->'%(FileName)'->Replace('.XUnitWrapper', ''))">
         <PayloadDirectory>%(RootDir)%(Directory)</PayloadDirectory>
         <Command Condition=" '$(Scenario)' == '' ">$(HelixPythonPath) $(RunnerScript) -wrapper %(FileName)%(Extension)</Command>
         <Command Condition=" '$(Scenario)' != '' ">$(HelixPythonPath) $(RunnerScript) -wrapper %(FileName)%(Extension) -scenario $(Scenario)</Command>
-        <Timeout>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</Timeout>
+        <Timeout>$([System.TimeSpan]::FromMinutes($(TimeoutInMinutes)))</Timeout>
       </HelixWorkItem>
     </ItemGroup>
   </Target>
