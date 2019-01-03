@@ -2377,7 +2377,6 @@ namespace System.Globalization
                 // This is determined in DateTimeFormatInfoScanner.  Use this flag to determine if we should treat date separator as ignorable symbol.
                 bool useDateSepAsIgnorableSymbol = false;
 
-                string monthPostfix = null;
                 if (dateWords != null)
                 {
                     // There are DateWords.  It could be a real date word (such as "de"), or a monthPostfix.
@@ -2389,7 +2388,7 @@ namespace System.Globalization
                             // This is a month postfix
                             case DateTimeFormatInfoScanner.MonthPostfixChar:
                                 // Get the real month postfix.
-                                monthPostfix = dateWords[i].Substring(1);
+                                ReadOnlySpan<char> monthPostfix = dateWords[i].AsSpan(1);
                                 // Add the month name + postfix into the token.
                                 AddMonthNames(temp, monthPostfix);
                                 break;
@@ -2421,7 +2420,7 @@ namespace System.Globalization
                     InsertHash(temp, this.DateSeparator, TokenType.SEP_Date, 0);
                 }
                 // Add the regular month names.
-                AddMonthNames(temp, null);
+                AddMonthNames(temp);
 
                 // Add the abbreviated month names.
                 for (int i = 1; i <= 13; i++)
@@ -2548,22 +2547,21 @@ namespace System.Globalization
             return (temp);
         }
 
-        private void AddMonthNames(TokenHashValue[] temp, string monthPostfix)
+        private void AddMonthNames(TokenHashValue[] temp, ReadOnlySpan<char> monthPostfix = default)
         {
             for (int i = 1; i <= 13; i++)
             {
-                string str;
                 //str = internalGetMonthName(i, MonthNameStyles.Regular, false);
                 // We have to call public methods here to work with inherited DTFI.
                 // Insert the month name first, so that they are at the front of abbreviated
                 // month names.
-                str = GetMonthName(i);
+                string str = GetMonthName(i);
                 if (str.Length > 0)
                 {
-                    if (monthPostfix != null)
+                    if (!monthPostfix.IsEmpty)
                     {
                         // Insert the month name with the postfix first, so it can be matched first.
-                        InsertHash(temp, str + monthPostfix, TokenType.MonthToken, i);
+                        InsertHash(temp, string.Concat(str, monthPostfix), TokenType.MonthToken, i);
                     }
                     else
                     {

@@ -956,9 +956,11 @@ namespace System.Globalization
                             if (this.SENGLISHLANGUAGE[this.SENGLISHLANGUAGE.Length - 1] == ')')
                             {
                                 // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
-                                _sEnglishDisplayName =
-                                    this.SENGLISHLANGUAGE.Substring(0, _sEnglishLanguage.Length - 1) +
-                                    ", " + this.SENGCOUNTRY + ")";
+                                _sEnglishDisplayName = string.Concat(
+                                    this.SENGLISHLANGUAGE.AsSpan(0, _sEnglishLanguage.Length - 1),
+                                    ", ",
+                                    this.SENGCOUNTRY,
+                                    ")");
                             }
                             else
                             {
@@ -1645,7 +1647,7 @@ namespace System.Globalization
                             sep = "";
                         }
 
-                        time = time.Substring(0, j) + sep + time.Substring(endIndex);
+                        time = string.Concat(time.AsSpan(0, j), sep, time.AsSpan(endIndex));
                         break;
                     case 'm':
                     case 'H':
