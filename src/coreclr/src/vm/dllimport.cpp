@@ -468,16 +468,8 @@ public:
                 argIdx--;
             }
 
-            LocalDesc locDescThread(MscorlibBinder::GetClass(CLASS__THREAD));
-            DWORD dwThreadLocalNum = pcs->NewLocal(locDescThread);
-
-            // call Thread.get_CurrentThread()
-            pcs->EmitCALL(METHOD__THREAD__GET_CURRENT_THREAD, 0, 1);
-            pcs->EmitDUP();
-            pcs->EmitSTLOC(dwThreadLocalNum);
-
-            // call current_thread.get_CurrentCulture()
-            pcs->EmitCALL(METHOD__THREAD__GET_CULTURE, 1, 1);
+            // call CultureInfo.get_CurrentCulture()
+            pcs->EmitCALL(METHOD__CULTURE_INFO__GET_CURRENT_CULTURE, 0, 1);
 
             // save the current culture
             LocalDesc locDescCulture(MscorlibBinder::GetClass(CLASS__CULTURE_INFO));
@@ -486,23 +478,20 @@ public:
             pcs->EmitSTLOC(dwCultureLocalNum);
 
             // set a new one based on the LCID passed from unmanaged
-            pcs->EmitLDLOC(dwThreadLocalNum);
             pcs->EmitLDARG(argIdx);
 
             // call CultureInfo..ctor(lcid)
-            // call current_thread.set_CurrentCulture(culture)
+            // call CultureInfo.set_CurrentCulture(culture)
             pcs->EmitNEWOBJ(METHOD__CULTURE_INFO__INT_CTOR, 1);
-            pcs->EmitCALL(METHOD__THREAD__SET_CULTURE, 2, 0);
+            pcs->EmitCALL(METHOD__CULTURE_INFO__SET_CURRENT_CULTURE, 1, 0);
 
             // and restore the current one after the call
             m_slIL.SetCleanupNeeded();
             ILCodeStream *pcsCleanup = m_slIL.GetCleanupCodeStream();
 
-            // call current_thread.set_CurrentCulture(original_culture)
-            pcsCleanup->EmitLDLOC(dwThreadLocalNum);
+            // call CultureInfo.set_CurrentCulture(original_culture)
             pcsCleanup->EmitLDLOC(dwCultureLocalNum);
-            pcsCleanup->EmitCALL(METHOD__THREAD__SET_CULTURE, 1, 1);
-
+            pcsCleanup->EmitCALL(METHOD__CULTURE_INFO__SET_CURRENT_CULTURE, 1, 0);
         }
         else
         {
@@ -514,10 +503,8 @@ public:
             }
             else
             {
-                // call Thread.get_CurrentThread()
-                // call current_thread.get_CurrentCulture()
-                pcs->EmitCALL(METHOD__THREAD__GET_CURRENT_THREAD, 0, 1);
-                pcs->EmitCALL(METHOD__THREAD__GET_CULTURE, 1, 1);
+                // call CultureInfo.get_CurrentCulture()
+                pcs->EmitCALL(METHOD__CULTURE_INFO__GET_CURRENT_CULTURE, 0, 1);
 
                 //call CultureInfo.get_LCID(this)
                 pcs->EmitCALL(METHOD__CULTURE_INFO__GET_ID, 1, 1);

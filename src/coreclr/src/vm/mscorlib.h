@@ -46,6 +46,12 @@
     DEFINE_METHOD(classId, SET_ ## id, set_ ## stringName, IM_## gSign ## _RetVoid)
 #endif
 
+#ifndef DEFINE_STATIC_SET_PROPERTY
+#define DEFINE_STATIC_SET_PROPERTY(classId, id, stringName, gSign) \
+    DEFINE_STATIC_PROPERTY(classId, id, stringName, gSign) \
+    DEFINE_METHOD(classId, SET_ ## id, set_ ## stringName, SM_## gSign ## _RetVoid)
+#endif
+
 //
 // DEFINE_CLASS_U and DEFINE_FIELD_U are debug-only checks to verify that the managed and unmanaged layouts are in sync
 //
@@ -261,9 +267,10 @@ DEFINE_PROPERTY(CULTURE_INFO,       NAME,                   Name,               
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
 DEFINE_PROPERTY(CULTURE_INFO,       ID,                     LCID,                       Int)
 #endif
-DEFINE_PROPERTY(CULTURE_INFO,       PARENT,                 Parent,                     CultureInfo)
 DEFINE_FIELD(CULTURE_INFO,          CULTURE,                s_currentThreadCulture)
 DEFINE_FIELD(CULTURE_INFO,          UI_CULTURE,             s_currentThreadUICulture)
+DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_CULTURE,      CurrentCulture,     CultureInfo)
+DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_UI_CULTURE,   CurrentUICulture,   CultureInfo)
 
 DEFINE_CLASS(CURRENCY,              System,                 Currency)
 DEFINE_METHOD(CURRENCY,             DECIMAL_CTOR,           .ctor,                      IM_Dec_RetVoid)
@@ -823,9 +830,6 @@ DEFINE_FIELD_U(m_ThreadStartArg,           ThreadBaseObject,   m_ThreadStartArg)
 DEFINE_FIELD_U(DONT_USE_InternalThread,    ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(m_Priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
-DEFINE_SET_PROPERTY(THREAD,         CULTURE,                CurrentCulture,             CultureInfo)
-DEFINE_SET_PROPERTY(THREAD,         UI_CULTURE,             CurrentUICulture,           CultureInfo)
-DEFINE_STATIC_PROPERTY(THREAD,      CURRENT_THREAD,         CurrentThread,              Thread)
 DEFINE_METHOD(THREAD,               INTERNAL_GET_CURRENT_THREAD,             InternalGetCurrentThread,                    SM_RetIntPtr)
 
 DEFINE_CLASS(PARAMETERIZEDTHREADSTART,     Threading,                 ParameterizedThreadStart)

@@ -84,7 +84,6 @@ public:
     static FCDECL3(INT32,   SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState, CLR_BOOL fireMDAOnMismatch);
     static FCDECL1(void,    StartupSetApartmentState, ThreadBaseObject* pThis);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    static void QCALLTYPE nativeInitCultureAccessors();
 
     static
     void QCALLTYPE InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);

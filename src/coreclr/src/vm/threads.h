@@ -3361,24 +3361,11 @@ public:
         return m_TraceCallCount;
     }
 
-    // Functions to get culture information for thread.
-    int GetParentCultureName(__out_ecount(length) LPWSTR szBuffer, int length, BOOL bUICulture);
-    int GetCultureName(__out_ecount(length) LPWSTR szBuffer, int length, BOOL bUICulture);
-    LCID GetCultureId(BOOL bUICulture);
-    OBJECTREF GetCulture(BOOL bUICulture);
-
-    // Release user cultures that can't survive appdomain unload
-
-    // Functions to set the culture on the thread.
-    void SetCultureId(LCID lcid, BOOL bUICulture);
-    void SetCulture(OBJECTREF *CultureObj, BOOL bUICulture);
+    // Functions to get/set culture information for current thread.
+    static OBJECTREF GetCulture(BOOL bUICulture);
+    static void SetCulture(OBJECTREF *CultureObj, BOOL bUICulture);
 
 private:
-
-    // Used by the culture accesors.
-    ARG_SLOT CallPropertyGet(BinderMethodID id, OBJECTREF pObject);
-    ARG_SLOT CallPropertySet(BinderMethodID id, OBJECTREF pObject, OBJECTREF pValue);
-
 #if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
     // Used in suspension code to redirect a thread at a HandledJITCase
     BOOL RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt);
@@ -4209,20 +4196,16 @@ public:
         return m_pLoadingFile;
     }
 
- private:
-
+private:
     static void LoadingFileRelease(Thread *pThread)
     {
         WRAPPER_NO_CONTRACT;
         pThread->ClearLoadingFile();
     }
 
- public:
-
+public:
      typedef Holder<Thread *, DoNothing, Thread::LoadingFileRelease> LoadingFileHolder;
-    void InitCultureAccessors();
-    FieldDesc *managedThreadCurrentCulture;
-    FieldDesc *managedThreadCurrentUICulture;
+
 private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
     // it is performing a <clinit>)
@@ -5124,9 +5107,6 @@ public:
 };
 
 // End of class Thread
-
-
-LCID GetThreadCultureIdNoThrow(Thread *pThread, BOOL bUICulture);
 
 typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 typedef Thread::ThreadPreventAsyncHolder ThreadPreventAsyncHolder;
@@ -6667,62 +6647,6 @@ inline void NO_FORBIDGC_LOADER_USE_ThrowSO()
 // exception was triggered from code that was executing in cooperative GC mode, we now have GC holes and
 // general corruption.
 BOOL HasIllegalReentrancy();
-
-
-// This class can be used to "schedule" a culture setting,
-//  kicking in when leaving scope or during exception unwinding.
-//  Note: during destruction, this can throw.  You have been warned.
-class ReturnCultureHolder
-{
-public:
-    ReturnCultureHolder(Thread* pThread, OBJECTREF* culture, BOOL bUICulture)
-    {
-        CONTRACTL
-        {
-            WRAPPER(NOTHROW);
-            WRAPPER(GC_NOTRIGGER);
-            MODE_COOPERATIVE;
-            PRECONDITION(CheckPointer(pThread));
-        }
-        CONTRACTL_END;
-
-        m_pThread = pThread;
-        m_culture = culture;
-        m_bUICulture = bUICulture;
-        m_acquired = TRUE;
-    }
-
-    FORCEINLINE void SuppressRelease()
-    {
-        m_acquired = FALSE;
-    }
-
-    ~ReturnCultureHolder()
-    {
-        CONTRACTL
-        {
-            WRAPPER(THROWS);
-            WRAPPER(GC_TRIGGERS);
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        if (m_acquired)
-            m_pThread->SetCulture(m_culture, m_bUICulture);
-    }
-
-private:
-    ReturnCultureHolder()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    Thread* m_pThread;
-    OBJECTREF* m_culture;
-    BOOL m_bUICulture;
-    BOOL m_acquired;
-};
-
 
 //
 // _pThread:        (Thread*)       current Thread
