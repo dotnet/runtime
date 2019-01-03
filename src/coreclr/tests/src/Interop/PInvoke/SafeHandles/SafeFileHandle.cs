@@ -21,7 +21,7 @@ namespace SafeHandlesTests{
         }
 
         //each SafeHandle subclass will expose a static method for instance creation
-        [DllImport("api-ms-win-core-file-l1-2-1", EntryPoint = "CreateFileW", SetLastError = true)]
+        [DllImport("Kernel32", EntryPoint = "CreateFileW", SetLastError = true)]
         public static extern ChildSFH_NoCloseHandle CreateChildSafeFileHandle(String lpFileName,
             DesiredAccess dwDesiredAccess, ShareMode dwShareMode,
             IntPtr lpSecurityAttributes, CreationDisposition dwCreationDisposition,
@@ -49,7 +49,7 @@ namespace SafeHandlesTests{
     public class ChildSafeFileHandle : SafeFileHandle
     {
         //each SafeHandle subclass will expose a static method for instance creation
-        [DllImport("api-ms-win-core-file-l1-2-1", EntryPoint = "CreateFileW", SetLastError = true)]
+        [DllImport("Kernel32", EntryPoint = "CreateFileW", SetLastError = true)]
         public static extern ChildSafeFileHandle CreateChildSafeFileHandle(String lpFileName,
             DesiredAccess dwDesiredAccess, ShareMode dwShareMode,
             IntPtr lpSecurityAttributes, CreationDisposition dwCreationDisposition,
@@ -77,7 +77,7 @@ namespace SafeHandlesTests{
         }
 
         //each SafeHandle subclass will expose a static method for instance creation
-        [DllImport("api-ms-win-core-file-l1-2-1", EntryPoint = "CreateFileW", SetLastError = true)]
+        [DllImport("Kernel32", EntryPoint = "CreateFileW", SetLastError = true)]
         public static extern SFH_NoCloseHandle CreateFile(String lpFileName,
                                                 DesiredAccess dwDesiredAccess, ShareMode dwShareMode,
                                                 IntPtr lpSecurityAttributes, CreationDisposition dwCreationDisposition,
@@ -126,12 +126,12 @@ namespace SafeHandlesTests{
         }
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [DllImport("api-ms-win-core-handle-l1-1-0", SetLastError = true)]
+        [DllImport("Kernel32", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr handle);
 
 
         //each SafeHandle subclass will expose a static method for instance creation
-        [DllImport("api-ms-win-core-file-l1-2-1", EntryPoint = "CreateFileW", SetLastError = true)]
+        [DllImport("Kernel32", EntryPoint = "CreateFileW", SetLastError = true)]
         public static extern SafeFileHandle CreateFile(String lpFileName,
                                                 DesiredAccess dwDesiredAccess, ShareMode dwShareMode,
                                                 IntPtr lpSecurityAttributes, CreationDisposition dwCreationDisposition,
