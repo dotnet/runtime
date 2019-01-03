@@ -57,10 +57,6 @@ enum HWIntrinsicFlag : unsigned int
     // - the immediate value is valid on the full range of imm8 (0-255)
     HW_Flag_FullRangeIMM = 0x2,
 
-    // Generic
-    // - must throw NotSupportException if the type argument is not numeric type
-    HW_Flag_OneTypeGeneric = 0x4,
-
     // NoCodeGen
     // - should be transformed in the compiler front-end, cannot reach CodeGen
     HW_Flag_NoCodeGen = 0x8,
@@ -209,12 +205,6 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_FullRangeIMM) != 0;
-    }
-
-    static bool IsOneTypeGeneric(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_OneTypeGeneric) != 0;
     }
 
     static bool RequiresCodegen(NamedIntrinsic id)
