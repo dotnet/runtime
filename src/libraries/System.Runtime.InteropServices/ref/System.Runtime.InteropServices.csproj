@@ -9,7 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.InteropServices.cs" />
-    <Compile Condition="'$(TargetsNetCoreApp)' == 'true'" Include="System.Runtime.InteropServices.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Reflection\ref\System.Reflection.csproj" />
