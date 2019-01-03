@@ -15,8 +15,7 @@ namespace System.Globalization
             string localeName;
             if (CultureData.GetDefaultLocaleName(out localeName))
             {
-                cultureInfo = GetCultureByName(localeName, true);
-                cultureInfo._isReadOnly = true;
+                cultureInfo = GetCultureByName(localeName);
             }
             else
             {

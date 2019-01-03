@@ -40,11 +40,7 @@ namespace System.Globalization
                 }
             }
 
-            CultureInfo temp = GetCultureByName(strDefault, true);
-
-            temp._isReadOnly = true;
-
-            return temp;
+            return GetCultureByName(strDefault);
         }
 
         private static CultureInfo GetUserDefaultUICulture()
@@ -68,9 +64,7 @@ namespace System.Globalization
                         index++;
                     }
 
-                    CultureInfo temp = GetCultureByName(new string(languages, 0, index), true);
-                    temp._isReadOnly = true;
-                    return temp;
+                    return GetCultureByName(new string(languages, 0, index));
                 }
             }
 #endif
