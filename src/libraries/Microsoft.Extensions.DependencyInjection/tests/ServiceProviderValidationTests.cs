@@ -165,6 +165,28 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 aggregateException.InnerExceptions[0].Message);
         }
 
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_ThrowsWhenImplementationIsNotAssignableToService()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient(typeof(IBaz), typeof(Boo));
+            serviceCollection.AddSingleton(typeof(IFoo), new object());
+
+            // Act + Assert
+            var aggregateException = Assert.Throws<AggregateException>(() => serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true }));
+            Assert.StartsWith("Some services are not able to be constructed", aggregateException.Message);
+            Assert.Equal(2, aggregateException.InnerExceptions.Count);
+
+            Assert.Equal("Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IBaz Lifetime: Transient ImplementationType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Boo': " +
+                         "Implementation type 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Boo' can't be converted to service type 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IBaz'",
+                         aggregateException.InnerExceptions[0].Message);
+
+            Assert.Equal("Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo Lifetime: Singleton ImplementationInstance: System.Object': " +
+                         "Constant value of type 'System.Object' can't be converted to service type 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo'",
+                         aggregateException.InnerExceptions[1].Message);
+        }
+
         private interface IFoo
         {
         }

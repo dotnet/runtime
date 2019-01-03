@@ -17,6 +17,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ConstructorCallSite(ResultCache cache, Type serviceType, ConstructorInfo constructorInfo, ServiceCallSite[] parameterCallSites) : base(cache)
         {
+            if (!serviceType.IsAssignableFrom(constructorInfo.DeclaringType))
+            {
+                throw new ArgumentException(Resources.FormatImplementationTypeCantBeConvertedToServiceType(constructorInfo.DeclaringType, serviceType));
+            }
+
             ServiceType = serviceType;
             ConstructorInfo = constructorInfo;
             ParameterCallSites = parameterCallSites;

@@ -357,11 +357,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var parameterCallSites = new ServiceCallSite[parameters.Length];
             for (var index = 0; index < parameters.Length; index++)
             {
-                var callSite = GetCallSite(parameters[index].ParameterType, callSiteChain);
+                var parameterType = parameters[index].ParameterType;
+                var callSite = GetCallSite(parameterType, callSiteChain);
 
                 if (callSite == null && ParameterDefaultValue.TryGetDefaultValue(parameters[index], out var defaultValue))
                 {
-                    callSite = new ConstantCallSite(serviceType, defaultValue);
+                    callSite = new ConstantCallSite(parameterType, defaultValue);
                 }
 
                 if (callSite == null)
@@ -369,7 +370,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     if (throwIfCallSiteNotFound)
                     {
                         throw new InvalidOperationException(Resources.FormatCannotResolveService(
-                            parameters[index].ParameterType,
+                            parameterType,
                             implementationType));
                     }
 
