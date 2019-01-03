@@ -3,13 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptMsgClose(IntPtr hCryptMsg);
+        [Flags]
+        internal enum MsgEncodingType : int
+        {
+            PKCS_7_ASN_ENCODING = 0x10000,
+            X509_ASN_ENCODING = 0x00001,
+
+            All = PKCS_7_ASN_ENCODING | X509_ASN_ENCODING,
+        }
     }
 }
