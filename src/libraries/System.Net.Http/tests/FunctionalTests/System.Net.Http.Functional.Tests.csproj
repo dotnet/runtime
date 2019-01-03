@@ -75,6 +75,7 @@
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="HttpClientHandlerTest.Authentication.cs" />
+    <Compile Include="HttpClientHandlerTest.AutoRedirect.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
     <Compile Include="HttpClientHandlerTest.ClientCertificates.cs" />
