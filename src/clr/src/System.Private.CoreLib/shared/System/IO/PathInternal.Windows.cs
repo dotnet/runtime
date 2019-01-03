@@ -375,7 +375,8 @@ namespace System.IO
             if (normalized)
                 return path;
 
-            StringBuilder builder = StringBuilderCache.Acquire(path.Length);
+            Span<char> initialBuffer = stackalloc char[MaxShortPath];
+            ValueStringBuilder builder = new ValueStringBuilder(initialBuffer);
 
             int start = 0;
             if (IsDirectorySeparator(path[start]))
@@ -404,7 +405,7 @@ namespace System.IO
                 builder.Append(current);
             }
 
-            return StringBuilderCache.GetStringAndRelease(builder);
+            return builder.ToString();
         }
 
         /// <summary>
