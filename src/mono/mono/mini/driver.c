@@ -2420,7 +2420,7 @@ mono_main (int argc, char* argv[])
 	}
 
 #ifdef DISABLE_JIT
-	if (!mono_aot_only) {
+	if (!mono_aot_only && !mono_use_interpreter) {
 		fprintf (stderr, "This runtime has been configured with --enable-minimal=jit, so the --full-aot command line option is required.\n");
 		exit (1);
 	}
