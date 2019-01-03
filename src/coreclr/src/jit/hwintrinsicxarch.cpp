@@ -815,14 +815,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if (HWIntrinsicInfo::IsOneTypeGeneric(intrinsic) && !HWIntrinsicInfo::HasSpecialImport(intrinsic))
-    {
-        if (!varTypeIsArithmetic(baseType))
-        {
-            return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
-        }
-    }
-
     if (HWIntrinsicInfo::IsFloatingPointUsed(intrinsic))
     {
         // Set `compFloatingPointUsed` to cover the scenario where an intrinsic is being on SIMD fields, but
@@ -1148,14 +1140,7 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
             if (sig->numArgs == 2)
             {
                 baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-                if (!varTypeIsArithmetic(baseType))
-                {
-                    retNode = impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
-                }
-                else
-                {
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, lastOp, intrinsic, baseType, 32);
-                }
+                retNode  = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, lastOp, intrinsic, baseType, 32);
             }
             else
             {
