@@ -398,7 +398,7 @@ UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
     }
     else
     {
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) || (defined(_TARGET_UNIX_) && (defined(_TARGET_ARMARCH_) || defined(_TARGET_X86_)))
         assert(func->startLoc != nullptr);
         offset = func->startLoc->GetFuncletPrologOffset(genEmitter);
 #else
