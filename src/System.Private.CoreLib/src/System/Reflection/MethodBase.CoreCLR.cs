@@ -72,7 +72,7 @@ namespace System.Reflection
                 // Why don't we just use "&"?
                 if (t.IsByRef)
                 {
-                    sbParamList.Append(typeName.TrimEnd('&'));
+                    sbParamList.Append(typeName.AsSpan().TrimEnd('&'));
                     sbParamList.Append(" ByRef");
                 }
                 else
