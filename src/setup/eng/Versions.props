@@ -5,4 +5,20 @@
     <PreReleaseVersionLabel>prerelease</PreReleaseVersionLabel>
     <MicrosoftDotNetMaestroTasksVersion>1.0.0-beta.18619.4</MicrosoftDotNetMaestroTasksVersion>
   </PropertyGroup>
+  <!--Package versions-->
+  <PropertyGroup>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.19052.1</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19052.1</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCoreTargetsPackageVersion>3.0.0-preview.19052.1</MicrosoftNETCoreTargetsPackageVersion>
+    <NETStandardLibraryPackageVersion>2.1.0-prerelease.18626.1</NETStandardLibraryPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27220-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+  </PropertyGroup>
+  <!--Package names-->
+  <PropertyGroup>
+    <MicrosoftPrivateCoreFxNETCoreAppPackage>Microsoft.Private.CoreFx.NETCoreApp</MicrosoftPrivateCoreFxNETCoreAppPackage>
+    <MicrosoftNETCorePlatformsPackage>Microsoft.NETCore.Platforms</MicrosoftNETCorePlatformsPackage>
+    <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>
+    <NETStandardLibraryPackage>NETStandard.Library</NETStandardLibraryPackage>
+    <MicrosoftNETCoreRuntimeCoreCLRPackage>Microsoft.NETCore.Runtime.CoreCLR</MicrosoftNETCoreRuntimeCoreCLRPackage>
+  </PropertyGroup>
 </Project>

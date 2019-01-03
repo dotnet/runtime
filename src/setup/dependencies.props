@@ -9,18 +9,10 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>5b4f2a5859f580bc037342aa22a0eb9fd2ffc792</CoreFxCurrentRef>
-    <CoreClrCurrentRef>5b4f2a5859f580bc037342aa22a0eb9fd2ffc792</CoreClrCurrentRef>
-    <StandardCurrentRef>9beae4222a58a355e2107e99bdbcb8902c232c18</StandardCurrentRef>
-    <BuildToolsCurrentRef>8cfc1012ee83209da9c0df19941f74aad3e39e12</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>5f8acf1c140f742304e6d85cde307bf31f094104</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19052.1</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.19052.1</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27303-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <NETStandardLibraryPackageVersion>2.0.3</NETStandardLibraryPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
     <MicrosoftTargetingPackPrivateWinRTPackageVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTPackageVersion>
   </PropertyGroup>
@@ -55,18 +47,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RemoteDependencyBuildInfo Include="CoreFx">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/$(DependencyBranch)</BuildInfoPath>
-      <CurrentRef>$(CoreFxCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="CoreClr">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
-      <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="Standard">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)standard/release/2.0.0</BuildInfoPath>
-      <CurrentRef>$(StandardCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="BuildTools">
       <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
@@ -76,25 +56,10 @@
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>
 
-    <XmlUpdateStep Include="CoreFx">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>MicrosoftPrivateCoreFxNETCoreAppPackageVersion</ElementName>
-      <PackageId>Microsoft.Private.CoreFx.NETCoreApp</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="CoreFx">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>MicrosoftNETCorePlatformsPackageVersion</ElementName>
-      <PackageId>Microsoft.NETCore.Platforms</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="CoreClr">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>MicrosoftNETCoreRuntimeCoreCLRPackageVersion</ElementName>
-      <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="Standard">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>NETStandardLibraryPackageVersion</ElementName>
-      <PackageId>NETStandard.Library</PackageId>
+    <XmlUpdateStep Include="BuildTools">
+       <Path>$(MSBuildThisFileFullPath)</Path>
+       <ElementName>FeedTasksPackageVersion</ElementName>
+       <PackageId>$(FeedTasksPackage)</PackageId>
     </XmlUpdateStep>
     <UpdateStep Include="BuildTools">
       <UpdaterType>File</UpdaterType>
