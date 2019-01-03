@@ -4185,8 +4185,12 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
         if (retType == TYP_STRUCT)
         {
-            unsigned retSimdSize = 0;
-            getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &retSimdSize);
+            unsigned  retSimdSize = 0;
+            var_types retBasetype = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &retSimdSize);
+            if (!varTypeIsArithmetic(retBasetype))
+            {
+                return nullptr;
+            }
             retType = getSIMDTypeForSize(retSimdSize);
         }
     }
@@ -4615,7 +4619,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             methodName += 2;
 
-                            if (strcmp(methodName, "`1") == 0)
+                            if (methodName[0] == '\0')
                             {
                                 result = NI_Base_Vector128_As;
                             }
@@ -4708,7 +4712,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             methodName += 2;
 
-                            if (strcmp(methodName, "`1") == 0)
+                            if (methodName[0] == '\0')
                             {
                                 result = NI_Base_Vector256_As;
                             }
