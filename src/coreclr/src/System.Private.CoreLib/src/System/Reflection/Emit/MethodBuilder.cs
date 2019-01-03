@@ -497,9 +497,9 @@ namespace System.Reflection.Emit
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder(1000);
-            sb.Append("Name: " + m_strName + " " + Environment.NewLine);
-            sb.Append("Attributes: " + (int)m_iAttributes + Environment.NewLine);
-            sb.Append("Method Signature: " + GetMethodSignature() + Environment.NewLine);
+            sb.Append("Name: ").Append(m_strName).AppendLine(" ");
+            sb.Append("Attributes: ").Append((int)m_iAttributes).AppendLine();
+            sb.Append("Method Signature: ").Append(GetMethodSignature()).AppendLine();
             sb.Append(Environment.NewLine);
             return sb.ToString();
         }
