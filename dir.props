@@ -50,6 +50,7 @@
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
   <Import Project="dependencies.props" />
+  <Import Project="$(MSBuildThisFileDirectory)eng\Versions.props" />
 
   <PropertyGroup Condition="'$(DotNetBuildOffline)' != 'true'">
     <!-- list of nuget package sources passed to NuGet -->
