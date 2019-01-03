@@ -115,6 +115,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
+    public sealed class PlatformHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
+    {
+        public PlatformHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
     public sealed class PlatformHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public PlatformHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
