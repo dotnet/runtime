@@ -26,7 +26,6 @@
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\targeting_pack_ref\targeting_pack_ref.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\test_dependencies\test_dependencies.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\test_runtime\test_runtime.csproj" />
-    <RestoreProjects Include="$(MSBuildThisFileDirectory)src\Common\vc_runtime\vc_runtime.csproj" Condition="'$(__BuildArch)' == 'arm' or '$(__BuildArch)' == 'arm64'"/>
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+roslyn\benchmark+roslyn.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark+serialize\benchmark+serialize.csproj" />
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\JIT\config\benchmark\benchmark.csproj" />

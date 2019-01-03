@@ -32,7 +32,6 @@
 
   <ItemGroup>
     <CrossGenFiles Include="..\packages\runtime.$(TargetRid).Microsoft.NETCore.Runtime.CoreCLR\$(DesiredPackageVersionArg)\tools\crossgen*"/>
-    <VCRuntimeFiles Include="..\packages\vc-runtime\$(VCRuntimeVersion)\content\VC\Redist\MSVC\14.14.26405\onecore\$(BuildArch)\Microsoft.VC141.CRT\*"/>
   </ItemGroup>
 
   <PropertyGroup>
@@ -40,7 +39,7 @@
     <RefDestination>$(ProductDestination)\ref</RefDestination>
   </PropertyGroup>
 
-  <Target Name="CopyDependecyToCoreRoot"
+  <Target Name="CopyDependencyToCoreRoot"
     Inputs="@(CoreRootProjectLockJsonFiles)"
     Outputs="$(CORE_ROOT)\*.*">
 
@@ -149,24 +148,6 @@
     <Copy
       SourceFiles="@(CrossGenFiles)"
       DestinationFolder="$(ProductDestination)"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-
-  </Target>
-
-  <Target Name="CopyVCRuntimeToCoreRoot"
-    AfterTargets="CopyDependecyToCoreRoot"
-    Outputs="$(CORE_ROOT)\*.*"
-    Condition="'$(BuildArch)' == 'arm' or '$(BuildArch)' == 'arm64'">
-
-    <Copy
-      SourceFiles="@(VCRuntimeFiles)"
-      DestinationFolder="$(CORE_ROOT)"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
       Retries="$(CopyRetryCount)"
