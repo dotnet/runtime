@@ -74,7 +74,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             internal static byte[] DecryptCekCore(
                 X509Certificate2 cert,
                 RSA privateKey,
-                ReadOnlySpan<byte> encrypedKey,
+                ReadOnlySpan<byte> encryptedKey,
                 string keyEncryptionAlgorithm,
                 out Exception exception)
             {
@@ -98,13 +98,13 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 if (privateKey != null)
                 {
-                    return DecryptKey(privateKey, encryptionPadding, encrypedKey, out exception);
+                    return DecryptKey(privateKey, encryptionPadding, encryptedKey, out exception);
                 }
                 else
                 {
                     using (RSA rsa = cert.GetRSAPrivateKey())
                     {
-                        return DecryptKey(rsa, encryptionPadding, encrypedKey, out exception);
+                        return DecryptKey(rsa, encryptionPadding, encryptedKey, out exception);
                     }
                 }
             }
