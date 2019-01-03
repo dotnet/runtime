@@ -175,19 +175,18 @@
 
   <Target Name="GenerateReferenceSource">
     <PropertyGroup>
-      <_GenApiExePath>$(ToolsDir)GenApi.exe</_GenApiExePath>
       <_RefSourceFileOutputPath>$(MSBuildProjectDirectory)/../ref/$(AssemblyName).cs</_RefSourceFileOutputPath>
       <_ExcludeAPIList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAPIList>
       <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
     </PropertyGroup>
 
     <PropertyGroup>
-      <_GenAPICmd>$(DotnetToolCommand) $(_GenApiExePath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -assembly:@(IntermediateAssembly)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -libPath:$(RefPath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -out:$(_RefSourceFileOutputPath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -excludeAttributesList:$(_ExcludeAPIList)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -headerFile:$(_LicenseHeaderTxtPath)</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICommand)</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) "@(IntermediateAssembly)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --lib-path "$(RefPath)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --out "$(_RefSourceFileOutputPath)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAPIList)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --header-file "$(_LicenseHeaderTxtPath)"</_GenAPICmd>
     </PropertyGroup>
 
     <Exec Command="$(_GenAPICmd)" />
