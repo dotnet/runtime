@@ -47,30 +47,38 @@ namespace System.IO
         // is null, any existing extension is removed from path.
         public static string ChangeExtension(string path, string extension)
         {
-            if (path != null)
+            if (path == null)
+                return null;
+
+            int subLength = path.Length;
+            if (subLength == 0)
+                return string.Empty;
+
+            for (int i = path.Length - 1; i >= 0; i--)
             {
-                string s = path;
-                for (int i = path.Length - 1; i >= 0; i--)
+                char ch = path[i];
+
+                if (ch == '.')
                 {
-                    char ch = path[i];
-                    if (ch == '.')
-                    {
-                        s = path.Substring(0, i);
-                        break;
-                    }
-                    if (PathInternal.IsDirectorySeparator(ch)) break;
+                    subLength = i;
+                    break;
                 }
 
-                if (extension != null && path.Length != 0)
+                if (PathInternal.IsDirectorySeparator(ch))
                 {
-                    s = (extension.Length == 0 || extension[0] != '.') ?
-                        s + "." + extension :
-                        s + extension;
+                    break;
                 }
-
-                return s;
             }
-            return null;
+
+            if (extension == null)
+            {
+                return path.Substring(0, subLength);
+            }
+
+            ReadOnlySpan<char> subpath = path.AsSpan(0, subLength);
+            return extension.StartsWith('.') ?
+                string.Concat(subpath, extension) :
+                string.Concat(subpath, ".", extension);
         }
 
         /// <summary>
