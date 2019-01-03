@@ -70,9 +70,6 @@
   </Target>
 
   <Target Name="RunApiCompat" DependsOnTargets="BuildDependenciesProject">
-    <PropertyGroup>
-      <ApiCompatCmd>$(ToolHostCmd) "$(ToolsDir)ApiCompat.exe"</ApiCompatCmd>
-    </PropertyGroup>
 
     <!-- Exclude Roslyn assemblies as they don't live in our packages any longer -->
     <ItemGroup>
@@ -89,37 +86,37 @@
     <MakeDir Directories="$(IntermediateOutputPath)" />
 
     <!-- Microsoft.NETCore.App Ref vs. runtime packages -->
-    <Exec Command="$(ApiCompatCmd) &quot;$(SharedFrameworkValidationRefPath)&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRuntimePath)&quot;"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(SharedFrameworkValidationRefPath)&quot; $(ApiCompatArgs) --impl-dirs &quot;$(SharedFrameworkValidationRuntimePath)&quot;"
           CustomErrorRegularExpression="Total Issues: [^0]"
           IgnoreStandardErrorWarningFormat="true"
           StandardOutputImportance="Low" />
     
     <!-- Netstandard.Library vs. Microsoft.NETCore.App Ref -->
-    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)/netstandard.dll&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRefPath)&quot;"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandardRefPath)/netstandard.dll&quot; $(ApiCompatArgs) --impl-dirs &quot;$(SharedFrameworkValidationRefPath)&quot;"
           CustomErrorRegularExpression="Total Issues: [^0]"
           IgnoreStandardErrorWarningFormat="true"
           StandardOutputImportance="Low" />
 
     <!-- Last shipped Microsoft.NETCore.App Ref vs. current Microsoft.NETCore.App Ref -->
-    <Exec Command="$(ApiCompatCmd) &quot;$(RefRootPath)SharedFrameworkValidation.LKG&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRefPath)&quot;"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(RefRootPath)SharedFrameworkValidation.LKG&quot; $(ApiCompatArgs) --impl-dirs &quot;$(SharedFrameworkValidationRefPath)&quot;"
           CustomErrorRegularExpression="Total Issues: [^0]"
           IgnoreStandardErrorWarningFormat="true"
           StandardOutputImportance="Low" />
 
     <!-- Last shipped runtime packages vs current runtime packages -->
-    <Exec Command="$(ApiCompatCmd) &quot;@(_SharedFrameworkLKGAssemblies)&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRuntimePath)&quot; -baseline:&quot;$(MSBuildThisFileDirectory)ApiCompatBaseline.LKGRuntime.CurrentRuntime.txt&quot;"
+    <Exec Command="$(_ApiCompatCommand) &quot;@(_SharedFrameworkLKGAssemblies)&quot; $(ApiCompatArgs) --impl-dirs &quot;$(SharedFrameworkValidationRuntimePath)&quot; --baseline &quot;$(MSBuildThisFileDirectory)ApiCompatBaseline.LKGRuntime.CurrentRuntime.txt&quot;"
           CustomErrorRegularExpression="Total Issues: [^0]"
           IgnoreStandardErrorWarningFormat="true"
           StandardOutputImportance="Low" />
 
     <!-- Microsoft.NETCore.App Ref vs. shared framework -->
-    <Exec Command="$(ApiCompatCmd) &quot;$(PackagesDir)microsoft.netcore.app/$(MicrosoftNETCoreAppPackageVersion)/ref/netcoreapp2.0&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkExtractPath)&quot;"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(PackagesDir)microsoft.netcore.app/$(MicrosoftNETCoreAppPackageVersion)/ref/netcoreapp2.0&quot; $(ApiCompatArgs) --impl-dirs &quot;$(SharedFrameworkExtractPath)&quot;"
           CustomErrorRegularExpression="Total Issues: [^0]"
           IgnoreStandardErrorWarningFormat="true"
           StandardOutputImportance="Low" />
 
     <!-- Last shipped shared framework vs. current shared framework -->
-    <Exec Command="$(ApiCompatCmd) &quot;@(_LKGSharedFrameworkAssemblies)&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkExtractPath)&quot; -baseline:&quot;$(MSBuildThisFileDirectory)ApiCompatBaseline.LKGSharedFramework.CurrentSharedFramework.txt&quot;"
+    <Exec Command="$(_ApiCompatCommand) &quot;@(_LKGSharedFrameworkAssemblies)&quot; $(ApiCompatArgs) --impl-dirs &quot;$(SharedFrameworkExtractPath)&quot; --baseline &quot;$(MSBuildThisFileDirectory)ApiCompatBaseline.LKGSharedFramework.CurrentSharedFramework.txt&quot;"
           CustomErrorRegularExpression="Total Issues: [^0]"
           IgnoreStandardErrorWarningFormat="true"
           StandardOutputImportance="Low" />
