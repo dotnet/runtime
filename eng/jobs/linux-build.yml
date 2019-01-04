@@ -1,7 +1,8 @@
 parameters:
   additionalMSBuildArgs: ''
   additionalRunArgs: ''
-  crossBuild: false 
+  crossBuild: false
+  disableCrossgen: false
   displayName: null
   dockerImage: null
   osGroup: Linux
@@ -41,13 +42,14 @@ jobs:
       BuildArguments: -OfficialBuildId=$(OfficialBuildId)
         -ConfigurationGroup=$(_BuildConfig)
         -CrossBuild=${{ parameters.crossBuild }}
+        -DisableCrossgen=${{ parameters.disableCrossgen }}
         -PortableBuild=${{ parameters.portableBuild }}
         -strip-symbols
         -SkipTests=${{ parameters.skipTests }}
         -TargetArchitecture=${{ parameters.targetArchitecture }}
         -- /p:StabilizePackageVersion=$(IsStable)
         ${{ parameters.additionalMSBuildArgs }}
-      
+
       PublishArguments: /p:PublishType=$(_PublishType)
         /p:ConfigurationGroup=$(_BuildConfig)
         /p:OSGroup=${{ parameters.osGroup }}
