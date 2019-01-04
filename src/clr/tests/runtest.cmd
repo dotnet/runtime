@@ -7,18 +7,21 @@ set "__MsgPrefix=RUNTEST: "
 
 set __ThisScriptDir="%~dp0"
 
-if /I not "%PROCESSOR_ARCHITECTURE%"=="arm64" (
-    if /I not "%PROCESSOR_ARCHITECTURE%"=="arm" (
-        call "%__ThisScriptDir%"\..\setup_vs_tools.cmd
-        if NOT '%ERRORLEVEL%' == '0' exit /b 1
+if /I "%PROCESSOR_ARCHITECTURE%"=="arm64" goto :skip_vs_setup
+if /I "%PROCESSOR_ARCHITECTURE%"=="arm" goto :skip_vs_setup
 
-        if defined VS150COMNTOOLS (
-            set __VSVersion=vs2017
-        ) else (
-            set __VSVersion=vs2015
-        )
-    )
-)   
+REM If we're running in the x86 WoW layer on Windows arm64, we still don't check for VS.
+if /I "%PROCESSOR_ARCHITEW6432%"=="arm64" goto :skip_vs_setup
+
+call "%__ThisScriptDir%"\..\setup_vs_tools.cmd
+if NOT '%ERRORLEVEL%' == '0' exit /b 1
+
+if defined VS150COMNTOOLS (
+    set __VSVersion=vs2017
+) else (
+    set __VSVersion=vs2015
+)
+:skip_vs_setup
 
 :: Set the default arguments
 set __BuildArch=x64
