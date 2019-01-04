@@ -175,7 +175,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				var defaultBaseType = src.IsEnum ? "System.Enum" : src.IsValueType ? "System.ValueType" : "System.Object";
 				expectedBaseName = GetCustomAttributeCtorValues<object> (src, nameof (KeptBaseTypeAttribute)).FirstOrDefault ()?.ToString () ?? defaultBaseType;
 			}
-			Assert.AreEqual (expectedBaseName, linked.BaseType?.FullName);
+			Assert.AreEqual (expectedBaseName, linked.BaseType?.FullName, $"Incorrect base type on : {linked.Name}");
 		}
 
 		void VerifyInterfaces (TypeDefinition src, TypeDefinition linked)
