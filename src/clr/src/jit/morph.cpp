@@ -5027,8 +5027,19 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
     return newArg;
 }
 
-// Make a copy of a struct variable if necessary, to pass to a callee.
-// returns: tree that computes address of the outgoing arg
+//------------------------------------------------------------------------
+// fgMakeOutgoingStructArgCopy: make a copy of a struct variable if necessary,
+//   to pass to a callee.
+//
+// Arguments:
+//    call - call being processed
+//    args - args for the call
+///   argIndex - arg being processed
+//    copyBlkClass - class handle for the struct
+//
+// Return value:
+//    tree that computes address of the outgoing arg
+//
 void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
                                            GenTree*             args,
                                            unsigned             argIndex,
@@ -5036,38 +5047,46 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
 {
     GenTree* argx = args->Current();
     noway_assert(argx->gtOper != GT_MKREFANY);
-    fgArgTabEntry*       argEntry = Compiler::gtArgEntryByNode(call, argx);
-    GenTreeLclVarCommon* lcl      = nullptr;
+    fgArgTabEntry* argEntry = Compiler::gtArgEntryByNode(call, argx);
 
-    // See if we need to insert a copy at all
-    // Case 1: don't need a copy if it is the last use of a local.  We can't determine that all of the time
-    // but if there is only one use and no loops, the use must be last.
-    if (argx->OperIsLocal())
+    // If we're optimizing, see if we can avoid making a copy.
+    //
+    // We don't need a copy if this is the last use of an implicit by-ref local.
+    //
+    // We can't determine that all of the time, but if there is only
+    // one use and the method has no loops, then this use must be the last.
+    if (!(opts.compDbgCode || opts.MinOpts()))
     {
-        lcl = argx->AsLclVarCommon();
-    }
-    else if ((argx->OperGet() == GT_OBJ) && argx->AsIndir()->Addr()->OperIsLocal())
-    {
-        lcl = argx->AsObj()->Addr()->AsLclVarCommon();
-    }
-    if (lcl != nullptr)
-    {
-        unsigned varNum = lcl->AsLclVarCommon()->GetLclNum();
-        if (lvaIsImplicitByRefLocal(varNum))
+        GenTreeLclVarCommon* lcl = nullptr;
+
+        if (argx->OperIsLocal())
         {
-            LclVarDsc* varDsc = &lvaTable[varNum];
-            // JIT_TailCall helper has an implicit assumption that all tail call arguments live
-            // on the caller's frame. If an argument lives on the caller caller's frame, it may get
-            // overwritten if that frame is reused for the tail call. Therefore, we should always copy
-            // struct parameters if they are passed as arguments to a tail call.
-            if (!call->IsTailCallViaHelper() && (varDsc->lvRefCnt(RCS_EARLY) == 1) && !fgMightHaveLoop())
-            {
-                varDsc->setLvRefCnt(0, RCS_EARLY);
-                args->gtOp.gtOp1 = lcl;
-                argEntry->node   = lcl;
+            lcl = argx->AsLclVarCommon();
+        }
+        else if ((argx->OperGet() == GT_OBJ) && argx->AsIndir()->Addr()->OperIsLocal())
+        {
+            lcl = argx->AsObj()->Addr()->AsLclVarCommon();
+        }
 
-                JITDUMP("did not have to make outgoing copy for V%2d", varNum);
-                return;
+        if (lcl != nullptr)
+        {
+            unsigned varNum = lcl->AsLclVarCommon()->GetLclNum();
+            if (lvaIsImplicitByRefLocal(varNum))
+            {
+                LclVarDsc* varDsc = &lvaTable[varNum];
+                // JIT_TailCall helper has an implicit assumption that all tail call arguments live
+                // on the caller's frame. If an argument lives on the caller caller's frame, it may get
+                // overwritten if that frame is reused for the tail call. Therefore, we should always copy
+                // struct parameters if they are passed as arguments to a tail call.
+                if (!call->IsTailCallViaHelper() && (varDsc->lvRefCnt(RCS_EARLY) == 1) && !fgMightHaveLoop())
+                {
+                    varDsc->setLvRefCnt(0, RCS_EARLY);
+                    args->gtOp.gtOp1 = lcl;
+                    argEntry->node   = lcl;
+
+                    JITDUMP("did not have to make outgoing copy for V%2d", varNum);
+                    return;
+                }
             }
         }
     }
