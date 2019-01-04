@@ -431,6 +431,8 @@ def create_and_use_test_env(_os, env, func):
     global gc_stress_c
     global gc_stress
 
+    ret_code = 0
+
     complus_vars = defaultdict(lambda: None)
 
     for key in env:
@@ -442,23 +444,35 @@ def create_and_use_test_env(_os, env, func):
         print("Found COMPlus variables in the current environment")
         print("")
 
-        file_header = None
-
-        if _os == "Windows_NT":
-            file_header = \
-"""@echo off
-REM Temporary test env for test run.
-
-"""
-        else:
-            file_header = \
-"""# Temporary test env for test run.
-
-"""
-
         contents = ""
 
-        with tempfile.NamedTemporaryFile(mode="w") as test_env:
+        # We can't use:
+        #
+        #   with tempfile.NamedTemporaryFile() as test_env:
+        #       ...
+        #       return func(...)
+        #
+        # because on Windows Python locks the file, and trying to use it give you:
+        #
+        #    The process cannot access the file because it is being used by another process.
+        #
+        # errors.
+
+        tempfile_suffix = ".bat" if _os == "Windows_NT" else ""
+        test_env = tempfile.NamedTemporaryFile(mode="w", suffix=tempfile_suffix, delete=False)
+        try:
+            file_header = None
+
+            if _os == "Windows_NT":
+                file_header = \
+"""@REM Temporary test env for test run.
+@echo on
+"""
+            else:
+                file_header = \
+"""# Temporary test env for test run.
+"""
+
             test_env.write(file_header)
             contents += file_header
             
@@ -470,18 +484,30 @@ REM Temporary test env for test run.
                 else:
                     command = "export"
 
-                print("Unset %s" % key)
                 if key.lower() == "complus_gcstress" and "c" in value.lower():
                     gc_stress_c = True
 
                 if key.lower() == "complus_gcstress":
                     gc_stress = True
 
+                print("Unset %s" % key)
                 os.environ[key] = ""
 
-                line = "%s %s=%s%s" % (command, key, value, os.linesep)
+                # \n below gets converted to \r\n on Windows because the file is opened in text (not binary) mode
+
+                line = "%s %s=%s\n" % (command, key, value)
                 test_env.write(line)
+
                 contents += line
+
+            if _os == "Windows_NT":
+                file_suffix = \
+"""@echo off
+"""
+                test_env.write(file_suffix)
+                contents += file_suffix
+
+            test_env.close()
 
             print("")
             print("TestEnv: %s" % test_env.name)
@@ -491,10 +517,15 @@ REM Temporary test env for test run.
             print(contents)
             print("")
 
-            return func(test_env.name)
+            ret_code = func(test_env.name)
+
+        finally:
+            os.remove(test_env.name)
 
     else:
-        return func(None)
+        ret_code = func(None)
+
+    return ret_code
 
 def get_environment(test_env=None):
     """ Get all the COMPlus_* Environment variables
@@ -502,6 +533,9 @@ def get_environment(test_env=None):
     Notes:
         All COMPlus variables need to be captured as a test_env script to avoid
         influencing the test runner.
+
+        On Windows, os.environ keys (the environment variable names) are all upper case,
+        and map lookup is case-insensitive on the key.
     """
     global gc_stress_c
     global gc_stress
@@ -939,44 +973,61 @@ def run_tests(host_os,
         host_os(str)                : os
         arch(str)                   : arch
         build_type(str)             : configuration
-        coreclr_repo_location(str)  : path to the root of the repo
         core_root(str)              : Core_Root path
+        coreclr_repo_location(str)  : path to the root of the repo
         test_location(str)          : Test bin, location
         test_native_bin_location    : Native test components, None and windows.
-        test_env(str)               : path to the test_env to be used
+        test_env(str)               : path to the script file to be used to set the test environment
+        is_long_gc(bool)            : 
+        is_gcsimulator(bool)        :
+        is_jitdasm(bool)            :
+        is_ilasm(bool)              :
+        is_illink(bool)             :
+        run_crossgen_tests(bool)    :
+        run_sequential(bool)        :
+        limited_core_dumps(bool)    :
     """
 
     # Setup the dotnetcli location
     dotnetcli_location = os.path.join(coreclr_repo_location, "Tools", "dotnetcli", "dotnet%s" % (".exe" if host_os == "Windows_NT" else ""))
 
     # Default timeout for unix is 15 minutes
+    print("Setting __TestTimeout=%s" % str(15*60*1000))
     os.environ["__TestTimeout"] = str(15*60*1000) # 900,000 ms
 
     # Setup the environment
     if is_long_gc:
         print("Running Long GC Tests, extending timeout to 20 minutes.")
+        print("Setting __TestTimeout=%s" % str(20*60*1000))
         os.environ["__TestTimeout"] = str(20*60*1000) # 1,200,000 ms
+        print("Setting RunningLongGCTests=1")
         os.environ["RunningLongGCTests"] = "1"
     
     if is_gcsimulator:
         print("Running GCSimulator tests, extending timeout to one hour.")
+        print("Setting __TestTimeout=%s" % str(60*60*1000))
         os.environ["__TestTimeout"] = str(60*60*1000) # 3,600,000 ms
+        print("Setting RunningGCSimulatorTests=1")
         os.environ["RunningGCSimulatorTests"] = "1"
 
     if is_jitdasm:
         print("Running jit disasm and tests.")
+        print("Setting RunningJitDisasm=1")
         os.environ["RunningJitDisasm"] = "1"
 
     if is_ilasm:
         print("Running ILasm round trip.")
+        print("Setting RunningIlasmRoundTrip=1")
         os.environ["RunningIlasmRoundTrip"] = "1"
 
     if run_crossgen_tests:
         print("Running tests R2R")
+        print("Setting RunCrossGen=true")
         os.environ["RunCrossGen"] = "true"
 
     if gc_stress:
         print("Running GCStress, extending timeout to 120 minutes.")
+        print("Setting __TestTimeout=%s" % str(120*60*1000))
         os.environ["__TestTimeout"] = str(120*60*1000) # 1,800,000 ms
 
     if limited_core_dumps:
@@ -988,6 +1039,7 @@ def run_tests(host_os,
 
     # Set test env if exists
     if test_env is not None:
+        print("Setting __TestEnv=%s" % test_env)
         os.environ["__TestEnv"] = test_env
 
     #=====================================================================================================================================================
@@ -2251,21 +2303,21 @@ def do_setup(host_os,
         build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location, args.altjit_arch)
 
     return run_tests(host_os, 
-              arch,
-              build_type,
-              core_root, 
-              coreclr_repo_location,
-              test_location, 
-              test_native_bin_location,
-              is_illink=unprocessed_args.il_link, 
-              is_long_gc=unprocessed_args.long_gc,
-              is_gcsimulator=unprocessed_args.gcsimulator,
-              is_jitdasm=unprocessed_args.jitdisasm,
-              is_ilasm=unprocessed_args.ilasmroundtrip,
-              limited_core_dumps=unprocessed_args.limited_core_dumps,
-              run_sequential=unprocessed_args.sequential,
-              run_crossgen_tests=unprocessed_args.run_crossgen_tests,
-              test_env=test_env)
+                     arch,
+                     build_type,
+                     core_root, 
+                     coreclr_repo_location,
+                     test_location, 
+                     test_native_bin_location,
+                     test_env=test_env,
+                     is_long_gc=unprocessed_args.long_gc,
+                     is_gcsimulator=unprocessed_args.gcsimulator,
+                     is_jitdasm=unprocessed_args.jitdisasm,
+                     is_ilasm=unprocessed_args.ilasmroundtrip,
+                     is_illink=unprocessed_args.il_link, 
+                     run_crossgen_tests=unprocessed_args.run_crossgen_tests,
+                     run_sequential=unprocessed_args.sequential,
+                     limited_core_dumps=unprocessed_args.limited_core_dumps)
 
 ################################################################################
 # Main
