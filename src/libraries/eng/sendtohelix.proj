@@ -30,6 +30,18 @@
     <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
   </PropertyGroup>
 
+  <!-- If mission control reports a test failure then fail the build whenever helix wait runs. -->
+  <PropertyGroup Condition="'$(FailOnMissionControlTestFailure)' == ''">
+    <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
+    <FailOnMissionControlTestFailure Condition="'$(OfficialBuildId)' != ''">false</FailOnMissionControlTestFailure>
+  </PropertyGroup>
+
+  <!-- If mission control reports a test crash (fireball) then fail the build on helix wait -->
+  <PropertyGroup Condition="'$(FailOnWorkItemFailure)' == ''">
+    <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
+    <FailOnWorkItemFailure Condition="'$(OfficialBuildId)' != ''">false</FailOnWorkItemFailure>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(HelixType)' == ''">
     <!-- For PRs we want helixtype to be the same for all frameworks -->
     <HelixType>test/functional/cli/</HelixType>

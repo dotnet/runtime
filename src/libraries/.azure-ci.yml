@@ -2,8 +2,8 @@
 trigger: none
 
 # TODO: add paths to exclude CI when modifying docs or stuff not affecting the build
-# TODO: enable PR triggers when helix SDK issues are fixed
-pr: none
+pr:
+- master
 
 resources:
   containers:
