@@ -23,42 +23,45 @@ namespace System.Reflection
 
         internal INVOCATION_FLAGS InvocationFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if ((m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
-                {
-                    Type declaringType = DeclaringType;
-
-                    INVOCATION_FLAGS invocationFlags = 0;
-
-                    // first take care of all the NO_INVOKE cases
-                    if (declaringType != null && declaringType.ContainsGenericParameters)
-                    {
-                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
-                    }
-
-                    // If the invocationFlags are still 0, then
-                    // this should be an usable field, determine the other flags
-                    if (invocationFlags == 0)
-                    {
-                        if ((m_fieldAttributes & FieldAttributes.InitOnly) != (FieldAttributes)0)
-                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD;
-
-                        if ((m_fieldAttributes & FieldAttributes.HasFieldRVA) != (FieldAttributes)0)
-                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD;
-
-                        // find out if the field type is one of the following: Primitive, Enum or Pointer
-                        Type fieldType = FieldType;
-                        if (fieldType.IsPointer || fieldType.IsEnum || fieldType.IsPrimitive)
-                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_FIELD_SPECIAL_CAST;
-                    }
-
-                    // must be last to avoid threading problems
-                    m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
-                }
-
-                return m_invocationFlags;
+                return (m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) != 0 ?
+                    m_invocationFlags : InitializeInvocationFlags();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private INVOCATION_FLAGS InitializeInvocationFlags()
+        {
+            Type declaringType = DeclaringType;
+
+            INVOCATION_FLAGS invocationFlags = 0;
+
+            // first take care of all the NO_INVOKE cases
+            if (declaringType != null && declaringType.ContainsGenericParameters)
+            {
+                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
+            }
+
+            // If the invocationFlags are still 0, then
+            // this should be an usable field, determine the other flags
+            if (invocationFlags == 0)
+            {
+                if ((m_fieldAttributes & FieldAttributes.InitOnly) != (FieldAttributes)0)
+                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD;
+
+                if ((m_fieldAttributes & FieldAttributes.HasFieldRVA) != (FieldAttributes)0)
+                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD;
+
+                // find out if the field type is one of the following: Primitive, Enum or Pointer
+                Type fieldType = FieldType;
+                if (fieldType.IsPointer || fieldType.IsEnum || fieldType.IsPrimitive)
+                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_FIELD_SPECIAL_CAST;
+            }
+
+            // must be last to avoid threading problems
+            return (m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED);
         }
         #endregion
 
@@ -84,6 +87,7 @@ namespace System.Reflection
         #endregion
 
         #region Internal Members
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void CheckConsistency(object target)
         {
             // only test instance fields
@@ -113,57 +117,6 @@ namespace System.Reflection
                 return false;
 
             return m.m_fieldHandle == m_fieldHandle;
-        }
-
-        // UnsafeSetValue doesn't perform any consistency or visibility check.
-        // It is the caller's responsibility to ensure the operation is safe.
-        // When the caller needs to perform consistency checks they should 
-        // call CheckConsistency() before calling this method.
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        internal void UnsafeSetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
-        {
-            RuntimeType declaringType = DeclaringType as RuntimeType;
-            RuntimeType fieldType = (RuntimeType)FieldType;
-            value = fieldType.CheckValue(value, binder, culture, invokeAttr);
-
-            bool domainInitialized = false;
-            if (declaringType == null)
-            {
-                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, null, ref domainInitialized);
-            }
-            else
-            {
-                domainInitialized = declaringType.DomainInitialized;
-                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, declaringType, ref domainInitialized);
-                declaringType.DomainInitialized = domainInitialized;
-            }
-        }
-
-        // UnsafeGetValue doesn't perform any consistency or visibility check.
-        // It is the caller's responsibility to ensure the operation is safe.
-        // When the caller needs to perform consistency checks they should 
-        // call CheckConsistency() before calling this method.
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        internal object UnsafeGetValue(object obj)
-        {
-            RuntimeType declaringType = DeclaringType as RuntimeType;
-
-            RuntimeType fieldType = (RuntimeType)FieldType;
-
-            bool domainInitialized = false;
-            if (declaringType == null)
-            {
-                return RuntimeFieldHandle.GetValue(this, obj, fieldType, null, ref domainInitialized);
-            }
-            else
-            {
-                domainInitialized = declaringType.DomainInitialized;
-                object retVal = RuntimeFieldHandle.GetValue(this, obj, fieldType, declaringType, ref domainInitialized);
-                declaringType.DomainInitialized = domainInitialized;
-                return retVal;
-            }
         }
 
         #endregion
@@ -218,7 +171,20 @@ namespace System.Reflection
 
             CheckConsistency(obj);
 
-            return UnsafeGetValue(obj);
+            RuntimeType fieldType = (RuntimeType)FieldType;
+
+            bool domainInitialized = false;
+            if (declaringType == null)
+            {
+                return RuntimeFieldHandle.GetValue(this, obj, fieldType, null, ref domainInitialized);
+            }
+            else
+            {
+                domainInitialized = declaringType.DomainInitialized;
+                object retVal = RuntimeFieldHandle.GetValue(this, obj, fieldType, declaringType, ref domainInitialized);
+                declaringType.DomainInitialized = domainInitialized;
+                return retVal;
+            }
         }
 
         public override object GetRawConstantValue() { throw new InvalidOperationException(); }
@@ -307,13 +273,17 @@ namespace System.Reflection
 
         public override Type FieldType
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (m_fieldType == null)
-                    m_fieldType = new Signature(this, m_declaringType).FieldType;
-
-                return m_fieldType;
+                return m_fieldType ?? InitializeFieldType();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private RuntimeType InitializeFieldType()
+        {
+            return (m_fieldType = new Signature(this, m_declaringType).FieldType);
         }
 
         public override Type[] GetRequiredCustomModifiers()
