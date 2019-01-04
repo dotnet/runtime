@@ -166,7 +166,7 @@ emit_nursery_check_ilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
 	mono_mb_emit_byte (mb, CEE_RET);
 #else
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
+	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore_internal);
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 }
