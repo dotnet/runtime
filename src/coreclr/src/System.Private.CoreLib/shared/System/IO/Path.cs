@@ -673,6 +673,9 @@ namespace System.IO
             byte b3 = bytes[3];
             byte b4 = bytes[4];
 
+            // write to chars[11] first in order to eliminate redundant bounds checks
+            chars[11] = (char)Base32Char[bytes[7] & 0x1F];
+
             // Consume the 5 Least significant bits of the first 5 bytes
             chars[0] = (char)Base32Char[b0 & 0x1F];
             chars[1] = (char)Base32Char[b1 & 0x1F];
@@ -707,7 +710,6 @@ namespace System.IO
             // Consume the 5 Least significant bits of the remaining 3 bytes
             chars[9] = (char)Base32Char[bytes[5] & 0x1F];
             chars[10] = (char)Base32Char[bytes[6] & 0x1F];
-            chars[11] = (char)Base32Char[bytes[7] & 0x1F];
         }
 
         /// <summary>
