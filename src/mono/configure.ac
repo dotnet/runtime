@@ -5056,6 +5056,7 @@ if test ${TARGET} = RISCV32 -o ${TARGET} = RISCV64; then
 			#error "double"
 			#endif
 		], [
+			fpabi=auto
 		], [
 			fpabi=double
 		])
@@ -5067,6 +5068,7 @@ if test ${TARGET} = RISCV32 -o ${TARGET} = RISCV64; then
 			#error "single"
 			#endif
 		], [
+			fpabi=auto
 		], [
 			fpabi=single
 		])
@@ -5078,6 +5080,7 @@ if test ${TARGET} = RISCV32 -o ${TARGET} = RISCV64; then
 			#error "soft"
 			#endif
 		], [
+			fpabi=auto
 		], [
 			fpabi=soft
 		])
