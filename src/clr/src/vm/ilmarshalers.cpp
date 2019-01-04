@@ -772,17 +772,9 @@ void ILWSTRBufferMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     pslILEmit->EmitCALL(METHOD__STRING_BUILDER__GET_LENGTH, 1, 1);
 
     // stack: StringBuilder length
-
-    // if (!fConvertSpaceJustCalled)
-    {
-        // we don't need to double-check the length because the length
-        // must be smaller than the capacity and the capacity was already
-        // checked by EmitConvertSpaceCLRToNative
-        
-        pslILEmit->EmitDUP();
-        // static void StubHelpers.CheckStringLength(int length)
-        pslILEmit->EmitCALL(METHOD__STUBHELPERS__CHECK_STRING_LENGTH, 1, 0);
-    }
+    pslILEmit->EmitDUP();
+    // static void StubHelpers.CheckStringLength(int length)
+    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CHECK_STRING_LENGTH, 1, 0);
 
     // stack: StringBuilder length 
 
