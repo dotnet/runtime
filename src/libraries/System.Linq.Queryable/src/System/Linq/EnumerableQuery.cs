@@ -8,7 +8,6 @@ using System.Linq.Expressions;
 
 namespace System.Linq
 {
-    // Must remain public for Silverlight
     public abstract class EnumerableQuery
     {
         internal abstract Expression Expression { get; }
@@ -26,7 +25,6 @@ namespace System.Linq
         }
     }
 
-    // Must remain public for Silverlight
     public class EnumerableQuery<T> : EnumerableQuery, IOrderedQueryable<T>, IQueryProvider
     {
         private readonly Expression _expression;
@@ -34,14 +32,12 @@ namespace System.Linq
 
         IQueryProvider IQueryable.Provider => this;
 
-        // Must remain public for Silverlight
         public EnumerableQuery(IEnumerable<T> enumerable)
         {
             _enumerable = enumerable;
             _expression = Expression.Constant(this);
         }
 
-        // Must remain public for Silverlight
         public EnumerableQuery(Expression expression)
         {
             _expression = expression;
@@ -76,13 +72,6 @@ namespace System.Linq
             return new EnumerableQuery<TElement>(expression);
         }
 
-        // Baselining as Safe for Mix demo so that interface can be transparent. Marking this
-        // critical (which was the original annotation when porting to silverlight) would violate
-        // fxcop security rules if the interface isn't also critical. However, transparent code
-        // can't access this anyway for Mix since we're not exposing AsQueryable().
-        //
-        // Note, the above assertion no longer holds. Now making AsQueryable() public again
-        // the security fallout of which will need to be re-examined.
         object IQueryProvider.Execute(Expression expression)
         {
             if (expression == null)
@@ -90,7 +79,6 @@ namespace System.Linq
             return EnumerableExecutor.Create(expression).ExecuteBoxed();
         }
 
-        // see above
         TElement IQueryProvider.Execute<TElement>(Expression expression)
         {
             if (expression == null)
