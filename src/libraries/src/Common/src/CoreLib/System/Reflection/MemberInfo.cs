@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -44,32 +45,20 @@ namespace System.Reflection
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
 
+        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MemberInfo left, MemberInfo right)
         {
-            if (object.ReferenceEquals(left, right))
-                return true;
+            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // so it can become a simple test
+            if (right is null)
+            {
+                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                return (left is null) ? true : false;
+            }
 
-            if ((object)left == null || (object)right == null)
-                return false;
-
-            Type type1, type2;
-            MethodBase method1, method2;
-            FieldInfo field1, field2;
-            EventInfo event1, event2;
-            PropertyInfo property1, property2;
-
-            if ((type1 = left as Type) != null && (type2 = right as Type) != null)
-                return type1 == type2;
-            else if ((method1 = left as MethodBase) != null && (method2 = right as MethodBase) != null)
-                return method1 == method2;
-            else if ((field1 = left as FieldInfo) != null && (field2 = right as FieldInfo) != null)
-                return field1 == field2;
-            else if ((event1 = left as EventInfo) != null && (event2 = right as EventInfo) != null)
-                return event1 == event2;
-            else if ((property1 = left as PropertyInfo) != null && (property2 = right as PropertyInfo) != null)
-                return property1 == property2;
-
-            return false;
+            // Quick reference equality test prior to calling the virtual Equality
+            return ReferenceEquals(right, left) ? true : right.Equals(left);
         }
 
         public static bool operator !=(MemberInfo left, MemberInfo right) => !(left == right);
