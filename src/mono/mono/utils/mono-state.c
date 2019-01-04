@@ -646,7 +646,7 @@ mono_native_state_add_version (MonoStateWriter *writer)
 #endif
 #endif
 
-	const char *susp_policy = mono_threads_suspend_policy_name ();
+	const char *susp_policy = mono_threads_suspend_policy_name (mono_threads_suspend_policy ());
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
 	mono_state_writer_object_key (writer, "suspend");
