@@ -38,7 +38,6 @@ namespace System.Net.Http.Functional.Tests
 
         public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
         public static readonly object[][] VerifyUploadServers = Configuration.Http.VerifyUploadServers;
-        public static readonly object[][] CompressedServers = Configuration.Http.CompressedServers;
         public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
         public static readonly object[][] Http2NoPushServers = Configuration.Http.Http2NoPushServers;
 
@@ -395,28 +394,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(CompressedServers))]
-        public async Task GetAsync_SetAutomaticDecompression_ContentDecompressed(Uri server)
-        {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            using (var client = new HttpClient(handler))
-            {
-                using (HttpResponseMessage response = await client.GetAsync(server))
-                {
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    _output.WriteLine(responseContent);
-                    TestHelper.VerifyResponseBody(
-                        responseContent,
-                        response.Content.Headers.ContentMD5,
-                        false,
-                        null);
-                }
-            }
-        }
-
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
         [Theory]
         [InlineData("[::1234]")]
@@ -571,92 +548,6 @@ namespace System.Net.Http.Functional.Tests
             }), options);
 
             Assert.True(connectionAccepted);
-        }
-
-        [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(CompressedServers))]
-        public async Task GetAsync_SetAutomaticDecompression_HeadersRemoved(Uri server)
-        {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(server, HttpCompletionOption.ResponseHeadersRead))
-            {
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                Assert.False(response.Content.Headers.Contains("Content-Encoding"), "Content-Encoding unexpectedly found");
-                Assert.False(response.Content.Headers.Contains("Content-Length"), "Content-Length unexpectedly found");
-            }
-        }
-
-        [Theory]
-#if netcoreapp
-        [InlineData(DecompressionMethods.Brotli, "br", "")]
-        [InlineData(DecompressionMethods.Brotli, "br", "br")]
-        [InlineData(DecompressionMethods.Brotli, "br", "gzip")]
-        [InlineData(DecompressionMethods.Brotli, "br", "gzip, deflate")]
-#endif
-        [InlineData(DecompressionMethods.GZip, "gzip", "")]
-        [InlineData(DecompressionMethods.Deflate, "deflate", "")]
-        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip, deflate", "")]
-        [InlineData(DecompressionMethods.GZip, "gzip", "gzip")]
-        [InlineData(DecompressionMethods.Deflate, "deflate", "deflate")]
-        [InlineData(DecompressionMethods.GZip, "gzip", "deflate")]
-        [InlineData(DecompressionMethods.GZip, "gzip", "br")]
-        [InlineData(DecompressionMethods.Deflate, "deflate", "gzip")]
-        [InlineData(DecompressionMethods.Deflate, "deflate", "br")]
-        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip, deflate", "gzip, deflate")]
-        public async Task GetAsync_SetAutomaticDecompression_AcceptEncodingHeaderSentWithNoDuplicates(
-            DecompressionMethods methods,
-            string encodings,
-            string manualAcceptEncodingHeaderValues)
-        {
-            if (IsCurlHandler)
-            {
-                // Skip these tests on CurlHandler, dotnet/corefx #29905.
-                return;
-            }
-
-            if (!UseSocketsHttpHandler &&
-                (encodings.Contains("br") || manualAcceptEncodingHeaderValues.Contains("br")))
-            {
-                // Brotli encoding only supported on SocketsHttpHandler.
-                return;
-            }
-
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                HttpClientHandler handler = CreateHttpClientHandler();
-                handler.AutomaticDecompression = methods;
-
-                using (var client = new HttpClient(handler))
-                {
-                    if (!string.IsNullOrEmpty(manualAcceptEncodingHeaderValues))
-                    {
-                        client.DefaultRequestHeaders.Add("Accept-Encoding", manualAcceptEncodingHeaderValues);
-                    }
-
-                    Task<HttpResponseMessage> clientTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
-                    await TaskTimeoutExtensions.WhenAllOrAnyFailed(new Task[] { clientTask, serverTask }); 
-
-                    List<string> requestLines = await serverTask;
-                    string requestLinesString = string.Join("\r\n", requestLines);
-                    _output.WriteLine(requestLinesString);
-
-                    Assert.InRange(Regex.Matches(requestLinesString, "Accept-Encoding").Count, 1, 1);
-                    Assert.InRange(Regex.Matches(requestLinesString, encodings).Count, 1, 1);
-                    if (!string.IsNullOrEmpty(manualAcceptEncodingHeaderValues))
-                    {
-                        Assert.InRange(Regex.Matches(requestLinesString, manualAcceptEncodingHeaderValues).Count, 1, 1);
-                    }
-
-                    using (HttpResponseMessage response = await clientTask)
-                    {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    }                    
-                }
-            });
         }
 
         [ActiveIssue(32647, TargetFrameworkMonikers.Uap)]
