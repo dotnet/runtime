@@ -18,8 +18,6 @@
     <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
     <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
     <FeatureStubsAsIL>true</FeatureStubsAsIL>
-
-    <FeatureCoreFxGlobalization>true</FeatureCoreFxGlobalization>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
