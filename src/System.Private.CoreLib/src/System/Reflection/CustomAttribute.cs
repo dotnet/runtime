@@ -1524,12 +1524,12 @@ namespace System.Reflection
                                     type = Type_Type;
                             }
 
-                            RuntimePropertyInfo property = null;
+                            PropertyInfo property = null;
 
                             if (type == null)
-                                property = attributeType.GetProperty(name) as RuntimePropertyInfo;
+                                property = attributeType.GetProperty(name);
                             else
-                                property = attributeType.GetProperty(name, type, Type.EmptyTypes) as RuntimePropertyInfo;
+                                property = attributeType.GetProperty(name, type, Type.EmptyTypes);
 
                             // Did we get a valid property reference?
                             if (property == null)
@@ -1539,7 +1539,7 @@ namespace System.Reflection
                                         isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name));
                             }
 
-                            RuntimeMethodInfo setMethod = property.GetSetMethod(true) as RuntimeMethodInfo;
+                            MethodInfo setMethod = property.GetSetMethod(true);
 
                             // Public properties may have non-public setter methods
                             if (!setMethod.IsPublic)
@@ -1550,10 +1550,8 @@ namespace System.Reflection
                         }
                         else
                         {
-                            RtFieldInfo field = attributeType.GetField(name) as RtFieldInfo;
-
-                            field.CheckConsistency(attribute);
-                            field.UnsafeSetValue(attribute, value, BindingFlags.Default, Type.DefaultBinder, null);
+                            FieldInfo field = attributeType.GetField(name);
+                            field.SetValue(attribute, value, BindingFlags.Default, Type.DefaultBinder, null);
                         }
                     }
                     catch (Exception e)
