@@ -10,7 +10,7 @@
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.19052.1</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19052.1</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>3.0.0-preview.19052.1</MicrosoftNETCoreTargetsPackageVersion>
-    <NETStandardLibraryPackageVersion>2.1.0-prerelease.18626.1</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19054.1</NETStandardLibraryPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27220-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
   </PropertyGroup>
   <!--Package names-->
