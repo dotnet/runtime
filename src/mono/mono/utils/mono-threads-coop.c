@@ -640,29 +640,9 @@ mono_threads_suspend_policy_name (MonoThreadsSuspendPolicy policy)
 }
 
 gboolean
-mono_threads_suspend_policy_is_blocking_transition_enabled (MonoThreadsSuspendPolicy p)
-{
-	switch (p) {
-	case MONO_THREADS_SUSPEND_FULL_COOP:
-	case MONO_THREADS_SUSPEND_HYBRID:
-		return TRUE;
-	case MONO_THREADS_SUSPEND_FULL_PREEMPTIVE:
-		return FALSE;
-	default:
-		g_assert_not_reached ();
-	}
-}
-
-gboolean
 mono_threads_is_cooperative_suspension_enabled (void)
 {
 	return (mono_threads_suspend_policy () == MONO_THREADS_SUSPEND_FULL_COOP);
-}
-
-gboolean
-mono_threads_is_blocking_transition_enabled (void)
-{
-	return mono_threads_suspend_policy_is_blocking_transition_enabled (mono_threads_suspend_policy ());
 }
 
 gboolean

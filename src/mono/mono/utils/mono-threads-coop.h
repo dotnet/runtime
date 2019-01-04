@@ -34,6 +34,20 @@ typedef enum {
 } MonoThreadsSuspendPolicy;
 
 static inline gboolean
+mono_threads_suspend_policy_is_blocking_transition_enabled (MonoThreadsSuspendPolicy p)
+{
+	switch (p) {
+	case MONO_THREADS_SUSPEND_FULL_COOP:
+	case MONO_THREADS_SUSPEND_HYBRID:
+		return TRUE;
+	case MONO_THREADS_SUSPEND_FULL_PREEMPTIVE:
+		return FALSE;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static inline gboolean
 mono_threads_suspend_policy_are_safepoints_enabled (MonoThreadsSuspendPolicy p)
 {
 	switch (p) {
@@ -61,8 +75,11 @@ mono_threads_suspend_policy (void);
 const char*
 mono_threads_suspend_policy_name (MonoThreadsSuspendPolicy p);
 
-gboolean
-mono_threads_is_blocking_transition_enabled (void);
+static inline gboolean
+mono_threads_is_blocking_transition_enabled (void)
+{
+	return mono_threads_suspend_policy_is_blocking_transition_enabled (mono_threads_suspend_policy ());
+}
 
 gboolean
 mono_threads_is_cooperative_suspension_enabled (void);
