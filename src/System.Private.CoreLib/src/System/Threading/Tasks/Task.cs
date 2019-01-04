@@ -890,8 +890,7 @@ namespace System.Threading.Tasks
                 Task currentTask = Task.InternalCurrent;
                 Task parentTask = m_contingentProperties?.m_parent;
                 etwLog.TaskScheduled(ts.Id, currentTask == null ? 0 : currentTask.Id,
-                                     this.Id, parentTask == null ? 0 : parentTask.Id, (int)this.Options,
-                                     System.Threading.Thread.GetDomainID());
+                                     this.Id, parentTask == null ? 0 : parentTask.Id, (int)this.Options);
                 return true;
             }
             else
