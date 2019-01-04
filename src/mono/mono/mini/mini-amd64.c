@@ -1339,6 +1339,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return args_size;
 }
 
+#ifndef DISABLE_JIT
 gboolean
 mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig, gboolean virtual_)
 {
@@ -1364,6 +1365,7 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 
 	return res;
 }
+#endif /* DISABLE_JIT */
 
 /*
  * Initialize the cpu to execute managed code.
@@ -3012,6 +3014,7 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	amd64_movsd_reg_membase (code, (dreg), AMD64_RSP, -8); \
 } while (0);
 
+#ifndef DISABLE_JIT
 static guint8*
 emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data)
 {
@@ -3172,7 +3175,6 @@ store_membase_imm_to_store_membase_reg (int opcode)
 	return -1;
 }
 
-#ifndef DISABLE_JIT
 
 #define INST_IGNORES_CFLAGS(opcode) (!(((opcode) == OP_ADC) || ((opcode) == OP_ADC_IMM) || ((opcode) == OP_IADC) || ((opcode) == OP_IADC_IMM) || ((opcode) == OP_SBB) || ((opcode) == OP_SBB_IMM) || ((opcode) == OP_ISBB) || ((opcode) == OP_ISBB_IMM)))
 
