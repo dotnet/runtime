@@ -28,8 +28,8 @@ namespace System
             {
                 return false;
             }
-            RuntimeType thisType = (RuntimeType)this.GetType();
-            RuntimeType thatType = (RuntimeType)obj.GetType();
+            Type thisType = this.GetType();
+            Type thatType = obj.GetType();
 
             if (thatType != thisType)
             {
@@ -48,8 +48,8 @@ namespace System
 
             for (int i = 0; i < thisFields.Length; i++)
             {
-                thisResult = ((RtFieldInfo)thisFields[i]).UnsafeGetValue(thisObj);
-                thatResult = ((RtFieldInfo)thisFields[i]).UnsafeGetValue(obj);
+                thisResult = thisFields[i].GetValue(thisObj);
+                thatResult = thisFields[i].GetValue(obj);
 
                 if (thisResult == null)
                 {

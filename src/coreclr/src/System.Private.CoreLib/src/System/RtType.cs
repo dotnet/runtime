@@ -14,6 +14,8 @@ using System.Threading;
 using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 using MdToken = System.Reflection.MetadataToken;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System
 {
     // this is a work around to get the concept of a calli. It's not as fast but it would be interesting to 
@@ -2379,30 +2381,44 @@ namespace System
 
         private RuntimeTypeCache Cache
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (m_cache == IntPtr.Zero)
+                if (m_cache != IntPtr.Zero)
                 {
-                    IntPtr newgcHandle = new RuntimeTypeHandle(this).GetGCHandle(GCHandleType.WeakTrackResurrection);
-                    IntPtr gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, IntPtr.Zero);
-                    // Leak the handle if the type is collectible. It will be reclaimed when
-                    // the type goes away.
-                    if (gcHandle != IntPtr.Zero && !IsCollectible)
-                        GCHandle.InternalFree(newgcHandle);
+                    object cache = GCHandle.InternalGet(m_cache);
+                    if (cache != null)
+                    {
+                        Debug.Assert(cache is RuntimeTypeCache);
+                        return Unsafe.As<RuntimeTypeCache>(cache);
+                    }
                 }
-
-                RuntimeTypeCache cache = GCHandle.InternalGet(m_cache) as RuntimeTypeCache;
-                if (cache == null)
-                {
-                    cache = new RuntimeTypeCache(this);
-                    RuntimeTypeCache existingCache = GCHandle.InternalCompareExchange(m_cache, cache, null, false) as RuntimeTypeCache;
-                    if (existingCache != null)
-                        cache = existingCache;
-                }
-
-                Debug.Assert(cache != null);
-                return cache;
+                return InitializeCache();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private RuntimeTypeCache InitializeCache()
+        {
+            if (m_cache == IntPtr.Zero)
+            {
+                IntPtr newgcHandle = new RuntimeTypeHandle(this).GetGCHandle(GCHandleType.WeakTrackResurrection);
+                IntPtr gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, IntPtr.Zero);
+                if (gcHandle != IntPtr.Zero)
+                    GCHandle.InternalFree(newgcHandle);
+            }
+
+            RuntimeTypeCache cache = (RuntimeTypeCache)GCHandle.InternalGet(m_cache);
+            if (cache == null)
+            {
+                cache = new RuntimeTypeCache(this);
+                RuntimeTypeCache existingCache = (RuntimeTypeCache)GCHandle.InternalCompareExchange(m_cache, cache, null, false);
+                if (existingCache != null)
+                    cache = existingCache;
+            }
+
+            Debug.Assert(cache != null);
+            return cache;
         }
 
         private string GetDefaultMemberName()
