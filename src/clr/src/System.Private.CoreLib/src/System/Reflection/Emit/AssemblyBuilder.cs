@@ -523,21 +523,17 @@ namespace System.Reflection.Emit
             return InternalAssembly.GetLoadedModules(getResourceModules);
         }
         
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return InternalAssembly.InternalGetSatelliteAssembly(culture, null, ref stackMark);
+            return InternalAssembly.GetSatelliteAssembly(culture, null);
         }
 
         /// <sumary> 
         /// Useful for binding to a very specific version of a satellite assembly
         /// </sumary>
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version version)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return InternalAssembly.InternalGetSatelliteAssembly(culture, version, ref stackMark);
+            return InternalAssembly.GetSatelliteAssembly(culture, version);
         }
 
         public override bool IsDynamic => true;
