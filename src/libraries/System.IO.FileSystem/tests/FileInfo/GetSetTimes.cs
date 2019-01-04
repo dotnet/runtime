@@ -43,7 +43,7 @@ namespace System.IO.Tests
         public FileInfo GetNonZeroNanoseconds()
         {
             FileInfo fileinfo = new FileInfo(GetTestFilePath());
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 20; i++)
             {
                 fileinfo.Create().Dispose();
                 if (HasNonZeroNanoseconds(fileinfo.LastWriteTime))
