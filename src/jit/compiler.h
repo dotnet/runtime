@@ -3329,7 +3329,8 @@ public:
                              unsigned*               methodFlags,
                              CORINFO_CONTEXT_HANDLE* contextHandle,
                              CORINFO_CONTEXT_HANDLE* exactContextHandle,
-                             bool                    isLateDevirtualization);
+                             bool                    isLateDevirtualization,
+                             bool                    isTailCall);
 
     //=========================================================================
     //                          PROTECTED
