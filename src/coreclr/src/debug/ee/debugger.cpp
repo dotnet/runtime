@@ -11351,14 +11351,23 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         // the detach reply before the process exits if the main thread is near exiting.
         m_pRCThread->SendIPCReply();
 
-        // Let the process run free now... there is no debugger to bother it anymore.
-        fContinue = ResumeThreads(NULL);
+        if (this->m_isBlockedOnGarbageCollectionEvent)
+        {
+            this->m_stopped = FALSE;
+            SetEvent(this->GetGarbageCollectionBlockerEvent());
+        }
+        else
+        {
+            // Let the process run free now... there is no debugger to bother it anymore.
+            fContinue = ResumeThreads(pEvent->vmAppDomain.GetRawPtr());
 
-        //
-        // Go ahead and release the TSL now that we're continuing. This ensures that we've held
-        // the thread store lock the entire time the Runtime was just stopped.
-        //
-        ThreadSuspend::UnlockThreadStore(FALSE, ThreadSuspend::SUSPEND_FOR_DEBUGGER);
+            //
+            // Go ahead and release the TSL now that we're continuing. This ensures that we've held
+            // the thread store lock the entire time the Runtime was just stopped.
+            //
+            ThreadSuspend::UnlockThreadStore(FALSE, ThreadSuspend::SUSPEND_FOR_DEBUGGER);
+        }
+
         break;
 
 #ifndef DACCESS_COMPILE
