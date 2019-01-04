@@ -88,7 +88,7 @@ REM
 REM TieredCompilation will use minopts. Therefore it is also included in this
 REM set. Unlike the rest, TieredCompilation=0 should run the JitOptimizationSensitive
 REM tests. The following cannot run the test.
-REN
+REM
 REM     TieredCompilation=1
 REM     TieredCompilation=
 IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_JITMinOpts%"=="" IF "%COMPlus_TailcallStress%"=="" goto :Compatible
