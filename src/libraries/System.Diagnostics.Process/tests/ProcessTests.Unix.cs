@@ -297,6 +297,9 @@ namespace System.Diagnostics.Tests
         [OuterLoop("Opens program")]
         public void ProcessStart_OpenFileOnLinux_UsesSpecifiedProgramUsingArgumentList(string programToOpenWith)
         {
+            if (PlatformDetection.IsAlpine)
+                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/31970)]
+
             if (IsProgramInstalled(programToOpenWith))
             {
                 string fileToOpen = GetTestFilePath() + ".txt";
