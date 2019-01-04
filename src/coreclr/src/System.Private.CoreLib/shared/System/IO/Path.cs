@@ -76,9 +76,15 @@ namespace System.IO
             }
 
             ReadOnlySpan<char> subpath = path.AsSpan(0, subLength);
+#if MS_IO_REDIST
+            return extension.Length != 0 && extension[0] == '.' ?
+                StringExtensions.Concat(subpath, extension.AsSpan()) :
+                StringExtensions.Concat(subpath, ".".AsSpan(), extension.AsSpan());
+#else
             return extension.StartsWith('.') ?
                 string.Concat(subpath, extension) :
                 string.Concat(subpath, ".", extension);
+#endif
         }
 
         /// <summary>
