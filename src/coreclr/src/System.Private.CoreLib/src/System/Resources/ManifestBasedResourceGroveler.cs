@@ -71,7 +71,7 @@ namespace System.Resources
             }
             else
             {
-                satellite = GetSatelliteAssembly(lookForCulture, ref stackMark);
+                satellite = GetSatelliteAssembly(lookForCulture);
 
                 if (satellite == null)
                 {
@@ -378,7 +378,7 @@ namespace System.Resources
             return satellite.GetManifestResourceStream(canonicalName, ref stackMark, canSkipSecurityCheck);
         }
 
-        private RuntimeAssembly GetSatelliteAssembly(CultureInfo lookForCulture, ref StackCrawlMark stackMark)
+        private RuntimeAssembly GetSatelliteAssembly(CultureInfo lookForCulture)
         {
             if (!_mediator.LookedForSatelliteContractVersion)
             {
@@ -395,7 +395,7 @@ namespace System.Resources
             // Yet also somehow log this error for a developer.
             try
             {
-                satellite = _mediator.MainAssembly.InternalGetSatelliteAssembly(satAssemblyName, lookForCulture, _mediator.SatelliteContractVersion, false, ref stackMark);
+                satellite = _mediator.MainAssembly.InternalGetSatelliteAssembly(satAssemblyName, lookForCulture, _mediator.SatelliteContractVersion, false);
             }
 
             // Jun 08: for cases other than ACCESS_DENIED, we'll assert instead of throw to give release builds more opportunity to fallback.

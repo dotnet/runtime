@@ -674,41 +674,30 @@ namespace System.Reflection
             return null;
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return InternalGetSatelliteAssembly(culture, null, ref stackMark);
+            return GetSatelliteAssembly(culture, null);
         }
 
         // Useful for binding to a very specific version of a satellite assembly
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version version)
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return InternalGetSatelliteAssembly(culture, version, ref stackMark);
-        }
-
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
-        internal Assembly InternalGetSatelliteAssembly(CultureInfo culture,
-                                                       Version version,
-                                                       ref StackCrawlMark stackMark)
         {
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
 
-
             string name = GetSimpleName() + ".resources";
-            return InternalGetSatelliteAssembly(name, culture, version, true, ref stackMark);
+            return InternalGetSatelliteAssembly(name, culture, version, true);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal RuntimeAssembly InternalGetSatelliteAssembly(string name,
                                                               CultureInfo culture,
                                                               Version version,
-                                                              bool throwOnFileNotFound,
-                                                              ref StackCrawlMark stackMark)
+                                                              bool throwOnFileNotFound)
         {
+            // This stack crawl mark is never used because the requesting assembly is explicitly specified,
+            // so the value could be anything.
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             AssemblyName an = new AssemblyName();
 
             an.SetPublicKey(GetPublicKey());
