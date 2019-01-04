@@ -152,6 +152,10 @@ typedef ptrdiff_t ssize_t;
 
 /* Used when building with Android NDK's unified headers */
 #if defined(HOST_ANDROID) && defined (ANDROID_UNIFIED_HEADERS)
+#ifdef HAVE_ANDROID_NDK_VERSION_H
+#include <android/ndk-version.h>
+#endif
+
 #if __ANDROID_API__ < 21
 
 typedef int32_t __mono_off32_t;
@@ -160,7 +164,7 @@ typedef int32_t __mono_off32_t;
 #include <sys/mman.h>
 #endif
 
-#if !defined(mmap)
+#if __NDK_MAJOR__ < 18
 
 #ifdef __cplusplus
 extern "C" {
@@ -178,26 +182,23 @@ void* mmap (void*, size_t, int, int, int, __mono_off32_t);
 } // extern C
 #endif
 
-#endif /* !mmap */
+#endif /* __NDK_MAJOR__ < 18 */
 
 #ifdef HAVE_SYS_SENDFILE_H
 #include <sys/sendfile.h>
 #endif
 
-#if !defined(sendfile)
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* The same thing as with mmap happens with sendfile */
-ssize_t sendfile (int out_fd, int in_fd, __mono_off32_t* offset, size_t count);
+/* Similar thing as with mmap happens with sendfile, except that the off_t is always used (and
+ * mono expects 64-bit offset here */
+ssize_t sendfile (int out_fd, int in_fd, off_t* offset, size_t count);
 
 #ifdef __cplusplus
 } // extern C
 #endif
-
-#endif /* !sendfile */
 
 #endif /* __ANDROID_API__ < 21 */
 #endif /* HOST_ANDROID && ANDROID_UNIFIED_HEADERS */
