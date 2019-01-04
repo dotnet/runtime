@@ -32,7 +32,6 @@
 #include "comdynamic.h"
 #include "excep.h"
 #include "fcall.h"
-#include "nlsinfo.h"
 #include "clrconfignative.h"
 #include "commodule.h"
 #include "marshalnative.h"

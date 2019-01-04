@@ -153,9 +153,6 @@
 #include "apithreadstress.h"
 #include "perflog.h"
 #include "../dlls/mscorrc/resource.h"
-#ifdef FEATURE_USE_LCID
-#include "nlsinfo.h"
-#endif 
 #include "util.hpp"
 #include "shimload.h"
 #include "comthreadpool.h"
