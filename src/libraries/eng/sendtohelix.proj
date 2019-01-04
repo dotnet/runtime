@@ -4,13 +4,11 @@
     <HelixSourcePrefix>pr/</HelixSourcePrefix>
     <HelixSourcePrefix Condition="'$(OfficialBuildId)' != ''">official/</HelixSourcePrefix>
     <HelixSource Condition="'$(HelixSource)' == ''">$(HelixSourcePrefix)dotnet/corefx</HelixSource>
-    <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)</HelixSource>
+    <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)/</HelixSource>
     
     <!-- Set helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
-
-    <HelixType Condition="'$(HelixType)' == ''">test/functional/cli</HelixType>
 
     <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">600</TimeoutInSeconds>
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
@@ -30,6 +28,14 @@
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
     test run name will be displayed as $(BuildConfiguration)-$(HelixTargetQueue) -->
     <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HelixType)' == ''">
+    <!-- For PRs we want helixtype to be the same for all frameworks -->
+    <HelixType>test/functional/cli/</HelixType>
+    <HelixType Condition="'$(TargetGroup)' == 'netfx' AND '$(OfficialBuildId)' != ''">test/functional/desktop/cli/</HelixType>
+    <HelixType Condition="'$(TargetGroup)' == 'uap' AND '$(OfficialBuildId)' != ''">test/functional/uwp/cli/</HelixType>
+    <HelixType Condition="'$(TargetGroup)' == 'uapaot' AND '$(OfficialBuildId)' != ''">test/functional/ilc/</HelixType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MaxRetryCount)' == ''">
@@ -77,7 +83,18 @@
         <Timeout>$(_timeoutSpan)</Timeout>
       </HelixWorkItem>
     </ItemGroup>
-
   </Target>
 
+  <Target Name="ShowMissionControlUrl"
+          AfterTargets="StartTestRuns"
+          Condition="'$(OfficialBuildId)' != ''">
+    <PropertyGroup>
+      <_McUser>dotnet-mc-bot-2</_McUser>
+      <_McHelixType>$([System.String]::Copy('$(HelixType)').ToLowerInvariant().Replace('/', '~2F'))</_McHelixType>
+      <_McHelixSource>$([System.String]::Copy('$(HelixSource)').ToLowerInvariant().Replace('/', '~2F'))</_McHelixSource>
+      <_McUrl>https://mc.dot.net/#/user/$(_McUser)/$(_McHelixSource)/$(_McHelixType)/$(OfficialBuildId)</_McUrl>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="Results will be available at $(_McUrl)" />
+  </Target>
 </Project>
