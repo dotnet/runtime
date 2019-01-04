@@ -54,7 +54,7 @@ public:
 private:
     friend class TypeString;
     friend SString* TypeName::ToString(SString*, BOOL, BOOL, BOOL);
-    friend TypeHandle TypeName::GetTypeWorker(BOOL, BOOL, Assembly*, BOOL, BOOL, StackCrawlMark*, Assembly*, 
+    friend TypeHandle TypeName::GetTypeWorker(BOOL, BOOL, Assembly*, BOOL, BOOL, Assembly*, 
         ICLRPrivBinder * pPrivHostBinder,
         BOOL, OBJECTREF *);
     HRESULT OpenGenericArguments(); 

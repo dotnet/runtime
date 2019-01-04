@@ -1416,7 +1416,8 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
             COMPlusThrowArgumentNull(W("className"),W("ArgumentNull_String"));
 
     {
-        typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE, pStackMark,
+        typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE,
+                                              SystemDomain::GetCallersAssembly(pStackMark),
                                               bLoadTypeFromPartialNameHack, (OBJECTREF*)keepAlive.m_ppObject,
                                               pPrivHostBinder);
     }
