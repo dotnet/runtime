@@ -61,6 +61,7 @@ initTargetDistroRid()
         fi
     else
         export __DistroRid="$__HostDistroRid"
+        export __RuntimeId="$__HostDistroRid"
     fi
 
     if [ "$ID.$VERSION_ID" == "ubuntu.16.04" ]; then
