@@ -1141,7 +1141,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         /*pAssemblyGetType =*/ NULL, 
         /*fEnableCASearchRules = */ TRUE, 
         /*fProhibitAsmQualifiedName = */ FALSE, 
-        NULL, 
         pRequestingAssembly, 
         nullptr,
         FALSE,
@@ -1181,7 +1180,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     BOOL bThrowIfNotFound, 
     BOOL bIgnoreCase, 
     BOOL bProhibitAsmQualifiedName,
-    StackCrawlMark* pStackMark, 
+    Assembly* pRequestingAssembly, 
     BOOL bLoadTypeFromPartialNameHack,
     OBJECTREF *pKeepAlive,
     ICLRPrivBinder * pPrivHostBinder)
@@ -1225,16 +1224,15 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
     BOOL bPeriodPrefix = szTypeName[0] == W('.');
     
     TypeHandle result = pTypeName->GetTypeWorker(
-        bPeriodPrefix ? FALSE : bThrowIfNotFound, 
-        bIgnoreCase, 
-        pAssemblyGetType ? pAssemblyGetType->GetAssembly() : NULL, 
-        /*fEnableCASearchRules = */TRUE, 
-        bProhibitAsmQualifiedName, 
-        pStackMark, 
-        NULL, 
+        bPeriodPrefix ? FALSE : bThrowIfNotFound,
+        bIgnoreCase,
+        pAssemblyGetType ? pAssemblyGetType->GetAssembly() : NULL,
+        /*fEnableCASearchRules = */TRUE,
+        bProhibitAsmQualifiedName,
+        pRequestingAssembly,
         pPrivHostBinder,
         bLoadTypeFromPartialNameHack,
-        pKeepAlive);      
+        pKeepAlive);
 
     if (bPeriodPrefix && result.IsNull())
     {
@@ -1255,16 +1253,15 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         }
         
         result = pTypeName->GetTypeWorker(
-            bThrowIfNotFound, 
-            bIgnoreCase, 
-            pAssemblyGetType ? pAssemblyGetType->GetAssembly() : NULL, 
-            /*fEnableCASearchRules = */TRUE, 
-            bProhibitAsmQualifiedName, 
-            pStackMark, 
-            NULL, 
+            bThrowIfNotFound,
+            bIgnoreCase,
+            pAssemblyGetType ? pAssemblyGetType->GetAssembly() : NULL,
+            /*fEnableCASearchRules = */TRUE,
+            bProhibitAsmQualifiedName,
+            pRequestingAssembly,
             pPrivHostBinder,
             bLoadTypeFromPartialNameHack,
-            pKeepAlive);      
+            pKeepAlive);
     }
 
     return result;
@@ -1320,7 +1317,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         COMPlusThrow(kArgumentException, IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC);
     }
 
-    return pTypeName->GetTypeWorker(bThrowIfNotFound, /*bIgnoreCase = */FALSE, pAssembly, /*fEnableCASearchRules = */FALSE, FALSE, NULL, NULL, 
+    return pTypeName->GetTypeWorker(bThrowIfNotFound, /*bIgnoreCase = */FALSE, pAssembly, /*fEnableCASearchRules = */FALSE, FALSE, NULL, 
         nullptr, // pPrivHostBinder
         FALSE, NULL /* cannot find a collectible type unless it is in assembly */);
 }
@@ -1387,7 +1384,6 @@ TypeHandle TypeName::GetTypeFromAsm()
         /*fEnableCASearchRules = */FALSE, 
         FALSE, 
         NULL, 
-        NULL, 
         nullptr, // pPrivHostBinder
         FALSE, 
         NULL /* cannot find a collectible type */);
@@ -1409,7 +1405,6 @@ TypeHandle TypeName::GetTypeFromAsm()
 
     BOOL fEnableCASearchRules,
     BOOL bProhibitAsmQualifiedName,
-    StackCrawlMark* pStackMark, 
     Assembly* pRequestingAssembly, 
     ICLRPrivBinder * pPrivHostBinder,
     BOOL bLoadTypeFromPartialNameHack,
@@ -1464,9 +1459,6 @@ TypeHandle TypeName::GetTypeFromAsm()
             }
         }
 
-        if (!pRequestingAssembly && pStackMark)
-            pRequestingAssembly = SystemDomain::GetCallersAssembly(pStackMark);
-
         SString * pssOuterTypeName = NULL;
         if (GetNames().GetCount() > 0)
         {
@@ -1513,9 +1505,6 @@ TypeHandle TypeName::GetTypeFromAsm()
     // Otherwise look in the caller's assembly then the system assembly
     else if (fEnableCASearchRules)
     {
-        if (!pRequestingAssembly && pStackMark)
-            pRequestingAssembly = SystemDomain::GetCallersAssembly(pStackMark); 
-        
         // Look for type in caller's assembly
         if (pRequestingAssembly)
             th = GetTypeHaveAssembly(pRequestingAssembly, bThrowIfNotFound, bIgnoreCase, pKeepAlive);
@@ -1584,7 +1573,7 @@ TypeHandle TypeName::GetTypeFromAsm()
         {
             TypeHandle thGenericArg = m_genericArguments[i]->GetTypeWorker(
                 bThrowIfNotFound, bIgnoreCase,
-                pAssemblyGetType, fEnableCASearchRules, bProhibitAsmQualifiedName, pStackMark, pRequestingAssembly, 
+                pAssemblyGetType, fEnableCASearchRules, bProhibitAsmQualifiedName, pRequestingAssembly, 
                 pPrivHostBinder,
                 bLoadTypeFromPartialNameHack, 
                 (pKeepAlive != NULL) ? &gc.keepAlive : NULL /* Only pass a keepalive parameter if we were passed a keepalive parameter */);
