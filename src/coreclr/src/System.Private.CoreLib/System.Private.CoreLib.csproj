@@ -307,10 +307,6 @@
     <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\CodePageDataItem.cs" Condition="'$(FeatureCoreFxGlobalization)' != 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\CodePageDataItem.Unix.cs" Condition="'$(FeatureCoreFxGlobalization)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.cs" Condition="'$(FeatureCoreFxGlobalization)' != 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.Unix.cs" Condition="'$(FeatureCoreFxGlobalization)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />

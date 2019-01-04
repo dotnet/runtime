@@ -105,7 +105,6 @@ if(WIN32)
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
         mdwinmd_wks
-        comnls_wks
         kernel32.lib
         advapi32.lib
         ole32.lib

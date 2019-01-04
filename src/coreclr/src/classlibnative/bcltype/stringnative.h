@@ -47,8 +47,6 @@ public:
     static FCDECL1(FC_BOOL_RET, IsFastSort, StringObject* pThisRef);
     static FCDECL1(FC_BOOL_RET, IsAscii, StringObject* pThisRef);
 
-    static FCDECL2(INT32, FCCompareOrdinalIgnoreCaseWC, StringObject* strA, __in_z INT8 *strB);
-
     static FCDECL6(INT32, CompareOrdinalEx, StringObject* strA, INT32 indexA, INT32 countA, StringObject* strB, INT32 indexB, INT32 countB);
 
     static FCDECL2(FC_CHAR_RET, GetCharAt, StringObject* pThisRef, INT32 index);
