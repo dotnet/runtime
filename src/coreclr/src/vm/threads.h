@@ -1317,13 +1317,10 @@ public:
     STDMETHODIMP EndPreventAsyncAbort()
         DAC_EMPTY_RET(E_FAIL);
 
-    void InternalReset (BOOL fFull, BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
+    void InternalReset (BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
     INT32 ResetManagedThreadObject(INT32 nPriority); 
     INT32 ResetManagedThreadObjectInCoopMode(INT32 nPriority);
     BOOL  IsRealThreadPoolResetNeeded();
-private:
-    //Helpers for reset...
-    void FullResetThread();
 public:
     HRESULT DetachThread(BOOL fDLLThreadDetach);
 

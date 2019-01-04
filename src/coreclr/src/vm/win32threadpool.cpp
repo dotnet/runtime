@@ -722,7 +722,7 @@ void QueueUserWorkItemHelp(LPTHREAD_START_ROUTINE Function, PVOID Context)
     if (pThread) {
         if (pThread->IsAbortRequested())
             pThread->EEResetAbort(Thread::TAR_ALL);
-        pThread->InternalReset(FALSE);
+        pThread->InternalReset();
     }
 }
 
@@ -2036,7 +2036,7 @@ Work:
         {
             if (pThread->IsAbortRequested())
                 pThread->EEResetAbort(Thread::TAR_ALL);
-            pThread->InternalReset(FALSE);
+            pThread->InternalReset();
         }
     }
 
@@ -3657,7 +3657,7 @@ Top:
                 if (pThread) {
                     if (pThread->IsAbortRequested())
                         pThread->EEResetAbort(Thread::TAR_ALL);
-                    pThread->InternalReset(FALSE);
+                    pThread->InternalReset();
                 }
             }
             else

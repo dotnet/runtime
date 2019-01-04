@@ -563,7 +563,7 @@ void UnManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNo
             {
                 pThread->EEResetAbort(Thread::TAR_ALL);
             }
-            pThread->InternalReset(FALSE);
+            pThread->InternalReset();
         }
 
         endTime = GetTickCount();
