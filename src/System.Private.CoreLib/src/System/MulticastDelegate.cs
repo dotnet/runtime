@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -428,24 +429,36 @@ namespace System
             return del;
         }
 
+        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MulticastDelegate d1, MulticastDelegate d2)
         {
-            if (ReferenceEquals(d1, d2))
+            // Test d2 first to allow branch elimination when inlined for null checks (== null)
+            // so it can become a simple test
+            if (d2 is null)
             {
-                return true;
+                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                return (d1 is null) ? true : false;
             }
 
-            return d1 is null ? false : d1.Equals(d2);
+            return ReferenceEquals(d2, d1) ? true : d2.Equals((object)d1);
         }
 
+        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(MulticastDelegate d1, MulticastDelegate d2)
         {
-            if (ReferenceEquals(d1, d2))
+            // Can't call the == operator as it will call object==
+
+            // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
+            // so it can become a simple test
+            if (d2 is null)
             {
-                return false;
+                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                return (d1 is null) ? false : true;
             }
 
-            return d1 is null ? true : !d1.Equals(d2);
+            return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);
         }
 
         public override sealed int GetHashCode()
