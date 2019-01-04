@@ -4504,6 +4504,7 @@ public:
         }
         else
         {
+            assert(elemTyp != TYP_STRUCT);
             elemTyp = varTypeUnsignedToSigned(elemTyp);
             return CORINFO_CLASS_HANDLE(size_t(elemTyp) << 1 | 0x1);
         }
