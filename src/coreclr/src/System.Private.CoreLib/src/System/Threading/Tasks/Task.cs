@@ -17,6 +17,7 @@ using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
@@ -2485,7 +2486,12 @@ namespace System.Threading.Tasks
             }
         }
 
-        private static readonly ContextCallback s_ecCallback = obj => ((Task)obj).InnerInvoke();
+        private static readonly ContextCallback s_ecCallback = obj =>
+        {
+            Debug.Assert(obj is Task);
+            // Only used privately to pass directly to EC.Run
+            Unsafe.As<Task>(obj).InnerInvoke();
+        };
 
         /// <summary>
         /// The actual code which invokes the body of the task. This can be overridden in derived types.
