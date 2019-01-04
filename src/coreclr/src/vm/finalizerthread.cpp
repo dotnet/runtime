@@ -175,7 +175,7 @@ Object * FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread,int bi
                 CallFinalizer(fobj);
             }
         }
-        pThread->InternalReset(FALSE);
+        pThread->InternalReset();
     } 
     else 
     {
@@ -202,7 +202,7 @@ Object * FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread,int bi
                                                       &args,
                                                       pThreadTurnAround);
             }
-            pThread->InternalReset(FALSE);
+            pThread->InternalReset();
             // process the object we got back or be done if we got back null
             pReturnObject = OBJECTREFToObject(args.fobj);
             GCPROTECT_END();

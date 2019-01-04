@@ -61,7 +61,7 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
         if(!pThread->IsRealThreadPoolResetNeeded())
         {
             pThread->ResetManagedThreadObjectInCoopMode(ThreadNative::PRIORITY_NORMAL);
-            pThread->InternalReset(FALSE, TRUE, FALSE, FALSE);  
+            pThread->InternalReset(TRUE, FALSE, FALSE);  
             if(ThreadpoolMgr::ShouldGrowCompletionPortThreadpool(ThreadpoolMgr::CPThreadCounter.DangerousGetDirtyCounts()))
             {
                 //We may have to create a CP thread, go back to the Vm, and process the packet there.
