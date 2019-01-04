@@ -8771,30 +8771,6 @@ INT32 Thread::ResetManagedThreadObjectInCoopMode(INT32 nPriority)
     return nPriority;
 }
 
-void Thread::FullResetThread()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-
-    // We need to put this thread in COOPERATIVE GC first to solve race between AppDomain::Unload
-    // and Thread::Reset.  AppDomain::Unload does a full GC to collect all roots in one AppDomain.
-    // ThreadStaticData used to be coupled with a managed array of objects in the managed Thread
-    // object, however this is no longer the case.
-
-    // TODO: Do we still need to put this thread into COOP mode?
-
-    GCX_FORBID();
-    DeleteThreadStaticData();
-
-    m_alloc_context.alloc_bytes = 0;
-    m_fPromoted = FALSE;
-}
-
 BOOL Thread::IsRealThreadPoolResetNeeded()
 {
     CONTRACTL 
@@ -8822,7 +8798,7 @@ BOOL Thread::IsRealThreadPoolResetNeeded()
     return FALSE;
 }
 
-void Thread::InternalReset(BOOL fFull, BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeeded, BOOL fResetAbort)
+void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeeded, BOOL fResetAbort)
 {
     CONTRACTL {
         NOTHROW;
@@ -8845,12 +8821,6 @@ void Thread::InternalReset(BOOL fFull, BOOL fNotFinalizerThread, BOOL fThreadObj
     {
         nPriority = ResetManagedThreadObject(nPriority);
     }
-
-    if (fFull)
-    {
-        FullResetThread();
-    }
-
 
     //m_MarshalAlloc.Collapse(NULL);
 
