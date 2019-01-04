@@ -10,6 +10,7 @@ parameters:
   targetOS: ''
   waitForCompletion: '' # true | false
   officialBuildId: ''
+  enableAzurePipelinesReporter: '' # true | false
 
 steps:
   - script: ${{ parameters.msbuildScript }}
@@ -26,7 +27,7 @@ steps:
             /p:IsExternal=${{ parameters.isExternal }}
             /p:Creator=${{ parameters.creator }}
             /p:OfficialBuildId=${{ parameters.officialBuildId }}
-            /p:EnableAzurePipelinesReporter=true
+            /p:EnableAzurePipelinesReporter=${{ parameters.enableAzurePipelinesReporter }}
     displayName: Send to Helix
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
