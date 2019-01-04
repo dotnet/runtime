@@ -866,7 +866,11 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
+#if __GLIBC_PREREQ(2, 27)
+typedef ucontext_t MonoContext;
+#else
 typedef struct ucontext MonoContext;
+#endif
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) 					\
 	do {								\
