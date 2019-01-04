@@ -9,7 +9,7 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <BuildToolsCurrentRef>fe8ca5d5e6dac18ea1d488c54c329979ce6ea30c</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>d0df8823a285aa2e5c51ac38c3ca39d006038a45</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -37,7 +37,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.2.0-beta.18578.9</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>3.0.0-preview1-03603-01</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
