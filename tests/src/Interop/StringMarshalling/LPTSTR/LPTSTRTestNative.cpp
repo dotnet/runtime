@@ -153,3 +153,11 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE ReverseP_MarshalStrB_Out(Test_Del_M
     return TRUE;
 
 }
+
+// Verify that we append extra null terminators to our StringBuilder native buffers.
+// Although this is a hidden implementation detail, it would be breaking behavior to stop doing this
+// so we have a test for it. In particular, this detail prevents us from optimizing marshalling StringBuilders by pinning.
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Verify_NullTerminators_PastEnd(LPCWSTR buffer, int length)
+{
+    return buffer[length+1] == W('\0');
+}
