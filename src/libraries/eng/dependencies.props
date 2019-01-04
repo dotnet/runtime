@@ -9,15 +9,15 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>c4996abafbeb29b3abd964d9912723ad1f85b70f</CoreFxCurrentRef>
-    <CoreClrCurrentRef>c4996abafbeb29b3abd964d9912723ad1f85b70f</CoreClrCurrentRef>
+    <CoreFxCurrentRef>984a541f1d8f243a704fe4074e4b60c6cc3278f7</CoreFxCurrentRef>
+    <CoreClrCurrentRef>984a541f1d8f243a704fe4074e4b60c6cc3278f7</CoreClrCurrentRef>
     <CoreSetupCurrentRef>56b60e4ef0879b0423542f32a0b87779b4236453</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>ee0de9a3e2dd5b77c07c5ff76f8b496517fd23bf</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>ee0de9a3e2dd5b77c07c5ff76f8b496517fd23bf</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>984a541f1d8f243a704fe4074e4b60c6cc3278f7</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>984a541f1d8f243a704fe4074e4b60c6cc3278f7</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>5f8acf1c140f742304e6d85cde307bf31f094104</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>984a541f1d8f243a704fe4074e4b60c6cc3278f7</BuildToolsCurrentRef>
     <CoreFxOptimizationDataCurrentRef>f2a2e6a48d26036fbb7e9a3aced37e7dfce677fc</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
@@ -32,13 +32,13 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview.19052.1</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19052.1</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27302-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview-27302-02</MicrosoftNetCoreIlasmPackageVersion>
-    <ProjectNTfsExpectedPrerelease>beta-27302-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-27302-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27302-00</ProjectNTfsTestILCPackageVersion>
+    <CoreFxExpectedPrerelease>preview.19053.3</CoreFxExpectedPrerelease>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19053.3</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27304-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview-27304-01</MicrosoftNetCoreIlasmPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-27303-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-27303-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27303-00</ProjectNTfsTestILCPackageVersion>
     <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview-27218-01</MicrosoftNETCoreDotNetHostPackageVersion>
     <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview-27218-01</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27218-01</MicrosoftNETCoreAppPackageVersion>
@@ -69,7 +69,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <BuildToolsPackage>microsoft.dotnet.buildtools</BuildToolsPackage>
-    <BuildToolsPackageVersion>3.0.0-preview1-03430-01</BuildToolsPackageVersion>
+    <BuildToolsPackageVersion>3.0.0-preview1-03603-01</BuildToolsPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
