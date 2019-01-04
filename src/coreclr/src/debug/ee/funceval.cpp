@@ -1784,7 +1784,7 @@ void GatherFuncEvalArgInfo(DebuggerEval *pDE,
         //
         bool fNeedBoxOrUnbox = ((argSigType == ELEMENT_TYPE_CLASS) && (pFEAD->argElementType == ELEMENT_TYPE_VALUETYPE)) ||
             (((argSigType == ELEMENT_TYPE_VALUETYPE) && ((pFEAD->argElementType == ELEMENT_TYPE_CLASS) || (pFEAD->argElementType == ELEMENT_TYPE_OBJECT))) ||
-            // This is when method signature is expecting a BYREF ValueType, yet we recieve the boxed valuetype's handle.
+            // This is when method signature is expecting a BYREF ValueType, yet we receive the boxed valuetype's handle.
             (pFEAD->argElementType == ELEMENT_TYPE_CLASS && argSigType == ELEMENT_TYPE_BYREF && byrefArgSigType == ELEMENT_TYPE_VALUETYPE));
 
         pFEArgInfo[currArgIndex].argSigType = argSigType;
