@@ -639,17 +639,8 @@ mono_threads_suspend_policy_name (MonoThreadsSuspendPolicy policy)
 	}
 }
 
-static gboolean
-blocking_transition_getenv_compat (void)
-{
-	static int inenv = -1;
-	if (G_UNLIKELY (inenv == -1))
-		inenv = g_hasenv ("MONO_ENABLE_BLOCKING_TRANSITION");
-	return inenv;
-}
-
-static gboolean
-blocking_transition_from_policy (MonoThreadsSuspendPolicy p)
+gboolean
+mono_threads_suspend_policy_is_blocking_transition_enabled (MonoThreadsSuspendPolicy p)
 {
 	switch (p) {
 	case MONO_THREADS_SUSPEND_FULL_COOP:
@@ -663,13 +654,6 @@ blocking_transition_from_policy (MonoThreadsSuspendPolicy p)
 }
 
 gboolean
-mono_threads_suspend_policy_is_blocking_transition_enabled (MonoThreadsSuspendPolicy p)
-{
-	return blocking_transition_getenv_compat () ||
-		blocking_transition_from_policy (p);
-}
-
-gboolean
 mono_threads_is_cooperative_suspension_enabled (void)
 {
 	return (mono_threads_suspend_policy () == MONO_THREADS_SUSPEND_FULL_COOP);
@@ -678,11 +662,7 @@ mono_threads_is_cooperative_suspension_enabled (void)
 gboolean
 mono_threads_is_blocking_transition_enabled (void)
 {
-	static int enabled = -1;
-	if (G_UNLIKELY (enabled == -1)) {
-		enabled = mono_threads_suspend_policy_is_blocking_transition_enabled (mono_threads_suspend_policy ());
-	}
-	return enabled == 1;
+	return mono_threads_suspend_policy_is_blocking_transition_enabled (mono_threads_suspend_policy ());
 }
 
 gboolean
