@@ -77,37 +77,6 @@ FCIMPL1(FC_BOOL_RET, COMString::IsAscii, StringObject* thisRef) {
 FCIMPLEND
 
 
-
-//This function relies on the fact that we put a terminating null on the end of
-//all managed strings.
-FCIMPL2(INT32, COMString::FCCompareOrdinalIgnoreCaseWC, StringObject* strA, __in_z INT8 *strBChars) {
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(strA);
-    WCHAR *strAChars;
-    WCHAR *strAStart;
-    INT32 aLength;
-    INT32 ret;
-
-    _ASSERT(strA != NULL && strBChars != NULL);
-
-    //Get our data.
-    strA->RefInterpretGetStringValuesDangerousForGC((WCHAR **) &strAChars, &aLength);
-
-    //Record the start pointer for some comparisons at the end.
-    strAStart = strAChars;
-
-    if (!StringObject::CaseInsensitiveCompHelper(strAChars, strBChars, aLength, -1, &ret)) {
-        //This will happen if we have characters greater than 0x7F. This indicates that the function failed.
-        // We don't throw an exception here. You can look at the success value returned to do something meaningful.
-        ret = 1;
-    }
-
-    FC_GC_POLL_RET();
-    return ret;
-}
-FCIMPLEND
-
 /*==================================GETCHARAT===================================
 **Returns the character at position index.  Thows IndexOutOfRangeException as
 **appropriate.

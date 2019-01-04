@@ -261,19 +261,6 @@ namespace System.Text
             if (result != null)
                 return result;
 
-            //
-            // NOTE: If you add a new encoding that can be retrieved by codepage, be sure to
-            // add the corresponding item in EncodingTable.
-            // Otherwise, the code below will throw exception when trying to call
-            // EncodingTable.GetDataItem().
-            //
-            if (codepage < 0 || codepage > 65535)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(codepage), SR.Format(SR.ArgumentOutOfRange_Range, 0, 65535));
-            }
-
-
             switch (codepage)
             {
                 case CodePageDefault: return Default;            // 0
@@ -294,14 +281,13 @@ namespace System.Text
                     throw new ArgumentException(SR.Format(SR.Argument_CodepageNotSupported, codepage), nameof(codepage));
             }
 
-            // Is it a valid code page?
-            if (EncodingTable.GetCodePageDataItem(codepage) == null)
+            if (codepage < 0 || codepage > 65535)
             {
-                throw new NotSupportedException(
-                    SR.Format(SR.NotSupported_NoCodepageData, codepage));
+                throw new ArgumentOutOfRangeException(
+                    nameof(codepage), SR.Format(SR.ArgumentOutOfRange_Range, 0, 65535));
             }
 
-            return UTF8;
+            throw new NotSupportedException(SR.Format(SR.NotSupported_NoCodepageData, codepage));
         }
 
         public static Encoding GetEncoding(int codepage,
@@ -399,58 +385,19 @@ namespace System.Text
         }
 
         // Returns the human-readable description of the encoding ( e.g. Hebrew (DOS)).
-#if PROJECTN
-        public virtual String EncodingName
-        {
-            get
-            {
-                string encodingName = GetLocalizedEncodingNameResource(this.CodePage);
-                if (encodingName == null)
-                {
-                    throw new NotSupportedException(SR.Format(SR.MissingEncodingNameResource, this.CodePage));
-                }
-
-                if (encodingName.StartsWith("Globalization_cp_", StringComparison.Ordinal))
-                {
-                    // On ProjectN, resource strings are stripped from retail builds and replaced by
-                    // their identifier names. Since this property is meant to be a localized string,
-                    // but we don't localize ProjectN, we specifically need to do something reasonable
-                    // in this case. This currently returns the English name of the encoding from a
-                    // static data table.
-                    encodingName = EncodingTable.GetCodePageDataItem(this.CodePage).EnglishName;
-                    if (encodingName == null)
-                    {
-                        throw new NotSupportedException(SR.Format(SR.MissingEncodingNameResource, this.WebName, this.CodePage));
-                    }
-                }
-                return encodingName;
-            }
-        }
-
-        private static string GetLocalizedEncodingNameResource(int codePage)
-        {
-            switch (codePage)
-            {
-                case 1200: return SR.Globalization_cp_1200;
-                case 1201: return SR.Globalization_cp_1201;
-                case 12000: return SR.Globalization_cp_12000;
-                case 12001: return SR.Globalization_cp_12001;
-                case 20127: return SR.Globalization_cp_20127;
-                case 28591: return SR.Globalization_cp_28591;
-                case 65000: return SR.Globalization_cp_65000;
-                case 65001: return SR.Globalization_cp_65001;
-                default: return null;
-            }
-        }
-#else
         public virtual string EncodingName
         {
             get
             {
-                return SR.GetResourceString("Globalization_cp_" + _codePage.ToString());
+                if (_dataItem == null)
+                {
+                    GetDataItem();
+                }
+                
+                return _dataItem.DisplayName;
             }
         }
-#endif
+
         // Returns the name for this encoding that can be used with mail agent header
         // tags.  If the encoding may not be used, the string is empty.
 
