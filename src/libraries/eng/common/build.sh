@@ -130,6 +130,9 @@ while [[ $# > 0 ]]; do
     /p:*)
       properties="$properties $1"
       ;;
+    /m:*)
+      properties="$properties $1"
+      ;;
     *)
       echo "Invalid argument: $1"
       usage
