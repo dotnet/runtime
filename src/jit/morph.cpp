@@ -5055,7 +5055,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
     //
     // We can't determine that all of the time, but if there is only
     // one use and the method has no loops, then this use must be the last.
-    if (!(opts.compDbgCode || opts.MinOpts()))
+    if (opts.OptimizationEnabled())
     {
         GenTreeLclVarCommon* lcl = nullptr;
 
@@ -13208,7 +13208,7 @@ DONE_MORPHING_CHILDREN:
                     /* Try to change *(&lcl + cns) into lcl[cns] to prevent materialization of &lcl */
 
                     if (op1->gtOp.gtOp1->OperGet() == GT_ADDR && op1->gtOp.gtOp2->OperGet() == GT_CNS_INT &&
-                        (!(opts.MinOpts() || opts.compDbgCode)))
+                        opts.OptimizationEnabled())
                     {
                         // No overflow arithmetic with pointers
                         noway_assert(!op1->gtOverflow());
@@ -15109,7 +15109,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
     bool result = false;
 
     // We don't want to make any code unreachable
-    if (opts.compDbgCode || opts.MinOpts())
+    if (opts.OptimizationDisabled())
     {
         return false;
     }
@@ -15611,7 +15611,8 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
             continue;
         }
 #ifdef FEATURE_SIMD
-        if (!opts.MinOpts() && stmt->gtStmtExpr->TypeGet() == TYP_FLOAT && stmt->gtStmtExpr->OperGet() == GT_ASG)
+        if (opts.OptimizationEnabled() && stmt->gtStmtExpr->TypeGet() == TYP_FLOAT &&
+            stmt->gtStmtExpr->OperGet() == GT_ASG)
         {
             fgMorphCombineSIMDFieldAssignments(block, stmt);
         }
@@ -15834,7 +15835,7 @@ void Compiler::fgMorphBlocks()
     //
     // Local assertion prop is enabled if we are optimized
     //
-    optLocalAssertionProp = (!opts.compDbgCode && !opts.MinOpts());
+    optLocalAssertionProp = opts.OptimizationEnabled();
 
     if (optLocalAssertionProp)
     {
@@ -16862,7 +16863,7 @@ void Compiler::fgMorph()
 // TODO-ObjectStackAllocation: Enable the optimization for architectures using
 // JIT32_GCENCODER (i.e., x86).
 #ifndef JIT32_GCENCODER
-    if (JitConfig.JitObjectStackAllocation() && !opts.MinOpts() && !opts.compDbgCode)
+    if (JitConfig.JitObjectStackAllocation() && opts.OptimizationEnabled())
     {
         objectAllocator.EnableObjectStackAllocation();
     }
