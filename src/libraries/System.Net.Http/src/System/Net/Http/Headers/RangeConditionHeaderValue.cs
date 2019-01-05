@@ -154,7 +154,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                if (!HttpDateParser.TryStringToDate(input.Substring(current), out date))
+                if (!HttpDateParser.TryStringToDate(input.AsSpan(current), out date))
                 {
                     return 0;
                 }
