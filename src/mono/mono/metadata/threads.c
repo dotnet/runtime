@@ -2552,7 +2552,11 @@ request_thread_abort (MonoInternalThread *thread, MonoObjectHandle *state, gbool
 // though this would still work efficiently.
 {
 	LOCK_THREAD (thread);
-	
+
+	/* With self abort we always throw a new exception */
+	if (thread == mono_thread_internal_current ())
+		thread->abort_exc = NULL;
+
 	if (thread->state & (ThreadState_AbortRequested | ThreadState_Stopped))
 	{
 		UNLOCK_THREAD (thread);
@@ -2598,11 +2602,13 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThreadHandle thread_handle,
 {
 	// InternalThreads are always pinned, so shallowly coop-handleize.
 	MonoInternalThread * const thread = mono_internal_thread_handle_ptr (thread_handle);
+	gboolean is_self = thread == mono_thread_internal_current ();
 
-	if (!request_thread_abort (thread, &state, FALSE))
+	/* For self aborts we always process the abort */
+	if (!request_thread_abort (thread, &state, FALSE) && !is_self)
 		return;
 
-	if (thread == mono_thread_internal_current ()) {
+	if (is_self) {
 		self_abort_internal (error);
 	} else {
 		async_abort_internal (thread, TRUE);

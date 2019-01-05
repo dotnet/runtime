@@ -612,6 +612,7 @@ TESTS_CS_SRC=		\
 	priority.cs	\
 	abort-cctor.cs	\
 	abort-try-holes.cs \
+	abort-tests.cs \
 	thread-native-exit.cs \
 	reference-loader.cs \
 	thread-suspend-suspended.cs \
