@@ -2261,7 +2261,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
 
 void Compiler::impMarkContiguousSIMDFieldAssignments(GenTree* stmt)
 {
-    if (!featureSIMD || opts.MinOpts())
+    if (!featureSIMD || opts.OptimizationDisabled())
     {
         return;
     }

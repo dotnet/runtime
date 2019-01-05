@@ -51,7 +51,7 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 
 void Compiler::optSetBlockWeights()
 {
-    noway_assert(!opts.MinOpts() && !opts.compDbgCode);
+    noway_assert(opts.OptimizationEnabled());
     assert(fgDomsComputed);
 
 #ifdef DEBUG
@@ -4050,7 +4050,7 @@ static GenTree* optFindLoopTermTest(BasicBlock* bottom)
 
 void Compiler::fgOptWhileLoop(BasicBlock* block)
 {
-    noway_assert(!opts.MinOpts() && !opts.compDbgCode);
+    noway_assert(opts.OptimizationEnabled());
     noway_assert(compCodeOpt() != SMALL_CODE);
 
     /*
@@ -4360,7 +4360,7 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
 
 void Compiler::optOptimizeLayout()
 {
-    noway_assert(!opts.MinOpts() && !opts.compDbgCode);
+    noway_assert(opts.OptimizationEnabled());
 
 #ifdef DEBUG
     if (verbose)
@@ -4414,7 +4414,7 @@ void Compiler::optOptimizeLayout()
 
 void Compiler::optOptimizeLoops()
 {
-    noway_assert(!opts.MinOpts() && !opts.compDbgCode);
+    noway_assert(opts.OptimizationEnabled());
 
 #ifdef DEBUG
     if (verbose)
