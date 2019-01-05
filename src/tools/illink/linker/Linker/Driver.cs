@@ -504,10 +504,4 @@ namespace Mono.Linker {
 			return p;
 		}
 	}
-
-	[Flags]
-	public enum CodeOptimizations
-	{
-		BeforeFieldInit = 1 << 0,
-	}
 }
