@@ -230,10 +230,10 @@ namespace Mono.Linker.Steps {
 		static void CopyFileAndRemoveReadOnly (string src, string dest) {
 			File.Copy (src, dest, true);
 
-			FileAttributes attrs = File.GetAttributes (dest);
+			System.IO.FileAttributes attrs = File.GetAttributes (dest);
 
-			if ((attrs & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
-				File.SetAttributes (dest, attrs & ~FileAttributes.ReadOnly);
+			if ((attrs & System.IO.FileAttributes.ReadOnly) == System.IO.FileAttributes.ReadOnly)
+				File.SetAttributes (dest, attrs & ~System.IO.FileAttributes.ReadOnly);
 		}
 
 		protected virtual string GetAssemblyFileName (AssemblyDefinition assembly, string directory)
