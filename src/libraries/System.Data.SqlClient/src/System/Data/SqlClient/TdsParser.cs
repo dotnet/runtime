@@ -3626,9 +3626,9 @@ namespace System.Data.SqlClient
                 return false;
             }
 
-            col.updatability = (byte)((flags & TdsEnums.Updatability) >> 2);
+            col.Updatability = (byte)((flags & TdsEnums.Updatability) >> 2);
             col.isNullable = (TdsEnums.Nullable == (flags & TdsEnums.Nullable));
-            col.isIdentity = (TdsEnums.Identity == (flags & TdsEnums.Identity));
+            col.IsIdentity = (TdsEnums.Identity == (flags & TdsEnums.Identity));
 
             // read second byte of column metadata flags
             if (!stateObj.TryReadByte(out flags))
@@ -3636,7 +3636,7 @@ namespace System.Data.SqlClient
                 return false;
             }
 
-            col.isColumnSet = (TdsEnums.IsColumnSet == (flags & TdsEnums.IsColumnSet));
+            col.IsColumnSet = (TdsEnums.IsColumnSet == (flags & TdsEnums.IsColumnSet));
 
             byte tdsType;
             if (!stateObj.TryReadByte(out tdsType))
@@ -4011,13 +4011,13 @@ namespace System.Data.SqlClient
                     return false;
                 }
 
-                col.isDifferentName = (TdsEnums.SQLDifferentName == (status & TdsEnums.SQLDifferentName));
-                col.isExpression = (TdsEnums.SQLExpression == (status & TdsEnums.SQLExpression));
-                col.isKey = (TdsEnums.SQLKey == (status & TdsEnums.SQLKey));
-                col.isHidden = (TdsEnums.SQLHidden == (status & TdsEnums.SQLHidden));
+                col.IsDifferentName = (TdsEnums.SQLDifferentName == (status & TdsEnums.SQLDifferentName));
+                col.IsExpression = (TdsEnums.SQLExpression == (status & TdsEnums.SQLExpression));
+                col.IsKey = (TdsEnums.SQLKey == (status & TdsEnums.SQLKey));
+                col.IsHidden = (TdsEnums.SQLHidden == (status & TdsEnums.SQLHidden));
 
                 // read off the base table name if it is different than the select list column name
-                if (col.isDifferentName)
+                if (col.IsDifferentName)
                 {
                     byte len;
                     if (!stateObj.TryReadByte(out len))
@@ -4039,9 +4039,9 @@ namespace System.Data.SqlClient
                 }
 
                 // Expressions are readonly
-                if (col.isExpression)
+                if (col.IsExpression)
                 {
-                    col.updatability = 0;
+                    col.Updatability = 0;
                 }
             }
 
@@ -8163,9 +8163,9 @@ namespace System.Data.SqlClient
 
                     ushort flags;
 
-                    flags = (ushort)(md.updatability << 2);
+                    flags = (ushort)(md.Updatability << 2);
                     flags |= (ushort)(md.isNullable ? (ushort)TdsEnums.Nullable : (ushort)0);
-                    flags |= (ushort)(md.isIdentity ? (ushort)TdsEnums.Identity : (ushort)0);
+                    flags |= (ushort)(md.IsIdentity ? (ushort)TdsEnums.Identity : (ushort)0);
 
                     WriteShort(flags, stateObj);      // write the flags
 
