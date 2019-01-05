@@ -12,11 +12,11 @@ setlocal
 set __sourceDir=%~dp0
 set __ExtraCmakeParams=
 
-:: VS 2015 is the minimum supported toolset
-if "%__VSVersion%" == "vs2017" (
-  set __VSString=15 2017
+:: VS 2017 is the minimum supported toolset
+if "%__VSVersion%" == "vs2019" (
+  set __VSString=16 2019
 ) else (
-  set __VSString=14 2015
+  set __VSString=15 2017
 )
 
 :: Set the target architecture to a format cmake understands. ANYCPU defaults to x64
@@ -47,7 +47,7 @@ GOTO :DONE
   echo "Usage..."
   echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion> <Target Architecture>"
   echo "Specify the path to the top level CMake file"
-  echo "Specify the VSVersion to be used - VS2015 or VS2017"
+  echo "Specify the VSVersion to be used - VS2017 or VS2019"
   echo "Specify the Target Architecture - AnyCPU, x86, x64, ARM, or ARM64."
   EXIT /B 1
 
