@@ -280,18 +280,38 @@ namespace System.Data.SqlClient
 
     sealed internal class _SqlMetaData : SqlMetaDataPriv
     {
+        private enum _SqlMetadataFlags : int
+        {
+            None = 0,
+
+            Updatable = 1,
+            UpdateableUnknown = 2,
+            IsDifferentName = 4,
+            IsKey = 8,
+            IsHidden = 16,
+            IsExpression = 32,
+            IsIdentity = 64,
+            IsColumnSet = 128,
+
+            IsReadOnlyMask = (Updatable | UpdateableUnknown)
+        }
+
         internal string column;
         internal string baseColumn;
         internal MultiPartTableName multiPartTableName;
         internal readonly int ordinal;
-        internal byte updatability;     // two bit field (0 is read only, 1 is updatable, 2 is updatability unknown)
+
+        private _SqlMetadataFlags flags;
+
+        //private byte updatability;     // two bit field (0 is read only, 1 is updatable, 2 is updatability unknown)
+        //private bool isDifferentName;
+        //private bool isKey;
+        //private bool isHidden;
+        //private bool isExpression;
+        //private bool isIdentity;
+        //private bool isColumnSet;
+
         internal byte tableNum;
-        internal bool isDifferentName;
-        internal bool isKey;
-        internal bool isHidden;
-        internal bool isExpression;
-        internal bool isIdentity;
-        internal bool isColumnSet;
         internal byte op;        // for altrow-columns only
         internal ushort operand; // for altrow-columns only
 
@@ -329,6 +349,59 @@ namespace System.Data.SqlClient
             }
         }
 
+
+        public byte Updatability
+        {
+            get => (byte)(flags & _SqlMetadataFlags.IsReadOnlyMask);
+            set => flags = (_SqlMetadataFlags)((value & 0x3) | ((int)flags & ~0x03));
+        }
+
+        public bool IsReadOnly
+        {
+            get => (flags & _SqlMetadataFlags.IsReadOnlyMask ) == _SqlMetadataFlags.None;
+        }
+
+        public bool IsDifferentName
+        {
+            get => (flags & _SqlMetadataFlags.IsDifferentName) == _SqlMetadataFlags.IsDifferentName;
+            set => Set(_SqlMetadataFlags.IsDifferentName, value);
+        }
+
+        public bool IsKey
+        {
+            get => (flags & _SqlMetadataFlags.IsKey) == _SqlMetadataFlags.IsKey;
+            set => Set(_SqlMetadataFlags.IsKey, value);
+        }
+
+        public bool IsHidden
+        {
+            get => (flags & _SqlMetadataFlags.IsHidden) == _SqlMetadataFlags.IsHidden;
+            set => Set(_SqlMetadataFlags.IsHidden, value);
+        }
+
+        public bool IsExpression
+        {
+            get => (flags & _SqlMetadataFlags.IsExpression) == _SqlMetadataFlags.IsExpression;
+            set => Set(_SqlMetadataFlags.IsExpression, value);
+        }
+
+        public bool IsIdentity
+        {
+            get => (flags & _SqlMetadataFlags.IsIdentity) == _SqlMetadataFlags.IsIdentity;
+            set => Set(_SqlMetadataFlags.IsIdentity, value);
+        }
+
+        public bool IsColumnSet
+        {
+            get => (flags & _SqlMetadataFlags.IsColumnSet) == _SqlMetadataFlags.IsColumnSet;
+            set => Set(_SqlMetadataFlags.IsColumnSet, value);
+        }
+
+        private void Set(_SqlMetadataFlags flag, bool value)
+        {
+            flags = value ? flags | flag : flags & ~flag;
+        }
+
         internal bool IsNewKatmaiDateTimeType
         {
             get
@@ -352,14 +425,15 @@ namespace System.Data.SqlClient
             result.column = column;
             result.baseColumn = baseColumn;
             result.multiPartTableName = multiPartTableName;
-            result.updatability = updatability;
+            //result.updatability = updatability;
             result.tableNum = tableNum;
-            result.isDifferentName = isDifferentName;
-            result.isKey = isKey;
-            result.isHidden = isHidden;
-            result.isExpression = isExpression;
-            result.isIdentity = isIdentity;
-            result.isColumnSet = isColumnSet;
+            //result.isDifferentName = isDifferentName;
+            //result.isKey = isKey;
+            //result.isHidden = isHidden;
+            //result.isExpression = isExpression;
+            //result.isIdentity = isIdentity;
+            //result.isColumnSet = isColumnSet;
+            result.flags = flags;
             result.op = op;
             result.operand = operand;
             return result;
@@ -496,7 +570,7 @@ namespace System.Data.SqlClient
         internal int codePage;
         internal Encoding encoding;
         internal bool isNullable;
-        internal bool isMultiValued = false;
+        internal bool isMultiValued;
 
         // UDT specific metadata
         // server metadata info
