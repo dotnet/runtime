@@ -9337,6 +9337,12 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                         --msgLength;
                         break;
                     }
+                    if (tree->gtFlags & GTF_IND_TGT_NOT_HEAP)
+                    {
+                        printf("s");
+                        --msgLength;
+                        break;
+                    }
                     if (tree->gtFlags & GTF_IND_INVARIANT)
                     {
                         printf("#");
@@ -14436,6 +14442,11 @@ GenTree* Compiler::gtNewTempAssign(
         }
         // 2) TYP_DOUBLE = TYP_FLOAT or TYP_FLOAT = TYP_DOUBLE
         else if (varTypeIsFloating(dstTyp) && varTypeIsFloating(valTyp))
+        {
+            ok = true;
+        }
+        // 3) TYP_BYREF = TYP_REF when object stack allocation is enabled
+        else if (JitConfig.JitObjectStackAllocation() && (dstTyp == TYP_BYREF) && (valTyp == TYP_REF))
         {
             ok = true;
         }

@@ -4245,7 +4245,6 @@ void GCInfo::gcMakeRegPtrTable(
                 // Or in byref_OFFSET_FLAG for 'byref' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
             }
-            gcUpdateFlagForStackAllocatedObjects(flags);
 
             if (varDsc->lvPinned)
             {
@@ -4345,7 +4344,6 @@ void GCInfo::gcMakeRegPtrTable(
                 {
                     flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
                 }
-                gcUpdateFlagForStackAllocatedObjects(flags);
 
                 GcStackSlotBase stackSlotBase = GC_SP_REL;
                 if (compiler->isFramePointerUsed())
@@ -4730,7 +4728,6 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         {
             regFlags = (GcSlotFlags)(regFlags | GC_SLOT_INTERIOR);
         }
-        gcUpdateFlagForStackAllocatedObjects(regFlags);
 
         RegSlotIdKey rskey(regNum, regFlags);
         GcSlotId     regSlotId;
@@ -4821,7 +4818,6 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
         {
             flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
         }
-        gcUpdateFlagForStackAllocatedObjects(flags);
 
         if ((lowBits & pinned_OFFSET_FLAG) != 0)
         {
@@ -4922,30 +4918,6 @@ void GCInfo::gcInfoRecordGCStackArgsDead(GcInfoEncoder* gcInfoEncoder,
         assert(b); // Should have been added in the first pass.
         // Live until the call.
         gcInfoEncoderWithLog->SetSlotState(instrOffset, varSlotId, GC_SLOT_DEAD);
-    }
-}
-
-//------------------------------------------------------------------------
-// gcUpdateFlagForStackAllocatedObjects: Update the flags to handle a possibly stack-allocated object.
-//                                       allocation.
-// Arguments:
-//    flags - flags to update
-//
-//
-// Notes:
-//    TODO-ObjectStackAllocation: This is a temporary conservative implementation.
-//    Currently variables pointing to heap and/or stack allocated objects have type TYP_REF so we
-//    conservatively report them as INTERIOR.
-//    Ideally we should have the following types for object pointers:
-//        1. TYP_I_IMPL for variables always pointing to stack-allocated objects (not reporting to GC)
-//        2. TYP_REF for variables always pointing to heap-allocated objects (reporting as normal objects to GC)
-//        3. TYP_BYREF for variables that may point to the stack or to the heap (reporting as interior objects to GC)
-
-void GCInfo::gcUpdateFlagForStackAllocatedObjects(GcSlotFlags& flags)
-{
-    if ((compiler->optMethodFlags & OMF_HAS_OBJSTACKALLOC) != 0)
-    {
-        flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
     }
 }
 
