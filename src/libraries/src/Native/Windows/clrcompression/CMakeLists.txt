@@ -77,12 +77,6 @@ else()
     )
 endif()
 
-include (CheckSymbolExists)
-check_symbol_exists(vsnprintf stdio.h HAVE_VSNPRINTF)
-if (HAVE_VSNPRINTF) # HAVE_VSNPRINTF is CMAKE variable, compiler doesn't know about it yet
-    add_definitions(-DHAVE_VSNPRINTF) # this is for the compiler
-endif ()
-
 #Include Brotli include files
 include_directories("../../AnyOS/brotli/include")
 
