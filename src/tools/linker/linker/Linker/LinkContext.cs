@@ -381,4 +381,10 @@ namespace Mono.Linker {
 				Logger.LogMessage (importance, message, values);
 		}
 	}
+
+	[Flags]
+	public enum CodeOptimizations
+	{
+		BeforeFieldInit = 1 << 0,
+	}
 }
