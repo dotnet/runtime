@@ -16857,14 +16857,10 @@ void Compiler::fgMorph()
     // local variable allocation on the stack.
     ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
 
-// TODO-ObjectStackAllocation: Enable the optimization for architectures using
-// JIT32_GCENCODER (i.e., x86).
-#ifndef JIT32_GCENCODER
     if (JitConfig.JitObjectStackAllocation() && opts.OptimizationEnabled())
     {
         objectAllocator.EnableObjectStackAllocation();
     }
-#endif // JIT32_GCENCODER
 
     objectAllocator.Run();
 
