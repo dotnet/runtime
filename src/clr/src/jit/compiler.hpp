@@ -1681,7 +1681,7 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
     // this new local will be referenced.
     if (lvaLocalVarRefCounted())
     {
-        if (opts.MinOpts() || opts.compDbgCode)
+        if (opts.OptimizationDisabled())
         {
             lvaTable[tempNum].lvImplicitlyReferenced = 1;
         }
@@ -1818,7 +1818,7 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
 inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, RefCountState state, bool propagate)
 {
     // In minopts and debug codegen, we don't maintain normal ref counts.
-    if ((state == RCS_NORMAL) && (comp->opts.MinOpts() || comp->opts.compDbgCode))
+    if ((state == RCS_NORMAL) && comp->opts.OptimizationDisabled())
     {
         // Note, at least, that there is at least one reference.
         lvImplicitlyReferenced = 1;
