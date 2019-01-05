@@ -8279,6 +8279,16 @@ public:
             return compMinOptsIsSet;
         }
 #endif // !DEBUG
+
+        inline bool OptimizationDisabled()
+        {
+            return MinOpts() || compDbgCode;
+        }
+        inline bool OptimizationEnabled()
+        {
+            return !OptimizationDisabled();
+        }
+
         inline void SetMinOpts(bool val)
         {
             assert(!compMinOptsIsUsed);

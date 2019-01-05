@@ -457,7 +457,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     if (targetCnt == 1)
     {
         JITDUMP("Lowering switch " FMT_BB ": single target; converting to BBJ_ALWAYS\n", originalSwitchBB->bbNum);
-        noway_assert(comp->opts.MinOpts() || comp->opts.compDbgCode);
+        noway_assert(comp->opts.OptimizationDisabled());
         if (originalSwitchBB->bbNext == jumpTab[0])
         {
             originalSwitchBB->bbJumpKind = BBJ_NONE;
@@ -5229,7 +5229,7 @@ void Lowering::DoPhase()
 
     comp->fgLocalVarLiveness();
     // local var liveness can delete code, which may create empty blocks
-    if (!comp->opts.MinOpts() && !comp->opts.compDbgCode)
+    if (comp->opts.OptimizationEnabled())
     {
         comp->optLoopsMarked = false;
         bool modified        = comp->fgUpdateFlowGraph();

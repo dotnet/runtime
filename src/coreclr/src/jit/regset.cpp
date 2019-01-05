@@ -90,7 +90,7 @@ void RegSet::verifyRegUsed(regNumber reg)
 
 void RegSet::verifyRegistersUsed(regMaskTP regMask)
 {
-    if (m_rsCompiler->opts.MinOpts() || m_rsCompiler->opts.compDbgCode)
+    if (m_rsCompiler->opts.OptimizationDisabled())
     {
         return;
     }
