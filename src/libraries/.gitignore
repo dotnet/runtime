@@ -38,12 +38,8 @@ msbuild.binlog
 cross/rootfs/
 cross/android-rootfs/
 
-# Visual Studio 2015
+# Visual Studio
 .vs/
-
-# Visual Studio 2015 Pre-CTP6
-*.sln.ide
-*.ide/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/

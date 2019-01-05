@@ -77,7 +77,7 @@ else()
     )
 endif()
 
-if ($ENV{__VSVersion} STREQUAL vs2015)
+if ($ENV{__VSVersion} STREQUAL vs2017)
     add_definitions(-DHAVE_VSNPRINTF)
 endif ()
 
