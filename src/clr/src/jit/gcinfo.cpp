@@ -267,6 +267,12 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree
                 // This case occurs for Span<T>.
                 return WBF_NoBarrier;
             }
+            if (tgt->gtFlags & GTF_IND_TGT_NOT_HEAP)
+            {
+                // This indirection is not from to the heap.
+                // This case occurs for stack-allocated objects.
+                return WBF_NoBarrier;
+            }
             return gcWriteBarrierFormFromTargetAddress(tgt->gtOp.gtOp1);
 
         case GT_LEA:

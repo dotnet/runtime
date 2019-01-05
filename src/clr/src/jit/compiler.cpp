@@ -9269,6 +9269,10 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_TGTANYWHERE]");
                 }
+                if (tree->gtFlags & GTF_IND_TGT_NOT_HEAP)
+                {
+                    chars += printf("[IND_TGT_NOT_HEAP]");
+                }
                 if (tree->gtFlags & GTF_IND_TLS_REF)
                 {
                     chars += printf("[IND_TLS_REF]");

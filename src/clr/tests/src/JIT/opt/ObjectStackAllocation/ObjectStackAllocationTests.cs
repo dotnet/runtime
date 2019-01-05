@@ -33,7 +33,7 @@ namespace ObjectStackAllocation
         }
     }
 
-    class SimpleClassWithGCField : SimpleClassA
+    sealed class SimpleClassWithGCField : SimpleClassA
     {
         public object o;
 
@@ -80,6 +80,13 @@ namespace ObjectStackAllocation
     {
         static volatile int f1 = 5;
         static volatile int f2 = 7;
+        static SimpleClassA classA;
+        static SimpleClassWithGCField classWithGCField;
+        static string str0;
+        static string str1;
+        static string str2;
+        static string str3;
+        static string str4;
 
         delegate int Test();
 
@@ -89,11 +96,23 @@ namespace ObjectStackAllocation
         {
             AllocationKind expectedAllocationKind = AllocationKind.Stack;
             if (GCStressEnabled()) {
+                Console.WriteLine("GCStress is enabled");
                 expectedAllocationKind = AllocationKind.Undefined;
             }
             else if (!SPCOptimizationsEnabled()) {
+                Console.WriteLine("System.Private.CoreLib.dll optimizations are disabled");
                 expectedAllocationKind = AllocationKind.Heap;
             }
+
+            classA = new SimpleClassA(f1, f2);
+
+            classWithGCField = new SimpleClassWithGCField(f1, f2, null);
+
+            str0 = "str_zero";
+            str1 = "str_one";
+            str2 = "str_two";
+            str3 = "str_three";
+            str4 = "str_four";
 
             CallTestAndVerifyAllocation(AllocateSimpleClassAndAddFields, 12, expectedAllocationKind);
 
@@ -107,22 +126,24 @@ namespace ObjectStackAllocation
 
             CallTestAndVerifyAllocation(AllocateClassWithNestedStructAndAddFields, 24, expectedAllocationKind);
 
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckTypeNoHelper, 1, expectedAllocationKind);
+
+            CallTestAndVerifyAllocation(AllocateSimpleClassWithGCFieldAndAddFields, 12, expectedAllocationKind);
+
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndAssignRefToAField, 12, expectedAllocationKind);
+
+            CallTestAndVerifyAllocation(TestMixOfReportingAndWriteBarriers, 34, expectedAllocationKind);
+
             // The remaining tests currently never allocate on the stack
             if (expectedAllocationKind == AllocationKind.Stack) {
                 expectedAllocationKind = AllocationKind.Heap;
             }
 
             // This test calls CORINFO_HELP_ISINSTANCEOFCLASS
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckType, 1, expectedAllocationKind);
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckTypeHelper, 1, expectedAllocationKind);
 
             // This test calls CORINFO_HELP_CHKCASTCLASS_SPECIAL
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);
-
-            // Stack allocation of classes with GC fields is currently disabled
-            CallTestAndVerifyAllocation(AllocateSimpleClassWithGCFieldAndAddFields, 12, expectedAllocationKind);
-
-            // Assigning class ref to a field of another object currently always disables stack allocation
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndAssignRefToAField, 12, expectedAllocationKind);
 
             // Stack allocation of boxed structs is currently disabled
             CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
@@ -183,6 +204,7 @@ namespace ObjectStackAllocation
         {
             SimpleClassA a1 = new SimpleClassA(f1, f2);
             SimpleClassA a2 = (f1 == 0) ? a1 : new SimpleClassA(f2, f1);
+            GC.Collect();
             return (a1 == a2) ? 1 : 0;
         }
 
@@ -191,20 +213,31 @@ namespace ObjectStackAllocation
         {
             SimpleClassA a1 = new SimpleClassA(f1, f2);
             SimpleClassA a2 = (f1 == 0) ? a1 : new SimpleClassA(f2, f1);
+            GC.Collect();
             return (a1 != a2) ? 1 : 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int AllocateSimpleClassAndCheckType()
+        static int AllocateSimpleClassAndCheckTypeNoHelper()
         {
             object o = (f1 == 0) ? (object)new SimpleClassB(f1, f2) : (object)new SimpleClassA(f1, f2);
-            return (o is SimpleClassB) || !(o is SimpleClassA) ? 0 : 1;
+            GC.Collect();
+            return (o is SimpleClassB) ? 0 : 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AllocateSimpleClassAndCheckTypeHelper()
+        {
+            object o = (f1 == 0) ? (object)new SimpleClassB(f1, f2) : (object)new SimpleClassA(f1, f2);
+            GC.Collect();
+            return !(o is SimpleClassA) ? 0 : 1;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int AllocateSimpleClassAndCast()
         {
             object o = (f1 == 0) ? (object)new SimpleClassB(f1, f2) : (object)new SimpleClassA(f2, f1);
+            GC.Collect();
             return ((SimpleClassA)o).f1;
         }
 
@@ -212,6 +245,7 @@ namespace ObjectStackAllocation
         static int AllocateSimpleClassAndGetField()
         {
             SimpleClassA a = new SimpleClassA(f1, f2);
+            GC.Collect();
             ref int f = ref a.f2;
             return f;
         }
@@ -220,6 +254,7 @@ namespace ObjectStackAllocation
         static int AllocateClassWithNestedStructAndGetField()
         {
             ClassWithNestedStruct c = new ClassWithNestedStruct(f1, f2);
+            GC.Collect();
             ref int f = ref c.ns.s.f1;
             return f;
         }
@@ -228,6 +263,7 @@ namespace ObjectStackAllocation
         static int AllocateClassWithNestedStructAndAddFields()
         {
             ClassWithNestedStruct c = new ClassWithNestedStruct(f1, f2);
+            GC.Collect();
             return c.ns.f1 + c.ns.f2 + c.ns.s.f1 + c.ns.s.f2;
         }
 
@@ -235,14 +271,15 @@ namespace ObjectStackAllocation
         static int AllocateSimpleClassWithGCFieldAndAddFields()
         {
             SimpleClassWithGCField c = new SimpleClassWithGCField(f1, f2, null);
+            GC.Collect();
             return c.f1 + c.f2;
         }
 
         static int AllocateSimpleClassAndAssignRefToAField()
         {
             SimpleClassWithGCField c = new SimpleClassWithGCField(f1, f2, null);
-            SimpleClassA a = new SimpleClassA(f1, f2);
-            c.o = a;
+            GC.Collect();
+            c.o = classA;
             return c.f1 + c.f2;
         }
 
@@ -253,7 +290,38 @@ namespace ObjectStackAllocation
             str.f1 = f1;
             str.f2 = f2;
             object boxedSimpleStruct = (object)str;
+            GC.Collect();
             return ((SimpleStruct)boxedSimpleStruct).f1 + ((SimpleStruct)boxedSimpleStruct).f2;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int TestMixOfReportingAndWriteBarriers()
+        {
+            // c1 doesn't escape and is allocated on the stack
+            SimpleClassWithGCField c1 = new SimpleClassWithGCField(f1, f2, str0);
+
+            // c2 always points to a heap-allocated object
+            SimpleClassWithGCField c2 = classWithGCField;
+
+            // c2 and c3 may point to a heap-allocated object or to a stack-allocated object
+            SimpleClassWithGCField c3 = (f1 == 0) ? c1 : c2;
+            SimpleClassWithGCField c4 = (f2 == 0) ? c2 : c1;
+
+            // c1 doesn't have to be reported to GC (but can be conservatively reported as an interior pointer)
+            // c1.o should be reported to GC as a normal pointer (but can be conservatively reported as an interior pointer)
+            // c2 should be reported to GC as a normal pointer (but can be conservatively reported as an interior pointer)
+            // c3 and c4 must be reported as interior pointers
+            GC.Collect();
+
+            // This assignment doesn't need a write barrier but may conservatively use a checked barrier
+            c1.o = str1;
+            // This assignment should optimally use a normal write barrier but may conservatively use a checked barrier
+            c2.o = str2;
+            // These assignments require a checked write barrier
+            c3.o = str3;
+            c4.o = str4;
+
+            return c1.o.ToString().Length + c2.o.ToString().Length + c3.o.ToString().Length + c4.o.ToString().Length;
         }
     }
 }
