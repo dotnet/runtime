@@ -552,7 +552,7 @@ namespace System.Data.SqlClient
 
                 // Check for excluded types
                 if ((metadata.type == SqlDbType.Timestamp)
-                    || ((metadata.isIdentity) && !IsCopyOption(SqlBulkCopyOptions.KeepIdentity)))
+                    || ((metadata.IsIdentity) && !IsCopyOption(SqlBulkCopyOptions.KeepIdentity)))
                 {
                     // Remove metadata for excluded columns
                     metaDataSet[i] = null;
