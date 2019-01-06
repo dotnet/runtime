@@ -145,9 +145,8 @@ namespace System.Globalization
 
         public override bool Equals(object obj)
         {
-            IdnMapping that = obj as IdnMapping;
             return
-                that != null &&
+                obj is IdnMapping that &&
                 _allowUnassigned == that._allowUnassigned &&
                 _useStd3AsciiRules == that._useStd3AsciiRules;
         }

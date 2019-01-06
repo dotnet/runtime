@@ -38,8 +38,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             object _this = Unsafe.As<object>(this);
 
-            IMapView<K, V> _this_map = _this as IMapView<K, V>;
-            if (_this_map != null)
+            if (_this is IMapView<K, V> _this_map)
             {
                 uint size = _this_map.Size;
 

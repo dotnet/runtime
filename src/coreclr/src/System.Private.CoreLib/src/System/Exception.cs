@@ -200,8 +200,7 @@ namespace System
             {
                 if (Data.Contains("__RestrictedErrorObject"))
                 {
-                    __RestrictedErrorObject restrictedObject = Data["__RestrictedErrorObject"] as __RestrictedErrorObject;
-                    if (restrictedObject != null)
+                    if (Data["__RestrictedErrorObject"] is __RestrictedErrorObject restrictedObject)
                         restrictedErrorObject = restrictedObject.RealErrorObject;
                 }
                 return (bool)Data["__HasRestrictedLanguageErrorObject"];
