@@ -1262,6 +1262,16 @@ namespace System.Runtime.InteropServices
             return pNewMem;
         }
 
+        internal static IntPtr AllocBSTR(int length)
+        {
+            IntPtr bstr = Win32Native.SysAllocStringLen(null, length);
+            if (bstr == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return bstr;
+        }
+
         public static void FreeBSTR(IntPtr ptr)
         {
             if (!IsWin32Atom(ptr))
