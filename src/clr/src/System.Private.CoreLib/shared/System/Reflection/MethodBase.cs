@@ -63,7 +63,6 @@ namespace System.Reflection
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
 
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MethodBase left, MethodBase right)
         {
@@ -75,8 +74,13 @@ namespace System.Reflection
                 return (left is null) ? true : false;
             }
 
-            // Quick reference equality test prior to calling the virtual Equality
-            return ReferenceEquals(right, left) ? true : right.Equals(left);
+            // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
+            if ((object)left == (object)right)
+            {
+                return true;
+            }
+
+            return (left is null) ? false : left.Equals(right);
         }
 
         public static bool operator !=(MethodBase left, MethodBase right) => !(left == right);
