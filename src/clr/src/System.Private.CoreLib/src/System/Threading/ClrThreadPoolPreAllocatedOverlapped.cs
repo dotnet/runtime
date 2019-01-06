@@ -48,7 +48,7 @@ namespace System.Threading
         ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed.
         /// </exception>
         [CLSCompliant(false)]
-        public unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object state, object pinData)
+        public PreAllocatedOverlapped(IOCompletionCallback callback, object state, object pinData)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
@@ -69,7 +69,7 @@ namespace System.Threading
         /// <summary>
         /// Frees the resources associated with this <see cref="PreAllocatedOverlapped"/> instance. 
         /// </summary>
-        public unsafe void Dispose()
+        public void Dispose()
         {
             _lifetime.Dispose(this);
             GC.SuppressFinalize(this);

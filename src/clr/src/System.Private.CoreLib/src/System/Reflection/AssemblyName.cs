@@ -576,7 +576,7 @@ namespace System.Reflection
                        + 10)));
         }
 
-        private static unsafe bool IsReservedUnreservedOrHash(char c)
+        private static bool IsReservedUnreservedOrHash(char c)
         {
             if (IsUnreserved(c))
             {
@@ -585,7 +585,7 @@ namespace System.Reflection
             return (RFC3986ReservedMarks.Contains(c));
         }
 
-        internal static unsafe bool IsUnreserved(char c)
+        internal static bool IsUnreserved(char c)
         {
             if (IsAsciiLetterOrDigit(c))
             {
