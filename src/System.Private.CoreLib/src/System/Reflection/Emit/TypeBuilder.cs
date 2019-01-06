@@ -1496,34 +1496,34 @@ namespace System.Reflection.Emit
                 switch (nativeCallConv)
                 {
                     case CallingConvention.Winapi:
-                        linkFlags = (int)PInvokeMap.CallConvWinapi;
+                        linkFlags = (int)PInvokeAttributes.CallConvWinapi;
                         break;
                     case CallingConvention.Cdecl:
-                        linkFlags = (int)PInvokeMap.CallConvCdecl;
+                        linkFlags = (int)PInvokeAttributes.CallConvCdecl;
                         break;
                     case CallingConvention.StdCall:
-                        linkFlags = (int)PInvokeMap.CallConvStdcall;
+                        linkFlags = (int)PInvokeAttributes.CallConvStdcall;
                         break;
                     case CallingConvention.ThisCall:
-                        linkFlags = (int)PInvokeMap.CallConvThiscall;
+                        linkFlags = (int)PInvokeAttributes.CallConvThiscall;
                         break;
                     case CallingConvention.FastCall:
-                        linkFlags = (int)PInvokeMap.CallConvFastcall;
+                        linkFlags = (int)PInvokeAttributes.CallConvFastcall;
                         break;
                 }
                 switch (nativeCharSet)
                 {
                     case CharSet.None:
-                        linkFlags |= (int)PInvokeMap.CharSetNotSpec;
+                        linkFlags |= (int)PInvokeAttributes.CharSetNotSpec;
                         break;
                     case CharSet.Ansi:
-                        linkFlags |= (int)PInvokeMap.CharSetAnsi;
+                        linkFlags |= (int)PInvokeAttributes.CharSetAnsi;
                         break;
                     case CharSet.Unicode:
-                        linkFlags |= (int)PInvokeMap.CharSetUnicode;
+                        linkFlags |= (int)PInvokeAttributes.CharSetUnicode;
                         break;
                     case CharSet.Auto:
-                        linkFlags |= (int)PInvokeMap.CharSetAuto;
+                        linkFlags |= (int)PInvokeAttributes.CharSetAuto;
                         break;
                 }
 
