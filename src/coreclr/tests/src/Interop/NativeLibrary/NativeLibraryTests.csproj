@@ -35,7 +35,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj">
+    <ProjectReference Include="..\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj">
       <Project>{c8c0dc74-fac4-45b1-81fe-70c4808366e0}</Project>
       <Name>CoreCLRTestLibrary</Name>
     </ProjectReference>
