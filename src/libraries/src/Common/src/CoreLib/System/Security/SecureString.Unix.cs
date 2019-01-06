@@ -147,7 +147,7 @@ namespace System.Security
                 _buffer.AcquirePointer(ref bufferPtr);
                 int resultByteLength = (length + 1) * sizeof(char);
 
-                ptr = PInvokeMarshal.AllocBSTR(length);
+                ptr = Marshal.AllocBSTR(length);
 
                 Buffer.MemoryCopy(bufferPtr, (byte*)ptr, resultByteLength, length * sizeof(char));
 
@@ -159,7 +159,7 @@ namespace System.Security
                 if (result == IntPtr.Zero && ptr != IntPtr.Zero)
                 {
                     RuntimeImports.RhZeroMemory(ptr, (UIntPtr)(length * sizeof(char)));
-                    PInvokeMarshal.FreeBSTR(ptr);
+                    Marshal.FreeBSTR(ptr);
                 }
 
                 if (bufferPtr != null)
