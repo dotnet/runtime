@@ -403,8 +403,7 @@ namespace System.Diagnostics.Tracing
             {
                 foreach (WeakReference eventSourceRef in EventListener.s_EventSources)
                 {
-                    EventSource eventSource = eventSourceRef.Target as EventSource;
-                    if (eventSource != null && !eventSource.IsDisposed)
+                    if (eventSourceRef.Target is EventSource eventSource && !eventSource.IsDisposed)
                         ret.Add(eventSource);
                 }
             }
@@ -2715,8 +2714,7 @@ namespace System.Diagnostics.Tracing
                 // TODO Enforce singleton pattern 
                 foreach (WeakReference eventSourceRef in EventListener.s_EventSources)
                 {
-                    EventSource eventSource = eventSourceRef.Target as EventSource;
-                    if (eventSource != null && eventSource.Guid == m_guid && !eventSource.IsDisposed)
+                    if (eventSourceRef.Target is EventSource eventSource && eventSource.Guid == m_guid && !eventSource.IsDisposed)
                     {
                         if (eventSource != this)
                         {
@@ -4160,8 +4158,7 @@ namespace System.Diagnostics.Tracing
             {
                 foreach (var esRef in s_EventSources)
                 {
-                    EventSource es = esRef.Target as EventSource;
-                    if (es != null)
+                    if (esRef.Target is EventSource es)
                         es.Dispose();
                 }
             }
@@ -4181,8 +4178,7 @@ namespace System.Diagnostics.Tracing
             // Foreach existing EventSource in the appdomain
             foreach (WeakReference eventSourceRef in s_EventSources)
             {
-                EventSource eventSource = eventSourceRef.Target as EventSource;
-                if (eventSource != null)
+                if (eventSourceRef.Target is EventSource eventSource)
                 {
                     // Is the first output dispatcher the dispatcher we are removing?
                     if (eventSource.m_Dispatchers.m_Listener == listenerToRemove)
@@ -4246,8 +4242,7 @@ namespace System.Diagnostics.Tracing
                 foreach (WeakReference eventSourceRef in s_EventSources)
                 {
                     id++;
-                    EventSource eventSource = eventSourceRef.Target as EventSource;
-                    if (eventSource == null)
+                    if (!(eventSourceRef.Target is EventSource eventSource))
                         continue;
                     Debug.Assert(eventSource.m_id == id, "Unexpected event source ID.");
 
@@ -4328,8 +4323,7 @@ namespace System.Diagnostics.Tracing
                         for (int i = 0; i < eventSourcesSnapshot.Length; i++)
                         {
                             WeakReference eventSourceRef = eventSourcesSnapshot[i];
-                            EventSource eventSource = eventSourceRef.Target as EventSource;
-                            if (eventSource != null)
+                            if (eventSourceRef.Target is EventSource eventSource)
                             {
                                 EventSourceCreatedEventArgs args = new EventSourceCreatedEventArgs();
                                 args.EventSource = eventSource;

@@ -500,8 +500,7 @@ namespace System.Threading.Tasks
                 return null;
 
             // If it can be cast to an array, use it directly
-            Task[] activeTasksArray = activeTasksSource as Task[];
-            if (activeTasksArray == null)
+            if (!(activeTasksSource is Task[] activeTasksArray))
             {
                 activeTasksArray = (new List<Task>(activeTasksSource)).ToArray();
             }

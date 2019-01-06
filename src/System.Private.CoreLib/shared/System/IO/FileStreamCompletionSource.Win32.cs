@@ -137,8 +137,7 @@ namespace System.IO
                 // be directly the FileStreamCompletion that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
                 object state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                FileStream fs = state as FileStream;
-                FileStreamCompletionSource completionSource = fs != null ?
+                FileStreamCompletionSource completionSource = state is FileStream fs ?
                     fs._currentOverlappedOwner :
                     (FileStreamCompletionSource)state;
                 Debug.Assert(completionSource._overlapped == pOverlapped, "Overlaps don't match");

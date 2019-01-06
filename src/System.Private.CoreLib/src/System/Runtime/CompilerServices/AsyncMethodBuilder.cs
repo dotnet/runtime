@@ -736,8 +736,7 @@ namespace System.Runtime.CompilerServices
             Task<TResult> task = this.Task;
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
-            var oce = exception as OperationCanceledException;
-            bool successfullySet = oce != null ?
+            bool successfullySet = exception is OperationCanceledException oce ?
                 task.TrySetCanceled(oce.CancellationToken, oce) :
                 task.TrySetException(exception);
 
