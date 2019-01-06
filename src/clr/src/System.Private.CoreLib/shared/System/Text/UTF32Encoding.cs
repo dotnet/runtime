@@ -1159,8 +1159,7 @@ namespace System.Text
 
         public override bool Equals(object value)
         {
-            UTF32Encoding that = value as UTF32Encoding;
-            if (that != null)
+            if (value is UTF32Encoding that)
             {
                 return (_emitUTF32ByteOrderMark == that._emitUTF32ByteOrderMark) &&
                        (_bigEndian == that._bigEndian) &&

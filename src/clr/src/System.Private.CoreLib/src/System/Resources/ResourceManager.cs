@@ -1002,8 +1002,7 @@ namespace System.Resources
 
                 if (value != null)
                 {
-                    UnmanagedMemoryStream stream = value as UnmanagedMemoryStream;
-                    if (stream != null && wrapUnmanagedMemStream)
+                    if (value is UnmanagedMemoryStream stream && wrapUnmanagedMemStream)
                         return new UnmanagedMemoryStreamWrapper(stream);
                     else
                         return value;
@@ -1041,8 +1040,7 @@ namespace System.Resources
                             }
                         }
 
-                        UnmanagedMemoryStream stream = value as UnmanagedMemoryStream;
-                        if (stream != null && wrapUnmanagedMemStream)
+                        if (value is UnmanagedMemoryStream stream && wrapUnmanagedMemStream)
                             return new UnmanagedMemoryStreamWrapper(stream);
                         else
                             return value;

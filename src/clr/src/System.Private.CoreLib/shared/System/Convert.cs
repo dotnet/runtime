@@ -160,8 +160,7 @@ namespace System
         public static TypeCode GetTypeCode(object value)
         {
             if (value == null) return TypeCode.Empty;
-            IConvertible temp = value as IConvertible;
-            if (temp != null)
+            if (value is IConvertible temp)
             {
                 return temp.GetTypeCode();
             }
@@ -173,8 +172,7 @@ namespace System
         public static bool IsDBNull(object value)
         {
             if (value == System.DBNull.Value) return true;
-            IConvertible convertible = value as IConvertible;
-            return convertible != null ? convertible.GetTypeCode() == TypeCode.DBNull : false;
+            return value is IConvertible convertible ? convertible.GetTypeCode() == TypeCode.DBNull : false;
         }
 
         // Converts the given object to the given type. In general, this method is
@@ -201,8 +199,7 @@ namespace System
                 return null;
             }
 
-            IConvertible v = value as IConvertible;
-            if (v == null)
+            if (!(value is IConvertible v))
             {
                 throw new InvalidCastException(SR.InvalidCast_IConvertible);
             }
@@ -330,8 +327,7 @@ namespace System
                 return null;
             }
 
-            IConvertible ic = value as IConvertible;
-            if (ic == null)
+            if (!(value is IConvertible ic))
             {
                 if (value.GetType() == conversionType)
                 {
@@ -2002,11 +1998,9 @@ namespace System
 
         public static string ToString(object value, IFormatProvider provider)
         {
-            IConvertible ic = value as IConvertible;
-            if (ic != null)
+            if (value is IConvertible ic)
                 return ic.ToString(provider);
-            IFormattable formattable = value as IFormattable;
-            if (formattable != null)
+            if (value is IFormattable formattable)
                 return formattable.ToString(null, provider);
             return value == null ? string.Empty : value.ToString();
         }

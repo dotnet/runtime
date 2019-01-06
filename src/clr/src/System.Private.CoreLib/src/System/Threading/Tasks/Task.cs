@@ -673,8 +673,7 @@ namespace System.Threading.Tasks
             var targetTask = o as Task;
             if (targetTask == null)
             {
-                var tuple = o as Tuple<Task, Task, TaskContinuation>;
-                if (tuple != null)
+                if (o is Tuple<Task, Task, TaskContinuation> tuple)
                 {
                     targetTask = tuple.Item1;
 
@@ -2499,14 +2498,13 @@ namespace System.Threading.Tasks
         {
             // Invoke the delegate
             Debug.Assert(m_action != null, "Null action in InnerInvoke()");
-            var action = m_action as Action;
-            if (action != null)
+            if (m_action is Action action)
             {
                 action();
                 return;
             }
-            var actionWithState = m_action as Action<object>;
-            if (actionWithState != null)
+
+            if (m_action is Action<object> actionWithState)
             {
                 actionWithState(m_stateObject);
                 return;
@@ -2523,8 +2521,7 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(unhandledException != null);
 
-            OperationCanceledException exceptionAsOce = unhandledException as OperationCanceledException;
-            if (exceptionAsOce != null && IsCancellationRequested &&
+            if (unhandledException is OperationCanceledException exceptionAsOce && IsCancellationRequested &&
                 m_contingentProperties.m_cancellationToken == exceptionAsOce.CancellationToken)
             {
                 // All conditions are satisfied for us to go into canceled state in Finish().
@@ -4431,9 +4428,7 @@ namespace System.Threading.Tasks
             // Task is completed. Nothing to do here.
             if (continuationsLocalRef == s_taskCompletionSentinel) return;
 
-            List<object> continuationsLocalListRef = continuationsLocalRef as List<object>;
-
-            if (continuationsLocalListRef == null)
+            if (!(continuationsLocalRef is List<object> continuationsLocalListRef))
             {
                 // This is not a list. If we have a single object (the one we want to remove) we try to replace it with an empty list.
                 // Note we cannot go back to a null state, since it will mess up the AddTaskContinuation logic.
@@ -5524,15 +5519,13 @@ namespace System.Threading.Tasks
         public static Task WhenAll(IEnumerable<Task> tasks)
         {
             // Take a more efficient path if tasks is actually an array
-            Task[] taskArray = tasks as Task[];
-            if (taskArray != null)
+            if (tasks is Task[] taskArray)
             {
                 return WhenAll(taskArray);
             }
 
             // Skip a List allocation/copy if tasks is a collection
-            ICollection<Task> taskCollection = tasks as ICollection<Task>;
-            if (taskCollection != null)
+            if (tasks is ICollection<Task> taskCollection)
             {
                 int index = 0;
                 taskArray = new Task[taskCollection.Count];
@@ -5774,15 +5767,13 @@ namespace System.Threading.Tasks
         public static Task<TResult[]> WhenAll<TResult>(IEnumerable<Task<TResult>> tasks)
         {
             // Take a more efficient route if tasks is actually an array
-            Task<TResult>[] taskArray = tasks as Task<TResult>[];
-            if (taskArray != null)
+            if (tasks is Task<TResult>[] taskArray)
             {
                 return WhenAll<TResult>(taskArray);
             }
 
             // Skip a List allocation/copy if tasks is a collection
-            ICollection<Task<TResult>> taskCollection = tasks as ICollection<Task<TResult>>;
-            if (taskCollection != null)
+            if (tasks is ICollection<Task<TResult>> taskCollection)
             {
                 int index = 0;
                 taskArray = new Task<TResult>[taskCollection.Count];
@@ -6148,20 +6139,17 @@ namespace System.Threading.Tasks
         {
             if (continuationObject != null)
             {
-                Action singleAction = continuationObject as Action;
-                if (singleAction != null)
+                if (continuationObject is Action singleAction)
                 {
                     return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction) };
                 }
 
-                TaskContinuation taskContinuation = continuationObject as TaskContinuation;
-                if (taskContinuation != null)
+                if (continuationObject is TaskContinuation taskContinuation)
                 {
                     return taskContinuation.GetDelegateContinuationsForDebugger();
                 }
 
-                Task continuationTask = continuationObject as Task;
-                if (continuationTask != null)
+                if (continuationObject is Task continuationTask)
                 {
                     Debug.Assert(continuationTask.m_action == null);
                     Delegate[] delegates = continuationTask.GetDelegateContinuationsForDebugger();
@@ -6171,14 +6159,12 @@ namespace System.Threading.Tasks
 
                 //We need this ITaskCompletionAction after the Task because in the case of UnwrapPromise
                 //the VS debugger is more interested in the continuation than the internal invoke()
-                ITaskCompletionAction singleCompletionAction = continuationObject as ITaskCompletionAction;
-                if (singleCompletionAction != null)
+                if (continuationObject is ITaskCompletionAction singleCompletionAction)
                 {
                     return new Delegate[] { new Action<Task>(singleCompletionAction.Invoke) };
                 }
 
-                List<object> continuationList = continuationObject as List<object>;
-                if (continuationList != null)
+                if (continuationObject is List<object> continuationList)
                 {
                     List<Delegate> result = new List<Delegate>();
                     foreach (object obj in continuationList)
@@ -6628,8 +6614,7 @@ namespace System.Threading.Tasks
 
                 // Otherwise, process the inner task it returned.
                 case TaskStatus.RanToCompletion:
-                    var taskOfTaskOfTResult = task as Task<Task<TResult>>; // it's either a Task<Task> or Task<Task<TResult>>
-                    ProcessInnerTask(taskOfTaskOfTResult != null ?
+                    ProcessInnerTask(task is Task<Task<TResult>> taskOfTaskOfTResult ? // it's either a Task<Task> or Task<Task<TResult>>
                         taskOfTaskOfTResult.Result : ((Task<Task>)task).Result);
                     break;
             }

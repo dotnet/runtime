@@ -822,24 +822,21 @@ namespace System.Reflection.Emit
                 return;
             }
 
-            GenericMethodInfo gmi = handle as GenericMethodInfo;
-            if (gmi != null)
+            if (handle is GenericMethodInfo gmi)
             {
                 methodHandle = gmi.m_methodHandle.Value;
                 typeHandle = gmi.m_context.Value;
                 return;
             }
 
-            GenericFieldInfo gfi = handle as GenericFieldInfo;
-            if (gfi != null)
+            if (handle is GenericFieldInfo gfi)
             {
                 fieldHandle = gfi.m_fieldHandle.Value;
                 typeHandle = gfi.m_context.Value;
                 return;
             }
 
-            VarArgMethod vaMeth = handle as VarArgMethod;
-            if (vaMeth != null)
+            if (handle is VarArgMethod vaMeth)
             {
                 if (vaMeth.m_dynamicMethod == null)
                 {
@@ -949,9 +946,7 @@ namespace System.Reflection.Emit
             if (fromMethod == 0)
                 return (byte[])this[token];
 
-            VarArgMethod vaMethod = this[token] as VarArgMethod;
-
-            if (vaMethod == null)
+            if (!(this[token] is VarArgMethod vaMethod))
                 return null;
 
             return vaMethod.m_signature.GetSignature(true);

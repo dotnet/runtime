@@ -310,8 +310,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
 
             // Make sure we have an array to begin with
-            Array dataArray = _data as Array;
-            if (dataArray == null)
+            if (!(_data is Array dataArray))
             {
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, typeof (T).MakeArrayType().Name), HResults.TYPE_E_TYPEMISMATCH);
             }
@@ -400,8 +399,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             // If the property type is IInspectable, and we have a nested IPropertyValue, then we need
             // to pass along the request to coerce the value.
-            IPropertyValue ipv = value as IPropertyValue;
-            if (type == PropertyType.Inspectable && ipv != null)
+            if (type == PropertyType.Inspectable && value is IPropertyValue ipv)
             {
                 if (typeof(T) == typeof(byte))
                 {
@@ -507,8 +505,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Debug.Assert(expectedArrayElementType != null);
             Debug.Assert(Marshal.SizeOf(expectedArrayElementType) == Marshal.SizeOf(typeof(T)));
 
-            Array dataArray = _data as Array;
-            if (dataArray == null || _data.GetType().GetElementType() != expectedArrayElementType)
+            if (!(_data is Array dataArray) || _data.GetType().GetElementType() != expectedArrayElementType)
             {
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, _data.GetType(), expectedArrayElementType.MakeArrayType().Name), HResults.TYPE_E_TYPEMISMATCH);
             }
