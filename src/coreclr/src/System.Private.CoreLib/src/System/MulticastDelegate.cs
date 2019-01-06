@@ -233,8 +233,7 @@ namespace System
                 followCount = (int)dFollow._invocationCount;
 
             int resultCount;
-            object[] invocationList = _invocationList as object[];
-            if (invocationList == null)
+            if (!(_invocationList is object[] invocationList))
             {
                 resultCount = 1 + followCount;
                 resultList = new object[resultCount];
@@ -343,10 +342,9 @@ namespace System
 
             if (v == null)
                 return this;
-            if (v._invocationList as object[] == null)
+            if (!(v._invocationList is object[]))
             {
-                object[] invocationList = _invocationList as object[];
-                if (invocationList == null)
+                if (!(_invocationList is object[] invocationList))
                 {
                     // they are both not real Multicast
                     if (this.Equals(value))
@@ -375,8 +373,7 @@ namespace System
             }
             else
             {
-                object[] invocationList = _invocationList as object[];
-                if (invocationList != null)
+                if (_invocationList is object[] invocationList)
                 {
                     int invocationCount = (int)_invocationCount;
                     int vInvocationCount = (int)v._invocationCount;
@@ -411,8 +408,7 @@ namespace System
         public override sealed Delegate[] GetInvocationList()
         {
             Delegate[] del;
-            object[] invocationList = _invocationList as object[];
-            if (invocationList == null)
+            if (!(_invocationList is object[] invocationList))
             {
                 del = new Delegate[1];
                 del[0] = this;
@@ -468,17 +464,14 @@ namespace System
 
             if (_invocationCount != (IntPtr)0)
             {
-                var t = _invocationList as Delegate;
-
-                if (t != null)
+                if (_invocationList is Delegate t)
                 {
                     // this is a secure/wrapper delegate so we need to unwrap and check the inner one
                     return t.GetHashCode();
                 }
             }
 
-            object[] invocationList = _invocationList as object[];
-            if (invocationList == null)
+            if (!(_invocationList is object[] invocationList))
             {
                 return base.GetHashCode();
             }
@@ -510,16 +503,14 @@ namespace System
                 }
                 else
                 {
-                    object[] invocationList = _invocationList as object[];
-                    if (invocationList != null)
+                    if (_invocationList is object[] invocationList)
                     {
                         int invocationCount = (int)_invocationCount;
                         return ((Delegate)invocationList[invocationCount - 1]).GetTarget();
                     }
                     else
                     {
-                        Delegate receiver = _invocationList as Delegate;
-                        if (receiver != null)
+                        if (_invocationList is Delegate receiver)
                             return receiver.GetTarget();
                     }
                 }
@@ -532,8 +523,7 @@ namespace System
             if (_invocationCount != (IntPtr)0 && _invocationList != null)
             {
                 // multicast case
-                object[] invocationList = _invocationList as object[];
-                if (invocationList != null)
+                if (_invocationList is object[] invocationList)
                 {
                     int index = (int)_invocationCount - 1;
                     return ((Delegate)invocationList[index]).Method;

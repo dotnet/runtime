@@ -63,8 +63,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             // Note: This list is not really read-only - you could QI for a modifiable
             // list.  We gain some perf by doing this.  We believe this is acceptable.
-            IReadOnlyList<T> roList = _this as IReadOnlyList<T>;
-            if (roList == null)
+            if (!(_this is IReadOnlyList<T> roList))
             {
                 roList = new ReadOnlyCollection<T>(_this);
             }

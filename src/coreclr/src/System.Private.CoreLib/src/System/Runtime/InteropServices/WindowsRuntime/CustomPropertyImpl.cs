@@ -91,8 +91,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private object InvokeInternal(object target, object[] args, bool getValue)
         {
             // Forward to the right object if we are dealing with a proxy
-            IGetProxyTarget proxy = target as IGetProxyTarget;
-            if (proxy != null)
+            if (target is IGetProxyTarget proxy)
             {
                 target = proxy.GetTarget();
             }

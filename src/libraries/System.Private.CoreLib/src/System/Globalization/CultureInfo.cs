@@ -872,9 +872,7 @@ namespace System.Globalization
             if (object.ReferenceEquals(this, value))
                 return true;
 
-            CultureInfo that = value as CultureInfo;
-
-            if (that != null)
+            if (value is CultureInfo that)
             {
                 // using CompareInfo to verify the data passed through the constructor
                 // CultureInfo(String cultureName, String textAndCompareCultureName)

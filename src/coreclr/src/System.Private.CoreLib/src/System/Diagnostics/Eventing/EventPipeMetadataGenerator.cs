@@ -186,8 +186,7 @@ namespace System.Diagnostics.Tracing
                 //     Nested struct property name  : NULL-terminated string.
                 EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (uint)TypeCode.Object);
 
-                InvokeTypeInfo invokeTypeInfo = TypeInfo as InvokeTypeInfo;
-                if(invokeTypeInfo == null)
+                if(!(TypeInfo is InvokeTypeInfo invokeTypeInfo))
                 {
                     throw new NotSupportedException();
                 }
@@ -233,8 +232,7 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(pMetadataBlob != null);
 
             // Check if this property is a nested struct.
-            InvokeTypeInfo invokeTypeInfo = property.typeInfo as InvokeTypeInfo;
-            if(invokeTypeInfo != null)
+            if(property.typeInfo is InvokeTypeInfo invokeTypeInfo)
             {
                 // Each nested struct is serialized as:
                 //     TypeCode.Object              : 4 bytes
@@ -299,8 +297,7 @@ namespace System.Diagnostics.Tracing
             TypeCode typeCode = GetTypeCodeExtended(ParameterType);
             if(typeCode == TypeCode.Object)
             {
-                InvokeTypeInfo typeInfo = TypeInfo as InvokeTypeInfo;
-                if(typeInfo == null)
+                if(!(TypeInfo is InvokeTypeInfo typeInfo))
                 {
                     throw new NotSupportedException();
                 }
@@ -343,8 +340,7 @@ namespace System.Diagnostics.Tracing
             uint ret = 0;
 
             // Check if this property is a nested struct.
-            InvokeTypeInfo invokeTypeInfo = property.typeInfo as InvokeTypeInfo;
-            if(invokeTypeInfo != null)
+            if(property.typeInfo is InvokeTypeInfo invokeTypeInfo)
             {
                 // Each nested struct is serialized as:
                 //     TypeCode.Object      : 4 bytes

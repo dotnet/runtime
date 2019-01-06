@@ -4957,10 +4957,8 @@ namespace System.Reflection
 
         private static int GetHashCodeHelper(K key)
         {
-            string sKey = key as string;
-
             // For strings we don't want the key to differ across domains as CerHashtable might be shared.
-            if (sKey == null)
+            if (!(key is string sKey))
             {
                 return key.GetHashCode();
             }

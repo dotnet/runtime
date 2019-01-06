@@ -530,8 +530,7 @@ namespace System
         // updated object back to the original type.
         internal static void MarshalHelperCastVariant(object pValue, int vt, ref Variant v)
         {
-            IConvertible iv = pValue as IConvertible;
-            if (iv == null)
+            if (!(pValue is IConvertible iv))
             {
                 switch (vt)
                 {

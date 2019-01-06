@@ -34,8 +34,7 @@ namespace System.Globalization
 
         public override bool Equals(object value)
         {
-            StringInfo that = value as StringInfo;
-            if (that != null)
+            if (value is StringInfo that)
             {
                 return (_str.Equals(that._str));
             }

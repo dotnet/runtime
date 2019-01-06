@@ -527,8 +527,7 @@ namespace System.IO
                 return Task.CompletedTask;
 
             // If destination is not a memory stream, write there asynchronously:
-            MemoryStream memStrDest = destination as MemoryStream;
-            if (memStrDest == null)
+            if (!(destination is MemoryStream memStrDest))
                 return destination.WriteAsync(_buffer, pos, n, cancellationToken);
 
             try

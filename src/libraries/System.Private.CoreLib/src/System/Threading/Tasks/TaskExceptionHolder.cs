@@ -123,8 +123,7 @@ namespace System.Threading.Tasks
             // If this changes, make sure to only conditionally mark as handled below.
 
             // Store the cancellation exception
-            var oce = exceptionObject as OperationCanceledException;
-            if (oce != null)
+            if (exceptionObject is OperationCanceledException oce)
             {
                 m_cancellationException = ExceptionDispatchInfo.Capture(oce);
             }
@@ -155,24 +154,21 @@ namespace System.Threading.Tasks
             else Debug.Assert(exceptions.Count > 0, "Expected existing exceptions list to have > 0 exceptions.");
 
             // Handle Exception by capturing it into an ExceptionDispatchInfo and storing that
-            var exception = exceptionObject as Exception;
-            if (exception != null)
+            if (exceptionObject is Exception exception)
             {
                 exceptions.Add(ExceptionDispatchInfo.Capture(exception));
             }
             else
             {
                 // Handle ExceptionDispatchInfo by storing it into the list
-                var edi = exceptionObject as ExceptionDispatchInfo;
-                if (edi != null)
+                if (exceptionObject is ExceptionDispatchInfo edi)
                 {
                     exceptions.Add(edi);
                 }
                 else
                 {
                     // Handle enumerables of exceptions by capturing each of the contained exceptions into an EDI and storing it
-                    var exColl = exceptionObject as IEnumerable<Exception>;
-                    if (exColl != null)
+                    if (exceptionObject is IEnumerable<Exception> exColl)
                     {
 #if DEBUG
                         int numExceptions = 0;
@@ -192,8 +188,7 @@ namespace System.Threading.Tasks
                     else
                     {
                         // Handle enumerables of EDIs by storing them directly
-                        var ediColl = exceptionObject as IEnumerable<ExceptionDispatchInfo>;
-                        if (ediColl != null)
+                        if (exceptionObject is IEnumerable<ExceptionDispatchInfo> ediColl)
                         {
                             exceptions.AddRange(ediColl);
 #if DEBUG

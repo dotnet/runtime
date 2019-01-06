@@ -31,8 +31,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Debug.Assert(target != null);
             Debug.Assert(propertyName != null);
 
-            IGetProxyTarget proxy = target as IGetProxyTarget;
-            if (proxy != null)
+            if (target is IGetProxyTarget proxy)
                 target = proxy.GetTarget();
 
             // Only return public instance/static properties
@@ -66,8 +65,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Debug.Assert(target != null);
             Debug.Assert(propertyName != null);
 
-            IGetProxyTarget proxy = target as IGetProxyTarget;
-            if (proxy != null)
+            if (target is IGetProxyTarget proxy)
                 target = proxy.GetTarget();
 
             // Only return public instance/static properties
@@ -88,8 +86,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         internal static unsafe void GetType(object target, TypeNameNative* pIndexedParamType)
         {
-            IGetProxyTarget proxy = target as IGetProxyTarget;
-            if (proxy != null)
+            if (target is IGetProxyTarget proxy)
                 target = proxy.GetTarget();
 
             SystemTypeMarshaler.ConvertToNative(target.GetType(), pIndexedParamType);
@@ -156,22 +153,22 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             //
             // QI and figure out the right flags
             //
-            if (target as IList != null)
+            if (target is IList)
                 supportFlags |= InterfaceForwardingSupport.IBindableVector;
 
             // NOTE: We need to use the directed type here
             // If we use IVector_Raw<T1> here, it derives from a different IIterable<T> which the runtime
             // doesn't recognize, and therefore IEnumerable cast won't be able to take advantage of this QI
-            if (target as IList<T1> != null)
+            if (target is IList<T1>)
                 supportFlags |= InterfaceForwardingSupport.IVector;
 
-            if (target as IBindableVectorView != null)
+            if (target is IBindableVectorView)
                 supportFlags |= InterfaceForwardingSupport.IBindableVectorView;
 
             // NOTE: We need to use the redirected type here
             // If we use IVector_Raw<T1> here, it derives from a different IIterable<T> which the runtime
             // doesn't recognize, and therefore IEnumerable cast won't be able to take advantage of this QI
-            if (target as IReadOnlyList<T2> != null)
+            if (target is IReadOnlyList<T2>)
                 supportFlags |= InterfaceForwardingSupport.IVectorView;
 
             // Verify IEnumerable last because the first few QIs might succeed and we need
@@ -179,7 +176,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // forward it manually)
             // For example, if we try to shoot in the dark by trying IVector<IInspectable> and it 
             // succeeded, IEnumerable needs to know that
-            if (target as IEnumerable != null)
+            if (target is IEnumerable)
                 supportFlags |= InterfaceForwardingSupport.IBindableIterableOrIIterable;
 
             return new ICustomPropertyProviderProxy<T1, T2>(target, supportFlags);

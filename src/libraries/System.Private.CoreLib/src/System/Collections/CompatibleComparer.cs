@@ -37,8 +37,7 @@ namespace System.Collections
                 return _comparer.Compare(a, b);
             }
 
-            IComparable ia = a as IComparable;
-            if (ia != null)
+            if (a is IComparable ia)
             {
                 return ia.CompareTo(b);
             }

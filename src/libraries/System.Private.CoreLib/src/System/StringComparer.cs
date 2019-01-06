@@ -114,18 +114,15 @@ namespace System
             if (x == null) return -1;
             if (y == null) return 1;
 
-            string sa = x as string;
-            if (sa != null)
+            if (x is string sa)
             {
-                string sb = y as string;
-                if (sb != null)
+                if (y is string sb)
                 {
                     return Compare(sa, sb);
                 }
             }
 
-            IComparable ia = x as IComparable;
-            if (ia != null)
+            if (x is IComparable ia)
             {
                 return ia.CompareTo(y);
             }
@@ -138,11 +135,9 @@ namespace System
             if (x == y) return true;
             if (x == null || y == null) return false;
 
-            string sa = x as string;
-            if (sa != null)
+            if (x is string sa)
             {
-                string sb = y as string;
-                if (sb != null)
+                if (y is string sb)
                 {
                     return Equals(sa, sb);
                 }
@@ -157,8 +152,7 @@ namespace System
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            string s = obj as string;
-            if (s != null)
+            if (obj is string s)
             {
                 return GetHashCode(s);
             }
@@ -232,9 +226,8 @@ namespace System
         // Equals method for the comparer itself.
         public override bool Equals(object obj)
         {
-            CultureAwareComparer comparer = obj as CultureAwareComparer;
             return
-                comparer != null &&
+                obj is CultureAwareComparer comparer &&
                 _options == comparer._options &&
                 _compareInfo.Equals(comparer._compareInfo);
         }
@@ -316,8 +309,7 @@ namespace System
         // Equals method for the comparer itself. 
         public override bool Equals(object obj)
         {
-            OrdinalComparer comparer = obj as OrdinalComparer;
-            if (comparer == null)
+            if (!(obj is OrdinalComparer comparer))
             {
                 return false;
             }
