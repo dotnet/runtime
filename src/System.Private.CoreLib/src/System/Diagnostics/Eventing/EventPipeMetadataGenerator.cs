@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tracing
 
         private EventPipeMetadataGenerator() { }
 
-        public unsafe byte[] GenerateEventMetadata(EventMetadata eventMetadata)
+        public byte[] GenerateEventMetadata(EventMetadata eventMetadata)
         {
             ParameterInfo[] parameters = eventMetadata.Parameters;
             EventParameterInfo[] eventParams = new EventParameterInfo[parameters.Length];
@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tracing
                 eventParams);
         }
 
-        public unsafe byte[] GenerateEventMetadata(
+        public byte[] GenerateEventMetadata(
             int eventId,
             string eventName,
             EventKeywords keywords,
@@ -292,7 +292,7 @@ namespace System.Diagnostics.Tracing
         }
 
 
-        internal unsafe uint GetMetadataLength()
+        internal uint GetMetadataLength()
         {
             uint ret = 0;
 

@@ -82,14 +82,14 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public unsafe override object GetValue(object obj)
+        public override object GetValue(object obj)
         {
             return GetValue(false);
         }
 
-        public unsafe override object GetRawConstantValue() { return GetValue(true); }
+        public override object GetRawConstantValue() { return GetValue(true); }
 
-        private unsafe object GetValue(bool raw)
+        private object GetValue(bool raw)
         {
             // Cannot cache these because they could be user defined non-agile enumerations
 
