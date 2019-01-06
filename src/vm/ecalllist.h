@@ -832,11 +832,6 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetDelegateForFunctionPointerInternal", MarshalNative::GetDelegateForFunctionPointerInternal)
     FCFuncElement("GetFunctionPointerForDelegateInternal", MarshalNative::GetFunctionPointerForDelegateInternal)
 
-    QCFuncElement("LoadLibraryFromPath", MarshalNative::LoadLibraryFromPath)
-    QCFuncElement("LoadLibraryByName", MarshalNative::LoadLibraryByName)
-    QCFuncElement("FreeNativeLibrary", MarshalNative::FreeNativeLibrary)
-    QCFuncElement("GetNativeLibraryExport", MarshalNative::GetNativeLibraryExport)
-
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
     FCFuncElement("GetHRForException_WinRT", MarshalNative::GetHRForException_WinRT)
@@ -869,6 +864,13 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("ChangeWrapperHandleStrength", MarshalNative::ChangeWrapperHandleStrength)
     FCFuncElement("CleanupUnusedObjectsInCurrentContext", MarshalNative::CleanupUnusedObjectsInCurrentContext)
 #endif // FEATURE_COMINTEROP
+FCFuncEnd()
+
+FCFuncStart(gInteropNativeLibraryFuncs)
+    QCFuncElement("LoadFromPath", NativeLibraryNative::LoadFromPath)
+    QCFuncElement("LoadByName", NativeLibraryNative::LoadByName)
+    QCFuncElement("FreeLib", NativeLibraryNative::FreeLib)
+    QCFuncElement("GetSymbol", NativeLibraryNative::GetSymbol)
 FCFuncEnd()
 
 FCFuncStart(gArrayWithOffsetFuncs)
@@ -1278,6 +1280,7 @@ FCClassElement("MngdSafeArrayMarshaler", "System.StubHelpers", gMngdSafeArrayMar
 FCClassElement("ModuleBuilder", "System.Reflection.Emit", gCOMModuleBuilderFuncs)
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
+FCClassElement("NativeLibrary", "System.Runtime.InteropServices", gInteropNativeLibraryFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 #endif

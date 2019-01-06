@@ -35,6 +35,7 @@
 #include "clrconfignative.h"
 #include "commodule.h"
 #include "marshalnative.h"
+#include "nativelibrarynative.h"
 #include "system.h"
 #include "comutilnative.h"
 #include "comsynchronizable.h"
