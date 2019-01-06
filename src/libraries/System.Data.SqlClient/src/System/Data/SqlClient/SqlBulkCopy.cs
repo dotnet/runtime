@@ -1386,7 +1386,7 @@ namespace System.Data.SqlClient
 
             if (isNull)
             {
-                if (!metadata.isNullable)
+                if (!metadata.IsNullable)
                 {
                     throw SQL.BulkLoadBulkLoadNotAllowDBNull(metadata.column);
                 }

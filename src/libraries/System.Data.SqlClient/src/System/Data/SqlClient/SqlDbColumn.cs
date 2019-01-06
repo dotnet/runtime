@@ -19,7 +19,7 @@ namespace System.Data.SqlClient
 
         private void Populate()
         {
-            AllowDBNull = _metadata.isNullable;
+            AllowDBNull = _metadata.IsNullable;
             BaseCatalogName = _metadata.catalogName;
             BaseColumnName = _metadata.baseColumn;
             BaseSchemaName = _metadata.schemaName;
@@ -52,7 +52,7 @@ namespace System.Data.SqlClient
 
             IsReadOnly = _metadata.IsReadOnly;
 
-            UdtAssemblyQualifiedName = _metadata.udtAssemblyQualifiedName;
+            UdtAssemblyQualifiedName = _metadata.udt?.AssemblyQualifiedName;
 
         }
 
