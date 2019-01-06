@@ -511,9 +511,7 @@ namespace System
                 return 1;
             }
 
-            string other = value as string;
-
-            if (other == null)
+            if (!(value is string other))
             {
                 throw new ArgumentException(SR.Arg_MustBeString);
             }
@@ -606,8 +604,7 @@ namespace System
             if (object.ReferenceEquals(this, obj))
                 return true;
 
-            string str = obj as string;
-            if (str == null)
+            if (!(obj is string str))
                 return false;
 
             if (this.Length != str.Length)

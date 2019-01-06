@@ -24,8 +24,7 @@ namespace System.Text
 
         public override bool Equals(object value)
         {
-            EncodingInfo that = value as EncodingInfo;
-            if (that != null)
+            if (value is EncodingInfo that)
             {
                 return this.CodePage == that.CodePage;
             }
