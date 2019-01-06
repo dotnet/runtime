@@ -2033,16 +2033,18 @@ namespace System.Reflection.Emit
             {
                 // Check for global typebuilder
                 if (((m_tdType.Token & 0x00FFFFFF) != 0) && ((tkParent & 0x00FFFFFF) != 0))
+                {
                     SetParentType(m_module.GetNativeHandle(), m_tdType.Token, tkParent);
+                }
 
                 if (m_inst != null)
-                    foreach (Type tb in m_inst)
-                        if (tb is GenericTypeParameterBuilder)
-                            ((GenericTypeParameterBuilder)tb).m_type.CreateType();
+                {
+                    foreach (GenericTypeParameterBuilder tb in m_inst)
+                    {
+                        tb.m_type.CreateType();
+                    }
+                }
             }
-
-            byte[] body;
-            MethodAttributes methodAttrs;
 
             if (!m_isHiddenGlobalType)
             {
@@ -2060,11 +2062,10 @@ namespace System.Reflection.Emit
             {
                 MethodBuilder meth = m_listMethods[i];
 
-
                 if (meth.IsGenericMethodDefinition)
                     meth.GetToken(); // Doubles as "CreateMethod" for MethodBuilder -- analogous to CreateType()
 
-                methodAttrs = meth.Attributes;
+                MethodAttributes methodAttrs = meth.Attributes;
 
                 // Any of these flags in the implemenation flags is set, we will not attach the IL method body
                 if (((meth.GetMethodImplementationFlags() & (MethodImplAttributes.CodeTypeMask | MethodImplAttributes.PreserveSig | MethodImplAttributes.Unmanaged)) != MethodImplAttributes.IL) ||
@@ -2073,8 +2074,7 @@ namespace System.Reflection.Emit
                     continue;
                 }
 
-                int sigLength;
-                byte[] localSig = meth.GetLocalSignature(out sigLength);
+                byte[] localSig = meth.GetLocalSignature(out int sigLength);
 
                 // Check that they haven't declared an abstract method on a non-abstract class
                 if (((methodAttrs & MethodAttributes.Abstract) != 0) && ((m_iAttr & TypeAttributes.Abstract) == 0))
@@ -2082,7 +2082,7 @@ namespace System.Reflection.Emit
                     throw new InvalidOperationException(SR.InvalidOperation_BadTypeAttributesNotAbstract);
                 }
 
-                body = meth.GetBody();
+                byte[] body = meth.GetBody();
 
                 // If this is an abstract method or an interface, we don't need to set the IL.
 
