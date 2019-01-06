@@ -294,22 +294,13 @@ namespace System.Data.SqlClient
             IsIdentity = 64,
             IsColumnSet = 128,
 
-            IsReadOnlyMask = (Updatable | UpdateableUnknown)
+            IsReadOnlyMask = (Updatable | UpdateableUnknown) // two bit field (0 is read only, 1 is updatable, 2 is updatability unknown)
         }
 
         internal string column;
         internal string baseColumn;
         internal MultiPartTableName multiPartTableName;
         internal readonly int ordinal;
-
-        //private byte updatability;     // two bit field (0 is read only, 1 is updatable, 2 is updatability unknown)
-        //private bool isDifferentName;
-        //private bool isKey;
-        //private bool isHidden;
-        //private bool isExpression;
-        //private bool isIdentity;
-        //private bool isColumnSet;
-
         internal byte tableNum;
         internal byte op;        // for altrow-columns only
         internal ushort operand; // for altrow-columns only
@@ -572,35 +563,9 @@ namespace System.Data.SqlClient
         internal SqlCollation collation;
         internal int codePage;
         internal Encoding encoding;
-        //internal bool isNullable;
-        //internal bool isMultiValued;
         internal MetaType metaType; // cached metaType
-
-
-        //// UDT specific metadata
-        //// server metadata info
-        //// additional temporary UDT meta data
-        //internal string udtDatabaseName;
-        //internal string udtSchemaName;
-        //internal string udtTypeName;
-        //internal string udtAssemblyQualifiedName;
-
-        //// on demand
-        //internal Type udtType;
         public SqlMetaDataUdt udt;
-
-        //// Xml specific metadata
-        //internal string xmlSchemaCollectionDatabase;
-        //internal string xmlSchemaCollectionOwningSchema;
-        //internal string xmlSchemaCollectionName;
         public SqlMetaDataXmlSchemaCollection xmlSchemaCollection;
-
-
-        //// Structured type-specific metadata
-        //internal string structuredTypeDatabaseName;
-        //internal string structuredTypeSchemaName;
-        //internal string structuredTypeName;
-        //internal IList<SmiMetaData> structuredFields;
 
         internal SqlMetaDataPriv()
         {
@@ -633,36 +598,20 @@ namespace System.Data.SqlClient
             this.collation = original.collation;
             this.codePage = original.codePage;
             this.encoding = original.encoding;
-            //this.isNullable = original.isNullable;
-            //this.isMultiValued = original.isMultiValued;
             this.metaType = original.metaType;
             this.flags = original.flags;
 
-            //this.udtDatabaseName = original.udtDatabaseName;
-            //this.udtSchemaName = original.udtSchemaName;
-            //this.udtTypeName = original.udtTypeName;
-            //this.udtAssemblyQualifiedName = original.udtAssemblyQualifiedName;
-            //this.udtType = original.udtType;
             if (original.udt != null)
             {
                 udt = new SqlMetaDataUdt();
                 udt.CopyFrom(original.udt);
             }
 
-            //this.xmlSchemaCollectionDatabase = original.xmlSchemaCollectionDatabase;
-            //this.xmlSchemaCollectionOwningSchema = original.xmlSchemaCollectionOwningSchema;
-            //this.xmlSchemaCollectionName = original.xmlSchemaCollectionName;
-
             if (original.xmlSchemaCollection != null)
             {
                 xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
                 xmlSchemaCollection.CopyFrom(original.xmlSchemaCollection);
             }
-
-            //this.structuredTypeDatabaseName = original.structuredTypeDatabaseName;
-            //this.structuredTypeSchemaName = original.structuredTypeSchemaName;
-            //this.structuredTypeName = original.structuredTypeName;
-            //this.structuredFields = original.structuredFields;
         }
     }
 
