@@ -36,7 +36,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsInstanceOfType(RuntimeType type, object o);
 
-        internal static unsafe Type GetTypeHelper(Type typeStart, Type[] genericArgs, IntPtr pModifiers, int cModifiers)
+        internal static Type GetTypeHelper(Type typeStart, Type[] genericArgs, IntPtr pModifiers, int cModifiers)
         {
             Type type = typeStart;
 
@@ -1098,7 +1098,7 @@ namespace System
             return handle.Value == Value;
         }
 
-        public unsafe bool Equals(RuntimeFieldHandle handle)
+        public bool Equals(RuntimeFieldHandle handle)
         {
             return handle.Value == Value;
         }
@@ -1119,7 +1119,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void* _GetUtf8Name(RuntimeFieldHandleInternal field);
 
-        internal static unsafe MdUtf8String GetUtf8Name(RuntimeFieldHandleInternal field) { return new MdUtf8String(_GetUtf8Name(field)); }
+        internal static MdUtf8String GetUtf8Name(RuntimeFieldHandleInternal field) { return new MdUtf8String(_GetUtf8Name(field)); }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool MatchesNameHash(RuntimeFieldHandleInternal handle, uint hash);
@@ -1172,7 +1172,7 @@ namespace System
         public static readonly ModuleHandle EmptyHandle = GetEmptyMH();
         #endregion
 
-        unsafe private static ModuleHandle GetEmptyMH()
+        private static ModuleHandle GetEmptyMH()
         {
             return new ModuleHandle();
         }
@@ -1210,7 +1210,7 @@ namespace System
             return handle.m_ptr == m_ptr;
         }
 
-        public unsafe bool Equals(ModuleHandle handle)
+        public bool Equals(ModuleHandle handle)
         {
             return handle.m_ptr == m_ptr;
         }
@@ -1519,7 +1519,7 @@ namespace System
         internal abstract byte[] GetCodeInfo(ref int stackSize, ref int initLocals, ref int EHCount);
         internal abstract byte[] GetLocalsSignature();
         internal abstract unsafe void GetEHInfo(int EHNumber, void* exception);
-        internal abstract unsafe byte[] GetRawEHInfo();
+        internal abstract byte[] GetRawEHInfo();
         // token resolution
         internal abstract string GetStringLiteral(int token);
         internal abstract void ResolveToken(int token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle);

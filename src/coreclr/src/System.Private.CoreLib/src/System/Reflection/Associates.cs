@@ -35,7 +35,7 @@ namespace System.Reflection
             return false;
         }
 
-        private static unsafe RuntimeMethodInfo AssignAssociates(
+        private static RuntimeMethodInfo AssignAssociates(
             int tkMethod,
             RuntimeType declaredType,
             RuntimeType reflectedType)
@@ -108,7 +108,7 @@ namespace System.Reflection
             return associateMethod;
         }
 
-        internal static unsafe void AssignAssociates(
+        internal static void AssignAssociates(
             MetadataImport scope,
             int mdPropEvent,
             RuntimeType declaringType,

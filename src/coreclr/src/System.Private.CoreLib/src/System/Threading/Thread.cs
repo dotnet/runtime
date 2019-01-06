@@ -194,7 +194,7 @@ namespace System.Threading
         }
 
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
-        internal unsafe ThreadHandle GetNativeHandle()
+        internal ThreadHandle GetNativeHandle()
         {
             IntPtr thread = DONT_USE_InternalThread;
 

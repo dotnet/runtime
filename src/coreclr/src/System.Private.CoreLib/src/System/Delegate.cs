@@ -56,7 +56,7 @@ namespace System
         // This constructor is called from a class to generate a 
         // delegate based upon a static method name and the Type object
         // for the class defining the method.
-        protected unsafe Delegate(Type target, string method)
+        protected Delegate(Type target, string method)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
@@ -548,7 +548,7 @@ namespace System
 
         // V2 internal API.
         // This is Critical because it skips the security check when creating the delegate.
-        internal static unsafe Delegate CreateDelegateNoSecurityCheck(Type type, object target, RuntimeMethodHandle method)
+        internal static Delegate CreateDelegateNoSecurityCheck(Type type, object target, RuntimeMethodHandle method)
         {
             // Validate the parameters.
             if (type == null)

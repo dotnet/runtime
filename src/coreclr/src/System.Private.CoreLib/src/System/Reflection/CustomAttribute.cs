@@ -251,7 +251,7 @@ namespace System.Reflection
         #endregion
 
         #region Internal Static Members
-        internal static unsafe CustomAttributeRecord[] GetCustomAttributeRecords(RuntimeModule module, int targetToken)
+        internal static CustomAttributeRecord[] GetCustomAttributeRecords(RuntimeModule module, int targetToken)
         {
             MetadataImport scope = module.MetadataImport;
 
@@ -1416,7 +1416,7 @@ namespace System.Reflection
             return false;
         }
 
-        private static unsafe object[] GetCustomAttributes(
+        private static object[] GetCustomAttributes(
             RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType attributeFilterType)
         {
             RuntimeType.ListBuilder<object> attributes = new RuntimeType.ListBuilder<object>();
@@ -1435,7 +1435,7 @@ namespace System.Reflection
             return result;
         }
 
-        private static unsafe void AddCustomAttributes(
+        private static void AddCustomAttributes(
             ref RuntimeType.ListBuilder<object> attributes,
             RuntimeModule decoratedModule, int decoratedMetadataToken,
             RuntimeType attributeFilterType, bool mustBeInheritable, ref RuntimeType.ListBuilder<object> derivedAttributes)
@@ -1570,7 +1570,7 @@ namespace System.Reflection
             }
         }
 
-        private static unsafe bool FilterCustomAttributeRecord(
+        private static bool FilterCustomAttributeRecord(
             CustomAttributeRecord caRecord,
             MetadataImport scope,
             RuntimeModule decoratedModule,

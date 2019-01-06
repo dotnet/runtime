@@ -43,7 +43,7 @@ namespace Microsoft.Win32
             //
             // Callback
             //
-            internal unsafe delegate void EtwEnableCallback(
+            internal delegate void EtwEnableCallback(
                 [In] ref Guid sourceId,
                 [In] int isEnabled,
                 [In] byte level,
@@ -69,7 +69,7 @@ namespace Microsoft.Win32
             internal static extern uint EventUnregister([In] long registrationHandle);
 
             [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventWriteString", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-            internal static extern unsafe int EventWriteString(
+            internal static extern int EventWriteString(
                     [In] long registrationHandle,
                     [In] byte level,
                     [In] long keyword,
@@ -77,7 +77,7 @@ namespace Microsoft.Win32
                     );
 
             [StructLayout(LayoutKind.Sequential)]
-            internal unsafe struct EVENT_FILTER_DESCRIPTOR
+            internal struct EVENT_FILTER_DESCRIPTOR
             {
                 public long Ptr;
                 public int Size;
