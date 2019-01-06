@@ -251,7 +251,7 @@ namespace System.Reflection.Emit
             return s_anonymouslyHostedDynamicMethodsModule;
         }
 
-        private unsafe void Init(string name,
+        private void Init(string name,
                                  MethodAttributes attributes,
                                  CallingConventions callingConvention,
                                  Type returnType,
@@ -369,7 +369,7 @@ namespace System.Reflection.Emit
         }
 
         // This is guaranteed to return a valid handle
-        internal unsafe RuntimeMethodHandle GetMethodDescriptor()
+        internal RuntimeMethodHandle GetMethodDescriptor()
         {
             if (m_methodHandle == null)
             {

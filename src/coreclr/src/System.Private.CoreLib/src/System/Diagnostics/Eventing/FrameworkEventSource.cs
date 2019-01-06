@@ -628,7 +628,7 @@ namespace System.Diagnostics.Tracing
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void BeginGetResponse(object id, string uri, bool success, bool synchronous)
+        public void BeginGetResponse(object id, string uri, bool success, bool synchronous)
         {
             if (IsEnabled())
                 GetResponseStart(IdForObject(id), uri, success, synchronous);
@@ -638,7 +638,7 @@ namespace System.Diagnostics.Tracing
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void EndGetResponse(object id, bool success, bool synchronous, int statusCode)
+        public void EndGetResponse(object id, bool success, bool synchronous, int statusCode)
         {
             if (IsEnabled())
                 GetResponseStop(IdForObject(id), success, synchronous, statusCode);
@@ -648,7 +648,7 @@ namespace System.Diagnostics.Tracing
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void BeginGetRequestStream(object id, string uri, bool success, bool synchronous)
+        public void BeginGetRequestStream(object id, string uri, bool success, bool synchronous)
         {
             if (IsEnabled())
                 GetRequestStreamStart(IdForObject(id), uri, success, synchronous);
@@ -658,7 +658,7 @@ namespace System.Diagnostics.Tracing
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void EndGetRequestStream(object id, bool success, bool synchronous)
+        public void EndGetRequestStream(object id, bool success, bool synchronous)
         {
             if (IsEnabled())
                 GetRequestStreamStop(IdForObject(id), success, synchronous);

@@ -6466,7 +6466,7 @@ namespace System.Threading.Tasks
             if (m_inliningDepth < 0) m_inliningDepth = 0;
         }
 
-        private unsafe bool CheckForSufficientStack()
+        private bool CheckForSufficientStack()
         {
             return RuntimeHelpers.TryEnsureSufficientExecutionStack();
         }

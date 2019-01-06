@@ -23,7 +23,7 @@ namespace System.Reflection.Emit
         internal DynamicScope m_scope;
         private int m_methodSigToken;
 
-        internal unsafe DynamicILGenerator(DynamicMethod method, byte[] methodSignature, int size)
+        internal DynamicILGenerator(DynamicMethod method, byte[] methodSignature, int size)
             : base(method, size)
         {
             m_scope = new DynamicScope();
@@ -753,7 +753,7 @@ namespace System.Reflection.Emit
             return m_localSignature;
         }
 
-        internal override unsafe byte[] GetRawEHInfo()
+        internal override byte[] GetRawEHInfo()
         {
             return m_exceptionHeader;
         }
@@ -916,7 +916,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Constructor
-        internal unsafe DynamicScope()
+        internal DynamicScope()
         {
             m_tokens = new List<object>();
             m_tokens.Add(null);

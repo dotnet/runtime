@@ -749,7 +749,7 @@ namespace System
                     return list.ToArray();
                 }
 
-                private unsafe RuntimeFieldInfo[] PopulateFields(Filter filter)
+                private RuntimeFieldInfo[] PopulateFields(Filter filter)
                 {
                     ListBuilder<RuntimeFieldInfo> list = new ListBuilder<RuntimeFieldInfo>();
 
@@ -872,7 +872,7 @@ namespace System
                     }
                 }
 
-                private unsafe void PopulateLiteralFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
+                private void PopulateLiteralFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Debug.Assert(declaringType != null);
                     Debug.Assert(ReflectedType != null);
@@ -1041,7 +1041,7 @@ namespace System
                     return list.ToArray();
                 }
 
-                private unsafe RuntimeType[] PopulateNestedClasses(Filter filter)
+                private RuntimeType[] PopulateNestedClasses(Filter filter)
                 {
                     RuntimeType declaringType = ReflectedType;
 
@@ -1091,7 +1091,7 @@ namespace System
                     return list.ToArray();
                 }
 
-                private unsafe RuntimeEventInfo[] PopulateEvents(Filter filter)
+                private RuntimeEventInfo[] PopulateEvents(Filter filter)
                 {
                     Debug.Assert(ReflectedType != null);
 
@@ -1123,7 +1123,7 @@ namespace System
                     return list.ToArray();
                 }
 
-                private unsafe void PopulateEvents(
+                private void PopulateEvents(
                     Filter filter, RuntimeType declaringType, Dictionary<string, RuntimeEventInfo> csEventInfos, ref ListBuilder<RuntimeEventInfo> list)
                 {
                     int tkDeclaringType = RuntimeTypeHandle.GetToken(declaringType);
@@ -1183,7 +1183,7 @@ namespace System
                     }
                 }
 
-                private unsafe RuntimePropertyInfo[] PopulateProperties(Filter filter)
+                private RuntimePropertyInfo[] PopulateProperties(Filter filter)
                 {
                     Debug.Assert(ReflectedType != null);
 
@@ -1223,7 +1223,7 @@ namespace System
                     return list.ToArray();
                 }
 
-                private unsafe void PopulateProperties(
+                private void PopulateProperties(
                     Filter filter,
                     RuntimeType declaringType,
                     Dictionary<string, List<RuntimePropertyInfo>> csPropertyInfos,
@@ -1513,7 +1513,7 @@ namespace System
                 }
             }
 
-            internal unsafe string GetNameSpace()
+            internal string GetNameSpace()
             {
                 // @Optimization - Use ConstructName to populate m_namespace
                 if (m_namespace == null)
@@ -1536,7 +1536,7 @@ namespace System
                 set => m_typeCode = value;
             }
 
-            internal unsafe RuntimeType GetEnclosingType()
+            internal RuntimeType GetEnclosingType()
             {
                 if (m_enclosingType == null)
                 {
@@ -1733,7 +1733,7 @@ namespace System
             return retval;
         }
 
-        internal static unsafe MethodBase GetMethodBase(RuntimeType reflectedType, RuntimeMethodHandleInternal methodHandle)
+        internal static MethodBase GetMethodBase(RuntimeType reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
             Debug.Assert(!methodHandle.IsNullHandle());
 
@@ -1875,12 +1875,12 @@ namespace System
             set => Cache.DomainInitialized = value;
         }
 
-        internal static unsafe FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
+        internal static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
         {
             return GetFieldInfo(RuntimeFieldHandle.GetApproxDeclaringType(fieldHandle), fieldHandle);
         }
 
-        internal static unsafe FieldInfo GetFieldInfo(RuntimeType reflectedType, IRuntimeFieldInfo field)
+        internal static FieldInfo GetFieldInfo(RuntimeType reflectedType, IRuntimeFieldInfo field)
         {
             RuntimeFieldHandleInternal fieldHandle = field.Value;
 
@@ -1911,7 +1911,7 @@ namespace System
         }
 
         // Called internally
-        private static unsafe PropertyInfo GetPropertyInfo(RuntimeType reflectedType, int tkProperty)
+        private static PropertyInfo GetPropertyInfo(RuntimeType reflectedType, int tkProperty)
         {
             RuntimePropertyInfo property = null;
             RuntimePropertyInfo[] candidates =
@@ -3698,7 +3698,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object AllocateValueType(RuntimeType type, object value, bool fForceTypeChange);
 
-        internal unsafe object CheckValue(object value, Binder binder, CultureInfo culture, BindingFlags invokeAttr)
+        internal object CheckValue(object value, Binder binder, CultureInfo culture, BindingFlags invokeAttr)
         {
             // this method is used by invocation in reflection to check whether a value can be assigned to type.
             if (IsInstanceOfType(value))
@@ -4856,7 +4856,7 @@ namespace System
 
         // Very common called version of the Equals pair
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe bool Equals(MdUtf8String s)
+        internal bool Equals(MdUtf8String s)
         {
             if (s.m_StringHeapByteLength != m_StringHeapByteLength)
             {
@@ -4868,7 +4868,7 @@ namespace System
             }
         }
 
-        internal unsafe bool EqualsCaseInsensitive(MdUtf8String s)
+        internal bool EqualsCaseInsensitive(MdUtf8String s)
         {
             if (s.m_StringHeapByteLength != m_StringHeapByteLength)
             {
@@ -4880,7 +4880,7 @@ namespace System
             }
         }
 
-        internal unsafe uint HashCaseInsensitive()
+        internal uint HashCaseInsensitive()
         {
             return HashCaseInsensitive(m_pStringHeap, m_StringHeapByteLength);
         }

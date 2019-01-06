@@ -338,39 +338,39 @@ namespace System.Reflection
 
         #region FCalls
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _Enum(IntPtr scope, int type, int parent, out MetadataEnumResult result);
+        private static extern void _Enum(IntPtr scope, int type, int parent, out MetadataEnumResult result);
 
-        public unsafe void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
+        public void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
         {
             _Enum(m_metadataImport2, (int)type, parent, out result);
         }
 
-        public unsafe void EnumNestedTypes(int mdTypeDef, out MetadataEnumResult result)
+        public void EnumNestedTypes(int mdTypeDef, out MetadataEnumResult result)
         {
             Enum(MetadataTokenType.TypeDef, mdTypeDef, out result);
         }
 
-        public unsafe void EnumCustomAttributes(int mdToken, out MetadataEnumResult result)
+        public void EnumCustomAttributes(int mdToken, out MetadataEnumResult result)
         {
             Enum(MetadataTokenType.CustomAttribute, mdToken, out result);
         }
 
-        public unsafe void EnumParams(int mdMethodDef, out MetadataEnumResult result)
+        public void EnumParams(int mdMethodDef, out MetadataEnumResult result)
         {
             Enum(MetadataTokenType.ParamDef, mdMethodDef, out result);
         }
 
-        public unsafe void EnumFields(int mdTypeDef, out MetadataEnumResult result)
+        public void EnumFields(int mdTypeDef, out MetadataEnumResult result)
         {
             Enum(MetadataTokenType.FieldDef, mdTypeDef, out result);
         }
 
-        public unsafe void EnumProperties(int mdTypeDef, out MetadataEnumResult result)
+        public void EnumProperties(int mdTypeDef, out MetadataEnumResult result)
         {
             Enum(MetadataTokenType.Property, mdTypeDef, out result);
         }
 
-        public unsafe void EnumEvents(int mdTypeDef, out MetadataEnumResult result)
+        public void EnumEvents(int mdTypeDef, out MetadataEnumResult result)
         {
             Enum(MetadataTokenType.Event, mdTypeDef, out result);
         }

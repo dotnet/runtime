@@ -381,7 +381,7 @@ namespace System.StubHelpers
             return new string((sbyte*)pNative, 0, cch);
         }
 
-        internal static unsafe void ClearNative(IntPtr pNative)
+        internal static void ClearNative(IntPtr pNative)
         {
             if (IntPtr.Zero != pNative)
             {
@@ -392,7 +392,7 @@ namespace System.StubHelpers
 
     internal static class AnsiBSTRMarshaler
     {
-        internal static unsafe IntPtr ConvertToNative(int flags, string strManaged)
+        internal static IntPtr ConvertToNative(int flags, string strManaged)
         {
             if (null == strManaged)
             {
@@ -425,7 +425,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ClearNative(IntPtr pNative)
+        internal static void ClearNative(IntPtr pNative)
         {
             if (IntPtr.Zero != pNative)
             {
@@ -442,7 +442,7 @@ namespace System.StubHelpers
             return IntPtr.Zero;
         }
 
-        internal static unsafe string ConvertToManaged(IntPtr bstr)
+        internal static string ConvertToManaged(IntPtr bstr)
         {
             Debug.Fail("NYI");
             return null;
@@ -1376,7 +1376,7 @@ namespace System.StubHelpers
     // For converting WinRT's Windows.Foundation.HResult into System.Exception and vice versa.
     internal static class HResultExceptionMarshaler
     {
-        internal static unsafe int ConvertToNative(Exception ex)
+        internal static int ConvertToNative(Exception ex)
         {
             if (!Environment.IsWinRTSupported)
             {
@@ -1389,7 +1389,7 @@ namespace System.StubHelpers
             return ex._HResult;
         }
 
-        internal static unsafe Exception ConvertToManaged(int hr)
+        internal static Exception ConvertToManaged(int hr)
         {
             if (!Environment.IsWinRTSupported)
             {

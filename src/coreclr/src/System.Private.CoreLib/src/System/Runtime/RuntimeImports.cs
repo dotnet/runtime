@@ -35,6 +35,6 @@ namespace System.Runtime
         private static extern unsafe void RhZeroMemory(void* b, nuint byteLength);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
+        internal static extern void RhBulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
     }
 }
