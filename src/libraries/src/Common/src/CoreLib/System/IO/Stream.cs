@@ -1078,8 +1078,7 @@ namespace System.IO
 
             internal static int EndRead(IAsyncResult asyncResult)
             {
-                SynchronousAsyncResult ar = asyncResult as SynchronousAsyncResult;
-                if (ar == null || ar._isWrite)
+                if (!(asyncResult is SynchronousAsyncResult ar) || ar._isWrite)
                     throw new ArgumentException(SR.Arg_WrongAsyncResult);
 
                 if (ar._endXxxCalled)
@@ -1093,8 +1092,7 @@ namespace System.IO
 
             internal static void EndWrite(IAsyncResult asyncResult)
             {
-                SynchronousAsyncResult ar = asyncResult as SynchronousAsyncResult;
-                if (ar == null || !ar._isWrite)
+                if (!(asyncResult is SynchronousAsyncResult ar) || !ar._isWrite)
                     throw new ArgumentException(SR.Arg_WrongAsyncResult);
 
                 if (ar._endXxxCalled)

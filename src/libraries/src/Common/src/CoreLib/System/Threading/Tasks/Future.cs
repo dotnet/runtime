@@ -597,14 +597,13 @@ namespace System.Threading.Tasks
         {
             // Invoke the delegate
             Debug.Assert(m_action != null);
-            var func = m_action as Func<TResult>;
-            if (func != null)
+            if (m_action is Func<TResult> func)
             {
                 m_result = func();
                 return;
             }
-            var funcWithState = m_action as Func<object, TResult>;
-            if (funcWithState != null)
+
+            if (m_action is Func<object, TResult> funcWithState)
             {
                 m_result = funcWithState(m_stateObject);
                 return;

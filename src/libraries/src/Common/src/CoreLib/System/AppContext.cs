@@ -99,8 +99,7 @@ namespace System
                 }
             }
 
-            string value = GetData(switchName) as string;
-            if (value != null && bool.TryParse(value, out isEnabled))
+            if (GetData(switchName) is string value && bool.TryParse(value, out isEnabled))
             {
                return true;
             }

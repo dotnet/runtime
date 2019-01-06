@@ -1190,8 +1190,7 @@ namespace System.Text
 
         public override bool Equals(object value)
         {
-            Encoding that = value as Encoding;
-            if (that != null)
+            if (value is Encoding that)
                 return (_codePage == that._codePage) &&
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
