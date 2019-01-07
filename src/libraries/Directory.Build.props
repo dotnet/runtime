@@ -234,8 +234,15 @@
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(ArchGroup)</_packageRID>
     <_packageRID Condition="$(TargetGroup.StartsWith('uap'))">win10-$(ArchGroup)</_packageRID>
     <_packageRID Condition="$(TargetGroup.EndsWith('aot'))">$(_packageRID)-aot</_packageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(ArchGroup)</PackageRID>
+    <!--
+      Store the generated default separately from PackageRID to allow PackageRID override while
+      still being able to access the default value for the current configuration. For example,
+      source-build passes a PackageRID, but we need to retain the default info to restore
+      runtime.depproj properly for the netcoreapp-Windows_NT configuration.
+    -->
+    <PackageRIDConfigurationDefault Condition="'$(PackageRIDConfigurationDefault)' == ''">$(_packageRID)</PackageRIDConfigurationDefault>
+    <PackageRIDConfigurationDefault Condition="'$(PackageRIDConfigurationDefault)' == ''">$(RuntimeOS)-$(ArchGroup)</PackageRIDConfigurationDefault>
+    <PackageRID Condition="'$(PackageRID)' == ''">$(PackageRIDConfigurationDefault)</PackageRID>
   </PropertyGroup>
 
   <!-- Set some shortcuts for more terse conditions in project files -->

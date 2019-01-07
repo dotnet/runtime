@@ -1,7 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <!--
+      Use the configuration default for PackageRID. PackageRID might be overridden by the build
+      command, and interfere with this depproj in -allconfigurations mode.
+    -->
+    <RuntimeIdentifier>$(PackageRIDConfigurationDefault)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAOT)'=='true'">
