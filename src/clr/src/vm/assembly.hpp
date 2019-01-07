@@ -413,7 +413,6 @@ public:
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
                      PBYTE *pbInMemoryResource, Assembly **pAssemblyRef,
                      LPCSTR *szFileName, DWORD *dwLocation,
-                     StackCrawlMark *pStackMark = NULL, BOOL fSkipSecurityCheck = FALSE,
                      BOOL fSkipRaiseResolveEvent = FALSE);
 
     //****************************************************************************************

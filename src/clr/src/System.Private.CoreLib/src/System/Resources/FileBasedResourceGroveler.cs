@@ -34,7 +34,7 @@ namespace System.Resources
         // Consider modifying IResourceGroveler interface (hence this method signature) when we figure out 
         // serialization compat story for moving ResourceManager members to either file-based or 
         // manifest-based classes. Want to continue tightening the design to get rid of unused params.
-        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark)
+        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
 

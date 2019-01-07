@@ -51,7 +51,7 @@ namespace System.Resources
             _mediator = mediator;
         }
 
-        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark)
+        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
             Debug.Assert(localResourceSets != null, "localResourceSets shouldn't be null; check caller");
@@ -100,7 +100,7 @@ namespace System.Resources
                     localResourceSets.TryGetValue(culture.Name, out rs);
                 }
 
-                stream = GetManifestResourceStream(satellite, fileName, ref stackMark);
+                stream = GetManifestResourceStream(satellite, fileName);
             }
 
             // 4a. Found a stream; create a ResourceSet if possible
@@ -306,17 +306,12 @@ namespace System.Resources
             }
         }
 
-        private Stream GetManifestResourceStream(RuntimeAssembly satellite, string fileName, ref StackCrawlMark stackMark)
+        private Stream GetManifestResourceStream(RuntimeAssembly satellite, string fileName)
         {
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
 
-            // If we're looking in the main assembly AND if the main assembly was the person who
-            // created the ResourceManager, skip a security check for private manifest resources.
-            bool canSkipSecurityCheck = (_mediator.MainAssembly == satellite)
-                                        && (_mediator.CallingAssembly == _mediator.MainAssembly);
-
-            Stream stream = satellite.GetManifestResourceStream(_mediator.LocationInfo, fileName, canSkipSecurityCheck, ref stackMark);
+            Stream stream = satellite.GetManifestResourceStream(_mediator.LocationInfo, fileName);
             if (stream == null)
             {
                 stream = CaseInsensitiveManifestResourceStreamLookup(satellite, fileName);
@@ -329,30 +324,19 @@ namespace System.Resources
         // case-insensitive lookup rules.  Yes, this is slow.  The metadata
         // dev lead refuses to make all assembly manifest resource lookups case-insensitive,
         // even optionally case-insensitive.        
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private Stream CaseInsensitiveManifestResourceStreamLookup(RuntimeAssembly satellite, string name)
         {
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(name != null, "name shouldn't be null; check caller");
 
-            StringBuilder sb = new StringBuilder();
-            if (_mediator.LocationInfo != null)
-            {
-                string nameSpace = _mediator.LocationInfo.Namespace;
-                if (nameSpace != null)
-                {
-                    sb.Append(nameSpace);
-                    if (name != null)
-                        sb.Append(Type.Delimiter);
-                }
-            }
-            sb.Append(name);
+            string nameSpace = _mediator.LocationInfo?.Namespace;
+            string delimiter = (nameSpace != null && name != null) ? Type.Delimiter.ToString() : null;
+            string resourceName = string.Concat(nameSpace, delimiter, name);
 
-            string givenName = sb.ToString();
             string canonicalName = null;
             foreach (string existingName in satellite.GetManifestResourceNames())
             {
-                if (string.Equals(existingName, givenName, StringComparison.InvariantCultureIgnoreCase))
+                if (string.Equals(existingName, resourceName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (canonicalName == null)
                     {
@@ -360,7 +344,7 @@ namespace System.Resources
                     }
                     else
                     {
-                        throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_MultipleBlobs, givenName, satellite.ToString()));
+                        throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_MultipleBlobs, resourceName, satellite.ToString()));
                     }
                 }
             }
@@ -370,12 +354,7 @@ namespace System.Resources
                 return null;
             }
 
-            // If we're looking in the main assembly AND if the main
-            // assembly was the person who created the ResourceManager,
-            // skip a security check for private manifest resources.
-            bool canSkipSecurityCheck = _mediator.MainAssembly == satellite && _mediator.CallingAssembly == _mediator.MainAssembly;
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return satellite.GetManifestResourceStream(canonicalName, ref stackMark, canSkipSecurityCheck);
+            return satellite.GetManifestResourceStream(canonicalName);
         }
 
         private RuntimeAssembly GetSatelliteAssembly(CultureInfo lookForCulture)

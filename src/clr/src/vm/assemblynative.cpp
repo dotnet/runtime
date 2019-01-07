@@ -558,7 +558,7 @@ INT32 QCALLTYPE AssemblyNative::GetFlags(QCall::AssemblyHandle pAssembly)
     return retVal;
 }
 
-BYTE * QCALLTYPE AssemblyNative::GetResource(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, UINT64 * length, QCall::StackCrawlMarkHandle stackMark, BOOL skipSecurityCheck)
+BYTE * QCALLTYPE AssemblyNative::GetResource(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, DWORD * length)
 {
     QCALL_CONTRACT;
 
@@ -578,13 +578,9 @@ BYTE * QCALLTYPE AssemblyNative::GetResource(QCall::AssemblyHandle pAssembly, LP
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
-    DWORD  cbResource;
-    if (pAssembly->GetResource(pNameUTF8, &cbResource,
-                               &pbInMemoryResource, NULL, NULL,
-                               NULL, stackMark, skipSecurityCheck, FALSE))
-    {
-        *length = cbResource;
-    }
+    pAssembly->GetResource(pNameUTF8, length,
+                           &pbInMemoryResource, NULL, NULL,
+                           NULL, FALSE);
 
     END_QCALL;
 
@@ -592,7 +588,7 @@ BYTE * QCALLTYPE AssemblyNative::GetResource(QCall::AssemblyHandle pAssembly, LP
     return pbInMemoryResource;
 }
 
-INT32 QCALLTYPE AssemblyNative::GetManifestResourceInfo(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, QCall::ObjectHandleOnStack retAssembly, QCall::StringHandleOnStack retFileName, QCall::StackCrawlMarkHandle stackMark)
+INT32 QCALLTYPE AssemblyNative::GetManifestResourceInfo(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, QCall::ObjectHandleOnStack retAssembly, QCall::StringHandleOnStack retFileName)
 {
     QCALL_CONTRACT;
 
@@ -617,7 +613,7 @@ INT32 QCALLTYPE AssemblyNative::GetManifestResourceInfo(QCall::AssemblyHandle pA
     DWORD dwLocation = 0;
 
     if (pAssembly->GetResource(pNameUTF8, NULL, NULL, &pReferencedAssembly, &pFileName,
-                              &dwLocation, stackMark, FALSE, FALSE))
+                              &dwLocation, FALSE))
     {
         if (pFileName)
             retFileName.Set(pFileName);
