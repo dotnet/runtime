@@ -231,10 +231,10 @@ namespace R2RDump
         READYTORUN_HELPER_Dbl2ULngOvf = 0xD7,
 
         // Floating point ops
-        READYTORUN_HELPER_DblRem = 0xE0,
-        READYTORUN_HELPER_FltRem = 0xE1,
-        READYTORUN_HELPER_DblRound = 0xE2,
-        READYTORUN_HELPER_FltRound = 0xE3,
+        READYTORUN_HELPER_FltRem = 0xE0,
+        READYTORUN_HELPER_DblRem = 0xE1,
+        READYTORUN_HELPER_FltRound = 0xE2,
+        READYTORUN_HELPER_DblRound = 0xE3,
 
         // Personality rountines
         READYTORUN_HELPER_PersonalityRoutine = 0xF0,
