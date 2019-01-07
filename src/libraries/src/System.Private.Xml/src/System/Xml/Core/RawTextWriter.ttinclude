@@ -1,0 +1,127 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Text" #>
+<#
+switch (WriterType)
+{
+    case RawTextWriterType.Utf8:
+    case RawTextWriterType.Encoded:
+        break;
+    default:
+        throw new ArgumentOutOfRangeException(
+            "WriterType", WriterType,
+            "Unknown value for WriterType.");
+}
+#>
+<#+
+    private const string newline = "\r\n";
+
+    public enum RawTextWriterType {
+        Unknown, Utf8, Encoded
+    }
+
+    public RawTextWriterType WriterType;
+    public string ClassName;
+    public string ClassNameIndent;
+    public string BaseClassName;
+    public string BufferName;
+    public string BufferType;
+    public string EncodeCharBody;
+    public string SetTextContentMarkBody;
+
+    public string SetTextContentMark(int indentAmount, bool value)
+    {
+        return SetTextContentMark(indentAmount, 2, value);
+    }
+
+    public string SetTextContentMark(int indentAmount, int linesPrefix, bool value)
+    {
+        string prefixed = LinesPrefix(linesPrefix, SetTextContentMarkBody);
+
+        return ReIndent(indentAmount, prefixed)
+            .Replace("_value_", BoolString(value));
+    }
+
+    public string EncodeChar(int indentAmount, bool entitizeInvalidChars)
+    {
+        return ReIndent(indentAmount, EncodeCharBody)
+            .Replace("_entitizeInvalidChars_", BoolString(entitizeInvalidChars));
+    }
+
+    public static string LinesPrefix(int amount, string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(code.Length);
+
+        for (int i = 0; i < amount; ++i)
+        {
+            sb.Append(newline);
+        }
+
+        sb.Append(code);
+
+        return sb.ToString();
+    }
+
+    public static string LinesPostfix(int amount, string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(code);
+
+        for (int i = 0; i < amount; ++i)
+        {
+            sb.Append(newline);
+        }
+
+        return sb.ToString();
+    }
+
+    private static string ReIndent(int indentAmount, string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(code.Length);
+        string[] lines = code.Split(new string[] { newline }, StringSplitOptions.None);
+        string indentation = new string(' ', indentAmount * 4);
+
+        for (int i = 0; i < lines.Length; ++i)
+        {
+            string line = lines[i];
+
+            // Do not make lines that have "trailing space."
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                sb.Append(newline);
+                continue;
+            }
+
+            bool lastLine = i == lines.Length - 1;
+
+            sb.Append(indentation);
+            sb.Append(line);
+
+            if (!lastLine)
+            {
+                sb.Append(newline);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static string BoolString(bool value)
+    {
+        return value ? "true" : "false";
+    }
+#>
