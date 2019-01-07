@@ -154,8 +154,9 @@ namespace Internal.Cryptography.Pal
                             byte[] extensionRawData = pV1Template->Value.ToByteArray();
                             if (!extensionRawData.DecodeObjectNoThrow(
                                 CryptDecodeObjectStructType.X509_UNICODE_ANY_STRING,
-                                delegate(void* pvDecoded)
+                                delegate(void* pvDecoded, int cbDecoded)
                                 {
+                                    Debug.Assert(cbDecoded >= sizeof(CERT_NAME_VALUE));
                                     CERT_NAME_VALUE* pNameValue = (CERT_NAME_VALUE*)pvDecoded;
                                     string actual = Marshal.PtrToStringUni(new IntPtr(pNameValue->Value.pbData));
                                     if (templateName.Equals(actual, StringComparison.OrdinalIgnoreCase))
@@ -176,8 +177,9 @@ namespace Internal.Cryptography.Pal
                             byte[] extensionRawData = pV2Template->Value.ToByteArray();
                             if (!extensionRawData.DecodeObjectNoThrow(
                                 CryptDecodeObjectStructType.X509_CERTIFICATE_TEMPLATE,
-                                delegate(void* pvDecoded)
+                                delegate(void* pvDecoded, int cbDecoded)
                                 {
+                                    Debug.Assert(cbDecoded >= sizeof(CERT_TEMPLATE_EXT));
                                     CERT_TEMPLATE_EXT* pTemplateExt = (CERT_TEMPLATE_EXT*)pvDecoded;
                                     string actual = Marshal.PtrToStringAnsi(pTemplateExt->pszObjId);
                                     string expectedOidValue =
@@ -245,8 +247,9 @@ namespace Internal.Cryptography.Pal
                     byte[] extensionRawData = pCertExtension->Value.ToByteArray();
                     if (!extensionRawData.DecodeObjectNoThrow(
                         CryptDecodeObjectStructType.X509_CERT_POLICIES,
-                        delegate(void* pvDecoded)
+                        delegate(void* pvDecoded, int cbDecoded)
                         {
+                            Debug.Assert(cbDecoded >= sizeof(CERT_POLICIES_INFO));
                             CERT_POLICIES_INFO* pCertPoliciesInfo = (CERT_POLICIES_INFO*)pvDecoded;
                             for (int i = 0; i < pCertPoliciesInfo->cPolicyInfo; i++)
                             {
