@@ -490,6 +490,13 @@ typedef struct {
 	mach_port_deallocate (current_task (), self);	\
 } while (0);
 
+#elif defined(HOST_WATCHOS)
+
+#define MONO_CONTEXT_GET_CURRENT(ctx) do { \
+	gpointer _dummy; \
+	ctx.regs [ARMREG_SP] = (host_mgreg_t)(gsize)&_dummy; \
+} while (0);
+
 #else
 
 #define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\

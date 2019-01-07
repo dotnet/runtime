@@ -4168,6 +4168,14 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		;;
+	aarch64-*darwin*ilp32)
+		TARGET=ARM64;
+		arch_target=arm64
+		AC_DEFINE(MONO_ARCH_ILP32, 1, [64 bit mode with 4 byte longs and pointers])
+		sizeof_register=8
+		# assuming no other target other than watchOS is using aarch64*darwin triple
+		TARGET_SYS=WATCHOS
+		;;
 	aarch64-*)
 		# https://lkml.org/lkml/2012/7/15/133
 		TARGET=ARM64
