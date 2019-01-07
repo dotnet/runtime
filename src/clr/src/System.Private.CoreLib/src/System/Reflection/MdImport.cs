@@ -2,20 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
 using System;
-using System.Reflection;
 using System.Globalization;
-using System.Threading;
 using System.Diagnostics;
-using System.Collections;
 using System.Runtime.CompilerServices;
-using System.Security;
-using System.Text;
 using System.Runtime.InteropServices;
-using System.Configuration.Assemblies;
-using System.Runtime.Versioning;
 
 namespace System.Reflection
 {
@@ -160,10 +151,15 @@ namespace System.Reflection
         Invalid = 0x7FFFFFFF,
     }
 
-    internal struct ConstArray
+    internal readonly struct ConstArray
     {
-        public IntPtr Signature { get { return m_constArray; } }
-        public int Length { get { return m_length; } }
+        // Keep the definition in sync with vm\ManagedMdImport.hpp
+        internal readonly int m_length;
+        internal readonly IntPtr m_constArray;
+
+        public IntPtr Signature => m_constArray;
+        public int Length => m_length;
+
         public byte this[int index]
         {
             get
@@ -178,19 +174,15 @@ namespace System.Reflection
             }
         }
 
-        // Keep the definition in sync with vm\ManagedMdImport.hpp
-        internal int m_length;
-        internal IntPtr m_constArray;
     }
 
     internal struct MetadataToken
     {
-        #region Implicit Cast Operators
-        public static implicit operator int(MetadataToken token) { return token.Value; }
-        public static implicit operator MetadataToken(int token) { return new MetadataToken(token); }
-        #endregion
+        public int Value;
 
-        #region Public Static Members
+        public static implicit operator int(MetadataToken token) => token.Value;
+        public static implicit operator MetadataToken(int token) => new MetadataToken(token);
+
         public static bool IsTokenOfType(int token, params MetadataTokenType[] types)
         {
             for (int i = 0; i < types.Length; i++)
@@ -202,43 +194,30 @@ namespace System.Reflection
             return false;
         }
 
-        public static bool IsNullToken(int token)
-        {
-            return (token & 0x00FFFFFF) == 0;
-        }
-        #endregion
+        public static bool IsNullToken(int token) => (token & 0x00FFFFFF) == 0;
 
-        #region Public Data Members
-        public int Value;
-        #endregion
 
-        #region Constructor
         public MetadataToken(int token) { Value = token; }
-        #endregion
 
-        #region Public Members
-        public bool IsGlobalTypeDefToken { get { return (Value == 0x02000001); } }
-        public MetadataTokenType TokenType { get { return (MetadataTokenType)(Value & 0xFF000000); } }
-        public bool IsTypeRef { get { return TokenType == MetadataTokenType.TypeRef; } }
-        public bool IsTypeDef { get { return TokenType == MetadataTokenType.TypeDef; } }
-        public bool IsFieldDef { get { return TokenType == MetadataTokenType.FieldDef; } }
-        public bool IsMethodDef { get { return TokenType == MetadataTokenType.MethodDef; } }
-        public bool IsMemberRef { get { return TokenType == MetadataTokenType.MemberRef; } }
-        public bool IsEvent { get { return TokenType == MetadataTokenType.Event; } }
-        public bool IsProperty { get { return TokenType == MetadataTokenType.Property; } }
-        public bool IsParamDef { get { return TokenType == MetadataTokenType.ParamDef; } }
-        public bool IsTypeSpec { get { return TokenType == MetadataTokenType.TypeSpec; } }
-        public bool IsMethodSpec { get { return TokenType == MetadataTokenType.MethodSpec; } }
-        public bool IsString { get { return TokenType == MetadataTokenType.String; } }
-        public bool IsSignature { get { return TokenType == MetadataTokenType.Signature; } }
-        public bool IsModule { get { return TokenType == MetadataTokenType.Module; } }
-        public bool IsAssembly { get { return TokenType == MetadataTokenType.Assembly; } }
-        public bool IsGenericPar { get { return TokenType == MetadataTokenType.GenericPar; } }
-        #endregion
+        public bool IsGlobalTypeDefToken => (Value == 0x02000001);
+        public MetadataTokenType TokenType => (MetadataTokenType)(Value & 0xFF000000);
+        public bool IsTypeRef => TokenType == MetadataTokenType.TypeRef;
+        public bool IsTypeDef => TokenType == MetadataTokenType.TypeDef;
+        public bool IsFieldDef => TokenType == MetadataTokenType.FieldDef;
+        public bool IsMethodDef => TokenType == MetadataTokenType.MethodDef;
+        public bool IsMemberRef => TokenType == MetadataTokenType.MemberRef;
+        public bool IsEvent => TokenType == MetadataTokenType.Event;
+        public bool IsProperty => TokenType == MetadataTokenType.Property;
+        public bool IsParamDef => TokenType == MetadataTokenType.ParamDef;
+        public bool IsTypeSpec => TokenType == MetadataTokenType.TypeSpec;
+        public bool IsMethodSpec => TokenType == MetadataTokenType.MethodSpec;
+        public bool IsString => TokenType == MetadataTokenType.String;
+        public bool IsSignature => TokenType == MetadataTokenType.Signature;
+        public bool IsModule => TokenType == MetadataTokenType.Module;
+        public bool IsAssembly => TokenType == MetadataTokenType.Assembly;
+        public bool IsGenericPar => TokenType == MetadataTokenType.GenericPar;
 
-        #region Object Overrides
-        public override string ToString() { return string.Format(CultureInfo.InvariantCulture, "0x{0:x8}", Value); }
-        #endregion
+        public override string ToString() => string.Format(CultureInfo.InvariantCulture, "0x{0:x8}", Value);
     }
 
     internal unsafe struct MetadataEnumResult
@@ -270,12 +249,10 @@ namespace System.Reflection
         }
     }
 
-    internal struct MetadataImport
+    internal readonly struct MetadataImport
     {
-        #region Private Data Members
-        private IntPtr m_metadataImport2;
-        private object m_keepalive;
-        #endregion
+        private readonly IntPtr m_metadataImport2;
+        private readonly object m_keepalive;
 
         #region Override methods from Object
         internal static readonly MetadataImport EmptyImport = new MetadataImport((IntPtr)0, null);
