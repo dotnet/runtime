@@ -63,10 +63,10 @@ namespace NativeDefs
         [DllImport(NativeBinaryName)]
         public static extern bool ReverseP_MarshalStrB_InOut(Del_MarshalStrB_InOut d, [MarshalAs(UnmanagedType.LPTStr)]string s);
 
-        [DllImport(NativeBinaryName)]
+        [DllImport(NativeBinaryName, CharSet = CharSet.Unicode)]
         public static extern bool Verify_NullTerminators_PastEnd(StringBuilder builder, int length);
 
-        [DllImport(NativeBinaryName, EntryPoint = "Verify_NullTerminators_PastEnd")]
+        [DllImport(NativeBinaryName, EntryPoint = "Verify_NullTerminators_PastEnd", CharSet = CharSet.Unicode)]
         public static extern bool Verify_NullTerminators_PastEnd_Out([Out] StringBuilder builder, int length);
     }
 }
