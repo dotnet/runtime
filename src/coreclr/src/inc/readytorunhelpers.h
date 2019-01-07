@@ -84,10 +84,10 @@ HELPER(READYTORUN_HELPER_Dbl2UIntOvf,               CORINFO_HELP_DBL2UINT_OVF,  
 HELPER(READYTORUN_HELPER_Dbl2ULng,                  CORINFO_HELP_DBL2ULNG,                          )
 HELPER(READYTORUN_HELPER_Dbl2ULngOvf,               CORINFO_HELP_DBL2ULNG_OVF,                      )
 
-HELPER(READYTORUN_HELPER_DblRem,                    CORINFO_HELP_FLTREM,                            )
-HELPER(READYTORUN_HELPER_FltRem,                    CORINFO_HELP_DBLREM,                            )
-HELPER(READYTORUN_HELPER_DblRound,                  CORINFO_HELP_FLTROUND,                          )
-HELPER(READYTORUN_HELPER_FltRound,                  CORINFO_HELP_DBLROUND,                          )
+HELPER(READYTORUN_HELPER_FltRem,                    CORINFO_HELP_FLTREM,                            )
+HELPER(READYTORUN_HELPER_DblRem,                    CORINFO_HELP_DBLREM,                            )
+HELPER(READYTORUN_HELPER_FltRound,                  CORINFO_HELP_FLTROUND,                          )
+HELPER(READYTORUN_HELPER_DblRound,                  CORINFO_HELP_DBLROUND,                          )
 
 #ifndef _TARGET_X86_
 HELPER(READYTORUN_HELPER_PersonalityRoutine,        CORINFO_HELP_EE_PERSONALITY_ROUTINE,            OPTIMIZEFORSIZE)
