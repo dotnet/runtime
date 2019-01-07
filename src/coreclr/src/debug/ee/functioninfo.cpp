@@ -939,6 +939,8 @@ void DebuggerJitInfo::LazyInitBounds()
 
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%x GetBoundariesAndVars success=0x%x\n", this, fSuccess));
 
+        // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons
+        CodeVersionManager::TableLockHolder lockHolder(m_fd->GetCodeVersionManager());
         Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
 
         if (!m_fAttemptInit)
@@ -1065,8 +1067,27 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // Pick a unique initial value (-10) so that the 1st doesn't accidentally match.
     int ilPrevOld = -10;
 
-    InstrumentedILOffsetMapping mapping = 
-        m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
+    _ASSERTE(m_fd->GetCodeVersionManager()->LockOwnedByCurrentThread());
+    CodeVersionManager *pCodeVersionManager = m_fd->GetCodeVersionManager();
+    InstrumentedILOffsetMapping mapping;
+
+    NativeCodeVersion nativeVersion = pCodeVersionManager->GetNativeCodeVersion(m_fd, (PCODE)CORDB_ADDRESS_TO_PTR(m_addrOfCode));
+    _ASSERTE(!nativeVersion.IsNull());
+    ILCodeVersion ilVersion = nativeVersion.GetILCodeVersion();
+    if (!ilVersion.IsDefaultVersion())
+    {
+        // Did the current rejit provide a map?
+        const InstrumentedILOffsetMapping *pReJitMap = ilVersion.GetInstrumentedILMap();
+        if (pReJitMap != NULL)
+        {
+            mapping = *pReJitMap;
+        }
+    }
+    else if (m_methodInfo->HasInstrumentedILMap())
+    {
+        // If a ReJIT hasn't happened, check for a profiler provided map.
+        mapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
+    }
 
     //
     // <TODO>@todo perf: we could do the vast majority of this
@@ -1101,7 +1122,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
         // (8 old -> 50 new)
         // And the jit gives us an entry for 44 new, that will map back to 6 old.
         // Since the map can only have one entry for 6 old, we remove 44 new.
-        if (m_methodInfo->HasInstrumentedILMap())
+        if (!mapping.IsNull())
         {
             int ilThisOld = m_methodInfo->TranslateToInstIL(&mapping, 
                                                             pMapEntry->ilOffset, 
