@@ -1714,7 +1714,6 @@ void DomainAssembly::DeliverSyncEvents()
 BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
                                  PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
                                  LPCSTR *szFileName, DWORD *dwLocation,
-                                 StackCrawlMark *pStackMark, BOOL fSkipSecurityCheck,
                                  BOOL fSkipRaiseResolveEvent)
 {
     CONTRACTL
@@ -1732,8 +1731,6 @@ BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
                                    pAssemblyRef,
                                    szFileName,
                                    dwLocation,
-                                   pStackMark,
-                                   fSkipSecurityCheck,
                                    fSkipRaiseResolveEvent,
                                    this,
                                    this->m_pDomain );

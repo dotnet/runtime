@@ -148,8 +148,6 @@ namespace System.Resources
         private Version _satelliteContractVersion;
         private bool _lookedForSatelliteContractVersion;
 
-        private RuntimeAssembly _callingAssembly;  // Assembly who created the ResMgr.
-
         private IResourceGroveler resourceGroveler;
 
         public static readonly int MagicNumber = unchecked((int)0xBEEFCACE);  // If only hex had a K...
@@ -180,16 +178,8 @@ namespace System.Resources
         internal const string ResFileExtension = ".resources";
         internal const int ResFileExtensionLength = 10;
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        private void Init()
-        {
-            _callingAssembly = (RuntimeAssembly)Assembly.GetCallingAssembly();
-        }
-
         protected ResourceManager()
         {
-            Init();
-
             _lastUsedResourceCache = new CultureNameResourceSetPair();
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
             resourceGroveler = new ManifestBasedResourceGroveler(mediator);
@@ -227,7 +217,6 @@ namespace System.Resources
             resourceGroveler = new FileBasedResourceGroveler(mediator);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ResourceManager(string baseName, Assembly assembly)
         {
             if (null == baseName)
@@ -245,19 +234,8 @@ namespace System.Resources
             SetAppXConfiguration();
 
             CommonAssemblyInit();
-
-            _callingAssembly = (RuntimeAssembly)Assembly.GetCallingAssembly();
-            // Special case for mscorlib - protect mscorlib's private resources.
-            // This isn't for security reasons, but to ensure we can make
-            // breaking changes to mscorlib's internal resources without 
-            // assuming users may have taken a dependency on them.
-            if (assembly == typeof(object).Assembly && _callingAssembly != assembly)
-            {
-                _callingAssembly = null;
-            }
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ResourceManager(string baseName, Assembly assembly, Type usingResourceSet)
         {
             if (null == baseName)
@@ -276,16 +254,8 @@ namespace System.Resources
             _userResourceSet = usingResourceSet;
 
             CommonAssemblyInit();
-            _callingAssembly = (RuntimeAssembly)Assembly.GetCallingAssembly();
-            // Special case for mscorlib - protect mscorlib's private resources.
-            // This isn't for security reasons, but to ensure we can make
-            // breaking changes to mscorlib's internal resources without 
-            // assuming users may have taken a dependency on them.
-            if (assembly == typeof(object).Assembly && _callingAssembly != assembly)
-                _callingAssembly = null;
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ResourceManager(Type resourceSource)
         {
             if (null == resourceSource)
@@ -301,13 +271,6 @@ namespace System.Resources
             SetAppXConfiguration();
 
             CommonAssemblyInit();
-
-            _callingAssembly = (RuntimeAssembly)Assembly.GetCallingAssembly();
-            // Special case for mscorlib - protect mscorlib's private resources.
-            if (MainAssembly == typeof(object).Assembly && _callingAssembly != MainAssembly)
-            {
-                _callingAssembly = null;
-            }
         }
 
         // Trying to unify code as much as possible, even though having to do a
@@ -466,7 +429,6 @@ namespace System.Resources
         // if it hasn't yet been loaded and if parent CultureInfos should be 
         // loaded as well for resource inheritance.
         //         
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public virtual ResourceSet GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
             if (null == culture)
@@ -483,13 +445,10 @@ namespace System.Resources
                 }
             }
 
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
             if (UseManifest && culture.HasInvariantCultureName)
             {
                 string fileName = GetResourceFileName(culture);
-                RuntimeAssembly mainAssembly = (RuntimeAssembly)MainAssembly;
-                Stream stream = mainAssembly.GetManifestResourceStream(_locationInfo, fileName, _callingAssembly == MainAssembly, ref stackMark);
+                Stream stream = MainAssembly.GetManifestResourceStream(_locationInfo, fileName);
                 if (createIfNotExists && stream != null)
                 {
                     rs = ((ManifestBasedResourceGroveler)resourceGroveler).CreateResourceSet(stream, MainAssembly);
@@ -498,14 +457,6 @@ namespace System.Resources
                 }
             }
 
-            // Note: ideally we could plumb through the stack crawl mark here, but we must
-            // call the virtual 3-argument InternalGetResourceSet method for compatibility.
-            // Security-wise, we're not overly interested in protecting access to resources,
-            // since full-trust callers can get them already and most resources are public.
-            // Also, the JIT inliner could always inline a caller into another assembly's
-            // method.
-            // So if we happen to return some resources in cases where we should really be
-            // doing a demand for member access permissions, we're not overly concerned.
             return InternalGetResourceSet(culture, createIfNotExists, tryParents);
         }
 
@@ -513,33 +464,22 @@ namespace System.Resources
         // for getting a resource set lives.  Access to it is controlled by
         // threadsafe methods such as GetResourceSet, GetString, & GetObject.  
         // This will take a minimal number of locks.
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         protected virtual ResourceSet InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
             Debug.Assert(culture != null, "culture != null");
 
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return InternalGetResourceSet(culture, createIfNotExists, tryParents, ref stackMark);
-        }
-
-        // InternalGetResourceSet is a non-threadsafe method where all the logic
-        // for getting a resource set lives.  Access to it is controlled by
-        // threadsafe methods such as GetResourceSet, GetString, & GetObject.  
-        // This will take a minimal number of locks.
-        private ResourceSet InternalGetResourceSet(CultureInfo requestedCulture, bool createIfNotExists, bool tryParents, ref StackCrawlMark stackMark)
-        {
             Dictionary<string, ResourceSet> localResourceSets = _resourceSets;
             ResourceSet rs = null;
             CultureInfo foundCulture = null;
             lock (localResourceSets)
             {
-                if (localResourceSets.TryGetValue(requestedCulture.Name, out rs))
+                if (localResourceSets.TryGetValue(culture.Name, out rs))
                 {
                     return rs;
                 }
             }
 
-            ResourceFallbackManager mgr = new ResourceFallbackManager(requestedCulture, _neutralResourcesCulture, tryParents);
+            ResourceFallbackManager mgr = new ResourceFallbackManager(culture, _neutralResourcesCulture, tryParents);
 
             foreach (CultureInfo currentCultureInfo in mgr)
             {
@@ -548,7 +488,7 @@ namespace System.Resources
                     if (localResourceSets.TryGetValue(currentCultureInfo.Name, out rs))
                     {
                         // we need to update the cache if we fellback
-                        if (requestedCulture != currentCultureInfo) foundCulture = currentCultureInfo;
+                        if (culture != currentCultureInfo) foundCulture = currentCultureInfo;
                         break;
                     }
                 }
@@ -560,7 +500,7 @@ namespace System.Resources
                 // ResourceManager).  It's happened.
 
                 rs = resourceGroveler.GrovelForResourceSet(currentCultureInfo, localResourceSets,
-                                                           tryParents, createIfNotExists, ref stackMark);
+                                                           tryParents, createIfNotExists);
 
                 // found a ResourceSet; we're done
                 if (rs != null)
@@ -767,9 +707,6 @@ namespace System.Resources
             bool bUsingSatelliteAssembliesUnderAppX = false;
 
             RuntimeAssembly resourcesAssembly = (RuntimeAssembly)MainAssembly;
-
-            if (resourcesAssembly == null)
-                resourcesAssembly = _callingAssembly;
 
             if (resourcesAssembly != null)
             {
@@ -1016,11 +953,6 @@ namespace System.Resources
 
             foreach (CultureInfo currentCultureInfo in mgr)
             {
-                // Note: Technically this method should be passed in a stack crawl mark that we then pass
-                // to InternalGetResourceSet for ensuring we demand permissions to read your private resources
-                // if you're reading resources from an assembly other than yourself.  But, we must call our
-                // three argument overload (without the stack crawl mark) for compatibility.  After 
-                // consideration, we aren't worried about the security impact.
                 ResourceSet rs = InternalGetResourceSet(currentCultureInfo, true, true);
                 if (rs == null)
                     break;
@@ -1135,11 +1067,6 @@ namespace System.Resources
             {
                 get { return _rm.FallbackLocation; }
                 set { _rm._fallbackLoc = value; }
-            }
-
-            internal RuntimeAssembly CallingAssembly
-            {
-                get { return _rm._callingAssembly; }
             }
 
             internal RuntimeAssembly MainAssembly
