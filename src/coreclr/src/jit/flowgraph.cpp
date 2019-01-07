@@ -3572,7 +3572,7 @@ void Compiler::fgCreateGCPolls()
     }
 #endif // DEBUG
 
-    if (!(opts.MinOpts() || opts.compDbgCode))
+    if (opts.OptimizationEnabled())
     {
         // Remove polls from well formed loops with a constant upper bound.
         for (unsigned lnum = 0; lnum < optLoopCount; ++lnum)
@@ -3785,7 +3785,7 @@ void Compiler::fgCreateGCPolls()
         // can't or don't want to emit an inline check.  Check all of those.  If after all of that we still
         // have INLINE, then emit an inline check.
 
-        if (opts.MinOpts() || opts.compDbgCode)
+        if (opts.OptimizationDisabled())
         {
 #ifdef DEBUG
             if (verbose)
@@ -3832,7 +3832,7 @@ void Compiler::fgCreateGCPolls()
     // past the epilog.  We should never split blocks unless we're optimizing.
     if (createdPollBlocks)
     {
-        noway_assert(!opts.MinOpts() && !opts.compDbgCode);
+        noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks();
     }
 }
@@ -13023,7 +13023,7 @@ void Compiler::fgComputeBlockAndEdgeWeights()
     JITDUMP("*************** In fgComputeBlockAndEdgeWeights()\n");
 
     const bool usingProfileWeights = fgIsUsingProfileWeights();
-    const bool isOptimizing        = !opts.MinOpts() && !opts.compDbgCode;
+    const bool isOptimizing        = opts.OptimizationEnabled();
 
     fgHaveValidEdgeWeights = false;
     fgCalledCount          = BB_UNITY_WEIGHT;
@@ -16444,7 +16444,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
     /* This should never be called for debuggable code */
 
-    noway_assert(!opts.MinOpts() && !opts.compDbgCode);
+    noway_assert(opts.OptimizationEnabled());
 
 #ifdef DEBUG
     if (verbose)
