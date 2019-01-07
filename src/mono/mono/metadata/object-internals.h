@@ -2054,6 +2054,9 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error);
 char*
 mono_utf16_to_utf8 (const mono_unichar2 *s, gsize slength, MonoError *error);
 
+char*
+mono_utf16_to_utf8len (const mono_unichar2 *s, gsize slength, gsize *utf8_length, MonoError *error);
+
 gboolean
 mono_runtime_object_init_checked (MonoObject *this_obj, MonoError *error);
 

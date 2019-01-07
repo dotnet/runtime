@@ -14,18 +14,6 @@
 void
 mono_w32semaphore_init (void);
 
-ICALL_EXPORT
-gpointer
-ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCount, gint32 maximumCount, MonoString *name, gint32 *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle, gint32 releaseCount, gint32 *prevcount);
-
-ICALL_EXPORT
-gpointer
-ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, gint32 rights, gint32 *error);
-
 typedef struct MonoW32HandleNamedSemaphore MonoW32HandleNamedSemaphore;
 
 MonoW32HandleNamespace*

@@ -7542,14 +7542,15 @@ mono_string_to_utf8 (MonoString *s)
 }
 
 /**
- * mono_utf16_to_utf8:
+ * mono_utf16_to_utf8len:
  */
 char *
-mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
+mono_utf16_to_utf8len (const gunichar2 *s, gsize slength, gsize *utf8_length, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	long written = 0;
+	*utf8_length = 0;
 	char *as;
 	GError *gerror = NULL;
 
@@ -7562,6 +7563,7 @@ mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
 		return g_strdup ("");
 
 	as = g_utf16_to_utf8 (s, slength, NULL, &written, &gerror);
+	*utf8_length = written;
 	if (gerror) {
 		mono_error_set_argument (error, "string", gerror->message);
 		g_error_free (gerror);
@@ -7574,9 +7576,20 @@ mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
 		memcpy (as2, as, written);
 		g_free (as);
 		as = as2;
+
+		// FIXME utf8_length is ambiguous here.
+		// For now it is what strlen would report.
+		// A lot of code does not deal correctly with embedded nuls.
 	}
 
 	return as;
+}
+
+char *
+mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
+{
+	gsize utf8_length = 0;
+	return mono_utf16_to_utf8len (s, slength, &utf8_length, error);
 }
 
 char *

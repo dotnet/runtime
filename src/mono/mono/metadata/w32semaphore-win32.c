@@ -22,32 +22,26 @@ mono_w32semaphore_init (void)
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 gpointer
-ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCount, gint32 maximumCount, MonoString *name, gint32 *error)
+ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount, gint32 maximumCount,
+	const gunichar2 *name, gint32 name_length, gint32 *win32error, MonoError *error)
 { 
-	HANDLE sem;
-
-	sem = CreateSemaphore (NULL, initialCount, maximumCount, name ? mono_string_chars_internal (name) : NULL);
-
-	*error = GetLastError ();
-
+	HANDLE sem = CreateSemaphoreW (NULL, initialCount, maximumCount, name);
+	*win32error = GetLastError ();
 	return sem;
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
 
 MonoBoolean
-ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle, gint32 releaseCount, gint32 *prevcount)
-{ 
+ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle, gint32 releaseCount, gint32 *prevcount, MonoError *error)
+{
 	return ReleaseSemaphore (handle, releaseCount, (PLONG)prevcount);
 }
 
 gpointer
-ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, gint32 rights, gint32 *error)
+ves_icall_System_Threading_Semaphore_OpenSemaphore_icall (const gunichar2 *name, gint32 name_length,
+	gint32 rights, gint32 *win32error, MonoError *error)
 {
-	HANDLE sem;
-
-	sem = OpenSemaphore (rights, FALSE, mono_string_chars_internal (name));
-
-	*error = GetLastError ();
-
+	HANDLE sem = OpenSemaphoreW (rights, FALSE, name);
+	*win32error = GetLastError ();
 	return sem;
 }
