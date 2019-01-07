@@ -1683,7 +1683,6 @@ void PEFile::FlushExternalLog()
 BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
                                  PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
                                  LPCSTR *szFileName, DWORD *dwLocation,
-                                 StackCrawlMark *pStackMark, BOOL fSkipSecurityCheck,
                                  BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly, AppDomain* pAppDomain)
 {
     CONTRACTL
@@ -1773,8 +1772,6 @@ BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
                                                 pAssemblyRef,
                                                 szFileName,
                                                 dwLocation,
-                                                pStackMark,
-                                                fSkipSecurityCheck,
                                                 fSkipRaiseResolveEvent);
         }
 
@@ -1782,31 +1779,6 @@ BOOL PEFile::GetResource(LPCSTR szName, DWORD *cbResource,
         if (mdLinkRef == mdFileNil)
         {
             // The resource is embedded in the manifest file
-
-#ifndef CROSSGEN_COMPILE
-            if (!IsMrPublic(dwResourceFlags) && pStackMark && !fSkipSecurityCheck)
-            {
-                Assembly *pCallersAssembly = SystemDomain::GetCallersAssembly(pStackMark);
-
-                if (pCallersAssembly &&  // full trust for interop
-                    (!pCallersAssembly->GetManifestFile()->Equals(this)))
-                {
-                    RefSecContext sCtx(AccessCheckOptions::kMemberAccess);
-
-                    AccessCheckOptions accessCheckOptions(
-                        AccessCheckOptions::kMemberAccess,  /*accessCheckType*/
-                        NULL,                               /*pAccessContext*/
-                        FALSE,                              /*throwIfTargetIsInaccessible*/
-                        (MethodTable *) NULL                /*pTargetMT*/
-                        );
-
-                    // SL: return TRUE only if the caller is critical
-                    // Desktop: return TRUE only if demanding MemberAccess succeeds
-                    if (!accessCheckOptions.DemandMemberAccessOrFail(&sCtx, NULL, TRUE /*visibilityCheck*/))
-                        return FALSE;
-                }
-            }
-#endif // CROSSGEN_COMPILE
 
             if (dwLocation) {
                 *dwLocation = *dwLocation | 5; // ResourceLocation.embedded |
