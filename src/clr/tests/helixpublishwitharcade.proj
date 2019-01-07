@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="SubmitTestsToHelix">
 
-  <!-- This project uses the helix SDK ,documented at
+  <!-- This project uses the helix SDK, documented at
        https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
        to send test jobs to helix. -->
 
