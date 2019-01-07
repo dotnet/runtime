@@ -492,7 +492,7 @@ void CodeGen::siBeginBlock(BasicBlock* block)
         // For debuggable or minopts code, scopes can begin only on block boundaries.
         // For other codegen modes (eg minopts/tier0) we currently won't report any
         // untracked locals.
-        if (compiler->opts.compDbgCode || compiler->opts.MinOpts())
+        if (compiler->opts.OptimizationDisabled())
         {
             // Check if there are any scopes on the current block's start boundary.
             VarScopeDsc* varScope = nullptr;
