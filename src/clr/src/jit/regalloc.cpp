@@ -207,7 +207,7 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
 #endif
 
 #if ETW_EBP_FRAMED
-    if (!result && (opts.MinOpts() || opts.compDbgCode))
+    if (!result && opts.OptimizationDisabled())
     {
         INDEBUG(reason = "Debug Code");
         result = true;
