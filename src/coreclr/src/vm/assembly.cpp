@@ -1855,7 +1855,6 @@ BOOL Assembly::FileNotFound(HRESULT hr)
 BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
                               PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
                               LPCSTR *szFileName, DWORD *dwLocation,
-                              StackCrawlMark *pStackMark, BOOL fSkipSecurityCheck,
                               BOOL fSkipRaiseResolveEvent)
 {
     CONTRACTL
@@ -1869,9 +1868,9 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     DomainAssembly *pAssembly = NULL;
     BOOL result = GetDomainAssembly()->GetResource(szName, cbResource,
                                                    pbInMemoryResource, &pAssembly,
-                                                   szFileName, dwLocation, pStackMark, fSkipSecurityCheck,
+                                                   szFileName, dwLocation,
                                                    fSkipRaiseResolveEvent);
-    if (result && pAssemblyRef != NULL && pAssembly!=NULL)
+    if (result && pAssemblyRef != NULL && pAssembly != NULL)
         *pAssemblyRef = pAssembly->GetAssembly();
 
     return result;

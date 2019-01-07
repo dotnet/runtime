@@ -283,7 +283,6 @@ public:
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
                      PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
                      LPCSTR *szFileName, DWORD *dwLocation, 
-                     StackCrawlMark *pStackMark, BOOL fSkipSecurityCheck,
                      BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly,
                      AppDomain* pAppDomain);
 #ifndef DACCESS_COMPILE
