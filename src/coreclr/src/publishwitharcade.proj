@@ -18,6 +18,7 @@
 
     <ItemGroup>
       <PackagesToPublish Include="$(PackagesBinDir)pkg\*.nupkg" IsShipping="true" />
+      <SymbolPackagesToPublish Include="$(PackagesBinDir)symbolpkg\*.nupkg" IsShipping="true" />
     </ItemGroup>
 
     <!-- Managed-only packages are built on each windows leg, but we
@@ -26,6 +27,9 @@
     <ItemGroup Condition=" '$(BuildArch)' != 'x64' ">
       <PackagesToPublish Remove="$(PackagesBinDir)pkg\Microsoft.NET.Sdk.IL*.nupkg" />
       <PackagesToPublish Remove="$(PackagesBinDir)pkg\Microsoft.TargetingPack.Private.CoreCLR*.nupkg" />
+
+      <SymbolPackagesToPublish Remove="$(PackagesBinDir)symbolpkg\Microsoft.NET.Sdk.IL*.nupkg" />
+      <SymbolPackagesToPublish Remove="$(PackagesBinDir)symbolpkg\Microsoft.TargetingPack.Private.CoreCLR*.nupkg" />
     </ItemGroup>
 
     <!-- TODO: Investigate whether we can get rid of the transport
@@ -36,7 +40,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ItemsToPushToBlobFeed Include="@(PackagesToPublish)">
+      <ItemsToPushToBlobFeed Include="@(PackagesToPublish);@(SymbolPackagesToPublish)">
         <ManifestArtifactData Condition="!%(IsShipping)">NonShipping=true</ManifestArtifactData> <!-- TODO: how is this metadata used? -->
       </ItemsToPushToBlobFeed>
     </ItemGroup>
