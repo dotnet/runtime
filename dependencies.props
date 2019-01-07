@@ -37,7 +37,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>3.0.0-preview1-03603-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.2.0-beta.18578.9</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
@@ -56,11 +56,6 @@
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>
 
-    <XmlUpdateStep Include="BuildTools">
-       <Path>$(MSBuildThisFileFullPath)</Path>
-       <ElementName>FeedTasksPackageVersion</ElementName>
-       <PackageId>$(FeedTasksPackage)</PackageId>
-    </XmlUpdateStep>
     <UpdateStep Include="BuildTools">
       <UpdaterType>File</UpdaterType>
       <Path>$(RepoRoot)BuildToolsVersion.txt</Path>
