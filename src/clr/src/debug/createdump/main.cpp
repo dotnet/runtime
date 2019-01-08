@@ -20,11 +20,7 @@ bool CreateDumpCommon(const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, 
 int __cdecl main(const int argc, const char* argv[])
 {
     MINIDUMP_TYPE minidumpType = MiniDumpWithPrivateReadWriteMemory;
-#ifdef ANDROID
-    const char* dumpPathTemplate = "/data/local/tmp/coredump.%d";
-#else
-    const char* dumpPathTemplate = "/tmp/coredump.%d";
-#endif
+    const char* dumpPathTemplate = nullptr;
     pid_t pid = 0;
 
     int exitCode = PAL_InitializeDLL();
@@ -33,6 +29,7 @@ int __cdecl main(const int argc, const char* argv[])
         fprintf(stderr, "PAL initialization FAILED %d\n", exitCode);
         return exitCode;
     }
+
 
     // Parse the command line options and target pid
     argv++;
@@ -70,8 +67,25 @@ int __cdecl main(const int argc, const char* argv[])
             argv++;
         }
     }
+
     if (pid != 0)
     { 
+        if (dumpPathTemplate == nullptr)
+        {
+            char tmpPath[MAX_LONGPATH];
+            if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
+            {
+                fprintf(stderr, "GetTempPath failed (0x%08x)", ::GetLastError());
+                return ::GetLastError();
+            }
+            exitCode = strcat_s(tmpPath, MAX_LONGPATH, "coredump.%d");
+            if (exitCode != 0)
+            {
+                fprintf(stderr, "strcat_s failed (%d)", exitCode);
+                return exitCode;
+            }
+            dumpPathTemplate = tmpPath;
+        }
         ReleaseHolder<DumpDataTarget> dataTarget = new DumpDataTarget(pid);
         ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid, dataTarget, false);
 
