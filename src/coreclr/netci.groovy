@@ -2271,11 +2271,14 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                                 // If we ran the tests, collect the test logs collected by xunit. We want to do this even if the tests fail, so we
                                 // must do it in the same batch file as the test run.
 
+                                buildCommandsStr += "echo on\r\n" // Show the following commands in the log. "echo" doesn't alter the errorlevel.
                                 buildCommandsStr += "set saved_errorlevel=%errorlevel%\r\n"
                                 buildCommandsStr += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${arch}.${configuration}\\Reports', '.\\bin\\tests\\testReports.zip')\"\r\n";
                                 buildCommandsStr += "exit /b %saved_errorlevel%\r\n"
 
-                                Utilities.addArchival(newJob, "bin/tests/testReports.zip", "")
+                                def doNotFailIfNothingArchived = true
+                                def archiveOnlyIfSuccessful = false
+                                Utilities.addArchival(newJob, "bin/tests/testReports.zip", "", doNotFailIfNothingArchived, archiveOnlyIfSuccessful)
                             }
                             buildCommands += buildCommandsStr
                         }
@@ -3145,6 +3148,7 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
                 def runtestCommand = "call %WORKSPACE%\\tests\\runtest.cmd ${architecture} ${configuration} skipgeneratelayout"
 
                 addCommand("${runtestCommand}")
+                addCommand("echo on") // Show the following commands in the log. "echo" doesn't alter the errorlevel.
                 addCommand("set saved_errorlevel=%errorlevel%")
 
                 // Collect the test logs collected by xunit. Ignore errors here. We want to collect these even if the run
@@ -3161,7 +3165,10 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
     } // job
 
     if (!isCoreFxScenario(scenario)) {
-        Utilities.addArchival(newJob, "bin/tests/testReports.zip", "")
+        def doNotFailIfNothingArchived = true
+        def archiveOnlyIfSuccessful = false
+        Utilities.addArchival(newJob, "bin/tests/testReports.zip", "", doNotFailIfNothingArchived, archiveOnlyIfSuccessful)
+
         Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml', true)
     }
 
