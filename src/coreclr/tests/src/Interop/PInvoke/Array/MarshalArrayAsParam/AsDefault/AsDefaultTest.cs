@@ -633,7 +633,7 @@ public class ArrayMarshal
         }
         catch (Exception e)
         {
-            Console.WriteLine($"\nTEST FAIL: {e.Message}");
+            Console.WriteLine($"\nTEST FAIL: {e}");
             return 101;
         }
     }

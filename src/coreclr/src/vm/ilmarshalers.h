@@ -142,7 +142,6 @@ public:
         }
         CONTRACTL_END;
         
-        CONSISTENCY_CHECK(pManagedType->cbType == 1);
         if (pManagedType->IsValueClass())
         {
             EmitLoadHomeAddr(pslILEmit);    // dest
