@@ -6835,8 +6835,14 @@ void Compiler::fgImport()
             // Assume if we generate any IR for the block we generate IR for the entire block.
             if (!block->isEmpty())
             {
-                unsigned blockILSize = blockILSize = block->bbCodeOffsEnd - block->bbCodeOffs;
-                importedILSize += blockILSize;
+                IL_OFFSET beginOffset = block->bbCodeOffs;
+                IL_OFFSET endOffset   = block->bbCodeOffsEnd;
+
+                if ((beginOffset != BAD_IL_OFFSET) && (endOffset != BAD_IL_OFFSET) && (endOffset > beginOffset))
+                {
+                    unsigned blockILSize = endOffset - beginOffset;
+                    importedILSize += blockILSize;
+                }
             }
         }
     }
