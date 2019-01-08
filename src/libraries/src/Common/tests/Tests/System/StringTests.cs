@@ -207,50 +207,17 @@ namespace System.Tests
             Assert.Equal(expected, s.AsSpan().Length);
         }
 
-        public static IEnumerable<object[]> Concat_Strings_TestData()
+        public static IEnumerable<object[]> Concat_Strings_LessThan2_GreaterThan4_TestData()
         {
+            // 0
             yield return new object[] { new string[0], "" };
 
+            // 1
             yield return new object[] { new string[] { "1" }, "1" };
             yield return new object[] { new string[] { null }, "" };
             yield return new object[] { new string[] { "" }, "" };
 
-            yield return new object[] { new string[] { "1", "2" }, "12" };
-            yield return new object[] { new string[] { null, "1" }, "1" };
-            yield return new object[] { new string[] { "", "1" }, "1" };
-            yield return new object[] { new string[] { "1", null }, "1" };
-            yield return new object[] { new string[] { "1", "" }, "1" };
-            yield return new object[] { new string[] { null, null }, "" };
-            yield return new object[] { new string[] { "", "" }, "" };
-
-            yield return new object[] { new string[] { "1", "2", "3" }, "123" };
-            yield return new object[] { new string[] { null, "1", "2" }, "12" };
-            yield return new object[] { new string[] { "", "1", "2" }, "12" };
-            yield return new object[] { new string[] { "1", null, "2" }, "12" };
-            yield return new object[] { new string[] { "1", "", "2" }, "12" };
-            yield return new object[] { new string[] { "1", "2", null }, "12" };
-            yield return new object[] { new string[] { "1", "2", "" }, "12" };
-            yield return new object[] { new string[] { null, "2", null }, "2" };
-            yield return new object[] { new string[] { "", "2", "" }, "2" };
-            yield return new object[] { new string[] { null, null, null }, "" };
-            yield return new object[] { new string[] { "", "", "" }, "" };
-
-            yield return new object[] { new string[] { "1", "2", "3", "4" }, "1234" };
-            yield return new object[] { new string[] { null, "1", "2", "3" }, "123" };
-            yield return new object[] { new string[] { "", "1", "2", "3" }, "123" };
-            yield return new object[] { new string[] { "1", null, "2", "3" }, "123" };
-            yield return new object[] { new string[] { "1", "", "2", "3" }, "123" };
-            yield return new object[] { new string[] { "1", "2", null, "3" }, "123" };
-            yield return new object[] { new string[] { "1", "2", "", "3" }, "123" };
-            yield return new object[] { new string[] { "1", "2", "3", null }, "123" };
-            yield return new object[] { new string[] { "1", "2", "3", "" }, "123" };
-            yield return new object[] { new string[] { "1", null, null, null }, "1" };
-            yield return new object[] { new string[] { "1", "", "", "" }, "1" };
-            yield return new object[] { new string[] { null, "1", null, "2" }, "12" };
-            yield return new object[] { new string[] { "", "1", "", "2" }, "12" };
-            yield return new object[] { new string[] { null, null, null, null }, "" };
-            yield return new object[] { new string[] { "", "", "", "" }, "" };
-
+            // 5
             yield return new object[] { new string[] { "1", "2", "3", "4", "5" }, "12345" };
             yield return new object[] { new string[] { null, "1", "2", "3", "4" }, "1234" };
             yield return new object[] { new string[] { "", "1", "2", "3", "4" }, "1234" };
@@ -267,11 +234,55 @@ namespace System.Tests
             yield return new object[] { new string[] { null, null, null, null, null }, "" };
             yield return new object[] { new string[] { "", "", "", "", "" }, "" };
 
+            // 7
             yield return new object[] { new string[] { "abcd", "efgh", "ijkl", "mnop", "qrst", "uvwx", "yz" }, "abcdefghijklmnopqrstuvwxyz" };
         }
 
+        public static IEnumerable<object[]> Concat_Strings_2_3_4_TestData()
+        {
+            // 2
+            yield return new object[] { new string[] { "1", "2" }, "12" };
+            yield return new object[] { new string[] { null, "1" }, "1" };
+            yield return new object[] { new string[] { "", "1" }, "1" };
+            yield return new object[] { new string[] { "1", null }, "1" };
+            yield return new object[] { new string[] { "1", "" }, "1" };
+            yield return new object[] { new string[] { null, null }, "" };
+            yield return new object[] { new string[] { "", "" }, "" };
+
+            // 3
+            yield return new object[] { new string[] { "1", "2", "3" }, "123" };
+            yield return new object[] { new string[] { null, "1", "2" }, "12" };
+            yield return new object[] { new string[] { "", "1", "2" }, "12" };
+            yield return new object[] { new string[] { "1", null, "2" }, "12" };
+            yield return new object[] { new string[] { "1", "", "2" }, "12" };
+            yield return new object[] { new string[] { "1", "2", null }, "12" };
+            yield return new object[] { new string[] { "1", "2", "" }, "12" };
+            yield return new object[] { new string[] { null, "2", null }, "2" };
+            yield return new object[] { new string[] { "", "2", "" }, "2" };
+            yield return new object[] { new string[] { null, null, null }, "" };
+            yield return new object[] { new string[] { "", "", "" }, "" };
+
+            // 4
+            yield return new object[] { new string[] { "1", "2", "3", "4" }, "1234" };
+            yield return new object[] { new string[] { null, "1", "2", "3" }, "123" };
+            yield return new object[] { new string[] { "", "1", "2", "3" }, "123" };
+            yield return new object[] { new string[] { "1", null, "2", "3" }, "123" };
+            yield return new object[] { new string[] { "1", "", "2", "3" }, "123" };
+            yield return new object[] { new string[] { "1", "2", null, "3" }, "123" };
+            yield return new object[] { new string[] { "1", "2", "", "3" }, "123" };
+            yield return new object[] { new string[] { "1", "2", "3", null }, "123" };
+            yield return new object[] { new string[] { "1", "2", "3", "" }, "123" };
+            yield return new object[] { new string[] { "1", null, null, null }, "1" };
+            yield return new object[] { new string[] { "1", "", "", "" }, "1" };
+            yield return new object[] { new string[] { null, "1", null, "2" }, "12" };
+            yield return new object[] { new string[] { "", "1", "", "2" }, "12" };
+            yield return new object[] { new string[] { null, null, null, null }, "" };
+            yield return new object[] { new string[] { "", "", "", "" }, "" };
+        }
+
         [Theory]
-        [MemberData(nameof(Concat_Strings_TestData))]
+        [MemberData(nameof(Concat_Strings_2_3_4_TestData))]
+        [MemberData(nameof(Concat_Strings_LessThan2_GreaterThan4_TestData))]
         public static void Concat_String(string[] values, string expected)
         {
             Action<string> validate = result =>
