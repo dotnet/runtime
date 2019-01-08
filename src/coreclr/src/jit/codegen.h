@@ -287,14 +287,19 @@ protected:
                               regNumber reg2,
                               int       spOffset,
                               int       spDelta,
-                              bool      lastSavedWasPreviousPair,
+                              bool      useSaveNextPair,
                               regNumber tmpReg,
                               bool*     pTmpRegIsZero);
 
     void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
 
-    void genEpilogRestoreRegPair(
-        regNumber reg1, regNumber reg2, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
+    void genEpilogRestoreRegPair(regNumber reg1,
+                                 regNumber reg2,
+                                 int       spOffset,
+                                 int       spDelta,
+                                 bool      useSaveNextPair,
+                                 regNumber tmpReg,
+                                 bool*     pTmpRegIsZero);
 
     void genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
 
@@ -307,27 +312,29 @@ protected:
     {
         regNumber reg1;
         regNumber reg2;
+        bool      useSaveNextPair;
 
-        RegPair(regNumber reg1) : reg1(reg1), reg2(REG_NA)
+        RegPair(regNumber reg1) : reg1(reg1), reg2(REG_NA), useSaveNextPair(false)
         {
         }
 
-        RegPair(regNumber reg1, regNumber reg2) : reg1(reg1), reg2(reg2)
+        RegPair(regNumber reg1, regNumber reg2) : reg1(reg1), reg2(reg2), useSaveNextPair(false)
         {
             assert(reg2 == REG_NEXT(reg1));
         }
     };
 
     static void genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* regStack);
+    static void genSetUseSaveNextPairs(ArrayStack<RegPair>* regStack);
 
     static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
 
-    int genSaveCalleeSavedRegisterGroup(regMaskTP regsMask,
-                                        int       spDelta,
-                                        int spOffset DEBUGARG(bool isRegsToSaveCountOdd));
-    int genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask,
-                                           int       spDelta,
-                                           int spOffset DEBUGARG(bool isRegsToRestoreCountOdd));
+    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask,
+                                         int       spDelta,
+                                         int spOffset DEBUGARG(bool isRegsToSaveCountOdd));
+    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask,
+                                            int       spDelta,
+                                            int spOffset DEBUGARG(bool isRegsToRestoreCountOdd));
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
