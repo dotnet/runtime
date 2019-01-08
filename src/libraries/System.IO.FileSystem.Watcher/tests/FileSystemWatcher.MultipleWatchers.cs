@@ -55,7 +55,6 @@ namespace System.IO.Tests
             ExecuteWithRetry(() =>
             {
                 using (var watcher1 = new FileSystemWatcher(TestDirectory))
-                using (var watcher2 = new FileSystemWatcher(TestDirectory))
                 {
                     string fileName = Path.Combine(TestDirectory, "file");
                     watcher1.Filter = Path.GetFileName(fileName);
