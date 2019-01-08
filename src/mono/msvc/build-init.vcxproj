@@ -167,7 +167,7 @@
 
   <Target Name="AfterBuild" DependsOnTargets="AfterBuildWinSetup" />
 
-  <Target Name="_BackupConfigFile" Condition="'$(_MonoConfigFileBackupExists)' != 'true'">
+  <Target Name="_BackupConfigFile" Condition="'$(_MonoConfigFileBackupExists)' != 'true' and Exists('$(MONO_DIR)/config.h')">
     <Copy SourceFiles="$(MONO_DIR)/config.h" DestinationFiles="$(MONO_DIR)/cygconfig.h" />
   </Target>
 
