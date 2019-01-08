@@ -84,7 +84,7 @@
 //     actually exist yet. To support this methods can have code:Precode that is an entry point that exists
 //     and will call the JIT compiler if the code does not yet exist.
 //     
-//  * NGEN - NGen stands for Native code GENeration and it is the runtime way of precomiling IL and IL
+//  * NGEN - NGen stands for Native code GENeration and it is the runtime way of precompiling IL and IL
 //      Meta-data into native code and runtime data structures. At compilation time the most
 //      fundamental data structures is the code:ZapNode which represents something that needs to go into the
 //      NGEN image.
