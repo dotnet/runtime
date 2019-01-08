@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Logging.Test
 {
     public class TraceSourceScopeTest
     {
-#if NET461
+#if NET472
         [Fact]
         public static void DiagnosticsScope_PushesAndPops_LogicalOperationStack()
         {
