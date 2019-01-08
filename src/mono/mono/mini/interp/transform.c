@@ -2389,6 +2389,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	MonoDomain *domain = rtm->domain;
 	MonoMethodSignature *signature = mono_method_signature_internal (method);
 	gboolean ret = TRUE;
+	gboolean emitted_funccall_seq_point = FALSE;
 	guint32 *arg_offsets = NULL;
 
 	original_bb = bb = mono_basic_block_split (method, error, header);
@@ -2617,6 +2618,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		switch (*td->ip) {
 		case CEE_NOP: 
 			/* lose it */
+			emitted_funccall_seq_point = FALSE;
 			++td->ip;
 			break;
 		case CEE_BREAK:
@@ -2824,6 +2826,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				InterpBasicBlock *cbb = td->offset_to_bb [td->ip - header->code];
 				g_assert (cbb);
 
+				//check is is a nested call and remove the MONO_INST_NONEMPTY_STACK of the last breakpoint, only for non native methods
+				if (!(method->flags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+					if (emitted_funccall_seq_point)	{
+						if (cbb->last_seq_point)
+							cbb->last_seq_point->flags |= MONO_SEQ_POINT_FLAG_NESTED_CALL;
+					}
+					else
+						emitted_funccall_seq_point = TRUE;	
+				}
 				emit_seq_point (td, td->ip - header->code, cbb, TRUE);
 			}
 
