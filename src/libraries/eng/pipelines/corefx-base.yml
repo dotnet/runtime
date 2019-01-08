@@ -127,7 +127,7 @@ jobs:
 
         # enable helix telemetry -- we only send telemetry during official builds
         enableTelemetry: ${{ parameters.isOfficialBuild }}
-        helixRepo: corefx
+        helixRepo: dotnet/corefx
 
         name: ${{ job.job }}
         workspace:
