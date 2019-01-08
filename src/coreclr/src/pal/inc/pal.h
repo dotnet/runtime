@@ -1103,6 +1103,14 @@ GetTempPathW(
          IN DWORD nBufferLength,
          OUT LPWSTR lpBuffer);
 
+PALIMPORT
+DWORD
+PALAPI
+GetTempPathA(
+         IN DWORD nBufferLength,
+         OUT LPSTR lpBuffer);
+
+
 #ifdef UNICODE
 #define GetTempPath GetTempPathW
 #else
