@@ -332,6 +332,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Sibling(nullptr)
     , m_Code(nullptr)
     , m_ILSize(0)
+    , m_ImportedILSize(0)
     , m_Offset(BAD_IL_OFFSET)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
     , m_CodeSizeEstimate(0)
@@ -574,6 +575,7 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, GenTreeStmt* s
     , m_InlineContext(nullptr)
     , m_Caller(nullptr)
     , m_Callee(nullptr)
+    , m_ImportedILSize(0)
     , m_Description(description)
     , m_Reported(false)
 {
@@ -958,16 +960,16 @@ int InlineStrategy::EstimateTime(InlineContext* context)
 {
     // Simple linear models based on observations
     // show time is fairly well predicted by IL size.
-    unsigned ilSize = context->GetILSize();
-
+    //
     // Prediction varies for root and inlines.
     if (context == m_RootContext)
     {
-        return EstimateRootTime(ilSize);
+        return EstimateRootTime(context->GetILSize());
     }
     else
     {
-        return EstimateInlineTime(ilSize);
+        // Use amount of IL actually imported
+        return EstimateInlineTime(context->GetImportedILSize());
     }
 }
 
@@ -1137,14 +1139,17 @@ void InlineStrategy::NoteOutcome(InlineContext* context)
 }
 
 //------------------------------------------------------------------------
-// BudgetCheck: return true if as inline of this size would exceed the
-// jit time budget for this method
+// BudgetCheck: return true if an inline of this size would likely
+//     exceed the jit time budget for this method
 //
 // Arguments:
 //     ilSize - size of the method's IL
 //
 // Return Value:
 //     true if the inline would go over budget
+//
+// Notes:
+//     Presumes all IL in the method will be imported.
 
 bool InlineStrategy::BudgetCheck(unsigned ilSize)
 {
@@ -1205,15 +1210,16 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     calleeContext->m_Parent = parentContext;
     // Push on front here will put siblings in reverse lexical
     // order which we undo in the dumper
-    calleeContext->m_Sibling       = parentContext->m_Child;
-    parentContext->m_Child         = calleeContext;
-    calleeContext->m_Child         = nullptr;
-    calleeContext->m_Offset        = stmt->gtStmtILoffsx;
-    calleeContext->m_Observation   = inlineInfo->inlineResult->GetObservation();
-    calleeContext->m_Success       = true;
-    calleeContext->m_Devirtualized = originalCall->IsDevirtualized();
-    calleeContext->m_Guarded       = originalCall->IsGuarded();
-    calleeContext->m_Unboxed       = originalCall->IsUnboxed();
+    calleeContext->m_Sibling        = parentContext->m_Child;
+    parentContext->m_Child          = calleeContext;
+    calleeContext->m_Child          = nullptr;
+    calleeContext->m_Offset         = stmt->gtStmtILoffsx;
+    calleeContext->m_Observation    = inlineInfo->inlineResult->GetObservation();
+    calleeContext->m_Success        = true;
+    calleeContext->m_Devirtualized  = originalCall->IsDevirtualized();
+    calleeContext->m_Guarded        = originalCall->IsGuarded();
+    calleeContext->m_Unboxed        = originalCall->IsUnboxed();
+    calleeContext->m_ImportedILSize = inlineInfo->inlineResult->GetImportedILSize();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
