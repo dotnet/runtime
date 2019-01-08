@@ -257,6 +257,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\BStrWrapper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\COMException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComMemberType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CurrencyWrapper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ErrorWrapper.cs" />
