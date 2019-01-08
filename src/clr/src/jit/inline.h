@@ -470,10 +470,20 @@ public:
         m_Reported = true;
     }
 
-    // Get the InlineContext for this inline
+    // Get the InlineContext for this inline.
     InlineContext* GetInlineContext() const
     {
         return m_InlineContext;
+    }
+
+    unsigned GetImportedILSize() const
+    {
+        return m_ImportedILSize;
+    }
+
+    void SetImportedILSize(unsigned x)
+    {
+        m_ImportedILSize = x;
     }
 
 private:
@@ -490,6 +500,7 @@ private:
     InlineContext*        m_InlineContext;
     CORINFO_METHOD_HANDLE m_Caller; // immediate caller's handle
     CORINFO_METHOD_HANDLE m_Callee;
+    unsigned              m_ImportedILSize; // estimated size of imported IL
     const char*           m_Description;
     bool                  m_Reported;
 };
@@ -707,6 +718,11 @@ public:
         return m_Unboxed;
     }
 
+    unsigned GetImportedILSize() const
+    {
+        return m_ImportedILSize;
+    }
+
 private:
     InlineContext(InlineStrategy* strategy);
 
@@ -717,6 +733,7 @@ private:
     InlineContext*    m_Sibling;           // next child of the parent
     BYTE*             m_Code;              // address of IL buffer for the method
     unsigned          m_ILSize;            // size of IL buffer for the method
+    unsigned          m_ImportedILSize;    // estimated size of imported IL
     IL_OFFSETX        m_Offset;            // call site location within parent
     InlineObservation m_Observation;       // what lead to this inline
     int               m_CodeSizeEstimate;  // in bytes * 10
