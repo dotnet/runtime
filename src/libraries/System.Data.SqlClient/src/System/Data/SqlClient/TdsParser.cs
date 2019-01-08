@@ -7530,7 +7530,7 @@ namespace System.Data.SqlClient
                                     if (releaseConnectionLock)
                                     {
                                         task.ContinueWith(
-                                            (_,state) => ((SqlInternalConnectionTds)state)._parserLock.Release(),
+                                            (_, state) => ((SqlInternalConnectionTds)state)._parserLock.Release(),
                                             state: _connHandler,
                                             TaskScheduler.Default
                                         );
