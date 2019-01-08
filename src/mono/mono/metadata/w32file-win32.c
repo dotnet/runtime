@@ -515,6 +515,8 @@ mono_w32file_get_console_error (void)
 }
 #endif // HAVE_API_SUPPORT_WIN32_GET_STD_HANDLE
 
+#ifdef HAVE_API_SUPPORT_WIN32_GET_FILE_SIZE
+
 gint64
 mono_w32file_get_file_size (HANDLE handle, gint32 *error)
 {
@@ -530,6 +532,8 @@ mono_w32file_get_file_size (HANDLE handle, gint32 *error)
 	MONO_EXIT_GC_SAFE;
 	return length.QuadPart;
 }
+
+#endif // HAVE_API_SUPPORT_WIN32_GET_FILE_SIZE
 
 // Support older UWP SDK.
 WINBASEAPI

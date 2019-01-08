@@ -14,6 +14,7 @@
 :: %8 VS configuration (Debug/Release).
 :: %9 VS target.
 :: %10 MsBuild bin path, if used.
+:: %11 Force MSBuild (true/false), if used.
 :: --------------------------------------------------
 
 @echo off
@@ -30,15 +31,26 @@ set NINJA_BIN_NAME=ninja.exe
 set PYTHON_BIN_NAME=python.exe
 
 set LLVM_DIR=%~1
-set LLVM_BUILD_DIR=%~2
-set LLVM_INSTALL_DIR=%~3
-set MONO_DIST_DIR=%~4
-set VS_CFLAGS=%~5
-set LLVM_ADDITIONAL_CMAKE_ARGS=%~6
-set VS_PLATFORM=%~7
-set VS_CONFIGURATION=%~8
-set VS_TARGET=%~9
-set MSBUILD_BIN_PATH=%~10
+shift
+set LLVM_BUILD_DIR=%~1
+shift
+set LLVM_INSTALL_DIR=%~1
+shift
+set MONO_DIST_DIR=%~1
+shift
+set VS_CFLAGS=%~1
+shift
+set LLVM_ADDITIONAL_CMAKE_ARGS=%~1
+shift
+set VS_PLATFORM=%~1
+shift
+set VS_CONFIGURATION=%~1
+shift
+set VS_TARGET=%~1
+shift
+set MSBUILD_BIN_PATH=%~1
+shift
+set FORCE_MSBUILD=%~1
 
 :: Setup toolchain.
 :: set GIT=
@@ -81,6 +93,10 @@ if "%VS_CONFIGURATION%" == "" (
 
 if "%VS_TARGET%" == "" (
     set VS_TARGET=Build
+)
+
+if "%FORCE_MSBUILD%" == "" (
+    set FORCE_MSBUILD=false
 )
 
 if not exist "%LLVM_DIR%" (
@@ -362,7 +378,11 @@ if "%CMAKE%" == "" (
 )
 
 if /i "%VS_TARGET%" == "build" (
-    echo Found CMake: %CMAKE%
+    echo Found CMake: "%CMAKE%"
+)
+
+if /i "%FORCE_MSBUILD%" == "true" (
+    goto _SETUP_CMAKE_ENVIRONMENT_VS_GENERATOR
 )
 
 :: Check for optional cmake generate and build tools.
@@ -395,7 +415,7 @@ goto _SETUP_CMAKE_ENVIRONMENT_EXIT
 :_SETUP_CMAKE_ENVIRONMENT_NINJA_GENERATOR
 
 if /i "%VS_TARGET%" == "build" (
-    echo Found Ninja: %NINJA%
+    echo Found Ninja: "%NINJA%"
     echo Using Ninja build generator.
 )
 

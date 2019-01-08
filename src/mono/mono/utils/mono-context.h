@@ -271,6 +271,11 @@ struct sigcontext {
 #undef MONO_SIGNAL_USE_UCONTEXT_T
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4324)
+#endif
+
 typedef struct {
 	host_mgreg_t gregs [AMD64_NREG];
 #if defined(MONO_HAVE_SIMD_REG)
@@ -279,6 +284,10 @@ typedef struct {
 	double fregs [AMD64_XMM_NREG];
 #endif
 } MonoContext;
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->gregs [AMD64_RIP] = (host_mgreg_t)(gsize)(ip); } while (0);
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->gregs [AMD64_RBP] = (host_mgreg_t)(gsize)(bp); } while (0);

@@ -173,14 +173,30 @@ mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 // There are deliberately locals and a constant NULL global with this same name.
 extern MonoThreadInfo * const mono_thread_info_current_var;
 
+#ifdef _MSC_VER
+// declaration of 'identifier' hides global declaration
+#define DISABLE_WARNING_4459 \
+		__pragma (warning (push)) \
+		__pragma (warning (disable:4459)) \
+
+#define RESTORE_WARNING_4459 \
+		__pragma (warning (pop)) \
+
+#else
+#define DISABLE_WARNING_4459
+#define RESTORE_WARNING_4459
+#endif
+
 /*
 Icall macros
 */
 #define SETUP_ICALL_COMMON	\
 	do { \
+		DISABLE_WARNING_4459 \
 		ERROR_DECL (error);	\
 		/* There are deliberately locals and a constant NULL global with this same name. */ \
 		MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current (); \
+		RESTORE_WARNING_4459 \
 
 #define CLEAR_ICALL_COMMON	\
 	mono_error_set_pending_exception (error);
@@ -198,8 +214,10 @@ Icall macros
 	(RESULT) = g_cast (mono_stack_mark_pop_value (mono_thread_info_current_var, &__mark, (HANDLE)));
 
 #define HANDLE_FUNCTION_ENTER() do {				\
+	DISABLE_WARNING_4459 \
 	/* There are deliberately locals and a constant NULL global with this same name. */ \
 	MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current ();	\
+	RESTORE_WARNING_4459 \
 	SETUP_ICALL_FRAME					\
 
 #define HANDLE_FUNCTION_RETURN()		\

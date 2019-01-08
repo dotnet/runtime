@@ -4953,13 +4953,13 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
  */
 void
 mono_runtime_exec_managed_code (MonoDomain *domain,
-				MonoMainThreadFunc main_func,
-				gpointer main_args)
+				MonoMainThreadFunc mfunc,
+				gpointer margs)
 {
 	// This function is external_only.
 
 	ERROR_DECL (error);
-	mono_thread_create_checked (domain, main_func, main_args, error);
+	mono_thread_create_checked (domain, mfunc, margs, error);
 	mono_error_assert_ok (error);
 
 	mono_thread_manage ();

@@ -34,6 +34,7 @@
 #include <string.h>
 //#include <signal.h>
 #include <ctype.h>
+#include <limits.h>
 
 #ifndef DISABLE_VERIFIER
 /*
@@ -1761,7 +1762,7 @@ is_valid_ser_string_full (VerifyContext *ctx, const char **str_start, guint32 *s
 		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for string size"));
 
 	/*NULL string*/
-	if (*ptr == (char)0xFF) {
+	if (*ptr == CHAR_MAX) {
 		*_ptr = ptr + 1;
 		return TRUE;
 	}

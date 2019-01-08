@@ -106,6 +106,8 @@
     <PropertyGroup>
         <_MonoSourceDir>$([System.IO.Path]::GetFullPath('$(MONO_DIR)').TrimEnd('\'))</_MonoSourceDir>
         <_MonoOutputDir>$([System.IO.Path]::GetFullPath('$(OutDir)'))</_MonoOutputDir>
+        <_MonoExternalBuildForceMSBuild Condition="'$(MONO_EXTERNAL_BUILD_FORCE_MSBUILD)' == 'true'">true</_MonoExternalBuildForceMSBuild>
+        <_MonoExternalBuildForceMSBuild Condition="'$(MONO_EXTERNAL_BUILD_FORCE_MSBUILD)' != 'true'">false</_MonoExternalBuildForceMSBuild>
     </PropertyGroup>
 
     <PropertyGroup>

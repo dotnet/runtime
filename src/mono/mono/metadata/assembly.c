@@ -1911,13 +1911,13 @@ static AssemblyPreLoadHook *assembly_preload_hook = NULL;
 static AssemblyPreLoadHook *assembly_refonly_preload_hook = NULL;
 
 static MonoAssembly *
-invoke_assembly_preload_hook (MonoAssemblyName *aname, gchar **assemblies_path)
+invoke_assembly_preload_hook (MonoAssemblyName *aname, gchar **apath)
 {
 	AssemblyPreLoadHook *hook;
 	MonoAssembly *assembly;
 
 	for (hook = assembly_preload_hook; hook; hook = hook->next) {
-		assembly = hook->func (aname, assemblies_path, hook->user_data);
+		assembly = hook->func (aname, apath, hook->user_data);
 		if (assembly != NULL)
 			return assembly;
 	}
@@ -1926,13 +1926,13 @@ invoke_assembly_preload_hook (MonoAssemblyName *aname, gchar **assemblies_path)
 }
 
 static MonoAssembly *
-invoke_assembly_refonly_preload_hook (MonoAssemblyName *aname, gchar **assemblies_path)
+invoke_assembly_refonly_preload_hook (MonoAssemblyName *aname, gchar **apath)
 {
 	AssemblyPreLoadHook *hook;
 	MonoAssembly *assembly;
 
 	for (hook = assembly_refonly_preload_hook; hook; hook = hook->next) {
-		assembly = hook->func (aname, assemblies_path, hook->user_data);
+		assembly = hook->func (aname, apath, hook->user_data);
 		if (assembly != NULL)
 			return assembly;
 	}

@@ -25,6 +25,7 @@
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/verify-internals.h"
 #include "mono/utils/checked-build.h"
+#include <limits.h>
 
 
 #define CHECK_ADD4_OVERFLOW_UN(a, b) ((guint32)(0xFFFFFFFFU) - (guint32)(b) < (guint32)(a))
@@ -242,7 +243,7 @@ load_cattr_type (MonoImage *image, MonoType *t, gboolean header, const char *p, 
 	if (header) {
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
-		if (*p == (char)0xFF) {
+		if (*p == CHAR_MAX) {
 			*end = p + 1;
 			return NULL;
 		}
@@ -381,7 +382,7 @@ handle_enum:
 	case MONO_TYPE_STRING:
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
-		if (*p == (char)0xFF) {
+		if (*p == CHAR_MAX) {
 			*end = p + 1;
 			return NULL;
 		}

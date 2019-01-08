@@ -13,6 +13,7 @@
 #include "mono-threads-debug.h"
 #include "mono-logger-internals.h"
 #include "mono-error-internals.h"
+#include <mono/metadata/w32subset.h>
 
 enum ThreadWaitInfo {
 	THREAD_WAIT_INFO_CLEARED = 0,
@@ -168,8 +169,7 @@ mono_win32_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, BOO
 	return result;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-
+#ifdef HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT
 DWORD
 mono_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout, BOOL alertable)
 {
@@ -191,7 +191,7 @@ mono_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout
 
 #endif
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#ifdef HAVE_API_SUPPORT_WIN32_WAIT_FOR_MULTIPLE_OBJECTS
 DWORD
 mono_win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, DWORD timeout, DWORD wakeMask, DWORD flags)
 {
