@@ -61,10 +61,19 @@ typedef ptrdiff_t ssize_t;
 #define MONO_PRAGMA_WARNING_PUSH() __pragma(warning (push))
 #define MONO_PRAGMA_WARNING_DISABLE(x) __pragma(warning (disable:x))
 #define MONO_PRAGMA_WARNING_POP() __pragma(warning (pop))
+
+#define MONO_DISABLE_WARNING(x) \
+		MONO_PRAGMA_WARNING_PUSH() \
+		MONO_PRAGMA_WARNING_DISABLE(x)
+
+#define MONO_RESTORE_WARNING \
+		MONO_PRAGMA_WARNING_POP()
 #else
 #define MONO_PRAGMA_WARNING_PUSH()
 #define MONO_PRAGMA_WARNING_DISABLE(x)
 #define MONO_PRAGMA_WARNING_POP()
+#define MONO_DISABLE_WARNING(x)
+#define MONO_RESTORE_WARNING
 #endif
 
 #if !defined(_MSC_VER) && !defined(HOST_SOLARIS) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(MONOTOUCH) && HAVE_VISIBILITY_HIDDEN

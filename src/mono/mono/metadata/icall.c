@@ -6752,7 +6752,11 @@ ves_icall_System_Environment_get_UserName (MonoError *error)
 {
 	error_init (error);
 	/* using glib is more portable */
-	return g_get_user_name () != NULL ? mono_string_new_handle (mono_domain_get (), g_get_user_name (), error) : MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
+	const gchar *user_name = g_get_user_name ();
+	if (user_name != NULL)
+		return mono_string_new_handle (mono_domain_get (), user_name, error);
+	else
+		return NULL_HANDLE_STRING;
 }
 
 #ifndef HOST_WIN32
@@ -7120,7 +7124,11 @@ ves_icall_System_IO_DriveInfo_GetDriveFormat (const gunichar2 *path, gint32 path
 MonoStringHandle
 ves_icall_System_Environment_InternalGetHome (MonoError *error)
 {
-	return g_get_home_dir () != NULL ? mono_string_new_handle (mono_domain_get (), g_get_home_dir (), error) : MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
+	const gchar *home_dir = g_get_home_dir ();
+	if (home_dir != NULL)
+		return mono_string_new_handle (mono_domain_get (), home_dir, error);
+	else
+		return NULL_HANDLE_STRING;
 }
 
 static const char * const encodings [] = {

@@ -169,7 +169,7 @@ mono_win32_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, BOO
 	return result;
 }
 
-#ifdef HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT
+#if HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT
 DWORD
 mono_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout, BOOL alertable)
 {
@@ -189,9 +189,9 @@ mono_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout
 	return result;
 }
 
-#endif
+#endif /* HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT */
 
-#ifdef HAVE_API_SUPPORT_WIN32_WAIT_FOR_MULTIPLE_OBJECTS
+#if HAVE_API_SUPPORT_WIN32_MSG_WAIT_FOR_MULTIPLE_OBJECTS
 DWORD
 mono_win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, DWORD timeout, DWORD wakeMask, DWORD flags)
 {
@@ -211,7 +211,7 @@ mono_win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles,
 
 	return result;
 }
-#endif
+#endif /* HAVE_API_SUPPORT_WIN32_MSG_WAIT_FOR_MULTIPLE_OBJECTS */
 
 DWORD
 mono_win32_wsa_wait_for_multiple_events (DWORD count, const WSAEVENT FAR *handles, BOOL waitAll, DWORD timeout, BOOL alertable)

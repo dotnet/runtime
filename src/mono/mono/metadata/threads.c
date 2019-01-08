@@ -2203,7 +2203,7 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 	return map_native_wait_result_to_managed (ret, numhandles);
 }
 
-#ifdef HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT
+#if HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT
 gint32
 ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal, gpointer toWait, gint32 ms, MonoError *error)
 {

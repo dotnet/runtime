@@ -29,8 +29,4 @@ ICALL_EXPORT
 MonoArray*
 ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token);
 
-ICALL_EXPORT
-MonoArray*
-ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token);
-
 #endif /* _MONO_METADATA_SECURITY_H_ */

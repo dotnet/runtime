@@ -182,7 +182,7 @@ g_get_home_dir (void)
 	return home_dir;
 }
 
-const char *
+const gchar *
 g_get_user_name (void)
 {
 	const char * retName = g_getenv ("USER");

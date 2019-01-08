@@ -94,7 +94,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (MonoError *
 }
 
 gint32
-mono_security_win_get_token_name (gpointer token, gunichar2 ** uniname)
+mono_security_win_get_token_name (gpointer token, gunichar2 ** uniname, MonoError *error)
 {
 	gint32 size = 0;
 
@@ -120,7 +120,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 
 	error_init (error);
 
-	size = mono_security_win_get_token_name (token, &uniname);
+	size = mono_security_win_get_token_name (token, &uniname, error);
 
 	if (size > 0) {
 		result = mono_string_new_utf16_handle (mono_domain_get (), uniname, size, error);

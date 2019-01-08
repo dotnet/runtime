@@ -41,8 +41,8 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 {
 	// FIXME This is now supported by UWP.
 	ERROR_DECL (error); // FIXMEcoop
-	mono_security_win_not_supported ("GetTokenInformation", &error);
-	mono_error_set_pending_exception (&error); // FIXMEcoop
+	mono_security_win_not_supported ("GetTokenInformation", error);
+	mono_error_set_pending_exception (error); // FIXMEcoop
 	return NULL;
 }
 
@@ -69,13 +69,10 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (Mo
 }
 
 gint32
-mono_security_win_get_token_name (gpointer token, gunichar2 ** uniname)
+mono_security_win_get_token_name (gpointer token, gunichar2 **uniname, MonoError *error)
 {
-	ERROR_DECL (error); // FIXMEcoop
 	// FIXME This is now supported by UWP.
-	mono_security_win_not_supported ("GetTokenInformation", &error);
-	mono_error_set_pending_exception (&error); // FIXMEcoop
-
+	mono_security_win_not_supported ("GetTokenInformation", error);
 	return FALSE;
 }
 

@@ -51,13 +51,13 @@ mono_dl_open_file (const char *file, int flags)
 	if (file) {
 		gunichar2* file_utf16 = g_utf8_to_utf16 (file, strlen (file), NULL, NULL, NULL);
 
-#ifdef HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
+#if HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
 		guint last_sem = SetErrorMode (SEM_FAILCRITICALERRORS);
 #endif
 		guint32 last_error = 0;
 
-#ifdef HAVE_API_SUPPORT_WIN32_LOAD_LIBRARY
-		hModule = LoadLibrary (file_utf16);
+#if HAVE_API_SUPPORT_WIN32_LOAD_LIBRARY
+		hModule = LoadLibraryW (file_utf16);
 #elif HAVE_API_SUPPORT_WIN32_LOAD_PACKAGED_LIBRARY
 		hModule = LoadPackagedLibrary (file_utf16, NULL);
 #else
@@ -66,7 +66,7 @@ mono_dl_open_file (const char *file, int flags)
 		if (!hModule)
 			last_error = GetLastError ();
 
-#ifdef HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
+#if HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
 		SetErrorMode (last_sem);
 #endif
 
@@ -75,8 +75,8 @@ mono_dl_open_file (const char *file, int flags)
 		if (!hModule)
 			SetLastError (last_error);
 	} else {
-#ifdef HAVE_API_SUPPORT_WIN32_GET_MODULE_HANDLE
-		hModule = GetModuleHandle (NULL);
+#if HAVE_API_SUPPORT_WIN32_GET_MODULE_HANDLE
+		hModule = GetModuleHandleW (NULL);
 #else
 		g_assert_not_reached ();
 #endif
