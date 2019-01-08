@@ -83,8 +83,6 @@ struct OverrideProcArgs
         struct
         {
             VARTYPE         m_vt;
-            UINT16          m_optionalbaseoffset; //for fast marshaling, offset of dataptr if known and less than 64k (0 otherwise)
-            MethodTable*    m_pMT;
 #ifdef FEATURE_COMINTEROP
             SIZE_T          m_cbElementSize;
             WinMDAdapter::RedirectedTypeIndex m_redirectedTypeIndex;
@@ -470,8 +468,7 @@ public:
     VOID EmitOrThrowInteropParamException(NDirectStubLinker* psl, BOOL fMngToNative, UINT resID, UINT paramIdx);
 
     // These methods retrieve the information for different element types.
-    HRESULT HandleArrayElemType(NativeTypeParamInfo *pParamInfo, 
-                                UINT16 optbaseoffset, 
+    HRESULT HandleArrayElemType(NativeTypeParamInfo *pParamInfo,
                                 TypeHandle elemTypeHnd, 
                                 int iRank, 
                                 BOOL fNoLowerBounds, 

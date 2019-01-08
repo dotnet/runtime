@@ -1314,6 +1314,11 @@ void ILCodeStream::EmitLDC_R8(UINT64 uConst)
 #endif // _WIN64
     Emit(CEE_LDC_R8, 1, (UINT_PTR)uConst);
 }
+void ILCodeStream::EmitLDELEMA(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_LDELEMA, -1, token);
+}
 void ILCodeStream::EmitLDELEM_REF()
 {
     WRAPPER_NO_CONTRACT;
@@ -1378,11 +1383,21 @@ void ILCodeStream::EmitLDIND_T(LocalDesc* pType)
 {
     CONTRACTL
     {
-        PRECONDITION(pType->cbType == 1);
+        PRECONDITION(pType->cbType >= 1);
     }
     CONTRACTL_END;
+
+    CorElementType elementType = ELEMENT_TYPE_END;
+
+    bool onlyFoundModifiers = true;
+    for(size_t i = 0; i < pType->cbType && onlyFoundModifiers; i++)
+    {
+        elementType = (CorElementType)pType->ElementType[i];
+        onlyFoundModifiers = (elementType == ELEMENT_TYPE_PINNED);
+    }
     
-    switch (pType->ElementType[0])
+
+    switch (elementType)
     {
         case ELEMENT_TYPE_I1:       EmitLDIND_I1(); break;
         case ELEMENT_TYPE_BOOLEAN:  // fall through
@@ -1577,10 +1592,18 @@ void ILCodeStream::EmitSTIND_T(LocalDesc* pType)
 {
     CONTRACTL
     {
-        PRECONDITION(pType->cbType == 1);
+        PRECONDITION(pType->cbType >= 1);
     }
     CONTRACTL_END;
-    
+
+    CorElementType elementType = ELEMENT_TYPE_END;
+
+    bool onlyFoundModifiers = true;
+    for(size_t i = 0; i < pType->cbType && onlyFoundModifiers; i++)
+    {
+        elementType = (CorElementType)pType->ElementType[i];
+        onlyFoundModifiers = (elementType == ELEMENT_TYPE_PINNED);
+    }
     switch (pType->ElementType[0])
     {
         case ELEMENT_TYPE_I1:       EmitSTIND_I1(); break;
