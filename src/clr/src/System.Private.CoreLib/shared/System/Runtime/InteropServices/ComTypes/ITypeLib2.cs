@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.ComTypes
         [PreserveSig]
         new void ReleaseTLibAttr(IntPtr pTLibAttr);
         void GetCustData(ref Guid guid, out object pVarVal);
-        [LCIDConversionAttribute(1)]
+        [LCIDConversion(1)]
         void GetDocumentation2(int index, out string pbstrHelpString, out int pdwHelpStringContext, out string pbstrHelpStringDll);
         void GetLibStatistics(IntPtr pcUniqueNames, out int pcchUniqueNames);
         void GetAllCustData(IntPtr pCustData);
