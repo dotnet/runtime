@@ -373,18 +373,18 @@ namespace System.IO
                 if (context is null)
                 {
                     // Flow suppressed, just run here
-                    ProcessEvent(numEvents.ToInt32(), eventPaths, eventFlags, eventIds, watcher);
+                    ProcessEvents(numEvents.ToInt32(), eventPaths, eventFlags, eventIds, watcher);
                 }
                 else
                 {
                     ExecutionContext.Run(
                         context,
-                        (object o) => ((RunningInstance)o).ProcessEvent(numEvents.ToInt32(), eventPaths, eventFlags, eventIds, watcher),
+                        (object o) => ((RunningInstance)o).ProcessEvents(numEvents.ToInt32(), eventPaths, eventFlags, eventIds, watcher),
                         this);
                 }
             }
 
-            private unsafe void ProcessEvent(int numEvents,
+            private unsafe void ProcessEvents(int numEvents,
                 byte** eventPaths,
                 Interop.EventStream.FSEventStreamEventFlags[] eventFlags,
                 FSEventStreamEventId[] eventIds,
@@ -394,7 +394,7 @@ namespace System.IO
                 // list so when the for-loop comes across it, we'll skip it since it's already been processed as part of the original of the pair.
                 List<FSEventStreamEventId> handledRenameEvents = null;
                 Memory<char>[] events = new Memory<char>[numEvents];
-                ProcessEvents();
+                ParseEvents();
 
                 for (long i = 0; i < numEvents; i++)
                 {
@@ -489,7 +489,7 @@ namespace System.IO
 
                 this._context = ExecutionContext.Capture();
 
-                void ProcessEvents()
+                void ParseEvents()
                 {
                     for (int i = 0; i < events.Length; i++)
                     {
