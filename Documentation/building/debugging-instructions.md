@@ -54,6 +54,8 @@ You can combine steps 4-8 and pass everything on the lldb command line:
 
 For .NET Core version 1.x and 2.0.x, libsosplugin.so is built for and will only work with version 3.6 of lldb. For .NET Core 2.1, the plugin is built for 3.9 lldb and will work with 3.8 and 3.9 lldb.
 
+**Note:** _corerun_ is a simple host that does not support resolving NuGet dependencies. It relies on libraries being locatable via the `CORE_LIBRARIES` environment variable or present in the same directory as the corerun executable. The instructions above are equally applicable to the _dotnet_ host, however - e.g. for step 4 `lldb-3.9 dotnet bin/Debug/netcoreapp2.1/MvcApplication.dll` will let you debug _MvcApplication_ in the same manner.
+
 ### SOS commands ###
 
 This is the full list of commands currently supported by SOS. lldb is case-sensitive, unlike windbg.
