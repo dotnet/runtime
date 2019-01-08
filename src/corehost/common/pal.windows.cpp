@@ -12,6 +12,9 @@
 #include <ShlObj.h>
 #include <ctime>
 
+#if !defined(RRF_SUBKEY_WOW6432KEY)
+#define RRF_SUBKEY_WOW6432KEY  0x00020000
+#endif
 
 bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
 {
@@ -197,18 +200,6 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
-bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
-{
-    pal::string_t dir;
-    if (!get_default_installation_dir(&dir))
-    {
-        return false;
-    }
-
-    dirs->push_back(dir);
-    return true;
-}
-
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
     pal::char_t* program_files_dir;
@@ -227,7 +218,75 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
 
     append_path(recv, _X("dotnet"));
+
     return true;
+}
+
+bool get_sdk_self_registered_dir(pal::string_t* recv)
+{
+#if !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+    //  Self-registered SDK installation directory is only supported for x64 and x86 architectures.
+    return false;
+#else
+    recv->clear();
+
+    //  ***Used only for testing***
+    pal::string_t environmentOverride;
+    if (pal::getenv(_X("_DOTNET_TEST_SDK_SELF_REGISTERED_DIR"), &environmentOverride))
+    {
+        recv->assign(environmentOverride);
+        return true;
+    }
+    //  ***************************
+
+    DWORD size = 0;
+    const HKEY hkey = HKEY_LOCAL_MACHINE;
+    // The registry search occurs in the 32-bit registry in all cases.
+    const DWORD flags = RRF_RT_REG_SZ | RRF_SUBKEY_WOW6432KEY;
+    pal::string_t sub_key = pal::string_t(_X("SOFTWARE\\dotnet\\Setup\\InstalledVersions\\")) + get_arch() + pal::string_t(_X("\\sdk"));
+    pal::char_t* value = _X("InstallLocation");
+
+    // Determine the size of the buffer
+    LONG result = ::RegGetValueW(hkey, sub_key.c_str(), value, flags, nullptr, nullptr, &size);
+    if (result != ERROR_SUCCESS || size == 0)
+    {
+        return false;
+    }
+
+    // Get the key's value
+    std::vector<pal::char_t> buffer(size/sizeof(pal::char_t));
+    result = ::RegGetValueW(hkey, sub_key.c_str(), value, flags, nullptr, &buffer[0], &size);
+    if (result != ERROR_SUCCESS)
+    {
+        return false;
+    }
+
+    recv->assign(buffer.data());
+
+    return true;
+#endif
+}
+
+bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
+{
+    pal::string_t default_dir;
+    pal::string_t custom_dir;
+    bool dir_found = false;
+    if (get_sdk_self_registered_dir(&custom_dir))
+    {
+        dirs->push_back(custom_dir);
+        dir_found = true;
+    }
+    if (get_default_installation_dir(&default_dir))
+    {
+        // Avoid duplicate global dirs.
+        if (!dir_found || !are_paths_equal_with_normalized_casing(custom_dir, default_dir))
+        {
+            dirs->push_back(default_dir);
+            dir_found = true;
+        }
+    }
+    return dir_found;
 }
 
 // To determine the OS version, we are going to use RtlGetVersion API
