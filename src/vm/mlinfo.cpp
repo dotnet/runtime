@@ -2434,7 +2434,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                 ParamInfo.m_SafeArrayElementVT = VT_VARIANT;
                             }
                             
-                            IfFailGoto(HandleArrayElemType(&ParamInfo, 0, thElement, -1, FALSE, isParam, pAssembly), lFail);
+                            IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, -1, FALSE, isParam, pAssembly), lFail);
                             break;
                         }
 
@@ -2745,18 +2745,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
             }
 
-            unsigned ofs = 0;
-            if (arrayTypeHnd.GetMethodTable())
-            {
-                ofs = ArrayBase::GetDataPtrOffset(arrayTypeHnd.GetMethodTable());
-                if (ofs > 0xffff)
-                {
-                    ofs = 0;   // can't represent it, so pass on magic value (which causes fallback to regular ML code)
-                }
-            }
-
             // Handle retrieving the information for the array type.
-            IfFailGoto(HandleArrayElemType(&ParamInfo, (UINT16)ofs, thElement, asArray->GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
+            IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, asArray->GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
             break;
         }
         
@@ -2958,7 +2948,7 @@ VOID MarshalInfo::EmitOrThrowInteropParamException(NDirectStubLinker* psl, BOOL 
 }
 
 
-HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, UINT16 optbaseoffset,  TypeHandle thElement, int iRank, BOOL fNoLowerBounds, BOOL isParam, Assembly *pAssembly)
+HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHandle thElement, int iRank, BOOL fNoLowerBounds, BOOL isParam, Assembly *pAssembly)
 {
     CONTRACTL
     {
@@ -3047,8 +3037,6 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, UINT16
     {
         // Retrieve the extra information associated with the native array marshaling.
         m_args.na.m_vt  = m_arrayElementType;
-        m_args.na.m_pMT = !m_hndArrayElemType.IsTypeDesc() ? m_hndArrayElemType.AsMethodTable() : NULL;   
-        m_args.na.m_optionalbaseoffset = optbaseoffset;
         m_countParamIdx = pParamInfo->m_CountParamIdx;
         m_multiplier    = pParamInfo->m_Multiplier;
         m_additive      = pParamInfo->m_Additive;
@@ -3056,10 +3044,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, UINT16
 #ifdef FEATURE_COMINTEROP
     else if (m_type == MARSHAL_TYPE_HIDDENLENGTHARRAY)
     {
-        m_args.na.m_optionalbaseoffset = optbaseoffset;
-
         m_args.na.m_vt  = m_arrayElementType;
-        m_args.na.m_pMT = m_hndArrayElemType.AsMethodTable();
         m_args.na.m_cbElementSize = arrayMarshalInfo.GetElementSize();
         m_args.na.m_redirectedTypeIndex = arrayMarshalInfo.GetRedirectedTypeIndex();
     }

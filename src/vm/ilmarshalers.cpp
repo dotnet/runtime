@@ -3777,10 +3777,6 @@ void ILNativeArrayMarshaler::EmitMarshalArgumentCLRToNative()
         // the other.  Since there is no enforcement of this, apps blithely depend
         // on it.  
         //
-        
-        // The base offset should only be 0 for System.Array parameters for which
-        // OleVariant::GetMarshalerForVarType(vt) should never return NULL.
-        _ASSERTE(m_pargs->na.m_optionalbaseoffset != 0);
 
         EmitSetupSigAndDefaultHomesCLRToNative();
 
@@ -3794,13 +3790,21 @@ void ILNativeArrayMarshaler::EmitMarshalArgumentCLRToNative()
         EmitStoreNativeValue(m_pcsMarshal);
 
         EmitLoadManagedValue(m_pcsMarshal);
-        m_pcsMarshal->EmitBRFALSE(pNullRefLabel);
+        m_pcsMarshal->EmitBRFALSE(pNullRefLabel);        
 
+        // COMPAT: We cannot generate the same code that the C# compiler generates for
+        // a fixed() statement on an array since we need to provide a non-null value
+        // for a 0-length array. For compat reasons, we need to preserve old behavior.
+        // Additionally, we need to ensure that we do not pass non-null for a zero-length
+        // array when interacting with GDI/GDI+ since they fail on null arrays but succeed
+        // on 0-length arrays.
         EmitLoadManagedValue(m_pcsMarshal);
         m_pcsMarshal->EmitSTLOC(dwPinnedLocal);
         m_pcsMarshal->EmitLDLOC(dwPinnedLocal);
         m_pcsMarshal->EmitCONV_I();
-        m_pcsMarshal->EmitLDC(m_pargs->na.m_optionalbaseoffset);
+        // Optimize marshalling by emitting the data ptr offset directly into the IL stream
+        // instead of doing an FCall to recalulate it each time when possible.
+        m_pcsMarshal->EmitLDC(ArrayBase::GetDataPtrOffset(m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle().MakeSZArray().GetMethodTable()));
         m_pcsMarshal->EmitADD();
         EmitStoreNativeValue(m_pcsMarshal);
 
@@ -4620,6 +4624,7 @@ LocalDesc ILHiddenLengthArrayMarshaler::GetNativeType()
 LocalDesc ILHiddenLengthArrayMarshaler::GetManagedType()
 {
     LIMITED_METHOD_CONTRACT;
+
     return LocalDesc(ELEMENT_TYPE_OBJECT);
 }
 
@@ -4676,9 +4681,17 @@ void ILHiddenLengthArrayMarshaler::EmitMarshalArgumentCLRToNative()
         m_pcsMarshal->EmitSTLOC(dwPinnedLocal);
 
         // native = pinnedLocal + dataOffset
+
+        // COMPAT: We cannot generate the same code that the C# compiler generates for
+        // a fixed() statement on an array since we need to provide a non-null value
+        // for a 0-length array. For compat reasons, we need to preserve old behavior.
+        EmitLoadManagedValue(m_pcsMarshal);
+        m_pcsMarshal->EmitSTLOC(dwPinnedLocal);
         m_pcsMarshal->EmitLDLOC(dwPinnedLocal);
         m_pcsMarshal->EmitCONV_I();
-        m_pcsMarshal->EmitLDC(m_pargs->na.m_optionalbaseoffset);
+        // Optimize marshalling by emitting the data ptr offset directly into the IL stream
+        // instead of doing an FCall to recalulate it each time.
+        m_pcsMarshal->EmitLDC(ArrayBase::GetDataPtrOffset(m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle().MakeSZArray().GetMethodTable()));
         m_pcsMarshal->EmitADD();
         EmitStoreNativeValue(m_pcsMarshal);
 
@@ -4974,11 +4987,6 @@ bool ILHiddenLengthArrayMarshaler::CanUsePinnedArray()
         return false;
     }
 
-    if (m_pargs->na.m_optionalbaseoffset == 0)
-    {
-        return false;
-    }
-
     return true;
 }
 
@@ -5123,7 +5131,7 @@ MethodDesc *ILHiddenLengthArrayMarshaler::GetExactMarshalerMethod(MethodDesc *pG
         pGenericMD,
         pGenericMD->GetMethodTable(),
         FALSE,                                 // forceBoxedEntryPoint
-        m_pargs->na.m_pMT->GetInstantiation(), // methodInst
+        m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle().GetInstantiation(), // methodInst
         FALSE,                                 // allowInstParam
         TRUE);                                 // forceRemotableMethod
 }
