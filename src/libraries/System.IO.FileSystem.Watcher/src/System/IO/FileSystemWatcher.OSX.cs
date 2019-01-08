@@ -386,12 +386,9 @@ namespace System.IO
 
             private unsafe void ProcessEvent(int numEvents,
                 byte** eventPaths,
-                [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
                 Interop.EventStream.FSEventStreamEventFlags[] eventFlags,
-                [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
                 FSEventStreamEventId[] eventIds,
-                FileSystemWatcher watcher
-            )
+                FileSystemWatcher watcher)
             {
                 // Since renames come in pairs, when we find the first we need to search for the next one. Once we find it, we'll add it to this
                 // list so when the for-loop comes across it, we'll skip it since it's already been processed as part of the original of the pair.
