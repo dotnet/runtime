@@ -131,6 +131,7 @@ nativeStringResourceTable_mscorrc_debug
 #GetSystemTime
 #GetSystemTimeAsFileTime
 #GetTempFileNameW
+#GetTempPathA
 #GetTempPathW
 #HeapAlloc
 #HeapFree
