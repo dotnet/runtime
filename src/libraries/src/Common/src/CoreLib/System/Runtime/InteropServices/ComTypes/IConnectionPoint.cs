@@ -5,7 +5,7 @@
 namespace System.Runtime.InteropServices.ComTypes
 {
     [Guid("B196B286-BAB4-101A-B69C-00AA00341D07")]
-    [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface IConnectionPoint
     {
