@@ -556,9 +556,28 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionNotification.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\HandleProcessCorruptedStateExceptionsAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IBindCtx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IConnectionPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IConnectionPointContainer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumConnectionPoints.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumConnections.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumMoniker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumString.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumVARIANT.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IMoniker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IPersistFile.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IRunningObjectTable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeComp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeInfo2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeLib.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeLib2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CallingConvention.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CharSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComImportAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComInterfaceType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComVisibleAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DefaultCharSetAttribute.cs" />
@@ -568,13 +587,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ExternalException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\GuidAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\LCIDConversionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\HandleRef.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InterfaceTypeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\LayoutKind.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalAsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalDirectiveException.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.Fast.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.Fast.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OptionalAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OutAttribute.cs" />
@@ -942,26 +963,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IBindCtx.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IConnectionPoint.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IConnectionPointContainer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IEnumConnectionPoints.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IEnumConnections.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IEnumerable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IEnumMoniker.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IEnumString.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IEnumVARIANT.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IMoniker.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IPersistFile.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IRunningObjectTable.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\IStream.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\ITypeComp.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\ITypeInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\ITypeInfo2.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\ITypeLib.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\ComTypes\ITypeLib2.cs" />
-  </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows) and '$(EnableWinRT)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.WinRT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile2.cs" />
@@ -1073,17 +1074,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' AND '$(Platform)' == 'arm64'">
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Aes.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Base.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha1.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha256.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Simd.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Aes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Base.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Sha1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Sha256.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Simd.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' OR '$(Platform)' != 'arm64'">
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Aes.PlatformNotSupported.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Base.PlatformNotSupported.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha1.PlatformNotSupported.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha256.PlatformNotSupported.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Simd.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Aes.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Base.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Sha1.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Sha256.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Simd.PlatformNotSupported.cs" />
   </ItemGroup>
 </Project>

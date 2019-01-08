@@ -40,33 +40,6 @@ namespace System.Runtime.InteropServices
         public int Value => _val;
     }
 
-    public enum ComInterfaceType
-    {
-        InterfaceIsDual = 0,
-        InterfaceIsIUnknown = 1,
-        InterfaceIsIDispatch = 2,
-
-        InterfaceIsIInspectable = 3,
-    }
-
-    [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
-    public sealed class InterfaceTypeAttribute : Attribute
-    {
-        internal ComInterfaceType _val;
-
-        public InterfaceTypeAttribute(ComInterfaceType interfaceType)
-        {
-            _val = interfaceType;
-        }
-
-        public InterfaceTypeAttribute(short interfaceType)
-        {
-            _val = (ComInterfaceType)interfaceType;
-        }
-
-        public ComInterfaceType Value => _val;
-    }
-
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class ComDefaultInterfaceAttribute : Attribute
     {
@@ -103,19 +76,6 @@ namespace System.Runtime.InteropServices
         }
 
         public ClassInterfaceType Value => _val;
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public sealed class LCIDConversionAttribute : Attribute
-    {
-        internal int _val;
-
-        public LCIDConversionAttribute(int lcid)
-        {
-            _val = lcid;
-        }
-
-        public int Value => _val;
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
@@ -162,14 +122,6 @@ namespace System.Runtime.InteropServices
         }
 
         public string Value => _val;
-    }
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)]
-    public sealed class ComImportAttribute : Attribute
-    {
-        public ComImportAttribute()
-        {
-        }
     }
 
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
