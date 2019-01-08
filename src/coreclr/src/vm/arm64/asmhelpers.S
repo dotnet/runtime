@@ -344,8 +344,14 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     cmp  x14,  x12
 
     ldr  x12, LOCAL_LABEL(wbs_highest_address)
-    ccmp x14, x12, #0x0, ge
-    blt  C_FUNC(JIT_WriteBarrier)
+
+    // Compare against the upper bound if the previous comparison indicated
+    // that the destination address is greater than or equal to the lower
+    // bound. Otherwise, set the C flag (specified by the 0x2) so that the
+    // branch below is not taken.
+    ccmp x14, x12, #0x2, hs
+
+    blo  C_FUNC(JIT_WriteBarrier)
 
 LOCAL_LABEL(NotInHeap):
     str  x15, [x14], 8
@@ -429,7 +435,13 @@ LOCAL_LABEL(CheckCardTable):
     cmp  x15,  x12
 
     ldr  x12, LOCAL_LABEL(wbs_ephemeral_high)
-    ccmp x15, x12, 0x0, hs
+
+    // Compare against the upper bound if the previous comparison indicated
+    // that the destination address is greater than or equal to the lower
+    // bound. Otherwise, set the C flag (specified by the 0x2) so that the
+    // branch to exit is taken.
+    ccmp x15, x12, #0x2, hs
+
     bhi  LOCAL_LABEL(Exit)
 
 LOCAL_LABEL(SkipEphemeralCheck):
