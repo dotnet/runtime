@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tests
 {
     public class EventLogEntryEventWrittenTest
     {
-        static AutoResetEvent signal;
+        private static AutoResetEvent signal;
         private const string message = "EventLogEntryEventWrittenTestMessage";
         private int eventCounter;
 
