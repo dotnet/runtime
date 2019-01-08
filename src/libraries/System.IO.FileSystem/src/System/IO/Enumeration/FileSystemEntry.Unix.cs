@@ -10,14 +10,13 @@ namespace System.IO.Enumeration
     /// Lower level view of FileSystemInfo used for processing and filtering find results.
     /// </summary>
     public unsafe ref partial struct FileSystemEntry
-    {
-        private const int FileNameBufferSize = 256;
+   {
         internal Interop.Sys.DirectoryEntry _directoryEntry;
         private FileStatus _status;
         private Span<char> _pathBuffer;
         private ReadOnlySpan<char> _fullPath;
         private ReadOnlySpan<char> _fileName;
-        private fixed char _fileNameBuffer[FileNameBufferSize];
+        private fixed char _fileNameBuffer[Interop.Sys.DirectoryEntry.NameBufferSize];
         private FileAttributes _initialAttributes;
 
         internal static FileAttributes Initialize(
@@ -94,7 +93,7 @@ namespace System.IO.Enumeration
                 {
                     fixed (char* c = _fileNameBuffer)
                     {
-                        Span<char> buffer = new Span<char>(c, FileNameBufferSize);
+                        Span<char> buffer = new Span<char>(c, Interop.Sys.DirectoryEntry.NameBufferSize);
                         _fileName = _directoryEntry.GetName(buffer);
                     }
                 }
