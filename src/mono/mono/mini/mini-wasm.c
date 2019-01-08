@@ -622,6 +622,9 @@ G_BEGIN_DECLS
 
 //llvm builtin's that we should not have used in the first place
 
+#include <sys/types.h>
+#include <pwd.h>
+#include <uuid/uuid.h>
 
 //libc / libpthread missing bits from musl or shit we didn't detect :facepalm:
 int pthread_getschedparam (pthread_t thread, int *policy, struct sched_param *param)
@@ -701,6 +704,30 @@ sem_timedwait (sem_t *sem, const struct timespec *abs_timeout)
 	g_error ("sem_timedwait");
 	return 0;
 	
+}
+
+ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
+
+ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
+{
+	g_error ("sendfile");
+	return 0;
+}
+
+int
+getpwnam_r (const char *name, struct passwd *pwd, char *buffer, size_t bufsize,
+			struct passwd **result)
+{
+	g_error ("getpwnam_r");
+	return 0;
+}
+
+int
+getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
+			struct passwd **result)
+{
+	g_error ("getpwuid_r");
+	return 0;
 }
 
 G_END_DECLS
