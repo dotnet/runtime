@@ -59,7 +59,6 @@ namespace System.IO.Tests
                 {
                     string fileName = Path.Combine(TestDirectory, "file");
                     watcher1.Filter = Path.GetFileName(fileName);
-                    watcher2.Filter = Path.GetFileName(fileName);
 
                     var local = new AsyncLocal<int>();
 
