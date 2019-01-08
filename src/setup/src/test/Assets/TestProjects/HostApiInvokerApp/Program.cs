@@ -34,14 +34,17 @@ namespace HostApiInvokerApp
             // Enable tracing so that test assertion failures are easier to diagnose.
             Environment.SetEnvironmentVariable("COREHOST_TRACE", "1");
 
-            // If requested, test multilevel lookup using fake ProgramFiles location.
+            // If requested, test multilevel lookup using fake Global SDK directories:
+            //     1. using a fake ProgramFiles location
+            //     2. using a fake SDK Self-Registered location
             // Note that this has to be set here and not in the calling test process because 
             // %ProgramFiles% gets reset on process creation.
-            string testMultilevelLookupProgramFiles = Environment.GetEnvironmentVariable(
-                "TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES");
+            string testMultilevelLookupProgramFiles = Environment.GetEnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES");
+            string testMultilevelLookupSelfRegistered = Environment.GetEnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED");
 
-            if (testMultilevelLookupProgramFiles != null)
+            if (testMultilevelLookupProgramFiles != null && testMultilevelLookupSelfRegistered != null)
             {
+                Environment.SetEnvironmentVariable("_DOTNET_TEST_SDK_SELF_REGISTERED_DIR", testMultilevelLookupSelfRegistered);
                 Environment.SetEnvironmentVariable("ProgramFiles", testMultilevelLookupProgramFiles);
                 Environment.SetEnvironmentVariable("ProgramFiles(x86)", testMultilevelLookupProgramFiles);
                 Environment.SetEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "1");

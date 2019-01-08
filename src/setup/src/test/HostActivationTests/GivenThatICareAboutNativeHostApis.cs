@@ -149,11 +149,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
             public string AppDll => _fixture.TestProject.AppDll;
             public string ExeDir => Path.Combine(_fixture.TestProject.ProjectDirectory, "ed");
             public string ProgramFiles => Path.Combine(ExeDir, "pf");
+            public string SelfRegistered => Path.Combine(ExeDir, "sr");
             public string WorkingDir => Path.Combine(_fixture.TestProject.ProjectDirectory, "wd");
-            public string GlobalSdkDir => Path.Combine(ProgramFiles, "dotnet", "sdk");
+            public string ProgramFilesGlobalSdkDir => Path.Combine(ProgramFiles, "dotnet", "sdk");
+            public string SelfRegisteredGlobalSdkDir => Path.Combine(SelfRegistered, "sdk");
             public string LocalSdkDir => Path.Combine(ExeDir, "sdk");
             public string GlobalJson => Path.Combine(WorkingDir, "global.json");
-            public string[] GlobalSdks = new[] { "4.5.6", "1.2.3", "2.3.4-preview" };
+            public string[] ProgramFilesGlobalSdks = new[] { "4.5.6", "1.2.3", "2.3.4-preview" };
+            public string[] SelfRegisteredGlobalSdks = new[] { "3.0.0", "15.1.4-preview", "5.6.7" };
             public string[] LocalSdks = new[] { "0.1.2", "5.6.7-preview", "1.2.3" };
 
             public SdkResolutionFixture(SharedTestState state)
@@ -166,11 +169,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 // on a given machine from impacting the test.
                 File.WriteAllText(GlobalJson, "{}");
 
-                foreach (string sdk in GlobalSdks)
+                foreach (string sdk in ProgramFilesGlobalSdks)
                 {
-                    Directory.CreateDirectory(Path.Combine(GlobalSdkDir, sdk));
+                    Directory.CreateDirectory(Path.Combine(ProgramFilesGlobalSdkDir, sdk));
                 }
-
+                foreach (string sdk in SelfRegisteredGlobalSdks)
+                {
+                    Directory.CreateDirectory(Path.Combine(SelfRegisteredGlobalSdkDir, sdk));
+                }
                 foreach (string sdk in LocalSdks)
                 {
                     Directory.CreateDirectory(Path.Combine(LocalSdkDir, sdk));
@@ -194,15 +200,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
             string expectedList = string.Join(';', new[]
             {
                 Path.Combine(f.LocalSdkDir, "0.1.2"),
-                Path.Combine(f.GlobalSdkDir, "1.2.3"),
+                Path.Combine(f.ProgramFilesGlobalSdkDir, "1.2.3"),
                 Path.Combine(f.LocalSdkDir, "1.2.3"),
-                Path.Combine(f.GlobalSdkDir, "2.3.4-preview"),
-                Path.Combine(f.GlobalSdkDir, "4.5.6"),
+                Path.Combine(f.ProgramFilesGlobalSdkDir, "2.3.4-preview"),
+                Path.Combine(f.SelfRegisteredGlobalSdkDir, "3.0.0"),
+                Path.Combine(f.ProgramFilesGlobalSdkDir, "4.5.6"),
                 Path.Combine(f.LocalSdkDir, "5.6.7-preview"),
+                Path.Combine(f.SelfRegisteredGlobalSdkDir, "5.6.7"),
+                Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview"),
             });
 
             f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_available_sdks", f.ExeDir })
                 .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES", f.ProgramFiles)
+                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED", f.SelfRegistered)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
