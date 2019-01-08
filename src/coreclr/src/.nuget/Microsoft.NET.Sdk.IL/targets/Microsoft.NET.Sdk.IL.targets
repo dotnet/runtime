@@ -64,12 +64,12 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
 
     <PropertyGroup>
-      <_IlasmDir>$(ToolsDir)\ilasm</_IlasmDir>
+      <_IlasmDir>$([MSBuild]::NormalizeDirectory('$(ToolsDir)', 'ilasm'))</_IlasmDir>
 
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">-DLL</_OutputTypeArgument>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">-EXE</_OutputTypeArgument>
 
-      <_KeyFileArgument Condition="'$(KeyOriginatorFile)' != ''">-KEY=$(KeyOriginatorFile)</_KeyFileArgument>
+      <_KeyFileArgument Condition="'$(KeyOriginatorFile)' != ''">-KEY="$(KeyOriginatorFile)"</_KeyFileArgument>
 
       <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches> 
       <_IlasmSwitches Condition="'$(FoldIdenticalMethods)' == 'True'">$(_IlasmSwitches) -FOLD</_IlasmSwitches>
@@ -85,7 +85,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <MakeDir Directories="$(_IlasmDir)" />
     <Copy DestinationFolder="$(_IlasmDir)" SourceFiles="@(_IlasmSourceFiles)" />
 
-    <Exec Command="$(_IlasmDir)\ilasm $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=@(IntermediateAssembly) $(_KeyFileArgument) @(Compile, ' ')">
+    <Exec Command="$(_IlasmDir)ilasm $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=&quot;@(IntermediateAssembly)&quot; $(_KeyFileArgument) @(Compile, ' ')">
       <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
     </Exec>
 
