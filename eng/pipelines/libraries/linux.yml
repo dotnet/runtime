@@ -18,7 +18,7 @@ jobs:
       strategy:
         matrix:
           x64_Release:
-            _configuration: Release
+            _BuildConfig: Release
             _architecture: x64
             _framework: netcoreapp
             _helixQueues: $(linuxDefaultQueues)
@@ -27,7 +27,7 @@ jobs:
             _buildExtraArguments: ''
 
           arm64_Release:
-            _configuration: Release
+            _BuildConfig: Release
             _architecture: arm64
             _framework: netcoreapp
             _helixQueues: $(linuxArm64Queues)
@@ -37,7 +37,7 @@ jobs:
           
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             musl_x64_Release:
-              _configuration: Release
+              _BuildConfig: Release
               _architecture: x64
               _framework: netcoreapp
               _helixQueues: $(alpineQueues)
@@ -73,7 +73,7 @@ jobs:
         matrix:
           ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             musl_x64_Debug:
-              _configuration: Debug
+              _BuildConfig: Debug
               _architecture: x64
               _framework: netcoreapp
               _dockerContainer: alpine_36_container
@@ -81,7 +81,7 @@ jobs:
               _buildExtraArguments: /p:RuntimeOS=linux-musl /p:PortableBuild=false
 
           arm_Release:
-            _configuration: Release
+            _BuildConfig: Release
             _architecture: arm
             _framework: netcoreapp
             _buildExtraArguments: /p:RuntimeOS=ubuntu.16.04
