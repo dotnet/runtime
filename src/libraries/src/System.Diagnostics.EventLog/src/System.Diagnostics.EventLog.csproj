@@ -19,6 +19,34 @@
     <Compile Include="System\Diagnostics\EventLogEntry.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="System\Diagnostics\Reader\CoTaskMemSafeHandle.cs" />
+    <Compile Include="System\Diagnostics\Reader\CoTaskMemUnicodeSafeHandle.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventBookmark.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventKeyword.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLevel.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogConfiguration.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogException.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogHandle.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogInformation.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogLink.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogPropertySelector.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogQuery.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogReader.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogRecord.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogSession.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogStatus.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventLogWatcher.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventMetadata.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventOpcode.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventProperty.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventRecord.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventRecordWrittenEventArgs.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventTask.cs" />
+    <Compile Include="System\Diagnostics\Reader\NativeWrapper.cs" />
+    <Compile Include="System\Diagnostics\Reader\ProviderMetadata.cs" />
+    <Compile Include="System\Diagnostics\Reader\ProviderMetadataCachedInformation.cs" />
+    <Compile Include="System\Diagnostics\Reader\Winmeta.cs" />
+    <Compile Include="System\Diagnostics\Reader\UnsafeNativeMethods.cs" />
     <Compile Include="System\Diagnostics\EventLogEntryCollection.cs" />
     <Compile Include="System\Diagnostics\EventLogEntryType.cs" />
     <Compile Include="System\Diagnostics\EventLogInternal.cs" />
@@ -98,6 +126,7 @@
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="Microsoft.Win32.Registry" />
+    <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
@@ -115,7 +144,9 @@
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.AccessControl" />
+    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
 </Project>

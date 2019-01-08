@@ -243,4 +243,7 @@
   <data name="LogAlreadyExistsAsSource" xml:space="preserve">
     <value>Log {0} has already been registered as a source on the local computer.</value>
   </data>
+  <data name="NotSupported_IONonFileDevices" xml:space="preserve"> 
+    <value>Opening Win32 devices other than file such as COM ports, printers, disk partitions and tape drives is not supported. Avoid use of "\\\\.\\" in the path.</value> 
+  </data>
 </root>
