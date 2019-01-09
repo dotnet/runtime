@@ -6,7 +6,7 @@ using System;
 using System.Collections.Specialized;
 using System.Security;
 using System.Runtime.InteropServices;
-
+using System.Diagnostics;
 
 namespace System.Runtime.Caching
 {
@@ -60,9 +60,9 @@ namespace System.Runtime.Caching
 
         protected void InitHistory()
         {
-            Dbg.Assert(_pressureHigh > 0, "_pressureHigh > 0");
-            Dbg.Assert(_pressureLow > 0, "_pressureLow > 0");
-            Dbg.Assert(_pressureLow <= _pressureHigh, "_pressureLow <= _pressureHigh");
+            Debug.Assert(_pressureHigh > 0, "_pressureHigh > 0");
+            Debug.Assert(_pressureLow > 0, "_pressureLow > 0");
+            Debug.Assert(_pressureLow <= _pressureHigh, "_pressureLow <= _pressureHigh");
 
             int pressure = GetCurrentPressure();
 
