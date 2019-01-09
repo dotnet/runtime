@@ -818,3 +818,26 @@ bool IsCorrectLongStructPack16Explicit(LongStructPack16Explicit* p)
 		return false;
 	return true;
 }
+
+struct IntWithInnerSequential
+{
+    int i1;
+    InnerSequential sequential;
+};
+
+struct SequentialWrapper
+{
+    InnerSequential sequential;
+};
+
+struct SequentialDoubleWrapper
+{
+    SequentialWrapper wrapper;
+};
+
+struct AggregateSequentialWrapper
+{
+    SequentialWrapper wrapper1;
+    InnerSequential sequential;
+    SequentialWrapper wrapper2;
+};

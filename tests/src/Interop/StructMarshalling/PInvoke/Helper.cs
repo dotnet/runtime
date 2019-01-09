@@ -656,28 +656,28 @@ public class Helper
     }
     #endregion
     
-    #region methods for IncludeOuterIntergerStructSequential struct
-    public static IncludeOuterIntergerStructSequential NewIncludeOuterIntergerStructSequential(int i321, int i322)
+    #region methods for IncludeOuterIntegerStructSequential struct
+    public static IncludeOuterIntegerStructSequential NewIncludeOuterIntegerStructSequential(int i321, int i322)
     {
-        IncludeOuterIntergerStructSequential s10 = new IncludeOuterIntergerStructSequential();
+        IncludeOuterIntegerStructSequential s10 = new IncludeOuterIntegerStructSequential();
         s10.s.s_int.i = i321;
         s10.s.i = i322;
         return s10;
     }
-    public static void PrintIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential str1, string name)
+    public static void PrintIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential str1, string name)
     {
         Console.WriteLine("\t{0}.s.s_int.i = {1}", name, str1.s.s_int.i);
         Console.WriteLine("\t{0}.s.i = {1}", name, str1.s.i);
     }
-    public static bool ValidateIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential str1, IncludeOuterIntergerStructSequential str2, string methodName)
+    public static bool ValidateIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential str1, IncludeOuterIntegerStructSequential str2, string methodName)
     {
         if (str1.s.s_int.i != str2.s.s_int.i || str1.s.i != str2.s.i)
         {
             Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
-            PrintIncludeOuterIntergerStructSequential(str1, str1.ToString());
+            PrintIncludeOuterIntegerStructSequential(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
-            PrintIncludeOuterIntergerStructSequential(str2, str2.ToString());
+            PrintIncludeOuterIntegerStructSequential(str2, str2.ToString());
             return false;
         }
         else
