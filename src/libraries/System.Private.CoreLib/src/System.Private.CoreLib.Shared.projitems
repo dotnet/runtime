@@ -54,6 +54,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\IPinnable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\MemoryHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\MemoryManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\OperationStatus.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\StandardFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Utilities.cs" />
