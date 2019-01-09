@@ -127,7 +127,7 @@ stub_init_delegate (MonoDelegate *del)
 }
 
 static gpointer
-stub_get_remoting_invoke (gpointer imethod, MonoError *error)
+stub_get_remoting_invoke (MonoMethod *method, gpointer imethod, MonoError *error)
 {
 	g_assert_not_reached ();
 	return NULL;

@@ -319,11 +319,18 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 }
 
 static gpointer
-interp_get_remoting_invoke (gpointer addr, MonoError *error)
+interp_get_remoting_invoke (MonoMethod *method, gpointer addr, MonoError *error)
 {
 #ifndef DISABLE_REMOTING
-	InterpMethod *imethod = lookup_method_pointer (addr);
+	InterpMethod *imethod;
 
+	if (addr) {
+		imethod = lookup_method_pointer (addr);
+	} else {
+		g_assert (method);
+		imethod = mono_interp_get_imethod (mono_domain_get (), method, error);
+		return_val_if_nok (error, NULL);
+	}
 	g_assert (imethod);
 	g_assert (mono_use_interpreter);
 
@@ -2471,6 +2478,12 @@ interp_no_native_to_managed (void)
 }
 #endif
 
+static void
+no_llvmonly_interp_method_pointer (void)
+{
+	g_assert_not_reached ();
+}
+
 /*
  * interp_create_method_pointer:
  *
@@ -2481,12 +2494,17 @@ static gpointer
 interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *error)
 {
 #ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
+	if (mono_llvm_only)
+		return (gpointer)no_llvmonly_interp_method_pointer;
 	return (gpointer)interp_no_native_to_managed;
 #else
 	gpointer addr, entry_func, entry_wrapper;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitDomainInfo *info;
 	InterpMethod *imethod = mono_interp_get_imethod (domain, method, error);
+
+	if (mono_llvm_only)
+		return (gpointer)no_llvmonly_interp_method_pointer;
 
 	if (compile) {
 		/* Return any errors from method compilation */

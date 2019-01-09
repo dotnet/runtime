@@ -1359,6 +1359,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	WrapperInfo *info;
 	MonoMethodSignature *csig, *gsharedvt_sig;
 	int i, pindex, retval_var = 0;
+	char **param_names;
 	static GHashTable *cache;
 
 	// FIXME: Memory management
@@ -1381,6 +1382,12 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	memcpy (csig, sig, mono_metadata_signature_size (sig));
 	csig->param_count ++;
 	csig->params [sig->param_count] = mono_get_int_type ();
+#ifdef ENABLE_ILGEN
+	param_names = g_new0 (char*, csig->param_count);
+	for (int i = 0; i < sig->param_count; ++i)
+		param_names [i] = g_strdup_printf ("%d", i);
+	param_names [sig->param_count] = g_strdup ("ftndesc");
+#endif
 
 	/* Create the signature for the gsharedvt callconv */
 	gsharedvt_sig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + ((sig->param_count + 2) * sizeof (MonoType*)));
@@ -1405,6 +1412,9 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 
 	// FIXME: Use shared signatures
 	mb = mono_mb_new (mono_defaults.object_class, sig->hasthis ? "gsharedvt_in_sig" : "gsharedvt_in_sig_static", MONO_WRAPPER_OTHER);
+#ifdef ENABLE_ILGEN
+	mono_mb_set_param_names (mb, (const char**)param_names);
+#endif
 
 #ifndef DISABLE_JIT
 	if (sig->ret->type != MONO_TYPE_VOID)
@@ -1439,6 +1449,11 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	info->d.gsharedvt.sig = sig;
 
 	res = mono_mb_create (mb, csig, sig->param_count + 16, info);
+#ifdef ENABLE_ILGEN
+	for (int i = 0; i < sig->param_count + 1; ++i)
+		g_free (param_names [i]);
+	g_free (param_names);
+#endif
 
 	gshared_lock ();
 	cached = (MonoMethod*)g_hash_table_lookup (cache, sig);
@@ -1463,6 +1478,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	WrapperInfo *info;
 	MonoMethodSignature *normal_sig, *csig;
 	int i, pindex, args_start, ldind_op, stind_op;
+	char **param_names;
 	static GHashTable *cache;
 
 	// FIXME: Memory management
@@ -1484,16 +1500,20 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	csig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + ((sig->param_count + 2) * sizeof (MonoType*)));
 	memcpy (csig, sig, mono_metadata_signature_size (sig));
 	pindex = 0;
+	param_names = g_new0 (char*, sig->param_count + 2);
 	/* The return value is returned using an explicit vret argument */
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		csig->params [pindex ++] = mono_get_int_type ();
+		csig->params [pindex] = mono_get_int_type ();
 		csig->ret = mono_get_void_type ();
+		param_names [pindex] = g_strdup ("vret");
+		pindex ++;
 	}
 	args_start = pindex;
 	if (sig->hasthis)
 		args_start ++;
 	for (i = 0; i < sig->param_count; i++) {
 		csig->params [pindex] = sig->params [i];
+		param_names [pindex] = g_strdup_printf ("%d", i);
 		if (!sig->params [i]->byref) {
 			csig->params [pindex] = mono_metadata_type_dup (NULL, csig->params [pindex]);
 			csig->params [pindex]->byref = 1;
@@ -1501,7 +1521,9 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 		pindex ++;
 	}
 	/* Rgctx arg */
-	csig->params [pindex ++] = mono_get_int_type ();
+	csig->params [pindex] = mono_get_int_type ();
+	param_names [pindex] = g_strdup ("ftndesc");
+	pindex  ++;
 	csig->param_count = pindex;
 
 	/* Create the signature for the normal callconv */
@@ -1512,6 +1534,9 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 
 	// FIXME: Use shared signatures
 	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_out_sig", MONO_WRAPPER_OTHER);
+#ifdef ENABLE_ILGEN
+	mono_mb_set_param_names (mb, (const char**)param_names);
+#endif
 
 #ifndef DISABLE_JIT
 	if (sig->ret->type != MONO_TYPE_VOID)
@@ -1562,6 +1587,9 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	info->d.gsharedvt.sig = sig;
 
 	res = mono_mb_create (mb, csig, sig->param_count + 16, info);
+	for (int i = 0; i < sig->param_count + 1; ++i)
+		g_free (param_names [i]);
+	g_free (param_names);
 
 	gshared_lock ();
 	cached = (MonoMethod*)g_hash_table_lookup (cache, sig);
@@ -2040,8 +2068,6 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	}
 	case MONO_RGCTX_INFO_METHOD_FTNDESC: {
 		MonoMethod *m = (MonoMethod*)data;
-		gpointer addr;
-		gpointer arg = NULL;
 
 		/* Returns an ftndesc */
 		g_assert (mono_llvm_only);

@@ -2140,7 +2140,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--full-aot-interp") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
 		} else if (strcmp (argv [i], "--llvmonly-interp") == 0) {
-			mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
+			mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
@@ -2765,6 +2765,12 @@ mono_runtime_set_execution_mode (MonoEEMode mode)
 		mono_llvm_only = TRUE;
 
 		mono_ee_features.force_use_interpreter = TRUE;
+		break;
+
+	case MONO_AOT_MODE_LLVMONLY_INTERP:
+		mono_aot_only = TRUE;
+		mono_use_interpreter = TRUE;
+		mono_llvm_only = TRUE;
 		break;
 
 	case MONO_EE_MODE_INTERP:

@@ -441,12 +441,8 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 {
 	gpointer addr;
 	gboolean callee_gsharedvt;
-	MonoMethod *jmethod = NULL;
-	MonoJitInfo *ji;
 
-	// FIXME: This loads information from AOT (perf problem)
-	ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
-	callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
+	*out_arg = NULL;
 
 	if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (m);
@@ -467,9 +463,6 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		}
 	}
 
-	if (callee_gsharedvt)
-		g_assert (m->is_inflated);
-
 	addr = compiled_method;
 
 	if (add_unbox_tramp) {
@@ -477,26 +470,23 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		 * The unbox trampolines call the method directly, so need to add
 		 * an rgctx tramp before them.
 		 */
-		if (mono_aot_only) {
-			addr = mono_aot_get_unbox_trampoline (m, addr);
-		} else {
-			unbox_trampolines ++;
-			addr = mono_arch_get_unbox_trampoline (m, addr);
-		}
+		addr = mono_aot_get_unbox_trampoline (m, addr);
 	}
 
 	g_assert (mono_llvm_only);
 	g_assert (out_arg);
 
-	if (ji && !ji->is_trampoline)
-		jmethod = jinfo_get_method (ji);
-
-	if (callee_gsharedvt)
-		callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jmethod));
+	callee_gsharedvt = mono_aot_get_method_flags ((guint8*)compiled_method) & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE;
 
 	if (!caller_gsharedvt && callee_gsharedvt) {
 		MonoMethodSignature *sig, *gsig;
+		MonoJitInfo *ji;
+		MonoMethod *jmethod;
 		gpointer wrapper_addr;
+
+		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+		g_assert (ji);
+		jmethod = jinfo_get_method (ji);
 
 		/* Here m is a generic instance, while ji->method is the gsharedvt method implementing it */
 

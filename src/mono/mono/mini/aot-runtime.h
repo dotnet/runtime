@@ -75,6 +75,12 @@ typedef enum {
 } MonoAotFileFlags;
 
 typedef enum {
+	MONO_AOT_METHOD_FLAG_NONE = 0,
+	MONO_AOT_METHOD_FLAG_HAS_CCTOR = 1,
+	MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE = 2,
+} MonoAotMethodFlags;
+
+typedef enum {
 	MONO_AOT_TABLE_BLOB,
 	MONO_AOT_TABLE_IMAGE_TABLE,
 	MONO_AOT_TABLE_CLASS_NAME,
@@ -269,6 +275,7 @@ G_EXTERN_C void mono_aot_init_gshared_method_this  (gpointer aot_module, guint32
 G_EXTERN_C void mono_aot_init_gshared_method_mrgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx);
 G_EXTERN_C void mono_aot_init_gshared_method_vtable  (gpointer aot_module, guint32 method_index, MonoVTable *vtable);
 GHashTable *mono_aot_get_weak_field_indexes (MonoImage *image);
+MonoAotMethodFlags mono_aot_get_method_flags (guint8 *code);
 
 /* This is an exported function */
 MONO_API void     mono_aot_register_module           (gpointer *aot_info);

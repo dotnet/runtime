@@ -195,6 +195,9 @@ static MonoAotModule *container_amodule = NULL;
  */
 static GHashTable *ji_to_amodule;
 
+/* Maps method addresses to MonoAotMethodFlags */
+static GHashTable *code_to_method_flags;
+
 /*
  * Whenever to AOT compile loaded assemblies on demand and store them in
  * a cache.
@@ -4206,6 +4209,22 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		g_free (full_name);
 	}
 
+	if (mono_llvm_only) {
+		guint8 *info, *p;
+
+		info = &amodule->blob [mono_aot_get_offset (amodule->method_info_offsets, method_index)];
+		p = info;
+		guint8 flags = decode_value (p, &p);
+		/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
+		if (flags & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE) {
+			mono_aot_lock ();
+			if (!code_to_method_flags)
+				code_to_method_flags = g_hash_table_new (NULL, NULL);
+			g_hash_table_insert (code_to_method_flags, code, GUINT_TO_POINTER (flags));
+			mono_aot_unlock ();
+		}
+	}
+
 	amodule_lock (amodule);
 
 	init_plt (amodule);
@@ -4350,7 +4369,8 @@ mono_aot_can_dedup (MonoMethod *method)
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
 		if (info->subtype == WRAPPER_SUBTYPE_PTR_TO_STRUCTURE ||
-			info->subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR)
+			info->subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR ||
+			info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)
 			return FALSE;
 		return TRUE;
 	}
@@ -4459,8 +4479,8 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 
 	p = info;
 
-	//does the method's class has a cctor?
-	if (decode_value (p, &p) == 1)
+	guint8 flags = decode_value (p, &p);
+	if (flags & MONO_AOT_METHOD_FLAG_HAS_CCTOR)
 		klass_to_run_ctor = decode_klass_ref (amodule, p, &p, error);
 	if (!is_ok (error))
 		return FALSE;
@@ -6226,6 +6246,20 @@ mono_aot_handle_pagefault (void *ptr)
 #endif
 }
 
+MonoAotMethodFlags
+mono_aot_get_method_flags (guint8 *code)
+{
+	guint32 flags;
+
+	if (!code_to_method_flags)
+		return MONO_AOT_METHOD_FLAG_NONE;
+	mono_aot_lock ();
+	/* Not found and no FLAG_NONE are the same, but its not a problem */
+	flags = GPOINTER_TO_UINT (g_hash_table_lookup (code_to_method_flags, code));
+	mono_aot_unlock ();
+	return (MonoAotMethodFlags)flags;
+}
+
 #else
 /* AOT disabled */
 
@@ -6442,6 +6476,12 @@ GHashTable *
 mono_aot_get_weak_field_indexes (MonoImage *image)
 {
 	return NULL;
+}
+
+MonoAotMethodFlags
+mono_aot_get_method_flags (guint8 *code)
+{
+	return MONO_AOT_METHOD_FLAG_NONE;
 }
 
 #endif

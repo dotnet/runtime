@@ -6508,7 +6508,6 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 {
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 	MonoClass *delegate_class = mono_class_from_mono_type_internal (type);
-	gpointer func;
 	MonoMethod *method = MONO_HANDLE_GETVAL (info, method);
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 
@@ -6544,21 +6543,12 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 	MonoObjectHandle delegate = mono_object_new_handle (MONO_HANDLE_DOMAIN (ref_type), delegate_class, error);
 	return_val_if_nok (error, NULL_HANDLE);
 
-	if (method_is_dynamic (method)) {
-		/* Creating a trampoline would leak memory */
-		func = mono_compile_method_checked (method, error);
+	if (!method_is_dynamic (method) && (!MONO_HANDLE_IS_NULL (target) && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_handle_class (target))) {
+		method = mono_object_handle_get_virtual_method (target, method, error);
 		return_val_if_nok (error, NULL_HANDLE);
-	} else {
-		if (!MONO_HANDLE_IS_NULL (target) && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_handle_class (target)) {
-			method = mono_object_handle_get_virtual_method (target, method, error);
-			return_val_if_nok (error, NULL_HANDLE);
-		}
-		gpointer trampoline = mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE, error);
-		return_val_if_nok (error, NULL_HANDLE);
-		func = mono_create_ftnptr (mono_domain_get (), trampoline);
 	}
 
-	mono_delegate_ctor_with_method (delegate, target, func, method, error);
+	mono_delegate_ctor_with_method (delegate, target, NULL, method, error);
 	return_val_if_nok (error, NULL_HANDLE);
 	return delegate;
 }

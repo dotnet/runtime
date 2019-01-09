@@ -219,7 +219,7 @@ mono_exceptions_init (void)
 		throw_exception_func = mono_aot_get_trampoline ("throw_exception");
 		rethrow_exception_func = mono_aot_get_trampoline ("rethrow_exception");
 		rethrow_preserve_exception_func = mono_aot_get_trampoline ("rethrow_preserve_exception");
-	} else {
+	} else if (!mono_llvm_only) {
 		MonoTrampInfo *info;
 
 		restore_context_func = mono_arch_get_restore_context (&info, FALSE);
@@ -282,10 +282,18 @@ mono_get_rethrow_preserve_exception (void)
 	return rethrow_preserve_exception_func;
 }
 
+static void
+no_call_filter (void)
+{
+	g_assert_not_reached ();
+}
+
 gpointer
 mono_get_call_filter (void)
 {
-	g_assert (call_filter_func);
+	/* This is called even in llvmonly mode etc. */
+	if (!call_filter_func)
+		return (gpointer)no_call_filter;
 	return call_filter_func;
 }
 

@@ -15,7 +15,7 @@
 #ifndef __MONO_EE_H__
 #define __MONO_EE_H__
 
-#define MONO_EE_API_VERSION 0x7
+#define MONO_EE_API_VERSION 0x8
 
 typedef struct _MonoInterpStackIter MonoInterpStackIter;
 
@@ -32,7 +32,7 @@ struct _MonoEECallbacks {
 	MonoObject* (*runtime_invoke) (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error);
 	void (*init_delegate) (MonoDelegate *del);
 	void (*delegate_ctor) (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error);
-	gpointer (*get_remoting_invoke) (gpointer imethod, MonoError *error);
+	gpointer (*get_remoting_invoke) (MonoMethod *method, gpointer imethod, MonoError *error);
 	void (*set_resume_state) (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip);
 	gboolean (*run_finally) (StackFrameInfo *frame, int clause_index, gpointer handler_ip, gpointer handler_ip_end);
 	gboolean (*run_filter) (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip, gpointer handler_ip_end);
