@@ -47,6 +47,43 @@ namespace System.IO.Tests
             });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "#34017")]
+        [OuterLoop]
+        [Fact]
+        public void FileSystemWatcher_File_Create_SuppressedExecutionContextHandled()
+        {
+            ExecuteWithRetry(() =>
+            {
+                using (var watcher1 = new FileSystemWatcher(TestDirectory))
+                {
+                    string fileName = Path.Combine(TestDirectory, "file");
+                    watcher1.Filter = Path.GetFileName(fileName);
+
+                    var local = new AsyncLocal<int>();
+
+                    var tcs1 = new TaskCompletionSource<int>();
+                    watcher1.Created += (s, e) => tcs1.SetResult(local.Value);
+
+                    local.Value = 42;
+
+                    ExecutionContext.SuppressFlow();
+                    try
+                    {
+                        watcher1.EnableRaisingEvents = true;
+                    }
+                    finally
+                    {
+                        ExecutionContext.RestoreFlow();
+                    }
+
+                    File.Create(fileName).Dispose();
+                    tcs1.Task.Wait(WaitForExpectedEventTimeout);
+
+                    Assert.Equal(0, tcs1.Task.Result);
+                }
+            });
+        }
+
         [OuterLoop]
         [Fact]
         public void FileSystemWatcher_File_Create_NotAffectEachOther()
