@@ -30,9 +30,9 @@ DumpDelegate (dumpdelegate)        u (clru)
 DumpStackObjects (dso)             DumpStack (dumpstack)
 DumpHeap (dumpheap)                EEStack (eestack)
 DumpVC                             CLRStack (clrstack)
-GCRoot (gcroot)                    GCInfo
-PrintException (pe)                EHInfo
-                                   bpmd (bpmd)
+FinalizeQueue (finalizequeue)      GCInfo
+GCRoot (gcroot)                    EHInfo
+PrintException (pe)                bpmd (bpmd)
                                    
 Examining CLR data structures      Diagnostic Utilities
 -----------------------------      -----------------------------
@@ -430,6 +430,27 @@ MethodTable for it, and the Value column provides the start address:
 
 DumpVC is quite a specialized function. Some managed programs make heavy use 
 of value classes, while others do not.
+\\
+
+COMMAND: finalizequeue
+FinalizeQueue [-detail] | [-allReady] [-short]
+
+Displays all objects registered for finalization.
+The "-detail" option displays extra information about any SyncBlocks that need
+to be cleaned up. This data structure is cached and cleaned up by the 
+finalizer thread when it runs.
+
+The "-allReady" option displays all objects that are ready for finalization,
+regardless of whether they are already marked by the garbage collection
+as such, or will be marked by the next garbage collection. The objects that
+are in the "ready for finalization" list are finalizable objects that are
+no longer rooted. This option can be very expensive, because it verifies
+whether all the objects in the finalizable queues are still rooted.
+
+The "-short" option limits the output to the address of each object. If it is
+used in conjunction with -allReady, it enumerates all objects that have
+a finalizer that are no longer rooted. If it is used independently, it lists
+all objects in the finalizable and "ready for finalization" queues.
 \\
 
 COMMAND: gcroot.
