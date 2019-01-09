@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices
         {
             if (obj != null)
             {
-#if CORERT
+#if CORERT || !FEATURE_COMINTEROP
                 throw new PlatformNotSupportedException();
 #else
                 // Make sure this guy has an IDispatch
