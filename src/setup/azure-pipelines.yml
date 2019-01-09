@@ -130,15 +130,15 @@ jobs:
       skipTests: true
       targetArchitecture: armel
 
-# - template: /eng/jobs/linux-build.yml
-#   parameters:
-#     additionalMSBuildArgs: /p:OutputRid=rhel.6-x64
-#     displayName: Build_Linux_x64_FreeBSD
-#     dockerImage: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
-#     osGroup: FreeBSD
-#     portableBuild: true
-#     skipTests: true
-#     targetArchitecture: x64
+- ${{ if ne(variables['System.TeamProject'], 'public') }}:
+  - template: /eng/jobs/linux-build.yml
+    parameters:
+      displayName: Build_Linux_x64_FreeBSD
+      disableCrossgen: true
+      osGroup: FreeBSD
+      portableBuild: true
+      skipTests: true
+      targetArchitecture: x64
 
   ################################################################################
   # Build Windows legs
