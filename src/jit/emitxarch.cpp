@@ -2059,6 +2059,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         size += emitGetRexPrefixSize(ins);
     }
 
+    size += emitAdjustSizeCrc32(ins, attrSize);
+
     if (rgx == REG_NA)
     {
         /* The address is of the form "[reg+disp]" */
@@ -2225,19 +2227,21 @@ inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code, int val
 
 inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
 {
-    instruction ins = id->idIns();
+    instruction ins      = id->idIns();
+    emitAttr    attrSize = id->idOpSize();
 
     // fgMorph changes any statics that won't fit into 32-bit addresses
     // into constants with an indir, rather than GT_CLS_VAR
     // so we should only hit this path for statics that are RIP-relative
     UNATIVE_OFFSET size = sizeof(INT32);
 
-    size += emitGetVexPrefixAdjustedSize(ins, id->idOpSize(), code);
+    size += emitGetVexPrefixAdjustedSize(ins, attrSize, code);
+    size += emitAdjustSizeCrc32(ins, attrSize);
 
     // Most 16-bit operand instructions will need a prefix.
     // This refers to 66h size prefix override.
 
-    if (id->idOpSize() == EA_2BYTE && ins != INS_movzx && ins != INS_movsx)
+    if (attrSize == EA_2BYTE && ins != INS_movzx && ins != INS_movsx)
     {
         size++;
     }
@@ -6508,10 +6512,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
         sz += emitGetRexPrefixSize(ins);
     }
 
-    if (ins == INS_crc32)
-    {
-        sz += 1;
-    }
+    sz += emitAdjustSizeCrc32(ins, attr);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -8348,24 +8349,21 @@ void emitter::emitDispIns(
 #ifdef _TARGET_AMD64_
             if (ins == INS_movsxd)
             {
-                printf("%s, %s", emitRegName(id->idReg1(), EA_8BYTE), sstr);
+                attr = EA_8BYTE;
             }
             else
 #endif
                 if (ins == INS_movsx || ins == INS_movzx)
             {
-                printf("%s, %s", emitRegName(id->idReg1(), EA_PTRSIZE), sstr);
+                attr = EA_PTRSIZE;
             }
             else if ((ins == INS_crc32) && (attr != EA_8BYTE))
             {
                 // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
                 // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
-                printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
+                attr = EA_4BYTE;
             }
-            else
-            {
-                printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
-            }
+            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
             emitDispAddrMode(id);
             break;
 
@@ -8589,25 +8587,22 @@ void emitter::emitDispIns(
 #ifdef _TARGET_AMD64_
             if (ins == INS_movsxd)
             {
-                printf("%s, %s", emitRegName(id->idReg1(), EA_8BYTE), sstr);
+                attr = EA_8BYTE;
             }
             else
 #endif
                 if (ins == INS_movsx || ins == INS_movzx)
             {
-                printf("%s, %s", emitRegName(id->idReg1(), EA_PTRSIZE), sstr);
+                attr = EA_PTRSIZE;
             }
             else if ((ins == INS_crc32) && (attr != EA_8BYTE))
             {
                 // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
                 // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
-                printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
-            }
-            else
-            {
-                printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+                attr = EA_4BYTE;
             }
 
+            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
 
@@ -8819,7 +8814,7 @@ void emitter::emitDispIns(
             {
                 // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
                 // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
-                printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
+                attr = EA_4BYTE;
             }
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
             offs = emitGetInsDsp(id);
