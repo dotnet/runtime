@@ -22,21 +22,24 @@ jobs:
   - job: ${{ parameters.displayName }}
     displayName: ${{ parameters.displayName }}
     pool:
-      ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        name: dnceng-linux-external-temp
-      ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        name: dnceng-linux-internal-temp
+      ${{ if and(eq(parameters.displayName, 'Build_Linux_x64_FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
+        name: dnceng-freebsd-internal
+      ${{ if ne(parameters.displayName, 'Build_Linux_x64_FreeBSD') }}:
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          name: dnceng-linux-external-temp
+        ${{ if ne(variables['System.TeamProject'], 'public') }}:
+          name: dnceng-linux-internal-temp
     strategy: ${{ parameters.strategy }}
     variables:
 
-      ${{ if ne(parameters.displayName,'Build_Linux_x64_FreeBSD')}}:
+      ${{ if ne(parameters.displayName, 'Build_Linux_x64_FreeBSD')}}:
           RunArguments: docker run --privileged --rm
             -v "$(Build.SourcesDirectory):/root/coresetup"
             -w="/root/coresetup"
             ${{ parameters.additionalRunArgs }}
             ${{ parameters.dockerImage }}
       
-      ${{ if eq(parameters.displayName,'Build_Linux_x64_FreeBSD')}}:
+      ${{ if eq(parameters.displayName, 'Build_Linux_x64_FreeBSD')}}:
           RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
       BuildArguments: -OfficialBuildId=$(OfficialBuildId)
@@ -113,7 +116,7 @@ jobs:
         condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
 
     # Only for glibc leg, here we produce RPMs and Debs
-    - ${{ if eq(parameters.displayName,'Build_Linux_x64_glibc')}}:
+    - ${{ if eq(parameters.displayName, 'Build_Linux_x64_glibc')}}:
       - task: CopyFiles@2
         displayName: 'Copy built Portable linux-x64 binaries to staging directory'
         inputs:
@@ -224,6 +227,7 @@ jobs:
       condition: succeededOrFailed()
 
     # Force clean up machine in case any docker images are left behind
-    - script: docker system prune -f
-      displayName: Run Docker clean up
-      condition: succeededOrFailed()
+    - ${{ if ne(parameters.displayName, 'Build_Linux_x64_FreeBSD')}}:
+      - script: docker system prune -f
+        displayName: Run Docker clean up
+        condition: succeededOrFailed()
