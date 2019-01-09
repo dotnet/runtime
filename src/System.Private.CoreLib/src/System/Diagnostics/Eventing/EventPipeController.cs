@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tracing
         private const string NetPerfFileExtension = ".netperf";
         private const string ConfigFileSuffix = ".eventpipeconfig";
         private const int EnabledPollingIntervalMilliseconds = 1000; // 1 second
-        private const int DisabledPollingIntervalMilliseconds = 5000; // 5 seconds
+        private const int DisabledPollingIntervalMilliseconds = 20000; // 20 seconds
         private const uint DefaultCircularBufferMB = 1024; // 1 GB
         private const char ConfigEntryDelimiter = '=';
         private const char ProviderConfigDelimiter = ',';
@@ -76,17 +76,20 @@ namespace System.Diagnostics.Tracing
 
                 if (s_controllerInstance == null)
                 {
-                    if (Config_EnableEventPipe > 0)
+                    int enabled = Config_EnableEventPipe;
+                    if (enabled > 0)
                     {
                         // Enable tracing immediately.
                         // It will be disabled automatically on shutdown.
                         EventPipe.Enable(BuildConfigFromEnvironment());
                     }
-                    else
+                    // If not set at all, we listen for changes in the control file.
+                    else if (enabled != 0)
                     {
                         // Create a new controller to listen for commands.
                         s_controllerInstance = new EventPipeController();
                     }
+                    // If enable is explicitly set to 0, then don't start the controller (to avoid overhead).
                 }
             }
             catch { }
@@ -366,6 +369,9 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        /// <summary>
+        /// Returns -1 if the EnableEventPipe environment variable is not set at all (or is illegal)
+        /// </summary>
         private static int Config_EnableEventPipe
         {
             get
@@ -373,7 +379,7 @@ namespace System.Diagnostics.Tracing
                 string stringValue = CompatibilitySwitch.GetValueInternal("EnableEventPipe");
                 if ((stringValue == null) || (!int.TryParse(stringValue, out int value)))
                 {
-                    value = 0;
+                    value = -1;     // Indicates no value (or is illegal)
                 }
 
                 return value;
