@@ -61,6 +61,7 @@ add_subdirectory(DllImportAttribute/ExeFile)
 add_subdirectory(DllImportAttribute/FileNameContainDot)
 add_subdirectory(DllImportAttribute/Simple)
 add_subdirectory(ExecInDefAppDom)
+add_subdirectory(LayoutClass)
 
 if(WIN32)
     add_subdirectory(PInvoke/Attributes/LCID)
