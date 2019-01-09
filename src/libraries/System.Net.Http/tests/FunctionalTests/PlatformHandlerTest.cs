@@ -154,8 +154,10 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
+#if netcoreapp
     public sealed class PlatformHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
         protected override bool UseSocketsHttpHandler => false;
     }
+#endif
 }
