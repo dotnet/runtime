@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
+using System.Diagnostics;
 
 namespace System.Runtime.Caching
 {
@@ -136,7 +137,7 @@ namespace System.Runtime.Caching
 
         internal MemoryCacheEntryChangeMonitor(ReadOnlyCollection<string> keys, string regionName, MemoryCache cache)
         {
-            Dbg.Assert(keys != null && keys.Count > 0, "keys != null && keys.Count > 0");
+            Debug.Assert(keys != null && keys.Count > 0, "keys != null && keys.Count > 0");
             _keys = keys;
             _regionName = regionName;
             InitDisposableMembers(cache);

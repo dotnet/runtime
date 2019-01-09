@@ -6,6 +6,7 @@ using System;
 using System.Runtime.Caching.Resources;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using System.Diagnostics;
 
 // Every member of this class is thread-safe.
 // 
@@ -143,7 +144,7 @@ namespace System.Runtime.Caching
             _flags[INITIALIZED] = true;
 
             // If the dependency has already changed, or someone tried to dispose us, then call Dispose now.
-            Dbg.Assert(_flags[INITIALIZED], "It is critical that INITIALIZED is set before CHANGED is checked below");
+            Debug.Assert(_flags[INITIALIZED], "It is critical that INITIALIZED is set before CHANGED is checked below");
             if (_flags[CHANGED])
             {
                 Dispose();
@@ -160,7 +161,7 @@ namespace System.Runtime.Caching
             OnChangedHelper(state);
 
             // OnChanged will also invoke Dispose, but only after initialization is complete
-            Dbg.Assert(_flags[CHANGED], "It is critical that CHANGED is set before INITIALIZED is checked below.");
+            Debug.Assert(_flags[CHANGED], "It is critical that CHANGED is set before INITIALIZED is checked below.");
             if (_flags[INITIALIZED])
             {
                 DisposeHelper();
@@ -207,7 +208,7 @@ namespace System.Runtime.Caching
             OnChangedHelper(null);
 
             // If not initialized, throw, so the derived class understands that it must call InitializeComplete before Dispose.
-            Dbg.Assert(_flags[CHANGED], "It is critical that CHANGED is set before INITIALIZED is checked below.");
+            Debug.Assert(_flags[CHANGED], "It is critical that CHANGED is set before INITIALIZED is checked below.");
             if (!_flags[INITIALIZED])
             {
                 throw new InvalidOperationException(SR.Init_not_complete);
