@@ -24,6 +24,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         public bool ValidateOnBuild { get; set; }
 
-        internal ServiceProviderMode Mode { get; set; } = ServiceProviderMode.Dynamic;
+        internal ServiceProviderMode Mode { get; set; } = ServiceProviderMode.Default;
     }
 }
