@@ -1632,4 +1632,9 @@ namespace System.Net.Http.Functional.Tests
             }).Dispose();
         }
     }
+
+    public sealed class SocketsHttpHandlerTest_Http2 : HttpClientHandlerTest_Http2
+    {
+        protected override bool UseSocketsHttpHandler => true;
+    }
 }
