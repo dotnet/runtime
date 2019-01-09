@@ -822,6 +822,10 @@
                 {
                     "name" : "System.Runtime.InteropServices.Tests.GetIUnknownForObjectTests.GetIUnknownForObject_ObjectNotCollectible_ThrowsNotSupportedException",
                     "reason" : "outdated"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.DispatchWrapperTests.Ctor_NullUnix_ThrowsPlatformNotSupportedException",
+                    "reason": "outdated"
                 }
             ]
         }

@@ -2,31 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
-/*=============================================================================
-**
-** Class: DispatchWrapper.
-**
-**
-** Purpose: Wrapper that is converted to a variant with VT_DISPATCH.
-**
-**
-=============================================================================*/
-
 namespace System.Runtime.InteropServices
 {
+    // Wrapper that is converted to a variant with VT_DISPATCH
     public sealed class DispatchWrapper
     {
         public DispatchWrapper(Object obj)
         {
             if (obj != null)
             {
-#if CORERT || !FEATURE_COMINTEROP
-                throw new PlatformNotSupportedException();
-#else
                 // Make sure this guy has an IDispatch
                 IntPtr pdisp = Marshal.GetIDispatchForObject(obj);
 
@@ -34,7 +18,6 @@ namespace System.Runtime.InteropServices
                 Marshal.Release(pdisp);
 
                 WrappedObject = obj;
-#endif
             }
         }
 
