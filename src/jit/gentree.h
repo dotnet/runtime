@@ -1518,18 +1518,9 @@ public:
         return OperIsHWIntrinsic(gtOper);
     }
 
-#ifdef FEATURE_HW_INTRINSICS
-    inline bool OperIsSimdHWIntrinsic() const;
-#else
-    inline bool OperIsSimdHWIntrinsic() const
+    bool OperIsSimdOrHWintrinsic() const
     {
-        return false;
-    }
-#endif
-
-    bool OperIsSIMDorSimdHWintrinsic() const
-    {
-        return OperIsSIMD() || OperIsSimdHWIntrinsic();
+        return OperIsSIMD() || OperIsHWIntrinsic();
     }
 
     // This is here for cleaner GT_LONG #ifdefs.
@@ -4135,15 +4126,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 #endif
 };
-
-inline bool GenTree::OperIsSimdHWIntrinsic() const
-{
-    if (gtOper == GT_HWIntrinsic)
-    {
-        return this->AsHWIntrinsic()->isSIMD();
-    }
-    return false;
-}
 #endif // FEATURE_HW_INTRINSICS
 
 /* gtIndex -- array access */
