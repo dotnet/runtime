@@ -702,13 +702,6 @@ void CodeGen::siUpdate()
 }
 
 /*****************************************************************************
- *  In optimized code, we may not have access to gtLclVar.gtLclILoffs.
- *  So there may be ambiguity as to which entry in compiler->info.compVarScopes
- *  to use. We search the entire table and find the entry whose life
- *  begins closest to the given offset.
- */
-
-/*****************************************************************************
  *                          siCheckVarScope
  *
  * For non-debuggable code, whenever we come across a GenTree which is an
