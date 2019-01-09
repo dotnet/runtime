@@ -203,16 +203,6 @@ namespace System.Runtime.InteropServices
         }
     }
 
-    public class DispatchWrapper
-    {
-        public DispatchWrapper(object obj)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
-        public object WrappedObject => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-    }
-
     public static class ComEventsHelper
     {
         public static void Combine(object rcw, Guid iid, int dispid, Delegate d)
