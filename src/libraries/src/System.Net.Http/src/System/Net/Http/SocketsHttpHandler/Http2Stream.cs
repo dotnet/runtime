@@ -225,7 +225,7 @@ namespace System.Net.Http
                     {
                         if (_responseDataAvailable != null)
                         {
-                            _responseDataAvailable.SetResult(true);
+                            _responseDataAvailable.SetException(new IOException(SR.net_http_invalid_response));
                             _responseDataAvailable = null;
                         }
                     }
