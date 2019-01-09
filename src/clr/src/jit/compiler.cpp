@@ -9151,7 +9151,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(DEBUG)
-#if SMALL_TREE_NODES
         if (comp->dumpIRNodes)
         {
             if (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE)
@@ -9163,7 +9162,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 chars += printf("[NODE_SMALL]");
             }
         }
-#endif // SMALL_TREE_NODES
         if (tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED)
         {
             chars += printf("[MORPHED]");
@@ -10169,15 +10167,6 @@ int cLeafIR(Compiler* comp, GenTree* tree)
             break;
 
         case GT_LABEL:
-
-            if (tree->gtLabel.gtLabBB)
-            {
-                chars += printf(FMT_BB, tree->gtLabel.gtLabBB->bbNum);
-            }
-            else
-            {
-                chars += printf("BB?");
-            }
             break;
 
         case GT_IL_OFFSET:
