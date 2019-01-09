@@ -1029,8 +1029,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        MethodTable *pElementMT = m_arrayType.GetValue().AsArray()->GetArrayElementTypeHandle().GetMethodTable();
-        return OleVariant::GetElementSizeForVarType(m_vt, pElementMT) * m_numElems;
+        return OleVariant::GetElementSizeForVarType(m_vt, GetElementMethodTable()) * m_numElems;
+    }
+
+    MethodTable* GetElementMethodTable() const
+    {
+        return GetElementTypeHandle().GetMethodTable();
     }
 
     TypeHandle GetElementTypeHandle() const

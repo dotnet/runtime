@@ -2649,11 +2649,6 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         unsigned normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
         unsigned int fieldNativeSize = pFieldMarshaler->NativeSize();
-        if (fieldNativeSize > SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
-        {
-            // Pass on stack in this case.
-            return false;
-        }
 
         _ASSERTE(fieldNativeSize != (unsigned int)-1);
 
@@ -2704,6 +2699,23 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             case VT_R8:
                 fieldClassificationType = SystemVClassificationTypeSSE;
                 break;
+            case VT_RECORD:
+            {
+                MethodTable* pFieldMT = ((FieldMarshaler_FixedArray*)pFieldMarshaler)->GetElementMethodTable();
+
+                bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
+                helperPtr->inEmbeddedStruct = true;
+                bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
+                helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
+
+                if (!structRet)
+                {
+                    // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
+                    return false;
+                }
+
+                continue;
+            }
             case VT_DECIMAL:
             case VT_DATE:
             case VT_BSTR:
@@ -2714,7 +2726,6 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             case VT_HRESULT:
             case VT_CARRAY:
             case VT_USERDEFINED:
-            case VT_RECORD:
             case VT_FILETIME:
             case VT_BLOB:
             case VT_STREAM:
@@ -3044,7 +3055,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
             else
             {
                 fieldSize = helperPtr->fieldSizes[ordinal];
-                _ASSERTE(fieldSize > 0 && fieldSize <= SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES);
+                _ASSERTE(fieldSize > 0);
 
                 fieldClassificationType = helperPtr->fieldClassifications[ordinal];
                 _ASSERTE(fieldClassificationType != SystemVClassificationTypeMemory && fieldClassificationType != SystemVClassificationTypeUnknown);
@@ -3082,7 +3093,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
             }
 
             accumulatedSizeForEightByte += fieldSize;
-            if (accumulatedSizeForEightByte == SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
+            while (accumulatedSizeForEightByte >= SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
             {
                 // Save data for this eightbyte.
                 helperPtr->eightByteSizes[currentEightByte] = SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
@@ -3092,8 +3103,14 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
                 currentEightByte++;
                 _ASSERTE(currentEightByte <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
-                currentEightByteOffset = offset + fieldSize;
-                accumulatedSizeForEightByte = 0;
+                currentEightByteOffset += SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+                accumulatedSizeForEightByte -= SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+
+                // If a field is large enough to span multiple eightbytes, then set the eightbyte classification to the field's classification.
+                if (accumulatedSizeForEightByte > 0)
+                {
+                    helperPtr->eightByteClassifications[currentEightByte] = fieldClassificationType;
+                }
             }
 
             _ASSERTE(accumulatedSizeForEightByte < SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES);
