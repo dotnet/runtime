@@ -22,12 +22,12 @@ $defaultargs = "-restore -build -warnaserror:0"
 $possibleDirToBuild = if($ExtraArgs.Length -gt 0) { $ExtraArgs[0]; } else { $null }
 
 if ($possibleDirToBuild -ne $null) {
-  $dtb = $possibleDirToBuild
+  $dtb = $possibleDirToBuild.TrimEnd('\')
   if (Test-Path $dtb) {
     $ExtraArgs[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
   }
   else {
-    $dtb = Join-Path "$PSSCriptRoot\..\src" $possibleDirToBuild
+    $dtb = Join-Path "$PSSCriptRoot\..\src" $dtb
     if (Test-Path $dtb) {
       $ExtraArgs[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
     }
