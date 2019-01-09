@@ -69,18 +69,19 @@ variables:
 
 jobs:
   ################################################################################
-  # Build Linux legs
+  # Build Bash legs (Linux and FreeBSD)
   ################################################################################
-- template: /eng/jobs/linux-build.yml
-  parameters:
-    displayName: Build_Linux_x64_glibc
-    dockerImage: microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424
-    packageDistroListDeb: [debian.8,debian.9,ubuntu.16.04,ubuntu.18.04]
-    packageDistroListRpm: [centos.7,fedora.27,opensuse.42,oraclelinux.7,sles.12]
-    portableBuild: true
-    targetArchitecture: x64
+- ${{ if ne(variables['System.TeamProject'], 'public') }}:
+  - template: /eng/jobs/bash-build.yml
+    parameters:
+      displayName: Build_FreeBSD_x64
+      disableCrossgen: true
+      osGroup: FreeBSD
+      portableBuild: true
+      skipTests: true
+      targetArchitecture: x64
 
-- template: /eng/jobs/linux-build.yml
+- template: /eng/jobs/bash-build.yml
   parameters:
     crossBuild: true
     displayName: Build_Linux_Arm
@@ -90,7 +91,7 @@ jobs:
     skipTests: true
     targetArchitecture: arm
 
-- template: /eng/jobs/linux-build.yml
+- template: /eng/jobs/bash-build.yml
   parameters:
     crossBuild: true
     displayName: Build_Linux_Arm64
@@ -100,25 +101,9 @@ jobs:
     skipTests: true
     targetArchitecture: arm64
 
-- template: /eng/jobs/linux-build.yml
-  parameters:
-    additionalMSBuildArgs: /p:OutputRid=linux-musl-x64
-    displayName: Build_Linux_x64_Alpine36
-    dockerImage: microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-20171119021156
-    portableBuild: false
-    targetArchitecture: x64
-
-- template: /eng/jobs/linux-build.yml
-  parameters:
-    additionalMSBuildArgs: /p:OutputRid=rhel.6-x64
-    displayName: Build_Linux_x64_Rhel6
-    dockerImage: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
-    portableBuild: false
-    targetArchitecture: x64
-
 # Tizen build only for PR build
 - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-  - template: /eng/jobs/linux-build.yml
+  - template: /eng/jobs/bash-build.yml
     parameters:
       additionalMSBuildArgs: /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json /p:OutputRid=tizen.5.0.0-armel
       additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/armel.tizen.build
@@ -130,19 +115,53 @@ jobs:
       skipTests: true
       targetArchitecture: armel
 
-- ${{ if ne(variables['System.TeamProject'], 'public') }}:
-  - template: /eng/jobs/linux-build.yml
-    parameters:
-      displayName: Build_Linux_x64_FreeBSD
-      disableCrossgen: true
-      osGroup: FreeBSD
-      portableBuild: true
-      skipTests: true
-      targetArchitecture: x64
+- template: /eng/jobs/bash-build.yml
+  parameters:
+    additionalMSBuildArgs: /p:OutputRid=linux-musl-x64
+    displayName: Build_Linux_x64_Alpine36
+    dockerImage: microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-20171119021156
+    portableBuild: false
+    targetArchitecture: x64
+
+- template: /eng/jobs/bash-build.yml
+  parameters:
+    displayName: Build_Linux_x64_glibc
+    dockerImage: microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424
+    packageDistroListDeb: [debian.8,debian.9,ubuntu.16.04,ubuntu.18.04]
+    packageDistroListRpm: [centos.7,fedora.27,opensuse.42,oraclelinux.7,sles.12]
+    portableBuild: true
+    targetArchitecture: x64
+
+- template: /eng/jobs/bash-build.yml
+  parameters:
+    additionalMSBuildArgs: /p:OutputRid=rhel.6-x64
+    displayName: Build_Linux_x64_Rhel6
+    dockerImage: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
+    portableBuild: false
+    targetArchitecture: x64
+
+  ################################################################################
+  # Build Build_OSX leg
+  ################################################################################
+- template: /eng/jobs/osx-build.yml
 
   ################################################################################
   # Build Windows legs
   ################################################################################
+
+# Windows Arm
+- template: /eng/jobs/windows-build.yml
+  parameters:
+    displayName: Build_Windows_Arm
+    skipTests: true
+    targetArchitecture: arm
+
+# Windows Arm64
+- template: /eng/jobs/windows-build.yml
+  parameters:
+    displayName: Build_Windows_Arm64
+    skipTests: true
+    targetArchitecture: arm64
 
 # Windows x64
 - template: /eng/jobs/windows-build.yml
@@ -157,25 +176,6 @@ jobs:
   parameters:
     displayName: Build_Windows_x86
     targetArchitecture: x86
-
-# Windows Arm64
-- template: /eng/jobs/windows-build.yml
-  parameters:
-    displayName: Build_Windows_Arm64
-    skipTests: true
-    targetArchitecture: arm64
-
-# Windows Arm
-- template: /eng/jobs/windows-build.yml
-  parameters:
-    displayName: Build_Windows_Arm
-    skipTests: true
-    targetArchitecture: arm
-
-  ################################################################################
-  # Build Build_OSX leg
-  ################################################################################
-- template: /eng/jobs/osx-build.yml
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
   ################################################################################

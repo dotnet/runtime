@@ -22,9 +22,9 @@ jobs:
   - job: ${{ parameters.displayName }}
     displayName: ${{ parameters.displayName }}
     pool:
-      ${{ if and(eq(parameters.displayName, 'Build_Linux_x64_FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
+      ${{ if and(eq(parameters.displayName, 'Build_FreeBSD_x64'), ne(variables['System.TeamProject'], 'public')) }}:
         name: dnceng-freebsd-internal
-      ${{ if ne(parameters.displayName, 'Build_Linux_x64_FreeBSD') }}:
+      ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64') }}:
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           name: dnceng-linux-external-temp
         ${{ if ne(variables['System.TeamProject'], 'public') }}:
@@ -32,14 +32,14 @@ jobs:
     strategy: ${{ parameters.strategy }}
     variables:
 
-      ${{ if ne(parameters.displayName, 'Build_Linux_x64_FreeBSD')}}:
+      ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64')}}:
           RunArguments: docker run --privileged --rm
             -v "$(Build.SourcesDirectory):/root/coresetup"
             -w="/root/coresetup"
             ${{ parameters.additionalRunArgs }}
             ${{ parameters.dockerImage }}
       
-      ${{ if eq(parameters.displayName, 'Build_Linux_x64_FreeBSD')}}:
+      ${{ if eq(parameters.displayName, 'Build_FreeBSD_x64')}}:
           RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
       BuildArguments: -OfficialBuildId=$(OfficialBuildId)
@@ -227,7 +227,7 @@ jobs:
       condition: succeededOrFailed()
 
     # Force clean up machine in case any docker images are left behind
-    - ${{ if ne(parameters.displayName, 'Build_Linux_x64_FreeBSD')}}:
+    - ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64')}}:
       - script: docker system prune -f
         displayName: Run Docker clean up
         condition: succeededOrFailed()
