@@ -40,84 +40,10 @@ namespace System.Runtime.Caching
             internal extern static void DebugBreak();
 
             [DllImport("kernel32.dll")]
-            internal extern static int GetCurrentProcessId();
-
-            [DllImport("kernel32.dll")]
-            internal extern static int GetCurrentThreadId();
-
-            [DllImport("kernel32.dll", CharSet=CharSet.Auto, SetLastError=true)]
-            internal extern static IntPtr GetCurrentProcess();
-
-            [DllImport("kernel32.dll")]
             internal extern static bool IsDebuggerPresent();
-
-            [DllImport("kernel32.dll", SetLastError=true)]
-            internal extern static bool TerminateProcess(HandleRef processHandle, int exitCode);
-
-            internal const int PM_NOREMOVE = 0x0000;
-            internal const int PM_REMOVE = 0x0001;
-
-            [StructLayout(LayoutKind.Sequential)]
-            internal struct MSG {
-                internal IntPtr   hwnd;
-                internal int      message;
-                internal IntPtr   wParam;
-                internal IntPtr   lParam;
-                internal int      time;
-                internal int      pt_x;
-                internal int      pt_y;
-            }
 
             //[DllImport("user32.dll", CharSet=CharSet.Auto)]
             //internal extern static bool PeekMessage([In, Out] ref MSG msg, HandleRef hwnd, int msgMin, int msgMax, int remove);
-
-            internal const int 
-                MB_OK = 0x00000000,
-                MB_OKCANCEL = 0x00000001,
-                MB_ABORTRETRYIGNORE = 0x00000002,
-                MB_YESNOCANCEL = 0x00000003,
-                MB_YESNO = 0x00000004,
-                MB_RETRYCANCEL = 0x00000005,
-                MB_ICONHAND = 0x00000010,
-                MB_ICONQUESTION = 0x00000020,
-                MB_ICONEXCLAMATION = 0x00000030,
-                MB_ICONASTERISK = 0x00000040,
-                MB_USERICON = 0x00000080,
-                MB_ICONWARNING = 0x00000030,
-                MB_ICONERROR = 0x00000010,
-                MB_ICONINFORMATION = 0x00000040,
-                MB_DEFBUTTON1 = 0x00000000,
-                MB_DEFBUTTON2 = 0x00000100,
-                MB_DEFBUTTON3 = 0x00000200,
-                MB_DEFBUTTON4 = 0x00000300,
-                MB_APPLMODAL = 0x00000000,
-                MB_SYSTEMMODAL = 0x00001000,
-                MB_TASKMODAL = 0x00002000,
-                MB_HELP = 0x00004000,
-                MB_NOFOCUS = 0x00008000,
-                MB_SETFOREGROUND = 0x00010000,
-                MB_DEFAULT_DESKTOP_ONLY = 0x00020000,
-                MB_TOPMOST = 0x00040000,
-                MB_RIGHT = 0x00080000,
-                MB_RTLREADING = 0x00100000,
-                MB_SERVICE_NOTIFICATION = 0x00200000,
-                MB_SERVICE_NOTIFICATION_NT3X = 0x00040000,
-                MB_TYPEMASK = 0x0000000F,
-                MB_ICONMASK = 0x000000F0,
-                MB_DEFMASK = 0x00000F00,
-                MB_MODEMASK = 0x00003000,
-                MB_MISCMASK = 0x0000C000;
-
-            internal const int
-                IDOK = 1,
-                IDCANCEL = 2,
-                IDABORT = 3,
-                IDRETRY = 4,
-                IDIGNORE = 5,
-                IDYES = 6,
-                IDNO = 7,
-                IDCLOSE = 8,
-                IDHELP = 9;
 
             //[DllImport("user32.dll", CharSet=CharSet.Auto, BestFitMapping=false)]
             //internal extern static int MessageBox(HandleRef hWnd, string text, string caption, int type);
@@ -142,12 +68,6 @@ namespace System.Runtime.Caching
 
             internal const int REG_NOTIFY_CHANGE_NAME       = 1;
             internal const int REG_NOTIFY_CHANGE_LAST_SET   = 4;
-
-            [DllImport("advapi32.dll", CharSet=CharSet.Auto, BestFitMapping=false, SetLastError=true)]
-            internal extern static int RegOpenKeyEx(IntPtr hKey, string lpSubKey, int ulOptions, int samDesired, out SafeRegistryHandle hkResult);
-
-            [DllImport("advapi32.dll", ExactSpelling=true, SetLastError=true)]
-            internal extern static int RegNotifyChangeKeyValue(SafeRegistryHandle hKey, bool watchSubTree, uint notifyFilter, SafeWaitHandle regEvent, bool async);
         }
 
         private enum TagValue {
@@ -167,7 +87,6 @@ namespace System.Runtime.Caching
         private const string            TAG_DEBUG_PREFIX = "DebugPrefix";
         private const string            TAG_DEBUG_THREAD_PREFIX = "DebugThreadPrefix";
 
-        private const string            PRODUCT = "Microsoft .NET Framework";
         private const string            COMPONENT = "System.Web";
 
         private static string           s_regKeyName = @"Software\Microsoft\ASP.NET\Debug";
@@ -422,7 +341,7 @@ namespace System.Runtime.Caching
                 }
 
                 // Open the reg key
-                int result = NativeMethods.RegOpenKeyEx(NativeMethods.HKEY_LOCAL_MACHINE, s_listenKeyName, 0, NativeMethods.KEY_READ, out s_regHandle);
+                int result = Interop.Advapi32.RegOpenKeyEx(NativeMethods.HKEY_LOCAL_MACHINE, s_listenKeyName, 0, NativeMethods.KEY_READ, out s_regHandle);
                 if (result != 0) 
                 {
                     StopRegistryMonitor();
@@ -430,7 +349,7 @@ namespace System.Runtime.Caching
                 }
 
                 // Listen for changes.
-                result = NativeMethods.RegNotifyChangeKeyValue(
+                result = Interop.Advapi32.RegNotifyChangeKeyValue(
                         s_regHandle, 
                         true, 
                         NativeMethods.REG_NOTIFY_CHANGE_NAME | NativeMethods.REG_NOTIFY_CHANGE_LAST_SET,
@@ -817,7 +736,7 @@ A=Exit process R=Debug I=Continue";
             }
             else 
             {
-                Debugger.Break();            
+                Debugger.Break();
             }
 #endif
         }
@@ -1020,4 +939,3 @@ A=Exit process R=Debug I=Continue";
         }
     }
 }
-
