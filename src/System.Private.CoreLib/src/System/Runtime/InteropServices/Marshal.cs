@@ -16,12 +16,6 @@ using System.StubHelpers;
 
 namespace System.Runtime.InteropServices
 {
-    public enum CustomQueryInterfaceMode
-    {
-        Ignore = 0,
-        Allow = 1
-    }
-
     /// <summary>
     /// This class contains methods that are mainly used to marshal between unmanaged
     /// and managed types.
