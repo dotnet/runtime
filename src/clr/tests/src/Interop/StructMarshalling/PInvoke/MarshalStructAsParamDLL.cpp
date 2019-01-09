@@ -690,12 +690,70 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByRefOut1
 	str1->i = 64;
 	return TRUE;
 }
+///////////////////////////////////////////////////////////////////////////////////////
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValIntWithInnerSequential(IntWithInnerSequential str, int i)
+{
+    if (str.i1 != i || !IsCorrectInnerSequential(&str.sequential))
+    {
+        printf("\tMarshalStructAsParam_AsSeqByValIntWithInnerSequential: IntWithInnerSequential param not as expected\n");
+        printf("Expected %d, Got %d for str.i\n", i, str.i1);
+        PrintInnerSequential(&str.sequential, "str.sequential");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValSequentialWrapper(SequentialWrapper wrapper)
+{
+    if (!IsCorrectInnerSequential(&wrapper.sequential))
+    {
+        printf("\tMarshalStructAsParam_AsSeqByValSequentialWrapper: SequentialWrapper param not as expected\n");
+        PrintInnerSequential(&wrapper.sequential, "wrapper.sequential");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValSequentialDoubleWrapper(SequentialDoubleWrapper wrapper)
+{
+    if (!IsCorrectInnerSequential(&wrapper.wrapper.sequential))
+    {
+        printf("\tMarshalStructAsParam_AsSeqByValSequentialWrapper: SequentialWrapper param not as expected\n");
+        PrintInnerSequential(&wrapper.wrapper.sequential, "wrapper.sequential");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsSeqByValSequentialAggregateSequentialWrapper(AggregateSequentialWrapper wrapper)
+{
+    if (!IsCorrectInnerSequential(&wrapper.wrapper1.sequential))
+    {
+        printf("\tMarshalStructAsParam_AsSeqByValSequentialWrapper: SequentialWrapper param not as expected\n");
+        PrintInnerSequential(&wrapper.wrapper1.sequential, "wrapper.sequential");
+        return FALSE;
+    }
+    if (!IsCorrectInnerSequential(&wrapper.sequential))
+    {
+        printf("\tMarshalStructAsParam_AsSeqByValSequentialWrapper: SequentialWrapper param not as expected\n");
+        PrintInnerSequential(&wrapper.sequential, "wrapper.sequential");
+        return FALSE;
+    }
+    if (!IsCorrectInnerSequential(&wrapper.wrapper2.sequential))
+    {
+        printf("\tMarshalStructAsParam_AsSeqByValSequentialWrapper: SequentialWrapper param not as expected\n");
+        PrintInnerSequential(&wrapper.wrapper2.sequential, "wrapper.sequential");
+        return FALSE;
+    }
+    return TRUE;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValINNER2(INNER2 inner)
 {
 	if(!IsCorrectINNER2(&inner))
 	{
-		printf("\tMarshalStructAsParam_AsSeqByVal: INNER param not as expected\n");
+		printf("\tMarshalStructAsParam_AsExpByVal: INNER param not as expected\n");
 		PrintINNER2(&inner,"inner");
 		return FALSE;
 	}
@@ -707,7 +765,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefINNE
 {
 	if(!IsCorrectINNER2(inner))
 	{
-		printf("\tMarshalStructAsParam_AsSeqByRef: INNER param not as expected\n");
+		printf("\tMarshalStructAsParam_AsExpByRef: INNER param not as expected\n");
 		PrintINNER2(inner,"inner");
 		return FALSE;
 	}
@@ -718,7 +776,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefInIN
 {
 	if(!IsCorrectINNER2(inner))
 	{
-		printf("\tMarshalStructAsParam_AsSeqByRefIn: INNER param not as expected\n");
+		printf("\tMarshalStructAsParam_AsExpByRefIn: INNER param not as expected\n");
 		PrintINNER2(inner,"inner");
 		return FALSE;
 	}
@@ -730,7 +788,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByValOutI
 {
 	if(!IsCorrectINNER2(&inner))
 	{
-		printf("\tMarshalStructAsParam_AsSeqByValOut:NNER param not as expected\n");
+		printf("\tMarshalStructAsParam_AsExpByValOut:NNER param not as expected\n");
 		PrintINNER2(&inner,"inner");
 		return FALSE;
 	}
