@@ -13,7 +13,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandlerTestBase
     {
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not currently supported on UAP")]
         [Theory]

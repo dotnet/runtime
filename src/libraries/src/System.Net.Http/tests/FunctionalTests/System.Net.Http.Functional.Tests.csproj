@@ -92,7 +92,7 @@
     <Compile Include="HttpClientHandlerTest.SslProtocols.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="HttpClientHandlerTest.SslProtocols.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="DiagnosticsTests.cs" />
-    <Compile Include="HttpClientTestBase.cs" />
+    <Compile Include="HttpClientHandlerTestBase.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpClientEKUTest.cs" />
     <Compile Include="HttpClientMiniStressTest.cs" />
