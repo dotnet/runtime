@@ -11,7 +11,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public sealed class SocketsHttpHandler_HttpClientHandler_Http2_Test : HttpClientHandlerTestBase
+    public abstract class HttpClientHandlerTest_Http2 : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
         public static bool SupportsAlpn => PlatformDetection.SupportsAlpn;
