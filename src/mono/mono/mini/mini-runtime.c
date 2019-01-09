@@ -4315,6 +4315,12 @@ mono_interp_entry_from_trampoline (gpointer ccontext, gpointer imethod)
 	mini_get_interp_callbacks ()->entry_from_trampoline (ccontext, imethod);
 }
 
+void
+mono_interp_to_native_trampoline (gpointer addr, gpointer ccontext)
+{
+	mini_get_interp_callbacks ()->to_native_trampoline (addr, ccontext);
+}
+
 MonoDomain *
 mini_init (const char *filename, const char *runtime_version)
 {
@@ -4891,6 +4897,7 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_tls_set_lmf_addr, "mono_tls_set_lmf_addr", "void ptr");
 
 	register_icall_no_wrapper (mono_interp_entry_from_trampoline, "mono_interp_entry_from_trampoline", "void ptr ptr");
+	register_icall_no_wrapper (mono_interp_to_native_trampoline, "mono_interp_to_native_trampoline", "void ptr ptr");
 
 #ifdef MONO_ARCH_HAS_REGISTER_ICALL
 	mono_arch_register_icall ();

@@ -3452,6 +3452,16 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 	*endbuf = p;
 }
 
+static void
+encode_icall (gpointer func, guint8 *p, guint8 **end)
+{
+	MonoJitICallInfo *callinfo = mono_find_jit_icall_by_addr (func);
+	g_assert (callinfo);
+	strcpy ((char *) p, callinfo->name);
+	p += strlen (callinfo->name) + 1;
+	*end = p;
+}
+
 #define MAX_IMAGE_INDEX 250
 
 static void
@@ -3536,17 +3546,15 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_signature (acfg, info->d.gsharedvt.sig, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
 				encode_signature (acfg, info->d.gsharedvt.sig, p, &p);
+			else if (info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)
+				encode_icall (info->d.icall.func, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 			if (info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-				MonoJitICallInfo *callinfo = NULL;
-				callinfo = mono_find_jit_icall_by_addr (info->d.icall.func);
-				g_assert (callinfo);
-				strcpy ((char*)p, callinfo->name);
-				p += strlen (callinfo->name) + 1;
+				encode_icall (info->d.icall.func, p, &p);
 			} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
 			} else {
@@ -7295,6 +7303,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
 			mono_arch_get_interp_to_native_trampoline (&info);
 			emit_trampoline (acfg, info);
+
 #ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 			mono_arch_get_native_to_interp_trampoline (&info);
 			emit_trampoline (acfg, info);
@@ -8943,7 +8952,8 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 		} else if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG) {
 			append_mangled_signature (s, info->d.gsharedvt.sig);
 			append_sig = FALSE;
-		}
+		} else if (info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)
+			g_string_append_printf (s, "%s", method->name);
 		break;
 	}
 	case MONO_WRAPPER_MANAGED_TO_NATIVE: {
@@ -13161,7 +13171,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #endif
 
 	if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
-		MonoMethod *wrapper = mini_get_interp_lmf_wrapper ();
+		MonoMethod *wrapper = mini_get_interp_lmf_wrapper ("mono_interp_to_native_trampoline", (gpointer) mono_interp_to_native_trampoline);
+		add_method (acfg, wrapper);
+
+		wrapper = mini_get_interp_lmf_wrapper ("mono_interp_entry_from_trampoline", (gpointer) mono_interp_entry_from_trampoline);
 		add_method (acfg, wrapper);
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE

@@ -79,7 +79,7 @@ typedef struct {
 typedef struct _InterpFrame InterpFrame;
 
 typedef void (*MonoFuncV) (void);
-typedef void (*MonoPIFunc) (MonoFuncV callme, void *margs);
+typedef void (*MonoPIFunc) (void *callme, void *margs);
 
 /* 
  * Structure representing a method transformed for the interpreter 

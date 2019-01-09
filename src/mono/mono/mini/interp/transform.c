@@ -1795,9 +1795,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error)));
 		mono_error_assert_ok (error);
 	} else {
+#ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
 		/* Try using fast icall path for simple signatures */
 		if (native && !method->dynamic)
 			op = interp_icall_op_for_sig (csignature);
+#endif
 		if (calli)
 			ADD_CODE(td, native ? ((op != -1) ? MINT_CALLI_NAT_FAST : MINT_CALLI_NAT) : MINT_CALLI);
 		else if (is_virtual)

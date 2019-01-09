@@ -384,9 +384,18 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 }
 
 #if defined (MONO_CROSS_COMPILE) || defined (HOST_WASM) || defined (_MSC_VER)
-#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) /* do nothing */
-#elif defined (MONO_ARCH_HAS_MONO_CONTEXT)
 #define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) \
+	(ext).kind = MONO_LMFEXT_INTERP_EXIT;
+
+#elif defined(MONO_ARCH_HAS_NO_PROPER_MONOCTX)
+/* some platforms, e.g. appleTV, don't provide us a precise MonoContext
+ * (registers are not accurate), thus resuming to the label does not work. */
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) \
+	(ext).kind = MONO_LMFEXT_INTERP_EXIT;
+
+#elif defined(MONO_ARCH_HAS_MONO_CONTEXT)
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) \
+	(ext).kind = MONO_LMFEXT_INTERP_EXIT_WITH_CTX; \
 	MONO_CONTEXT_GET_CURRENT ((ext).ctx); \
 	MONO_CONTEXT_SET_IP (&(ext).ctx, (exit_addr)); \
 	mono_arch_do_ip_adjustment (&(ext).ctx);
@@ -405,7 +414,6 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
  */
 #define INTERP_PUSH_LMF_WITH_CTX(frame, ext, exit_addr) \
 	memset (&(ext), 0, sizeof (MonoLMFExt)); \
-	(ext).kind = MONO_LMFEXT_INTERP_EXIT_WITH_CTX; \
 	(ext).interp_exit_data = (frame); \
 	INTERP_PUSH_LMF_WITH_CTX_BODY ((ext), (exit_addr)); \
 	mono_push_lmf (&(ext));
@@ -957,8 +965,6 @@ ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArr
 	return mono_array_addr_with_size_fast (ao, esize, pos);
 }
 
-static MonoPIFunc mono_interp_to_native_trampoline = NULL;
-
 #ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 static MonoFuncV mono_native_to_interp_trampoline = NULL;
 #endif
@@ -1217,42 +1223,65 @@ interp_frame_arg_set_storage (MonoInterpFrameHandle frame, MonoMethodSignature *
 	}
 }
 
+static MonoPIFunc
+get_interp_to_native_trampoline (void)
+{
+	static MonoPIFunc trampoline = NULL;
+
+	if (!trampoline) {
+		if (mono_ee_features.use_aot_trampolines) {
+			trampoline = (MonoPIFunc) mono_aot_get_trampoline ("interp_to_native_trampoline");
+		} else {
+			MonoTrampInfo *info;
+			trampoline = (MonoPIFunc) mono_arch_get_interp_to_native_trampoline (&info);
+			// TODO:
+			// mono_tramp_info_register (info, NULL);
+		}
+		mono_memory_barrier ();
+	}
+	return trampoline;
+}
+
+static void
+interp_to_native_trampoline (gpointer addr, gpointer ccontext)
+{
+	get_interp_to_native_trampoline () (addr, ccontext);
+}
+
 /* MONO_NO_OPTIMIATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE void
 ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context)
 {
 	MonoLMFExt ext;
+	gpointer args;
 
 	frame->ex = NULL;
 
 	g_assert (!frame->imethod);
-	if (!mono_interp_to_native_trampoline) {
-		if (mono_ee_features.use_aot_trampolines) {
-			mono_interp_to_native_trampoline = (MonoPIFunc)mono_aot_get_trampoline ("interp_to_native_trampoline");
-		} else {
-			MonoTrampInfo *info;
-			mono_interp_to_native_trampoline = (MonoPIFunc)mono_arch_get_interp_to_native_trampoline (&info);
-			// TODO:
-			// mono_tramp_info_register (info, NULL);
-		}
+
+	static MonoPIFunc entry_func = NULL;
+	if (!entry_func) {
+#ifdef MONO_ARCH_HAS_NO_PROPER_MONOCTX
+		ERROR_DECL (error);
+		entry_func = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ("mono_interp_to_native_trampoline", (gpointer) mono_interp_to_native_trampoline), error);
+		mono_error_assert_ok (error);
+#else
+		entry_func = get_interp_to_native_trampoline ();
+#endif
+		mono_memory_barrier ();
 	}
+
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
 	mono_arch_set_native_call_context_args (&ccontext, frame, sig);
+	args = &ccontext;
 #else
 	InterpMethodArguments *margs = build_args_from_sig (sig, frame);
-#endif
-
-#if DEBUG_INTERP
-	g_print ("ICALL: mono_interp_to_native_trampoline = %p, addr = %p\n", mono_interp_to_native_trampoline, addr);
+	args = margs;
 #endif
 
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, &&exit_pinvoke);
-#ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
-	mono_interp_to_native_trampoline (addr, &ccontext);
-#else
-	mono_interp_to_native_trampoline (addr, margs);
-#endif
+	entry_func ((gpointer) addr, args);
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
@@ -2557,8 +2586,14 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 	/* We need the lmf wrapper only when being called from mixed mode */
 	if (sig->pinvoke)
 		entry_func = (gpointer)interp_entry_from_trampoline;
-	else
-		entry_func = mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper (), error);
+	else {
+		static gpointer cached_func = NULL;
+		if (!cached_func) {
+			cached_func = mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ("mono_interp_entry_from_trampoline", (gpointer) mono_interp_entry_from_trampoline), error);
+			mono_memory_barrier ();
+		}
+		entry_func = cached_func;
+	}
 #endif
 	/* This is the argument passed to the interp_in wrapper by the static rgctx trampoline */
 	MonoFtnDesc *ftndesc = g_new0 (MonoFtnDesc, 1);
@@ -6205,6 +6240,7 @@ mono_ee_interp_init (const char *opts)
 #ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 	c.entry_from_trampoline = interp_entry_from_trampoline;
 #endif
+	c.to_native_trampoline = interp_to_native_trampoline;
 	c.create_method_pointer = interp_create_method_pointer;
 	c.runtime_invoke = interp_runtime_invoke;
 	c.init_delegate = interp_init_delegate;

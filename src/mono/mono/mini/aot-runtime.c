@@ -1083,7 +1083,9 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				ref->method = mini_get_interp_in_wrapper (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_INTERP_LMF) {
-				ref->method = mini_get_interp_lmf_wrapper ();
+				MonoJitICallInfo *info = mono_find_jit_icall_by_name ((char *) p);
+				g_assert (info);
+				ref->method = mini_get_interp_lmf_wrapper (info->name, (gpointer) info->func);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG) {
 				MonoMethodSignature *sig = decode_signature (module, p, &p);
 				if (!sig)

@@ -1821,16 +1821,27 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
  * needed so EH can resume directly into jitted code from interp, or into interp
  * when it needs to jump over native frames.
  */
-static MonoMethod*
-mini_create_interp_lmf_wrapper (gpointer target)
+MonoMethod*
+mini_get_interp_lmf_wrapper (const char *name, gpointer target)
 {
-	MonoMethod* ret;
+	MonoMethod *res, *cached;
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	WrapperInfo *info;
+	static GHashTable *cache = NULL;
 	MonoType *int_type = mono_get_int_type ();
 
-	mb = mono_mb_new (mono_defaults.object_class, "interp_lmf", MONO_WRAPPER_OTHER);
+	gshared_lock ();
+	if (!cache)
+		cache = g_hash_table_new_full (NULL, NULL, NULL, NULL);
+	res = (MonoMethod *) g_hash_table_lookup (cache, target);
+	gshared_unlock ();
+
+	if (res)
+		return res;
+
+	char *wrapper_name = g_strdup_printf ("__interp_lmf_%s", name);
+	mb = mono_mb_new (mono_defaults.object_class, wrapper_name, MONO_WRAPPER_OTHER);
 
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 	sig->ret = mono_get_void_type ();;
@@ -1850,23 +1861,23 @@ mini_create_interp_lmf_wrapper (gpointer target)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_LMF);
-	ret = mono_mb_create (mb, sig, 4, info);
+	info->d.icall.func = (gpointer) target;
+	res = mono_mb_create (mb, sig, 4, info);
+
+	gshared_lock ();
+	cached = (MonoMethod *) g_hash_table_lookup (cache, target);
+	if (cached) {
+		mono_free_method (res);
+		res = cached;
+	} else {
+		g_hash_table_insert (cache, target, res);
+	}
+	gshared_unlock ();
 	mono_mb_free (mb);
 
-	return ret;
-}
+	g_free (wrapper_name);
 
-MonoMethod*
-mini_get_interp_lmf_wrapper (void)
-{
-	static MonoMethod *wrapper = NULL;
-
-	if (wrapper)
-		return wrapper;
-
-	wrapper = (MonoMethod*)mini_create_interp_lmf_wrapper ((gpointer)mono_interp_entry_from_trampoline);
-
-	return wrapper;
+	return res;
 }
 
 MonoMethodSignature*
