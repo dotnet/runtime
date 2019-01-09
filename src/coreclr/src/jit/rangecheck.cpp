@@ -1027,6 +1027,14 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = false;
     }
+    else if (expr->OperGet() == GT_IND)
+    {
+        overflows = false;
+    }
+    else if (expr->OperGet() == GT_COMMA)
+    {
+        overflows = ComputeDoesOverflow(block, expr->gtEffectiveVal());
+    }
     // Check if the var def has rhs involving arithmetic that overflows.
     else if (expr->IsLocal())
     {
@@ -1134,6 +1142,29 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic 
             range = RangeOps::Merge(range, argRange, monotonic);
             JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
         }
+    }
+    else if (varTypeIsSmallInt(expr->TypeGet()))
+    {
+        switch (expr->TypeGet())
+        {
+            case TYP_UBYTE:
+                range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 255));
+                break;
+            case TYP_BYTE:
+                range = Range(Limit(Limit::keConstant, -127), Limit(Limit::keConstant, 128));
+                break;
+            case TYP_USHORT:
+                range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 65535));
+                break;
+            case TYP_SHORT:
+                range = Range(Limit(Limit::keConstant, -32768), Limit(Limit::keConstant, 32767));
+                break;
+            default:
+                range = Range(Limit(Limit::keUnknown));
+                break;
+        }
+
+        JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
     }
     else
     {
