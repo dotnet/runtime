@@ -8,6 +8,7 @@ jobs:
                   succeeded('Build_Linux_Arm64'),
                   succeeded('Build_Linux_Arm'),
                   succeeded('Build_Linux_x64_Alpine36'),
+                  succeeded('Build_Linux_x64_FreeBSD'),
                   succeeded('Build_Linux_x64_Rhel6'),
                   succeeded('Build_OSX'),
                   succeeded('Build_Windows_x64'),
@@ -21,7 +22,7 @@ jobs:
       - Build_Linux_Arm64
       - Build_Linux_Arm
       - Build_Linux_x64_Alpine36
-      # - Build_Linux_x64_FreeBSD
+      - Build_Linux_x64_FreeBSD
       - Build_Linux_x64_Rhel6
       - Build_Windows_x64
       - Build_Windows_x86
