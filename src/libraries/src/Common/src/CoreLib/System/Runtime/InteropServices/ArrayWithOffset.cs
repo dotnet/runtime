@@ -45,7 +45,10 @@ namespace System.Runtime.InteropServices
             return !(a == b);
         }
 
-#if !CORECLR // TODO: Cleanup
+#if CORECLR // TODO: Cleanup
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern int CalculateCount();
+#else
         private int CalculateCount()
         {
             if (m_array == null)
