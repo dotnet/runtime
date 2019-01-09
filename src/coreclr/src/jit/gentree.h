@@ -2733,7 +2733,7 @@ public:
 
 struct GenTreeLclVar : public GenTreeLclVarCommon
 {
-    INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for debug)
+    INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for JIT dumps)
 
     GenTreeLclVar(var_types type,
                   unsigned lclNum DEBUGARG(IL_OFFSET ilOffs = BAD_IL_OFFSET) DEBUGARG(bool largeNode = false))
