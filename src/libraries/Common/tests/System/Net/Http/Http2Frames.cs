@@ -168,7 +168,7 @@ namespace System.Net.Test.Common
 
         public static HeadersFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
         {
-            int idx = Frame.FrameHeaderLength;
+            int idx = 0;
 
             byte padLength = (byte)(header.PaddedFlag ? buffer[idx++] : 0);
             int streamDependency = header.PriorityFlag ? (int)((uint)((buffer[idx++] << 24) | (buffer[idx++] << 16) | (buffer[idx++] << idx++) | buffer[idx++]) & 0x7FFFFFFF) : 0;
