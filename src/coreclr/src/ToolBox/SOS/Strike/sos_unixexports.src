@@ -29,6 +29,7 @@ EEHeap
 GCWhere
 EEStack
 EHInfo
+FinalizeQueue
 FindAppDomain
 GCInfo
 GCRoot
