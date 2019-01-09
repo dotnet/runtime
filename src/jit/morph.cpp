@@ -2560,13 +2560,13 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
     // setting type of lcl vars created.
     GenTree* asg = gtNewTempAssign(lclNum, subTree);
 
-    GenTree* load = new (this, GT_LCL_VAR) GenTreeLclVar(subTree->TypeGet(), lclNum, BAD_IL_OFFSET);
+    GenTree* load = new (this, GT_LCL_VAR) GenTreeLclVar(subTree->TypeGet(), lclNum);
 
     GenTree* comma = gtNewOperNode(GT_COMMA, subTree->TypeGet(), asg, load);
 
     *ppTree = comma;
 
-    return new (this, GT_LCL_VAR) GenTreeLclVar(subTree->TypeGet(), lclNum, BAD_IL_OFFSET);
+    return new (this, GT_LCL_VAR) GenTreeLclVar(subTree->TypeGet(), lclNum);
 }
 
 //------------------------------------------------------------------------
@@ -4732,8 +4732,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 {
                     // We can use the struct promoted field as the two arguments
 
-                    GenTree* loLclVar = gtNewLclvNode(loVarNum, loType, loVarNum);
-                    GenTree* hiLclVar = gtNewLclvNode(hiVarNum, hiType, hiVarNum);
+                    GenTree* loLclVar = gtNewLclvNode(loVarNum, loType);
+                    GenTree* hiLclVar = gtNewLclvNode(hiVarNum, hiType);
 
                     // Create a new tree for 'arg'
                     //    replace the existing LDOBJ(ADDR(LCLVAR))
@@ -5480,7 +5480,7 @@ void Compiler::fgSetRngChkTarget(GenTree* tree, bool delay)
         BasicBlock* const       failBlock = fgSetRngChkTargetInner(boundsChk->gtThrowKind, delay);
         if (failBlock != nullptr)
         {
-            boundsChk->gtIndRngFailBB = gtNewCodeRef(failBlock);
+            boundsChk->gtIndRngFailBB = failBlock;
         }
     }
     else if (tree->OperIs(GT_INDEX_ADDR))
@@ -5489,7 +5489,7 @@ void Compiler::fgSetRngChkTarget(GenTree* tree, bool delay)
         BasicBlock* const       failBlock = fgSetRngChkTargetInner(SCK_RNGCHK_FAIL, delay);
         if (failBlock != nullptr)
         {
-            indexAddr->gtIndRngFailBB = gtNewCodeRef(failBlock);
+            indexAddr->gtIndRngFailBB = failBlock;
         }
     }
     else
@@ -5791,9 +5791,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
     addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
 
-#if SMALL_TREE_NODES
-    assert((tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) || GenTree::s_gtNodeSizes[GT_IND] == TREE_NODE_SZ_SMALL);
-#endif
+    assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) != 0) ||
+           (GenTree::s_gtNodeSizes[GT_IND] == TREE_NODE_SZ_SMALL));
 
     // Change the orginal GT_INDEX node into a GT_IND node
     tree->SetOper(GT_IND);
@@ -14695,13 +14694,11 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
     {
         GenTree* copy;
 
-#ifdef SMALL_TREE_NODES
         if (GenTree::s_gtNodeSizes[tree->gtOper] == TREE_NODE_SZ_SMALL)
         {
             copy = gtNewLargeOperNode(GT_ADD, TYP_INT);
         }
         else
-#endif
         {
             copy = new (this, GT_CALL) GenTreeCall(TYP_INT);
         }

@@ -805,7 +805,7 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
     storeIndLow->gtType     = TYP_INT;
 
     GenTree* addrBaseHigh = new (m_compiler, GT_LCL_VAR)
-        GenTreeLclVar(GT_LCL_VAR, addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
+        GenTreeLclVar(GT_LCL_VAR, addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum());
     GenTree* addrHigh =
         new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
     GenTree* storeIndHigh = new (m_compiler, GT_STOREIND) GenTreeStoreInd(TYP_INT, addrHigh, dataHigh);
@@ -857,7 +857,7 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
     // Create tree of ind(addr+4)
     GenTree* addrBase     = indLow->gtGetOp1();
     GenTree* addrBaseHigh = new (m_compiler, GT_LCL_VAR)
-        GenTreeLclVar(GT_LCL_VAR, addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
+        GenTreeLclVar(GT_LCL_VAR, addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum());
     GenTree* addrHigh =
         new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
     GenTree* indHigh = new (m_compiler, GT_IND) GenTreeIndir(GT_IND, TYP_INT, addrHigh, nullptr);
