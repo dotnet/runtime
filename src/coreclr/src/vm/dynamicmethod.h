@@ -110,7 +110,7 @@ class LCGMethodResolver : public DynamicResolver
     friend struct ExecutionManager::JumpStubCache;
 
 public:
-    void Destroy(BOOL fDomainUnload = FALSE);
+    void Destroy();
 
     void FreeCompileTimeState();
     void GetJitContext(SecurityControlFlags * securityControlFlags,

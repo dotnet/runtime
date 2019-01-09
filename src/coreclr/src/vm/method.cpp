@@ -226,14 +226,7 @@ BaseDomain *MethodDesc::GetDomain()
 //*******************************************************************************
 LoaderAllocator * MethodDesc::GetLoaderAllocatorForCode()
 {
-    if (IsLCGMethod())
-    {
-        return ::GetAppDomain()->GetLoaderAllocator();
-    }
-    else
-    {
-        return GetLoaderAllocator();
-    }
+    return GetLoaderAllocator();
 }
 
 
