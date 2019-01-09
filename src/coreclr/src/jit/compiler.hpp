@@ -871,11 +871,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void* GenTree::operator new(size_t sz, Compiler* comp, genTreeOps oper)
 {
-#if SMALL_TREE_NODES
     size_t size = GenTree::s_gtNodeSizes[oper];
-#else
-    size_t   size = TREE_NODE_SZ_LARGE;
-#endif
 
 #if MEASURE_NODE_SIZE
     genNodeSizeStats.genTreeNodeCnt += 1;
@@ -916,7 +912,6 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     INDEBUG(gtCostsInitialized = false;)
 
 #ifdef DEBUG
-#if SMALL_TREE_NODES
     size_t size = GenTree::s_gtNodeSizes[oper];
     if (size == TREE_NODE_SZ_SMALL && !largeNode)
     {
@@ -930,7 +925,6 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     {
         assert(!"bogus node size");
     }
-#endif
 #endif
 
 #if COUNT_AST_OPERS
@@ -1011,10 +1005,7 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
 // Returns an opcode that is of the largest node size in use.
 inline genTreeOps LargeOpOpcode()
 {
-#if SMALL_TREE_NODES
-    // Allocate a large node
     assert(GenTree::s_gtNodeSizes[GT_CALL] == TREE_NODE_SZ_LARGE);
-#endif
     return GT_CALL;
 }
 
@@ -1026,18 +1017,11 @@ inline genTreeOps LargeOpOpcode()
 inline GenTree* Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
-    assert((GenTree::OperKind(oper) & GTK_EXOP) ==
-           0); // Can't use this to construct any types that extend unary/binary operator.
-#if SMALL_TREE_NODES
-    // Allocate a large node
-
+    // Can't use this to construct any types that extend unary/binary operator.
+    assert((GenTree::OperKind(oper) & GTK_EXOP) == 0);
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL);
-
+    // Allocate a large node
     GenTree* node = new (this, LargeOpOpcode()) GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ true));
-#else
-    GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, op2);
-#endif
-
     return node;
 }
 
@@ -1061,7 +1045,7 @@ inline GenTree* Compiler::gtNewIconHandleNode(size_t value, unsigned flags, Fiel
 #if defined(LATE_DISASM)
     node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/ true));
 #else
-    node          = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, value, fields);
+    node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, value, fields);
 #endif
     node->gtFlags |= flags;
     return node;
@@ -1192,14 +1176,6 @@ inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfo
     return node;
 }
 
-/*****************************************************************************/
-
-inline GenTree* Compiler::gtNewCodeRef(BasicBlock* block)
-{
-    GenTree* node = new (this, GT_LABEL) GenTreeLabel(block);
-    return node;
-}
-
 /*****************************************************************************
  *
  *  A little helper to create a data member reference node.
@@ -1207,10 +1183,8 @@ inline GenTree* Compiler::gtNewCodeRef(BasicBlock* block)
 
 inline GenTree* Compiler::gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
 {
-#if SMALL_TREE_NODES
     /* 'GT_FIELD' nodes may later get transformed into 'GT_IND' */
     assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
-#endif // SMALL_TREE_NODES
 
     GenTree* tree = new (this, GT_FIELD) GenTreeField(typ, obj, fldHnd, offset);
 
@@ -1356,8 +1330,6 @@ inline void Compiler::gtSetStmtInfo(GenTree* stmt)
 }
 
 /*****************************************************************************/
-#if SMALL_TREE_NODES
-/*****************************************************************************/
 
 inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
@@ -1440,47 +1412,6 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
     return res;
 }
 
-/*****************************************************************************/
-#else // SMALL_TREE_NODES
-/*****************************************************************************/
-
-inline void GenTree::InitNodeSize()
-{
-}
-
-inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
-{
-    SetOperRaw(oper);
-
-    if (vnUpdate == CLEAR_VN)
-    {
-        // Clear the ValueNum field.
-        gtVNPair.SetBoth(ValueNumStore::NoVN);
-    }
-}
-
-inline void GenTree::ReplaceWith(GenTree* src)
-{
-    RecordOperBashing(OperGet(), src->OperGet()); // nop unless NODEBASH_STATS is enabled
-    *this    = *src;
-#ifdef DEBUG
-    gtSeqNum = 0;
-#endif
-}
-
-inline GenTree* Compiler::gtNewCastNode(var_types typ, GenTree* op1, var_types castType)
-{
-    GenTree* tree           = gtNewOperNode(GT_CAST, typ, op1);
-    tree->gtCast.gtCastType = castType;
-}
-
-inline GenTree* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, var_types castType)
-{
-    return gtNewCastNode(typ, op1, castType);
-}
-
-/*****************************************************************************/
-#endif // SMALL_TREE_NODES
 /*****************************************************************************/
 
 /*****************************************************************************/
