@@ -20,7 +20,7 @@ namespace System.Net.Http.Functional.Tests
 
     [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core.")]
-    public abstract class DiagnosticsTest : HttpClientTestBase
+    public abstract class DiagnosticsTest : HttpClientHandlerTestBase
     {
         [Fact]
         public static void EventSource_ExistsWithCorrectId()

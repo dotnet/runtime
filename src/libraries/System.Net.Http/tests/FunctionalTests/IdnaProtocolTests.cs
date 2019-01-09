@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class IdnaProtocolTests : HttpClientTestBase
+    public abstract class IdnaProtocolTests : HttpClientHandlerTestBase
     {
         protected abstract bool SupportsIdna { get; }
 

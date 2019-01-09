@@ -26,7 +26,7 @@ namespace System.Net.Http.Functional.Tests
 
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
-    public abstract class HttpClientHandlerTest : HttpClientTestBase
+    public abstract class HttpClientHandlerTest : HttpClientHandlerTestBase
     {
         readonly ITestOutputHelper _output;
         private const string ExpectedContent = "Test content";
