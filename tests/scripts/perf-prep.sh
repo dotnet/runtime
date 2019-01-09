@@ -7,7 +7,7 @@ function print_usage {
     echo 'Typical command line:'
     echo ''
     echo 'coreclr/tests/scripts/perf-perp.sh'
-    echo '    --branch="dotnet_coreclr"'
+    echo '    --repo="dotnet_coreclr"'
     echo ''
     echo 'Required arguments:'
     echo '  --branch=<path>             : branch where coreclr/corefx/test bits are copied from (e.g. dotnet_coreclr).'
@@ -21,7 +21,8 @@ readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
 # Argument variables
 perfArch="x64"
 perfConfig="Release"
-perfBranch=
+perfBranch="master"
+perfRepo=
 throughput=0
 nocorefx=0
 
@@ -31,6 +32,9 @@ do
         -h|--help)
             print_usage
             exit $EXIT_CODE_SUCCESS
+            ;;
+        --repo=*)
+            perfRepo=${i#*=}
             ;;
         --branch=*)
             perfBranch=${i#*=}
@@ -52,7 +56,8 @@ do
     esac
 done
 
-perfBranch="dotnet_coreclr"
+perfRepo="dotnet_coreclr"
+echo "repo = $perfRepo"
 echo "branch = $perfBranch"
 echo "architecture = $perfArch"
 echo "configuration = $perfConfig"
@@ -116,7 +121,7 @@ else
 
     if [ ! -d "bin/tests/Windows_NT.$perfArch.$perfConfig" ]; then
         echo "Downloading tests"
-        curl https://ci.dot.net/job/$perfBranch/job/master/job/release_windows_nt/lastSuccessfulBuild/artifact/bin/tests/tests.zip -o tests.zip
+        curl https://ci.dot.net/job/$perfRepo/job/$perfBranch/job/release_windows_nt/lastSuccessfulBuild/artifact/bin/tests/tests.zip -o tests.zip
         echo "unzip tests to ./bin/tests/Windows_NT.$perfArch.$perfConfig"
         unzip -q -o tests.zip -d ./bin/tests/Windows_NT.$perfArch.$perfConfig || exit 0
     fi
