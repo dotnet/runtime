@@ -28,23 +28,23 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public void FormatDescription()
+        [InlineData("System")]
+        [InlineData("Application")]
+        public void FormatDescription(string log)
         {
             if (PlatformDetection.IsWindows7) // Null events in PowerShell log
                 return;
-            var query = new EventLogQuery("Application", PathType.LogName, "*[System]") { ReverseDirection = true };
-            var eventLog = new EventLogReader(query, Helpers.GetBookmark("Application", PathType.LogName));
-            using (eventLog)
+            var query = new EventLogQuery(log, PathType.LogName, "*[System]") { ReverseDirection = true };
+            using (var eventLog = new EventLogReader(query, Helpers.GetBookmark(log, PathType.LogName)))
             {
-                using (var record = (EventLogRecord)eventLog.ReadEvent())
+                using (EventRecord record = eventLog.ReadEvent())
                 {
-                    Assert.Throws<EventLogNotFoundException>(() => record.FormatDescription(new[] {"dummy"}));
-                    Assert.Null(record.FormatDescription());
-                    Assert.Throws<EventLogNotFoundException>(() => ((EventRecord)record).FormatDescription(new[] {"dummy"}));
-                    Assert.Null(((EventRecord)record).FormatDescription(null));
-                    Assert.Null(((EventRecord)record).FormatDescription());
+                    Assert.IsType<EventLogRecord>(record);
+                    string description = record.FormatDescription();
+                    Assert.Equal(description, record.FormatDescription(null));
+                    Assert.Equal(description, record.FormatDescription(new List<object>()));
                 }
             }
         }

@@ -292,7 +292,14 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 if (theValues.Length == i)
                     Array.Resize(ref theValues, i + 1);
-                theValues[i] = o.ToString();
+                if (o is EventProperty elp)
+                {
+                    theValues[i] = elp.Value.ToString();
+                }
+                else
+                {
+                    theValues[i] = o.ToString();
+                }
                 i++;
             }
 
