@@ -341,10 +341,15 @@ namespace System
             return result;
         }
 
-        // TODO: Expose publicly: https://github.com/dotnet/corefx/issues/34330.
-        internal static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1)
+        public static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1)
         {
-            string result = FastAllocateString(checked(str0.Length + str1.Length));
+            int length = checked(str0.Length + str1.Length);
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(length);
             Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
 
             str0.CopyTo(resultSpan);
@@ -353,10 +358,15 @@ namespace System
             return result;
         }
 
-        // TODO: Expose publicly: https://github.com/dotnet/corefx/issues/34330.
-        internal static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2)
+        public static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2)
         {
-            string result = FastAllocateString(checked(str0.Length + str1.Length + str2.Length));
+            int length = checked(str0.Length + str1.Length + str2.Length);
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(length);
             Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
 
             str0.CopyTo(resultSpan);
@@ -370,10 +380,15 @@ namespace System
             return result;
         }
 
-        // TODO: Expose publicly: https://github.com/dotnet/corefx/issues/34330.
-        internal static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2, ReadOnlySpan<char> str3)
+        public static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2, ReadOnlySpan<char> str3)
         {
-            string result = FastAllocateString(checked(str0.Length + str1.Length + str2.Length + str3.Length));
+            int length = checked(str0.Length + str1.Length + str2.Length + str3.Length);
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(length);
             Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
 
             str0.CopyTo(resultSpan);
