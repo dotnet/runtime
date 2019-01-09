@@ -126,17 +126,18 @@ void DynamicMethodTable::Destroy()
     }
     CONTRACTL_END;
 
-    // Go over all DynamicMethodDescs and make sure that they are destroyed
-
-    if (m_pMethodTable != NULL)
+#if _DEBUG
+    // This method should be called only for collectible types or for non-collectible ones
+    // at the construction time when there are no DynamicMethodDesc instances added to the
+    // DynamicMethodTable yet (from the DynamicMethodTable::CreateDynamicMethodTable in case
+    // there were two threads racing to construct the instance for the thread that lost
+    // the race)
+    if (m_pMethodTable != NULL && !m_pMethodTable->GetLoaderAllocator()->IsCollectible())
     {
         MethodTable::IntroducedMethodIterator it(m_pMethodTable);
-        for (; it.IsValid(); it.Next())
-        {
-            DynamicMethodDesc *pMD = (DynamicMethodDesc*)it.GetMethodDesc();
-            pMD->Destroy(TRUE /* fDomainUnload */);
-        }
+        _ASSERTE(!it.IsValid());
     }
+#endif
 
     m_Crst.Destroy();
     LOG((LF_BCL, LL_INFO10, "Level1 - DynamicMethodTable destroyed {0x%p}\n", this));
@@ -155,7 +156,7 @@ void DynamicMethodTable::AddMethodsToList()
 
     AllocMemTracker amt;
 
-    LoaderHeap* pHeap = m_pDomain->GetHighFrequencyHeap();
+    LoaderHeap* pHeap = m_pMethodTable->GetLoaderAllocator()->GetHighFrequencyHeap();
     _ASSERTE(pHeap);
 
     //
@@ -836,11 +837,11 @@ void HostCodeHeap::FreeMemForCode(void * codeStart)
 //
 // Implementation for DynamicMethodDesc declared in method.hpp
 //
-void DynamicMethodDesc::Destroy(BOOL fDomainUnload)
+void DynamicMethodDesc::Destroy()
 {
     CONTRACTL
     {
-        if (fDomainUnload) NOTHROW; else THROWS;
+        THROWS;
         GC_TRIGGERS;
         MODE_ANY;
     }
@@ -862,9 +863,9 @@ void DynamicMethodDesc::Destroy(BOOL fDomainUnload)
         m_pszMethodName.SetValueMaybeNull(NULL);
     }
 
-    GetLCGMethodResolver()->Destroy(fDomainUnload);
+    GetLCGMethodResolver()->Destroy();
 
-    if (pLoaderAllocator->IsCollectible() && !fDomainUnload)
+    if (pLoaderAllocator->IsCollectible())
     {
         if (pLoaderAllocator->Release())
         {
@@ -931,7 +932,7 @@ void LCGMethodResolver::RecycleIndCells()
     }
 }
 
-void LCGMethodResolver::Destroy(BOOL fDomainUnload)
+void LCGMethodResolver::Destroy()
 {
     CONTRACTL {
         NOTHROW;
@@ -971,63 +972,53 @@ void LCGMethodResolver::Destroy(BOOL fDomainUnload)
         }
     }
 
-
-    if (!fDomainUnload)
-    {
-        // No need to recycle if the domain is unloading.
-        // Note that we need to do this before m_jitTempData is deleted
-        RecycleIndCells();
-    }
+    // Note that we need to do this before m_jitTempData is deleted
+    RecycleIndCells();
 
     m_jitMetaHeap.Delete();
     m_jitTempData.Delete();
 
 
-    // Per-appdomain resources has been reclaimed already if the appdomain is being unloaded. Do not try to
-    // release them again.
-    if (!fDomainUnload)
+    if (m_recordCodePointer)
     {
-        if (m_recordCodePointer)
-        {
 #if defined(_TARGET_AMD64_)
-            // Remove the unwind information (if applicable)
-            UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)m_recordCodePointer);
+        // Remove the unwind information (if applicable)
+        UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)m_recordCodePointer);
 #endif // defined(_TARGET_AMD64_)
 
-            HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)m_recordCodePointer);
-            LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", this, pHeap, *(size_t*)pHeap));
-            pHeap->m_pJitManager->FreeCodeMemory(pHeap, m_recordCodePointer);
+        HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)m_recordCodePointer);
+        LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", this, pHeap, *(size_t*)pHeap));
+        pHeap->m_pJitManager->FreeCodeMemory(pHeap, m_recordCodePointer);
 
-            m_recordCodePointer = NULL;
-        }
-
-        if (m_pJumpStubCache != NULL)
-        {
-            JumpStubBlockHeader* current = m_pJumpStubCache->m_pBlocks;            
-            while (current)
-            {
-                JumpStubBlockHeader* next = current->m_next;
-
-                HostCodeHeap *pHeap = current->GetHostCodeHeap();
-                LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", current, pHeap, *(size_t*)pHeap));
-                pHeap->m_pJitManager->FreeCodeMemory(pHeap, current);
-
-                current = next;
-            }
-            m_pJumpStubCache->m_pBlocks = NULL;
-
-            delete m_pJumpStubCache;
-            m_pJumpStubCache = NULL;
-        }
-
-        if (m_managedResolver)
-        {
-            ::DestroyLongWeakHandle(m_managedResolver);
-            m_managedResolver = NULL;
-        }
-
-        m_DynamicMethodTable->LinkMethod(m_pDynamicMethod);
+        m_recordCodePointer = NULL;
     }
+
+    if (m_pJumpStubCache != NULL)
+    {
+        JumpStubBlockHeader* current = m_pJumpStubCache->m_pBlocks;  
+        while (current)
+        {
+            JumpStubBlockHeader* next = current->m_next;
+
+            HostCodeHeap *pHeap = current->GetHostCodeHeap();
+            LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", current, pHeap, *(size_t*)pHeap));
+            pHeap->m_pJitManager->FreeCodeMemory(pHeap, current);
+
+            current = next;
+        }
+        m_pJumpStubCache->m_pBlocks = NULL;
+
+        delete m_pJumpStubCache;
+        m_pJumpStubCache = NULL;
+    }
+
+    if (m_managedResolver)
+    {
+        ::DestroyLongWeakHandle(m_managedResolver);
+        m_managedResolver = NULL;
+    }
+
+    m_DynamicMethodTable->LinkMethod(m_pDynamicMethod);
 }
 
 void LCGMethodResolver::FreeCompileTimeState()

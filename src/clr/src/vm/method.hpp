@@ -2423,7 +2423,7 @@ public:
     //
     // following implementations defined in DynamicMethod.cpp
     //
-    void Destroy(BOOL fDomainUnload = FALSE);
+    void Destroy();
 };
 
 
