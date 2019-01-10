@@ -822,8 +822,8 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    attr.Value = _r.LookupNamespace(attr.Value.Substring(0, colon)) + ":" +
-                        attr.Value.Substring(colon + 1);
+                    attr.Value = string.Concat(_r.LookupNamespace(attr.Value.Substring(0, colon)), ":",
+                        attr.Value.AsSpan(colon + 1));
                 }
             }
             return;

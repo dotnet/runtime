@@ -535,7 +535,7 @@ namespace System.Data
                 tempColumnName = "_x0058_"; // upper case Xml... -> _x0058_ml...
             }
 
-            tempColumnName += col.ColumnName.Substring(1);
+            tempColumnName = string.Concat(tempColumnName, col.ColumnName.AsSpan(1));
 
             if (nameTable.Get(tempColumnName) == null)
             {

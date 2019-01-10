@@ -207,7 +207,7 @@ namespace System.Net
                         {
                             int index = sendCommand.IndexOf(' ');
                             if (index != -1)
-                                sendCommand = sendCommand.Substring(0, index) + " ********";
+                                sendCommand = string.Concat(sendCommand.AsSpan(0, index), " ********");
                         }
                         if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Sending command {sendCommand}");
                     }
