@@ -27,13 +27,6 @@ using Internal.Win32;
 
 namespace System
 {
-    public enum EnvironmentVariableTarget
-    {
-        Process = 0,
-        User = 1,
-        Machine = 2,
-    }
-
     internal static partial class Environment
     {
         // Assume the following constants include the terminating '\0' - use <, not <=
