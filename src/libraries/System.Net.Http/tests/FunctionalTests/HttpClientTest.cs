@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Test.Common;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,12 +11,12 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract partial class HttpClientTest : HttpClientTestBase
+    public sealed partial class HttpClientTest
     {
         [Fact]
         public void Dispose_MultipleTimes_Success()
         {
-            HttpClient client = CreateHttpClient();
+            var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage())));
             client.Dispose();
             client.Dispose();
         }
@@ -27,7 +24,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void DefaultRequestHeaders_Idempotent()
         {
-            using (HttpClient client = CreateHttpClient())
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 Assert.NotNull(client.DefaultRequestHeaders);
                 Assert.Same(client.DefaultRequestHeaders, client.DefaultRequestHeaders);
@@ -37,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void BaseAddress_Roundtrip_Equal()
         {
-            using (HttpClient client = CreateHttpClient())
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 Assert.Null(client.BaseAddress);
 
@@ -53,7 +50,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void BaseAddress_InvalidUri_Throws()
         {
-            using (HttpClient client = CreateHttpClient())
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 AssertExtensions.Throws<ArgumentException>("value", () => client.BaseAddress = new Uri("ftp://onlyhttpsupported"));
                 AssertExtensions.Throws<ArgumentException>("value", () => client.BaseAddress = new Uri("/onlyabsolutesupported", UriKind.Relative));
@@ -63,7 +60,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Timeout_Roundtrip_Equal()
         {
-            using (HttpClient client = CreateHttpClient())
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
                 Assert.Equal(Timeout.InfiniteTimeSpan, client.Timeout);
@@ -76,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Timeout_OutOfRange_Throws()
         {
-            using (HttpClient client = CreateHttpClient())
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => client.Timeout = TimeSpan.FromSeconds(-2));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => client.Timeout = TimeSpan.FromSeconds(0));
@@ -87,7 +84,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void MaxResponseContentBufferSize_Roundtrip_Equal()
         {
-            using (HttpClient client = CreateHttpClient())
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 client.MaxResponseContentBufferSize = 1;
                 Assert.Equal(1, client.MaxResponseContentBufferSize);
@@ -100,7 +97,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void MaxResponseContentBufferSize_OutOfRange_Throws()
         {
-            using (HttpClient client = CreateHttpClient())
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => client.MaxResponseContentBufferSize = -1);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => client.MaxResponseContentBufferSize = 0);
@@ -120,25 +117,25 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000, 1000, false)]
         public async Task MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(int maxSize, int contentLength, bool exceptionExpected)
         {
-            using (HttpClient client = CreateHttpClient())
+            var content = new CustomContent(async s =>
+            {
+                await s.WriteAsync(TestHelper.GenerateRandomContent(contentLength));
+            });
+
+            var handler = new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage() { Content = content }));
+
+            using (var client = new HttpClient(handler))
             {
                 client.MaxResponseContentBufferSize = maxSize;
 
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                if (exceptionExpected)
                 {
-                    Task<string> getTask = client.GetStringAsync(url);
-                    Task serverTask = server.AcceptConnectionSendResponseAndCloseAsync(content: new string('s', contentLength));
-                    Task bothTasks = TestHelper.WhenAllCompletedOrAnyFailed(getTask, serverTask);
-
-                    if (exceptionExpected)
-                    {
-                        await Assert.ThrowsAsync<HttpRequestException>(() => bothTasks);
-                    }
-                    else
-                    {
-                        await bothTasks;
-                    }
-                });
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(CreateFakeUri()));
+                }
+                else
+                {
+                    await client.GetAsync(CreateFakeUri());
+                }
             }
         }
 
@@ -159,7 +156,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("/something.html")]
         public void GetAsync_NoBaseAddress_InvalidUri_ThrowsException(string uri)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
                 Assert.Throws<InvalidOperationException>(() => { client.GetAsync(uri == null ? null : new Uri(uri, UriKind.RelativeOrAbsolute)); });
             }
@@ -249,16 +246,6 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Same(e, await Assert.ThrowsAsync<FormatException>(() => client.GetStringAsync(CreateFakeUri())));
                 Assert.Same(e, await Assert.ThrowsAsync<FormatException>(() => client.GetByteArrayAsync(CreateFakeUri())));
                 Assert.Same(e, await Assert.ThrowsAsync<FormatException>(() => client.GetStreamAsync(CreateFakeUri())));
-            }
-        }
-
-        [Fact]
-        public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
-        {
-            using (HttpClient client = CreateHttpClient())
-            {
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(CreateFakeUri()));
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(CreateFakeUri()));
             }
         }
 
@@ -366,7 +353,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Dispose_UseAfterDispose_Throws()
         {
-            HttpClient client = CreateHttpClient();
+            var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage())));
             client.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => client.BaseAddress = null);
@@ -411,41 +398,19 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task SendAsync_UserAgent_CorrectlyWritten()
-        {
-            string userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.18 Safari/537.36";
-
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using (var client = CreateHttpClient())
-                {
-                    var message = new HttpRequestMessage(HttpMethod.Get, uri);
-                    message.Headers.TryAddWithoutValidation("User-Agent", userAgent);
-                    (await client.SendAsync(message).ConfigureAwait(false)).Dispose();
-                }
-            }, server => server.AcceptConnectionAsync(async connection =>
-            {
-                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"User-Agent: {userAgent}", headers);
-            }));
-        }
-
-        [Fact]
         [OuterLoop("One second delay in getting server's response")]
-        public async Task Timeout_SetTo30AndGetResponseFromLoopbackQuickly_Success()
+        public async Task Timeout_SetTo30AndGetResponseQuickly_Success()
         {
-            using (HttpClient client = CreateHttpClient())
+            var handler = new CustomResponseHandler(async (r, c) =>
+            {
+                await Task.Delay(TimeSpan.FromSeconds(0.5));
+                return new HttpResponseMessage();
+            });
+
+            using (var client = new HttpClient(handler))
             {
                 client.Timeout = TimeSpan.FromSeconds(30);
-
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
-                {
-                    Task getTask = client.GetStringAsync(url);
-                    await Task.Delay(TimeSpan.FromSeconds(.5));
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        getTask,
-                        server.AcceptConnectionSendResponseAndCloseAsync());
-                });
+                await client.GetAsync(CreateFakeUri());
             }
         }
 

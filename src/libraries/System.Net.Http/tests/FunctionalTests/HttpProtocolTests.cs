@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpProtocolTests : HttpClientTestBase
+    public abstract class HttpProtocolTests : HttpClientHandlerTestBase
     {
         protected virtual Stream GetStream(Stream s) => s;
         protected virtual Stream GetStream_ClientDisconnectOk(Stream s) => s;

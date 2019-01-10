@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class HttpClientHandlerTest_AutoRedirect : HttpClientTestBase
+    public abstract class HttpClientHandlerTest_AutoRedirect : HttpClientHandlerTestBase
     {
         readonly ITestOutputHelper _output;
         private const string ExpectedContent = "Test content";
