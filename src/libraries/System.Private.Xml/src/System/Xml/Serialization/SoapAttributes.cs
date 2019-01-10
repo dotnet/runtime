@@ -18,10 +18,6 @@ namespace System.Xml.Serialization
         Attribute = 0x8,
     }
 
-    /// <include file='doc\SoapAttributes.uex' path='docs/doc[@for="SoapAttributes"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class SoapAttributes
     {
         private bool _soapIgnore;
@@ -31,18 +27,10 @@ namespace System.Xml.Serialization
         private SoapEnumAttribute _soapEnum;
         private object _soapDefaultValue = null;
 
-        /// <include file='doc\SoapAttributes.uex' path='docs/doc[@for="SoapAttributes.SoapAttributes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public SoapAttributes()
         {
         }
 
-        /// <include file='doc\SoapAttributes.uex' path='docs/doc[@for="SoapAttributes.SoapAttributes1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public SoapAttributes(ICustomAttributeProvider provider)
         {
             object[] attrs = provider.GetCustomAttributes(false);
@@ -102,60 +90,36 @@ namespace System.Xml.Serialization
             return SoapFlags;
         }
 
-        /// <include file='doc\SoapAttributes.uex' path='docs/doc[@for="SoapAttributes.SoapType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public SoapTypeAttribute SoapType
         {
             get { return _soapType; }
             set { _soapType = value; }
         }
 
-        /// <include file='doc\SoapAttributes.uex' path='docs/doc[@for="SoapAttributes.SoapEnum"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public SoapEnumAttribute SoapEnum
         {
             get { return _soapEnum; }
             set { _soapEnum = value; }
         }
 
-        /// <include file='doc\SoapAttributes.uex' path='docs/doc[@for="SoapAttributes.SoapIgnore"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public bool SoapIgnore
         {
             get { return _soapIgnore; }
             set { _soapIgnore = value; }
         }
 
-        /// <include file='doc\SoapAttributes.uex' path='docs/doc[@for="SoapAttributes.SoapElement"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public SoapElementAttribute SoapElement
         {
             get { return _soapElement; }
             set { _soapElement = value; }
         }
 
-        /// <include file='doc\SoapAttributes.uex' path='docs/doc[@for="SoapAttributes.SoapAttribute"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public SoapAttributeAttribute SoapAttribute
         {
             get { return _soapAttribute; }
             set { _soapAttribute = value; }
         }
 
-        /// <include file='doc\SoapAttributes.uex' path='docs/doc[@for="SoapAttributes.SoapDefaultValue"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public object SoapDefaultValue
         {
             get { return _soapDefaultValue; }

@@ -68,7 +68,7 @@ namespace System.Xml.Linq
 
         public override void WriteCharEntity(char ch)
         {
-            AddString(new string(ch, 1));
+            AddString(char.ToString(ch));
         }
 
         public override void WriteChars(char[] buffer, int index, int count)
@@ -190,7 +190,8 @@ namespace System.Xml.Linq
 
         public override void WriteSurrogateCharEntity(char lowCh, char highCh)
         {
-            AddString(new string(new char[] { highCh, lowCh }));
+            ReadOnlySpan<char> entity = stackalloc char[] { highCh, lowCh };
+            AddString(new string(entity));
         }
 
         public override void WriteValue(DateTimeOffset value)

@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.NativeCrypto;
-using System.ComponentModel;
-using System.IO;
-using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {

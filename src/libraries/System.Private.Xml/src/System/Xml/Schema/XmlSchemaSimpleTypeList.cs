@@ -6,20 +6,12 @@ namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaSimpleTypeList.uex' path='docs/doc[@for="XmlSchemaSimpleTypeList"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaSimpleTypeList : XmlSchemaSimpleTypeContent
     {
         private XmlQualifiedName _itemTypeName = XmlQualifiedName.Empty;
         private XmlSchemaSimpleType _itemType;
         private XmlSchemaSimpleType _baseItemType; //Compiled
 
-        /// <include file='doc\XmlSchemaSimpleTypeList.uex' path='docs/doc[@for="XmlSchemaSimpleTypeList.ItemTypeName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("itemType")]
         public XmlQualifiedName ItemTypeName
         {
@@ -27,10 +19,6 @@ namespace System.Xml.Schema
             set { _itemTypeName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
-        /// <include file='doc\XmlSchemaSimpleTypeList.uex' path='docs/doc[@for="XmlSchemaSimpleTypeList.BaseType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("simpleType", typeof(XmlSchemaSimpleType))]
         public XmlSchemaSimpleType ItemType
         {
@@ -39,7 +27,6 @@ namespace System.Xml.Schema
         }
 
         //Compiled
-        /// <include file='doc\XmlSchemaSimpleTypeList.uex' path='docs/doc[@for="XmlSchemaSimpleTypeList.BaseItemType"]/*' />
         [XmlIgnore]
         public XmlSchemaSimpleType BaseItemType
         {

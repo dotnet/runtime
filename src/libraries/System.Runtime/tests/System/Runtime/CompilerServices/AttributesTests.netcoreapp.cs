@@ -9,6 +9,16 @@ namespace System.Runtime.CompilerServices.Tests
     public static partial class AttributesTests
     {
         [Fact]
+        public static void AsyncMethodBuilderAttributeTests()
+        {
+            var attr1 = new AsyncMethodBuilderAttribute(null);
+            Assert.Null(attr1.BuilderType);
+
+            var attr2 = new AsyncMethodBuilderAttribute(typeof(AttributesTests));
+            Assert.Equal(typeof(AttributesTests), attr2.BuilderType);
+        }
+
+        [Fact]
         public static void IsByRefLikeAttributeTests()
         {
             new IsByRefLikeAttribute();

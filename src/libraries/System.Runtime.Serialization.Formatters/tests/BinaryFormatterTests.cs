@@ -563,7 +563,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // These types are unstable during serialization and produce different blobs.
             if (obj is WeakReference<Point> ||
                 obj is Collections.Specialized.HybridDictionary ||
-                obj is Color)
+                obj is Color ||
+                obj.GetType().FullName == "System.Collections.SortedList+SyncSortedList")
             {
                 return;
             }

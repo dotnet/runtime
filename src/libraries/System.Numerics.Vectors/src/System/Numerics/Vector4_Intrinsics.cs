@@ -63,6 +63,7 @@ namespace System.Numerics
         /// <param name="value">The vector to use as the X and Y components.</param>
         /// <param name="z">The Z component.</param>
         /// <param name="w">The W component.</param>
+        [Intrinsic]
         public Vector4(Vector2 value, float z, float w)
         {
             X = value.X;
@@ -76,6 +77,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The vector to use as the X, Y, and Z components.</param>
         /// <param name="w">The W component.</param>
+        [Intrinsic]
         public Vector4(Vector3 value, float w)
         {
             X = value.X;
@@ -89,6 +91,7 @@ namespace System.Numerics
         /// <summary>
         /// Copies the contents of the vector into the given array.
         /// </summary>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(float[] array)
         {
@@ -337,6 +340,7 @@ namespace System.Numerics
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
         /// <returns>True if the vectors are not equal; False if they are equal.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector4 left, Vector4 right)
         {

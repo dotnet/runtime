@@ -11,7 +11,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
     ''' as to whether we Option Compare Text is defined or not
     ''' </summary>
     ''' <remarks>
-    ''' WARNING: Do not rename this attribute or move it out of this 
+    ''' WARNING: Do not rename this attribute or move it out of this
     ''' module.  Otherwise there are compiler changes that will
     ''' need to be made!
     ''' </remarks>

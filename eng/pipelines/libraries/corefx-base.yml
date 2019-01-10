@@ -17,7 +17,7 @@ parameters:
   # EACH JOB SHOULD INCLUDE THE FOLLOWING PROPERTIES (ASIDE FROM THE REQUIRED ONES IN THE JOB SCHEMA)
 
   # Required: as part of the strategy matrix, the following variables should be defined
-  #     _configuration: Debug | Release
+  #     _BuildConfig: Debug | Release
   #     _architecture: x64 | x86 | arm | arm64
   #     _framework: (netcoreapp, netfx, uap, etc).
   #     _helixQueues: Windows.Amd64 (Only needed if submitToHelix -> true.) -- Queues should be separated by + if multiple.
@@ -125,6 +125,10 @@ jobs:
           ${{ if and(ne(property.key, 'job'), ne(property.key, 'variables'), ne(property.key, 'enableMicrobuild')) }}:
             ${{ property.key }}: ${{ property.value }}
 
+        # enable helix telemetry -- we only send telemetry during official builds
+        enableTelemetry: ${{ parameters.isOfficialBuild }}
+        helixRepo: dotnet/corefx
+
         name: ${{ job.job }}
         workspace:
           clean: all
@@ -144,7 +148,7 @@ jobs:
                     $(_commonArguments)
                     -framework $(_framework)
                     /p:ArchGroup=$(_architecture)
-                    /p:ConfigurationGroup=$(_configuration)
+                    /p:ConfigurationGroup=$(_BuildConfig)
                     /p:SkipTests=$(_skipTests)
                     /p:Outerloop=$(_outerloop)
                     /p:ArchiveTests=${{ job.submitToHelix }}
@@ -161,7 +165,7 @@ jobs:
               parameters:
                 targetOS: ${{ parameters.targetOS }}
                 archGroup: $(_architecture)
-                configuration: $(_configuration)
+                configuration: $(_BuildConfig)
                 helixQueues: $(_helixQueues)
                 msbuildScript: $(_msbuildCommand)
                 framework: $(_framework)
@@ -172,15 +176,17 @@ jobs:
                   officialBuildId: $(Build.BuildNumber)
 
                 ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-                  creator: $(Build.RequestedFor)
-                  isExternal: true
+                  # TODO: SET Creator and isExternal: true whenever there is a viable way to get github user
+                  # that created the PR for the test telemetry to have the correct owner.
+                  # creator: $(Build.RequestedFor)
+                  isExternal: false
                   waitForCompletion: true
 
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - task: PublishBuildArtifacts@1
               displayName: Publish packages to artifacts container
               inputs:
-                pathToPublish: $(Build.SourcesDirectory)/artifacts/packages/$(_configuration)
+                pathToPublish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)
                 artifactName: packages
                 artifactType: container
               condition: and(succeeded(), ne(variables['_skipPublishPackages'], 'true'))

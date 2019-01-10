@@ -22,9 +22,9 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     [StructLayout(LayoutKind.Explicit, Size = 16)]
-#if !CORECLR && !ES_BUILD_PN    
+#if ES_BUILD_STANDALONE
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#endif // !CORECLR && !ES_BUILD_PN
+#endif
 
     /*
      EventDescriptor was public in the separate System.Diagnostics.Tracing assembly(pre NS2.0), 

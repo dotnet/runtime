@@ -21,6 +21,7 @@ namespace System.Net.Test.Common
         private Http2Options _options;
         private Uri _uri;
         private bool _ignoreSettingsAck;
+        private bool _ignoreWindowUpdates;
 
         public Uri Address
         {
@@ -120,6 +121,11 @@ namespace System.Net.Test.Common
                 return await ReadFrameAsync(timeout);
             }
 
+            if (_ignoreWindowUpdates && header.Type == FrameType.WindowUpdate)
+            {
+                return await ReadFrameAsync(timeout);
+            }
+
             // Construct the correct frame type and return it.
             switch (header.Type)
             {
@@ -133,6 +139,8 @@ namespace System.Net.Test.Common
                     return RstStreamFrame.ReadFrom(header, data);
                 case FrameType.Ping:
                     return PingFrame.ReadFrom(header, data);
+                case FrameType.GoAway:
+                    return GoAwayFrame.ReadFrom(header, data);
                 default:
                     return header;
             }
@@ -182,6 +190,21 @@ namespace System.Net.Test.Common
             return System.Text.Encoding.UTF8.GetString(prefix, 0, prefix.Length);
         }
 
+        public void ExpectSettingsAck()
+        {
+            // The timing of when we receive the settings ack is not guaranteed.
+            // To simplify frame processing, just record that we are expecting one,
+            // and then filter it out in ReadFrameAsync above.
+
+            Assert.False(_ignoreSettingsAck);
+            _ignoreSettingsAck = true;
+        }
+
+        public void IgnoreWindowUpdates()
+        {
+            _ignoreWindowUpdates = true;
+        }
+
         // Accept connection and handle connection setup
         public async Task EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
         {
@@ -208,8 +231,7 @@ namespace System.Net.Test.Common
             await WriteFrameAsync(settingsAck).ConfigureAwait(false);
 
             // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
-            // To simplify frame processing, set this flag to true so we will ignore the next SETTINGS ACK in ReadNextFrame.
-            _ignoreSettingsAck = true;
+            ExpectSettingsAck();
         }
 
         public async Task<int> ReadRequestHeaderAsync()
@@ -219,6 +241,14 @@ namespace System.Net.Test.Common
             Assert.Equal(FrameType.Headers, frame.Type);
             Assert.Equal(FrameFlags.EndHeaders | FrameFlags.EndStream, frame.Flags);
             return frame.StreamId;
+        }
+
+        public async Task SendDefaultResponseHeadersAsync(int streamId)
+        {
+            byte[] headers = new byte[] { 0x88 };   // Encoding for ":status: 200"
+
+            HeadersFrame headersFrame = new HeadersFrame(headers, FrameFlags.EndHeaders, 0, 0, 0, streamId);
+            await WriteFrameAsync(headersFrame).ConfigureAwait(false);
         }
 
         public async Task SendDefaultResponseAsync(int streamId)

@@ -375,7 +375,8 @@ namespace System.IO
             if (normalized)
                 return path;
 
-            StringBuilder builder = new StringBuilder(path.Length);
+            Span<char> initialBuffer = stackalloc char[MaxShortPath];
+            ValueStringBuilder builder = new ValueStringBuilder(initialBuffer);
 
             int start = 0;
             if (IsDirectorySeparator(path[start]))

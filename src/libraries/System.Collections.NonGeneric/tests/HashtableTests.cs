@@ -1194,6 +1194,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Changed behavior
     public class Hashtable_SyncRootTests
     {
         private Hashtable _hashDaughter;
@@ -1207,16 +1208,16 @@ namespace System.Collections.Tests
             var hash1 = new Hashtable();
             var hash2 = new Hashtable();
 
-            Assert.NotEqual(hash1.SyncRoot, hash2.SyncRoot);
-            Assert.Equal(hash1.SyncRoot.GetType(), typeof(object));
+            Assert.NotSame(hash1.SyncRoot, hash2.SyncRoot);
+            Assert.Equal(hash1.SyncRoot.GetType(), typeof(Hashtable));
 
             // Cloned hashtables have different SyncRoots
             hash1 = new Hashtable();
             hash2 = Hashtable.Synchronized(hash1);
             Hashtable hash3 = (Hashtable)hash2.Clone();
 
-            Assert.NotEqual(hash2.SyncRoot, hash3.SyncRoot);
-            Assert.NotEqual(hash1.SyncRoot, hash3.SyncRoot);
+            Assert.NotSame(hash2.SyncRoot, hash3.SyncRoot);
+            Assert.NotSame(hash1.SyncRoot, hash3.SyncRoot);
 
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working
             // scenario we have in mind.
@@ -1236,11 +1237,11 @@ namespace System.Collections.Tests
             _hashGrandDaughter = Hashtable.Synchronized(hashSon);
             _hashDaughter = Hashtable.Synchronized(hashMother);
 
+            Assert.Same(hashSon.SyncRoot, hashMother.SyncRoot);
             Assert.Equal(hashSon.SyncRoot, hashMother.SyncRoot);
-            Assert.Equal(hashSon.SyncRoot, hashMother.SyncRoot);
-            Assert.Equal(_hashGrandDaughter.SyncRoot, hashMother.SyncRoot);
-            Assert.Equal(_hashDaughter.SyncRoot, hashMother.SyncRoot);
-            Assert.Equal(hashSon.SyncRoot, hashMother.SyncRoot);
+            Assert.Same(_hashGrandDaughter.SyncRoot, hashMother.SyncRoot);
+            Assert.Same(_hashDaughter.SyncRoot, hashMother.SyncRoot);
+            Assert.Same(hashSon.SyncRoot, hashMother.SyncRoot);
 
             // We are going to rumble with the Hashtables with some threads
             int iNumberOfWorkers = 30;

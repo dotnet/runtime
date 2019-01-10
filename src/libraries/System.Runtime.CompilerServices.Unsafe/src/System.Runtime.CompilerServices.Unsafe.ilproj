@@ -31,16 +31,16 @@
     <PropertyGroup>
       <_IlasmDir>$(ToolsDir)\ilasm</_IlasmDir>
 
-      <_IldasmCommand>$(_IlasmDir)\ildasm.exe</_IldasmCommand>
-      <_IldasmCommand>$(_IldasmCommand) $(ContractOutputPath)/$(MSBuildProjectName).dll</_IldasmCommand>
-      <_IldasmCommand>$(_IldasmCommand) /OUT=$(IntermediateOutputPath)/$(MSBuildProjectName).ref.il</_IldasmCommand>
+      <_IldasmCommand>"$(_IlasmDir)\ildasm.exe"</_IldasmCommand>
+      <_IldasmCommand>$(_IldasmCommand) "$(ContractOutputPath)/$(MSBuildProjectName).dll"</_IldasmCommand>
+      <_IldasmCommand>$(_IldasmCommand) /OUT="$(IntermediateOutputPath)/$(MSBuildProjectName).ref.il"</_IldasmCommand>
 
       <!-- Try to use cvtres.exe from the framework and fallback to the one that is on the PATH in case we can't find it -->
       <_CvtResCommand Condition="Exists('$(SystemRoot)\Microsoft.NET\Framework\v4.0.30319\cvtres.exe')">$(SystemRoot)\Microsoft.NET\Framework\v4.0.30319\cvtres.exe</_CvtResCommand>
       <_CvtResCommand Condition="'$(_CvtResCommand)' == ''">cvtres.exe</_CvtResCommand>
       <_CvtResCommand>$(_CvtResCommand) /MACHINE:x86</_CvtResCommand>
-      <_CvtResCommand>$(_CvtResCommand) /OUT:$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj</_CvtResCommand>
-      <_CvtResCommand>$(_CvtResCommand) $(IntermediateOutputPath)$(MSBuildProjectName).ref.res</_CvtResCommand>
+      <_CvtResCommand>$(_CvtResCommand) /OUT:"$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj"</_CvtResCommand>
+      <_CvtResCommand>$(_CvtResCommand) "$(IntermediateOutputPath)$(MSBuildProjectName).ref.res"</_CvtResCommand>
     </PropertyGroup>
 
     <ItemGroup>

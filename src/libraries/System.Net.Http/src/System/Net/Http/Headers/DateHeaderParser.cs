@@ -34,10 +34,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            string dateString = value;
+            ReadOnlySpan<char> dateString = value;
             if (index > 0)
             {
-                dateString = value.Substring(index);
+                dateString = value.AsSpan(index);
             }
 
             DateTimeOffset date;

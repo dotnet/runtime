@@ -24,14 +24,12 @@ namespace System.Xml.Schema
         FractionDigits,
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaFacet"]/*' />
     public abstract class XmlSchemaFacet : XmlSchemaAnnotated
     {
         private string _value;
         private bool _isFixed;
         private FacetType _facetType;
 
-        /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaFacet.Value"]/*' />
         [XmlAttribute("value")]
         public string Value
         {
@@ -39,7 +37,6 @@ namespace System.Xml.Schema
             set { _value = value; }
         }
 
-        /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaFacet.IsFixed"]/*' />
         [XmlAttribute("fixed"), DefaultValue(false)]
         public virtual bool IsFixed
         {
@@ -66,10 +63,8 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaNumericFacet"]/*' />
     public abstract class XmlSchemaNumericFacet : XmlSchemaFacet { }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaLengthFacet"]/*' />
     public class XmlSchemaLengthFacet : XmlSchemaNumericFacet
     {
         public XmlSchemaLengthFacet()
@@ -78,7 +73,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaMinLengthFacet"]/*' />
     public class XmlSchemaMinLengthFacet : XmlSchemaNumericFacet
     {
         public XmlSchemaMinLengthFacet()
@@ -87,7 +81,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaMaxLengthFacet"]/*' />
     public class XmlSchemaMaxLengthFacet : XmlSchemaNumericFacet
     {
         public XmlSchemaMaxLengthFacet()
@@ -96,7 +89,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaPatternFacet"]/*' />
     public class XmlSchemaPatternFacet : XmlSchemaFacet
     {
         public XmlSchemaPatternFacet()
@@ -105,7 +97,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaEnumerationFacet"]/*' />
     public class XmlSchemaEnumerationFacet : XmlSchemaFacet
     {
         public XmlSchemaEnumerationFacet()
@@ -114,7 +105,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaMinExclusiveFacet"]/*' />
     public class XmlSchemaMinExclusiveFacet : XmlSchemaFacet
     {
         public XmlSchemaMinExclusiveFacet()
@@ -123,7 +113,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaMinInclusiveFacet"]/*' />
     public class XmlSchemaMinInclusiveFacet : XmlSchemaFacet
     {
         public XmlSchemaMinInclusiveFacet()
@@ -132,7 +121,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaMaxExclusiveFacet"]/*' />
     public class XmlSchemaMaxExclusiveFacet : XmlSchemaFacet
     {
         public XmlSchemaMaxExclusiveFacet()
@@ -141,7 +129,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaMaxInclusiveFacet"]/*' />
     public class XmlSchemaMaxInclusiveFacet : XmlSchemaFacet
     {
         public XmlSchemaMaxInclusiveFacet()
@@ -150,7 +137,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaTotalDigitsFacet"]/*' />
     public class XmlSchemaTotalDigitsFacet : XmlSchemaNumericFacet
     {
         public XmlSchemaTotalDigitsFacet()
@@ -159,7 +145,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaFractionDigitsFacet"]/*' />
     public class XmlSchemaFractionDigitsFacet : XmlSchemaNumericFacet
     {
         public XmlSchemaFractionDigitsFacet()
@@ -168,7 +153,6 @@ namespace System.Xml.Schema
         }
     }
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaWhiteSpaceFacet"]/*' />
     public class XmlSchemaWhiteSpaceFacet : XmlSchemaFacet
     {
         public XmlSchemaWhiteSpaceFacet()

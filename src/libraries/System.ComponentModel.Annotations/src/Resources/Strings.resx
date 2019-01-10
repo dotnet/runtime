@@ -61,6 +61,9 @@
   <data name="ArgumentIsNullOrWhitespace" xml:space="preserve">
     <value>The argument '{0}' cannot be null, empty or contain only whitespace.</value>
   </data>
+  <data name="AssociatedMetadataTypeTypeDescriptor_MetadataTypeContainsUnknownProperties" xml:space="preserve">
+    <value>The associated metadata type for type '{0}' contains the following unknown properties or fields: {1}. Please make sure that the names of these members match the names of the properties on the main type.</value>
+  </data>
   <data name="AttributeStore_Unknown_Property" xml:space="preserve">
     <value>The type '{0}' does not contain a public property named '{1}'.</value>
   </data>
@@ -126,6 +129,9 @@
   </data>
   <data name="MaxLengthAttribute_ValidationError" xml:space="preserve">
     <value>The field {0} must be a string or array type with a maximum length of '{1}'.</value>
+  </data>
+  <data name="MetadataTypeAttribute_TypeCannotBeNull" xml:space="preserve">
+    <value>MetadataClassType cannot be null.</value>
   </data>
   <data name="MinLengthAttribute_InvalidMinLength" xml:space="preserve">
     <value>MinLengthAttribute must have a Length value that is zero or greater.</value>

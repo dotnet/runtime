@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
@@ -8,6 +8,12 @@
 
 namespace System.ComponentModel.DataAnnotations
 {
+    public partial class AssociatedMetadataTypeTypeDescriptionProvider : System.ComponentModel.TypeDescriptionProvider
+    {
+        public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type) { }
+        public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type, System.Type associatedMetadataType) { }
+        public override System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor(System.Type objectType, object instance) { throw null; }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(384), AllowMultiple = false, Inherited = true)]
     [System.ObsoleteAttribute("This attribute is no longer in use and will be ignored if applied.")]
     public sealed partial class AssociationAttribute : System.Attribute
@@ -183,6 +189,12 @@ namespace System.ComponentModel.DataAnnotations
         public int Length { get { throw null; } }
         public override string FormatErrorMessage(string name) { throw null; }
         public override bool IsValid(object value) { throw null; }
+    }
+    [System.AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public sealed partial class MetadataTypeAttribute : System.Attribute
+    {
+        public System.Type MetadataClassType { get { throw null; } }
+        public MetadataTypeAttribute(System.Type metadataClassType) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2432), AllowMultiple = false)]
     public partial class MinLengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute

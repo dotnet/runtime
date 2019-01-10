@@ -30,7 +30,6 @@ namespace System.Collections.Specialized
         private volatile NameObjectEntry _nullKeyEntry;
         private KeysCollection _keys;
         private int _version;
-        private object _syncRoot;
 
         private static readonly StringComparer s_defaultComparer = CultureInfo.InvariantCulture.CompareInfo.GetStringComparer(CompareOptions.IgnoreCase);
 
@@ -384,17 +383,7 @@ namespace System.Collections.Specialized
                 array.SetValue(e.Current, index++);
         }
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    System.Threading.Interlocked.CompareExchange(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
         bool ICollection.IsSynchronized
         {
