@@ -30,26 +30,21 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsAOT)'!='true'">
-    <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
       <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
       <!-- Following is version used in release/uwp6.0 -->
       <Version Condition="'$(TargetGroup)'=='uap10.0.16299'">2.1.0-b-uwp6-25707-02</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.NETCore.TestHost">
-      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="runtime.native.System.Data.SqlClient.sni">
-      <Version>$(RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.NETCore.DotNetHost">
-      <Version>$(MicrosoftNETCoreDotNetHostPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy">
-      <Version>$(MicrosoftNETCoreDotNetHostPolicyPackageVersion)</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.TestHost" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
+    <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeNativeSystemDataSqlClientSniPackageVersion)" />
+    <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostPackageVersion)" />
+    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyPackageVersion)" />
+    <!-- DotNetAppHost is a transitive dependency of DotNetHostPolicy.
+         We do not need apphost.exe and the 3.0 SDK will actually remove it.
+         Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
+         This can be removed once we have a new SDK -->
+    <PackageReference Include="Microsoft.NETCore.DotNetAppHost" Version="$(MicrosoftNETCoreDotNetHostPolicyPackageVersion)" ExcludeAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
