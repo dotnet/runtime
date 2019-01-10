@@ -164,14 +164,7 @@ namespace System.Threading
 
             if (previousExecutionCtx0 != executionContext)
             {
-                // Restore changed ExecutionContext
-                currentThread0.ExecutionContext = executionContext;
-                if ((executionContext != null && executionContext.HasChangeNotifications) ||
-                    (previousExecutionCtx0 != null && previousExecutionCtx0.HasChangeNotifications))
-                {
-                    // There are change notifications; trigger any affected
-                    OnValuesChanged(previousExecutionCtx0, executionContext);
-                }
+                RestoreChangedContextToThread(currentThread0, executionContext, previousExecutionCtx0);
             }
 
             ExceptionDispatchInfo edi = null;
@@ -201,14 +194,7 @@ namespace System.Threading
             ExecutionContext currentExecutionCtx1 = currentThread1.ExecutionContext;
             if (currentExecutionCtx1 != previousExecutionCtx1)
             {
-                // Restore changed ExecutionContext back to previous
-                currentThread1.ExecutionContext = previousExecutionCtx1;
-                if ((currentExecutionCtx1 != null && currentExecutionCtx1.HasChangeNotifications) ||
-                    (previousExecutionCtx1 != null && previousExecutionCtx1.HasChangeNotifications))
-                {
-                    // There are change notifications; trigger any affected
-                    OnValuesChanged(currentExecutionCtx1, previousExecutionCtx1);
-                }
+                RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
             }
 
             // If exception was thrown by callback, rethrow it now original contexts are restored
@@ -248,14 +234,7 @@ namespace System.Threading
 
             if (previousExecutionCtx0 != executionContext)
             {
-                // Restore changed ExecutionContext
-                currentThread0.ExecutionContext = executionContext;
-                if ((executionContext != null && executionContext.HasChangeNotifications) ||
-                    (previousExecutionCtx0 != null && previousExecutionCtx0.HasChangeNotifications))
-                {
-                    // There are change notifications; trigger any affected
-                    OnValuesChanged(previousExecutionCtx0, executionContext);
-                }
+                RestoreChangedContextToThread(currentThread0, executionContext, previousExecutionCtx0);
             }
 
             ExceptionDispatchInfo edi = null;
@@ -285,14 +264,7 @@ namespace System.Threading
             ExecutionContext currentExecutionCtx1 = currentThread1.ExecutionContext;
             if (currentExecutionCtx1 != previousExecutionCtx1)
             {
-                // Restore changed ExecutionContext back to previous
-                currentThread1.ExecutionContext = previousExecutionCtx1;
-                if ((currentExecutionCtx1 != null && currentExecutionCtx1.HasChangeNotifications) ||
-                    (previousExecutionCtx1 != null && previousExecutionCtx1.HasChangeNotifications))
-                {
-                    // There are change notifications; trigger any affected
-                    OnValuesChanged(currentExecutionCtx1, previousExecutionCtx1);
-                }
+                RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
             }
 
             // If exception was thrown by callback, rethrow it now original contexts are restored
@@ -305,20 +277,11 @@ namespace System.Threading
             CheckThreadPoolAndContextsAreDefault();
             // ThreadPool starts on Default Context so we don't need to save the "previous" state as we know it is Default (null)
 
-            if (executionContext != null && executionContext.m_isDefault)
-            {
-                // Default is a null ExecutionContext internally
-                executionContext = null;
-            }
-            else if (executionContext != null)
+            // Default is a null ExecutionContext internally
+            if (executionContext != null && !executionContext.m_isDefault)
             {
                 // Non-Default context to restore
-                threadPoolThread.ExecutionContext = executionContext;
-                if (executionContext.HasChangeNotifications)
-                {
-                    // There are change notifications; trigger any affected
-                    OnValuesChanged(previousExecutionCtx: null, executionContext);
-                }
+                RestoreChangedContextToThread(threadPoolThread, contextToRestore: executionContext, currentContext: null);
             }
 
             ExceptionDispatchInfo edi = null;
@@ -345,14 +308,7 @@ namespace System.Threading
             {
                 // The EC always needs to be reset for this overload, as it will flow back to the caller if it performs 
                 // extra work prior to returning to the Dispatch loop. For example for Task-likes it will flow out of await points
-
-                // Restore to Default before Notifications, as the change can be observed in the handler.
-                currentThread.ExecutionContext = null;
-                if (currentExecutionCtx.HasChangeNotifications)
-                {
-                    // There are change notifications; trigger any affected
-                    OnValuesChanged(currentExecutionCtx, nextExecutionCtx: null);
-                }
+                RestoreChangedContextToThread(currentThread, contextToRestore: null, currentExecutionCtx);
             }
 
             // If exception was thrown by callback, rethrow it now original contexts are restored
@@ -367,9 +323,8 @@ namespace System.Threading
             CheckThreadPoolAndContextsAreDefault();
             Debug.Assert(executionContext != null && !executionContext.m_isDefault, "ExecutionContext argument is Default.");
 
-            Thread currentThread = Thread.CurrentThread;
             // Restore Non-Default context
-            currentThread.ExecutionContext = executionContext;
+            Thread.CurrentThread.ExecutionContext = executionContext;
             if (executionContext.HasChangeNotifications)
             {
                 OnValuesChanged(previousExecutionCtx: null, executionContext);
@@ -378,6 +333,21 @@ namespace System.Threading
             callback.Invoke(state);
 
             // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
+        }
+
+        internal static void RestoreChangedContextToThread(Thread currentThread, ExecutionContext contextToRestore, ExecutionContext currentContext)
+        {
+            Debug.Assert(currentThread == Thread.CurrentThread);
+            Debug.Assert(contextToRestore != currentContext);
+
+            // Restore changed ExecutionContext back to previous
+            currentThread.ExecutionContext = contextToRestore;
+            if ((currentContext != null && currentContext.HasChangeNotifications) ||
+                (contextToRestore != null && contextToRestore.HasChangeNotifications))
+            {
+                // There are change notifications; trigger any affected
+                OnValuesChanged(currentContext, contextToRestore);
+            }
         }
 
         // Inline as only called in one place and always called

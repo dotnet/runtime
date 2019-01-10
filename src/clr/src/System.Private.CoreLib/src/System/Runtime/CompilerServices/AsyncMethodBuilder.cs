@@ -976,14 +976,7 @@ namespace System.Runtime.CompilerServices
                 ExecutionContext currentExecutionCtx1 = currentThread1.ExecutionContext;
                 if (previousExecutionCtx1 != currentExecutionCtx1)
                 {
-                    // Restore changed ExecutionContext back to previous
-                    currentThread1.ExecutionContext = previousExecutionCtx1;
-                    if ((currentExecutionCtx1 != null && currentExecutionCtx1.HasChangeNotifications) ||
-                        (previousExecutionCtx1 != null && previousExecutionCtx1.HasChangeNotifications))
-                    {
-                        // There are change notifications; trigger any affected
-                        ExecutionContext.OnValuesChanged(currentExecutionCtx1, previousExecutionCtx1);
-                    }
+                    ExecutionContext.RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
                 }
             }
         }
