@@ -3649,6 +3649,12 @@
   <data name="Argument_PrecisionTooLarge" xml:space="preserve">
     <value>Precision cannot be larger than {0}.</value>
   </data>
+  <data name="AssemblyDependencyResolver_FailedToLoadHostpolicy" xml:space="preserve">
+    <value>Cannot load hostpolicy library. AssemblyDependencyResolver is currently only supported if the runtime is hosted through hostpolicy library.</value>
+  </data>
+  <data name="AssemblyDependencyResolver_FailedToResolveDependencies" xml:space="preserve">
+    <value>Dependency resolution failed for component {0} with error code {1}. Detailed error: {2}</value>
+  </data>
   <data name="Arg_EnumNotCloneable" xml:space="preserve">
     <value>The supplied object does not implement ICloneable.</value>
   </data>
