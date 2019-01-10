@@ -146,9 +146,6 @@ mono_btls_x509_verify_param_get_mono_flags (MonoBtlsX509VerifyParam *param)
 	MonoBtlsX509VerifyFlags current;
 	uint64_t flags;
 
-	if (!param->owns)
-		return -1;
-
 	current = 0;
 	flags = X509_VERIFY_PARAM_get_flags (param->param);
 
