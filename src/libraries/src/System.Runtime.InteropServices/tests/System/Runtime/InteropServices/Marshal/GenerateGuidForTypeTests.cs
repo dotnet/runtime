@@ -79,14 +79,12 @@ namespace System.Runtime.InteropServices.Tests
         public class ClassWithGuidAttribute { }
 
         [Fact]
-        [ActiveIssue(30926, ~TargetFrameworkMonikers.NetFramework)]
         public void GenerateGuidForType_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("type", () => Marshal.GenerateGuidForType(null));
         }
 
         [Fact]
-        [ActiveIssue(30926, ~TargetFrameworkMonikers.NetFramework)]
         public void GenerateGuidForType_NotRuntimeType_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);
