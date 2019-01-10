@@ -3831,7 +3831,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             unsigned  roundupSize    = (unsigned)roundUp(originalSize, TARGET_POINTER_SIZE);
             var_types structBaseType = argEntry->argType;
 
-#ifndef _TARGET_X86_
             // First, handle the case where the argument is passed by reference.
             if (argEntry->passedByRef)
             {
@@ -3841,9 +3840,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 assert(!"Structs are not passed by reference on x64/ux");
 #endif // UNIX_AMD64_ABI
             }
-            else
+            else // This is passed by value.
             {
-                // This is passed by value.
+
+#ifndef _TARGET_X86_
                 // Check to see if we can transform this into load of a primitive type.
                 // 'size' must be the number of pointer sized items
                 assert(size == roundupSize / TARGET_POINTER_SIZE);
@@ -4053,6 +4053,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
                     size = 1;
                 }
+#endif // !_TARGET_X86_
 
 #ifndef UNIX_AMD64_ABI
                 // We still have a struct unless we converted the GT_OBJ into a GT_IND above...
@@ -4087,7 +4088,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 }
 #endif // !UNIX_AMD64_ABI
             }
-#endif // !_TARGET_X86_
         }
 
         if (argEntry->isPassedInRegisters())

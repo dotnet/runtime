@@ -5302,6 +5302,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 {
                     GenTreeObj* obj      = source->AsObj();
                     unsigned    argBytes = roundUp(obj->gtBlkSize, TARGET_POINTER_SIZE);
+#ifdef _TARGET_X86_
+                    // If we have an OBJ, we must have created a copy if the original arg was not a
+                    // local and was not a multiple of TARGET_POINTER_SIZE.
+                    // Note that on x64/ux this will be handled by unrolling in genStructPutArgUnroll.
+                    assert((argBytes == obj->gtBlkSize) || obj->Addr()->IsLocalAddrExpr());
+#endif // _TARGET_X86_
                     assert((curArgTabEntry->numSlots * TARGET_POINTER_SIZE) == argBytes);
                 }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
