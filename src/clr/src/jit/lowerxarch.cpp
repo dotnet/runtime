@@ -2680,8 +2680,16 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
             assert(supportsUnalignedSIMDLoads == false);
             assert(supportsSIMDScalarLoads == false);
 
-            const unsigned expectedSize = genTypeSize(containingNode->TypeGet());
+            unsigned       expectedSize = genTypeSize(containingNode->TypeGet());
             const unsigned operandSize  = genTypeSize(node->TypeGet());
+
+            // CRC32 codegen depends on its second oprand's type.
+            // Currently, we are using SIMDBaseType to store the op2Type info.
+            if (containingIntrinsicId == NI_SSE42_Crc32)
+            {
+                var_types op2Type = containingNode->gtSIMDBaseType;
+                expectedSize      = genTypeSize(op2Type);
+            }
 
             supportsGeneralLoads = (operandSize >= expectedSize);
             break;
