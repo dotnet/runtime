@@ -97,18 +97,26 @@
     <PackageToInclude Condition="'$(TargetsNetCoreApp)' == 'true' OR '$(TargetsNetFx)' == 'true'" Include="Microsoft.CodeCoverage" />
   </ItemGroup>
 
-  <!-- Ensure that the native components of TraceEvent are restored into the runtime directory so that TraceEvent can pinvoke into them. -->
-  <Target Name="CopyTraceEventNativeFiles" AfterTargets="AfterResolveReferences">
+  <!--
+    Ensure that the native components of TraceEvent are restored into the testhost
+    so that TraceEvent can pinvoke into them.
+  -->
+  <Target Name="CopyTraceEventNativeFiles"
+          Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'netfx'"
+          AfterTargets="AfterResolveReferences">
 
     <ItemGroup>
       <TraceEventNativeFiles Include="$(PackagesDir)\$(MicrosoftDiagnosticsTracingTraceEventPackageName)\$(TraceEventPackageVersion)\lib\native\**\*.*" />
     </ItemGroup>
 
-    <Copy
-      SourceFiles="@(TraceEventNativeFiles)"
-      DestinationFiles="@(TraceEventNativeFiles->'$(RuntimePath)$(MicrosoftDiagnosticsTracingTraceEventPackageName)\%(RecursiveDir)%(FileName)%(Extension)')"
-      UseHardlinksIfPossible="true"
-      SkipUnchangedFiles="true" />
+    <PropertyGroup>
+      <TraceEventDestinationFolder Condition="'$(TargetGroup)' == 'netcoreapp'">$(NETCoreAppTestSharedFrameworkPath)</TraceEventDestinationFolder>
+      <TraceEventDestinationFolder Condition="'$(TargetGroup)' == 'netfx'">$(TestHostRootPath)</TraceEventDestinationFolder>
+    </PropertyGroup>
+
+    <Copy SourceFiles="@(TraceEventNativeFiles)"
+          DestinationFolder="$(TraceEventDestinationFolder)%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
 
   </Target>
 

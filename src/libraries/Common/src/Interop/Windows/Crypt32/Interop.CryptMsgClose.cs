@@ -13,4 +13,3 @@ internal static partial class Interop
         internal static extern bool CryptMsgClose(IntPtr hCryptMsg);
     }
 }
-

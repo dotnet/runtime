@@ -178,11 +178,6 @@ namespace System.Drawing
                 uri = new Uri(filePath);
             }
 
-            if (uri.IsUnc)
-            {
-                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, nameof(filePath), filePath));
-            }
-
             if (!uri.IsFile)
             {
                 return null;

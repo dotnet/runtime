@@ -17,7 +17,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(33573, ~TargetFrameworkMonikers.NetFramework)]
         public void ReleaseComObject_NullObject_ThrowsNullReferenceException()
         {
             Assert.Throws<NullReferenceException>(() => Marshal.ReleaseComObject(null));

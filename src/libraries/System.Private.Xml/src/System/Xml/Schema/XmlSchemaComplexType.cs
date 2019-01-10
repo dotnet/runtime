@@ -8,10 +8,6 @@ namespace System.Xml.Schema
     using System.ComponentModel;
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaComplexType : XmlSchemaType
     {
         private XmlSchemaDerivationMethod _block = XmlSchemaDerivationMethod.None;
@@ -93,10 +89,6 @@ namespace System.Xml.Schema
             return localAnyType;
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.XmlSchemaComplexType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchemaComplexType()
         {
         }
@@ -127,10 +119,7 @@ namespace System.Xml.Schema
                 return s_anyTypeLax.ElementDecl.ContentValidator;
             }
         }
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.IsAbstract"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         [XmlAttribute("abstract"), DefaultValue(false)]
         public bool IsAbstract
         {
@@ -151,10 +140,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.Block"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("block"), DefaultValue(XmlSchemaDerivationMethod.None)]
         public XmlSchemaDerivationMethod Block
         {
@@ -162,10 +147,6 @@ namespace System.Xml.Schema
             set { _block = value; }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.IsMixed"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("mixed"), DefaultValue(false)]
         public override bool IsMixed
         {
@@ -187,10 +168,6 @@ namespace System.Xml.Schema
         }
 
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.ContentModel"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("simpleContent", typeof(XmlSchemaSimpleContent)),
          XmlElement("complexContent", typeof(XmlSchemaComplexContent))]
         public XmlSchemaContentModel ContentModel
@@ -199,10 +176,6 @@ namespace System.Xml.Schema
             set { _contentModel = value; }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.Particle"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("group", typeof(XmlSchemaGroupRef)),
          XmlElement("choice", typeof(XmlSchemaChoice)),
          XmlElement("all", typeof(XmlSchemaAll)),
@@ -213,10 +186,6 @@ namespace System.Xml.Schema
             set { _particle = value; }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.Attributes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("attribute", typeof(XmlSchemaAttribute)),
          XmlElement("attributeGroup", typeof(XmlSchemaAttributeGroupRef))]
         public XmlSchemaObjectCollection Attributes
@@ -231,10 +200,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.AnyAttribute"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("anyAttribute")]
         public XmlSchemaAnyAttribute AnyAttribute
         {
@@ -243,40 +208,24 @@ namespace System.Xml.Schema
         }
 
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.ContentType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaContentType ContentType
         {
             get { return SchemaContentType; }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.ContentTypeParticle"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaParticle ContentTypeParticle
         {
             get { return _contentTypeParticle; }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.BlockResolved"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaDerivationMethod BlockResolved
         {
             get { return _blockResolved; }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.AttributeUses"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable AttributeUses
         {
@@ -290,20 +239,12 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.AttributeWildcard"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaAnyAttribute AttributeWildcard
         {
             get { return _attributeWildcard; }
         }
 
-        /// <include file='doc\XmlSchemaComplexType.uex' path='docs/doc[@for="XmlSchemaComplexType.LocalElements"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         internal XmlSchemaObjectTable LocalElements
         {

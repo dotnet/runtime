@@ -253,15 +253,15 @@ namespace System.Net.Test.Common
         public int ErrorCode = 0;
 
         public RstStreamFrame(FrameFlags flags, int errorCode, int streamId) :
-            base(Frame.FrameHeaderLength + 4, FrameType.RstStream, flags, streamId)
+            base(4, FrameType.RstStream, flags, streamId)
         {
             ErrorCode = errorCode;
         }
 
         public static RstStreamFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
         {
-            int idx = Frame.FrameHeaderLength;
-            int errorCode = (int)((uint)((buffer[idx++] << 24) | (buffer[idx++] << 16) | (buffer[idx++] << idx++) | buffer[idx++]) & 0x7FFFFFFF);
+            int idx = 0;
+            int errorCode = (int)((uint)((buffer[idx++] << 24) | (buffer[idx++] << 16) | (buffer[idx++] << 8) | buffer[idx++]) & 0x7FFFFFFF);
 
             return new RstStreamFrame(header.Flags, errorCode, header.StreamId);
         }
@@ -394,6 +394,44 @@ namespace System.Net.Test.Common
         public override string ToString()
         {
             return base.ToString() + $"\nEntry Count: {Entries.Count}";
+        }
+    }
+
+    public class GoAwayFrame : Frame
+    {
+        public int LastStreamId;
+        public int ErrorCode;
+        public byte[] AdditionalDebugData;
+
+        public GoAwayFrame(int lastStreamId, int errorCode, byte[] additionalDebugData, int streamId) :
+            base(additionalDebugData.Length + 8, FrameType.GoAway, FrameFlags.None, streamId)
+        {
+            LastStreamId = lastStreamId;
+            ErrorCode = errorCode;
+            AdditionalDebugData = additionalDebugData;
+        }
+
+        public static GoAwayFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
+        {
+            int lastStreamId = BinaryPrimitives.ReadInt32BigEndian(buffer);
+            int errorCode = BinaryPrimitives.ReadInt32BigEndian(buffer.Slice(4));
+            byte[] additionalDebugData = buffer.Slice(8).ToArray();
+
+            return new GoAwayFrame(lastStreamId, errorCode, additionalDebugData, header.StreamId);
+        }
+
+        public override void WriteTo(Span<byte> buffer)
+        {
+            base.WriteTo(buffer);
+
+            BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(Frame.FrameHeaderLength), LastStreamId);
+            BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(Frame.FrameHeaderLength + 4), ErrorCode);
+            AdditionalDebugData.CopyTo(buffer.Slice(Frame.FrameHeaderLength + 8));
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + $"\nLastStreamId: {LastStreamId}\nErrorCode: {ErrorCode}";
         }
     }
 }

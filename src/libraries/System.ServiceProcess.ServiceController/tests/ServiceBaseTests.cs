@@ -11,6 +11,7 @@ using Xunit;
 namespace System.ServiceProcess.Tests
 {
     [OuterLoop(/* Modifies machine state */)]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Persistent issues starting test service on NETFX")]
     public class ServiceBaseTests : IDisposable
     {
         private const int connectionTimeout = 30000;

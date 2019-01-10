@@ -6,10 +6,6 @@ namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaNotation.uex' path='docs/doc[@for="XmlSchemaNotation"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaNotation : XmlSchemaAnnotated
     {
         private string _name;
@@ -17,10 +13,6 @@ namespace System.Xml.Schema
         private string _systemId;
         private XmlQualifiedName _qname = XmlQualifiedName.Empty;
 
-        /// <include file='doc\XmlSchemaNotation.uex' path='docs/doc[@for="XmlSchemaNotation.Name"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("name")]
         public string Name
         {
@@ -28,10 +20,6 @@ namespace System.Xml.Schema
             set { _name = value; }
         }
 
-        /// <include file='doc\XmlSchemaNotation.uex' path='docs/doc[@for="XmlSchemaNotation.Public"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("public")]
         public string Public
         {
@@ -39,10 +27,6 @@ namespace System.Xml.Schema
             set { _publicId = value; }
         }
 
-        /// <include file='doc\XmlSchemaNotation.uex' path='docs/doc[@for="XmlSchemaNotation.System"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("system")]
         public string System
         {

@@ -19,14 +19,14 @@ jobs:
         matrix:
           ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             x64_Debug:
-              _configuration: Debug
+              _BuildConfig: Debug
               _architecture: x64
               _framework: netcoreapp
               _helixQueues: $(macOSQueues)
 
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             x64_Release:
-              _configuration: Release
+              _BuildConfig: Release
               _architecture: x64
               _framework: netcoreapp
               _helixQueues: $(macOSQueues)

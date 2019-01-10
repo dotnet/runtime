@@ -55,7 +55,6 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [MemberData(nameof(Loopbacks))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue(33257, TestPlatforms.Linux)]
         public void IPGlobalProperties_TcpListeners_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -82,7 +81,6 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [MemberData(nameof(Loopbacks))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue(33257, TestPlatforms.Linux)]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -113,7 +111,6 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue(33257, TestPlatforms.Linux)]
         public void IPGlobalProperties_TcpActiveConnections_NotListening()
         {
             TcpConnectionInformation[] tcpCconnections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
