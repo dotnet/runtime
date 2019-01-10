@@ -29,7 +29,8 @@ jobs:
                           /p:TargetArchitecture=${{ parameters.targetArchitecture }} 
                           /p:PortableBuild=true
                           /p:SkipTests=${{ parameters.skipTests }}
-                          /p:StabilizePackageVersion=$(IsStable)"
+                          /p:StabilizePackageVersion=$(IsStable)
+                          /nr:false"
       MsbuildSigningArguments: /p:CertificateId=400 /v:detailed /p:SignType=$(SignType)
     steps:
 
