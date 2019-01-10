@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -163,6 +165,43 @@ namespace System.Net.Primitives.Functional.Tests
             CookieContainer cc = new CookieContainer();
             Assert.Throws<ArgumentNullException>(() => cc.SetCookies(null, "")); // Null uri
             Assert.Throws<ArgumentNullException>(() => cc.SetCookies(u5, null)); // Null header
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // .NET Framework will not perform domainTable clean up.
+        public static void AddCookies_CapacityReached_OldCookiesRemoved(bool isFromSameDomain)
+        {
+            const int Capacity = 10;
+            const int TotalCookieCount = 100;
+            var cookieContainer = new CookieContainer(Capacity);
+            Cookie cookie;
+
+            for (int i = 0; i < TotalCookieCount; i++)
+            {
+                if (isFromSameDomain)
+                {
+                    cookie = new Cookie("name1", "value1", $"/{i}", "test.com");
+                }
+                else
+                {
+                    cookie = new Cookie("name1", "value1", "/", $"test{i}.com");
+                }
+
+                cookieContainer.Add(cookie);
+            }
+
+            Assert.Equal(Capacity, cookieContainer.Count);
+
+            if (!isFromSameDomain)
+            {
+                FieldInfo domainTableField = typeof(CookieContainer).GetField("m_domainTable", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.NotNull(domainTableField);
+                Hashtable domainTable = domainTableField.GetValue(cookieContainer) as Hashtable;
+                Assert.NotNull(domainTable);
+                Assert.Equal(Capacity, domainTable.Count);
+            }
         }
     }
 }
