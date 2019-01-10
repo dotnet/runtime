@@ -206,6 +206,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\DuplicateWaitObjectException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Empty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EntryPointNotFoundException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\EnvironmentVariableTarget.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ExecutionEngineException.cs" />
