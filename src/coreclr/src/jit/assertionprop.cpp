@@ -923,7 +923,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
         //
         // We only perform null-checks on GC refs
-        // so only make non-null assertions about GC refs
+        // so only make non-null assertions about GC refs or byrefs if we can't determine
+        // the corresponding ref.
         //
         if (lclVar->TypeGet() != TYP_REF)
         {
@@ -957,7 +958,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 }
             }
 
-            if (fgIsBigOffset(offset) || (vnStore->TypeOfVN(vn) != TYP_REF))
+            if (fgIsBigOffset(offset))
             {
                 goto DONE_ASSERTION; // Don't make an assertion
             }
