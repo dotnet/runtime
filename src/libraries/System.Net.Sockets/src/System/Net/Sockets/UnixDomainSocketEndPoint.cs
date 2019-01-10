@@ -125,7 +125,7 @@ namespace System.Net.Sockets
             bool isAbstract = IsAbstract(_path);
             if (isAbstract)
             {
-                return "@" + _path.Substring(1);
+                return string.Concat("@", _path.AsSpan(1));
             }
             else
             {

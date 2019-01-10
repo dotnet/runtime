@@ -639,7 +639,7 @@ namespace System.Web.Util
             int i = value.IndexOf('?');
             if (i >= 0)
             {
-                return UrlPathEncodeImpl(value.Substring(0, i)) + value.Substring(i);
+                return string.Concat(UrlPathEncodeImpl(value.Substring(0, i)), value.AsSpan(i));
             }
 
             // encode DBCS characters and spaces only
