@@ -8693,6 +8693,7 @@ public:
 
         const BYTE*    compCode;
         IL_OFFSET      compILCodeSize;     // The IL code size
+        IL_OFFSET      compILImportSize;   // Estimated amount of IL actually imported
         UNATIVE_OFFSET compNativeCodeSize; // The native code size, after instructions are issued. This
                                            // is less than (compTotalHotCodeSize + compTotalColdCodeSize) only if:
         // (1) the code is not hot/cold split, and we issued less code than we expected, or

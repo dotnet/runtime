@@ -5800,8 +5800,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 {
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
 
-    info.compCode       = methodInfo->ILCode;
-    info.compILCodeSize = methodInfo->ILCodeSize;
+    info.compCode         = methodInfo->ILCode;
+    info.compILCodeSize   = methodInfo->ILCodeSize;
+    info.compILImportSize = 0;
 
     if (info.compILCodeSize == 0)
     {
