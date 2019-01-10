@@ -54,6 +54,19 @@ linux_sources = $(unix_sources)
 
 aix_sources = $(unix_sources)
 
+android_sources = \
+	pal-android.h \
+	pal-android.c \
+	pal-icalls.h \
+	pal-icalls.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_io.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_io.h \
+	../../external/corefx/src/Native/Unix/System.Native/pal_networkstatistics.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_networkstatistics.h \
+	../../external/corefx/src/Native/Unix/System.Native/pal_random.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_random.h
+
+
 unix_sources = \
 	pal-icalls.h \
 	pal-icalls.c \
@@ -91,6 +104,10 @@ platform_sources = $(linux_sources)
 else
 if MONO_NATIVE_PLATFORM_AIX
 platform_sources = $(aix_sources)
+else
+if MONO_NATIVE_PLATFORM_ANDROID
+platform_sources = $(android_sources)
+endif
 endif
 endif
 endif
