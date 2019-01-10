@@ -122,11 +122,15 @@ internal class ScanProjectFiles
             bool hasReleaseCondition = false;
             bool hasDebugCondition = false;
             string oddness = null;
+            string optimizeOddness = null;
             string debugVal = null;
+            string optimizeVal = null;
             bool needsFix = false;
             XElement bestPropertyGroupNode = null;
             XElement lastPropertyGroupNode = null;
             List<XElement> debugTypePropertyGroupNodes = new List<XElement>();
+            List<XElement> optimizePropertyGroupNodes = new List<XElement>();
+
             foreach (XElement prop in props)
             {
                 lastPropertyGroupNode = prop;
@@ -185,6 +189,24 @@ internal class ScanProjectFiles
                         }
                     }
                 }
+
+                XElement optimize = prop.Element(nn + "Optimize");
+                if (optimize != null)
+                {
+                    optimizePropertyGroupNodes.Add(optimize);
+                    string newOptimizeVal = optimize.Value;
+                    if (string.IsNullOrWhiteSpace(newOptimizeVal))
+                    {
+                        newOptimizeVal = "False";
+                    }
+
+                    if (optimizeVal != null && !optimizeVal.Equals(newOptimizeVal, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        optimizeOddness = "MultipleConflictValues";
+                    }
+
+                    optimizeVal = newOptimizeVal;
+                }
             }
 
             if (oddness == null)
@@ -200,6 +222,7 @@ internal class ScanProjectFiles
             }
 
             bool hasDebugType = debugTypePropertyGroupNodes.Count > 0;
+            bool hasOptimize = optimizePropertyGroupNodes.Count > 0;
 
             // Analyze suffix convention mismatches
             string suffixNote = "SuffixNone";
@@ -253,11 +276,6 @@ internal class ScanProjectFiles
                 needsFix = true;
             }
 
-            if (needsFix)
-            {
-                s_needsFixCount++;
-            }
-
             if (needsFix || !s_showNeedsFixOnly)
             {
                 if (!hasDebugType)
@@ -276,6 +294,44 @@ internal class ScanProjectFiles
                 {
                     Console.WriteLine("{0} DebugType-{1}-Unconditional-{2}", projFile, debugVal, suffixNote);
                 }
+            }
+
+            if (optimizeOddness != null)
+            {
+                needsFix = true;
+            }
+
+            if (!needsFix)
+            {
+                if (isOptTypeTest)
+                {
+                    needsFix = DetermineIfOptimizeSettingNeedsFix(true, optimizeVal);
+                }
+                else if (isNotOptTypeTest)
+                {
+                    needsFix = DetermineIfOptimizeSettingNeedsFix(false, optimizeVal);
+                }
+            }
+
+            if (needsFix || !s_showNeedsFixOnly)
+            {
+                if (!hasOptimize)
+                {
+                    Console.WriteLine("{0} Optimize-n/a", projFile);
+                }
+                else if (optimizeOddness != null)
+                {
+                    Console.WriteLine("{0} Optimize-Odd-{1}", projFile, optimizeOddness);
+                }
+                else
+                {
+                    Console.WriteLine("{0} Optimize-{1}-Conflict", projFile, optimizeVal);
+                }
+            }
+
+            if (needsFix)
+            {
+                s_needsFixCount++;
             }
 
             // If a fix is needed, give it a shot!
@@ -418,5 +474,30 @@ internal class ScanProjectFiles
         }
 
         return updated;
+    }
+
+    /// <summary>
+    /// Determines if optimize setting needs to fix.
+    /// </summary>
+    /// <param name="isOptType">Whether a optimization is specified. This is the baseline for checking.</param>
+    /// <param name="optimizeVal">The optimize value in the project file's <Optimize /> property.</param>
+    /// <returns>True if a fix is needed. Otherwise false.</returns>
+    private static bool DetermineIfOptimizeSettingNeedsFix(bool isOptType, string optimizeVal)
+    {
+        if (isOptType && optimizeVal == null)
+        {
+            return true;
+        }
+
+        if (optimizeVal != null)
+        {
+            string expectedOptimizeValue = isOptType.ToString();
+            if (!optimizeVal.Equals(expectedOptimizeValue, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
