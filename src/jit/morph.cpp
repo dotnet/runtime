@@ -3840,10 +3840,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 assert(!"Structs are not passed by reference on x64/ux");
 #endif // UNIX_AMD64_ABI
             }
-            else
+            else // This is passed by value.
             {
-                // This is passed by value.
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifndef _TARGET_X86_
                 // Check to see if we can transform this into load of a primitive type.
