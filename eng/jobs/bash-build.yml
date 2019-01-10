@@ -51,6 +51,7 @@ jobs:
         -SkipTests=${{ parameters.skipTests }}
         -TargetArchitecture=${{ parameters.targetArchitecture }}
         -- /p:StabilizePackageVersion=$(IsStable)
+        /nr:false
         ${{ parameters.additionalMSBuildArgs }}
 
       PublishArguments: /p:PublishType=$(_PublishType)
@@ -59,6 +60,7 @@ jobs:
         /p:PortableBuild=${{ parameters.portableBuild }}
         /p:StabilizePackageVersion=$(IsStable)
         /p:TargetArchitecture=${{ parameters.targetArchitecture }}
+        /nr:false
          ${{ parameters.additionalMSBuildArgs }}
 
       CommonMSBuildArgs: /bl
@@ -68,6 +70,7 @@ jobs:
         /p:PortableBuild=false
         /p:StabilizePackageVersion=$(IsStable)
         /p:TargetArchitecture=${{ parameters.targetArchitecture }}
+        /nr:false
 
       # Packaging related variables
       # Debian
