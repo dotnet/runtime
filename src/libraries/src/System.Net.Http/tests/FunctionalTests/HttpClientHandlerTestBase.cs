@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpClientTestBase : RemoteExecutorTestBase
+    public abstract class HttpClientHandlerTestBase : RemoteExecutorTestBase
     {
         protected virtual bool UseSocketsHttpHandler => true;
 

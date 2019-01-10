@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract partial class HttpClientTest
+    public sealed partial class HttpClientTest
     {
         [Fact]
         public async Task PatchAsync_Canceled_Throws()
@@ -41,7 +41,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Dispose_UsePatchAfterDispose_Throws()
         {
-            HttpClient client = CreateHttpClient();
+            var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage())));
             client.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => { client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
