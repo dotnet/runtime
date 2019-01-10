@@ -1565,7 +1565,7 @@ private:
     // returns true if the tree can use the read-modify-write memory instruction form
     bool isRMWRegOper(GenTree* tree);
     int BuildMul(GenTree* tree);
-    void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
+    void SetContainsAVXFlags(unsigned sizeOfSIMDVector = 0);
     // Move the last use bit, if any, from 'fromTree' to 'toTree'; 'fromTree' must be contained.
     void CheckAndMoveRMWLastUse(GenTree* fromTree, GenTree* toTree)
     {
