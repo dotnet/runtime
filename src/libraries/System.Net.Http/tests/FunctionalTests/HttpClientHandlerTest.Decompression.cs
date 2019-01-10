@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpClientHandler_Decompression_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_Decompression_Test : HttpClientHandlerTestBase
     {
         private readonly ITestOutputHelper _output;
 
