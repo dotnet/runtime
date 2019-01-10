@@ -14,9 +14,6 @@ resources:
   - container: ubuntu_1604_arm64_cross_build_image
     image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
 
-  - container: ubuntu_1604_x64_build_image
-    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544
-
   - container: musl_x64_build_image
     image: microsoft/dotnet-buildtools-prereqs:alpine-3.6-WithNode-f4d3fe3-20181220200247
 
@@ -174,6 +171,7 @@ jobs:
       buildConfig: release
       jobParameters:
         priority: 1
+        timeoutInMinutes: 240
 
 # Pri1 crossgen (Official Build)
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -184,6 +182,7 @@ jobs:
       jobParameters:
         priority: 1
         crossgen: true
+        timeoutInMinutes: 240
 
 
 # Publish build information to Build Assets Registry
@@ -204,7 +203,6 @@ jobs:
       - build_Linux_arm64_release
       - build_Linux_musl_x64_release
       - build_Linux_rhel6_x64_release
-      - build_Linux_rhel7_x64_release
       - build_Linux_x64_release
       - build_OSX_x64_release
       - build_Windows_NT_x64_release
