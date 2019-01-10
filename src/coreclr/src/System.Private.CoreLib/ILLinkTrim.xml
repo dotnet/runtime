@@ -23,6 +23,9 @@
     <type fullname="System.Runtime.CompilerServices.AsyncMethodBuilderCore">
       <method name="TryGetStateMachineForDebugger" />
     </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncIteratorMethodBuilder">
+      <property name="ObjectIdForDebugger" />
+    </type>
     <type fullname="System.Runtime.CompilerServices.AsyncVoidMethodBuilder">
       <property name="ObjectIdForDebugger" />
     </type>
