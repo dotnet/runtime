@@ -5,7 +5,7 @@ jobs:
     displayName: Finalize_Publish
     # Run only if all build legs succeeded
     condition: and(
-                  # succeeded('Build_FreeBSD_x64'),
+                  succeeded('Build_FreeBSD_x64'),
                   succeeded('Build_Linux_Arm'),
                   succeeded('Build_Linux_Arm64'),
                   succeeded('Build_Linux_x64_Alpine36'),
@@ -19,7 +19,7 @@ jobs:
                   ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))
     # Run after all dependent legs are executed
     dependsOn: 
-      # - Build_FreeBSD_x64
+      - Build_FreeBSD_x64
       - Build_Linux_Arm
       - Build_Linux_Arm64
       - Build_Linux_x64_Alpine36
