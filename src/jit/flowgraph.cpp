@@ -22510,8 +22510,9 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             unsigned               methodFlags            = 0;
             CORINFO_CONTEXT_HANDLE context                = nullptr;
             const bool             isLateDevirtualization = true;
-            bool                   explicitTailCall       = (call->gtCall.gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr, isLateDevirtualization, explicitTailCall);
+            bool explicitTailCall = (call->gtCall.gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
+                                      explicitTailCall);
         }
     }
     else if (tree->OperGet() == GT_ASG)

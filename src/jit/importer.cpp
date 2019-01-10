@@ -8591,7 +8591,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             // See if we can devirtualize.
 
-            bool explicitTailCall = (tailCall & PREFIX_TAILCALL_EXPLICIT) != 0;
+            bool       explicitTailCall       = (tailCall & PREFIX_TAILCALL_EXPLICIT) != 0;
             const bool isLateDevirtualization = false;
             impDevirtualizeCall(call->AsCall(), &callInfo->hMethod, &callInfo->methodFlags, &callInfo->contextHandle,
                                 &exactContextHnd, isLateDevirtualization, explicitTailCall);
@@ -20175,7 +20175,7 @@ bool Compiler::IsMathIntrinsic(GenTree* tree)
 //     contextHandle -- [IN/OUT] context handle for the call. Updated iff call devirtualized.
 //     exactContextHnd -- [OUT] updated context handle iff call devirtualized
 //     isLateDevirtualization -- if devirtualization is happening after importation
-//     isTailCall -- [IN/OUT] true if we plan on using a tail call 
+//     isTailCall -- [IN/OUT] true if we plan on using a tail call
 //
 // Notes:
 //     Virtual calls in IL will always "invoke" the base class method.
@@ -20654,7 +20654,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     {
                         JITDUMP("Clearing the implicit tail call flag\n");
 
-                        // If set, we clear the implicit tail call flag 
+                        // If set, we clear the implicit tail call flag
                         // as we just introduced a new address taken local variable
                         //
                         call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
