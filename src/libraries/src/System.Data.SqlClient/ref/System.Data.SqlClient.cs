@@ -425,6 +425,11 @@ namespace System.Data.SqlClient
         public System.IAsyncResult BeginExecuteXmlReader() { throw null; }
         public System.IAsyncResult BeginExecuteXmlReader(System.AsyncCallback callback, object stateObject) { throw null; }
         public System.Xml.XmlReader EndExecuteXmlReader(System.IAsyncResult asyncResult) { throw null; }
+        public System.IAsyncResult BeginExecuteReader() { throw null; }
+        public System.IAsyncResult BeginExecuteReader(System.AsyncCallback callback, object stateObject) { throw null; }
+        public System.IAsyncResult BeginExecuteReader(System.AsyncCallback callback, object stateObject, System.Data.CommandBehavior behavior) { throw null; }
+        public System.IAsyncResult BeginExecuteReader(System.Data.CommandBehavior behavior) { throw null; }
+        public System.Data.SqlClient.SqlDataReader EndExecuteReader(System.IAsyncResult asyncResult) { throw null; }
         public override void Prepare() { }
         public System.Data.Sql.SqlNotificationRequest Notification { get { throw null; } set { } }
         public void ResetCommandTimeout() { }

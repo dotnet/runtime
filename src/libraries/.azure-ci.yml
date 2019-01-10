@@ -46,5 +46,18 @@ jobs:
     # Redhat6 leg is only for official builds
     - template: /eng/pipelines/redhat6.yml
 
+    # FreeBSD leg is only for official builds
+    - template: /eng/pipelines/freebsd.yml
+
     # Publish step
     - template: /eng/pipelines/publish.yml
+      parameters:
+        dependsOn:
+          - WindowsTest
+          - WindowsNoTest
+          - AllConfigurations
+          - LinuxTest
+          - LinuxNoTest
+          - MacOS
+          - RedHat6
+          - FreeBSD

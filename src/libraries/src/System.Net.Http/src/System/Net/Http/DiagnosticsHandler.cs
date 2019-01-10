@@ -75,9 +75,10 @@ namespace System.Net.Http
                 );
             }
 
-            // If we are on at all, we propagate any activity information.  
+            // If we are on at all, we propagate any activity information
+            // unless tracing system or user injected Request-Id for backward compatibility reasons.
             Activity currentActivity = Activity.Current;
-            if (currentActivity != null)
+            if (currentActivity != null && !request.Headers.Contains(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName))
             {
                 request.Headers.Add(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, currentActivity.Id);
                 //we expect baggage to be empty or contain a few items

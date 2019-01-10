@@ -47,30 +47,44 @@ namespace System.IO
         // is null, any existing extension is removed from path.
         public static string ChangeExtension(string path, string extension)
         {
-            if (path != null)
+            if (path == null)
+                return null;
+
+            int subLength = path.Length;
+            if (subLength == 0)
+                return string.Empty;
+
+            for (int i = path.Length - 1; i >= 0; i--)
             {
-                string s = path;
-                for (int i = path.Length - 1; i >= 0; i--)
+                char ch = path[i];
+
+                if (ch == '.')
                 {
-                    char ch = path[i];
-                    if (ch == '.')
-                    {
-                        s = path.Substring(0, i);
-                        break;
-                    }
-                    if (PathInternal.IsDirectorySeparator(ch)) break;
+                    subLength = i;
+                    break;
                 }
 
-                if (extension != null && path.Length != 0)
+                if (PathInternal.IsDirectorySeparator(ch))
                 {
-                    s = (extension.Length == 0 || extension[0] != '.') ?
-                        s + "." + extension :
-                        s + extension;
+                    break;
                 }
-
-                return s;
             }
-            return null;
+
+            if (extension == null)
+            {
+                return path.Substring(0, subLength);
+            }
+
+            ReadOnlySpan<char> subpath = path.AsSpan(0, subLength);
+#if MS_IO_REDIST
+            return extension.Length != 0 && extension[0] == '.' ?
+                StringExtensions.Concat(subpath, extension.AsSpan()) :
+                StringExtensions.Concat(subpath, ".".AsSpan(), extension.AsSpan());
+#else
+            return extension.StartsWith('.') ?
+                string.Concat(subpath, extension) :
+                string.Concat(subpath, ".", extension);
+#endif
         }
 
         /// <summary>
@@ -665,6 +679,9 @@ namespace System.IO
             byte b3 = bytes[3];
             byte b4 = bytes[4];
 
+            // write to chars[11] first in order to eliminate redundant bounds checks
+            chars[11] = (char)Base32Char[bytes[7] & 0x1F];
+
             // Consume the 5 Least significant bits of the first 5 bytes
             chars[0] = (char)Base32Char[b0 & 0x1F];
             chars[1] = (char)Base32Char[b1 & 0x1F];
@@ -699,7 +716,6 @@ namespace System.IO
             // Consume the 5 Least significant bits of the remaining 3 bytes
             chars[9] = (char)Base32Char[bytes[5] & 0x1F];
             chars[10] = (char)Base32Char[bytes[6] & 0x1F];
-            chars[11] = (char)Base32Char[bytes[7] & 0x1F];
         }
 
         /// <summary>

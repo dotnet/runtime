@@ -87,8 +87,7 @@ namespace System.Text
 
         public override bool Equals(object value)
         {
-            EncoderReplacementFallback that = value as EncoderReplacementFallback;
-            if (that != null)
+            if (value is EncoderReplacementFallback that)
             {
                 return (_strDefault == that._strDefault);
             }

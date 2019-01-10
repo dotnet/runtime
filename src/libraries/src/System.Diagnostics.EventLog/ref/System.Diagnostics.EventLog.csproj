@@ -14,4 +14,7 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+    <ProjectReference Include="..\..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
+  </ItemGroup>
 </Project>

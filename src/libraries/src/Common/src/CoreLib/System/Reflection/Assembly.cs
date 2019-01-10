@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Configuration.Assemblies;
 using System.Runtime.Serialization;
 using System.Security;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -147,15 +148,24 @@ namespace System.Reflection
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Assembly left, Assembly right)
         {
-            if (object.ReferenceEquals(left, right))
+            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // so it can become a simple test
+            if (right is null)
+            {
+                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                return (left is null) ? true : false;
+            }
+
+            // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
+            if ((object)left == (object)right)
+            {
                 return true;
+            }
 
-            if ((object)left == null || (object)right == null)
-                return false;
-
-            return left.Equals(right);
+            return (left is null) ? false : left.Equals(right);
         }
 
         public static bool operator !=(Assembly left, Assembly right)

@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP connection management behavior is different due to WinRT")]
-    public abstract class HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandlerTestBase
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxConnectionsPerServer either returns two or int.MaxValue depending if ctor of HttpClientHandlerTest executed first. Disabling cause of random xunit execution order.")]

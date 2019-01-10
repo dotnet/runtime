@@ -11,7 +11,7 @@ jobs:
       strategy:
         matrix:
           x64_Release:
-            _configuration: Release
+            _BuildConfig: Release
             _architecture: x64
             _framework: netcoreapp
             _buildExtraArguments: /p:RuntimeOS=rhel.6 /p:PortableBuild=false

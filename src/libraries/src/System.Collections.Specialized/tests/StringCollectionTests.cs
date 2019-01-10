@@ -635,11 +635,12 @@ namespace System.Collections.Specialized.Tests
         [Theory]
         [MemberData(nameof(StringCollection_Data))]
         [MemberData(nameof(StringCollection_Duplicates_Data))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Changed behavior
         public static void SyncRootTest(StringCollection collection, string[] data)
         {
             object syncRoot = collection.SyncRoot;
             Assert.NotNull(syncRoot);
-            Assert.IsType<object>(syncRoot);
+            Assert.IsType<ArrayList>(syncRoot);
 
             Assert.Same(syncRoot, collection.SyncRoot);
             Assert.NotSame(syncRoot, new StringCollection().SyncRoot);

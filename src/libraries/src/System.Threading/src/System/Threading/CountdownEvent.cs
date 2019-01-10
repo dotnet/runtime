@@ -247,7 +247,7 @@ namespace System.Threading
                 }
 
                 // The CAS failed.  Spin briefly and try again.
-                spin.SpinOnce();
+                spin.SpinOnce(sleep1Threshold: -1);
             }
 
             // If we were the last to signal, set the event.
@@ -361,7 +361,7 @@ namespace System.Threading
                 }
 
                 // The CAS failed.  Spin briefly and try again.
-                spin.SpinOnce();
+                spin.SpinOnce(sleep1Threshold: -1);
             }
 
             return true;

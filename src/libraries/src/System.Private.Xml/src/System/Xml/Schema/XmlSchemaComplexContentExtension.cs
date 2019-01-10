@@ -7,10 +7,6 @@ namespace System.Xml.Schema
     using System.Collections;
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaComplexContentExtension.uex' path='docs/doc[@for="XmlSchemaComplexContentExtension"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaComplexContentExtension : XmlSchemaContent
     {
         private XmlSchemaParticle _particle;
@@ -18,10 +14,6 @@ namespace System.Xml.Schema
         private XmlSchemaAnyAttribute _anyAttribute;
         private XmlQualifiedName _baseTypeName = XmlQualifiedName.Empty;
 
-        /// <include file='doc\XmlSchemaComplexContentExtension.uex' path='docs/doc[@for="XmlSchemaComplexContentExtension.BaseTypeName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("base")]
         public XmlQualifiedName BaseTypeName
         {
@@ -29,10 +21,6 @@ namespace System.Xml.Schema
             set { _baseTypeName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
-        /// <include file='doc\XmlSchemaComplexContentExtension.uex' path='docs/doc[@for="XmlSchemaComplexContentExtension.Particle"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("group", typeof(XmlSchemaGroupRef)),
          XmlElement("choice", typeof(XmlSchemaChoice)),
          XmlElement("all", typeof(XmlSchemaAll)),
@@ -43,10 +31,6 @@ namespace System.Xml.Schema
             set { _particle = value; }
         }
 
-        /// <include file='doc\XmlSchemaComplexContentExtension.uex' path='docs/doc[@for="XmlSchemaComplexContentExtension.Attributes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("attribute", typeof(XmlSchemaAttribute)),
          XmlElement("attributeGroup", typeof(XmlSchemaAttributeGroupRef))]
         public XmlSchemaObjectCollection Attributes
@@ -55,10 +39,6 @@ namespace System.Xml.Schema
         }
 
 
-        /// <include file='doc\XmlSchemaComplexContentExtension.uex' path='docs/doc[@for="XmlSchemaComplexContentExtension.AnyAttribute"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("anyAttribute")]
         public XmlSchemaAnyAttribute AnyAttribute
         {

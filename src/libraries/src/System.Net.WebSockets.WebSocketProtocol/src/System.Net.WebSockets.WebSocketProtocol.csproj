@@ -3,7 +3,7 @@
     <AssemblyName>System.Net.WebSockets.WebSocketProtocol</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ProjectGuid>{747BE014-7C1D-4460-95AF-B41C35717165}</ProjectGuid>
-    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

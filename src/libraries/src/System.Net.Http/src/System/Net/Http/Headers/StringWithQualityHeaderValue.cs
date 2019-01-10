@@ -203,7 +203,7 @@ namespace System.Net.Http.Headers
             }
 
             double quality = 0;
-            if (!double.TryParse(input.Substring(current, qualityLength), NumberStyles.AllowDecimalPoint,
+            if (!double.TryParse(input.AsSpan(current, qualityLength), NumberStyles.AllowDecimalPoint,
                 NumberFormatInfo.InvariantInfo, out quality))
             {
                 return false;

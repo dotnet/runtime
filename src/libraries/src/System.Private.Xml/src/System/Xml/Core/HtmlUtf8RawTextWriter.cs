@@ -1,17 +1,9 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Following comment might not be valid anymore as this code is fairly old and a lot happened since it was written...
-// WARNING: This file is generated and should not be modified directly.  Instead,
-// modify XmlTextWriterGenerator.cxx and run gen.bat in the same directory.
-// This batch file will execute the following commands:
-//
-//   cl.exe /C /EP /D _XML_UTF8_TEXT_WRITER HtmlTextWriterGenerator.cxx > HtmlUtf8TextWriter.cs
-//   cl.exe /C /EP /D _XML_ENCODED_TEXT_WRITER HtmlTextWriterGenerator.cxx > HtmlEncodedTextWriter.cs
-//
-// Because these two implementations of XmlTextWriter are so similar, the C++ preprocessor
-// is used to generate each implementation from one template file, using macros and ifdefs.
+// WARNING: This file is generated and should not be modified directly.
+// Instead, modify HtmlRawTextWriterGenerator.ttinclude
 
 using System;
 using System.IO;
@@ -62,7 +54,7 @@ namespace System.Xml
 
             RawText("<!DOCTYPE ");
 
-            // Bug 114337: Always output "html" or "HTML" in doc-type, even if "name" is something else
+            // Bug: Always output "html" or "HTML" in doc-type, even if "name" is something else
             if (name == "HTML")
                 RawText("HTML");
             else
@@ -97,7 +89,7 @@ namespace System.Xml
                 bufBytes[bufPos++] = (byte)']';
             }
 
-            bufBytes[this.bufPos++] = (byte)'>';
+            bufBytes[bufPos++] = (byte)'>';
         }
 
         // For the HTML element, it should call this method with ns and prefix as String.Empty
@@ -110,7 +102,6 @@ namespace System.Xml
             if (ns.Length == 0)
             {
                 Debug.Assert(prefix.Length == 0);
-
 
                 currentElementProperties = (ElementProperties)elementPropertySearch.FindCaseInsensitiveString(localName);
                 base.bufBytes[bufPos++] = (byte)'<';
@@ -132,7 +123,7 @@ namespace System.Xml
             base.bufBytes[base.bufPos++] = (byte)'>';
 
             // Detect whether content is output
-            this.contentPos = this.bufPos;
+            contentPos = bufPos;
 
             if ((currentElementProperties & ElementProperties.HEAD) != 0)
             {
@@ -149,8 +140,6 @@ namespace System.Xml
             if (ns.Length == 0)
             {
                 Debug.Assert(prefix.Length == 0);
-
-
 
                 if ((currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
@@ -174,8 +163,6 @@ namespace System.Xml
             if (ns.Length == 0)
             {
                 Debug.Assert(prefix.Length == 0);
-
-
 
                 if ((currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
@@ -299,7 +286,6 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-
                 if (base.attrEndPos == bufPos)
                 {
                     base.bufBytes[bufPos++] = (byte)' ';
@@ -349,8 +335,6 @@ namespace System.Xml
                     _endsWithAmpersand = false;
                 }
 
-
-
                 base.bufBytes[bufPos++] = (byte)'"';
             }
             base.inAttributeValue = false;
@@ -361,8 +345,6 @@ namespace System.Xml
         public override void WriteProcessingInstruction(string target, string text)
         {
             Debug.Assert(target != null && target.Length != 0 && text != null);
-
-
 
             bufBytes[base.bufPos++] = (byte)'<';
             bufBytes[base.bufPos++] = (byte)'?';
@@ -383,8 +365,6 @@ namespace System.Xml
         public override unsafe void WriteString(string text)
         {
             Debug.Assert(text != null);
-
-
 
             fixed (char* pSrc = text)
             {
@@ -421,8 +401,6 @@ namespace System.Xml
             Debug.Assert(index >= 0);
             Debug.Assert(count >= 0 && index + count <= buffer.Length);
 
-
-
             fixed (char* pSrcBegin = &buffer[index])
             {
                 if (inAttributeValue)
@@ -435,6 +413,10 @@ namespace System.Xml
                 }
             }
         }
+
+        //
+        // Private methods
+        //
 
         private void Init(XmlWriterSettings settings)
         {
@@ -556,7 +538,7 @@ namespace System.Xml
 
             fixed (byte* pDstBegin = bufBytes)
             {
-                byte* pDst = pDstBegin + this.bufPos;
+                byte* pDst = pDstBegin + bufPos;
 
                 char ch = (char)0;
                 for (;;)
@@ -599,7 +581,7 @@ namespace System.Xml
                             }
                             else if (pSrc[1] != '{')
                             {
-                                pDst = XmlUtf8RawTextWriter.AmpEntity(pDst);
+                                pDst = AmpEntity(pDst);
                                 break;
                             }
                             *pDst++ = (byte)ch;
@@ -644,7 +626,7 @@ namespace System.Xml
 
             fixed (byte* pDstBegin = bufBytes)
             {
-                byte* pDst = pDstBegin + this.bufPos;
+                byte* pDst = pDstBegin + bufPos;
 
                 char ch = (char)0;
                 for (;;)
@@ -687,7 +669,7 @@ namespace System.Xml
                             }
                             else if (pSrc[1] != '{')
                             {
-                                pDst = XmlUtf8RawTextWriter.AmpEntity(pDst);
+                                pDst = AmpEntity(pDst);
                                 break;
                             }
                             *pDst++ = (byte)ch;
@@ -712,7 +694,7 @@ namespace System.Xml
                         default:
                             const string hexDigits = "0123456789ABCDEF";
                             Debug.Assert(_uriEscapingBuffer?.Length > 0);
-                            fixed (byte* pUriEscapingBuffer = &_uriEscapingBuffer[0])
+                            fixed (byte* pUriEscapingBuffer = _uriEscapingBuffer)
                             {
                                 byte* pByte = pUriEscapingBuffer;
                                 byte* pEnd = pByte;
@@ -744,7 +726,6 @@ namespace System.Xml
             base.bufBytes[bufPos++] = (byte)';';
         }
     }
-
 
     //
     // Indentation HtmlWriter only indent <BLOCK><BLOCK> situations
@@ -801,12 +782,6 @@ namespace System.Xml
         // Constructors
         //
 
-
-
-
-
-
-
         public HtmlUtf8RawTextWriterIndent(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
             Init(settings);
@@ -829,8 +804,6 @@ namespace System.Xml
         public override void WriteStartElement(string prefix, string localName, string ns)
         {
             Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
-
-
 
             base.elementScope.Push((byte)base.currentElementProperties);
 
@@ -972,5 +945,4 @@ namespace System.Xml
         }
     }
 }
-
 

@@ -23,6 +23,7 @@ namespace System.IO.Tests
         public const int LongWaitTimeout = 50000;                   // ms to wait for an event that takes a longer time than the average operation
         public const int SubsequentExpectedWait = 10;               // ms to wait for checks that occur after the first.
         public const int WaitForExpectedEventTimeout_NoRetry = 3000;// ms to wait for an event that isn't surrounded by a retry.
+        public const int WaitForUnexpectedEventTimeout = 150;       // ms to wait for a non-expected event.
         public const int DefaultAttemptsForExpectedEvent = 3;       // Number of times an expected event should be retried if failing.
         public const int DefaultAttemptsForUnExpectedEvent = 2;     // Number of times an unexpected event should be retried if failing.
         public const int RetryDelayMilliseconds = 500;              // ms to wait when retrying after failure

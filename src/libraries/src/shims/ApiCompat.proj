@@ -38,22 +38,20 @@
   <Target Name="RunApiCompat"
           Condition="'$(_RunApiCompat)' == 'true'"
           Inputs="$(ApiCompatResponseFile);@(GenFacadesContracts)"
-          Outputs="$(ApiCompatBaselineFile);$(ApiCompatNSBaselineFile)"
-  >
-    <PropertyGroup>
-      <ApiCompatArgs>$(ApiCompatArgs) -implDirs:"$(ApiCompatImplementationDirs)"</ApiCompatArgs>
-      <ApiCompatArgs Condition="'$(ApiCompatExcludeAttributeList)' != ''">$(ApiCompatArgs) -excludeAttributes:"$(ApiCompatExcludeAttributeList)"</ApiCompatArgs>
-      <BaselineApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">-baseline:"$(ApiCompatBaselineIgnoreFile)"</BaselineApiCompatArgs>
-      <ApiCompatExitCode>0</ApiCompatExitCode>
+          Outputs="$(ApiCompatBaselineFile);$(ApiCompatNSBaselineFile)">
 
-      <ApiCompatCmd>$(_ApiCompatCommand)</ApiCompatCmd>
+    <PropertyGroup>
+      <ApiCompatArgs Condition="'$(ApiCompatExcludeAttributeList)' != ''">$(ApiCompatArgs) --exclude-attributes "$(ApiCompatExcludeAttributeList)"</ApiCompatArgs>
+      <ApiCompatArgs>$(ApiCompatArgs) --impl-dirs "$(ApiCompatImplementationDirs)"</ApiCompatArgs>
+      <BaselineApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">--baseline "$(ApiCompatBaselineIgnoreFile)"</BaselineApiCompatArgs>
+      <ApiCompatExitCode>0</ApiCompatExitCode>
     </PropertyGroup>
 
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
 
-    <Exec Command="$(ApiCompatCmd) &quot;@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')&quot; $(BaselineApiCompatArgs) @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
-          Condition="'$(TargetGroup)'=='netcoreapp' and '$(BaselineApiCompat)' == 'true'"
+    <Exec Command="$(_ApiCompatCommand) &quot;@(NetFxReference -> '$(NetFxRefPath)%(Identity).dll')&quot; $(BaselineApiCompatArgs) @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
+          Condition="'$(TargetGroup)' == 'netcoreapp' and '$(BaselineApiCompat)' == 'true'"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
@@ -69,7 +67,7 @@
       <NETStandard20OnlyRef Condition="'$(TargetGroup)' == 'netcoreapp'">$(NETStandard20OnlyRef);$(RefPath)\System.Runtime.dll</NETStandard20OnlyRef>
     </PropertyGroup>
 
-    <Exec Command="$(ApiCompatCmd) &quot;$(NETStandard20OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; -baseline:$(ApiCompatNSOnlyBaselineFile)"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(NETStandard20OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; --baseline $(ApiCompatNSOnlyBaselineFile)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
@@ -79,7 +77,7 @@
 
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(TargetGroup)" />
 
-    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; -baseline:$(ApiCompatNSBaselineFile)"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandardRefPath)&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"

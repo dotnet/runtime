@@ -268,7 +268,7 @@ namespace System.Resources.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images(string key, object expectedValue)
         {
@@ -298,7 +298,7 @@ namespace System.Resources.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetResourceSet_Images(string key, object expectedValue)
         {

@@ -1842,8 +1842,7 @@ namespace System.Text
 
         public override bool Equals(object value)
         {
-            UnicodeEncoding that = value as UnicodeEncoding;
-            if (that != null)
+            if (value is UnicodeEncoding that)
             {
                 //
                 // Big Endian Unicode has different code page (1201) than small Endian one (1200),

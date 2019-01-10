@@ -223,7 +223,7 @@ namespace System.Globalization
                 // Fast path for a regular CultureInfo
                 if (provider is CultureInfo cultureProvider && !cultureProvider._isInherited)
                 {
-                    return cultureProvider.numInfo ?? cultureProvider.NumberFormat;
+                    return cultureProvider._numInfo ?? cultureProvider.NumberFormat;
                 }
 
                 return
@@ -316,8 +316,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(CurrencyGroupSizes),
-                        SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(CurrencyGroupSizes));
                 }
                 VerifyWritable();
 
@@ -339,8 +338,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(NumberGroupSizes),
-                        SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(NumberGroupSizes));
                 }
                 VerifyWritable();
 
@@ -361,8 +359,7 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(PercentGroupSizes),
-                        SR.ArgumentNull_Obj);
+                    throw new ArgumentNullException(nameof(PercentGroupSizes));
                 }
                 VerifyWritable();
                 int[] inputSizes = (int[])value.Clone();
@@ -409,7 +406,7 @@ namespace System.Globalization
                 System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
-                    NumberFormatInfo info = culture.numInfo;
+                    NumberFormatInfo info = culture._numInfo;
                     if (info != null)
                     {
                         return info;

@@ -19,16 +19,6 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        public static void AsyncMethodBuilderAttributeTests()
-        {
-            var attr1 = new AsyncMethodBuilderAttribute(null);
-            Assert.Null(attr1.BuilderType);
-
-            var attr2 = new AsyncMethodBuilderAttribute(typeof(AttributesTests));
-            Assert.Equal(typeof(AttributesTests), attr2.BuilderType);
-        }
-
-        [Fact]
         public static void CallerFilePathAttributeTests()
         {
             new CallerFilePathAttribute();

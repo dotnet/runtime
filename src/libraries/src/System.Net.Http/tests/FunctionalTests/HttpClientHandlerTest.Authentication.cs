@@ -12,7 +12,7 @@ using Xunit;
 namespace System.Net.Http.Functional.Tests
 {
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Tests would need to be rewritten due to behavior differences with WinRT")]
-    public abstract class HttpClientHandler_Authentication_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_Authentication_Test : HttpClientHandlerTestBase
     {
         private const string Username = "testusername";
         private const string Password = "testpassword";

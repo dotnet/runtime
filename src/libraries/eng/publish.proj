@@ -1,16 +1,26 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
+  <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
+
+  <!-- We need to import Directory.Build.targets at the beginning because there is where we import the restored tools targets, in 
+  this case we need Microsoft.DotNet.Build.Tasks.Feed targets to be imported. -->
   <Import Project="..\Directory.Build.targets" />
 
   <PropertyGroup>
     <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">corefx</GitHubRepositoryName>
-    <AssetManifestFilePath>$(ArtifactsDir)AssetManifests\$(GitHubRepositoryName).xml</AssetManifestFilePath>
+    <AssetManifestFileName Condition="'$(AssetManifestFileName)' == '' AND '$(ManifestBuildId)' != ''">$(GitHubRepositoryName)-$(ManifestBuildId)</AssetManifestFileName>
+    <AssetManifestFileName Condition="'$(AssetManifestFileName)' == ''">$(GitHubRepositoryName)</AssetManifestFileName>
+    <AssetManifestFilePath>$(ArtifactsDir)AssetManifests\$(AssetManifestFileName).xml</AssetManifestFilePath>
 
     <PackageOutputRoot Condition="'$(PackagesOutputRoot)' == ''">$(ArtifactsDir)/packages/</PackageOutputRoot>
     <FinalPublishPattern>$(PackageOutputRoot)*.nupkg</FinalPublishPattern>
     <FinalPublishPrivatePattern>$(PackageOutputRoot)*Private*.nupkg</FinalPublishPrivatePattern>
     <FinalPublishExperimentalPattern>$(PackageOutputRoot)*Experimental*.nupkg</FinalPublishExperimentalPattern>
+
+    <SymbolsOutputRoot Condition="'$(SymbolsOutputRoot)' == ''">$(PackageOutputRoot)/symbols/</SymbolsOutputRoot>
+    <SymbolsPublishPattern>$(SymbolsOutputRoot)*.nupkg</SymbolsPublishPattern>
   </PropertyGroup>
+
 
   <ItemGroup Condition="'$(PackagesGlob)' != ''">
     <PackagesToPublish Include="$(PackagesGlob)" />
@@ -23,18 +33,15 @@
     <PackagesToPublish Include="$(FinalPublishPattern)" Exclude="@(PackagesToPublish)" />
   </ItemGroup>
 
-  <Target Name="PublishToAzureBlobFeed">
-    <Error Condition="'@(PackagesToPublish)'==''" Text="PackagesToPublish for packages is empty." />
-    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
-                    AccountKey="$(AccountKey)"
-                    ItemsToPush="@(PackagesToPublish)"
-                    Overwrite="$(PublishOverwrite)"
-                    AssetManifestPath="$(AssetManifestFilePath)"
-                    ManifestBuildId="$(ManifestBuildId)"
-                    ManifestBranch="$(ManifestBranch)"
-                    ManifestCommit="$(ManifestCommit)"
-                    ManifestRepoUri="$(ManifestRepoUri)" />
-  </Target>
+  <ItemGroup>
+    <SymbolPackagesToPublish  Include="$(SymbolsPublishPattern)">
+      <ManifestArtifactData>NonShipping=true</ManifestArtifactData>
+    </SymbolPackagesToPublish>
+
+    <PackagesToPublish Condition="'$(IncludeSymbolsOnPackagePublish)' == 'true'" Include="@(SymbolPackagesToPublish)" />
+
+    <PublishSymbolsDependsOn Include="SetupPublishSymbols" />
+  </ItemGroup>
 
   <Target Name="NuGetPush">
 
@@ -82,8 +89,16 @@
       IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)"
       PackageFile="%(NuGetPushCommand.PackageToPush)"
       PassIfIdenticalV2Feed="$(PassIfIdenticalV2Feed)" />
-
   </Target>
 
-  <Target Name="CheckForBuildTools" />
+  <Target Name="SetupPublishSymbols">
+    <PropertyGroup>
+      <ConvertPortablePdbsToWindowsPdbs Condition="'$(ConvertPortablePdbsToWindowsPdbs)'==''">true</ConvertPortablePdbsToWindowsPdbs>
+    </PropertyGroup>
+
+    <Error Condition="'$(SymbolServerPath)'==''" Text="Missing property SymbolServerPath" />
+    <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
+
+    <Message Importance="High" Text="Publishing %(SymbolPackagesToPublish.Identity) to $(SymbolServerPath)"/>
+  </Target>
 </Project>

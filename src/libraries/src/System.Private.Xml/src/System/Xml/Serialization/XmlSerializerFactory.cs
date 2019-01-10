@@ -16,73 +16,40 @@ namespace System.Xml.Serialization
     using System.Diagnostics;
     using System.Xml.Serialization;
 
-
-    /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSerializerFactory
     {
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
 
-        /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory.CreateSerializer"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace)
         {
             return CreateSerializer(type, overrides, extraTypes, root, defaultNamespace, null);
         }
 
-        /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory.CreateSerializer2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSerializer CreateSerializer(Type type, XmlRootAttribute root)
         {
             return CreateSerializer(type, null, Array.Empty<Type>(), root, null, null);
         }
 
-        /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory.CreateSerializer3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSerializer CreateSerializer(Type type, Type[] extraTypes)
         {
             return CreateSerializer(type, null, extraTypes, null, null, null);
         }
 
-        /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory.CreateSerializer4"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides)
         {
             return CreateSerializer(type, overrides, Array.Empty<Type>(), null, null, null);
         }
 
-        /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory.CreateSerializer5"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSerializer CreateSerializer(XmlTypeMapping xmlTypeMapping)
         {
             return new XmlSerializer(xmlTypeMapping);
         }
 
-        /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory.CreateSerializer6"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSerializer CreateSerializer(Type type)
         {
             return CreateSerializer(type, (string)null);
         }
 
-        /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory.CreateSerializer1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSerializer CreateSerializer(Type type, string defaultNamespace)
         {
             return new XmlSerializer(type, defaultNamespace);

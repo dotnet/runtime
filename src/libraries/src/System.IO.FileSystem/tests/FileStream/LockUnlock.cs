@@ -153,7 +153,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/corefx/issues/34397
         [InlineData(10, 0, 10, 1, 2)]
         [InlineData(10, 3, 5, 3, 5)]
         [InlineData(10, 3, 5, 3, 4)]

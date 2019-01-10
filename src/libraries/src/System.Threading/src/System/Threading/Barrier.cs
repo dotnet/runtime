@@ -387,7 +387,7 @@ namespace System.Threading
                     }
                     break;
                 }
-                spinner.SpinOnce();
+                spinner.SpinOnce(sleep1Threshold: -1);
             }
             return newPhase;
         }
@@ -472,7 +472,7 @@ namespace System.Threading
                         break;
                     }
                 }
-                spinner.SpinOnce();
+                spinner.SpinOnce(sleep1Threshold: -1);
             }
         }
 
@@ -674,7 +674,7 @@ namespace System.Threading
                     break;
                 }
 
-                spinner.SpinOnce();
+                spinner.SpinOnce(sleep1Threshold: -1);
             }
 
             // ** Perform the real wait **
@@ -740,7 +740,7 @@ namespace System.Threading
                         else
                             return false;
                     }
-                    spinner.SpinOnce();
+                    spinner.SpinOnce(sleep1Threshold: -1);
                 }
             }
 

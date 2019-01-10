@@ -3,7 +3,6 @@
     <ProjectGuid>{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}</ProjectGuid>
     <AssemblyName>System.Runtime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetsAOT)'=='true' OR '$(TargetGroup)' == 'uap'">true</GenFacadesIgnoreMissingTypes>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>

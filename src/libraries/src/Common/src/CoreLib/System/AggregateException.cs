@@ -399,11 +399,9 @@ namespace System
                         continue;
                     }
 
-                    AggregateException currentInnerAsAggregate = currentInnerException as AggregateException;
-
                     // If this exception is an aggregate, keep it around for later.  Otherwise,
                     // simply add it to the list of flattened exceptions to be returned.
-                    if (currentInnerAsAggregate != null)
+                    if (currentInnerException is AggregateException currentInnerAsAggregate)
                     {
                         exceptionsToFlatten.Add(currentInnerAsAggregate);
                     }
