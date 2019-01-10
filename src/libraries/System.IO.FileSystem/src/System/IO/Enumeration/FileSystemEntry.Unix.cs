@@ -38,11 +38,15 @@ namespace System.IO.Enumeration
             // IMPORTANT: Attribute logic must match the logic in FileStatus
 
             bool isDirectory = false;
+            bool isSymlink = false;
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR)
             {
                 // We know it's a directory.
                 isDirectory = true;
             }
+            // Some operating systems don't have the inode type in the dirent structure,
+            // so we use DT_UNKNOWN as a sentinel value. As such, check if the dirent is a
+            // directory.
             else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK
                 || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
                 && Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus targetStatus) >= 0)
@@ -50,12 +54,23 @@ namespace System.IO.Enumeration
                 // Symlink or unknown: Stat to it to see if we can resolve it to a directory.
                 isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
+            // Same idea as the directory check, just repeated for (and tweaked due to the
+            // nature of) symlinks.
+            if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
+            {
+                isSymlink = true;
+            }
+            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+                && (Interop.Sys.LStat(entry.FullPath, out Interop.Sys.FileStatus linkTargetStatus) >= 0))
+            {
+                isSymlink = (linkTargetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+            }
 
             entry._status = default;
             FileStatus.Initialize(ref entry._status, isDirectory);
 
             FileAttributes attributes = default;
-            if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
+            if (isSymlink)
                 attributes |= FileAttributes.ReparsePoint;
             if (isDirectory)
                 attributes |= FileAttributes.Directory;
