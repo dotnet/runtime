@@ -25,9 +25,6 @@
       <Visible>False</Visible>
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
-  <PropertyGroup>
-    <Optimize>True</Optimize>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="classic.il" />
   </ItemGroup>
