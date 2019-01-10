@@ -20,7 +20,7 @@ namespace System.Data.SqlClient.SNI
         private int _offset;
         private string _description;
         private SNIAsyncCallback _completionCallback;
-        private bool _isBufferFromArrayPool = false;
+        private bool _isBufferFromArrayPool;
 
         public SNIPacket() { }
 
@@ -174,6 +174,12 @@ namespace System.Data.SqlClient.SNI
         {
             Buffer.BlockCopy(data, 0, _data, _length, size);
             _length += size;
+        }
+
+        public void AppendData(ReadOnlySpan<byte> data)
+        {
+            data.CopyTo(_data.AsSpan(_length));
+            _length += data.Length;
         }
 
         /// <summary>
