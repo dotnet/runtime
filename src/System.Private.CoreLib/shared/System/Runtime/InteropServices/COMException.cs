@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Globalization;
+using System.Text;
 
 namespace System.Runtime.InteropServices
 {
@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices
     /// recognize the HResult.
     /// </summary>
     [Serializable]
-    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class COMException : ExternalException
     {
         public COMException()
@@ -47,28 +47,28 @@ namespace System.Runtime.InteropServices
 
         public override string ToString()
         {
+            StringBuilder s = new StringBuilder();
+            
+            string className = GetType().ToString();
+            s.Append(className).Append(" (0x").Append(HResult.ToString("X8", CultureInfo.InvariantCulture)).Append(')');
+
             string message = Message;
-            string s;
-            string _className = GetType().ToString();
-            s = _className + " (0x" + HResult.ToString("X8", CultureInfo.InvariantCulture) + ")";
-
-            if (!(message == null || message.Length <= 0))
+            if (!string.IsNullOrEmpty(message))
             {
-                s = s + ": " + message;
+                s.Append(": ").Append(message);
             }
 
-            Exception _innerException = InnerException;
-
-            if (_innerException != null)
+            Exception innerException = InnerException;
+            if (innerException != null)
             {
-                s = s + " ---> " + _innerException.ToString();
+                s.Append(" ---> ").Append(innerException.ToString());
             }
 
+            string stackTrace = StackTrace;
+            if (stackTrace != null)
+                s.Append(Environment.NewLine).Append(stackTrace);
 
-            if (StackTrace != null)
-                s += Environment.NewLine + StackTrace;
-
-            return s;
+            return s.ToString();
         }
     }
 }
