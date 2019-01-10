@@ -36,7 +36,7 @@ jobs:
     - name: portableBuildArg
       value: ''
     # Ensure that we produce os-specific packages for the following distros:
-    - ${{ if in(parameters.osIdentifier, 'Linux_rhel6', 'Linux_rhel7', 'Linux_musl') }}:
+    - ${{ if in(parameters.osIdentifier, 'Linux_rhel6', 'Linux_musl') }}:
       - name: portableBuildArg
         value: '-portablebuild=false'
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:

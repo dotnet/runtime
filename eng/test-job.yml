@@ -129,9 +129,13 @@ jobs:
           # Access token variable for internal project
           helixAccessToken: $(DotNet-HelixApi-Access)
           helixQueues: ${{ parameters.helixQueuesInternal }}
+          ${{ if eq(parameters.helixQueuesInternal, '') }}:
+            condition: false
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           isExternal: true
-          creator: $(Build.RequestedForId)
+          creator: coreclr/pulls
           helixQueues: ${{ parameters.helixQueuesPublic }}
+          ${{ if eq(parameters.helixQueuesPublic, '') }}:
+            condition: false
 
         scenarios: ${{ parameters.scenarios }}
