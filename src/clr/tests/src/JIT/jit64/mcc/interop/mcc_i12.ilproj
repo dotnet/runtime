@@ -28,9 +28,6 @@
       <Visible>False</Visible>
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
-  <PropertyGroup>
-    <Optimize>False</Optimize>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="mcc_i12.il ..\common\common.il" />
   </ItemGroup>
