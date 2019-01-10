@@ -20650,6 +20650,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                     call->gtCallMoreFlags |= GTF_CALL_M_UNBOXED;
                     derivedMethod = unboxedEntryMethod;
 
+#if FEATURE_TAILCALL_OPT
                     if (call->IsImplicitTailCall())
                     {
                         JITDUMP("Clearing the implicit tail call flag\n");
@@ -20659,6 +20660,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                         //
                         call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
                     }
+#endif // FEATURE_TAILCALL_OPT
                 }
                 else
                 {
