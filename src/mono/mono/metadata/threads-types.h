@@ -106,6 +106,20 @@ mono_thread_create_internal_handle (MonoDomain *domain, T func, gpointer arg, Mo
 }
 #endif
 
+/* Data owned by a MonoInternalThread that must live until both the finalizer
+ * for MonoInternalThread has run, and the underlying machine thread has
+ * detached.
+ *
+ * Normally a thread is first detached and then the InternalThread object is
+ * finalized and collected.  However during shutdown, when the root domain is
+ * finalized, all the InternalThread objects are finalized first and the
+ * machine threads are detached later.
+ */
+typedef struct {
+  MonoRefCount ref;
+  MonoCoopMutex *synch_cs;
+} MonoLongLivedThreadData;
+
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func);
 
 ICALL_EXPORT

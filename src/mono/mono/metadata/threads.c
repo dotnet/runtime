@@ -154,9 +154,6 @@ static GHashTable *contexts = NULL;
 /* Cleanup queue for contexts. */
 static MonoReferenceQueue *context_queue;
 
-/* Cleanup queue for threads. */
-static MonoReferenceQueue *thread_queue;
-
 /*
  * Threads which are starting up and they are not in the 'threads' hash yet.
  * When mono_thread_attach_internal is called for a thread, it will be removed from this hash table.
@@ -472,53 +469,56 @@ thread_get_tid (MonoInternalThread *thread)
 }
 
 static void
-free_synch_cs (void *user_data)
+free_synch_cs (MonoCoopMutex *synch_cs)
 {
-	MonoCoopMutex *synch_cs = (MonoCoopMutex*)user_data;
 	g_assert (synch_cs);
 	mono_coop_mutex_destroy (synch_cs);
 	g_free (synch_cs);
 }
 
 static void
-ensure_synch_cs_set (MonoInternalThread *thread)
+free_longlived_thread_data (void *user_data)
 {
-	MonoCoopMutex *synch_cs;
+	MonoLongLivedThreadData *lltd = (MonoLongLivedThreadData*)user_data;
+	free_synch_cs (lltd->synch_cs);
 
-	if (thread->synch_cs != NULL) {
-		return;
-	}
+	g_free (lltd);
+}
 
-	synch_cs = g_new0 (MonoCoopMutex, 1);
-	mono_coop_mutex_init_recursive (synch_cs);
+static void
+init_longlived_thread_data (MonoLongLivedThreadData *lltd)
+{
+	mono_refcount_init (lltd, free_longlived_thread_data);
+	mono_refcount_inc (lltd);
+	/* Initial refcount is 2: decremented once by
+	 * mono_thread_detach_internal and once by the MonoInternalThread
+	 * finalizer - whichever one happens later will deallocate. */
 
-	if (mono_atomic_cas_ptr ((gpointer *)&thread->synch_cs,
-					       synch_cs, NULL) != NULL) {
-		/* Another thread must have installed this CS */
-		mono_coop_mutex_destroy (synch_cs);
-		g_free (synch_cs);
-	} else {
-		// If we were the ones to initialize with this synch_cs variable, we
-		// should associate this one with our cleanup
-		mono_gc_reference_queue_add_internal (thread_queue, &thread->obj, synch_cs);
-	}
+	lltd->synch_cs = g_new0 (MonoCoopMutex, 1);
+	mono_coop_mutex_init_recursive (lltd->synch_cs);
+
+	mono_memory_barrier ();
+}
+
+static void
+dec_longlived_thread_data (MonoLongLivedThreadData *lltd)
+{
+	mono_refcount_dec (lltd);
 }
 
 static inline void
 lock_thread (MonoInternalThread *thread)
 {
-	if (!thread->synch_cs)
-		ensure_synch_cs_set (thread);
+	g_assert (thread->longlived);
+	g_assert (thread->longlived->synch_cs);
 
-	g_assert (thread->synch_cs);
-
-	mono_coop_mutex_lock (thread->synch_cs);
+	mono_coop_mutex_lock (thread->longlived->synch_cs);
 }
 
 static inline void
 unlock_thread (MonoInternalThread *thread)
 {
-	mono_coop_mutex_unlock (thread->synch_cs);
+	mono_coop_mutex_unlock (thread->longlived->synch_cs);
 }
 
 static void
@@ -673,7 +673,8 @@ create_internal_thread_object (void)
 	/* only possible failure mode is OOM, from which we don't exect to recover */
 	mono_error_assert_ok (error);
 
-	ensure_synch_cs_set (thread);
+	thread->longlived = g_new0 (MonoLongLivedThreadData, 1);
+	init_longlived_thread_data (thread->longlived);
 
 	thread->apartment_state = ThreadApartmentState_Unknown;
 	thread->managed_id = get_next_managed_thread_id ();
@@ -942,20 +943,12 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	thread->abort_exc = NULL;
 	thread->current_appcontext = NULL;
 
-	/*
-	 * This should be alive until after the reference queue runs the
-	 * post-free cleanup function
-	 */
-	while (TRUE) {
-		guint32 old_state = thread->state;
+	LOCK_THREAD (thread);
 
-		guint32 new_state = old_state;
-		new_state |= ThreadState_Stopped;
-		new_state &= ~ThreadState_Background;
+	thread->state |= ThreadState_Stopped;
+	thread->state &= ~ThreadState_Background;
 
-		if (mono_atomic_cas_i32 ((gint32 *)&thread->state, new_state, old_state) == old_state)
-			break;
-	}
+	UNLOCK_THREAD (thread);
 
 	/*
 	An interruption request has leaked to cleanup. Adjust the global counter.
@@ -1048,6 +1041,10 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	mono_gchandle_free_internal (gchandle);
 
 	mono_thread_info_unset_internal_thread_gchandle (info);
+
+	/* Possibly free synch_cs, if the finalizer for InternalThread already
+	 * ran also. */
+	dec_longlived_thread_data (thread->longlived);
 
 	MONO_PROFILER_RAISE (thread_exited, (thread->tid));
 
@@ -1666,9 +1663,9 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 	CloseHandle (this_obj->native_handle);
 #endif
 
-	// Taken care of by reference queue, but we should
-	// zero it out
-	this_obj->synch_cs = NULL;
+	/* Possibly free synch_cs, if the thread already detached also. */
+	dec_longlived_thread_data (this_obj->longlived);
+
 
 	if (this_obj->name) {
 		void *name = this_obj->name;
@@ -3253,7 +3250,6 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_thread_start_cb = start_cb;
 	mono_thread_attach_cb = attach_cb;
 
-	thread_queue = mono_gc_reference_queue_new_internal (free_synch_cs);
 }
 
 static gpointer
@@ -5497,7 +5493,7 @@ async_suspend_critical (MonoThreadInfo *info, gpointer ud)
 	}
 }
 
-/* LOCKING: called with @thread synch_cs held, and releases it */
+/* LOCKING: called with @thread longlived->synch_cs held, and releases it */
 static void
 async_suspend_internal (MonoInternalThread *thread, gboolean interrupt)
 {
@@ -5520,7 +5516,7 @@ async_suspend_internal (MonoInternalThread *thread, gboolean interrupt)
 	UNLOCK_THREAD (thread);
 }
 
-/* LOCKING: called with @thread synch_cs held, and releases it */
+/* LOCKING: called with @thread longlived->synch_cs held, and releases it */
 static void
 self_suspend_internal (void)
 {
