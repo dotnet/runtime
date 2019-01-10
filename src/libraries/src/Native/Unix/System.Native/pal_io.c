@@ -352,41 +352,10 @@ static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntr
     // location of the start of the string that exists in their own byte buffer.
     outputEntry->Name = entry->d_name;
 #if !defined(DT_UNKNOWN)
-    /* AIX has no d_type, make a substitute */
-    struct stat s;
-    stat(entry->d_name, &s);
-    if (S_ISDIR(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_DIR;
-    }
-    else if (S_ISFIFO(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_FIFO;
-    }
-    else if (S_ISCHR(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_CHR;
-    }
-    else if (S_ISBLK(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_BLK;
-    }
-    else if (S_ISREG(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_REG;
-    }
-    else if (S_ISLNK(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_LNK;
-    }
-    else if (S_ISSOCK(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_SOCK;
-    }
-    else
-    {
-        outputEntry->InodeType = PAL_DT_UNKNOWN;
-    }
+    // AIX has no d_type, and since we can't get the directory that goes with
+    // the filename from ReadDir, we can't stat the file. Return unknown and
+    // hope that managed code can properly stat the file.
+    outputEntry->InodeType = PAL_DT_UNKNOWN;
 #else
     outputEntry->InodeType = (int32_t)entry->d_type;
 #endif
