@@ -13,8 +13,10 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// Base class for file based <see cref="ConfigurationProvider"/>.
     /// </summary>
-    public abstract class FileConfigurationProvider : ConfigurationProvider
+    public abstract class FileConfigurationProvider : ConfigurationProvider, IDisposable
     {
+        private readonly IDisposable _changeTokenRegistration;
+
         /// <summary>
         /// Initializes a new instance with the specified source.
         /// </summary>
@@ -29,7 +31,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (Source.ReloadOnChange && Source.FileProvider != null)
             {
-                ChangeToken.OnChange(
+                _changeTokenRegistration = ChangeToken.OnChange(
                     () => Source.FileProvider.Watch(Source.Path),
                     () => {
                         Thread.Sleep(Source.ReloadDelay);
@@ -125,6 +127,18 @@ namespace Microsoft.Extensions.Configuration
             {
                 throw e;
             }
+        }
+
+        /// <inheritdoc />
+        public void Dispose() => Dispose(true);
+
+        /// <summary>
+        /// Dispose the provider.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> if invoked from <see cref="IDisposable.Dispose"/>.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            _changeTokenRegistration?.Dispose();
         }
     }
 }
