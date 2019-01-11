@@ -18,6 +18,12 @@
 #undef Sleep
 #endif // Sleep
 
+#ifdef HAS_SYSTEM_YIELDPROCESSOR
+// YieldProcessor is defined to Dont_Use_YieldProcessor. Restore it to the system-default implementation for the GC.
+#undef YieldProcessor
+#define YieldProcessor System_YieldProcessor
+#endif
+
 #define NUMA_NODE_UNDEFINED UINT32_MAX
 
 // Critical section used by the GC
