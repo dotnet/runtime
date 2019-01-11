@@ -59,6 +59,7 @@ public class Managed
         RunMarshalSeqStructAsParamByRefOut();
         RunMarshalSeqStructAsParamByValInOut();
         RunMarshalSeqStructAsParamByRefInOut();
+        RunMarshalSeqStructAsReturn();
         
         if (failures > 0)
         {
@@ -314,6 +315,15 @@ public class Managed
     static extern bool MarshalStructAsParam_AsSeqByValSequentialDoubleWrapper(SequentialDoubleWrapper wrapper);
     [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsSeqByValSequentialAggregateSequentialWrapper(AggregateSequentialWrapper wrapper);
+
+    [DllImport("MarshalStructAsParam")]
+    static extern HFA GetHFA(float f1, float f2, float f3, float f4);
+
+    [DllImport("MarshalStructAsParam")]
+    static extern ManyInts GetMultiplesOf(int i);
+
+    [DllImport("MarshalStructAsParam")]
+    static extern MultipleBool GetBools(bool b1, bool b2);
 
     #region Marshal struct method in PInvoke
     [SecuritySafeCritical]
@@ -2372,6 +2382,35 @@ public class Managed
         MarshalStructAsParam_AsSeqByRefInOut(StructID.S9Id);
         MarshalStructAsParam_AsSeqByRefInOut(StructID.IncludeOuterIntegerStructSequentialId);
         MarshalStructAsParam_AsSeqByRefInOut(StructID.S11Id);
+    }
+
+    private static void RunMarshalSeqStructAsReturn()
+    {
+        Console.WriteLine("\nVerify marshalsequential layout struct as return.");
+
+        HFA hfa = GetHFA(12.34f, 52.12f, 64.124f, 675.452351322f);
+        if (hfa.f1 != 12.34f || hfa.f2 != 52.12f || hfa.f3 != 64.124f || hfa.f4 != 675.452351322f)
+        {
+            Console.WriteLine("4-float structure returned from native to managed failed.");
+        }
+
+        ManyInts multiples = GetMultiplesOf(2);
+
+        int i = 1;
+        foreach (int multiple in multiples)
+        {
+            if (multiple != 2 * i)
+            {
+                Console.WriteLine("Structure of 20 ints returned from native to managed failed.");
+            }
+            i++;
+        }
+
+        MultipleBool bools = GetBools(true, true);
+        if (!bools.b1 || !bools.b2)
+        {
+            Console.WriteLine("Structure of two bools marshalled to BOOLs returned from native to managed failed");
+        }
     }
 }
 

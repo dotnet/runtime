@@ -888,7 +888,7 @@ protected:
 VOID ThrowInteropParamException(UINT resID, UINT paramIdx);
 
 VOID CollateParamTokens(IMDInternalImport *pInternalImport, mdMethodDef md, ULONG numargs, mdParamDef *aParams);
-bool IsUnsupportedValueTypeReturn(MetaSig& msig);
+bool IsUnsupportedTypedrefReturn(MetaSig& msig);
 
 void FindCopyCtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);
 void FindDtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);

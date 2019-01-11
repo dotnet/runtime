@@ -83,3 +83,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE TestNoGC(int *pintValue, GCCallback 
     return intReturn;
 }
 
+extern "C" DLL_EXPORT void* STDMETHODCALLTYPE InvalidMarshalPointer_Return()
+{
+    return nullptr;
+}

@@ -17,3 +17,8 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Marshal_Invalid(void* invalid)
 {
     return FALSE;
 }
+
+extern "C" DLL_EXPORT void* STDMETHODCALLTYPE Marshal_Invalid_Return()
+{
+    return nullptr;
+}

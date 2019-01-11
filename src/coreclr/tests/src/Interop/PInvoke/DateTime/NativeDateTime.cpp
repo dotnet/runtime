@@ -225,3 +225,8 @@ extern "C" DLL_EXPORT Datetime_Del_MarshalSeqStruct_InOut_cdecl __stdcall GetDel
 {
     return MarshalSeqStruct_InOut_cdecl;
 }
+
+extern "C" DATE DLL_EXPORT STDMETHODCALLTYPE PassThroughDate(DATE d)
+{
+    return d;
+}

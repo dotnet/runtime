@@ -11,6 +11,8 @@ extern "C" DLL_EXPORT void __cdecl TestVarArgs(LPWSTR formattedString, SIZE_T bu
     va_start(args, format);
 
     vswprintf_s(formattedString, bufferSize, format, args);
+
+    va_end(args);
 }
 
 extern "C" DLL_EXPORT void STDMETHODCALLTYPE TestArgIterator(LPWSTR formattedString, SIZE_T bufferSize, LPCWSTR format, va_list args)

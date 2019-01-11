@@ -42,6 +42,7 @@ unsafe class ArrayWithOffsetTest
 
             Assert.Throws<MarshalDirectiveException>(() => ArrayWithOffsetNative.Marshal_Invalid(arrayWithOffset));
             Assert.Throws<MarshalDirectiveException>(() => ArrayWithOffsetNative.Marshal_Invalid(ref arrayWithOffset));
+            Assert.Throws<MarshalDirectiveException>(() => ArrayWithOffsetNative.Marshal_Invalid_Return());
         }
         catch (Exception e)
         {

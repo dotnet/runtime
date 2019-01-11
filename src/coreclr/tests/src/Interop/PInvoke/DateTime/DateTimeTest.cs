@@ -46,6 +46,9 @@ class DatetimeTest
     [DllImport("NativeDateTime.dll", CallingConvention = CallingConvention.StdCall)]
     private static extern bool Marshal_Out_stdcall([Out][MarshalAs(UnmanagedType.Struct)] out DateTime t);
 
+    [DllImport("NativeDateTime.dll")]
+    private static extern DateTime PassThroughDate(DateTime d);
+
     [DllImport("NativeDateTime.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern bool MarshalSeqStruct_InOut_cdecl([In, Out][MarshalAs(UnmanagedType.Struct)] ref Stru_Seq_DateAsStructAsFld t);
 
@@ -124,6 +127,9 @@ class DatetimeTest
             StDate2.iInt = 100;
             Assert.IsTrue(MarshalExpStruct_InOut_cdecl(ref StDate2), "MarshalExpStruct_InOut_cdecl : Native side check failed");
             Assert.AreEqual(ExpectedRetdate, StDate2.dt, "MarshalExpStruct_InOut_cdecl : Returned date is wrong");
+
+            DateTime date3 = new DateTime(2008, 7, 4);
+            Assert.AreEqual(date3, PassThroughDate(date3));
 
             #endregion
 
