@@ -533,6 +533,12 @@ public:
     // returns the new ID.
     UINT32 GetTypeID(PTR_MethodTable pMT);
 
+#ifndef DACCESS_COMPILE
+    //------------------------------------------------------------------------
+    // Remove all types that belong to the passed in LoaderAllocator
+    void RemoveTypes(LoaderAllocator* pLoaderAllocator);
+#endif // DACCESS_COMPILE
+
     //------------------------------------------------------------------------
     inline UINT32 GetCount()
         { LIMITED_METHOD_CONTRACT; return m_entryCount; }
