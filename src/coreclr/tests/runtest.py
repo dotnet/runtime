@@ -61,11 +61,14 @@ from collections import defaultdict
 from sys import platform as _platform
 
 # Version specific imports
-
 if sys.version_info.major < 3:
     import urllib
 else:
     import urllib.request
+
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+
+from coreclr_arguments import *
 
 ################################################################################
 # Argument Parser
@@ -1110,113 +1113,47 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    if args.generate_layout_only:
-        args.generate_layout = True
+    coreclr_setup_args = CoreclrArguments(args, 
+                                          require_built_test_dir=True, 
+                                          require_built_core_root=True, 
+                                          require_built_product_dir=args.generate_layout_only)
 
-    host_os = None
-    arch = args.arch.lower()
-    build_type = args.build_type
+    normal_location = os.path.join(coreclr_setup_args.bin_location, "tests", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type))
 
-    test_location = args.test_location
-    core_root = args.core_root
-    test_native_bin_location = args.test_native_bin_location
+    # If we have supplied our own test location then we need to create a test location
+    # that the scripting will expect. As it is now, there is a dependency on the
+    # test location being under test/<os>.<build_type>.<arch>
 
-    coreclr_repo_location = args.coreclr_repo_location
-    if os.path.basename(coreclr_repo_location) == "tests":
-        coreclr_repo_location = os.path.dirname(coreclr_repo_location)
-   
-    if _platform == "linux" or _platform == "linux2":
-        host_os = "Linux"
-    elif _platform == "darwin":
-        host_os = "OSX"
-    elif _platform == "win32":
-        host_os = "Windows_NT"
-    else:
-        print("Unknown OS: %s" % host_os)
-        sys.exit(1)
-
-    assert os.path.isdir(coreclr_repo_location)
-
-    valid_arches = ["x64", "x86", "arm", "arm64"]
-    if not arch in valid_arches:
-        print("Unsupported architecture: %s." % arch)
-        print("Supported architectures: %s" % "[%s]" % ", ".join(valid_arches))
-        sys.exit(1)
-
-    def check_build_type(build_type):
-        valid_build_types = ["Debug", "Checked", "Release"]
-
-        if build_type != None and len(build_type) > 0:
-            # Force the build type to be capitalized
-            build_type = build_type.capitalize()
-
-        if not build_type in valid_build_types:
-            print("Unsupported configuration: %s." % build_type)
-            print("Supported configurations: %s" % "[%s]" % ", ".join(valid_build_types))
-            sys.exit(1)
-
-        return build_type
-
-    build_type = check_build_type(build_type)
-
-    if test_location is None:
-        default_test_location = os.path.join(coreclr_repo_location, "bin", "tests", "%s.%s.%s" % (host_os, arch, build_type))
-        
-        if os.path.isdir(default_test_location):
-            test_location = default_test_location
-
-            print("Using default test location.")
-            print("TestLocation: %s" % default_test_location)
-            print("")
-
-        else:
-            # The tests for the default location have not been built.
-            print("Error, unable to find the tests at %s" % default_test_location)
-
-            suggested_location = None
-            possible_test_locations = [item for item in os.listdir(os.path.join(coreclr_repo_location, "bin", "tests")) if host_os in item and arch in item]
-            if len(possible_test_locations) > 0:
-                print("Tests are built for the following:")
-                for item in possible_test_locations:
-                    print(item.replace(".", " "))
-                
-                print("Please run runtest.py again with the correct build-type by passing -build_type")
-            else:
-                print("No tests have been built for this host and arch. Please run build-test.%s" % ("cmd" if host_os == "Windows_NT" else "sh"))
-            
-            sys.exit(1)
-    else:
-        # If we have supplied our own test location then we need to create a test location
-        # that the scripting will expect. As it is now, there is a dependency on the
-        # test location being under test/<os>.<build_type>.<arch>
-
-        # Make sure that we are using the correct build_type. This is a test drop, it is possible
-        # that we are inferring the build type to be Debug incorrectly.
-
-        if build_type not in test_location:
+    # Make sure that we are using the correct build_type. This is a test drop, it is possible
+    # that we are inferring the build type to be Debug incorrectly.
+    if coreclr_setup_args.build_type not in coreclr_setup_args.test_location:
             # Remove punctuation
-            corrected_build_type = re.sub("[%s]" % string.punctuation, "", test_location.split(".")[-1])
-            build_type = check_build_type(corrected_build_type)
+            corrected_build_type = re.sub("[%s]" % string.punctuation, "", coreclr_setup_args.test_location.split(".")[-1])
+            coreclr_setup_args.verify(corrected_build_type,
+                                      "build_type",
+                                      coreclr_setup_args.check_build_type,
+                                      "Unsupported configuration: %s.\nSupported configurations: %s" % (corrected_build_type, ", ".join(coreclr_setup_args.valid_build_types)))
 
-        default_test_location = os.path.join(coreclr_repo_location, "bin", "tests", "%s.%s.%s" % (host_os, arch, build_type))
+    if args.test_location is not None and coreclr_setup_args.test_location != normal_location:
+        test_location = args.test_location
 
         # Remove optional end os.path.sep
         if test_location[-1] == os.path.sep:
             test_location = test_location[:-1]
 
-        if test_location.lower() != default_test_location.lower() and os.path.isdir(default_test_location):
+        if normal_location.lower() != test_location.lower() and os.path.isdir(normal_location):
             # Remove the existing directory if there is one.
-            shutil.rmtree(default_test_location)
+            shutil.rmtree(normal_location)
 
             print("Non-standard test location being used.")
             print("Overwrite the standard location with these tests.")
             print("TODO: Change runtest.proj to allow running from non-standard test location.")
             print("")
 
-            print("cp -r %s %s" % (test_location, default_test_location))
-            shutil.copytree(test_location, default_test_location)
+            print("cp -r %s %s" % (coreclr_setup_args.test_location, normal_location))
+            shutil.copytree(coreclr_setup_args.test_location, normal_location)
 
-            test_location = default_test_location
+            test_location = normal_location
 
             # unset core_root so it can be put in the default location
             core_root = None
@@ -1224,35 +1161,15 @@ def setup_args(args):
             # Force the core_root to be setup again.
             args.generate_layout = True
 
-        else:
-            test_location = default_test_location
+            coreclr_setup_args.verify(test_location,
+                                      "test_location",
+                                      lambda arg: True,
+                                      "Error setting test location.")
 
-            print("Using default test location.")
-            print("TestLocation: %s" % default_test_location)
-            print("")
-
-    if core_root is None:
-        default_core_root = os.path.join(test_location, "Tests", "Core_Root")
-
-        if os.path.isdir(default_core_root):
-            core_root = default_core_root
-
-            print("Using default location for core_root.")
-            print("Core_Root: %s" % core_root)
-            print("")
-
-        elif args.generate_layout is False:
-            # CORE_ROOT has not been setup correctly.
-            print("Error, unable to find CORE_ROOT at %s" % default_core_root)
-            print("Please run runtest.py with --generate_layout specified.")
-
-            sys.exit(1)
-
-        else:
-            print("--generate_layout passed. Core_Root will be populated at: %s" % default_core_root)
-            core_root = default_core_root
-    else:
-        print("Core_Root: %s" % core_root)
+    coreclr_setup_args.verify(args,
+                              "generate_layout",
+                              lambda arg: True,
+                              "Error setting generate_layout")
 
     is_same_os = False
     is_same_arch = False
@@ -1260,36 +1177,46 @@ def setup_args(args):
 
     # We will write out build information into the test directory. This is used
     # by runtest.py to determine whether we need to rebuild the test wrappers.
-    if os.path.isfile(os.path.join(test_location, "build_info.json")):
-        with open(os.path.join(test_location, "build_info.json")) as file_handle:
+    if os.path.isfile(os.path.join(coreclr_setup_args.test_location, "build_info.json")):
+        with open(os.path.join(coreclr_setup_args.test_location, "build_info.json")) as file_handle:
             build_info = json.load(file_handle)
-        is_same_os = build_info["build_os"] == host_os
-        is_same_arch = build_info["build_arch"] == arch
-        is_same_build_type = build_info["build_type"] == build_type
+        is_same_os = build_info["build_os"] == coreclr_setup_args.host_os
+        is_same_arch = build_info["build_arch"] == coreclr_setup_args.arch
+        is_same_build_type = build_info["build_type"] == coreclr_setup_args.build_type
 
-    if host_os != "Windows_NT" and not (is_same_os and is_same_arch and is_same_build_type):
-        if test_native_bin_location is None:
-            print("Using default location for test_native_bin_location.")
-            test_native_bin_location = os.path.join(os.path.join(coreclr_repo_location, "bin", "obj", "%s.%s.%s" % (host_os, arch, build_type), "tests"))
-            print("Native bin location: %s" % test_native_bin_location)
-            print("")
-            
-        if not os.path.isdir(test_native_bin_location):
-            print("Error, test_native_bin_location: %s, does not exist." % test_native_bin_location)
-            sys.exit(1)
-
-    if args.product_location is None and args.generate_layout:
-        product_location = os.path.join(coreclr_repo_location, "bin", "Product", "%s.%s.%s" % (host_os, arch, build_type))
-        if not os.path.isdir(product_location):
-            print("Error, unable to determine the product location. This is most likely because build_type was")
-            print("incorrectly passed. Or the product is not built. Please explicitely pass -product_location")
-
-            sys.exit(1)
-
+    if coreclr_setup_args.host_os != "Windows_NT" and not (is_same_os and is_same_arch and is_same_build_type):
+        test_native_bin_location = None
+        if args.test_native_bin_location is None:
+            test_native_bin_location = os.path.join(os.path.join(coreclr_setup_args.coreclr_repo_location, "bin", "obj", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type), "tests"))
+        else:
+            test_native_bin_location = args.test_native_bin_location
+        
+        coreclr_setup_args.verify(test_native_bin_location,
+                                  "test_native_bin_location",
+                                  lambda test_native_bin_location: os.path.isdir(test_native_bin_location),
+                                  "Error setting test_native_bin_location")
     else:
-        product_location = args.product_location
+        setattr(coreclr_setup_args, "test_native_bin_location", None)
 
-    return host_os, arch, build_type, coreclr_repo_location, product_location, core_root, test_location, test_native_bin_location
+    print("host_os                  :%s" % coreclr_setup_args.host_os)
+    print("arch                     :%s" % coreclr_setup_args.arch)
+    print("build_type               :%s" % coreclr_setup_args.build_type)
+    print("coreclr_repo_location    :%s" % coreclr_setup_args.coreclr_repo_location)
+    print("product_location         :%s" % coreclr_setup_args.product_location)
+    print("core_root                :%s" % coreclr_setup_args.core_root)
+    print("test_location            :%s" % coreclr_setup_args.test_location)
+    print("test_native_bin_location :%s" % coreclr_setup_args.test_native_bin_location)
+
+    return (
+        coreclr_setup_args.host_os,
+        coreclr_setup_args.arch,
+        coreclr_setup_args.build_type,
+        coreclr_setup_args.coreclr_repo_location,
+        coreclr_setup_args.product_location,
+        coreclr_setup_args.core_root,
+        coreclr_setup_args.test_location,
+        coreclr_setup_args.test_native_bin_location
+    )
 
 def setup_tools(host_os, coreclr_repo_location):
     """ Setup the tools for the repo
