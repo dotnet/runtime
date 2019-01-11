@@ -279,10 +279,6 @@ protected:
 
     void genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
 
-#ifdef DEBUG
-    static void genCheckSPOffset(bool isRegsCountOdd, int spOffset, int slotSize);
-#endif // DEBUG
-
     // A simple struct to keep register pairs for prolog and epilog.
     struct RegPair
     {
@@ -305,12 +301,8 @@ protected:
 
     static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
 
-    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask,
-                                         int       spDelta,
-                                         int spOffset DEBUGARG(bool isRegsToSaveCountOdd));
-    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask,
-                                            int       spDelta,
-                                            int spOffset DEBUGARG(bool isRegsToRestoreCountOdd));
+    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
+    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
@@ -514,6 +506,12 @@ protected:
 #if defined(DEBUG) && defined(LATE_DISASM) && defined(_TARGET_AMD64_)
     void genAmd64EmitterUnitTests();
 #endif
+
+#ifdef _TARGET_ARM64_
+    virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
+    virtual bool IsSaveFpLrWithAllCalleeSavedRegisters();
+    bool         genSaveFpLrWithAllCalleeSavedRegisters;
+#endif // _TARGET_ARM64_
 
     //-------------------------------------------------------------------------
     //
