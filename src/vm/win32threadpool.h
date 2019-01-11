@@ -697,7 +697,7 @@ public:
 
 	        while(lock != 0 || FastInterlockExchange( &lock, 1 ) != 0)
 	        {
-                YieldProcessor();           // indicate to the processor that we are spinning
+                YieldProcessorNormalized(); // indicate to the processor that we are spinning
 
 	            rounds++;
 	            

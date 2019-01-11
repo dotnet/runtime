@@ -107,7 +107,7 @@ INT32 Object::GetHashCodeEx()
                     iter++;
                     if ((iter % 1024) != 0 && g_SystemInfo.dwNumberOfProcessors > 1)
                     {
-                        YieldProcessor();           // indicate to the processor that we are spining
+                        YieldProcessorNormalized(); // indicate to the processor that we are spinning
                     }
                     else
                     {

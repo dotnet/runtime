@@ -103,7 +103,7 @@ void SpinUntil(void *pCond, BOOL fNonZero)
         else
         {
             // nope - just spin again
-            YieldProcessor();           // indicate to the processor that we are spining 
+            YieldProcessor();           // indicate to the processor that we are spinning 
             uNonSleepSpins--;
         }
     }
