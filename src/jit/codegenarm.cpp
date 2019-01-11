@@ -301,8 +301,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         genConsumeRegAndCopy(size, regCnt);
         endLabel = genCreateTempLabel();
         getEmitter()->emitIns_R_R(INS_TEST, easz, regCnt, regCnt);
-        emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
-        inst_JMP(jmpEqual, endLabel);
+        inst_JMP(EJ_eq, endLabel);
     }
 
     stackAdjustment = 0;
@@ -383,8 +382,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // Note that regCnt is the number of bytes to stack allocate.
         assert(genIsValidIntReg(regCnt));
         getEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, regCnt, STACK_ALIGN, INS_FLAGS_SET);
-        emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
-        inst_JMP(jmpNotEqual, loop);
+        inst_JMP(EJ_ne, loop);
     }
     else
     {
@@ -442,8 +440,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE, compiler->eeGetPageSize());
 
         getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, regTmp, regCnt);
-        emitJumpKind jmpLTU = genJumpKindForOper(GT_LT, CK_UNSIGNED);
-        inst_JMP(jmpLTU, done);
+        inst_JMP(EJ_lo, done);
 
         // Update SP to be at the next page of stack that we will tickle
         getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regTmp);
@@ -1137,7 +1134,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        genSetRegToCond(targetReg, tree);
+        inst_SETCC(GenCondition::FromRelop(tree), tree->TypeGet(), targetReg);
         genProduceReg(tree);
     }
 }
@@ -1163,8 +1160,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
     BasicBlock* skipLabel = genCreateTempLabel();
 
-    emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
-    inst_JMP(jmpEqual, skipLabel);
+    inst_JMP(EJ_eq, skipLabel);
 
     // emit the call to the EE-helper that stops for GC (or other reasons)
 
@@ -1237,54 +1233,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
 }
 
-//------------------------------------------------------------------------
-// genSetRegToCond: Generate code to materialize a condition into a register.
-//
-// Arguments:
-//   dstReg - The target register to set to 1 or 0
-//   tree - The GenTree Relop node that was used to set the Condition codes
-//
-// Return Value: none
-//
-// Preconditions:
-//    The condition codes must already have been appropriately set.
-//
-void CodeGen::genSetRegToCond(regNumber dstReg, GenTree* tree)
-{
-    // Emit code like that:
-    //   ...
-    //   beq True
-    //   bvs True    ; this second branch is typically absent
-    //   movs rD, #0
-    //   b Next
-    // True:
-    //   movs rD, #1
-    // Next:
-    //   ...
-
-    emitJumpKind jumpKind[2];
-    bool         branchToTrueLabel[2];
-    genJumpKindsForTree(tree, jumpKind, branchToTrueLabel);
-
-    BasicBlock* labelTrue = genCreateTempLabel();
-    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jumpKind[0]), labelTrue);
-
-    if (jumpKind[1] != EJ_NONE)
-    {
-        getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jumpKind[1]), labelTrue);
-    }
-
-    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree->gtType), dstReg, 0);
-
-    BasicBlock* labelNext = genCreateTempLabel();
-    getEmitter()->emitIns_J(INS_b, labelNext);
-
-    genDefineTempLabel(labelTrue);
-    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree->gtType), dstReg, 1);
-    genDefineTempLabel(labelNext);
-}
-
-//------------------------------------------------------------------------
 // genLongToIntCast: Generate code for long to int casts.
 //
 // Arguments:
@@ -1336,17 +1284,14 @@ void CodeGen::genLongToIntCast(GenTree* cast)
             BasicBlock* success = genCreateTempLabel();
 
             inst_RV_RV(INS_tst, loSrcReg, loSrcReg, TYP_INT, EA_4BYTE);
-            emitJumpKind JmpNegative = genJumpKindForOper(GT_LT, CK_LOGICAL);
-            inst_JMP(JmpNegative, allOne);
+            inst_JMP(EJ_mi, allOne);
             inst_RV_RV(INS_tst, hiSrcReg, hiSrcReg, TYP_INT, EA_4BYTE);
-            emitJumpKind jmpNotEqualL = genJumpKindForOper(GT_NE, CK_LOGICAL);
-            genJumpToThrowHlpBlk(jmpNotEqualL, SCK_OVERFLOW);
+            genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
             inst_JMP(EJ_jmp, success);
 
             genDefineTempLabel(allOne);
             inst_RV_IV(INS_cmp, hiSrcReg, -1, EA_4BYTE);
-            emitJumpKind jmpNotEqualS = genJumpKindForOper(GT_NE, CK_SIGNED);
-            genJumpToThrowHlpBlk(jmpNotEqualS, SCK_OVERFLOW);
+            genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
 
             genDefineTempLabel(success);
         }
@@ -1355,13 +1300,11 @@ void CodeGen::genLongToIntCast(GenTree* cast)
             if ((srcType == TYP_ULONG) && (dstType == TYP_INT))
             {
                 inst_RV_RV(INS_tst, loSrcReg, loSrcReg, TYP_INT, EA_4BYTE);
-                emitJumpKind JmpNegative = genJumpKindForOper(GT_LT, CK_LOGICAL);
-                genJumpToThrowHlpBlk(JmpNegative, SCK_OVERFLOW);
+                genJumpToThrowHlpBlk(EJ_mi, SCK_OVERFLOW);
             }
 
             inst_RV_RV(INS_tst, hiSrcReg, hiSrcReg, TYP_INT, EA_4BYTE);
-            emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_LOGICAL);
-            genJumpToThrowHlpBlk(jmpNotEqual, SCK_OVERFLOW);
+            genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
         }
     }
 

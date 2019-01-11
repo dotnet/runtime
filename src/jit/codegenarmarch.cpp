@@ -282,7 +282,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JTRUE:
-            genCodeForJumpTrue(treeNode);
+            genCodeForJumpTrue(treeNode->AsOp());
             break;
 
 #ifdef _TARGET_ARM64_
@@ -1331,13 +1331,13 @@ void CodeGen::genRangeCheck(GenTree* oper)
         //  constant operand in the second position
         src1    = arrLen;
         src2    = arrIndex;
-        jmpKind = genJumpKindForOper(GT_LE, CK_UNSIGNED);
+        jmpKind = EJ_ls;
     }
     else
     {
         src1    = arrIndex;
         src2    = arrLen;
-        jmpKind = genJumpKindForOper(GT_GE, CK_UNSIGNED);
+        jmpKind = EJ_hs;
     }
 
     var_types bndsChkType = genActualType(src2->TypeGet());
@@ -1480,8 +1480,7 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     emit->emitIns_R_R_I(ins_Load(TYP_INT), EA_PTRSIZE, tmpReg, arrReg, offset); // a 4 BYTE sign extending load
     emit->emitIns_R_R(INS_cmp, EA_4BYTE, tgtReg, tmpReg);
 
-    emitJumpKind jmpGEU = genJumpKindForOper(GT_GE, CK_UNSIGNED);
-    genJumpToThrowHlpBlk(jmpGEU, SCK_RNGCHK_FAIL);
+    genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL);
 
     genProduceReg(arrIndex);
 }
@@ -1688,7 +1687,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 
         // Generate the range check.
         getEmitter()->emitInsBinary(INS_cmp, emitActualTypeSize(TYP_I_IMPL), index, &arrLen);
-        genJumpToThrowHlpBlk(genJumpKindForOper(GT_GE, CK_UNSIGNED), SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
+        genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
     }
 
     // Can we use a ScaledAdd instruction?
@@ -3156,204 +3155,72 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
     compiler->compInfoBlkSize = 0; // not exposed by the GCEncoder interface
 }
 
-//-------------------------------------------------------------------------------------------
-// genJumpKindsForTree:  Determine the number and kinds of conditional branches
-//                       necessary to implement the given GT_CMP node
-//
-// Arguments:
-//   cmpTree           - (input) The GenTree node that is used to set the Condition codes
-//                     - The GenTree Relop node that was used to set the Condition codes
-//   jmpKind[2]        - (output) One or two conditional branch instructions
-//   jmpToTrueLabel[2] - (output) On Arm64 both branches will always branch to the true label
-//
-// Return Value:
-//    Sets the proper values into the array elements of jmpKind[] and jmpToTrueLabel[]
-//
-// Assumptions:
-//    At least one conditional branch instruction will be returned.
-//    Typically only one conditional branch is needed
-//     and the second jmpKind[] value is set to EJ_NONE
-//
-void CodeGen::genJumpKindsForTree(GenTree* cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2])
+// clang-format off
+const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 {
-    // On ARM both branches will always branch to the true label
-    jmpToTrueLabel[0] = true;
-    jmpToTrueLabel[1] = true;
+    { },       // NONE
+    { },       // 1
+    { EJ_lt }, // SLT
+    { EJ_le }, // SLE
+    { EJ_ge }, // SGE
+    { EJ_gt }, // SGT
+    { EJ_mi }, // S
+    { EJ_pl }, // NS
 
-    // For integer comparisons just use genJumpKindForOper
-    if (!varTypeIsFloating(cmpTree->gtOp.gtOp1))
-    {
-        CompareKind compareKind = ((cmpTree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
-        jmpKind[0]              = genJumpKindForOper(cmpTree->gtOper, compareKind);
-        jmpKind[1]              = EJ_NONE;
-    }
-    else // We have a Floating Point Compare operation
-    {
-        assert(cmpTree->OperIsCompare());
+    { EJ_eq }, // EQ
+    { EJ_ne }, // NE
+    { EJ_lo }, // ULT
+    { EJ_ls }, // ULE
+    { EJ_hs }, // UGE
+    { EJ_hi }, // UGT
+    { EJ_hs }, // C
+    { EJ_lo }, // NC
 
-        // For details on this mapping, see the ARM Condition Code table
-        // at section A8.3   in the ARMv7 architecture manual or
-        // at section C1.2.3 in the ARMV8 architecture manual.
+    { EJ_eq },                // FEQ
+    { EJ_gt, GT_AND, EJ_lo }, // FNE
+    { EJ_lo },                // FLT
+    { EJ_ls },                // FLE
+    { EJ_ge },                // FGE
+    { EJ_gt },                // FGT
+    { EJ_vs },                // O
+    { EJ_vc },                // NO
 
-        // We must check the GTF_RELOP_NAN_UN to find out
-        // if we need to branch when we have a NaN operand.
-        //
-        if ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) != 0)
-        {
-            // Must branch if we have an NaN, unordered
-            switch (cmpTree->gtOper)
-            {
-                case GT_EQ:
-                    jmpKind[0] = EJ_eq; // branch or set when equal (and no NaN's)
-                    jmpKind[1] = EJ_vs; // branch or set when we have a NaN
-                    break;
-
-                case GT_NE:
-                    jmpKind[0] = EJ_ne; // branch or set when not equal (or have NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                case GT_LT:
-                    jmpKind[0] = EJ_lt; // branch or set when less than (or have NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                case GT_LE:
-                    jmpKind[0] = EJ_le; // branch or set when less than or equal (or have NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                case GT_GT:
-                    jmpKind[0] = EJ_hi; // branch or set when greater than (or have NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                case GT_GE:
-                    jmpKind[0] = EJ_hs; // branch or set when greater than or equal (or have NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                default:
-                    unreached();
-            }
-        }
-        else // ((cmpTree->gtFlags & GTF_RELOP_NAN_UN) == 0)
-        {
-            // Do not branch if we have an NaN, unordered
-            switch (cmpTree->gtOper)
-            {
-                case GT_EQ:
-                    jmpKind[0] = EJ_eq; // branch or set when equal (and no NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                case GT_NE:
-                    jmpKind[0] = EJ_gt; // branch or set when greater than (and no NaN's)
-                    jmpKind[1] = EJ_lo; // branch or set when less than (and no NaN's)
-                    break;
-
-                case GT_LT:
-                    jmpKind[0] = EJ_lo; // branch or set when less than (and no NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                case GT_LE:
-                    jmpKind[0] = EJ_ls; // branch or set when less than or equal (and no NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                case GT_GT:
-                    jmpKind[0] = EJ_gt; // branch or set when greater than (and no NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                case GT_GE:
-                    jmpKind[0] = EJ_ge; // branch or set when greater than or equal (and no NaN's)
-                    jmpKind[1] = EJ_NONE;
-                    break;
-
-                default:
-                    unreached();
-            }
-        }
-    }
-}
+    { EJ_eq, GT_OR, EJ_vs },  // FEQU
+    { EJ_ne },                // FNEU
+    { EJ_lt },                // FLTU
+    { EJ_le },                // FLEU
+    { EJ_hs },                // FGEU
+    { EJ_hi },                // FGTU
+    { },                      // P
+    { },                      // NP
+};
+// clang-format on
 
 //------------------------------------------------------------------------
-// genCodeForJumpTrue: Generates code for jmpTrue statement.
+// inst_SETCC: Generate code to set a register to 0 or 1 based on a condition.
 //
 // Arguments:
-//    tree - The GT_JTRUE tree node.
+//   condition - The condition
+//   type      - The type of the value to be produced
+//   dstReg    - The destination register to be set to 1 or 0
 //
-// Return Value:
-//    None
-//
-void CodeGen::genCodeForJumpTrue(GenTree* tree)
+void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstReg)
 {
-    GenTree* cmp = tree->gtOp.gtOp1;
-    assert(cmp->OperIsCompare());
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-
-    // Get the "kind" and type of the comparison.  Note that whether it is an unsigned cmp
-    // is governed by a flag NOT by the inherent type of the node
-    emitJumpKind jumpKind[2];
-    bool         branchToTrueLabel[2];
-    genJumpKindsForTree(cmp, jumpKind, branchToTrueLabel);
-    assert(jumpKind[0] != EJ_NONE);
-
-    // On ARM the branches will always branch to the true label
-    assert(branchToTrueLabel[0]);
-    inst_JMP(jumpKind[0], compiler->compCurBB->bbJumpDest);
-
-    if (jumpKind[1] != EJ_NONE)
-    {
-        // the second conditional branch always has to be to the true label
-        assert(branchToTrueLabel[1]);
-        inst_JMP(jumpKind[1], compiler->compCurBB->bbJumpDest);
-    }
-}
-
-//------------------------------------------------------------------------
-// genCodeForJcc: Produce code for a GT_JCC node.
-//
-// Arguments:
-//    tree - the node
-//
-void CodeGen::genCodeForJcc(GenTreeCC* tree)
-{
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-
-    CompareKind  compareKind = ((tree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
-    emitJumpKind jumpKind    = genJumpKindForOper(tree->gtCondition, compareKind);
-
-    inst_JMP(jumpKind, compiler->compCurBB->bbJumpDest);
-}
-
-//------------------------------------------------------------------------
-// genCodeForSetcc: Generates code for a GT_SETCC node.
-//
-// Arguments:
-//    setcc - the GT_SETCC node
-//
-// Assumptions:
-//    The condition represents an integer comparison. This code doesn't
-//    have the necessary logic to deal with floating point comparisons,
-//    in fact it doesn't even know if the comparison is integer or floating
-//    point because SETCC nodes do not have any operands.
-//
-
-void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
-{
-    regNumber    dstReg      = setcc->gtRegNum;
-    CompareKind  compareKind = setcc->IsUnsigned() ? CK_UNSIGNED : CK_SIGNED;
-    emitJumpKind jumpKind    = genJumpKindForOper(setcc->gtCondition, compareKind);
-
+    assert(varTypeIsIntegral(type));
     assert(genIsValidIntReg(dstReg));
-    // Make sure nobody is setting GTF_RELOP_NAN_UN on this node as it is ignored.
-    assert((setcc->gtFlags & GTF_RELOP_NAN_UN) == 0);
 
 #ifdef _TARGET_ARM64_
-    inst_SET(jumpKind, dstReg);
+    const GenConditionDesc& desc = GenConditionDesc::Get(condition);
+
+    inst_SET(desc.jumpKind1, dstReg);
+
+    if (desc.oper != GT_NONE)
+    {
+        BasicBlock* labelNext = genCreateTempLabel();
+        inst_JMP((desc.oper == GT_OR) ? desc.jumpKind1 : emitter::emitReverseJumpKind(desc.jumpKind1), labelNext);
+        inst_SET(desc.jumpKind2, dstReg);
+        genDefineTempLabel(labelNext);
+    }
 #else
     // Emit code like that:
     //   ...
@@ -3366,19 +3233,17 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     //   ...
 
     BasicBlock* labelTrue = genCreateTempLabel();
-    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jumpKind), labelTrue);
+    inst_JCC(condition, labelTrue);
 
-    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(setcc->TypeGet()), dstReg, 0);
+    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), dstReg, 0);
 
     BasicBlock* labelNext = genCreateTempLabel();
     getEmitter()->emitIns_J(INS_b, labelNext);
 
     genDefineTempLabel(labelTrue);
-    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(setcc->TypeGet()), dstReg, 1);
+    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), dstReg, 1);
     genDefineTempLabel(labelNext);
 #endif
-
-    genProduceReg(setcc);
 }
 
 //------------------------------------------------------------------------

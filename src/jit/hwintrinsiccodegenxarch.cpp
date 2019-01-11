@@ -1437,7 +1437,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(tmpReg != targetReg);
 
             genHWIntrinsic_R_RM(node, ins, emitTypeSize(TYP_SIMD16));
-            emit->emitIns_R(INS_setpo, EA_1BYTE, targetReg);
+            emit->emitIns_R(INS_setnp, EA_1BYTE, targetReg);
             emit->emitIns_R(INS_sete, EA_1BYTE, tmpReg);
             emit->emitIns_R_R(INS_and, EA_1BYTE, tmpReg, targetReg);
             emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, tmpReg);
@@ -1503,7 +1503,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(tmpReg != targetReg);
 
             genHWIntrinsic_R_RM(node, ins, emitTypeSize(TYP_SIMD16));
-            emit->emitIns_R(INS_setpe, EA_1BYTE, targetReg);
+            emit->emitIns_R(INS_setp, EA_1BYTE, targetReg);
             emit->emitIns_R(INS_setne, EA_1BYTE, tmpReg);
             emit->emitIns_R_R(INS_or, EA_1BYTE, tmpReg, targetReg);
             emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, tmpReg);
@@ -1615,7 +1615,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(tmpReg != targetReg);
 
             genHWIntrinsic_R_RM(node, ins, emitTypeSize(TYP_SIMD16));
-            emit->emitIns_R(INS_setpo, EA_1BYTE, targetReg);
+            emit->emitIns_R(INS_setnp, EA_1BYTE, targetReg);
             emit->emitIns_R(INS_sete, EA_1BYTE, tmpReg);
             emit->emitIns_R_R(INS_and, EA_1BYTE, tmpReg, targetReg);
             emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, tmpReg);
@@ -1681,7 +1681,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(tmpReg != targetReg);
 
             genHWIntrinsic_R_RM(node, ins, emitTypeSize(TYP_SIMD16));
-            emit->emitIns_R(INS_setpe, EA_1BYTE, targetReg);
+            emit->emitIns_R(INS_setp, EA_1BYTE, targetReg);
             emit->emitIns_R(INS_setne, EA_1BYTE, tmpReg);
             emit->emitIns_R_R(INS_or, EA_1BYTE, tmpReg, targetReg);
             emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, tmpReg);
