@@ -250,7 +250,6 @@ namespace Mono.Linker.Steps {
 					IMetadataScope scope = et.Scope;
 					if ((td != null) && Annotations.IsMarked (td)) {
 						scope = assembly.MainModule.ImportReference (td).Scope;
-						hash.Add (td, scope);
 						et.Scope = scope;
 					}
 				}
