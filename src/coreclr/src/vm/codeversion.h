@@ -53,7 +53,7 @@ public:
 #ifdef FEATURE_CODE_VERSIONING
     NativeCodeVersion(PTR_NativeCodeVersionNode pVersionNode);
 #endif
-    NativeCodeVersion(PTR_MethodDesc pMethod);
+    explicit NativeCodeVersion(PTR_MethodDesc pMethod);
     BOOL IsNull() const;
     PTR_MethodDesc GetMethodDesc() const;
     NativeCodeVersionId GetVersionId() const;

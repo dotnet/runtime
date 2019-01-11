@@ -840,7 +840,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     PCODE pOtherCode = NULL;
     EX_TRY
     {
-        pCode = UnsafeJitFunction(this, pilHeader, *pFlags, pSizeOfCode);
+        pCode = UnsafeJitFunction(pConfig->GetCodeVersion(), pilHeader, *pFlags, pSizeOfCode);
     }
     EX_CATCH
     {

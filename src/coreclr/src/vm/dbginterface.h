@@ -174,7 +174,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    virtual void JITComplete(MethodDesc* fd, TADDR newAddress) = 0;
+    virtual void JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress) = 0;
 
     //
     // EnC functions
