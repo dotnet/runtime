@@ -8,6 +8,7 @@ parameters:
   HelixPostCommands: ''              # optional -- commands to run after Helix work item execution
   WorkItemDirectory: ''              # optional -- a payload directory to zip up and send to Helix; requires WorkItemCommand; incompatible with XUnitProjects
   WorkItemCommand: ''                # optional -- a command to execute on the payload; requires WorkItemDirectory; incompatible with XUnitProjects
+  WorkItemTimeout: ''                # optional -- a timeout in seconds for the work item command; requires WorkItemDirectory; incompatible with XUnitProjects
   CorrelationPayloadDirectory: ''    # optional -- a directory to zip up and send to Helix as a correlation payload
   XUnitProjects: ''                  # optional -- semicolon delimited list of XUnitProjects to parse and send to Helix; requires XUnitRuntimeTargetFramework, XUnitPublishTargetFramework, XUnitRunnerVersion, and IncludeDotNetCli=true
   XUnitPublishTargetFramework: ''    # optional -- framework to use to publish your xUnit projects
@@ -37,6 +38,7 @@ steps:
       HelixPostCommands: ${{ parameters.HelixPostCommands }}
       WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
       WorkItemCommand: ${{ parameters.WorkItemCommand }}
+      WorkItemTimeout: ${{ parameters.WorkItemTimeout }}
       CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
       XUnitProjects: ${{ parameters.XUnitProjects }}
       XUnitPublishTargetFramework: ${{ parameters.XUnitPublishTargetFramework }}
@@ -64,6 +66,7 @@ steps:
       HelixPostCommands: ${{ parameters.HelixPostCommands }}
       WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
       WorkItemCommand: ${{ parameters.WorkItemCommand }}
+      WorkItemTimeout: ${{ parameters.WorkItemTimeout }}
       CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
       XUnitProjects: ${{ parameters.XUnitProjects }}
       XUnitPublishTargetFramework: ${{ parameters.XUnitPublishTargetFramework }}
