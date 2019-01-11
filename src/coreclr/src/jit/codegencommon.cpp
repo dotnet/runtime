@@ -165,6 +165,10 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     genInterruptibleUsed = false;
     genCurDispOffset     = (unsigned)-1;
 #endif
+
+#ifdef _TARGET_ARM64_
+    genSaveFpLrWithAllCalleeSavedRegisters = false;
+#endif // _TARGET_ARM64_
 }
 
 void CodeGenInterface::genMarkTreeInReg(GenTree* tree, regNumber reg)
@@ -4827,11 +4831,12 @@ void          CodeGen::genPushCalleeSavedRegisters()
     }
 #elif defined(_TARGET_ARM64_)
     // See the document "ARM64 JIT Frame Layout" and/or "ARM64 Exception Data" for more details or requirements and
-    // options. Case numbers in comments here refer to this document.
+    // options. Case numbers in comments here refer to this document. See also Compiler::lvaAssignFrameOffsets()
+    // for pictures of the general frame layouts, and CodeGen::genFuncletProlog() implementations (per architecture)
+    // for pictures of the funclet frame layouts.
     //
     // For most frames, generate, e.g.:
-    //      stp fp,  lr,  [sp,-0x80]!   // predecrement SP with full frame size, and store FP/LR pair. Store pair
-    //                                  // ensures stack stays aligned.
+    //      stp fp,  lr,  [sp,-0x80]!   // predecrement SP with full frame size, and store FP/LR pair.
     //      stp r19, r20, [sp, 0x60]    // store at positive offset from SP established above, into callee-saved area
     //                                  // at top of frame (highest addresses).
     //      stp r21, r22, [sp, 0x70]
@@ -4843,8 +4848,67 @@ void          CodeGen::genPushCalleeSavedRegisters()
     // 3. General-purpose registers are 8 bytes, floating-point registers are 16 bytes, but FP/SIMD registers only
     //    preserve their lower 8 bytes, by calling convention.
     // 4. For frames with varargs, we spill the integer register arguments to the stack, so all the arguments are
-    //    consecutive.
+    //    consecutive, and at the top of the frame.
     // 5. We allocate the frame here; no further changes to SP are allowed (except in the body, for localloc).
+    //
+    // For functions with GS and localloc, we change the frame so the frame pointer and LR are saved at the top
+    // of the frame, just under the varargs registers (if any). Note that the funclet frames must follow the same
+    // rule, and both main frame and funclet frames (if any) must put PSPSym in the same offset from Caller-SP.
+    // Since this frame type is relatively rare, we force using it via stress modes, for additional coverage.
+    //
+    // The frames look like the following (simplified to only include components that matter for establishing the
+    // frames). See also Compiler::lvaAssignFrameOffsets().
+    //
+    // Frames with FP, LR saved at bottom of frame (above outgoing argument space):
+    //
+    //      |                       |
+    //      |-----------------------|
+    //      |  incoming arguments   |
+    //      +=======================+ <---- Caller's SP
+    //      |  Varargs regs space   | // Only for varargs functions; 64 bytes
+    //      |-----------------------|
+    //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
+    //      |-----------------------|
+    //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |-----------------------|
+    //      | locals, temps, etc.   |
+    //      |-----------------------|
+    //      |      Saved LR         | // 8 bytes
+    //      |-----------------------|
+    //      |      Saved FP         | // 8 bytes
+    //      |-----------------------|
+    //      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
+    //      |-----------------------| <---- Ambient SP
+    //      |       |               |
+    //      ~       | Stack grows   ~
+    //      |       | downward      |
+    //              V
+    //
+    // Frames with FP, LR saved at top of frame (below saved varargs incoming arguments):
+    //
+    //      |                       |
+    //      |-----------------------|
+    //      |  incoming arguments   |
+    //      +=======================+ <---- Caller's SP
+    //      |  Varargs regs space   | // Only for varargs functions; 64 bytes
+    //      |-----------------------|
+    //      |      Saved LR         | // 8 bytes
+    //      |-----------------------|
+    //      |      Saved FP         | // 8 bytes
+    //      |-----------------------|
+    //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
+    //      |-----------------------|
+    //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |-----------------------|
+    //      | locals, temps, etc.   |
+    //      |-----------------------|
+    //      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
+    //      |-----------------------| <---- Ambient SP
+    //      |       |               |
+    //      ~       | Stack grows   ~
+    //      |       | downward      |
+    //              V
+    //
 
     int totalFrameSize = genTotalFrameSize();
 
@@ -4853,10 +4917,25 @@ void          CodeGen::genPushCalleeSavedRegisters()
     regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
     regMaskTP maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
 
-    int frameType = 0; // This number is arbitrary, is defined below, and corresponds to one of the frame styles we
-                       // generate based on various sizes.
-    int calleeSaveSPDelta          = 0;
-    int calleeSaveSPDeltaUnaligned = 0;
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Save float regs: ");
+        dspRegMask(maskSaveRegsFloat);
+        printf("\n");
+        printf("Save int   regs: ");
+        dspRegMask(maskSaveRegsInt);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    // The frameType number is arbitrary, is defined below, and corresponds to one of the frame styles we
+    // generate based on various sizes.
+    int frameType = 0;
+
+    // The amount to subtract from SP before starting to store the callee-saved registers. It might be folded into the
+    // first save instruction as a "predecrement" amount, if possible.
+    int calleeSaveSPDelta = 0;
 
     if (isFramePointerUsed())
     {
@@ -4865,7 +4944,27 @@ void          CodeGen::genPushCalleeSavedRegisters()
         assert((maskSaveRegsInt & RBM_FP) != 0);
         assert((maskSaveRegsInt & RBM_LR) != 0);
 
-        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize < 512))
+        // If we need to generate a GS cookie, we need to make sure the saved frame pointer and return address
+        // (FP and LR) are protected from buffer overrun by the GS cookie. If FP/LR are at the lowest addresses,
+        // then they are safe, since they are lower than any unsafe buffers. And the GS cookie we add will
+        // protect our caller's frame. If we have a localloc, however, that is dynamically placed lower than our
+        // saved FP/LR. In that case, we save FP/LR along with the rest of the callee-saved registers, above
+        // the GS cookie.
+        //
+        // After the frame is allocated, the frame pointer is established, pointing at the saved frame pointer to
+        // create a frame pointer chain.
+        //
+        // Do we need another frame pointer register to get good code quality in the case of having the frame pointer
+        // point high in the frame, so we can take advantage of arm64's preference for positive offsets? C++ native
+        // code dedicates callee-saved x19 to this, so generates:
+        //      mov x19, sp
+        // in the prolog, then uses x19 for local var accesses. Given that this case is so rare, we currently do
+        // not do this. That means that negative offsets from FP might need to use the reserved register to form
+        // the local variable offset for an addressing mode.
+
+        // TODO-ARM64-Bug?: should this be "totalFrameSize <= 512"?
+        if (((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize < 512)) &&
+            !genSaveFpLrWithAllCalleeSavedRegisters)
         {
             // Case #1.
             //
@@ -4873,11 +4972,14 @@ void          CodeGen::genPushCalleeSavedRegisters()
             //      stp fp,lr,[sp,#-framesz]!
             //
             // The (totalFrameSize < 512) condition ensures that both the predecrement
-            //  and the postincrement of SP can occur with STP.
+            // and the postincrement of SP can occur with STP.
             //
             // After saving callee-saved registers, we establish the frame pointer with:
             //      mov fp,sp
             // We do this *after* saving callee-saved registers, so the prolog/epilog unwind codes mostly match.
+
+            JITDUMP("Frame type 1. #outsz=0; #framesz=%d; LclFrameSize=%d\n", totalFrameSize,
+                    compiler->compLclFrameSize);
 
             frameType = 1;
 
@@ -4892,55 +4994,77 @@ void          CodeGen::genPushCalleeSavedRegisters()
         {
             // Case #2.
             //
-            // Generate:
-            //      sub sp,sp,#framesz
-            //      stp fp,lr,[sp,#outsz]   // note that by necessity, #outsz <= #framesz - 16, so #outsz <= 496.
-            //
-            // The (totalFrameSize <= 512) condition ensures the callee-saved registers can all be saved using STP with
-            // signed offset encoding.
+            // The (totalFrameSize <= 512) condition ensures the callee-saved registers can all be saved using STP
+            // with signed offset encoding.
             //
             // After saving callee-saved registers, we establish the frame pointer with:
             //      add fp,sp,#outsz
             // We do this *after* saving callee-saved registers, so the prolog/epilog unwind codes mostly match.
 
-            frameType = 2;
+            if (genSaveFpLrWithAllCalleeSavedRegisters)
+            {
+                JITDUMP("Frame type 4 (save FP/LR at top). #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
+                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
 
-            assert(compiler->lvaOutgoingArgSpaceSize + 2 * REGSIZE_BYTES <= (unsigned)totalFrameSize);
+                frameType = 4;
 
-            getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
-            compiler->unwindAllocStack(totalFrameSize);
+                // The frame will be allocated below, when the callee-saved registers are saved. This might mean a
+                // separate SUB instruction or the SP adjustment might be folded in to the first STP if there is
+                // no outgoing argument space AND no local frame space, that is, if the only thing the frame does
+                // is save callee-saved registers (and possibly varargs argument registers).
+                calleeSaveSPDelta = totalFrameSize;
 
-            getEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
-                                          compiler->lvaOutgoingArgSpaceSize);
-            compiler->unwindSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize);
+                offset = (int)compiler->compLclFrameSize;
+            }
+            else
+            {
+                JITDUMP("Frame type 2 (save FP/LR at bottom). #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
+                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
 
-            maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                        // We've already saved FP/LR
-            offset = (int)compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
+                frameType = 2;
+
+                // Generate:
+                //      sub sp,sp,#framesz
+                //      stp fp,lr,[sp,#outsz]   // note that by necessity, #outsz <= #framesz - 16, so #outsz <= 496.
+
+                getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
+                compiler->unwindAllocStack(totalFrameSize);
+
+                assert(compiler->lvaOutgoingArgSpaceSize + 2 * REGSIZE_BYTES <= (unsigned)totalFrameSize);
+
+                getEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                                              compiler->lvaOutgoingArgSpaceSize);
+                compiler->unwindSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize);
+
+                maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                        // We've already saved FP/LR
+                offset = (int)compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
+            }
         }
         else
         {
             // Case 5 or 6.
             //
-            // First, the callee-saved registers will be saved, and the callee-saved register code must use pre-index
-            // to subtract from SP as the first instruction. It must also leave space for varargs registers to be
-            // stored. For example:
+            // First, the callee-saved registers will be saved, and the callee-saved register code must use
+            // pre-index to subtract from SP as the first instruction. It must also leave space for varargs
+            // registers to be stored. For example:
             //      stp r19,r20,[sp,#-96]!
             //      stp d8,d9,[sp,#16]
             //      ... save varargs incoming integer registers ...
             // Note that all SP alterations must be 16-byte aligned. We have already calculated any alignment to be
-            // lower on the stack than the callee-saved registers (see lvaAlignFrame() for how we calculate alignment).
-            // So, if there is an odd number of callee-saved registers, we use (for example, with just one saved
-            // register):
+            // lower on the stack than the callee-saved registers (see lvaAlignFrame() for how we calculate
+            // alignment). So, if there is an odd number of callee-saved registers, we use (for example, with just
+            // one saved register):
             //      sub sp,sp,#16
             //      str r19,[sp,#8]
             // This is one additional instruction, but it centralizes the aligned space. Otherwise, it might be
             // possible to have two 8-byte alignment padding words, one below the callee-saved registers, and one
             // above them. If that is preferable, we could implement it.
-            // Note that any varargs saved space will always be 16-byte aligned, since there are 8 argument registers.
+            //
+            // Note that any varargs saved space will always be 16-byte aligned, since there are 8 argument
+            // registers.
             //
             // Then, define #remainingFrameSz = #framesz - (callee-saved size + varargs space + possible alignment
-            // padding from above).
-            // Note that #remainingFrameSz must not be zero, since we still need to save FP,SP.
+            // padding from above). Note that #remainingFrameSz must not be zero, since we still need to save FP,SP.
             //
             // Generate:
             //      sub sp,sp,#remainingFrameSz
@@ -4952,10 +5076,10 @@ void          CodeGen::genPushCalleeSavedRegisters()
             //      stp fp,lr,[sp,#outsz]
             //      add fp,sp,#outsz
             //
-            // However, we need to handle the case where #outsz is larger than the constant signed offset encoding can
-            // handle. And, once again, we might need to deal with #outsz that is not aligned to 16-bytes (i.e.,
-            // STACK_ALIGN). So, in the case of large #outsz we will have an additional SP adjustment, using one of the
-            // following sequences:
+            // However, we need to handle the case where #outsz is larger than the constant signed offset encoding
+            // can handle. And, once again, we might need to deal with #outsz that is not aligned to 16-bytes (i.e.,
+            // STACK_ALIGN). So, in the case of large #outsz we will have an additional SP adjustment, using one of
+            // the following sequences:
             //
             // Define #remainingFrameSz2 = #remainingFrameSz - #outsz.
             //
@@ -4966,9 +5090,9 @@ void          CodeGen::genPushCalleeSavedRegisters()
             //
             // Or:
             //
-            //      sub sp,sp,roundUp(#remainingFrameSz2,16)    // if #remainingFrameSz2 is not 16-byte aligned (it is
-            //                                                  // always guaranteed to be 8 byte aligned).
-            //      stp fp,lr,[sp,#8]                           // it will always be #8 in the unaligned case
+            //      sub sp,sp,roundUp(#remainingFrameSz2,16) // if #remainingFrameSz2 is not 16-byte aligned (it is
+            //                                               // always guaranteed to be 8 byte aligned).
+            //      stp fp,lr,[sp,#8]                        // it will always be #8 in the unaligned case
             //      add fp,sp,#8
             //      sub sp,sp,#outsz - #8
             //
@@ -4976,21 +5100,47 @@ void          CodeGen::genPushCalleeSavedRegisters()
             //      mov rX, #outsz - #8 // maybe multiple instructions
             //      sub sp,sp,rX
             // )
+            //
+            // Note that even if we align the SP alterations, that does not imply that we are creating empty alignment
+            // slots. In fact, we are not; any empty alignment slots were calculated in
+            // Compiler::lvaAssignFrameOffsets() and its callees.
 
-            frameType = 3;
+            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize;
+            if (genSaveFpLrWithAllCalleeSavedRegisters)
+            {
+                JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
+                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
 
-            calleeSaveSPDeltaUnaligned =
-                totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES; // 2 for FP, LR which we'll save later.
+                // This case is much simpler, because we allocate space for the callee-saved register area, including
+                // FP/LR. Note the SP adjustment might be SUB or be folded into the first store as a predecrement.
+                // Then, we use a single SUB to establish the rest of the frame. We need to be careful about where
+                // to establish the frame pointer, as there is a limit of 2040 bytes offset from SP to FP in the
+                // unwind codes when FP is established.
+                frameType = 5;
+            }
+            else
+            {
+                JITDUMP("Frame type 3 (save FP/LR at bottom). #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
+                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
+
+                frameType = 3;
+
+                calleeSaveSPDeltaUnaligned -= 2 * REGSIZE_BYTES; // 2 for FP, LR which we'll save later.
+
+                // We'll take care of these later, but callee-saved regs code shouldn't see them.
+                maskSaveRegsInt &= ~(RBM_FP | RBM_LR);
+            }
+
             assert(calleeSaveSPDeltaUnaligned >= 0);
             assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
             calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
 
             offset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
-            assert((offset == 0) || (offset == REGSIZE_BYTES)); // At most one alignment slot between SP and where we
-                                                                // store the callee-saved registers.
 
-            // We'll take care of these later, but callee-saved regs code shouldn't see them.
-            maskSaveRegsInt &= ~(RBM_FP | RBM_LR);
+            JITDUMP("    calleeSaveSPDelta=%d, offset=%d\n", calleeSaveSPDelta, offset);
+
+            // At most one alignment slot between SP and where we store the callee-saved registers.
+            assert((offset == 0) || (offset == REGSIZE_BYTES));
         }
     }
     else
@@ -4999,8 +5149,8 @@ void          CodeGen::genPushCalleeSavedRegisters()
         assert((maskSaveRegsInt & RBM_FP) == 0);
         assert((maskSaveRegsInt & RBM_LR) != 0);
 
-        // Note that there is no pre-indexed save_lrpair unwind code variant, so we can't allocate the frame using 'stp'
-        // if we only have one callee-saved register plus LR to save.
+        // Note that there is no pre-indexed save_lrpair unwind code variant, so we can't allocate the frame using
+        // 'stp' if we only have one callee-saved register plus LR to save.
 
         NYI("Frame without frame pointer");
         offset = 0;
@@ -5008,6 +5158,7 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
     assert(frameType != 0);
 
+    JITDUMP("    offset=%d, calleeSaveSPDelta=%d\n", offset, calleeSaveSPDelta);
     genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSPDelta);
 
     offset += genCountBits(maskSaveRegsInt | maskSaveRegsFloat) * REGSIZE_BYTES;
@@ -5018,6 +5169,8 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
     if (compiler->info.compIsVarArgs)
     {
+        JITDUMP("    compIsVarArgs=true\n");
+
         // There are 8 general-purpose registers to home, thus 'offset' must be 16-byte aligned here.
         assert((offset % 16) == 0);
         for (regNumber reg1 = REG_ARG_FIRST; reg1 < REG_ARG_LAST; reg1 = REG_NEXT(REG_NEXT(reg1)))
@@ -5030,18 +5183,27 @@ void          CodeGen::genPushCalleeSavedRegisters()
         }
     }
 
+    // By default, we'll establish the frame pointer chain. (Note that currently frames without FP are NYI.)
+    bool establishFramePointer = true;
+
+    // If we do establish the frame pointer, what is the amount we add to SP to do so?
+    unsigned offsetSpToSavedFp = 0;
+
     if (frameType == 1)
     {
-        getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE);
-        compiler->unwindSetFrameReg(REG_FPBASE, 0);
+        assert(!genSaveFpLrWithAllCalleeSavedRegisters);
+        assert(offsetSpToSavedFp == 0);
     }
     else if (frameType == 2)
     {
-        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize);
-        compiler->unwindSetFrameReg(REG_FPBASE, compiler->lvaOutgoingArgSpaceSize);
+        assert(!genSaveFpLrWithAllCalleeSavedRegisters);
+
+        offsetSpToSavedFp = compiler->lvaOutgoingArgSpaceSize;
     }
     else if (frameType == 3)
     {
+        assert(!genSaveFpLrWithAllCalleeSavedRegisters);
+
         int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
         assert(remainingFrameSz > 0);
         assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
@@ -5057,19 +5219,28 @@ void          CodeGen::genPushCalleeSavedRegisters()
             int alignmentAdjustment2   = spAdjustment2 - spAdjustment2Unaligned;
             assert((alignmentAdjustment2 == 0) || (alignmentAdjustment2 == 8));
 
+            JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
+
             genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
             offset += spAdjustment2;
 
-            // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub" included
-            // some of it)
+            // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub"
+            // included some of it)
 
             int spAdjustment3 = compiler->lvaOutgoingArgSpaceSize - alignmentAdjustment2;
             assert(spAdjustment3 > 0);
             assert((spAdjustment3 % 16) == 0);
 
-            getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, alignmentAdjustment2);
-            compiler->unwindSetFrameReg(REG_FPBASE, alignmentAdjustment2);
+            JITDUMP("    alignmentAdjustment2=%d\n", alignmentAdjustment2);
+            genEstablishFramePointer(alignmentAdjustment2, /* reportUnwindData */ true);
 
+            // We just established the frame pointer chain; don't do it again.
+            establishFramePointer = false;
+
+            JITDUMP("    spAdjustment3=%d\n", spAdjustment3);
+
+            // TODO-ARM64-CQ: we're reporting this SUB SP in the unwind info. Do we need to, since we've already
+            // established the frame pointer?
             genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegZeroed);
             offset += spAdjustment3;
         }
@@ -5079,9 +5250,48 @@ void          CodeGen::genPushCalleeSavedRegisters()
                                  pInitRegZeroed);
             offset += remainingFrameSz;
 
-            getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize);
-            compiler->unwindSetFrameReg(REG_FPBASE, compiler->lvaOutgoingArgSpaceSize);
+            offsetSpToSavedFp = compiler->lvaOutgoingArgSpaceSize;
         }
+    }
+    else if (frameType == 4)
+    {
+        assert(genSaveFpLrWithAllCalleeSavedRegisters);
+        offsetSpToSavedFp = calleeSaveSPDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
+                            2 * REGSIZE_BYTES; // -2 for FP, LR
+    }
+    else if (frameType == 5)
+    {
+        assert(genSaveFpLrWithAllCalleeSavedRegisters);
+
+        offsetSpToSavedFp = calleeSaveSPDelta - (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
+                            2 * REGSIZE_BYTES; // -2 for FP, LR
+        JITDUMP("    offsetSpToSavedFp=%d\n", offsetSpToSavedFp);
+        genEstablishFramePointer(offsetSpToSavedFp, /* reportUnwindData */ true);
+
+        // We just established the frame pointer chain; don't do it again.
+        establishFramePointer = false;
+
+        int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
+        assert(remainingFrameSz > 0);
+        assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
+                                              // totalFrameSize and calleeSaveSPDelta -- is 16-byte aligned.
+
+        JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
+
+        // TODO-ARM64-CQ: we're reporting this SUB SP in the unwind info. Do we need to, since we've already
+        // established the frame pointer?
+        genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed);
+        offset += remainingFrameSz;
+    }
+    else
+    {
+        unreached();
+    }
+
+    if (establishFramePointer)
+    {
+        JITDUMP("    offsetSpToSavedFp=%d\n", offsetSpToSavedFp);
+        genEstablishFramePointer(offsetSpToSavedFp, /* reportUnwindData */ true);
     }
 
     assert(offset == totalFrameSize);
@@ -5499,16 +5709,20 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     int totalFrameSize = genTotalFrameSize();
 
-    int calleeSaveSPOffset; // This will be the starting place for restoring the callee-saved registers, in decreasing
-                            // order.
-    int frameType                  = 0; // An indicator of what type of frame we are popping.
-    int calleeSaveSPDelta          = 0;
-    int calleeSaveSPDeltaUnaligned = 0;
+    int calleeSaveSPOffset = 0; // This will be the starting place for restoring the callee-saved registers, in
+                                // decreasing order.
+    int frameType         = 0;  // An indicator of what type of frame we are popping.
+    int calleeSaveSPDelta = 0;  // Amount to add to SP after callee-saved registers have been restored.
 
     if (isFramePointerUsed())
     {
-        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize < 512))
+        // TODO-ARM64-Bug?: should this be "totalFrameSize <= 512"?
+        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize < 512) &&
+            !genSaveFpLrWithAllCalleeSavedRegisters)
         {
+            JITDUMP("Frame type 1. #outsz=0; #framesz=%d; localloc? %s\n", totalFrameSize,
+                    dspBool(compiler->compLocallocUsed));
+
             frameType = 1;
             if (compiler->compLocallocUsed)
             {
@@ -5520,37 +5734,63 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
 
-            // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the bottom
-            // of stack.
+            // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the
+            // bottom of stack.
             calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
         }
         else if (totalFrameSize <= 512)
         {
-            frameType = 2;
             if (compiler->compLocallocUsed)
             {
                 // Restore sp from fp
-                //      sub sp, fp, #outsz
-                getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE,
-                                            compiler->lvaOutgoingArgSpaceSize);
-                compiler->unwindSetFrameReg(REG_FPBASE, compiler->lvaOutgoingArgSpaceSize);
+                //      sub sp, fp, #outsz // Uses #outsz if FP/LR stored at bottom
+                int SPtoFPdelta = genSPtoFPdelta();
+                getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, SPtoFPdelta);
+                compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
             }
 
-            regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
+            if (genSaveFpLrWithAllCalleeSavedRegisters)
+            {
+                JITDUMP("Frame type 4 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
+                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
+                        dspBool(compiler->compLocallocUsed));
 
-            // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the bottom
-            // of stack.
-            calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
+                frameType = 4;
+
+                calleeSaveSPOffset = compiler->compLclFrameSize;
+
+                // Remove the frame after we're done restoring the callee-saved registers.
+                calleeSaveSPDelta = totalFrameSize;
+            }
+            else
+            {
+                JITDUMP("Frame type 2 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
+                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
+                        dspBool(compiler->compLocallocUsed));
+
+                frameType = 2;
+
+                regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
+
+                // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the
+                // bottom of stack.
+                calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
+            }
         }
-        else
+        else if (!genSaveFpLrWithAllCalleeSavedRegisters)
         {
+            JITDUMP("Frame type 3 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
+
             frameType = 3;
 
-            calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize -
-                                         2 * REGSIZE_BYTES; // 2 for FP, LR which we'll restore later.
+            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize -
+                                             2 * REGSIZE_BYTES; // 2 for FP, LR which we'll restore later.
             assert(calleeSaveSPDeltaUnaligned >= 0);
             assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
             calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
+
+            JITDUMP("    calleeSaveSPDelta=%d\n", calleeSaveSPDelta);
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and (hopefully) post-index SP.
 
@@ -5569,8 +5809,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
                 if (compiler->compLocallocUsed)
                 {
-                    // Restore sp from fp. No need to update sp after this since we've set up fp before adjusting sp in
-                    // prolog.
+                    // Restore sp from fp. No need to update sp after this since we've set up fp before adjusting sp
+                    // in prolog.
                     //      sub sp, fp, #alignmentAdjustment2
                     getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, alignmentAdjustment2);
                     compiler->unwindSetFrameReg(REG_FPBASE, alignmentAdjustment2);
@@ -5583,29 +5823,37 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                     int spAdjustment3 = compiler->lvaOutgoingArgSpaceSize - alignmentAdjustment2;
                     assert(spAdjustment3 > 0);
                     assert((spAdjustment3 % 16) == 0);
+
+                    JITDUMP("    spAdjustment3=%d\n", spAdjustment3);
+
                     genStackPointerAdjustment(spAdjustment3, REG_IP0, nullptr);
                 }
 
                 // Generate:
                 //      ldp fp,lr,[sp]
                 //      add sp,sp,#remainingFrameSz
+
+                JITDUMP("    alignmentAdjustment2=%d\n", alignmentAdjustment2);
                 genEpilogRestoreRegPair(REG_FP, REG_LR, alignmentAdjustment2, spAdjustment2, false, REG_IP1, nullptr);
             }
             else
             {
                 if (compiler->compLocallocUsed)
                 {
-                    // Restore sp from fp
+                    // Restore sp from fp; here that's #outsz from SP
                     //      sub sp, fp, #outsz
-                    getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE,
-                                                compiler->lvaOutgoingArgSpaceSize);
-                    compiler->unwindSetFrameReg(REG_FPBASE, compiler->lvaOutgoingArgSpaceSize);
+                    int SPtoFPdelta = genSPtoFPdelta();
+                    assert(SPtoFPdelta == compiler->lvaOutgoingArgSpaceSize);
+                    getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, SPtoFPdelta);
+                    compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
                 }
 
                 // Generate:
                 //      ldp fp,lr,[sp,#outsz]
                 //      add sp,sp,#remainingFrameSz     ; might need to load this constant in a scratch register if
                 //                                      ; it's large
+
+                JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
                 genEpilogRestoreRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize, remainingFrameSz, false,
                                         REG_IP1, nullptr);
@@ -5617,6 +5865,32 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
             assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
         }
+        else
+        {
+            JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
+
+            frameType = 5;
+
+            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize;
+            assert(calleeSaveSPDeltaUnaligned >= 0);
+            assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
+            calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
+
+            calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
+            assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
+
+            // Restore sp from fp:
+            //      sub sp, fp, #sp-to-fp-delta
+            // This is the same whether there is localloc or not. Note that we don't need to do anything to remove the
+            // "remainingFrameSz" to reverse the SUB of that amount in the prolog. The unwind codes won't match.
+
+            int offsetSpToSavedFp = calleeSaveSPDelta -
+                                    (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
+                                    2 * REGSIZE_BYTES; // -2 for FP, LR
+            getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, offsetSpToSavedFp);
+            compiler->unwindSetFrameReg(REG_FPBASE, offsetSpToSavedFp);
+        }
     }
     else
     {
@@ -5625,6 +5899,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         calleeSaveSPOffset = 0;
     }
 
+    JITDUMP("    calleeSaveSPOffset=%d, calleeSaveSPDelta=%d\n", calleeSaveSPOffset, calleeSaveSPDelta);
     genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSPOffset, calleeSaveSPDelta);
 
     if (frameType == 1)
@@ -5650,6 +5925,14 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         compiler->unwindAllocStack(totalFrameSize);
     }
     else if (frameType == 3)
+    {
+        // Nothing to do after restoring callee-saved registers.
+    }
+    else if (frameType == 4)
+    {
+        // Nothing to do after restoring callee-saved registers.
+    }
+    else if (frameType == 5)
     {
         // Nothing to do after restoring callee-saved registers.
     }
@@ -5858,8 +6141,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         regMask = genFindLowestBit(availMask);
         rZero2  = genRegNumFromMask(regMask);
         availMask &= ~regMask;
-        assert((genRegMask(rZero2) & intRegState.rsCalleeRegArgMaskLiveIn) ==
-               0); // rZero2 is not a live incoming argument reg
+        assert((genRegMask(rZero2) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rZero2 is not a live incoming
+                                                                                  // argument reg
 
         // We pick the next lowest register number for rAddr
         noway_assert(availMask != RBM_NONE);
@@ -5918,8 +6201,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         if (useLoop)
         {
             noway_assert(uCntSlots >= 2);
-            assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) ==
-                   0); // rCnt is not a live incoming argument reg
+            assert((genRegMask(rCnt) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // rCnt is not a live incoming
+                                                                                    // argument reg
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, (ssize_t)uCntSlots / 2);
         }
 
@@ -6053,8 +6336,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
     }
     else if (genInitStkLclCnt > 0)
     {
-        assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) ==
-               0); // initReg is not a live incoming argument reg
+        assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live incoming
+                                                                                   // argument reg
 
         /* Initialize any lvMustInit vars on the stack */
 
@@ -7347,6 +7630,22 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
     if (reportUnwindData)
     {
         compiler->unwindPadding();
+    }
+
+#elif defined(_TARGET_ARM64_)
+
+    if (delta == 0)
+    {
+        getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE);
+    }
+    else
+    {
+        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
+    }
+
+    if (reportUnwindData)
+    {
+        compiler->unwindSetFrameReg(REG_FPBASE, delta);
     }
 
 #else
@@ -9034,8 +9333,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     if (compiler->ehAnyFunclets())
     {
         assert(isFramePointerUsed());
-        assert(compiler->lvaDoneFrameLayout ==
-               Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be finalized
+        assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
+                                                                              // finalized
 
         // Frame pointer doesn't point at the end, it points at the pushed r11. So, instead
         // of adding the number of callee-saved regs to CallerSP, we add 1 for lr and 1 for r11
@@ -9080,10 +9379,11 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
             printf("               PSP slot SP offset: %d\n", genFuncletInfo.fiPSP_slot_SP_offset);
             printf("        PSP slot Caller SP offset: %d\n", genFuncletInfo.fiPSP_slot_CallerSP_offset);
 
-            if (PSP_slot_CallerSP_offset !=
-                compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)) // for debugging
+            if (PSP_slot_CallerSP_offset != compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym))
+            {
                 printf("lvaGetCallerSPRelativeOffset(lvaPSPSym): %d\n",
                        compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
+            }
         }
 #endif // DEBUG
 
@@ -9299,8 +9599,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     // because we're not going to allocate the same size frame as the parent.
 
     assert(isFramePointerUsed());
-    assert(compiler->lvaDoneFrameLayout ==
-           Compiler::FINAL_FRAME_LAYOUT);                         // The frame size and offsets must be finalized
+    assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
+                                                                          // finalized
     assert(compiler->compCalleeFPRegsSavedMask != (regMaskTP)-1); // The float registers to be preserved is finalized
 
     // Even though lvaToInitialSPRelativeOffset() depends on compLclFrameSize,
