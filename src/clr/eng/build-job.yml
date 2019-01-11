@@ -42,7 +42,7 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
       - name: dotnetfeedUrl
-        value: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+        value: https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json
       - name: dotnetfeedPAT
         value: $(dotnetfeed-storage-access-key-1)
       # Variables used by arcade to gather asset manifests
