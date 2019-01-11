@@ -780,9 +780,6 @@
     <!-- The following are tests that fail when building tests against packages -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildTestsAgainstPackages)' == 'true'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-1/k-nucleotide-1*">
             <Issue>9314</Issue>
         </ExcludeList>
@@ -2112,5 +2109,15 @@
             <Issue>Bug</Issue>
         </ExcludeList>
     </ItemGroup>
-    
+
+    <!-- runtest.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
+         Exclude these scripts to avoid creating such methods for the superpmicollect dependent test projects
+         and running them separately from superpmicollect test. -->
+
+    <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*" Exclude="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/superpmicollect.*">
+            <Issue>Do not run these scripts separately from superpmicollect test</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
 </Project>
