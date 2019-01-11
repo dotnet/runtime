@@ -443,7 +443,7 @@ void StackSampler::JitAndCollectTrace(MethodDesc* pMD, const ADID& adId)
             LOG((LF_JIT, LL_INFO100000, "%s:%s\n", pMD->GetMethodTable()->GetClass()->GetDebugClassName(), pMD->GetName())); 
 #endif
 
-            PCODE pCode = UnsafeJitFunction(pMD, pDecoder, flags);
+            PCODE pCode = UnsafeJitFunction(NativeCodeVersion(pMD), pDecoder, flags);
         }
         END_DOMAIN_TRANSITION;
 

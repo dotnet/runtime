@@ -1013,7 +1013,7 @@ public:
 
     // Creating the Jit-infos.
     DebuggerJitInfo *FindOrCreateInitAndAddJitInfo(MethodDesc* fd, PCODE startAddr);
-    DebuggerJitInfo *CreateInitAndAddJitInfo(MethodDesc* fd, TADDR startAddr, BOOL* jitInfoWasCreated);
+    DebuggerJitInfo *CreateInitAndAddJitInfo(NativeCodeVersion nativeCodeVersion, TADDR startAddr, BOOL* jitInfoWasCreated);
 
 
     void DeleteJitInfo(DebuggerJitInfo *dji);
@@ -1418,7 +1418,7 @@ private:
 class DebuggerJitInfo
 {
 public:
-    PTR_MethodDesc           m_fd;
+    NativeCodeVersion        m_nativeCodeVersion;
 
     // Loader module is used to control life-time of DebufferJitInfo. Ideally, we would refactor the code to use LoaderAllocator here
     // instead because of it is what the VM actually uses to track the life time. It would make the debugger interface less chatty.
@@ -1524,7 +1524,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    DebuggerJitInfo(DebuggerMethodInfo *minfo, MethodDesc *fd);
+    DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion nativeCodeVersion);
     ~DebuggerJitInfo();
 
 #endif // #ifdef DACCESS_COMPILE
@@ -1974,7 +1974,7 @@ public:
     void FuncEvalComplete(Thread *pThread, DebuggerEval *pDE);
 
     DebuggerMethodInfo *CreateMethodInfo(Module *module, mdMethodDef md);
-    void JITComplete(MethodDesc* fd, TADDR newAddress);
+    void JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress);
 
     HRESULT RequestFavor(FAVORCALLBACK fp, void * pData);
 

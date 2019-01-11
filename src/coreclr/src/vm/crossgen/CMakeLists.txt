@@ -15,6 +15,7 @@ set(VM_CROSSGEN_SOURCES
   ../clrprivbinderutil.cpp
   ../clsload.cpp
   ../codeman.cpp
+  ../codeversion.cpp
   ../comdelegate.cpp
   ../compile.cpp
   ../contractimpl.cpp
@@ -107,6 +108,7 @@ set(VM_CROSSGEN_HEADERS
   ../clsload.hpp
   ../clsload.inl
   ../codeman.h
+  ../codeversion.h
   ../comdelegate.h
   ../compile.h
   ../contractimpl.h

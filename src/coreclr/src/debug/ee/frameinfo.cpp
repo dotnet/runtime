@@ -608,7 +608,7 @@ DebuggerJitInfo * FrameInfo::GetJitInfoFromFrame()
         _ASSERTE(this->md != NULL);
         ji = g_pDebugger->GetJitInfo(this->md, (const BYTE*)GetControlPC(&(this->registers)));
         _ASSERTE(ji != NULL);
-        _ASSERTE(ji->m_fd == this->md);
+        _ASSERTE(ji->m_nativeCodeVersion.GetMethodDesc() == this->md);
     }
     EX_CATCH
     {
