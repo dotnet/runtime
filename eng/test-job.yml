@@ -40,6 +40,7 @@ jobs:
       helixType: ${{ format('test/functional/r2r/cli/pri{0}', parameters.priority) }}
 
     variables:
+    - group: DotNet-HelixApi-Access
     # Map template parameters to command line arguments
     - ${{ if eq(parameters.priority, '1') }}:
       - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
@@ -126,8 +127,9 @@ jobs:
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           isExternal: false
-          # Access token variable for internal project
-          helixAccessToken: $(DotNet-HelixApi-Access)
+          # Access token variable for internal project from the
+          # DotNet-HelixApi-Access variable group
+          helixAccessToken: $(HelixApiAccessToken)
           helixQueues: ${{ parameters.helixQueuesInternal }}
           ${{ if eq(parameters.helixQueuesInternal, '') }}:
             condition: false
