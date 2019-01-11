@@ -6,11 +6,4 @@
     <!-- use the most recent MS.NETCore.App we have from upstack -->
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
-  <ItemGroup Condition="'$(RuntimeIdentifier)' != ''">
-    <!-- The following types were moved into S.P.Corelib and can be removed
-         from this list after core-setup syncs: https://github.com/dotnet/corefx/issues/33487 -->
-    <IgnoredTypes Include="System.Buffers.StandardFormat" />
-    <IgnoredTypes Include="System.Buffers.Text.Utf8Formatter" />
-    <IgnoredTypes Include="System.Buffers.Text.Utf8Parser" />
-  </ItemGroup>
 </Project>
