@@ -283,4 +283,24 @@ class Tests
 			return 5;
 		return 0;
 	}
+
+	// Finally exception will be thrown from this stack : interp -> jit -> eh -> interp
+	// Test that we propagate the finally exception over the jitted frames
+	public static int test_0_finex () {
+		bool called_finally = false;
+		try {
+			try {
+				JitClass.throw_ex ();
+				return 3;
+			} finally {
+				called_finally = true;
+				throw new Exception ("E2");
+			}
+		} catch (Exception) {
+			if (!called_finally)
+				return 1;
+			return 0;
+		}
+		return 2;
+        }
 }
