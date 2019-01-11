@@ -4,10 +4,8 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 # See the LICENSE file in the project root for more information.
 #
-##########################################################################
-##########################################################################
-#
-# Module: run-pmi-diffs.py
+##
+# Title               :run-pmi-diffs.py
 #
 # Notes:
 #
@@ -26,16 +24,19 @@ import os
 import re
 import shutil
 import subprocess
+import urllib
 import sys
 import tarfile
 import zipfile
 
 # Version specific imports
-
 if sys.version_info.major < 3:
     import urllib
 else:
     import urllib.request
+
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "scripts"))
+from coreclr_arguments import *
 
 ##########################################################################
 # Globals
@@ -126,79 +127,85 @@ class ChangeDir:
 def validate_args(args):
     """ Validate all of the arguments parsed.
     Args:
-        args (argparser.ArgumentParser): Args parsed by the argument parser.
+        args (argparser.ArgumentParser) : Args parsed by the argument parser.
     Returns:
-        (arch, ci_arch, build_type, base_root, diff_root, scratch_root, skip_baseline_build, skip_diffs, target_branch, commit_hash)
-            (str, str, str, str, str, str, bool, bool, str, str)
+        args (CoreclrArguments)         : Args parsed
     Notes:
-        If the arguments are valid then return them all in a tuple. If not, raise
-        an exception stating x argument is incorrect.
+        If the arguments are valid then return them all in a tuple. If not, 
+        raise an exception stating x argument is incorrect.
     """
 
-    arch = args.arch
-    ci_arch = args.ci_arch
-    build_type = args.build_type
-    base_root = args.base_root
-    diff_root = args.diff_root
-    scratch_root = args.scratch_root
-    skip_baseline_build = args.skip_baseline_build
-    skip_diffs = args.skip_diffs
-    target_branch = args.target_branch
-    commit_hash = args.commit_hash
+    coreclr_setup_args = CoreclrArguments(args, 
+                                          require_built_test_dir=False, 
+                                          require_built_core_root=True, 
+                                          require_built_product_dir=False)
 
-    def validate_arg(arg, check):
-        """ Validate an individual arg
-        Args:
-           arg (str|bool): argument to be validated
-           check (lambda: x-> bool): test that returns either True or False
-                                   : based on whether the check passes.
+    coreclr_setup_args.verify(args,
+                              "base_root",
+                              lambda directory: os.path.isdir(directory) if directory is not None else True,
+                              "Base root is not a valid directory")
 
-        Returns:
-           is_valid (bool): Is the argument valid?
-        """
+    coreclr_setup_args.verify(args,
+                              "diff_root",
+                              lambda directory: os.path.isdir(directory) if directory is not None else True,
+                              "Base root is not a valid directory",
+                              modify_arg=lambda directory: nth_dirname(os.path.abspath(sys.argv[0]), 3) if directory is None else os.path.abspath(directory))
 
-        helper = lambda item: item is not None and check(item)
+    coreclr_setup_args.verify(args,
+                              "scratch_root",
+                              lambda directory: os.path.isdir(directory) if directory is not None else True,
+                              "Base root is not a valid directory",
+                              modify_arg=lambda directory: nth_dirname(os.path.abspath(sys.argv[0]), 3) if directory is None else os.path.abspath(directory))
 
-        if not helper(arg):
-            raise Exception('Argument: %s is not valid.' % (arg))
+    coreclr_setup_args.verify(args,
+                              "skip_baseline_build",
+                              lambda unused: True,
+                              "Error setting baseline build")
+    
+    coreclr_setup_args.verify(args,
+                              "skip_diffs",
+                              lambda unused: True,
+                              "Error setting skip_diffs")
 
-    valid_archs = ['x86', 'x64', 'arm', 'arm64']
-    valid_ci_archs = valid_archs + ['x86_arm_altjit', 'x64_arm64_altjit']
-    valid_build_types = ['Debug', 'Checked', 'Release']
+    coreclr_setup_args.verify(args,
+                              "target_branch",
+                              lambda unused: True,
+                              "Error setting target_branch")
 
-    arch = next((a for a in valid_archs if a.lower() == arch.lower()), arch)
-    build_type = next((b for b in valid_build_types if b.lower() == build_type.lower()), build_type)
+    coreclr_setup_args.verify(args,
+                              "commit_hash",
+                              lambda unused: True,
+                              "Error setting commit_hash")
 
-    validate_arg(arch, lambda item: item in valid_archs)
-    validate_arg(build_type, lambda item: item in valid_build_types)
+    coreclr_setup_args.verify(args,
+                              "ci_arch",
+                              lambda ci_arch: ci_arch in coreclr_setup_args.valid_arches + ['x86_arm_altjit', 'x64_arm64_altjit'],
+                              "Error setting ci_arch")
 
-    if diff_root is None:
-        diff_root = nth_dirname(os.path.abspath(sys.argv[0]), 3)
-    else:
-        diff_root = os.path.abspath(diff_root)
-        validate_arg(diff_root, lambda item: os.path.isdir(diff_root))
-
-    if scratch_root is None:
-        scratch_root = os.path.join(diff_root, '_', 'pmi')
-    else:
-        scratch_root = os.path.abspath(scratch_root)
-
-    if ci_arch is not None:
-        validate_arg(ci_arch, lambda item: item in valid_ci_archs)
-
-    args = (arch, ci_arch, build_type, base_root, diff_root, scratch_root, skip_baseline_build, skip_diffs, target_branch, commit_hash)
+    args = (
+        coreclr_setup_args.arch, 
+        coreclr_setup_args.ci_arch, 
+        coreclr_setup_args.build_type, 
+        coreclr_setup_args.base_root, 
+        coreclr_setup_args.diff_root, 
+        coreclr_setup_args.scratch_root, 
+        coreclr_setup_args.skip_baseline_build, 
+        coreclr_setup_args.skip_diffs, 
+        coreclr_setup_args.target_branch, 
+        coreclr_setup_args.commit_hash
+    )
 
     log('Configuration:')
-    log(' arch: %s' % arch)
-    log(' ci_arch: %s' % ci_arch)
-    log(' build_type: %s' % build_type)
-    log(' base_root: %s' % base_root)
-    log(' diff_root: %s' % diff_root)
-    log(' scratch_root: %s' % scratch_root)
-    log(' skip_baseline_build: %s' % skip_baseline_build)
-    log(' skip_diffs: %s' % skip_diffs)
-    log(' target_branch: %s' % target_branch)
-    log(' commit_hash: %s' % commit_hash)
+    log('    arch: %s' % coreclr_setup_args.arch)
+    log('    ci_arch: %s' % coreclr_setup_args.ci_arch)
+    log('    build_type: %s' % coreclr_setup_args.build_type)
+    log('    base_root: %s' % coreclr_setup_args.base_root)
+    log('    diff_root: %s' % coreclr_setup_args.diff_root)
+    log('    scratch_root: %s' % coreclr_setup_args.scratch_root)
+    log('    skip_baseline_build: %s' % coreclr_setup_args.skip_baseline_build)
+    log('    skip_diffs: %s' % coreclr_setup_args.skip_diffs)
+    log('    target_branch: %s' % coreclr_setup_args.target_branch)
+    log('    commit_hash: %s' % coreclr_setup_args.commit_hash)
 
     return args
 
