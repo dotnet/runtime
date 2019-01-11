@@ -7864,6 +7864,20 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
     return pMT;
 }
 
+#ifndef DACCESS_COMPILE
+//---------------------------------------------------------------------------------------
+void BaseDomain::RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+    } CONTRACTL_END;
+
+    m_typeIDMap.RemoveTypes(pLoaderAllocator);
+}
+#endif // DACCESS_COMPILE
+
 //---------------------------------------------------------------------------------------
 // 
 BOOL 
