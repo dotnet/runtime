@@ -5,7 +5,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot' OR '$(TargetGroup)' == 'netcoreappaot'"> <!-- TODO: Remove after .NET Native bits contain ConfiguredCancelableAsyncEnumerable -->
+  <ItemGroup Condition="'$(TargetsAot)' == 'true'"> <!-- TODO: Remove after .NET Native bits contain ConfiguredCancelableAsyncEnumerable -->
     <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs" />
   </ItemGroup>
   <ItemGroup>
