@@ -4072,6 +4072,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         , gtHWIntrinsicId(hwIntrinsicID)
         , gtIndexBaseType(TYP_UNKNOWN)
     {
+        if (OperIsMemoryStore())
+        {
+            gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+        }
     }
 
     GenTreeHWIntrinsic(
@@ -4080,6 +4084,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         , gtHWIntrinsicId(hwIntrinsicID)
         , gtIndexBaseType(TYP_UNKNOWN)
     {
+        if (OperIsMemoryStore())
+        {
+            gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+        }
     }
 
     // Note that HW Instrinsic instructions are a sub class of GenTreeOp which only supports two operands
