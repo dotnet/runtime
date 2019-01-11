@@ -819,6 +819,44 @@ bool IsCorrectLongStructPack16Explicit(LongStructPack16Explicit* p)
 	return true;
 }
 
+struct HFA
+{
+    float f1;
+    float f2;
+    float f3;
+    float f4;
+};
+
+struct ManyInts
+{
+    int i1;
+    int i2;
+    int i3;
+    int i4;
+    int i5;
+    int i6;
+    int i7;
+    int i8;
+    int i9;
+    int i10;
+    int i11;
+    int i12;
+    int i13;
+    int i14;
+    int i15;
+    int i16;
+    int i17;
+    int i18;
+    int i19;
+    int i20;
+};
+
+struct MultipleBools
+{
+    BOOL b1;
+    BOOL b2;
+};
+
 struct IntWithInnerSequential
 {
     int i1;

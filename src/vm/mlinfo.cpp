@@ -5129,33 +5129,11 @@ LExit:;
     RETURN;
 }
 
-bool IsUnsupportedValueTypeReturn(MetaSig& msig)
+bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-    
-    CorElementType type = msig.GetReturnTypeNormalized();
-    
-    if (type == ELEMENT_TYPE_VALUETYPE || type == ELEMENT_TYPE_TYPEDBYREF)
-    {
-#ifdef _TARGET_X86_
-        // On x86, the internal CorElementType for value types is normalized by the type loader
-        // (see calls to ComputeInternalCorElementTypeForValueType in MethodTableBuilder).
-        // We don't need to redo the normalization here.
-        return true;
-#else
-        TypeHandle th = msig.GetRetTypeHandleThrowing();
-        
-        return EEClass::ComputeInternalCorElementTypeForValueType(th.GetMethodTable()) == ELEMENT_TYPE_VALUETYPE;
-#endif // _TARGET_X86_
-    }
+    WRAPPER_NO_CONTRACT;
 
-    return false;
+    return msig.GetReturnTypeNormalized() == ELEMENT_TYPE_TYPEDBYREF;
 }
 
 #ifndef CROSSGEN_COMPILE

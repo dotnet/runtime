@@ -29,6 +29,7 @@ public class Managed
         RunMarshalStructAsParamAsExpByRefOut();
         RunMarshalStructAsParamAsExpByValInOut();
         RunMarshalStructAsParamAsExpByRefInOut();
+        RunMarshalStructAsReturn();
 
         if (failures > 0)
         {
@@ -205,6 +206,8 @@ public class Managed
     [DllImport("MarshalStructAsParam", EntryPoint = "MarshalStructAsParam_AsExpByRefLongStructPack16Explicit")]
     static extern bool MarshalStructAsParam_AsExpByRefInOutLongStructPack16Explicit([In, Out] ref LongStructPack16Explicit str1);
     #endregion
+    [DllImport("MarshalStructAsParam")]
+    static extern LongStructPack16Explicit GetLongStruct(long l1, long l2);
 
     #region Marshal Explicit struct method
     [SecuritySafeCritical]
@@ -1566,5 +1569,17 @@ public class Managed
         MarshalStructAsParam_AsExpByRefInOut(StructID.ShortStructPack4ExplicitId);
         MarshalStructAsParam_AsExpByRefInOut(StructID.IntStructPack8ExplicitId);
         MarshalStructAsParam_AsExpByRefInOut(StructID.LongStructPack16ExplicitId);
+    }
+
+    private static void RunMarshalStructAsReturn()
+    {
+        Console.WriteLine("\nVerify marshal Explicit layout struct as return.");
+
+        LongStructPack16Explicit longStruct = GetLongStruct(123456, 78910);
+        if(longStruct.l1 != 123456 || longStruct.l2 != 78910)
+        {
+            Console.WriteLine("Failed to return LongStructPack16Explicit.");
+            failures++;
+        }
     }
 }

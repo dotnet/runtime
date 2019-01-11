@@ -67,7 +67,7 @@ public class SHTester_Misc
 
         //4-returning structures (with SH subclass fields) from unmanaged code as pure return values
         Console.WriteLine("Testing SHReturnStruct...");
-        Assert.Throws<MarshalDirectiveException>(() => SHReturnStruct(), "FAILED!  Exception not thrown.");
+        Assert.Throws<NotSupportedException>(() => SHReturnStruct(), "FAILED!  Exception not thrown.");
 
         //6-passing structures with SH Array fields
         hndArray = new SafeFileHandle[Helper.N];
