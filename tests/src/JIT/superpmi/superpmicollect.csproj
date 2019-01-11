@@ -29,17 +29,27 @@
   <ItemGroup>
     <Compile Include="superpmicollect.cs" />
   </ItemGroup>
-
-    <!-- Add project references to those tests that we run as part of the test -->
-    <!-- Don't do this now; it simply builds and copies these EXE/PDB, but not the .cmd/.sh, which we use.
-    <ProjectReference Include="..\Performance\CodeQuality\Roslyn\CscBench.csproj" />
-    <ProjectReference Include="..\Methodical\fp\exgen\10w5d_cs_do.csproj" />
-    <ProjectReference Include="..\Generics\Coverage\chaos65204782cs.csproj" />
-    -->
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' ">
-  </PropertyGroup> 
+  </PropertyGroup>
+  <!-- TestProjects file contains the relative paths to the test projects that are used by superpmicollect test. -->
+  <PropertyGroup>
+    <_TestProjectsFileName>TestProjects.txt</_TestProjectsFileName>
+  </PropertyGroup>
+  <!-- In order to avoid hard-coding of those paths in C# file we embed the file as an assembly resource. -->
+  <ItemGroup>
+    <EmbeddedResource Include="$(_TestProjectsFileName)">
+      <LogicalName>TestProjects</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <!-- This target builds the executables and test running scripts for the TestProjects to output directory of the current project. -->
+  <Target Name="_BuildTestProjects" AfterTargets="Build">
+    <ReadLinesFromFile File="$(_TestProjectsFileName)">
+      <Output TaskParameter="Lines" ItemName="_TestProjectsToBuild" />
+    </ReadLinesFromFile>
+    <MSBuild Projects="@(_TestProjectsToBuild)" Properties="OutputPath=$(OutputPath)" />
+  </Target>
 </Project>
