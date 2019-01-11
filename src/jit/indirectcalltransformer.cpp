@@ -676,14 +676,16 @@ private:
 
             JITDUMP("Direct call [%06u] in block BB%02u\n", compiler->dspTreeID(call), thenBlock->bbNum);
 
-            // Then invoke impDevirtualizeCall do actually
+            // Then invoke impDevirtualizeCall to actually
             // transform the call for us. It should succeed.... as we have
             // now provided an exact typed this.
             CORINFO_METHOD_HANDLE  methodHnd              = inlineInfo->methInfo.ftn;
             unsigned               methodFlags            = inlineInfo->methAttr;
             CORINFO_CONTEXT_HANDLE context                = inlineInfo->exactContextHnd;
             const bool             isLateDevirtualization = true;
-            compiler->impDevirtualizeCall(call, &methodHnd, &methodFlags, &context, nullptr, isLateDevirtualization);
+            bool explicitTailCall = (call->gtCall.gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+            compiler->impDevirtualizeCall(call, &methodHnd, &methodFlags, &context, nullptr, isLateDevirtualization,
+                                          explicitTailCall);
 
             // Presumably devirt might fail? If so we should try and avoid
             // making this a guarded devirt candidate instead of ending
