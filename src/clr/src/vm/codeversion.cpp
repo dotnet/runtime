@@ -25,18 +25,18 @@
 // versioning information
 //
 
-NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs) : m_pMethod(rhs.m_pMethod) {}
-NativeCodeVersion::NativeCodeVersion(PTR_MethodDesc pMethod) : m_pMethod(pMethod) {}
-BOOL NativeCodeVersion::IsNull() const { return m_pMethod == NULL; }
-PTR_MethodDesc NativeCodeVersion::GetMethodDesc() const { return m_pMethod; }
-PCODE NativeCodeVersion::GetNativeCode() const { return m_pMethod->GetNativeCode(); }
+NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs) : m_pMethodDesc(rhs.m_pMethodDesc) {}
+NativeCodeVersion::NativeCodeVersion(PTR_MethodDesc pMethod) : m_pMethodDesc(pMethod) {}
+BOOL NativeCodeVersion::IsNull() const { return m_pMethodDesc == NULL; }
+PTR_MethodDesc NativeCodeVersion::GetMethodDesc() const { return m_pMethodDesc; }
+PCODE NativeCodeVersion::GetNativeCode() const { return m_pMethodDesc->GetNativeCode(); }
 NativeCodeVersionId NativeCodeVersion::GetVersionId() const { return 0; }
-ReJITID NativeCodeVersion::GetILCodeVersionId() const; { return 0; }
-ILCodeVersion NativeCodeVersion::GetILCodeVersion() const { return ILCodeVersion(m_pMethod); }
+// ReJITID NativeCodeVersion::GetILCodeVersionId() const; { return 0; }
+// ILCodeVersion NativeCodeVersion::GetILCodeVersion() const { return ILCodeVersion(m_pMethodDesc); }
 #ifndef DACCESS_COMPILE
-BOOL NativeCodeVersion::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected) { return m_pMethod->SetNativeCodeInterlocked(pCode, pExpected); }
+BOOL NativeCodeVersion::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected) { return m_pMethodDesc->SetNativeCodeInterlocked(pCode, pExpected); }
 #endif
-bool NativeCodeVersion::operator==(const NativeCodeVersion & rhs) const { return m_pMethod == rhs.m_pMethod; }
+bool NativeCodeVersion::operator==(const NativeCodeVersion & rhs) const { return m_pMethodDesc == rhs.m_pMethodDesc; }
 bool NativeCodeVersion::operator!=(const NativeCodeVersion & rhs) const { return !operator==(rhs); }
 
 
