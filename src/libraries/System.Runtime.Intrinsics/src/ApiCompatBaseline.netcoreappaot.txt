@@ -1,5 +1,0 @@
-Compat issues with assembly System.Runtime.Intrinsics:
-TypesMustExist : Type 'System.Runtime.Intrinsics.Vector128' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Intrinsics.Vector256' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Intrinsics.Vector64' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3
