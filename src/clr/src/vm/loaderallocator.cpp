@@ -485,6 +485,8 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
     {
         _ASSERTE(!pDomainLoaderAllocatorDestroyIterator->IsAlive());
 
+        GetAppDomain()->RemoveTypesFromTypeIDMap(pDomainLoaderAllocatorDestroyIterator);
+
         DomainAssemblyIterator domainAssemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete);
 
         // Release all assemblies from the same ALC
