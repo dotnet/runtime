@@ -1151,7 +1151,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic 
                 range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 255));
                 break;
             case TYP_BYTE:
-                range = Range(Limit(Limit::keConstant, -127), Limit(Limit::keConstant, 128));
+                range = Range(Limit(Limit::keConstant, -128), Limit(Limit::keConstant, 127));
                 break;
             case TYP_USHORT:
                 range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 65535));
