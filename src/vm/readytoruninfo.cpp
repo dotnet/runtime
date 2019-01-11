@@ -786,7 +786,11 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
     if (g_pDebugInterface != NULL)
     {
-        g_pDebugInterface->JITComplete(pMD, pEntryPoint);
+#if defined(CROSSGEN_COMPILE)
+        g_pDebugInterface->JITComplete(NativeCodeVersion(pMD), pEntryPoint);
+#else
+        g_pDebugInterface->JITComplete(pConfig->GetCodeVersion(), pEntryPoint);
+#endif
     }
 
     return pEntryPoint;

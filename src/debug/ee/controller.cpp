@@ -644,7 +644,7 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatchForAddress(DebuggerControll
         LOG((LF_CORDB,LL_INFO10000,"AddPatchForAddress w/ version 0x%04x, "
             "pid:0x%x\n", dji->m_methodInfo->GetCurrentEnCVersion(), patch->pid));
 
-        _ASSERTE( fd==NULL || fd == dji->m_fd );
+        _ASSERTE( fd==NULL || fd == dji->m_nativeCodeVersion.GetMethodDesc() );
     }
 
     SortPatchIntoPatchList(&patch);
@@ -1865,7 +1865,7 @@ BOOL DebuggerController::AddBindAndActivateILSlavePatch(DebuggerControllerPatch 
         // code bodies. 
         _ASSERTE(master->offset == 0);
         INDEBUG(BOOL fOk = )
-            AddBindAndActivatePatchForMethodDesc(dji->m_fd, dji,
+            AddBindAndActivatePatchForMethodDesc(dji->m_nativeCodeVersion.GetMethodDesc(), dji,
                 0, PATCH_KIND_IL_SLAVE,
                 LEAF_MOST_FRAME, m_pAppDomain);
         _ASSERTE(fOk);
@@ -1892,7 +1892,7 @@ BOOL DebuggerController::AddBindAndActivateILSlavePatch(DebuggerControllerPatch 
             if (!fExact && (masterILOffset != 0))
             {
                 LOG((LF_CORDB, LL_INFO10000, "DC::BP:Failed to bind patch at IL offset 0x%p in %s::%s\n",
-                    masterILOffset, dji->m_fd->m_pszDebugClassName, dji->m_fd->m_pszDebugMethodName));
+                    masterILOffset, dji->m_nativeCodeVersion.GetMethodDesc()->m_pszDebugClassName, dji->m_nativeCodeVersion.GetMethodDesc()->m_pszDebugMethodName));
 
                 continue;
             }
@@ -1902,7 +1902,7 @@ BOOL DebuggerController::AddBindAndActivateILSlavePatch(DebuggerControllerPatch 
             }
 
             INDEBUG(BOOL fOk = )
-                AddBindAndActivatePatchForMethodDesc(dji->m_fd, dji,
+                AddBindAndActivatePatchForMethodDesc(dji->m_nativeCodeVersion.GetMethodDesc(), dji,
                     offsetNative, PATCH_KIND_IL_SLAVE,
                     LEAF_MOST_FRAME, m_pAppDomain);
             _ASSERTE(fOk);
@@ -1982,7 +1982,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
                 DebuggerJitInfo *dji = it.Current();
                 _ASSERTE(dji->m_jitComplete);
                 if (dji->m_encVersion == encVersion &&
-                   (pMethodDescFilter == NULL || pMethodDescFilter == dji->m_fd))
+                   (pMethodDescFilter == NULL || pMethodDescFilter == dji->m_nativeCodeVersion.GetMethodDesc()))
                 {
                     fVersionMatch = TRUE;
 
@@ -2062,7 +2062,7 @@ BOOL DebuggerController::AddBindAndActivateNativeManagedPatch(MethodDesc * fd,
     CONTRACTL_END;
 
     // For non-dynamic methods, we always expect to have a DJI, but just in case, we don't want the assert to AV.
-    _ASSERTE((dji == NULL) || (fd == dji->m_fd));
+    _ASSERTE((dji == NULL) || (fd == dji->m_nativeCodeVersion.GetMethodDesc()));
     _ASSERTE(g_patches != NULL);
     return DebuggerController::AddBindAndActivatePatchForMethodDesc(fd, dji, offsetNative, PATCH_KIND_NATIVE_MANAGED, fp, pAppDomain);
 }
@@ -2187,7 +2187,7 @@ void DebuggerController::RemovePatchesFromModule(Module *pModule, AppDomain *pAp
         {
             DebuggerJitInfo * dji = patch->GetDJI();
 
-            _ASSERTE(patch->key.module == dji->m_fd->GetModule());
+            _ASSERTE(patch->key.module == dji->m_nativeCodeVersion.GetMethodDesc()->GetModule());
 
             // It is not necessary to check for m_fd->GetModule() here. It will
             // be covered by other module unload notifications issued for the appdomain.
@@ -2243,11 +2243,11 @@ bool DebuggerController::ModuleHasPatches( Module* pModule )
         {
             DebuggerJitInfo * dji = patch->GetDJI();
 
-            _ASSERTE(patch->key.module == dji->m_fd->GetModule());
+            _ASSERTE(patch->key.module == dji->m_nativeCodeVersion.GetMethodDesc()->GetModule());
 
             // It may be sufficient to just check m_pLoaderModule here. Since this is used for debug-only
             // check, we will check for m_fd->GetModule() as well to catch more potential problems.
-            if ( (dji->m_pLoaderModule == pModule) || (dji->m_fd->GetModule() == pModule) )
+            if ( (dji->m_pLoaderModule == pModule) || (dji->m_nativeCodeVersion.GetMethodDesc()->GetModule() == pModule) )
             {
                 return true;
             }
@@ -3912,8 +3912,8 @@ void DebuggerController::DispatchMethodEnter(void * pIP, FramePointer fp)
     }
 
     LOG((LF_CORDB, LL_INFO100000, "DC::DispatchMethodEnter for '%s::%s'\n",
-        dji->m_fd->m_pszDebugClassName,
-        dji->m_fd->m_pszDebugMethodName));
+        dji->m_nativeCodeVersion.GetMethodDesc()->m_pszDebugClassName,
+        dji->m_nativeCodeVersion.GetMethodDesc()->m_pszDebugMethodName));
 
     ControllerLockHolder lockController;
 
@@ -6661,7 +6661,7 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and
     // it was causing problems creating a stepper while sitting in ndirect stubs after we'd returned from the unmanaged
     // function that had been called.
-    MethodDesc *fd = dji->m_fd;
+    MethodDesc *fd = dji->m_nativeCodeVersion.GetMethodDesc();
 
     // The "+1" is for internal use, when we need to
     // set an intermediate patch in pitched code.  Isn't
@@ -7151,7 +7151,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                         dji = g_pDebugger->GetJitInfoFromAddr((TADDR) traceManagerRetAddr);
                         
                         MethodDesc * mdNative = (dji == NULL) ? 
-                            g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(traceManagerRetAddr)) : dji->m_fd;
+                            g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(traceManagerRetAddr)) : dji->m_nativeCodeVersion.GetMethodDesc();
                         _ASSERTE(mdNative != NULL);
 
                         // Find the method that the return is to.
@@ -7299,7 +7299,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
 
     _ASSERTE(!IsFrozen());
 
-    MethodDesc * pDesc = dji->m_fd;
+    MethodDesc * pDesc = dji->m_nativeCodeVersion.GetMethodDesc();
     LOG((LF_CORDB, LL_INFO10000, "DJMCStepper::TME, desc=%p, addr=%p\n",
         pDesc, ip));
 
@@ -7664,7 +7664,7 @@ void DebuggerStepper::PrepareForSendEvent(StackTraceTicket ticket)
                     dmi = dji->m_methodInfo;
 
                     CONSISTENCY_CHECK_MSGF(dmi->IsJMCFunction(), ("JMC stepper %p stopping in non-jmc method, MD=%p, '%s::%s'",
-                        this, dji->m_fd, dji->m_fd->m_pszDebugClassName, dji->m_fd->m_pszDebugMethodName));
+                        this, dji->m_nativeCodeVersion.GetMethodDesc(), dji->m_nativeCodeVersion.GetMethodDesc()->m_pszDebugClassName, dji->m_nativeCodeVersion.GetMethodDesc()->m_pszDebugMethodName));
 
                 }
 
@@ -7940,7 +7940,7 @@ void DebuggerJMCStepper::TriggerMethodEnter(Thread * thread,
 
     _ASSERTE(!IsFrozen());
 
-    MethodDesc * pDesc = dji->m_fd;
+    MethodDesc * pDesc = dji->m_nativeCodeVersion.GetMethodDesc();
     LOG((LF_CORDB, LL_INFO10000, "DJMCStepper::TME, desc=%p, addr=%p\n",
         pDesc, ip));
 
@@ -8663,7 +8663,7 @@ DebuggerEnCBreakpoint::DebuggerEnCBreakpoint(SIZE_T offset,
 {
     _ASSERTE( jitInfo != NULL );
     // Add and activate the specified patch
-    AddBindAndActivateNativeManagedPatch(jitInfo->m_fd, jitInfo, offset, LEAF_MOST_FRAME, pAppDomain);
+    AddBindAndActivateNativeManagedPatch(jitInfo->m_nativeCodeVersion.GetMethodDesc(), jitInfo, offset, LEAF_MOST_FRAME, pAppDomain);
     LOG((LF_ENC,LL_INFO1000, "DEnCBPDEnCBP::adding %S patch!\n",
         fTriggerType == REMAP_PENDING ? W("remap pending") : W("remap complete")));
 }
@@ -8743,7 +8743,7 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
     // what we are executing right now.
     DebuggerJitInfo *pJitInfo = m_jitInfo;
     _ASSERTE(pJitInfo);
-    _ASSERTE(pJitInfo->m_fd == pFD);
+    _ASSERTE(pJitInfo->m_nativeCodeVersion.GetMethodDesc() == pFD);
 
     // Grab the context for this thread. This is the context that was
     // passed to COMPlusFrameHandler.
@@ -8902,7 +8902,7 @@ DebuggerContinuableExceptionBreakpoint::DebuggerContinuableExceptionBreakpoint(T
 {
     _ASSERTE( jitInfo != NULL );
     // Add a native patch at the specified native offset, which is where we are going to resume execution.
-    AddBindAndActivateNativeManagedPatch(jitInfo->m_fd, jitInfo, nativeOffset, LEAF_MOST_FRAME, pAppDomain);
+    AddBindAndActivateNativeManagedPatch(jitInfo->m_nativeCodeVersion.GetMethodDesc(), jitInfo, nativeOffset, LEAF_MOST_FRAME, pAppDomain);
 }
 
 //---------------------------------------------------------------------------------------
