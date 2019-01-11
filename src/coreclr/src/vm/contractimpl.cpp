@@ -155,6 +155,41 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
 #ifndef DACCESS_COMPILE 
 
 //------------------------------------------------------------------------
+// Remove all types that belong to the passed in LoaderAllocator
+void TypeIDMap::RemoveTypes(LoaderAllocator *pLoaderAllocator)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SO_TOLERANT;
+    } CONTRACTL_END;
+
+    // Take the lock
+    CrstHolder lh(&m_lock);
+
+    for (HashMap::Iterator it = m_mtMap.begin(); !it.end(); ++it)
+    {
+        if (((MethodTable*)it.GetKey())->GetLoaderAllocator() == pLoaderAllocator)
+        {
+            // Note: the entry is just marked for deletion, the removal happens in Compact below
+            m_mtMap.DeleteValue(it.GetKey(), it.GetValue());
+        }
+    }
+
+    m_mtMap.Compact();
+
+    for (HashMap::Iterator it = m_idMap.begin(); !it.end(); ++it)
+    {
+        if (((MethodTable*)(it.GetValue() << 1))->GetLoaderAllocator() == pLoaderAllocator)
+        {
+            // Note: the entry is just marked for deletion, the removal happens in Compact below
+            m_idMap.DeleteValue(it.GetKey(), it.GetValue());
+        }
+    }
+
+    m_idMap.Compact();
+}
+//------------------------------------------------------------------------
 // If TRUE, it points to a matching entry.
 // If FALSE, it is at the insertion point.
 BOOL 
