@@ -4,7 +4,7 @@
     <HelixSourcePrefix>pr/</HelixSourcePrefix>
     <HelixSourcePrefix Condition="'$(OfficialBuildId)' != ''">official/</HelixSourcePrefix>
     <HelixSource Condition="'$(HelixSource)' == ''">$(HelixSourcePrefix)dotnet/corefx</HelixSource>
-    <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)/</HelixSource>
+    <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)</HelixSource>
     
     <!-- Set helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
