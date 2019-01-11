@@ -836,7 +836,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
                         jtrue->ChangeOper(GT_JCC);
                         GenTreeCC* jcc = jtrue->AsCC();
                         jcc->gtFlags |= GTF_USE_FLAGS;
-                        jcc->gtCondition = (relopOp2Value == 0) ? GT_NE : GT_EQ;
+                        jcc->gtCondition = (relopOp2Value == 0) ? GenCondition::NE : GenCondition::EQ;
 
                         BlockRange().Remove(simdUser->gtGetOp2());
                         BlockRange().Remove(simdUser);
@@ -854,8 +854,9 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
                 // to have to handle 2 cases (set flags/set destination register).
                 //
 
-                genTreeOps condition = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) ? GT_EQ : GT_NE;
-                GenTreeCC* setcc     = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, simdNode->TypeGet());
+                GenCondition condition =
+                    (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicOpEquality) ? GenCondition::EQ : GenCondition::NE;
+                GenTreeCC* setcc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, simdNode->TypeGet());
                 setcc->gtFlags |= GTF_USE_FLAGS;
                 BlockRange().InsertAfter(simdNode, setcc);
                 simdUse.ReplaceWith(comp, setcc);
@@ -1892,19 +1893,8 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         // The type of the operands has to be the same and no implicit conversions at this stage.
         assert(op1Type == op2Type);
 
-        bool reverseOps;
-        if ((cmp->gtFlags & GTF_RELOP_NAN_UN) != 0)
-        {
-            // Unordered comparison case
-            reverseOps = cmp->OperIs(GT_GT, GT_GE);
-        }
-        else
-        {
-            reverseOps = cmp->OperIs(GT_LT, GT_LE);
-        }
-
         GenTree* otherOp;
-        if (reverseOps)
+        if (GenCondition::FromFloatRelop(cmp).PreferSwap())
         {
             otherOp = op1;
         }
