@@ -494,6 +494,13 @@ extern "C" DLL_EXPORT BOOL __cdecl TakeStructArrayExpClassByVal( S_StructArray *
 /*----------------------------------------------------------------------------
 return a struct including a C array
 ----------------------------------------------------------------------------*/
+extern "C" DLL_EXPORT S_INTArray __cdecl S_INTArray_Ret_ByValue()
+{
+    INIT_EXPECTED_STRUCT( S_INTArray, ARRAY_SIZE, INT );
+
+    return *expected;
+}
+
 extern "C" DLL_EXPORT S_INTArray* __cdecl S_INTArray_Ret()
 {
     INIT_EXPECTED_STRUCT( S_INTArray, ARRAY_SIZE, INT );

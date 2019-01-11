@@ -6,7 +6,6 @@ using System;
 using System.Runtime.InteropServices;
 
 #pragma warning disable 618
-#region Struct Def
 [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
 public struct Stru_Exp_DecAsCYAsFld
 {
@@ -28,7 +27,12 @@ public struct Stru_Seq_DecAsLPStructAsFld
     [MarshalAs(UnmanagedType.LPStruct)]
     public decimal dec;
 }
-#endregion
+
+public struct NestedCurrency
+{
+    [MarshalAs(UnmanagedType.Currency)]
+    public decimal dec;
+}
 
 public class CMain
 {
@@ -49,6 +53,8 @@ public class CMain
     [DllImport("DecNative")]
     [return: MarshalAs(UnmanagedType.Currency)]
     static extern decimal RetCY();
+    [DllImport("DecNative", EntryPoint = "RetCY")]
+    static extern NestedCurrency RetCYStruct();
     [DllImport("DecNative")]
     static extern bool TakeStru_Exp_DecAsCYAsFldByInOutRef([Out] out Stru_Exp_DecAsCYAsFld s);
 
@@ -84,20 +90,10 @@ public class CMain
             return false;
         }
 
-        bool exceptionThrown = false;
-        try
+        dec = RetDec();
+        if (dec != decimal.MaxValue)
         {
-            RetDec();
-        }
-        catch (MarshalDirectiveException)
-        {
-            exceptionThrown = true;
-        }
-
-        if (!exceptionThrown)
-        {
-            Console.WriteLine("Expected MarshalDirectiveException is not thrown");
-            return false;
+            Console.WriteLine($"Test Failed. Expected 'decimal.MaxValue'. Got {dec}");
         }
 
         Console.WriteLine("MarshalAsLPStruct end.");
@@ -132,8 +128,8 @@ public class CMain
             return false;
         }
 
-
         bool exceptionThrown = false;
+
         try
         {
             RetCY();
@@ -142,10 +138,16 @@ public class CMain
         {
             exceptionThrown = true;
         }
-
         if (!exceptionThrown)
         {
-            Console.WriteLine("Expected MarshalDirectiveException is not thrown");
+            Console.WriteLine("Expected MarshalDirectiveException from RetCY() not thrown");
+            return false;
+        }
+
+        cy = RetCYStruct().dec;
+        if (cy != CY_MIN_VALUE)
+        {
+            Console.WriteLine($"Test Failed: RetCYStruct. Expected 'CY_MIN_VALUE'. Got '{cy}'.");
             return false;
         }
 
