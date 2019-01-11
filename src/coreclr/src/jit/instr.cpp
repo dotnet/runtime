@@ -314,11 +314,11 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
             ins = INS_seta;
             break;
 
-        case EJ_jpe:
-            ins = INS_setpe;
+        case EJ_jp:
+            ins = INS_setp;
             break;
-        case EJ_jpo:
-            ins = INS_setpo;
+        case EJ_jnp:
+            ins = INS_setnp;
             break;
 
         default:

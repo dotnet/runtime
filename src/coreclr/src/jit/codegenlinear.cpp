@@ -2132,3 +2132,81 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     }
 }
 #endif // !defined(_TARGET_64BIT_)
+
+//------------------------------------------------------------------------
+// genCodeForJumpTrue: Generate code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - The node
+//
+void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(jtrue->OperIs(GT_JTRUE));
+
+    GenCondition condition = GenCondition::FromRelop(jtrue->gtGetOp1());
+
+    if (condition.PreferSwap())
+    {
+        condition = GenCondition::Swap(condition);
+    }
+
+    inst_JCC(condition, compiler->compCurBB->bbJumpDest);
+}
+
+//------------------------------------------------------------------------
+// genCodeForJcc: Generate code for a GT_JCC node.
+//
+// Arguments:
+//    jcc - The node
+//
+void CodeGen::genCodeForJcc(GenTreeCC* jcc)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(jcc->OperIs(GT_JCC));
+
+    inst_JCC(jcc->gtCondition, compiler->compCurBB->bbJumpDest);
+}
+
+//------------------------------------------------------------------------
+// inst_JCC: Generate a conditional branch instruction sequence.
+//
+// Arguments:
+//   condition - The branch condition
+//   target    - The basic block to jump to when the condition is true
+//
+void CodeGen::inst_JCC(GenCondition condition, BasicBlock* target)
+{
+    const GenConditionDesc& desc = GenConditionDesc::Get(condition);
+
+    if (desc.oper == GT_NONE)
+    {
+        inst_JMP(desc.jumpKind1, target);
+    }
+    else if (desc.oper == GT_OR)
+    {
+        inst_JMP(desc.jumpKind1, target);
+        inst_JMP(desc.jumpKind2, target);
+    }
+    else // if (desc.oper == GT_AND)
+    {
+        BasicBlock* labelNext = genCreateTempLabel();
+        inst_JMP(emitter::emitReverseJumpKind(desc.jumpKind1), labelNext);
+        inst_JMP(desc.jumpKind2, target);
+        genDefineTempLabel(labelNext);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForSetcc: Generate code for a GT_SETCC node.
+//
+// Arguments:
+//    setcc - The node
+//
+void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
+{
+    assert(setcc->OperIs(GT_SETCC));
+
+    inst_SETCC(setcc->gtCondition, setcc->TypeGet(), setcc->gtRegNum);
+    genProduceReg(setcc);
+}
