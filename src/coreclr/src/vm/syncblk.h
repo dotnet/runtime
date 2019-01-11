@@ -17,7 +17,6 @@
 #include "slist.h"
 #include "crst.h"
 #include "vars.hpp"
-#include "yieldprocessornormalized.h"
 
 // #SyncBlockOverview
 // 

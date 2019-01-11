@@ -1633,7 +1633,7 @@ void WaitLongerNoInstru (int i)
     {
         if  (g_num_processors > 1)
         {
-            YieldProcessor();           // indicate to the processor that we are spining
+            YieldProcessor();           // indicate to the processor that we are spinning
             if  (i & 0x01f)
                 GCToOSInterface::YieldThread (0);
             else
@@ -1706,7 +1706,7 @@ retry:
                     {
                         if  (VolatileLoad(lock) < 0 || IsGCInProgress())
                             break;
-                        YieldProcessor();           // indicate to the processor that we are spining
+                        YieldProcessor();           // indicate to the processor that we are spinning
                     }
                     if  (VolatileLoad(lock) >= 0 && !IsGCInProgress())
                     {
@@ -1801,7 +1801,7 @@ void WaitLonger (int i
 #endif //SYNCHRONIZATION_STATS
         if  (g_num_processors > 1)
         {
-            YieldProcessor();           // indicate to the processor that we are spining
+            YieldProcessor();           // indicate to the processor that we are spinning
             if  (i & 0x01f)
                 GCToOSInterface::YieldThread (0);
             else
@@ -1852,7 +1852,7 @@ retry:
                     {
                         if  (spin_lock->lock < 0 || gc_heap::gc_started)
                             break;
-                        YieldProcessor();           // indicate to the processor that we are spining
+                        YieldProcessor();           // indicate to the processor that we are spinning
                     }
                     if  (spin_lock->lock >= 0 && !gc_heap::gc_started)
                     {
@@ -10332,7 +10332,7 @@ retry:
                 {
                     if  (gc_done_event_lock < 0)
                         break;
-                    YieldProcessor();           // indicate to the processor that we are spining
+                    YieldProcessor();           // indicate to the processor that we are spinning
                 }
                 if  (gc_done_event_lock >= 0)
                     GCToOSInterface::YieldThread(++dwSwitchCount);
@@ -36251,7 +36251,7 @@ retry:
         unsigned int i = 0;
         while (lock >= 0)
         {
-            YieldProcessor();           // indicate to the processor that we are spining
+            YieldProcessor();           // indicate to the processor that we are spinning
             if (++i & 7)
                 GCToOSInterface::YieldThread (0);
             else
