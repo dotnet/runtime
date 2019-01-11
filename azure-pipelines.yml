@@ -101,19 +101,19 @@ jobs:
     skipTests: true
     targetArchitecture: arm64
 
-# Tizen build only for PR build
-- ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-  - template: /eng/jobs/bash-build.yml
-    parameters:
-      additionalMSBuildArgs: /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json /p:OutputRid=tizen.5.0.0-armel
-      additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/armel.tizen.build
-      crossBuild: true
-      displayName: Build_Linux_ArmRel_Tizen
-      disableCrossgen: true
-      dockerImage: tizendotnet/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255-tizen-rootfs-5.0m1
-      portableBuild: false
-      skipTests: true
-      targetArchitecture: armel
+# # Tizen build only for PR build
+# - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+#   - template: /eng/jobs/bash-build.yml
+#     parameters:
+#       additionalMSBuildArgs: /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json /p:OutputRid=tizen.5.0.0-armel
+#       additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/armel.tizen.build
+#       crossBuild: true
+#       displayName: Build_Linux_ArmRel_Tizen
+#       disableCrossgen: true
+#       dockerImage: tizendotnet/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255-tizen-rootfs-5.0m1
+#       portableBuild: false
+#       skipTests: true
+#       targetArchitecture: armel
 
 - template: /eng/jobs/bash-build.yml
   parameters:
