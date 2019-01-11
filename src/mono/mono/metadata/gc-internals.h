@@ -66,6 +66,7 @@ extern void mono_gc_init (void);
 extern void mono_gc_base_init (void);
 extern void mono_gc_cleanup (void);
 extern void mono_gc_base_cleanup (void);
+extern void mono_gc_init_icalls (void);
 
 /*
  * Return whenever the current thread is registered with the GC (i.e. started

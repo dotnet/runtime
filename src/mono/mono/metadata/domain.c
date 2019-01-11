@@ -544,6 +544,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_loader_init ();
 	mono_reflection_init ();
 	mono_runtime_init_tls ();
+	mono_icall_init ();
 
 	domain = mono_domain_create ();
 	mono_root_domain = domain;

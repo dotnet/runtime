@@ -270,6 +270,11 @@ mono_gc_base_cleanup (void)
 	GC_finalizer_notifier = NULL;
 }
 
+void
+mono_gc_init_icalls (void)
+{
+}
+
 /**
  * mono_gc_collect:
  * \param generation GC generation identifier

@@ -52,6 +52,11 @@ mono_gc_base_cleanup (void)
 }
 
 void
+mono_gc_init_icalls (void)
+{
+}
+
+void
 mono_gc_collect (int generation)
 {
 }
