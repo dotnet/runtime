@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace SuperPMICollection
@@ -251,41 +253,27 @@ namespace SuperPMICollection
         // Run all the programs from the CoreCLR test binary drop we wish to run while collecting MC files.
         private static void RunTestProgramsWhileCollecting()
         {
-            // The list of all programs from the CoreCLR repo test binary drop that
-            // we should run when doing the SuperPMI collection. This is currently a
-            // hard-coded list of the relative paths within the test build binaries
-            // directory of the Windows .cmd files used to run a test. For non-Windows
-            // platforms, the .cmd is replaced by .sh, and the path separator character
-            // is changed.
-            //
-            // TODO: this should probably be loaded dynamically from a .json/.xml file.
-            //
             // Note: We previously used
             //      JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd
             // but it doesn't currently run on x86 due to this issue: https://github.com/dotnet/coreclr/issues/6844.
-            string[] SuperPMICollectionTestProgramsList =
-            {
-                @"JIT\Performance\CodeQuality\Bytemark\Bytemark\Bytemark.cmd",
-                @"JIT\Methodical\fp\exgen\10w5d_cs_do\10w5d_cs_do.cmd",
-                @"JIT\Generics\Coverage\chaos56200037cs\chaos56200037cs.cmd"
-            };
+            var superPMICollectionTestProgramsList = new List<string>();
 
-            // Figure out the root of the test binaries directory.
-            // Perhaps this (or something similar) would be a better way to figure out the binary root dir:
-            // testBinaryRootDir = System.IO.Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath);
-
-            string thisTestDir = Directory.GetCurrentDirectory();
-            int lastIndex = thisTestDir.LastIndexOf("JIT");
-            if (lastIndex == -1)
+            using (var resourceStream = typeof(SuperPMICollectionClass).GetTypeInfo().Assembly.GetManifestResourceStream("TestProjects"))
+            using (var streamReader = new StreamReader(resourceStream))
             {
-                throw new SpmiException("we expect the current directory when the test is run to be within the JIT test binaries tree, but it is not: " + thisTestDir);
+                string currentDirectory = Directory.GetCurrentDirectory();
+                string csprojRelativePath;
+                while ((csprojRelativePath = streamReader.ReadLine()) != null)
+                {
+                    string cmdFileName = Path.ChangeExtension(Path.GetFileName(csprojRelativePath), ".cmd");
+                    cmdFileName = Path.Combine(currentDirectory, cmdFileName);
+                    superPMICollectionTestProgramsList.Add(cmdFileName);
+                }
             }
-            string testBinaryRootDir = thisTestDir.Substring(0, lastIndex);
 
             // Run the tests
-            foreach (string test in SuperPMICollectionTestProgramsList)
+            foreach (string testFullPath in superPMICollectionTestProgramsList)
             {
-                string testFullPath = Path.Combine(testBinaryRootDir, test);
                 try
                 {
                     RunTest(testFullPath);
