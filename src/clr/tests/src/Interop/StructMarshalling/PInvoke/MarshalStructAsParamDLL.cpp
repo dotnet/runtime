@@ -1178,3 +1178,46 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutL
 	return TRUE;
 }
 
+extern "C" DLL_EXPORT HFA STDMETHODCALLTYPE GetHFA(float f1, float f2, float f3, float f4)
+{
+    return {f1, f2, f3, f4};
+}
+
+extern "C" DLL_EXPORT ManyInts STDMETHODCALLTYPE GetMultiplesOf(int value)
+{
+    ManyInts multiples = 
+    {
+        value * 1,
+        value * 2,
+        value * 3,
+        value * 4,
+        value * 5,
+        value * 6,
+        value * 7,
+        value * 8, 
+        value * 9,
+        value * 10,
+        value * 11,
+        value * 12,
+        value * 13,
+        value * 14,
+        value * 15,
+        value * 16,
+        value * 17,
+        value * 18,
+        value * 19,
+        value * 20,
+    };
+
+    return multiples;
+}
+
+extern "C" DLL_EXPORT LongStructPack16Explicit STDMETHODCALLTYPE GetLongStruct(LONG64 val1, LONG64 val2)
+{
+    return {val1, val2};
+}
+
+extern "C" DLL_EXPORT MultipleBools STDMETHODCALLTYPE GetBools(BOOL b1, BOOL b2)
+{
+    return {b1, b2};
+}

@@ -277,7 +277,7 @@ public class CMain
         }
         if (!exceptionThrown)
         {
-            Console.WriteLine("Expected MarshalDirectiveException from TakeDecAsInOutParamAsLPStructByRef(ref dec) not thrown");
+            Console.WriteLine("Expected MarshalDirectiveException from ReverseCall_CYRet(new Dele_CYRet(CYRet)) not thrown");
             return false;
         }
 

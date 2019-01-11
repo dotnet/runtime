@@ -87,7 +87,7 @@ public class CriticalHandleStructTest
     public static void Ret()
     {
         IntPtr handleValue = MyCriticalHandle.GetUniqueHandle();
-        Assert.Throws<MarshalDirectiveException>(() => Native.Ret(handleValue));
+        Assert.Throws<NotSupportedException>(() => Native.Ret(handleValue));
     }
 
     public static void Out()

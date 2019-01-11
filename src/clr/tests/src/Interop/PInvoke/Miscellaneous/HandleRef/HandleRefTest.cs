@@ -22,6 +22,9 @@ class HandleRefTest
     [DllImport(@"HandleRefNative", CallingConvention = CallingConvention.Winapi)]
     private static extern int TestNoGC(HandleRef pintValue, Action gcCallback);
 
+    [DllImport(@"HandleRefNative")]
+    private static extern HandleRef InvalidMarshalPointer_Return();
+
     public unsafe static int Main(string[] args)
     {
         try{
@@ -63,6 +66,9 @@ class HandleRefTest
             Action gcCallback = () => { Console.WriteLine("GC callback now"); GC.Collect(2, GCCollectionMode.Forced); GC.WaitForPendingFinalizers(); GC.Collect(2, GCCollectionMode.Forced); };
             Assert.AreEqual(intReturn, TestNoGC(hr4, gcCallback), "The return value is wrong");
             Console.WriteLine("Native code finished");
+
+            Console.WriteLine("InvalidMarshalPointer_Return");
+            Assert.Throws<MarshalDirectiveException>(() => InvalidMarshalPointer_Return());
 
             return 100;
         } catch (Exception e){

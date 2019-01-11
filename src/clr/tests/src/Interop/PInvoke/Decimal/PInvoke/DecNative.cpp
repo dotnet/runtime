@@ -124,9 +124,9 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeDecAsOutParamAsLPStructByRef(DE
     }
 }
 
-extern "C" DLL_EXPORT DECIMAL STDMETHODCALLTYPE RetDec()
+extern "C" DLL_EXPORT DECIMAL* STDMETHODCALLTYPE RetDec()
 {
-    return g_DECIMAL_MaxValue;
+    return &g_DECIMAL_MaxValue;
 }
 
 // CY

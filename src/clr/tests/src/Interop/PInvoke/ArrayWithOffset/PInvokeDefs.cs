@@ -16,4 +16,7 @@ unsafe class ArrayWithOffsetNative
 
     [DllImport(nameof(ArrayWithOffsetNative))]
     public static extern bool Marshal_Invalid(ref ArrayWithOffset array);
+
+    [DllImport(nameof(ArrayWithOffsetNative))]
+    public static extern ArrayWithOffset Marshal_Invalid_Return();
 }
