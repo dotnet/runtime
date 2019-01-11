@@ -63,6 +63,33 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         public static bool IsUsingManagedSNI() => (bool)(s_useManagedSNI?.GetValue(null) ?? false);
 
+        public static bool IsUsingNativeSNI() => !IsUsingManagedSNI();
+
+        public static bool IsUTF8Supported()
+        {
+            bool retval = false;
+            if (AreConnStringsSetup())
+            {
+                using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
+                using (SqlCommand command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = "SELECT CONNECTIONPROPERTY('SUPPORT_UTF8')";
+                    connection.Open();
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            // CONNECTIONPROPERTY('SUPPORT_UTF8') returns NULL in SQLServer versions that don't support UTF-8.
+                            retval = !reader.IsDBNull(0);
+                        }
+                    }
+                }
+            }
+            return retval;
+        }
+
         // the name length will be no more then (16 + prefix.Length + escapeLeft.Length + escapeRight.Length)
         // some providers does not support names (Oracle supports up to 30)
         public static string GetUniqueName(string prefix, string escapeLeft, string escapeRight)
