@@ -1995,6 +1995,236 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        public static IEnumerable<object[]> Interim1xxStatusCode()
+        {
+            yield return new object[] { (HttpStatusCode) 100 }; // 100 Continue.
+            // 101 SwitchingProtocols will be treated as a final status code.
+            yield return new object[] { (HttpStatusCode) 102 }; // 102 Processing.
+            yield return new object[] { (HttpStatusCode) 103 }; // 103 EarlyHints.
+            yield return new object[] { (HttpStatusCode) 150 };
+            yield return new object[] { (HttpStatusCode) 180 };
+            yield return new object[] { (HttpStatusCode) 199 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Interim1xxStatusCode))]
+        public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
+        {
+            // Skip test on .NET Framework since it doesn't have the fix.
+            if (PlatformDetection.IsFullFramework && (int)responseStatusCode >= 102) return;
+
+            var clientFinished = new TaskCompletionSource<bool>();
+            const string TestString = "test";
+            const string CookieHeaderExpected = "yummy_cookie=choco";
+            const string SetCookieExpected = "theme=light";
+            const string ContentTypeHeaderExpected = "text/html";
+
+            const string SetCookieIgnored1 = "hello=world";
+            const string SetCookieIgnored2 = "net=core";
+
+            // Set-Cookie header will not be ignored with CurlHandler.
+            int containerCookiesCount = IsCurlHandler ? 3 : 1;
+            string containerCookiesExpected = IsCurlHandler ?
+                SetCookieIgnored1 + "; " + SetCookieIgnored2 + "; " + SetCookieExpected : SetCookieExpected;
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+                    initialMessage.Content = new StringContent(TestString);
+                    initialMessage.Headers.ExpectContinue = true;
+                    HttpResponseMessage response = await client.SendAsync(initialMessage);
+
+                    // Verify status code.
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    // Verify Cookie header.
+                    Assert.Equal(1, response.Headers.GetValues("Cookie").Count());
+                    Assert.Equal(CookieHeaderExpected, response.Headers.GetValues("Cookie").First().ToString());
+                    // Verify Set-Cookie header.
+                    Assert.Equal(containerCookiesCount, handler.CookieContainer.Count);
+                    Assert.Equal(containerCookiesExpected, handler.CookieContainer.GetCookieHeader(uri));
+                    // Verify Content-type header.
+                    Assert.Equal(ContentTypeHeaderExpected, response.Content.Headers.ContentType.ToString());
+                    clientFinished.SetResult(true);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    // Send 100-Continue responses with additional headers.
+                    await connection.ReadRequestHeaderAndSendResponseAsync(responseStatusCode, additionalHeaders:
+                        "Cookie: ignore_cookie=choco1\r\n" + "Content-type: text/xml\r\n" + $"Set-Cookie: {SetCookieIgnored1}\r\n");
+                    await connection.SendResponseAsync(responseStatusCode, additionalHeaders:
+                        "Cookie: ignore_cookie=choco2\r\n" + "Content-type: text/plain\r\n" + $"Set-Cookie: {SetCookieIgnored2}\r\n");
+
+                    var result = new char[TestString.Length];
+                    await connection.Reader.ReadAsync(result, 0, TestString.Length);
+                    Assert.Equal(TestString, new string(result));
+
+                    // Send final status code.
+                    await connection.SendResponseAsync(HttpStatusCode.OK, additionalHeaders:
+                        $"Cookie: {CookieHeaderExpected}\r\n" + $"Content-type: {ContentTypeHeaderExpected}\r\n" + $"Set-Cookie: {SetCookieExpected}\r\n");
+                    await clientFinished.Task;
+                });
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(Interim1xxStatusCode))]
+        public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
+        {
+            // Skip test on .NET Framework since it doesn't have the fix.
+            if (PlatformDetection.IsFullFramework && (int)responseStatusCode >= 102) return;
+
+            var clientFinished = new TaskCompletionSource<bool>();
+            const string TestString = "test";
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+                    initialMessage.Content = new StringContent(TestString);
+                    // No ExpectContinue header.
+                    initialMessage.Headers.ExpectContinue = false;
+                    HttpResponseMessage response = await client.SendAsync(initialMessage);
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    clientFinished.SetResult(true);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    // Send unexpected 1xx responses.
+                    await connection.ReadRequestHeaderAndSendResponseAsync(responseStatusCode);
+                    await connection.SendResponseAsync(responseStatusCode);
+                    await connection.SendResponseAsync(responseStatusCode);
+
+                    var result = new char[TestString.Length];
+                    await connection.Reader.ReadAsync(result, 0, TestString.Length);
+                    Assert.Equal(TestString, new string(result));
+
+                    // Send final status code.
+                    await connection.SendResponseAsync(HttpStatusCode.OK);
+                    await clientFinished.Task;
+                });
+            });
+        }
+
+        [Fact]
+        public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse()
+        {
+            var clientFinished = new TaskCompletionSource<bool>();
+            const string TestString = "test";
+            const string Valid100ContinueResponse = "HTTP/1.1 100 Continue\r\n\r\n";
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+                    initialMessage.Content = new StringContent(TestString);
+                    initialMessage.Headers.ExpectContinue = true;
+                    HttpResponseMessage response = await client.SendAsync(initialMessage);
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    clientFinished.SetResult(true);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    // Send multiple 100-Continue responses.
+                    await connection.ReadRequestHeaderAndSendCustomResponseAsync(
+                        string.Concat(Enumerable.Repeat(Valid100ContinueResponse, 3)));
+
+                    var result = new char[TestString.Length];
+                    await connection.Reader.ReadAsync(result, 0, TestString.Length);
+                    Assert.Equal(TestString, new string(result));
+
+                    // Send final status code.
+                    await connection.SendResponseAsync(HttpStatusCode.OK);
+                    await clientFinished.Task;
+                });
+            });
+        }
+
+        [Fact]
+        public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually()
+        {
+            // CurlHandler will not send request body if it doesn't see 100-Continue.
+            // This is not correct. Per RFC 7231: A client that sends a 100-continue expectation is not required
+            // to wait for any specific length of time; such a client MAY proceed to send the message body even
+            // if it has not yet received a response.
+            if (IsCurlHandler) return;
+
+            var clientFinished = new TaskCompletionSource<bool>();
+            const string TestString = "test";
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+                    initialMessage.Content = new StringContent(TestString);
+                    initialMessage.Headers.ExpectContinue = true;
+                    HttpResponseMessage response = await client.SendAsync(initialMessage);
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    clientFinished.SetResult(true);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    // Send final status code 200.
+                    await connection.ReadRequestHeaderAndSendResponseAsync();
+
+                    var result = new char[TestString.Length];
+                    await connection.Reader.ReadAsync(result, 0, TestString.Length);
+                    Assert.Equal(TestString, new string(result));
+
+                    await clientFinished.Task;
+                });
+            });
+        }
+
+        [Fact]
+        public async Task SendAsync_101SwitchingProtocolsResponse_Success()
+        {
+            // WinHttpHandler and CurlHandler will hang, waiting for additional response.
+            // Other handlers will accept 101 as a final response.
+            if (IsWinHttpHandler || IsCurlHandler) return;
+
+            var clientFinished = new TaskCompletionSource<bool>();
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                    Assert.Equal(HttpStatusCode.SwitchingProtocols, response.StatusCode);
+                    clientFinished.SetResult(true);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    // Send a valid 101 Switching Protocols response.
+                    await connection.ReadRequestHeaderAndSendCustomResponseAsync(
+                        "HTTP/1.1 101 Switching Protocols\r\n" + "Upgrade: websocket\r\n" + "Connection: Upgrade\r\n\r\n");
+                    await clientFinished.Task;
+                });
+            });
+        }
+
         [ActiveIssue(30061, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(false)]
