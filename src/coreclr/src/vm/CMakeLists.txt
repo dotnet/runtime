@@ -232,7 +232,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     versionresilienthashcode.h
     virtualcallstub.h
     win32threadpool.h
-    yieldprocessornormalized.h
     zapsig.h
 )
 

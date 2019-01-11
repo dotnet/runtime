@@ -61,9 +61,8 @@ void SimpleRWLock::EnterRead()
         while (IsWriterWaiting())
         {
             int spinCount = m_spinCount;
-            while (spinCount > 0) {
-                spinCount--;
-                YieldProcessor();
+            if (spinCount > 0) {
+                YieldProcessorNormalizedForPreSkylakeCount(spinCount);
             }
             __SwitchToThread(0, ++dwSwitchCount);
         }
@@ -85,15 +84,9 @@ void SimpleRWLock::EnterRead()
             {
                 break;
             }
+
             // Delay by approximately 2*i clock cycles (Pentium III).
-            // This is brittle code - future processors may of course execute this
-            // faster or slower, and future code generators may eliminate the loop altogether.
-            // The precise value of the delay is not critical, however, and I can't think
-            // of a better way that isn't machine-dependent.
-            for (int delayCount = i; --delayCount; ) 
-            {
-                YieldProcessor();           // indicate to the processor that we are spining 
-            }
+            YieldProcessorNormalizedForPreSkylakeCount(i);
 
             // exponential backoff: wait a factor longer in the next iteration
             i *= g_SpinConstants.dwBackoffFactor;
@@ -182,15 +175,9 @@ void SimpleRWLock::EnterWrite()
             {
                 break;
             }
+
             // Delay by approximately 2*i clock cycles (Pentium III).
-            // This is brittle code - future processors may of course execute this
-            // faster or slower, and future code generators may eliminate the loop altogether.
-            // The precise value of the delay is not critical, however, and I can't think
-            // of a better way that isn't machine-dependent.
-            for (int delayCount = i; --delayCount; ) 
-            {
-                YieldProcessor();           // indicate to the processor that we are spining 
-            }
+            YieldProcessorNormalizedForPreSkylakeCount(i);
 
             // exponential backoff: wait a factor longer in the next iteration
             i *= g_SpinConstants.dwBackoffFactor;

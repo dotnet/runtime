@@ -330,6 +330,7 @@ NOINLINE OBJECTHANDLE AcquireWeakHandleSpinLockSpin(WEAKREFERENCEREF pThis)
     CONTRACTL_END;
 
     DWORD dwSwitchCount = 0;
+    YieldProcessorNormalizationInfo normalizationInfo;
 
     //
     // Boilerplate spinning logic stolen from other locks
@@ -342,10 +343,7 @@ NOINLINE OBJECTHANDLE AcquireWeakHandleSpinLockSpin(WEAKREFERENCEREF pThis)
 
             for (;;)
             {
-                for (DWORD i = 0; i < spincount; i++)
-                {
-                    YieldProcessor();
-                }
+                YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, spincount);
 
                 OBJECTHANDLE handle = InterlockedExchangeT(&pThis->m_Handle, SPECIAL_HANDLE_SPINLOCK);
                 if (handle != SPECIAL_HANDLE_SPINLOCK)
