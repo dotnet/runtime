@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tests
     {
         public static bool NotElevatedAndSupportsEventLogs { get => !AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
         public static bool IsElevatedAndSupportsEventLogs { get => AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
-        public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoServer; }
+        public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsNotWindowsIoTCore; }
 
         public static void RetryOnWin7(Action func)
         {

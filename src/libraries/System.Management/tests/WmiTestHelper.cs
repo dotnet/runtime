@@ -10,7 +10,11 @@ namespace System.Management.Tests
     public static class WmiTestHelper
     {
         private static readonly bool s_isElevated = AdminHelpers.IsProcessElevated();
-        private static readonly bool s_isWmiSupported = PlatformDetection.IsWindows && PlatformDetection.IsNotWindowsNanoServer && !PlatformDetection.IsUap;
+        private static readonly bool s_isWmiSupported =
+                                            PlatformDetection.IsWindows &&
+                                            PlatformDetection.IsNotWindowsNanoServer &&
+                                            PlatformDetection.IsNotWindowsIoTCore &&
+                                            !PlatformDetection.IsUap;
         private static readonly string s_systemDriveId = Path.GetPathRoot(Environment.GetEnvironmentVariable("SystemDrive"));
 
         // Use the environment variable below to do manual runs against remote boxes: just ensure that the credentials running the tests have
