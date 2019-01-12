@@ -399,7 +399,8 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(argName);
         }
 
-        internal static void ThrowNotSupportedExceptionIfNonNumericType<T>()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedVectorBaseType<T>() where T : struct
         {
             if (typeof(T) != typeof(byte) && typeof(T) != typeof(sbyte) &&
                 typeof(T) != typeof(short) && typeof(T) != typeof(ushort) &&
@@ -407,7 +408,7 @@ namespace System
                 typeof(T) != typeof(long) && typeof(T) != typeof(ulong) &&
                 typeof(T) != typeof(float) && typeof(T) != typeof(double))
             {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
         }
 
@@ -723,6 +724,8 @@ namespace System
                     return SR.NotSupported_FixedSizeCollection;
                 case ExceptionResource.Rank_MultiDimNotSupported:
                     return SR.Rank_MultiDimNotSupported;
+                case ExceptionResource.Arg_TypeNotSupported:
+                    return SR.Arg_TypeNotSupported;
                 default:
                     Debug.Assert(false,
                         "The enum value is not defined, please check the ExceptionResource Enum.");
@@ -880,5 +883,6 @@ namespace System
         InvalidOperation_IComparerFailed,
         NotSupported_FixedSizeCollection,
         Rank_MultiDimNotSupported,
+        Arg_TypeNotSupported,
     }
 }
