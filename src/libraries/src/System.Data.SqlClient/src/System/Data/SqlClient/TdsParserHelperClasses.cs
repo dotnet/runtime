@@ -6,6 +6,7 @@
 
 //------------------------------------------------------------------------------
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data.Common;
@@ -13,6 +14,7 @@ using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Security;
 using System.Text;
+using System.Threading;
 using Microsoft.SqlServer.Server;
 
 namespace System.Data.SqlClient
@@ -240,13 +242,179 @@ namespace System.Data.SqlClient
         internal int length;
         internal string newValue;
         internal string oldValue;
+        /// <summary>
+        /// contains binary data, before using this field check newBinRented to see if you can take the field array or whether you should allocate and copy
+        /// </summary>
         internal byte[] newBinValue;
+        /// <summary>
+        /// contains binary data, before using this field check newBinRented to see if you can take the field array or whether you should allocate and copy
+        /// </summary>
         internal byte[] oldBinValue;
         internal long newLongValue;
         internal long oldLongValue;
         internal SqlCollation newCollation;
         internal SqlCollation oldCollation;
         internal RoutingInfo newRoutingInfo;
+        internal bool newBinRented;
+        internal bool oldBinRented;
+
+        public SqlEnvChange Next;
+
+        public void Clear()
+        {
+            type = 0;
+            oldLength = 0;
+            newLength = 0;
+            length = 0;
+            newValue = null;
+            oldValue = null;
+            if (newBinValue != null)
+            {
+                Array.Clear(newBinValue, 0, newBinValue.Length);
+                if (newBinRented)
+                {
+                    ArrayPool<byte>.Shared.Return(newBinValue);
+                }
+
+                newBinValue = null;
+            }
+            if (oldBinValue != null)
+            {
+                Array.Clear(oldBinValue, 0, oldBinValue.Length);
+                if (oldBinRented)
+                {
+                    ArrayPool<byte>.Shared.Return(oldBinValue);
+                }
+                oldBinValue = null;
+            }
+            newBinRented = false;
+            oldBinRented = false;
+            newLongValue = 0;
+            oldLongValue = 0;
+            newCollation = null;
+            oldCollation = null;
+            newRoutingInfo = null;
+            Next = null;
+        }
+    }
+
+    internal static class SqlEnvChangePool
+    {
+        private static int _count;
+        private static int _capacity;
+        private static SqlEnvChange[] _items;
+#if DEBUG
+        private static string[] _stacks;
+#endif 
+
+        static SqlEnvChangePool()
+        {
+            _capacity = 10;
+            _items = new SqlEnvChange[_capacity];
+            _count = 1;
+#if DEBUG
+            _stacks = new string[_capacity];
+#endif 
+        }
+
+        public static SqlEnvChange Allocate()
+        {
+            SqlEnvChange retval = null;
+            lock (_items)
+            {
+                while (_count > 0 && retval is null)
+                {
+                    int count = _count; // copy the count we think we have
+                    int newCount = count - 1; // work out the new value we want
+                                              // exchange _count for newCount only if _count is the same as our cached copy
+                    if (count == Interlocked.CompareExchange(ref _count, newCount, count))
+                    {
+                        // count is now the previous value, we're the only thread that has it, so count-1 is safe to access
+                        Interlocked.Exchange(ref retval, _items[count - 1]);
+                    }
+                    else
+                    {
+                        // otherwise the count wasn't what we expected, spin the while and try again.
+                    }
+                }
+            }
+            if (retval is null)
+            {
+                retval = new SqlEnvChange();
+            }
+            return retval;
+        }
+
+        public static void Release(SqlEnvChange item, [Runtime.CompilerServices.CallerMemberName] string caller = null)
+        {
+            if (item is null)
+            {
+                Debug.Fail("attenpting to release null packet");
+                return;
+            }
+            item.Clear();
+            //lock (_items)
+            {
+#if DEBUG
+                if (_count > 0)
+                {
+                    for (int index = 0; index < _count; index += 1)
+                    {
+                        if (object.ReferenceEquals(item, _items[index]))
+                        {
+                            //throw new InvalidOperationException($"releasing an item which already exists in the pool, count={_count}, index={index}, caller={caller}, released at={_stacks[index]}");
+                            throw new InvalidOperationException($"releasing an item which already exists in the pool, count={_count}, index={index}");
+
+                        }
+                    }
+                }
+#endif
+                int tries = 0;
+
+                while (!(item is null) && tries < 3 && _count < _capacity)
+                {
+                    int count = _count;
+                    int newCount = count + 1;
+                    if (count == Interlocked.CompareExchange(ref _count, newCount, count))
+                    {
+                        _items[count] = item;
+#if DEBUG
+                        _stacks[count] = caller;
+#endif
+                        item = null;
+                    }
+                    else
+                    {
+                        tries += 1;
+                    }
+                }
+
+
+            }
+        }
+
+        public static int Count
+        {
+            get
+            {
+                return _count;
+            }
+        }
+
+        public static int Capacity
+        {
+            get
+            {
+                return _capacity;
+            }
+        }
+
+        public static void Clear()
+        {
+            Array.Clear(_items, 0, _capacity);
+            _count = 0;
+        }
+
     }
 
     sealed internal class SqlLogin
