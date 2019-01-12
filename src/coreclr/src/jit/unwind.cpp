@@ -149,6 +149,9 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 
     if (relOffsetMask & genRegMask(reg))
     {
+#ifndef _TARGET_ARM_
+        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
+#endif
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
     }
     else
