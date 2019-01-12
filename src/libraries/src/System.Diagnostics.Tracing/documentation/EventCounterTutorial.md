@@ -61,10 +61,10 @@ As usual, turn on PerfView, and then run the sample code, we will have something
 Now let's drill into what the data captured meant - when I copied from PerfView, it looks like this
 
 ```
-Payload="{ Name="request", Mean=51.66667, StandardDerivation=34.37376, Count=3, Min=23, Max=100, IntervalSec=1.038177 }"
+ThreadID="17,800" ProcessorNumber="5" Payload="{ Name:"request", Mean:142.0735, StandardDeviation:42.07355, Count:2, Min:100, Max:184.1471, IntervalSec:1.000588 }" 
 ```
 
-Now it is obvious that within a sampling period, we have 5 events, and all the other statistics.
+Now it is obvious that within a sampling period, we have 9 events, and all the other statistics.
 
 Notice that, this command also log the events, so we will get both the events and the counter statistics.
 
@@ -77,3 +77,11 @@ PerfView /onlyProviders=*Samples-EventCounterDemos-Minimal:*:Critical:EventCount
 ```
 
 Notice the `Critical` keyword in the command line, that is used to filter out the other events with lower priorities.
+
+In the next relaese of PerfView (> 2.0.26), we can visualize the counters using PerfView. To do so, you can right click on the event like this and choose the show event counter graph item:
+
+<img src="PerfViewCapture_Menu.png" alt="Show EventCounter graph menu item" title="Show EventCounter graph menu item" />
+
+Then it will show you a line graph showing the mean of the data like this. If you have multiple event counters, it can show multiple plots. You can also filter out a particular subset of counters using the filter text option:
+
+<img src="PerfViewCapture_Plot.png" alt=" EventCounter graph" title="EventCounter graph" />
