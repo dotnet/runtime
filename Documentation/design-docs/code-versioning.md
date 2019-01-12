@@ -327,14 +327,7 @@ to update the active child at either of those levels (ReJIT uses SetActiveILCode
 2. Recalculate the active code version for each entrypoint
 3. Update the published code version for each entrypoint to match the active code version
 
-In order to do step 3 the CodeVersionManager relies on one of two different mechanisms, either a FixupPrecode or a JumpStamp. Both techniques roughly involve using a jmp instruction as the method entrypoint and then updating that jmp to point at whatever code version should be published. In the FixupPrecode case this is memory that was allocated dynamically for the explicit purpose of being the method entrypoint. In the JumpStamp this is memory that was initially used as the prolog of the default code version and then repurposed. JumpStamp is required for AOT compiled images that use direct calls from method to method, however changing between prolog instructions and a jmp instruction requires EE suspension to ensure that threads have been evacuated from the region. FixupPrecode can be updated with only an Interlocked operation which offers lower overhead updates when it can be used.
-
-All methods have been classified to use at most one of the techniques, based on:
-
-```
-MethodDesc::IsVersionableWithPrecode()
-MethodDesc::IsVersionableWithJumpStamp()
-```
+In order to do step 3 the `CodeVersionManager` relies on one of three different mechanisms, a `FixupPrecode`, a `JumpStamp`, or backpatching entry point slots. In [method.hpp](https://github.com/dotnet/coreclr/blob/master/src/vm/method.hpp) these mechanisms are described in the `MethodDesc::IsVersionableWith*()` functions, and all methods have been classified to use at most one of the techniques, based on the `MethodDesc::IsVersionableWith*()` functions.
 
 ### Thread-safety ###
 CodeVersionManager is designed for use in a free-threaded environment, in many cases by requiring the caller to acquire a lock before calling. This lock can be acquired by constructing an instance of the

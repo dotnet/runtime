@@ -914,11 +914,6 @@ Note that ResolveWorkerChainLookupAsmStub currently points directly
 to ResolveWorkerAsmStub; in the future, this could be separate.
 */
 
-void LookupHolder::InitializeStatic()
-{
-    // Nothing to initialize
-}
-
 void  LookupHolder::Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
 {
     // Called directly by JITTED code
@@ -935,11 +930,6 @@ void  LookupHolder::Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
     _stub._token               = dispatchToken;
     _ASSERTE(4 == LookupStub::entryPointLen);
 }
-
-void DispatchHolder::InitializeStatic()
-{
-    // Nothing to initialize
-};
 
 void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT)
 {
@@ -1011,10 +1001,6 @@ void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expe
     _stub._expectedMT = DWORD(expectedMT);
     _stub._failTarget = failTarget;
     _stub._implTarget = implTarget;
-}
-
-void ResolveHolder::InitializeStatic()
-{
 }
 
 void ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,

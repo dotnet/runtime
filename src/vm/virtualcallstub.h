@@ -278,7 +278,7 @@ public:
           cache_entry_rangeList(),
           vtable_rangeList(),
           parentDomain(NULL),
-          isCollectible(false),
+          m_loaderAllocator(NULL),
           m_initialReservedMemForHeaps(NULL),
           m_FreeIndCellList(NULL),
           m_RecycledIndCellList(NULL),
@@ -516,7 +516,7 @@ private:
     template <typename STUB_HOLDER>
     void AddToCollectibleVSDRangeList(STUB_HOLDER *holder)
     {
-        if (isCollectible)
+        if (m_loaderAllocator->IsCollectible())
         {
             parentDomain->GetCollectibleVSDRanges()->AddRange(reinterpret_cast<BYTE *>(holder->stub()),
                 reinterpret_cast<BYTE *>(holder->stub()) + holder->stub()->size(),
@@ -639,7 +639,8 @@ private:
 private:
     // The parent domain of this manager
     PTR_BaseDomain  parentDomain;
-    bool            isCollectible;
+
+    PTR_LoaderAllocator m_loaderAllocator;
 
     BYTE *          m_initialReservedMemForHeaps;
 

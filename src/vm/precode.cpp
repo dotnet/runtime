@@ -494,6 +494,32 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 
     int count = pChunk->GetCount();
 
+    // Determine eligibility for tiered compilation
+#ifdef HAS_COMPACT_ENTRYPOINTS
+    bool hasMethodDescVersionableWithPrecode = false;
+#endif
+    {
+        MethodDesc *pMD = pChunk->GetFirstMethodDesc();
+        for (int i = 0; i < count; ++i)
+        {
+            if (pMD->DetermineAndSetIsEligibleForTieredCompilation())
+            {
+                _ASSERTE(pMD->IsEligibleForTieredCompilation());
+                _ASSERTE(!pMD->IsVersionableWithPrecode() || pMD->RequiresStableEntryPoint());
+            }
+
+#ifdef HAS_COMPACT_ENTRYPOINTS
+            if (pMD->IsVersionableWithPrecode())
+            {
+                _ASSERTE(pMD->RequiresStableEntryPoint());
+                hasMethodDescVersionableWithPrecode = true;
+            }
+#endif
+
+            pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
+        }
+    }
+
     PrecodeType t = PRECODE_STUB;
     bool preallocateJumpStubs = false;
 
@@ -521,7 +547,7 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 #ifdef HAS_COMPACT_ENTRYPOINTS
     // Note that these are just best guesses to save memory. If we guessed wrong,
     // we will allocate a new exact type of precode in GetOrCreatePrecode.
-    BOOL fForcedPrecode = pFirstMD->RequiresStableEntryPoint(count > 1);
+    BOOL fForcedPrecode = hasMethodDescVersionableWithPrecode || pFirstMD->RequiresStableEntryPoint(count > 1);
 
 #ifdef _TARGET_ARM_
     if (pFirstMD->RequiresMethodDescCallingConvention(count > 1)

@@ -73,7 +73,7 @@ stubs as necessary.  In the case of LookupStubs, alignment is necessary since
 LookupStubs are placed in a hash table keyed by token. */
 struct LookupHolder
 {
-    static void InitializeStatic();
+    static void InitializeStatic() { LIMITED_METHOD_CONTRACT; }
 
     void  Initialize(PCODE resolveWorkerTarget, size_t dispatchToken);
 
@@ -117,6 +117,16 @@ struct DispatchStub
 
     inline size_t       expectedMT()  { LIMITED_METHOD_CONTRACT;  return _expectedMT;     }
     inline PCODE        implTarget()  { LIMITED_METHOD_CONTRACT;  return _implTarget; }
+
+    inline TADDR implTargetSlot(EntryPointSlots::SlotType *slotTypeRef) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(slotTypeRef != nullptr);
+
+        *slotTypeRef = EntryPointSlots::SlotType_Normal;
+        return (TADDR)&_implTarget;
+    }
+
     inline PCODE        failTarget()  { LIMITED_METHOD_CONTRACT;  return _failTarget; }
     inline size_t       size()        { LIMITED_METHOD_CONTRACT;  return sizeof(DispatchStub); }
 
@@ -151,7 +161,13 @@ atomically update it.  When we get a resolver function that does what we want, w
 and live with just the inlineTarget field in the stub itself, since immutability will hold.*/
 struct DispatchHolder
 {
-    static void InitializeStatic();
+    static void InitializeStatic()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // Check that _implTarget is aligned in the DispatchHolder for backpatching
+        static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
+    }
 
     void  Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT);
 
@@ -245,7 +261,7 @@ any of its inlined tokens (non-prehashed) is aligned, then the token field in th
 is not needed. */ 
 struct ResolveHolder
 {
-    static void  InitializeStatic();
+    static void  InitializeStatic() { LIMITED_METHOD_CONTRACT; }
 
     void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget, 
                      size_t dispatchToken, UINT32 hashedToken,

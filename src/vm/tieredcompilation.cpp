@@ -406,6 +406,8 @@ void WINAPI TieredCompilationManager::TieringDelayTimerCallback(PVOID parameter,
 void TieredCompilationManager::TieringDelayTimerCallbackInAppDomain(LPVOID parameter)
 {
     WRAPPER_NO_CONTRACT;
+
+    GCX_PREEMP();
     GetAppDomain()->GetTieredCompilationManager()->TieringDelayTimerCallbackWorker();
 }
 
@@ -495,9 +497,15 @@ void TieredCompilationManager::ResumeCountingCalls(MethodDesc* pMethodDesc)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != nullptr);
-    _ASSERTE(pMethodDesc->IsVersionableWithPrecode());
 
-    pMethodDesc->GetPrecode()->ResetTargetInterlocked();
+    EX_TRY
+    {
+        pMethodDesc->ResetCodeEntryPoint();
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(RethrowTerminalExceptions);
 }
 
 bool TieredCompilationManager::TryAsyncOptimizeMethods()
