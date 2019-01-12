@@ -568,13 +568,19 @@ BOOL PrestubMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
 
     //
     // We want to set a frame patch, unless we're already at the
-    // frame patch, in which case we'll trace stable entrypoint which 
-    // should be set by now.
+    // frame patch, in which case we'll trace the method entrypoint.
     //
 
     if (fromPatch)
     {
-        trace->InitForStub(GetFunction()->GetStableEntryPoint());
+        // In between the time where the Prestub read the method entry point from the slot and the time it reached
+        // ThePrestubPatchLabel, GetMethodEntryPoint() could have been updated due to code versioning. This will result in the
+        // debugger getting some version of the code or the prestub, but not necessarily the exact code pointer that winds up
+        // getting executed. The debugger has code that handles this ambiguity by placing a breakpoint at the start of all
+        // native code versions, even if they aren't the one that was reported by this trace, see
+        // DebuggerController::PatchTrace() under case TRACE_MANAGED. This alleviates the StubManager from having to prevent the
+        // race that occurs here.
+        trace->InitForStub(GetFunction()->GetMethodEntryPoint());
     }
     else
     {
@@ -733,25 +739,11 @@ BOOL StubDispatchFrame::TraceFrame(Thread *thread, BOOL fromPatch,
 {
     WRAPPER_NO_CONTRACT;
 
-    //
-    // We want to set a frame patch, unless we're already at the
-    // frame patch, in which case we'll trace stable entrypoint which 
-    // should be set by now.
-    //
+    // StubDispatchFixupWorker and VSD_ResolveWorker never directly call managed code. Returning false instructs the debugger to
+    // step out of the call that erected this frame and continuing trying to trace execution from there.
+    LOG((LF_CORDB, LL_INFO1000, "StubDispatchFrame::TraceFrame: return FALSE\n"));
 
-    if (fromPatch)
-    {
-        trace->InitForStub(GetFunction()->GetStableEntryPoint());
-    }
-    else
-    {
-        trace->InitForStub(GetPreStubEntryPoint());
-    }
-
-    LOG((LF_CORDB, LL_INFO10000,
-         "StubDispatchFrame::TraceFrame: ip=" FMT_ADDR "\n", DBG_ADDR(trace->GetAddress()) ));
-    
-    return TRUE;
+    return FALSE;
 }
 
 Frame::Interception StubDispatchFrame::GetInterception()

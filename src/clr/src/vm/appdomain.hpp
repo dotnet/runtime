@@ -43,10 +43,7 @@
 
 #include "appxutil.h"
 
-#ifdef FEATURE_TIERED_COMPILATION
 #include "tieredcompilation.h"
-#include "callcounter.h"
-#endif
 
 #include "codeversion.h"
 
@@ -1464,14 +1461,6 @@ private:
 public:
     CodeVersionManager* GetCodeVersionManager() { return &m_codeVersionManager; }
 #endif //FEATURE_CODE_VERSIONING
-
-#ifdef FEATURE_TIERED_COMPILATION
-private:
-    CallCounter m_callCounter;
-
-public:
-    CallCounter* GetCallCounter() { return &m_callCounter; }
-#endif
 
 #ifdef DACCESS_COMPILE
 public:

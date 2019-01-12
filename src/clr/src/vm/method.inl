@@ -182,7 +182,15 @@ inline CodeVersionManager * MethodDesc::GetCodeVersionManager()
 inline CallCounter * MethodDesc::GetCallCounter()
 {
     LIMITED_METHOD_CONTRACT;
-    return GetModule()->GetCallCounter();
+    return GetLoaderAllocator()->GetCallCounter();
+}
+#endif
+
+#ifndef CROSSGEN_COMPILE
+inline MethodDescBackpatchInfoTracker * MethodDesc::GetBackpatchInfoTracker()
+{
+    LIMITED_METHOD_CONTRACT;
+    return GetLoaderAllocator()->GetMethodDescBackpatchInfoTracker();
 }
 #endif
 

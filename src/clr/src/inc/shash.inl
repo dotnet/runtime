@@ -227,6 +227,14 @@ void SHash<TRAITS>::RemoveAll()
     }
     CONTRACT_END;
 
+    if (TRAITS::s_DestructPerEntryCleanupAction)
+    {
+        for (Iterator i = Begin(); i != End(); i++)
+        {
+            TRAITS::OnDestructPerEntryCleanupAction(*i);
+        }
+    }
+
     delete [] m_table;
 
     m_table = NULL;

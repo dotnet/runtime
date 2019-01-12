@@ -136,6 +136,16 @@ struct DispatchStub
 
     inline size_t       expectedMT()  { LIMITED_METHOD_CONTRACT;  return _expectedMT;     }
     inline PCODE        implTarget()  { LIMITED_METHOD_CONTRACT;  return (PCODE) &_implDispl + sizeof(DISPL) + _implDispl; }
+
+    inline TADDR implTargetSlot(EntryPointSlots::SlotType *slotTypeRef) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(slotTypeRef != nullptr);
+
+        *slotTypeRef = EntryPointSlots::SlotType_ExecutableRel32;
+        return (TADDR)&_implDispl;
+    }
+
     inline PCODE        failTarget()  { LIMITED_METHOD_CONTRACT;  return (PCODE) &_failDispl + sizeof(DISPL) + _failDispl; }
     inline size_t       size()        { LIMITED_METHOD_CONTRACT;  return sizeof(DispatchStub); }
 
@@ -150,7 +160,7 @@ private:
     size_t  _expectedMT;        // xx xx xx xx              expectedMT        ; If you change it, change also AdjustContextForVirtualStub in excep.cpp!!!
     BYTE    jmpOp1[2];          // 0f 85        jne                 
     DISPL   _failDispl;         // xx xx xx xx              failEntry         ;must be forward jmp for perf reasons
-    BYTE jmpOp2;                // e9           jmp     
+    BYTE jmpOp2;                // e9           jmp
     DISPL   _implDispl;         // xx xx xx xx              implTarget
 #else //STUB_LOGGING
     BYTE    _entryPoint [2];    // ff 05        inc
@@ -196,12 +206,10 @@ struct DispatchHolder
     static DispatchHolder*  FromDispatchEntry(PCODE dispatchEntry);
 
 private:
-    //force expectedMT to be aligned since used as key in hash tables.
-#ifndef STUB_LOGGING
-    BYTE align[(sizeof(void*)-(offsetof(DispatchStub,_expectedMT)%sizeof(void*)))%sizeof(void*)];
-#endif
+    // Force _implDispl to be aligned so that it is backpatchable for tiering
+    BYTE align[(sizeof(void*) - (offsetof(DispatchStub, _implDispl) % sizeof(void*))) % sizeof(void*)];
     DispatchStub _stub;
-    BYTE pad[(sizeof(void*)-(sizeof(DispatchStub)%sizeof(void*))+offsetof(DispatchStub,_expectedMT))%sizeof(void*)];	//complete DWORD
+    BYTE pad[(sizeof(void*) - (sizeof(DispatchStub) % sizeof(void*)) + offsetof(DispatchStub, _implDispl)) % sizeof(void*)];	//complete DWORD
 };
 
 struct ResolveStub;
@@ -745,8 +753,8 @@ DispatchStub dispatchInit;
 
 void DispatchHolder::InitializeStatic()
 {
-    // Check that _expectedMT is aligned in the DispatchHolder
-    static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub,_expectedMT)) % sizeof(void*)) == 0);
+    // Check that _implDispl is aligned in the DispatchHolder for backpatching
+    static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implDispl)) % sizeof(void*)) == 0);
     static_assert_no_msg((sizeof(DispatchHolder) % sizeof(void*)) == 0);
 
 #ifndef STUB_LOGGING

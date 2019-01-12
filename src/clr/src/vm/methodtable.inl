@@ -618,6 +618,17 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 #ifndef DACCESS_COMPILE 
 
 //==========================================================================================
+inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSourceMTData, MethodTable *pSourceMT)
+{
+    WRAPPER_NO_CONTRACT;
+
+    MethodDesc *pMD = hSourceMTData->GetImplMethodDesc(slotNumber);
+    _ASSERTE(CheckPointer(pMD));
+    _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot(slotNumber));
+    SetSlot(slotNumber, pMD->GetInitialEntryPointForCopiedSlot());
+}
+
+//==========================================================================================
 inline INT32 MethodTable::MethodIterator::GetNumMethods() const
 {
     LIMITED_METHOD_CONTRACT;
