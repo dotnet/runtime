@@ -125,23 +125,29 @@ struct DispatchStubShort
 
     static BOOL isShortStub(LPCBYTE pCode);
     inline PCODE implTarget() const { LIMITED_METHOD_CONTRACT;  return (PCODE) _implTarget; }
+
+    inline TADDR implTargetSlot() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (TADDR)&_implTarget;
+    }
+
     inline PCODE failTarget() const { LIMITED_METHOD_CONTRACT;  return (PCODE) &_failDispl + sizeof(DISPL) + _failDispl; }
 
 private:
-    BYTE    part1 [2];            // 0f 85                    jne                                     
-    DISPL   _failDispl;           // xx xx xx xx                     failEntry         ;must be forward jmp for perf reasons
-    BYTE    part2 [2];            // 48 B8                    mov    rax, 
+    BYTE    part1 [2];            // 48 B8                    mov    rax,
     size_t  _implTarget;          // xx xx xx xx xx xx xx xx              64-bit address
+    BYTE    part2[2];             // 0f 85                    jne
+    DISPL   _failDispl;           // xx xx xx xx                     failEntry         ;must be forward jmp for perf reasons
     BYTE    part3 [2];            // FF E0                    jmp    rax
-
-    // 31 bytes long, need 1 byte of padding to 8-byte align.
-    BYTE    alignPad [1];         // cc 
 };
+
+#define DispatchStubShort_offsetof_failDisplBase (offsetof(DispatchStubLong, _failDispl) + sizeof(DISPL))
 
 inline BOOL DispatchStubShort::isShortStub(LPCBYTE pCode)
 {
     LIMITED_METHOD_CONTRACT;
-    return reinterpret_cast<DispatchStubShort const *>(pCode)->part1[0] == 0x0f;
+    return reinterpret_cast<DispatchStubShort const *>(pCode)->part2[0] == 0x0f;
 }
 
 
@@ -155,27 +161,34 @@ struct DispatchStubLong
 
     static inline BOOL isLongStub(LPCBYTE pCode);
     inline PCODE implTarget() const { LIMITED_METHOD_CONTRACT;  return (PCODE) _implTarget; }
+
+    inline TADDR implTargetSlot() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (TADDR)&_implTarget;
+    }
+
     inline PCODE failTarget() const { LIMITED_METHOD_CONTRACT;  return (PCODE) _failTarget; }
 
 private:
-    BYTE    part1 [1];            // 75                       jne
-    BYTE    _failDispl;           //    xx                           failLabel
-    BYTE    part2 [2];            // 48 B8                    mov    rax, 
+    BYTE    part1[2];             // 48 B8                    mov    rax,
     size_t  _implTarget;          // xx xx xx xx xx xx xx xx              64-bit address
+    BYTE    part2 [1];            // 75                       jne
+    BYTE    _failDispl;           //    xx                           failLabel
     BYTE    part3 [2];            // FF E0                    jmp    rax
     // failLabel:
     BYTE    part4 [2];            // 48 B8                    mov    rax,
     size_t  _failTarget;          // xx xx xx xx xx xx xx xx              64-bit address
     BYTE    part5 [2];            // FF E0                    jmp    rax
-
-    // 39 bytes long, need 1 byte of padding to 8-byte align.
-    BYTE    alignPad [1];         // cc 
 };
+
+#define DispatchStubLong_offsetof_failDisplBase (offsetof(DispatchStubLong, _failDispl) + sizeof(BYTE))
+#define DispatchStubLong_offsetof_failLabel (offsetof(DispatchStubLong, part4[0]))
 
 inline BOOL DispatchStubLong::isLongStub(LPCBYTE pCode)
 {
     LIMITED_METHOD_CONTRACT;
-    return reinterpret_cast<DispatchStubLong const *>(pCode)->part1[0] == 0x75;
+    return reinterpret_cast<DispatchStubLong const *>(pCode)->part2[0] == 0x75;
 }
 
 /*DispatchStub**************************************************************************************
@@ -234,6 +247,18 @@ struct DispatchStub
             return getLongStub()->implTarget();
     }
 
+    inline TADDR implTargetSlot(EntryPointSlots::SlotType *slotTypeRef) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(slotTypeRef != nullptr);
+
+        *slotTypeRef = EntryPointSlots::SlotType_Executable;
+        if (type() == e_TYPE_SHORT)
+            return getShortStub()->implTargetSlot();
+        else
+            return getLongStub()->implTargetSlot();
+    }
+
     inline PCODE failTarget() const
     {
         if (type() == e_TYPE_SHORT)
@@ -249,9 +274,10 @@ private:
     inline DispatchStubLong const *getLongStub() const
         { LIMITED_METHOD_CONTRACT; return reinterpret_cast<DispatchStubLong const *>(this + 1); }
 
-    BYTE    _entryPoint [2];      // 48 B8                    mov    rax, 
+    BYTE    _entryPoint [2];      // 48 B8                    mov    rax,
     size_t  _expectedMT;          // xx xx xx xx xx xx xx xx              64-bit address
     BYTE    part1 [3];            // 48 39 XX                 cmp    [THIS_REG], rax
+    BYTE    nopOp;                // 90                       nop                      ; 1-byte nop to align _implTarget
 
     // Followed by either DispatchStubShort or DispatchStubLong, depending
     // on whether we were able to make a rel32 or had to make an abs64 jump
@@ -291,7 +317,7 @@ struct DispatchHolder
     static BOOL CanShortJumpDispatchStubReachFailTarget(PCODE failTarget, LPCBYTE stubMemory)
     {
         STATIC_CONTRACT_WRAPPER;
-        LPCBYTE pFrom = stubMemory + sizeof(DispatchStub) + offsetof(DispatchStubShort, part2[0]);
+        LPCBYTE pFrom = stubMemory + sizeof(DispatchStub) + DispatchStubShort_offsetof_failDisplBase;
         size_t cbRelJump = failTarget - (PCODE)pFrom;
         return FitsInI4(cbRelJump);
     }
@@ -554,10 +580,13 @@ void  LookupHolder::Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
 
 void DispatchHolder::InitializeStatic()
 {
-    // Check that _expectedMT is aligned in the DispatchHolder
-    static_assert_no_msg(((sizeof(DispatchStub)+sizeof(DispatchStubShort)) % sizeof(void*)) == 0);
-    static_assert_no_msg(((sizeof(DispatchStub)+sizeof(DispatchStubLong)) % sizeof(void*)) == 0);
-    CONSISTENCY_CHECK((offsetof(DispatchStubLong, part4[0]) - offsetof(DispatchStubLong, part2[0])) < INT8_MAX);
+    // Check that _implTarget is aligned in the DispatchStub for backpatching
+    static_assert_no_msg(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _implTarget)) % sizeof(void *)) == 0);
+    static_assert_no_msg(((sizeof(DispatchStub) + offsetof(DispatchStubLong, _implTarget)) % sizeof(void *)) == 0);
+
+    static_assert_no_msg(((sizeof(DispatchStub) + sizeof(DispatchStubShort)) % sizeof(void*)) == 0);
+    static_assert_no_msg(((sizeof(DispatchStub) + sizeof(DispatchStubLong)) % sizeof(void*)) == 0);
+    static_assert_no_msg((DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase) < INT8_MAX);
 
     // Common dispatch stub initialization
     dispatchInit._entryPoint [0]      = 0x48;
@@ -570,24 +599,24 @@ void DispatchHolder::InitializeStatic()
 #else
     dispatchInit.part1 [2]            = 0x01; // RCX
 #endif
+    dispatchInit.nopOp                = 0x90;
 
     // Short dispatch stub initialization
-    dispatchShortInit.part1 [0]       = 0x0F;
-    dispatchShortInit.part1 [1]       = 0x85;
-    dispatchShortInit._failDispl      = 0xcccccccc;
-    dispatchShortInit.part2 [0]       = 0x48;
-    dispatchShortInit.part2 [1]       = 0xb8;
+    dispatchShortInit.part1 [0]       = 0x48;
+    dispatchShortInit.part1 [1]       = 0xb8;
     dispatchShortInit._implTarget     = 0xcccccccccccccccc;
+    dispatchShortInit.part2 [0]       = 0x0F;
+    dispatchShortInit.part2 [1]       = 0x85;
+    dispatchShortInit._failDispl      = 0xcccccccc;
     dispatchShortInit.part3 [0]       = 0xFF;
     dispatchShortInit.part3 [1]       = 0xE0;
-    dispatchShortInit.alignPad [0]    = INSTR_INT3;
 
     // Long dispatch stub initialization
-    dispatchLongInit.part1 [0]        = 0x75;
-    dispatchLongInit._failDispl       = BYTE(&dispatchLongInit.part4[0] - &dispatchLongInit.part2[0]);
-    dispatchLongInit.part2 [0]        = 0x48;
-    dispatchLongInit.part2 [1]        = 0xb8;
+    dispatchLongInit.part1 [0]        = 0x48;
+    dispatchLongInit.part1 [1]        = 0xb8;
     dispatchLongInit._implTarget      = 0xcccccccccccccccc;
+    dispatchLongInit.part2 [0]        = 0x75;
+    dispatchLongInit._failDispl       = BYTE(DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase);
     dispatchLongInit.part3 [0]        = 0xFF;
     dispatchLongInit.part3 [1]        = 0xE0;
         // failLabel:
@@ -596,7 +625,6 @@ void DispatchHolder::InitializeStatic()
     dispatchLongInit._failTarget      = 0xcccccccccccccccc;
     dispatchLongInit.part5 [0]        = 0xFF;
     dispatchLongInit.part5 [1]        = 0xE0;
-    dispatchLongInit.alignPad [0]     = INSTR_INT3;
 };
 
 void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT,

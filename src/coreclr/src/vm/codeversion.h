@@ -555,7 +555,6 @@ public:
 
 typedef SHash<ILCodeVersioningStateHashTraits> ILCodeVersioningStateHash;
 
-
 class CodeVersionManager
 {
     friend class ILCodeVersion;
@@ -614,6 +613,8 @@ public:
     static HRESULT AddCodePublishError(NativeCodeVersion nativeCodeVersion, HRESULT hrStatus, CDynArray<CodePublishError> * pErrors);
     static void OnAppDomainExit(AppDomain* pAppDomain);
 #endif
+
+    static bool IsMethodSupported(PTR_MethodDesc pMethodDesc);
 
 private:
 

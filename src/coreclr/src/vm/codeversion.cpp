@@ -1103,7 +1103,7 @@ HRESULT MethodDescVersioningState::SyncJumpStamp(NativeCodeVersion nativeCodeVer
     HRESULT hr = S_OK;
     PCODE pCode = nativeCodeVersion.IsNull() ? NULL : nativeCodeVersion.GetNativeCode();
     MethodDesc* pMethod = GetMethodDesc();
-    _ASSERTE(pMethod->IsVersionable() && pMethod->IsVersionableWithJumpStamp());
+    _ASSERTE(pMethod->IsVersionableWithJumpStamp());
 
     if (!pMethod->HasNativeCode())
     {
@@ -2135,7 +2135,6 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(MethodDesc* pMethodD
 
     HRESULT hr = S_OK;
     PCODE pCode = NULL;
-    BOOL fIsJumpStampMethod = pMethodDesc->IsVersionableWithJumpStamp();
 
     NativeCodeVersion activeVersion;
     {
@@ -2239,37 +2238,26 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
 {
     // TODO: This function needs to make sure it does not change the precode's target if call counting is in progress. Track
     // whether call counting is currently being done for the method, and use a lock to ensure the expected precode target.
-    LIMITED_METHOD_CONTRACT;
+    WRAPPER_NO_CONTRACT;
     _ASSERTE(LockOwnedByCurrentThread());
     _ASSERTE(pMethod->IsVersionable());
     HRESULT hr = S_OK;
     PCODE pCode = nativeCodeVersion.IsNull() ? NULL : nativeCodeVersion.GetNativeCode();
-    if (pMethod->IsVersionableWithPrecode())
+    if (pMethod->IsVersionableWithoutJumpStamp())
     {
-        Precode* pPrecode = pMethod->GetOrCreatePrecode();
-        if (pCode == NULL)
+        EX_TRY
         {
-            EX_TRY
+            if (pCode == NULL)
             {
-                pPrecode->Reset();
+                pMethod->ResetCodeEntryPoint();
             }
-            EX_CATCH_HRESULT(hr);
-            return hr;
-        }
-        else
-        {
-            EX_TRY
+            else
             {
-                pPrecode->SetTargetInterlocked(pCode, FALSE);
-
-                // SetTargetInterlocked() would return false if it lost the race with another thread. That is fine, this thread
-                // can continue assuming it was successful, similarly to it successfully updating the target and another thread
-                // updating the target again shortly afterwards.
-                hr = S_OK;
+                pMethod->SetCodeEntryPoint(pCode);
             }
-            EX_CATCH_HRESULT(hr);
-            return hr;
         }
+        EX_CATCH_HRESULT(hr);
+        return hr;
     }
     else
     {
@@ -2535,13 +2523,13 @@ HRESULT CodeVersionManager::DoJumpStampIfNecessary(MethodDesc* pMD, PCODE pCode)
         return S_OK;
     }
 
-    if (!(pMD->IsVersionable() && pMD->IsVersionableWithJumpStamp()))
+    if (!pMD->IsVersionableWithJumpStamp())
     {
         return GetNonVersionableError(pMD);
     }
 
 #ifndef FEATURE_JUMPSTAMP
-    _ASSERTE(!"How did we get here? IsVersionableWithJumpStamp() should have been FALSE above");
+    _ASSERTE(!"How did we get here? IsVersionableWithJumpStamp() should have been false above");
     return S_OK;
 #else
     HRESULT hr;
@@ -2572,6 +2560,27 @@ void CodeVersionManager::OnAppDomainExit(AppDomain * pAppDomain)
     _ASSERTE(!".Net Core shouldn't be doing app domain shutdown - if we start doing so this needs to be implemented");
 }
 #endif
+
+// Returns true if CodeVersionManager is capable of versioning this method. There may be other reasons that the runtime elects
+// not to version a method even if CodeVersionManager could support it. Use the MethodDesc::IsVersionableWith*() accessors to
+// get the final determination of versioning support for a given method.
+//
+//static
+bool CodeVersionManager::IsMethodSupported(PTR_MethodDesc pMethodDesc)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(pMethodDesc != NULL);
+
+    return
+        // CodeVersionManager data structures don't properly handle the lifetime semantics of dynamic code at this point
+        !pMethodDesc->IsDynamicMethod() &&
+
+        // CodeVersionManager data structures don't properly handle the lifetime semantics of collectible code at this point
+        !pMethodDesc->GetLoaderAllocator()->IsCollectible() &&
+
+        // EnC has its own way of versioning
+        !pMethodDesc->IsEnCMethod();
+}
 
 //---------------------------------------------------------------------------------------
 //

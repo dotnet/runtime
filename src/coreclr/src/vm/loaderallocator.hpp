@@ -20,6 +20,9 @@ class FuncPtrStubs;
 #include "qcall.h"
 #include "ilstubcache.h"
 
+#include "callcounter.h"
+#include "methoddescbackpatchinfo.h"
+
 #define VPTRU_LoaderAllocator 0x3200
 
 enum LoaderAllocatorType
@@ -225,8 +228,6 @@ protected:
 #endif
 
 private:
-    typedef SHash<PtrSetSHashTraits<LoaderAllocator * > > LoaderAllocatorSet;
-
     LoaderAllocatorSet m_LoaderAllocatorReferences;
     Volatile<UINT32>   m_cReferences;
     // This will be set by code:LoaderAllocator::Destroy (from managed scout finalizer) and signalizes that 
@@ -263,6 +264,14 @@ private:
     PtrHashMap m_interopDataHash;
     // Used for synchronizing access to the m_interopDataHash
     CrstExplicitInit m_InteropDataCrst;
+#endif
+
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCounter m_callCounter;
+#endif
+
+#ifndef CROSSGEN_COMPILE
+    MethodDescBackpatchInfoTracker m_methodDescBackpatchInfoTracker;
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -570,6 +579,22 @@ public:
 
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_TIERED_COMPILATION
+public:
+    CallCounter* GetCallCounter()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_callCounter;
+    }
+#endif // FEATURE_TIERED_COMPILATION
+
+#ifndef CROSSGEN_COMPILE
+    MethodDescBackpatchInfoTracker *GetMethodDescBackpatchInfoTracker()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_methodDescBackpatchInfoTracker;
+    }
+#endif
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;

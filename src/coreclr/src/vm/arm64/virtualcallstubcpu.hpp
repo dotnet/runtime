@@ -75,6 +75,16 @@ struct DispatchStub
 
     inline size_t expectedMT()  { LIMITED_METHOD_CONTRACT; return _expectedMT; }
     inline PCODE implTarget()  { LIMITED_METHOD_CONTRACT; return _implTarget; }
+
+    inline TADDR implTargetSlot(EntryPointSlots::SlotType *slotTypeRef) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(slotTypeRef != nullptr);
+
+        *slotTypeRef = EntryPointSlots::SlotType_Normal;
+        return (TADDR)&_implTarget;
+    }
+
     inline PCODE failTarget()  { LIMITED_METHOD_CONTRACT; return _failTarget; }
     inline size_t size()        { LIMITED_METHOD_CONTRACT; return sizeof(DispatchStub); }
 
@@ -89,7 +99,13 @@ private:
 
 struct DispatchHolder
 {
-    static void InitializeStatic() { }
+    static void InitializeStatic()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // Check that _implTarget is aligned in the DispatchHolder for backpatching
+        static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
+    }
 
     void  Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT)
     {
