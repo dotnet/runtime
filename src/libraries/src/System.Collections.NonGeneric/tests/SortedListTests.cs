@@ -1554,6 +1554,7 @@ namespace System.Collections.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/pull/34339")] // Changed behavior
         public void GetSyncRootBasic()
         {
             // Testing SyncRoot is not as simple as its implementation looks like. This is the working
