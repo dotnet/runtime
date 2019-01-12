@@ -1,0 +1,2 @@
+MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.ConfigureAwait<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.WithCancellation<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.

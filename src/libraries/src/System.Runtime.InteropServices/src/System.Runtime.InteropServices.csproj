@@ -22,8 +22,6 @@
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
     <Compile Include="System\Runtime\InteropServices\Attributes.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComEventInterfaceAttribute.cs" Condition="'$(TargetsAOT)' != 'true'" />
-    <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" Condition="'$(TargetsAOT)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" Condition="'$(TargetsAOT)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\IMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironment.cs" />
