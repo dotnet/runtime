@@ -291,6 +291,10 @@ public:
     DWORD         TieredCompilation_Tier1CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_tier1CallCountingDelayMs; }
 #endif
 
+#ifndef CROSSGEN_COMPILE
+    bool          BackpatchEntryPointSlots() const { LIMITED_METHOD_CONTRACT; return backpatchEntryPointSlots; }
+#endif
+
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     inline bool ShouldDumpElfOnMethod(LPCUTF8 methodName) const
     {
@@ -1026,6 +1030,10 @@ private: //----------------------------------------------------------------
     bool fTieredCompilation_OptimizeTier0;
     DWORD tieredCompilation_tier1CallCountThreshold;
     DWORD tieredCompilation_tier1CallCountingDelayMs;
+#endif
+
+#ifndef CROSSGEN_COMPILE
+    bool backpatchEntryPointSlots;
 #endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)

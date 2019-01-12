@@ -880,10 +880,20 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
 
-        // Skip fixup precode jump for better perf
-        PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(pCode);
-        if (pDirectTarget != NULL)
-            pCode = pDirectTarget;
+        if (pMD->IsVersionableWithVtableSlotBackpatch())
+        {
+            // The entry point for this method needs to be versionable, so use a FuncPtrStub similarly to what is done in
+            // MethodDesc::GetMultiCallableAddrOfCode()
+            GCX_COOP();
+            pCode = pMD->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMD);
+        }
+        else
+        {
+            // Skip fixup precode jump for better perf
+            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(pCode);
+            if (pDirectTarget != NULL)
+                pCode = pDirectTarget;
+        }
 
         INT64 oldValue = *(INT64*)pThunk;
         BYTE* pOldValue = (BYTE*)&oldValue;

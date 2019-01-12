@@ -1562,10 +1562,21 @@ EXTERN_C PVOID STDCALL VirtualMethodFixupWorker(Object * pThisPtr,  CORCOMPILE_V
 
     if (!DoesSlotCallPrestub(pCode))
     {
-        // Skip fixup precode jump for better perf
-        PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(pCode);
-        if (pDirectTarget != NULL)
-            pCode = pDirectTarget;
+        MethodDesc *pMD = MethodTable::GetMethodDescForSlotAddress(pCode);
+        if (pMD->IsVersionableWithVtableSlotBackpatch())
+        {
+            // The entry point for this method needs to be versionable, so use a FuncPtrStub similarly to what is done in
+            // MethodDesc::GetMultiCallableAddrOfCode()
+            GCX_COOP();
+            pCode = pMD->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMD);
+        }
+        else
+        {
+            // Skip fixup precode jump for better perf
+            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(pCode);
+            if (pDirectTarget != NULL)
+                pCode = pDirectTarget;
+        }
 
         INT64 oldValue = *(INT64*)pThunk;
         BYTE* pOldValue = (BYTE*)&oldValue;

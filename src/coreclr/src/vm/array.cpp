@@ -543,8 +543,11 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         if (!canShareVtableChunks)
         {
             // Copy top level class's vtable - note, vtable is contained within the MethodTable
+            MethodTable::MethodDataWrapper hParentMTData(MethodTable::GetMethodData(pParentClass, FALSE));
             for (UINT32 i = 0; i < numVirtuals; i++)
-                pMT->SetSlot(i, pParentClass->GetSlot(i));
+            {
+                pMT->CopySlotFrom(i, hParentMTData, pParentClass);
+            }
         }
 
         if (pClass != NULL)

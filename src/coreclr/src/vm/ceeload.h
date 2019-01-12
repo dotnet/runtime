@@ -74,7 +74,6 @@ class MethodTable;
 class AppDomain;
 class DynamicMethodTable;
 class CodeVersionManager;
-class CallCounter;
 class TieredCompilationManager;
 #ifdef FEATURE_PREJIT
 class CerNgenRootTable;
@@ -1795,9 +1794,6 @@ protected:
     PTR_BaseDomain GetDomain();
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager * GetCodeVersionManager();
-#endif
-#ifdef FEATURE_TIERED_COMPILATION
-    CallCounter * GetCallCounter();
 #endif
 
     mdFile GetModuleRef()
