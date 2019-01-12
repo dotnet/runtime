@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
+using System.Buffers;
 
 namespace System.Data.SqlClient
 {
@@ -1646,12 +1647,14 @@ namespace System.Data.SqlClient
             int cBytes = length << 1;
             byte[] buf;
             int offset = 0;
+            bool rentedBuffer = false;
 
             if (((_inBytesUsed + cBytes) > _inBytesRead) || (_inBytesPacket < cBytes))
             {
                 if (_bTmp == null || _bTmp.Length < cBytes)
                 {
-                    _bTmp = new byte[cBytes];
+                    _bTmp = ArrayPool<byte>.Shared.Rent(cBytes); //new byte[cBytes];
+                    rentedBuffer = true;
                 }
 
                 if (!TryReadByteArray(_bTmp, cBytes))
@@ -1677,6 +1680,10 @@ namespace System.Data.SqlClient
             }
 
             value = System.Text.Encoding.Unicode.GetString(buf, offset, cBytes);
+            if (rentedBuffer)
+            {
+                 ArrayPool<byte>.Shared.Return(_bTmp, clearArray: true);
+            }
             return true;
         }
 
@@ -1709,6 +1716,7 @@ namespace System.Data.SqlClient
             }
             byte[] buf = null;
             int offset = 0;
+            bool rentedBuffer = false;
 
             if (isPlp)
             {
@@ -1726,7 +1734,8 @@ namespace System.Data.SqlClient
                 {
                     if (_bTmp == null || _bTmp.Length < length)
                     {
-                        _bTmp = new byte[length];
+                        _bTmp = ArrayPool<byte>.Shared.Rent(length); // new byte[length];
+                        rentedBuffer = true;
                     }
 
                     if (!TryReadByteArray(_bTmp, length))
@@ -1754,6 +1763,10 @@ namespace System.Data.SqlClient
 
             // BCL optimizes to not use char[] underneath
             value = encoding.GetString(buf, offset, length);
+            if (rentedBuffer)
+            {
+                ArrayPool<byte>.Shared.Return(_bTmp, clearArray: true);
+            }
             return true;
         }
 
