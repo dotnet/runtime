@@ -551,6 +551,7 @@ DEFINE_METASIG_T(IM(RefGuid_OutIntPtr_RetCustomQueryInterfaceResult, r(g(GUID)) 
 #endif //FEATURE_COMINTEROP
 
 DEFINE_METASIG_T(SM(IntPtr_AssemblyName_RetAssemblyBase, I C(ASSEMBLY_NAME), C(ASSEMBLYBASE)))
+DEFINE_METASIG_T(SM(Str_AssemblyBase_IntPtr_RetIntPtr, s C(ASSEMBLYBASE) I, I))
 
 // ThreadPool
 DEFINE_METASIG(SM(Obj_Bool_RetVoid, j F, v))

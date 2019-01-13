@@ -6275,7 +6275,7 @@ INT_PTR NDirect::GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR sy
 }
 
 // static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pDomain, PCWSTR wszLibName)
+NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, PCWSTR wszLibName)
 {
     STANDARD_VM_CONTRACT;
     //Dynamic Pinvoke Support:
@@ -6290,7 +6290,8 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD,
     }
 #endif
 
-    LPVOID hmod = NULL;
+    NATIVE_LIBRARY_HANDLE hmod = NULL;
+    AppDomain* pDomain = GetAppDomain();
     CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
     Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
    
@@ -6349,11 +6350,92 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD,
     args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
 
     // Make the call
-    CALL_MANAGED_METHOD(hmod,LPVOID,args);
+    CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
 
     GCPROTECT_END();
 
-    return (NATIVE_LIBRARY_HANDLE)hmod;
+    return hmod;
+}
+
+// Return the AssemblyLoadContext for an assembly
+INT_PTR GetManagedAssemblyLoadContext(Assembly* pAssembly)
+{
+    STANDARD_VM_CONTRACT;
+
+    PTR_ICLRPrivBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
+    if (pBindingContext == NULL)
+    {
+        // GetBindingContext() returns NULL for System.Private.CoreLib
+        return NULL;
+    }
+
+    UINT_PTR assemblyBinderID = 0;
+    IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
+
+    AppDomain *pDomain = GetAppDomain();
+    ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+
+#ifdef FEATURE_COMINTEROP
+    if (AreSameBinderInstance(pCurrentBinder, pDomain->GetWinRtBinder()))
+    {
+        // No ALC associated handle with WinRT Binders.
+        return NULL;
+    }
+#endif // FEATURE_COMINTEROP
+
+    // The code here deals with two implementations of ICLRPrivBinder interface: 
+    //    - CLRPrivBinderCoreCLR for the TPA binder in the default ALC, and 
+    //    - CLRPrivBinderAssemblyLoadContext for custom ALCs.
+    // in order obtain the associated ALC handle.
+    INT_PTR ptrManagedAssemblyLoadContext = AreSameBinderInstance(pCurrentBinder, pDomain->GetTPABinderContext())
+        ? ((CLRPrivBinderCoreCLR *)pCurrentBinder)->GetManagedAssemblyLoadContext() 
+        : ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
+
+    return ptrManagedAssemblyLoadContext;
+}
+
+// static
+NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaEvent(NDirectMethodDesc * pMD, PCWSTR wszLibName)
+{
+    STANDARD_VM_CONTRACT;
+
+    NATIVE_LIBRARY_HANDLE hmod = NULL;
+    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
+    INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
+
+    if (ptrManagedAssemblyLoadContext == NULL)
+    {
+        return NULL;
+    }
+
+    GCX_COOP();
+
+    struct {
+        STRINGREF DllName;
+        OBJECTREF AssemblyRef;
+    } gc = { NULL, NULL };
+
+    GCPROTECT_BEGIN(gc);
+
+    gc.DllName = StringObject::NewString(wszLibName);
+    gc.AssemblyRef = pAssembly->GetExposedObject();
+
+    // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDllUsingEvent method
+    // While ResolveUnmanagedDllUsingEvent() could compute the AssemblyLoadContext using the AssemblyRef
+    // argument, it will involve another pInvoke to the runtime. So AssemblyLoadContext is passed in 
+    // as an additional argument.
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
+    DECLARE_ARGHOLDER_ARRAY(args, 3);
+    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.DllName);
+    args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.AssemblyRef);
+    args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
+
+    // Make the call
+    CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
+
+    GCPROTECT_END();
+
+    return hmod;
 }
 
 // Try to load the module alongside the assembly where the PInvoke was declared.
@@ -6633,15 +6715,13 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
     AppDomain* pDomain = GetAppDomain();
 
     // AssemblyLoadContext is not supported in AppX mode and thus,
-    // we should not perform PInvoke resolution via it when operating in
-    // AppX mode.
+    // we should not perform PInvoke resolution via it when operating in AppX mode.
     if (!AppX::IsAppXProcess())
     {
-        hmod = LoadLibraryModuleViaHost(pMD, pDomain, wszLibName);
+        hmod = LoadLibraryModuleViaHost(pMD, wszLibName);
         if (hmod != NULL)
         {
 #ifdef FEATURE_PAL
-            // Register the system library handle with PAL and get a PAL library handle
             hmod = PAL_RegisterLibraryDirect(hmod, wszLibName);
 #endif // FEATURE_PAL
             return hmod.Extract();
@@ -6654,34 +6734,28 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
        return hmod.Extract();
     }
 
-#ifdef FEATURE_PAL
-    // In the PAL version of CoreCLR, the CLR module itself exports the functionality
-    // that the Windows version obtains from kernel32 and friends.  In order to avoid
-    // picking up the wrong instance, we perform this redirection first.
-    // This is also true for CoreSystem builds, where mscorlib p/invokes are forwarded through coreclr
-    // itself so we can control CoreSystem library/API name re-mapping from one central location.
-    if (SString::_wcsicmp(wszLibName, MAIN_CLR_MODULE_NAME_W) == 0)
+    hmod = LoadLibraryModuleBySearch(pMD, pErrorTracker, wszLibName);
+    if (hmod != NULL)
     {
-        hmod = GetCLRModule();
-    }
+#ifdef FEATURE_PAL
+        hmod = PAL_RegisterLibraryDirect(hmod, wszLibName);
 #endif // FEATURE_PAL
 
-    if (hmod == NULL)
+        // If we have a handle add it to the cache.
+        pDomain->AddUnmanagedImageToCache(wszLibName, hmod);
+        return hmod.Extract();
+    }
+
+    if (!AppX::IsAppXProcess())
     {
-        hmod = LoadLibraryModuleBySearch(pMD, pErrorTracker, wszLibName);
+        hmod = LoadLibraryModuleViaEvent(pMD, wszLibName);
         if (hmod != NULL)
         {
 #ifdef FEATURE_PAL
-            // Register the system library handle with PAL and get a PAL library handle
             hmod = PAL_RegisterLibraryDirect(hmod, wszLibName);
 #endif // FEATURE_PAL
+            return hmod.Extract();
         }
-    }
-
-    if (hmod != NULL)
-    {
-        // If we have a handle add it to the cache.
-        pDomain->AddUnmanagedImageToCache(wszLibName, hmod);
     }
 
     return hmod.Extract();
