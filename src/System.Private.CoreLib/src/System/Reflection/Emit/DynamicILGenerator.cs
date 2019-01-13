@@ -863,7 +863,7 @@ namespace System.Reflection.Emit
     }
 
 
-    internal class DynamicILInfo
+    public class DynamicILInfo
     {
         #region Private Data Members
         private DynamicMethod m_method;
@@ -873,6 +873,18 @@ namespace System.Reflection.Emit
         private byte[] m_localSignature;
         private int m_maxStackSize;
         private int m_methodSignature;
+        #endregion
+
+        #region Constructor
+        internal DynamicILInfo(DynamicMethod method, byte[] methodSignature)
+        {
+            m_scope = new DynamicScope();
+            m_method = method;
+            m_methodSignature = m_scope.GetTokenFor(methodSignature);
+            m_exceptions = Array.Empty<byte>();
+            m_code = Array.Empty<byte>();
+            m_localSignature = Array.Empty<byte>();
+        }
         #endregion
 
         #region Internal Methods
@@ -901,8 +913,92 @@ namespace System.Reflection.Emit
         public DynamicMethod DynamicMethod { get { return m_method; } }
         internal DynamicScope DynamicScope { get { return m_scope; } }
 
+        public void SetCode(byte[] code, int maxStackSize)
+        {
+            m_code = (code != null) ? (byte[])code.Clone() : Array.Empty<byte>();
+            m_maxStackSize = maxStackSize;
+        }
+
+        [CLSCompliant(false)]
+        public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
+        {
+            if (codeSize < 0)
+                throw new ArgumentOutOfRangeException(nameof(codeSize), SR.ArgumentOutOfRange_GenericPositive);
+            if (codeSize > 0 && code == null)
+                throw new ArgumentNullException(nameof(code));
+
+            m_code = new Span<byte>(code, codeSize).ToArray();
+            m_maxStackSize = maxStackSize;
+        }
+
+        public void SetExceptions(byte[] exceptions)
+        {
+            m_exceptions = (exceptions != null) ? (byte[])exceptions.Clone() : Array.Empty<byte>();
+        }
+
+        [CLSCompliant(false)]
+        public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
+        {
+            if (exceptionsSize < 0)
+                throw new ArgumentOutOfRangeException(nameof(exceptionsSize), SR.ArgumentOutOfRange_GenericPositive);
+
+            if (exceptionsSize > 0 && exceptions == null)
+                throw new ArgumentNullException(nameof(exceptions));
+
+            m_exceptions = new Span<byte>(exceptions, exceptionsSize).ToArray();
+        }
+
+        public void SetLocalSignature(byte[] localSignature)
+        {
+            m_localSignature = (localSignature != null) ? (byte[])localSignature.Clone() : Array.Empty<byte>();
+        }
+
+        [CLSCompliant(false)]
+        public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
+        {
+            if (signatureSize < 0)
+                throw new ArgumentOutOfRangeException(nameof(signatureSize), SR.ArgumentOutOfRange_GenericPositive);
+
+            if (signatureSize > 0 && localSignature == null)
+                throw new ArgumentNullException(nameof(localSignature));
+
+            m_localSignature = new Span<byte>(localSignature, signatureSize).ToArray();
+        }
         #endregion
+
         #region Public Scope Methods
+        public int GetTokenFor(RuntimeMethodHandle method)
+        {
+            return DynamicScope.GetTokenFor(method);
+        }
+        public int GetTokenFor(DynamicMethod method)
+        {
+            return DynamicScope.GetTokenFor(method);
+        }
+        public int GetTokenFor(RuntimeMethodHandle method, RuntimeTypeHandle contextType)
+        {
+            return DynamicScope.GetTokenFor(method, contextType);
+        }
+        public int GetTokenFor(RuntimeFieldHandle field)
+        {
+            return DynamicScope.GetTokenFor(field);
+        }
+        public int GetTokenFor(RuntimeFieldHandle field, RuntimeTypeHandle contextType)
+        {
+            return DynamicScope.GetTokenFor(field, contextType);
+        }
+        public int GetTokenFor(RuntimeTypeHandle type)
+        {
+            return DynamicScope.GetTokenFor(type);
+        }
+        public int GetTokenFor(string literal)
+        {
+            return DynamicScope.GetTokenFor(literal);
+        }
+        public int GetTokenFor(byte[] signature)
+        {
+            return DynamicScope.GetTokenFor(signature);
+        }
         #endregion
     }
 
