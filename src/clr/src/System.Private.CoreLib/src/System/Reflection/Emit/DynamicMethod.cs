@@ -513,6 +513,17 @@ namespace System.Reflection.Emit
             return null;
         }
 
+        public DynamicILInfo GetDynamicILInfo()
+        {
+            if (m_DynamicILInfo == null)
+            {
+                byte[] methodSignature = SignatureHelper.GetMethodSigHelper(
+                        null, CallingConvention, ReturnType, null, null, m_parameterTypes, null, null).GetSignature(true);
+                m_DynamicILInfo = new DynamicILInfo(this, methodSignature);
+            }
+            return m_DynamicILInfo;
+        }
+
         public ILGenerator GetILGenerator()
         {
             return GetILGenerator(64);
