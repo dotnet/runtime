@@ -864,6 +864,7 @@ DEFINE_METHOD(FIRSTCHANCE_EVENTARGS,  CTOR,                   .ctor,            
 DEFINE_CLASS(ASSEMBLYLOADCONTEXT,  Loader,                AssemblyLoadContext)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVE,          Resolve,                      SM_IntPtr_AssemblyName_RetAssemblyBase)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLL,          ResolveUnmanagedDll,                      SM_Str_IntPtr_RetIntPtr)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLLUSINGEVENT, ResolveUnmanagedDllUsingEvent, SM_Str_AssemblyBase_IntPtr_RetIntPtr)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,          ResolveUsingResolvingEvent,                      SM_IntPtr_AssemblyName_RetAssemblyBase)
 DEFINE_FIELD(ASSEMBLYLOADCONTEXT,   ASSEMBLY_LOAD,          AssemblyLoad)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_LOAD,       OnAssemblyLoad, SM_Assembly_RetVoid)
