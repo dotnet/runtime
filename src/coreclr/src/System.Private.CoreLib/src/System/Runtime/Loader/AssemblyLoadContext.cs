@@ -78,6 +78,7 @@ namespace System.Runtime.Loader
                 m_pNativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, fRepresentsTPALoadContext, isCollectible);
 
                 // Initialize event handlers to be null by default
+                ResolvingUnmanagedDll = null;
                 Resolving = null;
                 Unloading = null;
 
@@ -304,12 +305,12 @@ namespace System.Runtime.Loader
                     resolvedAssembly = handler(this, assemblyName);
                     if (resolvedAssembly != null)
                     {
-                        break;
+                        return resolvedAssembly;
                     }
                 }
             }
 
-            return resolvedAssembly;
+            return null;
         }
 
         private Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string requestedSimpleName)
@@ -413,6 +414,36 @@ namespace System.Runtime.Loader
             return context.LoadUnmanagedDll(unmanagedDllName);
         }
 
+        // This method is invoked by the VM to resolve a native library using the ResolvingUnmanagedDll event
+        // after trying all other means of resolution.
+        private static IntPtr ResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchManagedAssemblyLoadContext)
+        {
+            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target);
+            return context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
+        }
+
+        private IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
+        {
+            IntPtr resolvedDll = IntPtr.Zero;
+
+            Func<Assembly, string, IntPtr> dllResolveHandler = ResolvingUnmanagedDll;
+
+            if (dllResolveHandler != null)
+            {
+                // Loop through the event subscribers and return the first non-null native library handle
+                foreach (Func<Assembly, string, IntPtr>  handler in dllResolveHandler.GetInvocationList())
+                {
+                    resolvedDll = handler(assembly, unmanagedDllName);
+                    if (resolvedDll != IntPtr.Zero)
+                    {
+                        return resolvedDll;
+                    }
+                }
+            }
+
+            return IntPtr.Zero;
+        }
+
         public static AssemblyLoadContext Default
         {
             get
@@ -509,7 +540,22 @@ namespace System.Runtime.Loader
             }
         }
 
+        // Event handler for resolving native libraries.
+        // This event is raised if the native library could not be resolved via
+        // the default resolution logic [including AssemblyLoadContext.LoadUnmanagedDll()]
+        // 
+        // Inputs: Invoking assembly, and library name to resolve
+        // Returns: A handle to the loaded native library
+        public event Func<Assembly, string, IntPtr> ResolvingUnmanagedDll;
+
+        // Event handler for resolving managed assemblies.
+        // This event is raised if the managed assembly could not be resolved via
+        // the default resolution logic [including AssemblyLoadContext.Load()]
+        // 
+        // Inputs: The AssemblyLoadContext and AssemblyName to be loaded
+        // Returns: The Loaded assembly object.
         public event Func<AssemblyLoadContext, AssemblyName, Assembly> Resolving;
+
         public event Action<AssemblyLoadContext> Unloading;
 
         // Contains the reference to VM's representation of the AssemblyLoadContext

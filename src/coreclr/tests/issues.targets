@@ -388,6 +388,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/methodimpl/methodimpl/*">
             <Issue>9565</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveEvent/ResolveEventTests/*">
+            <Issue>21964</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/16064/methodimpl/*">
             <Issue>9565</Issue>
         </ExcludeList>
@@ -817,6 +820,9 @@
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildTestsAgainstPackages)' == 'true' and '$(TargetsWindows)' != 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/NativeLibraryTests/*">
+            <Issue>Issue building native components for the test. Since tests are currently built on Windows, the native components end up at Core_Root instead of Test directory, which is not suitable for the test.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/ResolveEvent/ResolveEventTests/*">
             <Issue>Issue building native components for the test. Since tests are currently built on Windows, the native components end up at Core_Root instead of Test directory, which is not suitable for the test.</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/cti/system/byte/ByteToString3/*">
