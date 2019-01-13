@@ -353,7 +353,6 @@ namespace System.Data.SqlClient
                 return;
             }
             item.Clear();
-            //lock (_items)
             {
 #if DEBUG
                 if (_count > 0)
@@ -362,9 +361,7 @@ namespace System.Data.SqlClient
                     {
                         if (object.ReferenceEquals(item, _items[index]))
                         {
-                            //throw new InvalidOperationException($"releasing an item which already exists in the pool, count={_count}, index={index}, caller={caller}, released at={_stacks[index]}");
-                            throw new InvalidOperationException($"releasing an item which already exists in the pool, count={_count}, index={index}");
-
+                            Debug.Assert(false,$"releasing an item which already exists in the pool, count={_count}, index={index}, caller={caller}, released at={_stacks[index]}");
                         }
                     }
                 }
