@@ -23,7 +23,7 @@
 // Implementation of the custom marshaler info class.
 //==========================================================================
 
-CustomMarshalerInfo::CustomMarshalerInfo(BaseDomain *pDomain, TypeHandle hndCustomMarshalerType, TypeHandle hndManagedType, LPCUTF8 strCookie, DWORD cCookieStrBytes)
+CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, TypeHandle hndCustomMarshalerType, TypeHandle hndManagedType, LPCUTF8 strCookie, DWORD cCookieStrBytes)
 : m_NativeSize(0)
 , m_hndManagedType(hndManagedType)
 , m_hndCustomMarshaler(NULL)
@@ -38,7 +38,7 @@ CustomMarshalerInfo::CustomMarshalerInfo(BaseDomain *pDomain, TypeHandle hndCust
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pDomain));
+        PRECONDITION(CheckPointer(pLoaderAllocator));
     }
     CONTRACTL_END;
 
@@ -112,7 +112,7 @@ CustomMarshalerInfo::CustomMarshalerInfo(BaseDomain *pDomain, TypeHandle hndCust
                      IDS_EE_NOCUSTOMMARSHALER,
                      GetFullyQualifiedNameForClassW(hndCustomMarshalerType.GetMethodTable()));
     }
-    m_hndCustomMarshaler = pDomain->CreateHandle(CustomMarshalerObj);
+    m_hndCustomMarshaler = pLoaderAllocator->GetDomain()->CreateHandle(CustomMarshalerObj);
 
     // Retrieve the size of the native data.
     if (m_bDataIsByValue)
@@ -367,6 +367,7 @@ EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey 
         cbEntry += S_SIZE_T(pKey->GetMarshalerTypeNameByteCount());
         cbEntry += S_SIZE_T(pKey->GetCookieStringByteCount());
         cbEntry += S_SIZE_T(pKey->GetMarshalerInstantiation().GetNumArgs()) * S_SIZE_T(sizeof(LPVOID));
+        cbEntry += S_SIZE_T(sizeof(LPVOID)); // For EECMHelperHashtableKey::m_invokingAssembly
 
         if (cbEntry.IsOverflow())
             return NULL;
@@ -387,6 +388,7 @@ EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey 
         memcpy((void*)pEntryKey->m_strCookie, pKey->GetCookieString(), pKey->GetCookieStringByteCount()); 
         memcpy((void*)pEntryKey->m_Instantiation.GetRawArgs(), pKey->GetMarshalerInstantiation().GetRawArgs(),
             pEntryKey->m_Instantiation.GetNumArgs() * sizeof(LPVOID)); 
+        pEntryKey->m_invokingAssembly = pKey->GetInvokingAssembly();
     }
     else
     {
@@ -401,6 +403,7 @@ EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey 
         pEntryKey->m_cCookieStrBytes = pKey->GetCookieStringByteCount();
         pEntryKey->m_strCookie = pKey->GetCookieString();
         pEntryKey->m_Instantiation = Instantiation(pKey->GetMarshalerInstantiation());
+        pEntryKey->m_invokingAssembly = pKey->GetInvokingAssembly();
     }
 
     return pEntry;
@@ -457,6 +460,9 @@ BOOL EECMHelperHashtableHelper::CompareKeys(EEHashEntry_t *pEntry, EECMHelperHas
         if (pEntryKey->GetMarshalerInstantiation()[i] != pKey->GetMarshalerInstantiation()[i])
             return FALSE;
     }
+
+    if (pEntryKey->GetInvokingAssembly() != pKey->GetInvokingAssembly())
+        return FALSE;
 
     return TRUE;
 }
@@ -628,7 +634,7 @@ CustomMarshalerInfo *SharedCustomMarshalerHelper::GetCustomMarshalerInfo()
     CONTRACTL_END;
     
     // Retrieve the marshalling data for the current app domain.
-    EEMarshalingData *pMarshalingData = GetThread()->GetDomain()->GetMarshalingData();
+    EEMarshalingData *pMarshalingData = GetThread()->GetDomain()->GetLoaderAllocator()->GetMarshalingData();
 
     // Retrieve the custom marshaling information for the current shared custom
     // marshaling helper.

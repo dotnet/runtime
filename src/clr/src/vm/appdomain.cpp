@@ -711,8 +711,6 @@ BaseDomain::BaseDomain()
     m_handleStore = NULL;
 #endif
 
-    m_pMarshalingData = NULL;
-
 #ifdef FEATURE_COMINTEROP
     m_pMngStdInterfacesInfo = NULL;
     m_pWinRtBinder = NULL;
@@ -784,9 +782,6 @@ void BaseDomain::Init()
     // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
     m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
         CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
-
-    // Initialize the EE marshaling data to NULL.
-    m_pMarshalingData = NULL;
 
 #ifdef FEATURE_COMINTEROP
     // Allocate the managed standard interfaces information.
@@ -1804,51 +1799,6 @@ OBJECTREF AppDomain::GetMissingObject()
 #endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-
-EEMarshalingData *BaseDomain::GetMarshalingData()
-{
-    CONTRACT (EEMarshalingData*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(m_pMarshalingData));
-    }
-    CONTRACT_END;
-
-    if (!m_pMarshalingData)
-    {
-        // Take the lock
-        CrstHolder holder(&m_InteropDataCrst);
-
-        if (!m_pMarshalingData)
-        {
-            LoaderHeap* pHeap = GetLoaderAllocator()->GetLowFrequencyHeap();
-            m_pMarshalingData = new (pHeap) EEMarshalingData(this, pHeap, &m_DomainCrst);
-        }
-    }
-
-    RETURN m_pMarshalingData;
-}
-
-void BaseDomain::DeleteMarshalingData()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // We are in shutdown - no need to take any lock
-    if (m_pMarshalingData)
-    {
-        delete m_pMarshalingData;
-        m_pMarshalingData = NULL;
-    }
-}
 
 #ifndef CROSSGEN_COMPILE
 
