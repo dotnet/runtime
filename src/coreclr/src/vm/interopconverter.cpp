@@ -207,7 +207,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
                     // This is a redirected type - see if we need to manually marshal it                    
                     if (redirectedTypeIndex == WinMDAdapter::RedirectedTypeIndex_System_Uri)
                     {
-                        UriMarshalingInfo *pUriMarshalInfo = GetAppDomain()->GetMarshalingData()->GetUriMarshalingInfo();
+                        UriMarshalingInfo *pUriMarshalInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetUriMarshalingInfo();
                         struct
                         {
                             OBJECTREF ref;
@@ -241,7 +241,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
                              redirectedTypeIndex == WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_PropertyChangedEventArgs)
                     {
                         MethodDesc *pMD;
-                        EventArgsMarshalingInfo *pInfo = GetAppDomain()->GetMarshalingData()->GetEventArgsMarshalingInfo();
+                        EventArgsMarshalingInfo *pInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetEventArgsMarshalingInfo();
 
                         if (redirectedTypeIndex == WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_NotifyCollectionChangedEventArgs)
                             pMD = pInfo->GetSystemNCCEventArgsToWinRTNCCEventArgsMD();

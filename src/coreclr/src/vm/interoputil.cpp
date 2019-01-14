@@ -3261,7 +3261,7 @@ void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysCo
 
     // Retrieve the method desc to use for the current AD.
     MethodDesc *pOleColorToSystemColorMD = 
-        GetAppDomain()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetOleColorToSystemColorMD();
+        GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetOleColorToSystemColorMD();
 
     MethodDescCallSite oleColorToSystemColor(pOleColorToSystemColorMD);
 
@@ -3290,7 +3290,7 @@ OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj)
     
     // Retrieve the method desc to use for the current AD.
     MethodDesc *pSystemColorToOleColorMD = 
-        GetAppDomain()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetSystemColorToOleColorMD();
+        GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetSystemColorToOleColorMD();
     MethodDescCallSite systemColorToOleColor(pSystemColorToOleColorMD);
 
     // Set up the args and call the method.
@@ -6732,7 +6732,7 @@ ABI::Windows::Foundation::IUriRuntimeClass *CreateWinRTUri(LPCWSTR wszUri, INT32
 {
     STANDARD_VM_CONTRACT;
 
-    UriMarshalingInfo* marshalingInfo = GetAppDomain()->GetMarshalingData()->GetUriMarshalingInfo();
+    UriMarshalingInfo* marshalingInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetUriMarshalingInfo();
         
     // Get the cached factory from the UriMarshalingInfo object of the current appdomain
     ABI::Windows::Foundation::IUriRuntimeClassFactory* pFactory = marshalingInfo->GetUriFactory();
