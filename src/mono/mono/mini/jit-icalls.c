@@ -1134,6 +1134,7 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 	addr = mono_compile_method_checked (vmethod, error);
 	if (mono_error_set_pending_exception (error))
 		return NULL;
+	g_assert (addr);
 
 	addr = mini_add_method_trampoline (vmethod, addr, mono_method_needs_static_rgctx_invoke (vmethod, FALSE), FALSE);
 
@@ -1352,6 +1353,8 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 
 	gpointer compiled_ptr = mono_compile_method_checked (m, error);
 	mono_error_set_pending_exception (error);
+	g_assert (compiled_ptr);
+
 	return compiled_ptr;
 }
 
@@ -1564,7 +1567,7 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 	MonoVTable *vt;
 	gpointer *imt;
 	MonoMethod *impl_method, *generic_virtual = NULL, *variant_iface = NULL;
-	gpointer addr, compiled_method, aot_addr;
+	gpointer addr, aot_addr;
 	gboolean need_rgctx_tramp = FALSE, need_unbox_tramp = FALSE;
 
 	error_init (error);
@@ -1578,11 +1581,6 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 	mini_resolve_imt_method (vt, imt + imt_slot, imt_method, &impl_method, &aot_addr, &need_rgctx_tramp, &variant_iface, error);
 	return_val_if_nok (error, NULL);
 
-	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method_checked (impl_method, error);
-	mono_error_assert_ok (error);
-	g_assert (addr);
-
 	if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst)
 		generic_virtual = imt_method;
 
@@ -1594,7 +1592,9 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 			need_unbox_tramp = TRUE;
 	}
 
-	addr = mini_add_method_wrappers_llvmonly (impl_method, addr, caller_gsharedvt, need_unbox_tramp, out_arg);
+	addr = mini_llvmonly_load_method (impl_method, caller_gsharedvt, need_unbox_tramp, out_arg, error);
+	mono_error_assert_ok (error);
+	g_assert (addr);
 
 	if (generic_virtual || variant_iface) {
 		MonoMethod *target = generic_virtual ? generic_virtual : variant_iface;
@@ -1696,12 +1696,8 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		m = mono_marshal_get_synchronized_wrapper (m);
 
-	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method_checked (m, error);
+	addr = compiled_method = mini_llvmonly_load_method (m, gsharedvt, need_unbox_tramp, out_arg, error);
 	mono_error_assert_ok (error);
-	g_assert (addr);
-
-	addr = mini_add_method_wrappers_llvmonly (m, addr, gsharedvt, need_unbox_tramp, out_arg);
 
 	if (!gsharedvt && generic_virtual) {
 		// FIXME: This wastes memory since add_generic_virtual_invocation ignores it in a lot of cases
@@ -1739,12 +1735,10 @@ MonoFtnDesc*
 mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic_virtual)
 {
 	MonoMethod *m;
-	gpointer addr, compiled_method;
 	gboolean need_unbox_tramp = FALSE;
 	ERROR_DECL (error);
 	MonoGenericContext context = { NULL, NULL };
 	MonoMethod *declaring;
-	gpointer arg = NULL;
 
 	m = mono_class_get_vtable_entry (vt->klass, slot);
 
@@ -1769,19 +1763,13 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic
 	if (m_class_is_valuetype (vt->klass))
 		need_unbox_tramp = TRUE;
 
-	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method_checked (m, error);
-	mono_error_assert_ok (error);
-	g_assert (addr);
-
-	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &arg);
-
 	/*
 	 * This wastes memory but the memory usage is bounded since
 	 * mono_method_add_generic_virtual_invocation () eventually builds an imt trampoline for
 	 * this vtable slot so we are not called any more for this instantiation.
 	 */
-	MonoFtnDesc *ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
+	MonoFtnDesc *ftndesc = mini_llvmonly_load_method_ftndesc (m, FALSE, need_unbox_tramp, error);
+	mono_error_assert_ok (error);
 
 	mono_method_add_generic_virtual_invocation (mono_domain_get (),
 												vt, vt->vtable + slot,
@@ -1800,10 +1788,10 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 {
 	ERROR_DECL (error);
 	MonoMethod *m, *variant_iface;
-	gpointer addr, aot_addr, compiled_method;
+	MonoFtnDesc *ftndesc;
+	gpointer aot_addr;
 	gboolean need_unbox_tramp = FALSE;
 	gboolean need_rgctx_tramp;
-	gpointer arg = NULL;
 	gpointer *imt;
 
 	imt = (gpointer*)vt - MONO_IMT_SIZE;
@@ -1820,19 +1808,12 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		m = mono_marshal_get_synchronized_wrapper (m);
 
-	addr = compiled_method = mono_compile_method_checked (m, error);
-	if (!is_ok (error))
-		mono_llvm_raise_exception (mono_error_convert_to_exception (error));
-	g_assert (addr);
-
-	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &arg);
-
 	/*
 	 * This wastes memory but the memory usage is bounded since
 	 * mono_method_add_generic_virtual_invocation () eventually builds an imt trampoline for
 	 * this vtable slot so we are not called any more for this instantiation.
 	 */
-	MonoFtnDesc *ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
+	ftndesc = mini_llvmonly_load_method_ftndesc (m, FALSE, need_unbox_tramp, error);
 
 	mono_method_add_generic_virtual_invocation (mono_domain_get (),
 												vt, imt + imt_slot,
@@ -1886,18 +1867,18 @@ mono_llvmonly_init_delegate (MonoDelegate *del)
 	 */
 	if (G_UNLIKELY (!ftndesc)) {
 		MonoMethod *m = del->method;
+		gboolean need_unbox = FALSE;
+
 		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 			m = mono_marshal_get_synchronized_wrapper (m);
 
-		gpointer addr = mono_compile_method_checked (m, error);
+		if (m_class_is_valuetype (m->klass) && mono_method_signature_internal (m)->hasthis)
+			need_unbox = TRUE;
+
+		gpointer arg = NULL;
+		gpointer addr = mini_llvmonly_load_method_delegate (m, FALSE, need_unbox, &arg, error);
 		if (mono_error_set_pending_exception (error))
 			return;
-
-		if (m_class_is_valuetype (m->klass) && mono_method_signature_internal (m)->hasthis)
-		    addr = mono_aot_get_unbox_trampoline (m, NULL);
-
-		gpointer arg = mini_get_delegate_arg (del->method, addr);
-
 		ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
 		mono_memory_barrier ();
 		*del->method_code = (guint8*)ftndesc;
@@ -1910,6 +1891,8 @@ void
 mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
 {
 	ERROR_DECL (error);
+	gpointer addr, arg;
+	gboolean need_unbox;
 
 	g_assert (target);
 
@@ -1917,14 +1900,14 @@ mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, Mono
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		method = mono_marshal_get_synchronized_wrapper (method);
+	need_unbox = m_class_is_valuetype (method->klass);
 
 	del->method = method;
-	del->method_ptr = mono_compile_method_checked (method, error);
+	addr = mini_llvmonly_load_method_delegate (method, FALSE, need_unbox, &arg, error);
 	if (mono_error_set_pending_exception (error))
 		return;
-	if (m_class_is_valuetype (method->klass))
-		del->method_ptr = mono_aot_get_unbox_trampoline (method, NULL);
-	del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
+	del->method_ptr = addr;
+	del->extra_arg = arg;
 }
 
 MonoObject*

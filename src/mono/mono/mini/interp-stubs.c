@@ -113,6 +113,13 @@ stub_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *err
 	return NULL;
 }
 
+static MonoFtnDesc*
+stub_create_method_pointer_llvmonly (MonoMethod *method, gboolean compile, MonoError *error)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 static MonoObject*
 stub_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
@@ -148,6 +155,7 @@ mono_interp_stub_init (void)
 
 	MonoEECallbacks c;
 	c.create_method_pointer = stub_create_method_pointer;
+	c.create_method_pointer_llvmonly = stub_create_method_pointer_llvmonly;
 	c.runtime_invoke = stub_runtime_invoke;
 	c.init_delegate = stub_init_delegate;
 	c.get_remoting_invoke = stub_get_remoting_invoke;

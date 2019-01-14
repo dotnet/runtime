@@ -1737,7 +1737,7 @@ static void
 interp_entry (InterpEntryData *data)
 {
 	InterpFrame frame;
-	InterpMethod *rmethod = data->rmethod;
+	InterpMethod *rmethod;
 	ThreadContext *context;
 	stackval result;
 	stackval *args;
@@ -1746,6 +1746,13 @@ interp_entry (InterpEntryData *data)
 	MonoType *type;
 	gpointer orig_domain, attach_cookie;
 	int i;
+
+	if ((gsize)data->rmethod & 1) {
+		/* Unbox */
+		data->this_arg = mono_object_unbox_internal ((MonoObject*)data->this_arg);
+		data->rmethod = (InterpMethod*)(gpointer)((gsize)data->rmethod & ~1);
+	}
+	rmethod = data->rmethod;
 
 	if (rmethod->needs_thread_attach)
 		orig_domain = mono_threads_attach_coop (mono_domain_get (), &attach_cookie);
@@ -2261,7 +2268,6 @@ copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, unsigned char **v
 	*(char**)vt_sp = vt;
 }
 
-#ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 /*
  * These functions are the entry points into the interpreter from compiled code.
  * They are called by the interp_in wrappers. They have the following signature:
@@ -2417,7 +2423,7 @@ interp_entry_general (gpointer this_arg, gpointer res, gpointer *args, gpointer 
 	interp_entry (&data);
 }
 
-#else /* MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE */
+#ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 
 // inline so we can alloc on stack
 #define alloc_storage_for_stackval(s, t, p) do {							\
@@ -2514,6 +2520,87 @@ no_llvmonly_interp_method_pointer (void)
 }
 
 /*
+ * interp_create_method_pointer_llvmonly:
+ *
+ *   Return an ftndesc for entering the interpreter and executing METHOD.
+ */
+static MonoFtnDesc*
+interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoError *error)
+{
+	MonoDomain *domain = mono_domain_get ();
+	gpointer addr, entry_func, entry_wrapper;
+	MonoMethodSignature *sig;
+	MonoMethod *wrapper;
+	MonoJitDomainInfo *info;
+	InterpMethod *imethod;
+
+	imethod = mono_interp_get_imethod (domain, method, error);
+	return_val_if_nok (error, NULL);
+
+	if (unbox) {
+		if (imethod->llvmonly_unbox_entry)
+			return (MonoFtnDesc*)imethod->llvmonly_unbox_entry;
+	} else {
+		if (imethod->jit_entry)
+			return (MonoFtnDesc*)imethod->jit_entry;
+	}
+
+	sig = mono_method_signature_internal (method);
+
+	/*
+	 * The entry functions need access to the method to call, so we have
+	 * to use a ftndesc. The caller uses a normal signature, while the
+	 * entry functions use a gsharedvt_in signature, so wrap the entry function in
+	 * a gsharedvt_in_sig wrapper.
+	 */
+	wrapper = mini_get_gsharedvt_in_sig_wrapper (sig);
+
+	entry_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+	mono_error_assertf_ok (error, "couldn't compile wrapper \"%s\" for \"%s\"",
+			mono_method_get_name_full (wrapper, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL),
+			mono_method_get_name_full (method,  TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL));
+
+	if (sig->param_count > MAX_INTERP_ENTRY_ARGS) {
+		g_assert_not_reached ();
+		//entry_func = (gpointer)interp_entry_general;
+	} else if (sig->hasthis) {
+		if (sig->ret->type == MONO_TYPE_VOID)
+			entry_func = entry_funcs_instance [sig->param_count];
+		else
+			entry_func = entry_funcs_instance_ret [sig->param_count];
+	} else {
+		if (sig->ret->type == MONO_TYPE_VOID)
+			entry_func = entry_funcs_static [sig->param_count];
+		else
+			entry_func = entry_funcs_static_ret [sig->param_count];
+	}
+	g_assert (entry_func);
+
+	/* Encode unbox in the lower bit of imethod */
+	gpointer entry_arg = imethod;
+	if (unbox)
+		entry_arg = (gpointer)(((gsize)entry_arg) | 1);
+	MonoFtnDesc *entry_ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), entry_func, entry_arg);
+
+	addr = mini_create_llvmonly_ftndesc (mono_domain_get (), entry_wrapper, entry_ftndesc);
+
+	info = domain_jit_info (domain);
+	mono_domain_lock (domain);
+	if (!info->interp_method_pointer_hash)
+		info->interp_method_pointer_hash = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (info->interp_method_pointer_hash, addr, imethod);
+	mono_domain_unlock (domain);
+
+	mono_memory_barrier ();
+	if (unbox)
+		imethod->llvmonly_unbox_entry = addr;
+	else
+		imethod->jit_entry = addr;
+
+	return (MonoFtnDesc*)addr;
+}
+
+/*
  * interp_create_method_pointer:
  *
  * Return a function pointer which can be used to call METHOD using the
@@ -2541,15 +2628,20 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		return_val_if_nok (error, NULL);
 	}
 
+	if (imethod->jit_entry)
+		return imethod->jit_entry;
+
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
+
+	if (mono_llvm_only)
+		/* The caller should call interp_create_method_pointer_llvmonly */
+		g_assert_not_reached ();
+
 	/* HACK: method_ptr of delegate should point to a runtime method*/
 	if (method->wrapper_type && (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD ||
 				(method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)))
 		return imethod;
 
-	if (imethod->jit_entry)
-		return imethod->jit_entry;
-
-	MonoMethodSignature *sig = mono_method_signature_internal (method);
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 	MonoMethod *wrapper = mini_get_interp_in_wrapper (sig);
 
@@ -6242,6 +6334,7 @@ mono_ee_interp_init (const char *opts)
 #endif
 	c.to_native_trampoline = interp_to_native_trampoline;
 	c.create_method_pointer = interp_create_method_pointer;
+	c.create_method_pointer_llvmonly = interp_create_method_pointer_llvmonly;
 	c.runtime_invoke = interp_runtime_invoke;
 	c.init_delegate = interp_init_delegate;
 	c.delegate_ctor = interp_delegate_ctor;

@@ -118,6 +118,7 @@ typedef struct _InterpMethod
 	gpointer jit_addr;
 	MonoMethodSignature *jit_sig;
 	gpointer jit_entry;
+	gpointer llvmonly_unbox_entry;
 	MonoType *rtype;
 	MonoType **param_types;
 	MonoJitInfo *jinfo;

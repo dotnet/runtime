@@ -1445,15 +1445,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		/*
 		 * Return an ftndesc for either AOTed code, or for an interp entry.
 		 */
-		target = mono_compile_method_checked (patch_info->data.method, error);
+		target = mini_llvmonly_load_method_ftndesc (patch_info->data.method, FALSE, FALSE, error);
 		return_val_if_nok (error, NULL);
-		if (target) {
-			gpointer arg = NULL;
-			target = mini_add_method_wrappers_llvmonly (patch_info->data.method, (gpointer)target, FALSE, FALSE, &arg);
-			return mini_create_llvmonly_ftndesc (domain, (gpointer)target, arg);
-		} else {
-			g_assert_not_reached ();
-		}
 		break;
 	}
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
@@ -2449,6 +2442,9 @@ lookup_start:
 	}
 
 	if (!jit_only && !code && mono_aot_only && mono_use_interpreter && method->wrapper_type != MONO_WRAPPER_OTHER) {
+		if (mono_llvm_only)
+			/* Signal to the caller that AOTed code is not found */
+			return NULL;
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
 
 		if (!mono_error_ok (error))
@@ -2538,6 +2534,74 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
 
 	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), TRUE, error);
 	return code;
+}
+
+/*
+ * mini_llvmonly_load_method:
+ *
+ *   Return the AOT-ed code METHOD, or an interpreter entry for it.
+ *
+ */
+gpointer
+mini_llvmonly_load_method (MonoMethod *method, gboolean caller_gsharedvt, gboolean need_unbox, gpointer *out_arg, MonoError *error)
+{
+	gpointer addr = mono_compile_method_checked (method, error);
+	return_val_if_nok (error, NULL);
+
+	if (addr) {
+		return mini_add_method_wrappers_llvmonly (method, (gpointer)addr, caller_gsharedvt, need_unbox, out_arg);
+	} else {
+		MonoFtnDesc *desc = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (method, need_unbox, error);
+		return_val_if_nok (error, NULL);
+		*out_arg = desc->arg;
+		return desc->addr;
+	}
+}
+
+/*
+ * Same but returns an ftndesc which might be newly allocated.
+ */
+MonoFtnDesc*
+mini_llvmonly_load_method_ftndesc (MonoMethod *method, gboolean caller_gsharedvt, gboolean need_unbox, MonoError *error)
+{
+	gpointer addr = mono_compile_method_checked (method, error);
+	return_val_if_nok (error, NULL);
+
+	if (addr) {
+		gpointer arg = NULL;
+		addr = mini_add_method_wrappers_llvmonly (method, (gpointer)addr, caller_gsharedvt, need_unbox, &arg);
+		// FIXME: Cache this
+		return mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
+	} else {
+		MonoFtnDesc *ftndesc = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (method, need_unbox, error);
+		return_val_if_nok (error, NULL);
+		return ftndesc;
+	}
+}
+
+/*
+ * Same as load_method, but for delegates.
+ * See mini_get_delegate_arg ().
+ */
+gpointer
+mini_llvmonly_load_method_delegate (MonoMethod *method, gboolean caller_gsharedvt, gboolean need_unbox, gpointer *out_arg, MonoError *error)
+{
+	gpointer addr = mono_compile_method_checked (method, error);
+	return_val_if_nok (error, NULL);
+
+	if (addr) {
+		if (need_unbox)
+			addr = mono_aot_get_unbox_trampoline (method, NULL);
+		*out_arg = mini_get_delegate_arg (method, addr);
+		return addr;
+	} else {
+		MonoFtnDesc *desc = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (method, need_unbox, error);
+		return_val_if_nok (error, NULL);
+
+		g_assert (!caller_gsharedvt);
+		*out_arg = desc->arg;
+		return desc->addr;
+	}
 }
 
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD

@@ -390,6 +390,24 @@ callvirt_to_call (int opcode)
 	return -1;
 }
 
+static gboolean
+can_enter_interp (MonoCompile *cfg, MonoMethod *method)
+{
+	if (method->wrapper_type)
+		return FALSE;
+	if (m_class_get_image (method->klass) == m_class_get_image (cfg->method->klass))
+		return FALSE;
+
+	/* See needs_extra_arg () in mini-llvm.c */
+	if (method->string_ctor)
+		return FALSE;
+	if (method->klass == mono_get_string_class () && (strstr (method->name, "memcpy") || strstr (method->name, "bzero")))
+		return FALSE;
+
+	/* Assume all calls outside the assembly can enter the interpreter */
+	return TRUE;
+}
+
 MonoInst*
 mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig, gboolean tailcall,
 							MonoInst **args, MonoInst *this_ins, MonoInst *imt_arg, MonoInst *rgctx_arg)
@@ -444,6 +462,13 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 	if (cfg->llvm_only && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 		return mini_emit_llvmonly_virtual_call (cfg, method, sig, 0, args);
+
+	if (cfg->llvm_only && cfg->interp && !virtual_ && !tailcall && can_enter_interp (cfg, method)) {
+		MonoInst *ftndesc = mini_emit_get_rgctx_method (cfg, -1, method, MONO_RGCTX_INFO_METHOD_FTNDESC);
+
+		/* This call might need to enter the interpreter so make it indirect */
+		return mini_emit_llvmonly_calli (cfg, sig, args, ftndesc);
+	}
 
 	need_unbox_trampoline = method->klass == mono_defaults.object_class || mono_class_is_interface (method->klass);
 
