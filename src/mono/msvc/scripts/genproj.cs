@@ -713,6 +713,9 @@ public class MsbuildGenerator {
 
 		case "/features":
 			return true;
+
+		case "/sourcelink":
+			return true;
 		}
 
 		Console.Error.WriteLine ($"// Failing with : {arg}");
