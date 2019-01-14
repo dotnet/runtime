@@ -1,3 +1,4 @@
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -938,6 +939,8 @@ void DebuggerJitInfo::LazyInitBounds()
 
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%x GetBoundariesAndVars success=0x%x\n", this, fSuccess));
 
+        // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons 
+        CodeVersionManager::TableLockHolder lockHolder(mdesc->GetCodeVersionManager());
         Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
 
         if (!m_fAttemptInit)
@@ -1063,6 +1066,8 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // offset is the same as the last old IL offset, we remove it.
     // Pick a unique initial value (-10) so that the 1st doesn't accidentally match.
     int ilPrevOld = -10;
+
+    _ASSERTE(m_nativeCodeVersion.GetMethodDesc()->GetCodeVersionManager()->LockOwnedByCurrentThread());
 
     InstrumentedILOffsetMapping mapping;
 
@@ -1614,7 +1619,12 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     CodeVersionManager::TableLockHolder lockHolder(fd->GetCodeVersionManager());
     CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
     NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(fd, startAddr);
-    _ASSERTE(!nativeCodeVersion.IsNull());
+
+    // Some day we'll get EnC to use code versioning properly, but until then we'll get the right behavior treating all EnC versions as the default native code version.
+    if (nativeCodeVersion.IsNull())
+    {
+        nativeCodeVersion = NativeCodeVersion(fd);
+    }
 
     BOOL jitInfoWasCreated;
     return CreateInitAndAddJitInfo(nativeCodeVersion, startAddr, &jitInfoWasCreated); 
