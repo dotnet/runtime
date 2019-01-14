@@ -505,6 +505,27 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 	return virtual_imethod;
 }
 
+
+static InterpMethod*
+get_virtual_method_fast (MonoObject *obj, InterpMethod *imethod, int slot)
+{
+	gpointer *table = obj->vtable->interp_vtable;
+
+	if (!table) {
+		mono_domain_lock (obj->vtable->domain);
+		table = obj->vtable->interp_vtable;
+		if (!table) {
+			table = mono_domain_alloc0 (obj->vtable->domain, m_class_get_vtable_size (obj->vtable->klass) * sizeof (gpointer));
+			obj->vtable->interp_vtable = table;
+		}
+		mono_domain_unlock (obj->vtable->domain);
+	}
+
+	if (!table [slot])
+		table [slot] = get_virtual_method (imethod, obj);
+	return (InterpMethod*)table[slot];
+}
+
 static void inline
 stackval_from_data (MonoType *type_, stackval *result, void *data, gboolean pinvoke)
 {
@@ -3154,6 +3175,48 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
+				*sp = *endsp;
+				sp++;
+			}
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CALLVIRT_FAST)
+		MINT_IN_CASE(MINT_VCALLVIRT_FAST) {
+			MonoObject *this_arg;
+			MonoClass *this_class;
+			gboolean is_void = *ip == MINT_VCALLVIRT_FAST;
+			InterpMethod *imethod;
+			stackval *endsp = sp;
+			int slot;
+
+			frame->ip = ip;
+
+			imethod = (InterpMethod*)rtm->data_items [* (guint16 *)(ip + 1)];
+			slot = *(guint16*)(ip + 2);
+			ip += 3;
+			sp->data.p = vt_sp;
+			child_frame.retval = sp;
+
+			/* decrement by the actual number of args */
+			sp -= imethod->param_count + imethod->hasthis;
+			child_frame.stack_args = sp;
+
+			this_arg = (MonoObject*)sp->data.p;
+			this_class = this_arg->vtable->klass;
+
+			child_frame.imethod = get_virtual_method_fast (this_arg, imethod, slot);
+			if (m_class_is_valuetype (this_class) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
+				/* unbox */
+				gpointer unboxed = mono_object_unbox_internal (this_arg);
+				sp [0].data.p = unboxed;
+			}
+
+			interp_exec_method (&child_frame, context);
+
+			CHECK_RESUME_STATE (context);
+
+			if (!is_void) {
+				/* need to handle typedbyref ... */
 				*sp = *endsp;
 				sp++;
 			}

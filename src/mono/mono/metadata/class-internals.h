@@ -351,6 +351,8 @@ struct MonoVTable {
 
 	guint32     imt_collisions_bitmap;
 	MonoRuntimeGenericContext *runtime_generic_context;
+	/* interp virtual method table */
+	gpointer *interp_vtable;
 	/* do not add any fields after vtable, the structure is dynamically extended */
 	/* vtable contains function pointers to methods or their trampolines, at the
 	 end there may be a slot containing the pointer to the static fields */
