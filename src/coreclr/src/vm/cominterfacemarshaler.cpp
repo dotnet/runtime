@@ -745,7 +745,7 @@ void COMInterfaceMarshaler::MarshalToNonRCWType(OBJECTREF *poref)
             LPCWSTR pwszRawUri = hsRawUri.GetRawBuffer(&cchRawUri);
             gc.refRawURI = StringObject::NewString(pwszRawUri, cchRawUri);
 
-            UriMarshalingInfo *pUriMarshalingInfo = GetAppDomain()->GetMarshalingData()->GetUriMarshalingInfo();
+            UriMarshalingInfo *pUriMarshalingInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetUriMarshalingInfo();
             MethodDesc* pSystemUriCtorMD = pUriMarshalingInfo->GetSystemUriCtorMD();
 
             MethodTable *pMTSystemUri = pUriMarshalingInfo->GetSystemUriType().AsMethodTable();
@@ -787,7 +787,7 @@ void COMInterfaceMarshaler::MarshalToNonRCWType(OBJECTREF *poref)
         case WinMDAdapter::RedirectedTypeIndex_System_ComponentModel_PropertyChangedEventArgs:
         {
             MethodDesc *pMD;
-            EventArgsMarshalingInfo *pInfo = GetAppDomain()->GetMarshalingData()->GetEventArgsMarshalingInfo();
+            EventArgsMarshalingInfo *pInfo = GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetEventArgsMarshalingInfo();
             
             if (index == WinMDAdapter::RedirectedTypeIndex_System_Collections_Specialized_NotifyCollectionChangedEventArgs)
                 pMD = pInfo->GetWinRTNCCEventArgsToSystemNCCEventArgsMD();
