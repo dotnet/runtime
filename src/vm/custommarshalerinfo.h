@@ -36,7 +36,7 @@ class CustomMarshalerInfo
 {
 public:
     // Constructor and destructor.
-    CustomMarshalerInfo(BaseDomain* pDomain, TypeHandle hndCustomMarshalerType, TypeHandle hndManagedType, LPCUTF8 strCookie, DWORD cCookieStrBytes);
+    CustomMarshalerInfo(LoaderAllocator* pLoaderAllocator, TypeHandle hndCustomMarshalerType, TypeHandle hndManagedType, LPCUTF8 strCookie, DWORD cCookieStrBytes);
     ~CustomMarshalerInfo();
 
     // CustomMarshalerInfo's are always allocated on the loader heap so we need to redefine
@@ -114,44 +114,51 @@ private:
 
 typedef SList<CustomMarshalerInfo, true> CMINFOLIST;
 
+class Assembly;
 
 class EECMHelperHashtableKey
 {
 public:
-    EECMHelperHashtableKey(DWORD cMarshalerTypeNameBytes, LPCSTR strMarshalerTypeName, DWORD cCookieStrBytes, LPCSTR strCookie, Instantiation instantiation)
+    EECMHelperHashtableKey(DWORD cMarshalerTypeNameBytes, LPCSTR strMarshalerTypeName, DWORD cCookieStrBytes, LPCSTR strCookie, Instantiation instantiation, Assembly* invokingAssembly)
     : m_cMarshalerTypeNameBytes(cMarshalerTypeNameBytes)
     , m_strMarshalerTypeName(strMarshalerTypeName)
     , m_cCookieStrBytes(cCookieStrBytes)
     , m_strCookie(strCookie)
     , m_Instantiation(instantiation)
+    , m_invokingAssembly(invokingAssembly)
     {
         LIMITED_METHOD_CONTRACT;
     }
 
-    inline DWORD GetMarshalerTypeNameByteCount() const
+    DWORD GetMarshalerTypeNameByteCount() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_cMarshalerTypeNameBytes;
     }
-    inline LPCSTR GetMarshalerTypeName() const
+    LPCSTR GetMarshalerTypeName() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_strMarshalerTypeName;
     }
-    inline LPCSTR GetCookieString() const
+    LPCSTR GetCookieString() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_strCookie;
     }
-    inline ULONG GetCookieStringByteCount() const
+    ULONG GetCookieStringByteCount() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_cCookieStrBytes;
     }
-    inline Instantiation GetMarshalerInstantiation() const
+    Instantiation GetMarshalerInstantiation() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_Instantiation;
+    }
+    Assembly* GetInvokingAssembly() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_invokingAssembly;
     }
 
     DWORD           m_cMarshalerTypeNameBytes;
@@ -159,6 +166,7 @@ public:
     DWORD           m_cCookieStrBytes;
     LPCSTR          m_strCookie;
     Instantiation   m_Instantiation;
+    Assembly*       m_invokingAssembly;
 };
 
 

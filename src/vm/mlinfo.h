@@ -371,7 +371,7 @@ private:
 class EEMarshalingData
 {
 public:
-    EEMarshalingData(BaseDomain *pDomain, LoaderHeap *pHeap, CrstBase *pCrst);
+    EEMarshalingData(LoaderAllocator *pAllocator, CrstBase *pCrst);
     ~EEMarshalingData();
 
     // EEMarshalingData's are always allocated on the loader heap so we need to redefine
@@ -400,14 +400,15 @@ private:
     EECMHelperHashTable                 m_CMHelperHashtable;
     EEPtrHashTable                      m_SharedCMHelperToCMInfoMap;
 #endif // CROSSGEN_COMPILE
+    LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
-    BaseDomain*                         m_pDomain;
     CMINFOLIST                          m_pCMInfoList;
 #ifdef FEATURE_COMINTEROP
     OleColorMarshalingInfo*             m_pOleColorInfo;
     UriMarshalingInfo*                  m_pUriInfo;
     EventArgsMarshalingInfo*            m_pEventArgsInfo;
 #endif // FEATURE_COMINTEROP
+    CrstBase*                           m_lock;
 };
 
 struct ItfMarshalInfo;

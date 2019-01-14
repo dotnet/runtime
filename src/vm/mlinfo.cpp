@@ -429,7 +429,7 @@ CustomMarshalerHelper *SetupCustomMarshalerHelper(LPCUTF8 strMarshalerTypeName, 
     EEMarshalingData *pMarshalingData = NULL;
 
     // The assembly is not shared so we use the current app domain's marshaling data.
-    pMarshalingData = GetThread()->GetDomain()->GetMarshalingData();
+    pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
 
     // Retrieve the custom marshaler helper from the EE marshaling data.
     RETURN pMarshalingData->GetCustomMarshalerHelper(pAssembly, hndManagedType, strMarshalerTypeName, cMarshalerTypeNameBytes, strCookie, cCookieStrBytes);
@@ -1072,9 +1072,10 @@ void OleColorMarshalingInfo::operator delete(void *pMem)
 
 #endif // FEATURE_COMINTEROP
 
-EEMarshalingData::EEMarshalingData(BaseDomain *pDomain, LoaderHeap *pHeap, CrstBase *pCrst) :
-    m_pHeap(pHeap),
-    m_pDomain(pDomain)
+EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst) :
+    m_pAllocator(pAllocator),
+    m_pHeap(pAllocator->GetLowFrequencyHeap()),
+    m_lock(pCrst)
 {
     CONTRACTL
     {
@@ -1177,7 +1178,7 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
     TypeHandle hndCustomMarshalerType;
 
     // Create the key that will be used to lookup in the hashtable.
-    EECMHelperHashtableKey Key(cMarshalerTypeNameBytes, strMarshalerTypeName, cCookieStrBytes, strCookie, hndManagedType.GetInstantiation());
+    EECMHelperHashtableKey Key(cMarshalerTypeNameBytes, strMarshalerTypeName, cCookieStrBytes, strCookie, hndManagedType.GetInstantiation(), pAssembly);
 
     // Lookup the custom marshaler helper in the hashtable.
     if (m_CMHelperHashtable.GetValue(&Key, (HashDatum*)&pCMHelper))
@@ -1209,15 +1210,14 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
 
 
         // Create the custom marshaler info in the specified heap.
-        pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pDomain, hndCustomMarshalerType, hndManagedType, strCookie, cCookieStrBytes);
+        pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pAllocator, hndCustomMarshalerType, hndManagedType, strCookie, cCookieStrBytes);
 
         // Create the custom marshaler helper in the specified heap.
         pNewCMHelper = new (m_pHeap) NonSharedCustomMarshalerHelper(pNewCMInfo);
     }
 
-    // Take the app domain lock before we insert the custom marshaler info into the hashtable.
     {
-        BaseDomain::LockHolder lh(m_pDomain);
+        CrstHolder lock(m_lock);
 
         // Verify that the custom marshaler helper has not already been added by another thread.
         if (m_CMHelperHashtable.GetValue(&Key, (HashDatum*)&pCMHelper))
@@ -1277,15 +1277,14 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(SharedCustomMarsha
     }
 
     // Create the custom marshaler info in the specified heap.
-    pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pDomain, 
+    pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pAllocator, 
                                                    hndCustomMarshalerType, 
                                                    pSharedCMHelper->GetManagedType(), 
                                                    pSharedCMHelper->GetCookieString(), 
                                                    pSharedCMHelper->GetCookieStringByteCount());
 
     {
-        // Take the app domain lock before we insert the custom marshaler info into the hashtable.
-        BaseDomain::LockHolder lh(m_pDomain);
+        CrstHolder lock(m_lock);
 
         // Verify that the custom marshaler info has not already been added by another thread.
         if (m_SharedCMHelperToCMInfoMap.GetValue(pSharedCMHelper, (HashDatum*)&pCMInfo))
