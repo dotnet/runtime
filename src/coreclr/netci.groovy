@@ -221,11 +221,6 @@ class Constants {
             'x64': [
                 'Checked'
             ]
-        ],
-        'Tizen': [
-            'armem': [
-                'Checked'
-            ]
         ]
     ]
 
