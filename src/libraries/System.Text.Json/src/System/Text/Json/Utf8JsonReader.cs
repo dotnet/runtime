@@ -30,6 +30,7 @@ namespace System.Text.Json
         private int _maxDepth;
         private bool _inObject;
         private bool _isNotPrimitive;
+        private char _numberFormat;
         private JsonTokenType _tokenType;
         private JsonTokenType _previousTokenType;
         private JsonReaderOptions _readerOptions;
@@ -130,6 +131,7 @@ namespace System.Text.Json
             _maxDepth = _maxDepth,
             _inObject = _inObject,
             _isNotPrimitive = _isNotPrimitive,
+            _numberFormat = _numberFormat,
             _tokenType = _tokenType,
             _previousTokenType = _previousTokenType,
             _readerOptions = _readerOptions,
@@ -160,6 +162,7 @@ namespace System.Text.Json
             _maxDepth = state._maxDepth == 0 ? JsonReaderState.DefaultMaxDepth : state._maxDepth; // If max depth is not set, revert to the default depth.
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
+            _numberFormat = state._numberFormat;
             _tokenType = state._tokenType;
             _previousTokenType = state._previousTokenType;
             _readerOptions = state._readerOptions;
@@ -900,6 +903,7 @@ namespace System.Text.Json
             // TODO: https://github.com/dotnet/corefx/issues/33294
             Debug.Assert(data.Length > 0);
 
+            _numberFormat = default;
             consumed = 0;
             int i = 0;
 
@@ -977,6 +981,7 @@ namespace System.Text.Json
 
             Debug.Assert(nextByte == 'E' || nextByte == 'e');
             i++;
+            _numberFormat = 'e';
 
             signResult = ConsumeSign(ref data, ref i);
             if (signResult == ConsumeNumberResult.NeedMoreData)
