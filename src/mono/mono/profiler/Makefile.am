@@ -97,11 +97,15 @@ endif
 endif
 endif
 
+if HAVE_STATIC_ZLIB
+zlib_dep = $(STATIC_ZLIB_PATH)
+else
 if HAVE_ZLIB
 # The log profiler uses zlib for output compression when available.
 zlib_dep = -lz
 else
 zlib_dep =
+endif
 endif
 
 # We build a separate, static version of each profiler for use on targets

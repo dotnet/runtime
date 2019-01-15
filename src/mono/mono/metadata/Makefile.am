@@ -158,8 +158,12 @@ libmonoruntime_config_la_CPPFLAGS = $(AM_CPPFLAGS) -DMONO_BINDIR=\"$(bindir)/\" 
 #
 libmonoruntime_support_la_SOURCES = $(support_sources)
 libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)
+if HAVE_STATIC_ZLIB
+libmonoruntime_support_la_LDFLAGS = $(STATIC_ZLIB_PATH)
+else
 if HAVE_ZLIB
 libmonoruntime_support_la_LDFLAGS = -lz
+endif
 endif
 
 #

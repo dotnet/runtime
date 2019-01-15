@@ -15,6 +15,13 @@
  */
 
 #include <config.h>
+
+#if defined(TARGET_WIN32) || defined(HOST_WIN32)
+/* Needed for _ecvt_s */
+#define MINGW_HAS_SECURE_API 1
+#include <stdio.h>
+#endif
+
 #include <glib.h>
 #include <stdarg.h>
 #include <string.h>
@@ -31,6 +38,7 @@
 #if defined (HAVE_WCHAR_H)
 #include <wchar.h>
 #endif
+
 #include "mono/metadata/icall-internals.h"
 #include "mono/utils/mono-membar.h"
 #include <mono/metadata/object.h>
