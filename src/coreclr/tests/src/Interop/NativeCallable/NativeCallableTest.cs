@@ -32,6 +32,7 @@ public class Program
             NegativeTest_ViaDelegate();
             NegativeTest_NonBlittable();
             NegativeTest_GenericArguments();
+            NativeCallableViaUnmanagedCalli();
 
             if (args.Length != 0 && args[0].Equals("calli"))
             {
@@ -253,5 +254,53 @@ public class Program
         // To observe the crashing behavior set a breakpoint in the ReversePInvokeBadTransition() function
         // located in src/vm/dllimportcallback.cpp.
         testNativeMethod();
+    }
+
+    [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+    public static int CallbackViaUnmanagedCalli(int val)
+    {
+        return DoubleImpl(val);
+    }
+
+    public static void NativeCallableViaUnmanagedCalli()
+    {
+        Console.WriteLine($"{nameof(NativeCallableAttribute)} function via calli instruction with unmanaged calling convention.");
+
+        /*
+           void TestNativeCallableViaCalli()
+           {
+                .locals init (native int V_0)
+                IL_0000:  nop
+                IL_0001:  ldftn      int CallbackViaUnmanagedCalli(int32)
+                IL_0007:  stloc.0
+
+                IL_0008:  ldc.i4     1234
+                IL_000d:  ldloc.0
+                IL_000e:  calli      int32 stdcall(int32)
+
+                IL_0014:  ret
+           }
+        */
+        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallableViaUnmanagedCalli", typeof(int), null, typeof(Program).Module);
+        ILGenerator il = testNativeCallable.GetILGenerator();
+        il.DeclareLocal(typeof(IntPtr));
+        il.Emit(OpCodes.Nop);
+
+        // Get native function pointer of the callback
+        il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod(nameof(CallbackViaUnmanagedCalli)));
+        il.Emit(OpCodes.Stloc_0);
+
+        int n = 1234;
+
+        il.Emit(OpCodes.Ldc_I4, n);
+        il.Emit(OpCodes.Ldloc_0);
+        il.EmitCalli(OpCodes.Calli, CallingConvention.StdCall, typeof(int), new Type[] { typeof(int) });
+
+        il.Emit(OpCodes.Ret);
+
+        IntNativeMethodInvoker testNativeMethod = (IntNativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(IntNativeMethodInvoker));
+
+        int expected = DoubleImpl(n);
+        Assert.AreEqual(expected, testNativeMethod());
     }
 }
