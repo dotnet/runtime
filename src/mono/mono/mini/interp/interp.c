@@ -819,15 +819,6 @@ fill_in_trace (MonoException *exception, InterpFrame *frame)
 
 #define THROW_EX(exception,ex_ip) THROW_EX_GENERAL ((exception), (ex_ip), FALSE)
 
-/*
- * Its possible for child_frame.ex to contain an unthrown exception, if the transform phase
- * produced one.
- */
-#define CHECK_CHILD_EX(child_frame, ip) do { \
-	if ((child_frame).ex) \
-		THROW_EX ((child_frame).ex, (ip)); \
-	} while (0)
-
 #define EXCEPTION_CHECKPOINT	\
 	do {										\
 		if (*mono_thread_interruption_request_flag () && !mono_threads_is_critical_method (rtm->method)) { \
@@ -3051,8 +3042,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			CHECK_RESUME_STATE (context);
 
-			CHECK_CHILD_EX (child_frame, ip - 2);
-
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
 				*sp = *endsp;
@@ -3121,8 +3110,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			CHECK_RESUME_STATE (context);
 
-			CHECK_CHILD_EX (child_frame, ip - 2);
-
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
 				*sp = *endsp;
@@ -3173,8 +3160,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			interp_exec_method (&child_frame, context);
 
 			CHECK_RESUME_STATE (context);
-
-			CHECK_CHILD_EX (child_frame, ip - 2);
 
 			if (!is_void) {
 				/* need to handle typedbyref ... */
@@ -4203,7 +4188,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			interp_exec_method (&child_frame, context);
 
 			CHECK_RESUME_STATE (context);
-			CHECK_CHILD_EX (child_frame, ip);
+
 			if (vt)
 				*sp = valuetype_this;
 			else
@@ -4281,7 +4266,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			CHECK_RESUME_STATE (context);
 
-			CHECK_CHILD_EX (child_frame, ip - 2);
 			/*
 			 * a constructor returns void, but we need to return the object we created
 			 */
