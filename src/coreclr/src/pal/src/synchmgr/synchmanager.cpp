@@ -1657,7 +1657,11 @@ namespace CorUnix
         // Call the termination request handler if one is registered.
         if (g_terminationRequestHandler != NULL)
         {
-            g_terminationRequestHandler();
+            // The process will terminate normally by calling exit.
+            // We use an exit code of '128 + signo'. This is a convention used in popular
+            // shells to calculate an exit code when the process was terminated by a signal.
+            // This is also used by the Process.ExitCode implementation.
+            g_terminationRequestHandler(128 + SIGTERM);
         }
 
         return 0;
