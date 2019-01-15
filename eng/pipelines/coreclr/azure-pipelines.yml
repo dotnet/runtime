@@ -204,6 +204,7 @@ jobs:
       - build_Linux_musl_x64_release
       - build_Linux_rhel6_x64_release
       - build_Linux_x64_release
+      - build_FreeBSD_x64_release
       - build_OSX_x64_release
       - build_Windows_NT_x64_release
       - build_Windows_NT_x86_release
