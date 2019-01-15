@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices
                 if (RuntimeHelpers.ObjectHasComponentSize(obj))
                 {
                     // The object has a component size, which means it's variable-length, but we already
-                    // checked above that it's not a String. The only remaining option is that it's a T[]
+                    // checked above that it's not a string. The only remaining option is that it's a T[]
                     // or a U[] which is blittable to a T[] (e.g., int[] and uint[]).
 
                     // The array may be prepinned, so remove the high bit from the start index in the line below.

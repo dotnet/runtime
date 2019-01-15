@@ -7,7 +7,7 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class ComSourceInterfacesAttribute : Attribute
     {
-        public ComSourceInterfacesAttribute(String sourceInterfaces)
+        public ComSourceInterfacesAttribute(string sourceInterfaces)
         {
             Value = sourceInterfaces;
         }
@@ -32,6 +32,6 @@ namespace System.Runtime.InteropServices
             Value = sourceInterface1.FullName + "\0" + sourceInterface2.FullName + "\0" + sourceInterface3.FullName + "\0" + sourceInterface4.FullName;
         }
 
-        public String Value { get; }
+        public string Value { get; }
     }
 }
