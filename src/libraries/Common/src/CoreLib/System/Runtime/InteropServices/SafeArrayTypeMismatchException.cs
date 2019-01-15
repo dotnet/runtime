@@ -20,13 +20,13 @@ namespace System.Runtime.InteropServices
             HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
         }
 
-        public SafeArrayTypeMismatchException(String message)
+        public SafeArrayTypeMismatchException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
         }
 
-        public SafeArrayTypeMismatchException(String message, Exception inner)
+        public SafeArrayTypeMismatchException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
