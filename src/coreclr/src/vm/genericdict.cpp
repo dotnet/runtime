@@ -686,8 +686,20 @@ Dictionary::PopulateEntry(
             pBlob = p.GetPtr();
         }
 
-        CORCOMPILE_FIXUP_BLOB_KIND signatureKind = (CORCOMPILE_FIXUP_BLOB_KIND)CorSigUncompressData(pBlob);
-        switch (signatureKind)
+        BYTE signatureKind = *pBlob++;
+        if (signatureKind & ENCODE_MODULE_OVERRIDE)
+        {
+            DWORD moduleIndex = CorSigUncompressData(pBlob);
+            Module * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
+            if (pInfoModule == pModule)
+            {
+                pInfoModule = pSignatureModule;
+            }
+            _ASSERTE(pInfoModule == pSignatureModule);
+            signatureKind &= ~ENCODE_MODULE_OVERRIDE;
+        }
+
+        switch ((CORCOMPILE_FIXUP_BLOB_KIND) signatureKind)
         {
             case ENCODE_DECLARINGTYPE_HANDLE:   kind = DeclaringTypeHandleSlot; break;
             case ENCODE_TYPE_HANDLE:            kind = TypeHandleSlot; break;

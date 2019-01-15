@@ -21,6 +21,7 @@ bool g_fNGenWinMDResilient;
 
 #ifdef FEATURE_READYTORUN_COMPILER
 bool g_fReadyToRunCompilation;
+bool g_fLargeVersionBubble;
 #endif
 
 static bool s_fNGenNoMetaData;
@@ -110,6 +111,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 
 #ifdef FEATURE_READYTORUN_COMPILER
         g_fReadyToRunCompilation = !!(dwFlags & NGENWORKER_FLAGS_READYTORUN);
+        g_fLargeVersionBubble = !!(dwFlags & NGENWORKER_FLAGS_LARGEVERSIONBUBBLE);
 #endif
 
         if (pLogger != NULL)
