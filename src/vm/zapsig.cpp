@@ -760,7 +760,7 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
                         fValidAssemblyRef = FALSE;
                     }
                 }
-                
+
                 if (fValidAssemblyRef)
                 {
                     pAssembly = fromModule->GetAssemblyIfLoaded(
@@ -803,11 +803,11 @@ TypeHandle ZapSig::DecodeType(Module *pEncodeModuleContext,
     TypeHandle th = p.GetTypeHandleThrowing(pInfoModule,
                                             &typeContext,
                                             ClassLoader::LoadTypes,
-                                            level,                                            
+                                            level,
                                             level < CLASS_LOADED, // For non-full loads, drop a level when loading generic arguments
                                             NULL,
                                             pZapSigContext);
-                                            
+
     return th;
 }
 
@@ -1127,7 +1127,11 @@ BOOL ZapSig::EncodeMethod(
     TypeHandle ownerType;
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
+
+    // For methods encoded outside of the version bubble, we use pResolvedToken which describes the metadata token from which the method originated
+    // For tokens inside the version bubble we are not constrained by the contents of pResolvedToken and as such we skip this codepath
+    // FUTURE: This condition should likely be changed or reevaluated once support for smaller version bubbles is implemented.
+    if (IsReadyToRunCompilation() && (!IsLargeVersionBubbleEnabled() || !pMethod->GetModule()->IsInCurrentVersionBubble()))
     {
         if (pResolvedToken == NULL)
         {
@@ -1186,7 +1190,9 @@ BOOL ZapSig::EncodeMethod(
     }
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    if (IsReadyToRunCompilation())
+
+    // FUTURE: This condition should likely be changed or reevaluated once support for smaller version bubbles is implemented.
+    if (IsReadyToRunCompilation() && (!IsLargeVersionBubbleEnabled() || !pMethod->GetModule()->IsInCurrentVersionBubble()))
     {
         if (pConstrainedResolvedToken != NULL)
         {
@@ -1202,7 +1208,6 @@ BOOL ZapSig::EncodeMethod(
             // GetSvcLogger()->Printf(W("ReadyToRun: Method reference outside of current version bubble cannot be encoded\n"));
             ThrowHR(E_FAIL);
         }
-        _ASSERTE(pReferencingModule == GetAppDomain()->ToCompilationDomain()->GetTargetModule());
 
         methodToken = pResolvedToken->token;
 
@@ -1312,6 +1317,14 @@ BOOL ZapSig::EncodeMethod(
         if (fEncodeUsingResolvedTokenSpecStreams && pResolvedToken != NULL && pResolvedToken->pTypeSpec != NULL)
         {
             _ASSERTE(pResolvedToken->cbTypeSpec > 0);
+
+            if (IsReadyToRunCompilation() && pMethod->GetModule()->IsInCurrentVersionBubble() && pInfoModule != (Module *) pResolvedToken->tokenScope)
+            {
+                pSigBuilder->AppendElementType((CorElementType)ELEMENT_TYPE_MODULE_ZAPSIG);
+                DWORD index = (*((EncodeModuleCallback)pfnEncodeModule))(pEncodeModuleContext, (Module *) pResolvedToken->tokenScope);
+                pSigBuilder->AppendData(index);
+            }
+
             pSigBuilder->AppendBlob((PVOID)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
         }
         else
