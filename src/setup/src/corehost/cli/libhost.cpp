@@ -60,7 +60,7 @@ host_mode_t detect_operating_mode(const host_startup_info_t& host_info)
         append_path(&deps_in_dotnet_root, deps_filename.c_str());
         bool deps_exists = pal::file_exists(deps_in_dotnet_root);
 
-        trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%d] and checking if [%s] file present=[%d]"),
+        trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
             host_info.dotnet_root.c_str(), deps_filename.c_str(), deps_exists);
 
         // Name of runtimeconfig file; since no path is included here the check is in the current working directory
