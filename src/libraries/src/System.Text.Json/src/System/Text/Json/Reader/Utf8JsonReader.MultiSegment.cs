@@ -1560,7 +1560,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
 
-            if (marker == JsonConstants.ListSeperator)
+            if (marker == JsonConstants.ListSeparator)
             {
                 _consumed++;
                 _bytePositionInLine++;
@@ -1669,7 +1669,7 @@ namespace System.Text.Json
 
             Debug.Assert(first != JsonConstants.Slash);
 
-            if (first == JsonConstants.ListSeperator)
+            if (first == JsonConstants.ListSeparator)
             {
                 _consumed++;
                 _bytePositionInLine++;
@@ -1954,7 +1954,7 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
-            else if (marker == JsonConstants.ListSeperator)
+            else if (marker == JsonConstants.ListSeparator)
             {
                 _consumed++;
                 _bytePositionInLine++;

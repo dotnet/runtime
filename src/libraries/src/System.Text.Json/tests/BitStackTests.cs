@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json;
 using Xunit;
 
-namespace System.Text.JsonTests
+namespace System.Text.Json.Tests
 {
     public static partial class BitStackTests
     {
-        private static Random s_random = new Random(42);
+        private static readonly Random s_random = new Random(42);
 
         [Fact]
         public static void DefaultBitStack()
