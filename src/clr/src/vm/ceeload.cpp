@@ -5603,7 +5603,8 @@ mdTypeRef Module::LookupTypeRefByMethodTable(MethodTable *pMT)
     {
         if (pMT->GetClass()->IsEquivalentType())
         {
-            GetSvcLogger()->Log(W("ReadyToRun: Type reference to equivalent type cannot be encoded\n"));
+            if (g_CorCompileVerboseLevel >= CORCOMPILE_VERBOSE)
+                GetSvcLogger()->Log(W("ReadyToRun: Type reference to equivalent type cannot be encoded\n"));
             ThrowHR(E_NOTIMPL);
         }
 
