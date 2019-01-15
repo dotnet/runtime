@@ -488,10 +488,10 @@ CheckCardTable
         ldr      x12,  wbs_ephemeral_low
         cbz      x12,  SkipEphemeralCheck
         cmp      x15,  x12
+        blo      Exit
 
         ldr      x12,  wbs_ephemeral_high
-        ccmphs   x15,  x12, #0x2
-
+        cmp      x15,  x12
         bhi      Exit
 
 SkipEphemeralCheck
