@@ -676,6 +676,10 @@
                 {
                     "name": "System.Drawing.Tests.Graphics_DrawBezierTests.DrawBezier_Point",
                     "reason": "https://github.com/dotnet/corefx/issues/30180"
+                },
+                {
+                    "name": "System.Drawing.Tests.IconTests.ExtractAssociatedIcon_InvalidFilePath_ThrowsArgumentException",
+                    "reason": "https://github.com/dotnet/corefx/issues/34122"
                 }
             ]
         }
