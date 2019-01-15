@@ -109,11 +109,6 @@ struct MonoJitTlsData {
 	gboolean orig_ex_ctx_set;
 
 	/* 
-	 * Stores if we need to run a chained exception in Windows.
-	 */
-	gboolean mono_win_chained_exception_needs_run;
-
-	/* 
 	 * The current exception in flight
 	 */
 	guint32 thrown_exc;

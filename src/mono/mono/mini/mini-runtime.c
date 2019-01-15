@@ -3667,7 +3667,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 {
 #ifdef HOST_WIN32
-	gpointer const debug_fault_addr = (gpointer)_info->ExceptionRecord->ExceptionInformation [1];
+	gpointer const debug_fault_addr = (gpointer)MONO_SIG_HANDLER_GET_INFO () ->ep->ExceptionRecord->ExceptionInformation [1];
 #elif defined (HAVE_SIG_INFO)
 	gpointer const debug_fault_addr = MONO_SIG_HANDLER_GET_INFO ()->si_addr;
 #else

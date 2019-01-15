@@ -255,8 +255,8 @@ mono_runtime_cleanup_handlers (void)
 gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
-	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	jit_tls->mono_win_chained_exception_needs_run = TRUE;
+	/* Set to FALSE to indicate that vectored exception handling should continue to look for handler */
+	MONO_SIG_HANDLER_GET_INFO ()->handled = FALSE;
 	return TRUE;
 }
 
