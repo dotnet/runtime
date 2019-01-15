@@ -62,50 +62,52 @@ if /i "%1" == "-h"    goto Usage
 if /i "%1" == "/help" goto Usage
 if /i "%1" == "-help" goto Usage
 
-if /i "%1" == "x64"                   (set __BuildArch=x64&shift&goto Arg_Loop)
-if /i "%1" == "x86"                   (set __BuildArch=x86&shift&goto Arg_Loop)
-if /i "%1" == "arm"                   (set __BuildArch=arm&shift&goto Arg_Loop)
-if /i "%1" == "arm64"                 (set __BuildArch=arm64&shift&goto Arg_Loop)
-
-if /i "%1" == "debug"                 (set __BuildType=Debug&shift&goto Arg_Loop)
-if /i "%1" == "release"               (set __BuildType=Release&shift&goto Arg_Loop)
-if /i "%1" == "checked"               (set __BuildType=Checked&shift&goto Arg_Loop)
-
-if /i "%1" == "vs2015"                (set __VSVersion=%1&shift&goto Arg_Loop)
-if /i "%1" == "vs2017"                (set __VSVersion=%1&shift&goto Arg_Loop)
-
-if /i "%1" == "TestEnv"               (set __TestEnv=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "AgainstPackages"       (set __AgainstPackages=1&shift&goto Arg_Loop)
-if /i "%1" == "sequential"            (set __Sequential=1&shift&goto Arg_Loop)
-if /i "%1" == "crossgen"              (set __DoCrossgen=1&shift&goto Arg_Loop)
-if /i "%1" == "crossgenaltjit"        (set __DoCrossgen=1&set __CrossgenAltJit=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "longgc"                (set __LongGCTests=1&shift&goto Arg_Loop)
-if /i "%1" == "gcsimulator"           (set __GCSimulatorTests=1&shift&goto Arg_Loop)
-if /i "%1" == "jitstress"             (set COMPlus_JitStress=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "jitstressregs"         (set COMPlus_JitStressRegs=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "jitminopts"            (set COMPlus_JITMinOpts=1&shift&goto Arg_Loop)
-if /i "%1" == "jitforcerelocs"        (set COMPlus_ForceRelocs=1&shift&goto Arg_Loop)
-if /i "%1" == "jitdisasm"             (set __JitDisasm=1&shift&goto Arg_Loop)
-if /i "%1" == "ilasmroundtrip"        (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
-if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
-if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&shift&goto Arg_Loop)
-if /i "%1" == "buildxunitwrappers"    (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
-if /i "%1" == "printlastresultsonly"  (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
-if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
-if /i "%1" == "CoreFXTests"           (set __CoreFXTests=true&shift&goto Arg_Loop)
-if /i "%1" == "CoreFXTestsAll"        (set __CoreFXTests=true&set __CoreFXTestsRunAllAvailable=true&shift&goto Arg_Loop)
-if /i "%1" == "CoreFXTestList"        (set __CoreFXTests=true&set __CoreFXTestList=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
-if /i "%1" == "link"                  (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "x64"                                     (set __BuildArch=x64&shift&goto Arg_Loop)
+if /i "%1" == "x86"                                     (set __BuildArch=x86&shift&goto Arg_Loop)
+if /i "%1" == "arm"                                     (set __BuildArch=arm&shift&goto Arg_Loop)
+if /i "%1" == "arm64"                                   (set __BuildArch=arm64&shift&goto Arg_Loop)
+            
+if /i "%1" == "debug"                                   (set __BuildType=Debug&shift&goto Arg_Loop)
+if /i "%1" == "release"                                 (set __BuildType=Release&shift&goto Arg_Loop)
+if /i "%1" == "checked"                                 (set __BuildType=Checked&shift&goto Arg_Loop)
+            
+if /i "%1" == "vs2015"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
+if /i "%1" == "vs2017"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
+            
+if /i "%1" == "TestEnv"                                 (set __TestEnv=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "AgainstPackages"                         (set __AgainstPackages=1&shift&goto Arg_Loop)
+if /i "%1" == "sequential"                              (set __Sequential=1&shift&goto Arg_Loop)
+if /i "%1" == "crossgen"                                (set __DoCrossgen=1&shift&goto Arg_Loop)
+if /i "%1" == "crossgenaltjit"                          (set __DoCrossgen=1&set __CrossgenAltJit=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "longgc"                                  (set __LongGCTests=1&shift&goto Arg_Loop)
+if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
+if /i "%1" == "jitstress"                               (set COMPlus_JitStress=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "jitstressregs"                           (set COMPlus_JitStressRegs=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "jitminopts"                              (set COMPlus_JITMinOpts=1&shift&goto Arg_Loop)
+if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs=1&shift&goto Arg_Loop)
+if /i "%1" == "jitdisasm"                               (set __JitDisasm=1&shift&goto Arg_Loop)
+if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
+if /i "%1" == "GenerateLayoutOnly"                      (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
+if /i "%1" == "skipgeneratelayout"                      (set __SkipGenerateLayout=1&shift&goto Arg_Loop)
+if /i "%1" == "buildxunitwrappers"                      (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
+if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
+if /i "%1" == "PerfTests"                               (set __PerfTests=true&shift&goto Arg_Loop)
+if /i "%1" == "CoreFXTests"                             (set __CoreFXTests=true&shift&goto Arg_Loop)
+if /i "%1" == "CoreFXTestsAll"                          (set __CoreFXTests=true&set __CoreFXTestsRunAllAvailable=true&shift&goto Arg_Loop)
+if /i "%1" == "CoreFXTestList"                          (set __CoreFXTests=true&set __CoreFXTestList=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "runcrossgentests"                        (set RunCrossGen=true&shift&goto Arg_Loop)
+REM This test feature is currently intentionally undocumented
+if /i "%1" == "runlargeversionbubblecrossgentests"      (set RunCrossGen=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
+if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 REM tieredcompilation is on by default now, but setting this environment variable is harmless and I didn't want to break any automation that might be using it just yet
-if /i "%1" == "tieredcompilation"     (set COMPLUS_TieredCompilation=1&shift&goto Arg_Loop)
-if /i "%1" == "gcname"                (set COMPlus_GCName=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "timeout"               (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "altjitarch"            (set __AltJitArch=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "tieredcompilation"                       (set COMPLUS_TieredCompilation=1&shift&goto Arg_Loop)
+if /i "%1" == "gcname"                                  (set COMPlus_GCName=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "altjitarch"                              (set __AltJitArch=%2&shift&shift&goto Arg_Loop)
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
-if /i "%1" == "gcstresslevel"         (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
-if /i "%1" == "collectdumps"          (set __CollectDumps=true&shift&goto Arg_Loop)
+if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
+if /i "%1" == "collectdumps"                            (set __CollectDumps=true&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -206,6 +208,10 @@ if defined RunCrossGen (
 
 if defined __DoCrossgen (
     set __RuntestPyArgs=%__RuntestPyArgs% --precompile_core_root
+)
+
+if defined CrossgenLargeVersionBubble (
+    set __RuntestPyArgs=%__RuntestPyArgs% --large_version_bubble
 )
 
 if defined __PrintLastResultsOnly (

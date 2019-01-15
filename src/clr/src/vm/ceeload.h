@@ -2739,6 +2739,7 @@ public:
     BYTE *GetNativeFixupBlobData(RVA fixup);
 
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
+    IMDInternalImport *GetNativeAssemblyImportIfLoaded();
 
     BOOL FixupNativeEntry(CORCOMPILE_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup);
 

@@ -812,6 +812,7 @@ extern CEECompileInfo *g_pCEECompileInfo;
 
 #ifdef FEATURE_READYTORUN_COMPILER
 extern bool g_fReadyToRunCompilation;
+extern bool g_fLargeVersionBubble;
 #endif
 
 // Returns true if this is NGen compilation process.

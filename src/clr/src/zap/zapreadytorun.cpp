@@ -254,7 +254,7 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
             resolvedToken.token = token;
             resolvedToken.hClass = pMethod->GetClassHandle();
             resolvedToken.hMethod = pMethod->GetHandle();
-            GetCompileInfo()->EncodeMethod(module, pMethod->GetHandle(), &sigBuilder, NULL, NULL, &resolvedToken);
+            GetCompileInfo()->EncodeMethod(module, pMethod->GetHandle(), &sigBuilder, m_pImportTable, EncodeModuleHelper, &resolvedToken);
 
             DWORD cbBlob;
             PVOID pBlob = sigBuilder.GetSignature(&cbBlob);
@@ -326,6 +326,16 @@ public:
         }
     }
 };
+// At ngen time Zapper::CompileModule PlaceFixups called from
+//     code:ZapSig.GetSignatureForTypeHandle
+//
+/*static*/ DWORD ZapImage::EncodeModuleHelper(LPVOID compileContext,
+    CORINFO_MODULE_HANDLE referencedModule)
+{
+    _ASSERTE(!IsReadyToRunCompilation() || IsLargeVersionBubbleEnabled());
+    ZapImportTable * pTable = (ZapImportTable *)compileContext;
+    return pTable->GetIndexOfModule(referencedModule);
+}
 
 void ZapImage::OutputDebugInfoForReadyToRun()
 {
@@ -394,6 +404,14 @@ void ZapImage::OutputProfileDataForReadyToRun()
     if (m_pInstrumentSection != nullptr)
     {
         GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_PROFILEDATA_INFO, m_pInstrumentSection);
+    }
+}
+
+void ZapImage::OutputManifestMetadataForReadyToRun()
+{
+    if (m_pMetaDataSection != nullptr)
+    {
+        GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_MANIFEST_METADATA, m_pMetaDataSection);
     }
 }
 

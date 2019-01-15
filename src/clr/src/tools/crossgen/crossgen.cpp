@@ -152,6 +152,9 @@ void PrintUsageHelper()
 #ifdef FEATURE_READYTORUN_COMPILER
        W("    /ReadyToRun          - Generate images resilient to the runtime and\n")
        W("                           dependency versions\n")
+       W("    /LargeVersionBubble  - Generate image with a version bubble including all\n")
+       W("                           input assemblies\n")
+
 #endif
 #ifdef FEATURE_WINMD_RESILIENT
        W(" WinMD Parameters\n")
@@ -422,6 +425,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     LPWSTR pwzSearchPathForManagedPDB = NULL;
     LPCWSTR pwzOutputFilename = NULL;
     LPCWSTR pwzPublicKeys = nullptr;
+    bool fLargeVersionBubbleSwitch = false;
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     LPCWSTR pwszCLRJITPath = nullptr;
@@ -517,6 +521,11 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         else if (MatchParameter(*argv, W("FragileNonVersionable")))
         {
             dwFlags &= ~NGENWORKER_FLAGS_READYTORUN;
+        }
+        else if (MatchParameter(*argv, W("LargeVersionBubble")))
+        {
+            dwFlags |= NGENWORKER_FLAGS_LARGEVERSIONBUBBLE;
+            fLargeVersionBubbleSwitch = true;
         }
 #endif
         else if (MatchParameter(*argv, W("NoMetaData")))

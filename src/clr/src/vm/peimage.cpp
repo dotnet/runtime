@@ -460,7 +460,7 @@ IMDInternalImport* PEImage::GetNativeMDImport(BOOL loadAllowed)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasNativeHeader());
+        PRECONDITION(HasNativeHeader() || HasReadyToRunHeader());
         if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
         if (loadAllowed) THROWS;                         else NOTHROW;
         if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
@@ -485,7 +485,7 @@ void PEImage::OpenNativeMDImport()
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasNativeHeader());
+        PRECONDITION(HasNativeHeader() || HasReadyToRunHeader());
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
