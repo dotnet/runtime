@@ -21,6 +21,11 @@ jobs:
     name: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
     displayName: ${{ format('Build {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
+    # FreeBSD builds are disabled in the public project because we
+    # don't have any FreeBSD agents in the public pool.
+    ${{ if and(eq(parameters.osGroup, 'FreeBSD'), eq(variables['System.TeamProject'], 'public')) }}:
+      condition: false
+
     # Run all steps in the container.
     # Note that the containers are resources defined in azure-pipelines.yml
     containerName: ${{ parameters.containerName }}
@@ -39,6 +44,12 @@ jobs:
     - ${{ if in(parameters.osIdentifier, 'Linux_rhel6', 'Linux_musl') }}:
       - name: portableBuildArg
         value: '-portablebuild=false'
+    - name: clangArg
+      value: ''
+    # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
+    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+      - name: clangArg
+        value: '-clang6.0'
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
       - name: dotnetfeedUrl
@@ -54,8 +65,9 @@ jobs:
     steps:
 
     # Install native dependencies
-    #
-    # This is only required for non-docker builds.
+    # Linux builds use docker images with dependencies preinstalled,
+    # and FreeBSD builds use a build agent with dependencies
+    # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: sh eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
@@ -66,8 +78,13 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build.sh $(buildConfig) $(archType) $(crossArg) -skiptests -skipnuget
+      - script: ./build.sh $(buildConfig) $(archType) $(crossArg) -skiptests -skipnuget $(clangArg)
         displayName: Build product
+        ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+          env:
+            # init-tools.sh extracts an SDK from here to the Tools/dotnetcli folder instead of trying to restore it.
+            # Once we are using Arcade, use DotNetCoreSdkDir instead, as we do below.
+            DotNetBootstrapCliTarPath: /dotnet-sdk-freebsd-x64.tar
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # TODO: IBCOptimize? EnforcePGO? pass an OfficialBuildId? SignType? file logging parameters?
       - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -skiptests -skipbuildpackages
@@ -117,11 +134,18 @@ jobs:
           displayName: Build packages
         - script: ./eng/common/build.sh /p:DotNetPublishToBlobFeed=true --ci --restore --projects $(Build.SourcesDirectory)/eng/empty.proj
           displayName: Restore blob feed tasks
-        - script: ./eng/common/msbuild.sh --ci src/publishwitharcade.proj /p:__BuildType=$(buildConfigUpper) /p:__BuildArch=$(archType) /p:OSIdentifier=$(osIdentifier) /p:AzureFeedUrl=$(dotnetfeedUrl) /p:AzureAccountKey=$(dotnetfeedPAT)
+          ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+            env:
+              # Arcade uses this SDK instead of trying to restore one.
+              DotNetCoreSdkDir: /usr/local/dotnet
+        - script: ./eng/common/msbuild.sh --ci src/publishwitharcade.proj /p:__BuildType=$(buildConfigUpper) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osIdentifier) /p:AzureFeedUrl=$(dotnetfeedUrl) /p:AzureAccountKey=$(dotnetfeedPAT)
           displayName: Publish packages to blob feed
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
-            NUGET_PACKAGES: $(Build.SourcesDirectory)/.packages 
+            NUGET_PACKAGES: $(Build.SourcesDirectory)/.packages
+            ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+              # Arcade uses this SDK instead of trying to restore one.
+              DotNetCoreSdkDir: /usr/local/dotnet
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         # TODO: pass publish feed url and access token in from the internal pipeline
         - script: build-packages.cmd -BuildArch=$(archType) -BuildType=$(buildConfigUpper) -OfficialBuildId=$(Build.BuildNumber)

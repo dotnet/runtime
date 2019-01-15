@@ -76,6 +76,17 @@ jobs:
     helixQueuesInternal: 'Debian.9.Amd64,Ubuntu.1604.Amd64,Ubuntu.1804.Amd64,Centos.7.Amd64,Fedora.28.Amd64,RedHat.7.Amd64'
     ${{ insert }}: ${{ parameters.jobParameters }}
 
+# FreeBSD
+
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: x64
+    osGroup: FreeBSD
+    osIdentifier: FreeBSD
+    # There are no FreeBSD helix queues, so we don't run tests at the moment.
+    ${{ insert }}: ${{ parameters.jobParameters }}
+
 # macOS x64
 
 - template: ${{ parameters.jobTemplate }}

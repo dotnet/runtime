@@ -43,7 +43,7 @@ jobs:
     - group: DotNet-HelixApi-Access
     # Map template parameters to command line arguments
     - ${{ if eq(parameters.priority, '1') }}:
-      - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         - name: priorityArg
           value: 'priority1'
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -63,7 +63,11 @@ jobs:
     # TODO: Enable crossgen in build-test.sh. It currently doesn't
     # accept a crossgen arg, so disable the macos/linux crossgen test
     # build jobs.
-    ${{ if and(eq(parameters.crossgen, 'true'), or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX'))) }}:
+    ${{ if and(eq(parameters.crossgen, 'true'), in(parameters.osGroup, 'Linux', 'OSX')) }}:
+      condition: false
+
+    # FreeBSD test jobs are disabled since we don't have any FreeBSD helix queues.
+    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
       condition: false
 
     # Test job depends on the corresponding build job
@@ -84,7 +88,7 @@ jobs:
 
 
     # Download product build from pipeline artifact storage
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - task: DownloadPipelineArtifact@0
         displayName: Download product build pipeline artifact
         inputs:
