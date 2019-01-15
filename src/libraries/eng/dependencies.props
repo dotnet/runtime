@@ -11,8 +11,6 @@
   <PropertyGroup>
     <CoreFxCurrentRef>c9274882c2f1e70586d6bffd6edb91833cc41ebd</CoreFxCurrentRef>
     <CoreClrCurrentRef>c9274882c2f1e70586d6bffd6edb91833cc41ebd</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>56b60e4ef0879b0423542f32a0b87779b4236453</CoreSetupCurrentRef>
-    <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>9ac7399739f61f6e5b5a159b000a71006641a751</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>9ac7399739f61f6e5b5a159b000a71006641a751</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
@@ -39,9 +37,6 @@
     <ProjectNTfsExpectedPrerelease>beta-27311-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-27311-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27311-00</ProjectNTfsTestILCPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview-27218-01</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview-27218-01</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27218-01</MicrosoftNETCoreAppPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
@@ -93,14 +88,6 @@
     <RemoteDependencyBuildInfo Include="CoreClr">
       <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="CoreSetup">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)core-setup/$(DependencyBranch)</BuildInfoPath>
-      <CurrentRef>$(CoreSetupCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="External">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)projectk-tfs/$(DependencyBranch)</BuildInfoPath>
-      <CurrentRef>$(ExternalCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="Sni">
       <BuildInfoPath>$(BaseDotNetBuildInfo)sni/$(DependencyBranch)</BuildInfoPath>
@@ -181,21 +168,6 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion</ElementName>
       <PackageId>runtime.win-x64.runtime.native.System.Data.SqlClient.sni</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="CoreSetup">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>MicrosoftNETCoreDotNetHostPackageVersion</ElementName>
-      <PackageId>Microsoft.NETCore.DotNetHost</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="CoreSetup">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>MicrosoftNETCoreDotNetHostPolicyPackageVersion</ElementName>
-      <PackageId>Microsoft.NETCore.DotNetHostPolicy</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="CoreSetup">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>MicrosoftNETCoreAppPackageVersion</ElementName>
-      <PackageId>Microsoft.NETCore.App</PackageId>
     </XmlUpdateStep>
     <XmlUpdateStep Include="BuildTools">
       <Path>$(MSBuildThisFileFullPath)</Path>

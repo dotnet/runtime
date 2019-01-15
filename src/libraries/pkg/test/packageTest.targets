@@ -9,6 +9,7 @@
 
   <Import Project="tools\Packaging.common.targets" />
   <Import Project="tools\dependencies.props" />
+  <Import Project="tools\eng\versions.props" />
   <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets" />
   <Import Project="frameworkSettings\$(TargetFramework)\*.targets" />
   <Import Project="packageSettings\$(TestPackageId)\*.targets" />
