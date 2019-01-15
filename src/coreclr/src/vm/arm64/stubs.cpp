@@ -1111,9 +1111,6 @@ void InitJITHelpers1()
 
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
-#ifndef FEATURE_PAL // TODO-ARM64-WINDOWS #13592
-EXTERN_C void JIT_UpdateWriteBarrierState(bool) {}
-#endif
 
 #else
 EXTERN_C void JIT_UpdateWriteBarrierState(bool) {}
