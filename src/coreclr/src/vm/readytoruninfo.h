@@ -43,6 +43,7 @@ class ReadyToRunInfo
     NativeFormat::NativeArray       m_methodDefEntryPoints;
     NativeFormat::NativeHashtable   m_instMethodEntryPoints;
     NativeFormat::NativeHashtable   m_availableTypesHashtable;
+    NativeFormat::NativeHashtable   m_pMetaDataHashtable;
 
     Crst                            m_Crst;
     PtrHashMap                      m_entryPointToMethodDescMap;

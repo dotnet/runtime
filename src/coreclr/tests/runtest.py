@@ -122,6 +122,7 @@ parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", de
 parser.add_argument("--jitdisasm", dest="jitdisasm", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen_tests", dest="run_crossgen_tests", action="store_true", default=False)
+parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--precompile_core_root", dest="precompile_core_root", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
@@ -968,6 +969,7 @@ def run_tests(host_os,
               is_ilasm=False,
               is_illink=False,
               run_crossgen_tests=False,
+              large_version_bubble=False,
               run_sequential=False,
               limited_core_dumps=False):
     """ Run the coreclr tests
@@ -1027,6 +1029,10 @@ def run_tests(host_os,
         print("Running tests R2R")
         print("Setting RunCrossGen=true")
         os.environ["RunCrossGen"] = "true"
+
+    if large_version_bubble:
+        print("Large Version Bubble enabled")
+        os.environ["LargeVersionBubble"] = "true"
 
     if gc_stress:
         print("Running GCStress, extending timeout to 120 minutes.")
@@ -2243,6 +2249,7 @@ def do_setup(host_os,
                      is_ilasm=unprocessed_args.ilasmroundtrip,
                      is_illink=unprocessed_args.il_link, 
                      run_crossgen_tests=unprocessed_args.run_crossgen_tests,
+                     large_version_bubble=unprocessed_args.large_version_bubble,
                      run_sequential=unprocessed_args.sequential,
                      limited_core_dumps=unprocessed_args.limited_core_dumps)
 

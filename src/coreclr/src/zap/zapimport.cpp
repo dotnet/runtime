@@ -329,6 +329,7 @@ ZapGenericSignature * ZapImportTable::GetGenericSignature(PVOID signature, BOOL 
 /*static*/ DWORD ZapImportTable::EncodeModuleHelper( LPVOID compileContext,
                                                 CORINFO_MODULE_HANDLE referencedModule)
 {
+    _ASSERTE(!IsReadyToRunCompilation() || IsLargeVersionBubbleEnabled());
     ZapImportTable * pTable = (ZapImportTable *)compileContext;
     return pTable->GetIndexOfModule(referencedModule);
 }
@@ -952,6 +953,7 @@ void ZapImportTable::EncodeModule(CORCOMPILE_FIXUP_BLOB_KIND kind, CORINFO_MODUL
 {
     if (module != GetImage()->GetModuleHandle())
     {
+        _ASSERTE(!IsReadyToRunCompilation() || IsLargeVersionBubbleEnabled());
         pSigBuilder->AppendByte(kind | ENCODE_MODULE_OVERRIDE);
         pSigBuilder->AppendData(GetIndexOfModule(module));
     }
@@ -1635,7 +1637,7 @@ ZapImport * ZapImportTable::GetExternalMethodCell(CORINFO_METHOD_HANDLE handle, 
     }
     else
     {
-        EncodeMethod(ENCODE_METHOD_ENTRY, handle, &sigBuilder, pResolvedToken, pConstrainedResolvedToken);
+        EncodeMethod(ENCODE_METHOD_ENTRY, handle, &sigBuilder, pResolvedToken, pConstrainedResolvedToken, false);
     }
 
     return GetImportForSignature<ZapExternalMethodCell, ZapNodeType_ExternalMethodCell>((PVOID)handle, &sigBuilder);
@@ -1777,7 +1779,7 @@ ZapImport * ZapImportTable::GetDictionaryLookupCell(CORCOMPILE_FIXUP_BLOB_KIND k
     if ((kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE) == ENCODE_DICTIONARY_LOOKUP_THISOBJ)
     {
         CORINFO_CLASS_HANDLE hClassContext = GetJitInfo()->getMethodClass(pResolvedToken->tokenContext);
-        GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), hClassContext, &sigBuilder, NULL, NULL);
+        GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), hClassContext, &sigBuilder, this, EncodeModuleHelper);
     }
 
     switch (pLookup->runtimeLookupFlags)
@@ -1795,7 +1797,7 @@ ZapImport * ZapImportTable::GetDictionaryLookupCell(CORCOMPILE_FIXUP_BLOB_KIND k
             {
                 _ASSERTE(pLookup->runtimeLookupArgs != NULL);
                 sigBuilder.AppendData(ENCODE_DECLARINGTYPE_HANDLE);
-                GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), (CORINFO_CLASS_HANDLE)pLookup->runtimeLookupArgs, &sigBuilder, NULL, NULL);
+                GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), (CORINFO_CLASS_HANDLE)pLookup->runtimeLookupArgs, &sigBuilder, this, EncodeModuleHelper);
             }
             else
             {
@@ -1844,8 +1846,7 @@ ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind
 
         sigBuilder.AppendData(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
 
-        GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), handle, &sigBuilder, NULL, NULL);
-
+        GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), handle, &sigBuilder, this, EncodeModuleHelper);
         pImport->SetBlob(GetBlob(&sigBuilder));
     }
 
@@ -1863,7 +1864,7 @@ ZapImport * ZapImportTable::GetDynamicHelperCell(CORCOMPILE_FIXUP_BLOB_KIND kind
     if (delegateType != NULL)
     {
         _ASSERTE((CORCOMPILE_FIXUP_BLOB_KIND)(kind & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE) == ENCODE_DELEGATE_CTOR);
-        GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), delegateType, &sigBuilder, NULL, NULL);
+        GetCompileInfo()->EncodeClass(m_pImage->GetModuleHandle(), delegateType, &sigBuilder, this, EncodeModuleHelper);
     }
 
     return GetImportForSignature<ZapDynamicHelperCell, ZapNodeType_DynamicHelperCell>((void *)(uintptr_t)((kind << 1) | 1), &sigBuilder);

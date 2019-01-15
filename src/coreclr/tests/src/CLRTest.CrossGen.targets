@@ -75,6 +75,7 @@ fi
 
 REM CrossGen Script
 if defined RunCrossGen ( 
+    if defined LargeVersionBubble ( set OptionalArguments=!OptionalArguments! /largeversionbubble)
     set COMPlus_ZapRequire=$(ZapRequire)
     set COMPlus_ZapRequireList=$(MSBuildProjectName)
     if not exist "$(MSBuildProjectName).org" (
@@ -84,8 +85,8 @@ if defined RunCrossGen (
             mkdir IL
             copy $(MSBuildProjectName).exe IL\$(MSBuildProjectName).exe 
             ren $(MSBuildProjectName).exe $(MSBuildProjectName).org
-            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
-            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
+            echo "%_DebuggerFullPath% %CORE_ROOT%\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
+            %_DebuggerFullPath% "%CORE_ROOT%\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths %CORE_ROOT%%3B%25cd%25\IL%3B%25cd%25 /in $(MSBuildProjectName).org /out $(MSBuildProjectName).exe
             set CrossGenStatus=!ERRORLEVEL!
         )
         call :ReleaseLock
