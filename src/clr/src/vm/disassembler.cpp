@@ -79,61 +79,14 @@ namespace
     {
         LIMITED_METHOD_CONTRACT;
 
-        //
-        // Look for the coredistools module next to the hosting binary
-        //
-
-        DWORD result = WszGetModuleFileName(nullptr, libPath);
-        if (result == 0)
-        {
-            DISPLAYERROR(
-                W("GetModuleFileName failed, function 'DisasmInstruction': error %u\n"),
-                GetLastError());
-            return nullptr;
-        }
-
+        LPCWSTR sysDirectory = GetInternalSystemDirectory();
         LPCWSTR libFileName = MAKEDLLNAME(W("coredistools"));
-        PathString::Iterator iter = libPath.End();
-        if (libPath.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W))
-        {
-            libPath.Truncate(++iter);
-            libPath.Append(libFileName);
-        }
-        else
-        {
-            _ASSERTE(false && "unreachable");
-        }
+
+        // Look for the coredistools module next to the clr binary
+        libPath.AppendPrintf(W("%s%s"), sysDirectory, libFileName);
 
         LPCWSTR libraryName = libPath.GetUnicode();
-        HMODULE libraryHandle = CLRLoadLibrary(libraryName);
-        if (libraryHandle != nullptr)
-            return libraryHandle;
-
-        DISPLAYERROR(W("LoadLibrary failed for '%s': error %u\n"), libraryName, GetLastError());
-
-        //
-        // Fallback to the CORE_ROOT path
-        //
-
-        DWORD pathLen = GetEnvironmentVariableW(W("CORE_ROOT"), nullptr, 0);
-        if (pathLen == 0) // not set
-            return nullptr;
-
-        pathLen += 1; // Add 1 for null
-        PathString coreRoot;
-        WCHAR *coreRootRaw = coreRoot.OpenUnicodeBuffer(pathLen);
-        GetEnvironmentVariableW(W("CORE_ROOT"), coreRootRaw, pathLen);
-
-        libPath.Clear();
-        libPath.AppendPrintf(W("%s%s%s"), coreRootRaw, DIRECTORY_SEPARATOR_STR_W, libFileName);
-
-        libraryName = libPath.GetUnicode();
-        libraryHandle = CLRLoadLibrary(libraryName);
-        if (libraryHandle != nullptr)
-            return libraryHandle;
-
-        DISPLAYERROR(W("LoadLibrary failed for '%s': error %u\n"), libraryName, GetLastError());
-        return nullptr;
+        return CLRLoadLibrary(libraryName);
     }
 }
 

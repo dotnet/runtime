@@ -152,6 +152,21 @@ void StashKeywordAndLevel(bool isPublicProvider, GCEventKeyword keywords, GCEven
     }
 }
 
+#ifdef FEATURE_STANDALONE_GC
+HMODULE LoadStandaloneGc(LPCWSTR libFileName)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Look for the standalone GC module next to the clr binary
+    PathString libPath = GetInternalSystemDirectory();
+    libPath.Append(libFileName);
+
+    LPCWSTR libraryName = libPath.GetUnicode();
+    LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %S\n", libraryName));
+    return CLRLoadLibrary(libraryName);
+}
+#endif // FEATURE_STANDALONE_GC
+
 // Loads and initializes a standalone GC, given the path to the GC
 // that we should load. Returns S_OK on success and the failed HRESULT
 // on failure.
@@ -166,13 +181,12 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
     LOG((LF_GC, LL_FATALERROR, "EE not built with the ability to load standalone GCs"));
     return E_FAIL;
 #else
-    LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %S\n", standaloneGcLocation));
-    HMODULE hMod = CLRLoadLibrary(standaloneGcLocation);
+    HMODULE hMod = LoadStandaloneGc(standaloneGcLocation);
     if (!hMod)
     {
         HRESULT err = GetLastError();
         LOG((LF_GC, LL_FATALERROR, "Load of %S failed\n", standaloneGcLocation));
-        return err;
+        return __HRESULT_FROM_WIN32(err);
     }
 
     // a standalone GC dispatches virtually on GCToEEInterface, so we must instantiate
@@ -189,7 +203,7 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
     {
         HRESULT err = GetLastError();
         LOG((LF_GC, LL_FATALERROR, "Load of `GC_VersionInfo` from standalone GC failed\n"));
-        return err;
+        return __HRESULT_FROM_WIN32(err);
     }
 
     g_gc_load_status = GC_LOAD_STATUS_GET_VERSIONINFO;
@@ -216,7 +230,7 @@ HRESULT LoadAndInitializeGC(LPWSTR standaloneGcLocation)
     {
         HRESULT err = GetLastError();
         LOG((LF_GC, LL_FATALERROR, "Load of `GC_Initialize` from standalone GC failed\n"));
-        return err;
+        return __HRESULT_FROM_WIN32(err);
     }
 
     g_gc_load_status = GC_LOAD_STATUS_GET_INITIALIZE;
