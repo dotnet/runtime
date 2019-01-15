@@ -4216,14 +4216,7 @@ void GCInfo::gcMakeRegPtrTable(
                 }
                 else
                 {
-                    if (!varDsc->lvOnFrame)
-                    {
-                        // If this non-enregistered pointer arg is never
-                        // used, we don't need to report it.
-                        assert(varDsc->lvRefCnt() == 0);
-                        continue;
-                    }
-                    else if (varDsc->lvIsRegArg && varDsc->lvTracked)
+                    if (varDsc->lvIsRegArg && varDsc->lvTracked)
                     {
                         // If this register-passed arg is tracked, then
                         // it has been allocated space near the other
