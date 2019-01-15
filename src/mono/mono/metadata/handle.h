@@ -178,9 +178,11 @@ Icall macros
 */
 #define SETUP_ICALL_COMMON	\
 	do { \
+		MONO_DISABLE_WARNING(4459) /* declaration of 'identifier' hides global declaration */ \
 		ERROR_DECL (error);	\
 		/* There are deliberately locals and a constant NULL global with this same name. */ \
 		MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current (); \
+		MONO_RESTORE_WARNING \
 
 #define CLEAR_ICALL_COMMON	\
 	mono_error_set_pending_exception (error);
@@ -198,15 +200,21 @@ Icall macros
 	(RESULT) = g_cast (mono_stack_mark_pop_value (mono_thread_info_current_var, &__mark, (HANDLE)));
 
 #define HANDLE_FUNCTION_ENTER() do {				\
+	MONO_DISABLE_WARNING(4459) /* declaration of 'identifier' hides global declaration */ \
 	/* There are deliberately locals and a constant NULL global with this same name. */ \
 	MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current ();	\
+	MONO_RESTORE_WARNING \
 	SETUP_ICALL_FRAME					\
 
 #define HANDLE_FUNCTION_RETURN()		\
 	CLEAR_ICALL_FRAME;			\
 	} while (0)
 
-#define HANDLE_LOOP_PREPARE MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current ()
+#define HANDLE_LOOP_PREPARE \
+	MONO_DISABLE_WARNING(4459) /* declaration of 'identifier' hides global declaration */ \
+	/* There are deliberately locals and a constant NULL global with this same name. */ \
+	MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current () \
+	MONO_RESTORE_WARNING
 
 // Return a non-pointer or non-managed pointer, e.g. gboolean.
 #define HANDLE_FUNCTION_RETURN_VAL(VAL)		\

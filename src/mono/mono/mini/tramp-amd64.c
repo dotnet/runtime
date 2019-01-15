@@ -121,6 +121,7 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 
 #ifdef _WIN64
 // Workaround lack of Valgrind support for 64-bit Windows
+#undef VALGRIND_DISCARD_TRANSLATIONS
 #define VALGRIND_DISCARD_TRANSLATIONS(...)
 #endif
 

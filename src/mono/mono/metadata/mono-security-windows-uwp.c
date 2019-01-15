@@ -62,14 +62,14 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken 
 }
 
 MonoBoolean
-ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (MonoError *error))
+ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (MonoError *error)
 {
 	mono_security_win_not_supported ("RevertToSelf", error);
 	return FALSE;
 }
 
 gint32
-mono_security_win_get_token_name (gpointer token, gunichar2 ** uniname, MonoError *error)
+mono_security_win_get_token_name (gpointer token, gunichar2 **uniname, MonoError *error)
 {
 	// FIXME This is now supported by UWP.
 	mono_security_win_not_supported ("GetTokenInformation", error);

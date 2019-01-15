@@ -159,7 +159,7 @@ mono_handle_chunk_leak_check (HandleStack *handles) {
 #ifdef __cplusplus
 extern MonoThreadInfo * const mono_thread_info_current_var = NULL;
 #else
-MonoThreadInfo * const mono_thread_info_current_var;
+MonoThreadInfo * const mono_thread_info_current_var = NULL;
 #endif
 
 /* Actual handles implementation */

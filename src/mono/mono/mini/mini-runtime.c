@@ -2798,7 +2798,7 @@ GSList *mono_single_method_list;
 GHashTable *mono_single_method_hash;
 
 guint32
-mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt)
+mono_get_optimizations_for_method (MonoMethod *method, guint32 opt)
 {
 	g_assert (method);
 
@@ -2807,10 +2807,10 @@ mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt)
 		void *res = g_hash_table_lookup (bisect_methods_hash, name);
 		g_free (name);
 		if (res)
-			return default_opt | bisect_opt;
+			return opt | bisect_opt;
 	}
 	if (!mono_do_single_method_regression)
-		return default_opt;
+		return opt;
 	if (!mono_current_single_method) {
 		if (!mono_single_method_hash)
 			mono_single_method_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -2818,11 +2818,11 @@ mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt)
 			g_hash_table_insert (mono_single_method_hash, method, method);
 			mono_single_method_list = g_slist_prepend (mono_single_method_list, method);
 		}
-		return default_opt;
+		return opt;
 	}
 	if (method == mono_current_single_method)
 		return mono_single_method_regression_opt;
-	return default_opt;
+	return opt;
 }
 
 gpointer

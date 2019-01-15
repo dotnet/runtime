@@ -407,8 +407,8 @@ gboolean g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii);
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #ifdef _MSC_VER
-#define g_strcasecmp stricmp
-#define g_strncasecmp strnicmp
+#define g_strcasecmp _stricmp
+#define g_strncasecmp _strnicmp
 #define g_strstrip(a) g_strchug (g_strchomp (a))
 #else
 #define g_strcasecmp strcasecmp

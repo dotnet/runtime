@@ -17,7 +17,7 @@
 #include "mono/metadata/metadata-internals.h"
 
 gint32
-mono_security_win_get_token_name (gpointer token, gunichar2 ** uniname);
+mono_security_win_get_token_name (gpointer token, gunichar2 ** uniname, MonoError *error);
 
 gboolean
 mono_security_win_is_machine_protected (const gunichar2 *path, MonoError *error);

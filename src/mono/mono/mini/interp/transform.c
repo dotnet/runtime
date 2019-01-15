@@ -470,13 +470,13 @@ shift_op(TransformData *td, int mint_op)
 }
 
 static int 
-can_store (int stack_type, int var_type)
+can_store (int st_value, int vt_value)
 {
-	if (stack_type == STACK_TYPE_O || stack_type == STACK_TYPE_MP)
-		stack_type = STACK_TYPE_I;
-	if (var_type == STACK_TYPE_O || var_type == STACK_TYPE_MP)
-		var_type = STACK_TYPE_I;
-	return stack_type == var_type;
+	if (st_value == STACK_TYPE_O || st_value == STACK_TYPE_MP)
+		st_value = STACK_TYPE_I;
+	if (vt_value == STACK_TYPE_O || vt_value == STACK_TYPE_MP)
+		vt_value = STACK_TYPE_I;
+	return st_value == vt_value;
 }
 
 #define SET_SIMPLE_TYPE(s, ty) \

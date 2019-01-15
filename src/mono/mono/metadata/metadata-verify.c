@@ -1760,11 +1760,13 @@ is_valid_ser_string_full (VerifyContext *ctx, const char **str_start, guint32 *s
 	if (ptr >= end)
 		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for string size"));
 
+MONO_DISABLE_WARNING (4310) // cast truncates constant value
 	/*NULL string*/
 	if (*ptr == (char)0xFF) {
 		*_ptr = ptr + 1;
 		return TRUE;
 	}
+MONO_RESTORE_WARNING
 
 	if (!safe_read_cint (size, ptr, end))
 		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for string size"));

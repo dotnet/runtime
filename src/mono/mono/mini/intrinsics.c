@@ -1418,5 +1418,6 @@ mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field)
 	}
 	return NULL;
 }
-
+#else
+MONO_EMPTY_SOURCE_FILE (intrinsics);
 #endif

@@ -908,5 +908,6 @@ mini_emit_llvmonly_calli (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst 
 
 	return mini_emit_extra_arg_calli (cfg, fsig, args, arg_reg, call_target);
 }
-
+#else
+MONO_EMPTY_SOURCE_FILE (calls);
 #endif

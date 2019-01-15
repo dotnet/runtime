@@ -17,6 +17,7 @@
 #include "mono/utils/mono-dl-windows-internals.h"
 #include "mono/utils/mono-embed.h"
 #include "mono/utils/mono-path.h"
+#include "mono/metadata/w32subset.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -50,20 +51,22 @@ mono_dl_open_file (const char *file, int flags)
 	if (file) {
 		gunichar2* file_utf16 = g_utf8_to_utf16 (file, strlen (file), NULL, NULL, NULL);
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
 		guint last_sem = SetErrorMode (SEM_FAILCRITICALERRORS);
 #endif
 		guint32 last_error = 0;
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-		hModule = LoadLibrary (file_utf16);
-#else
+#if HAVE_API_SUPPORT_WIN32_LOAD_LIBRARY
+		hModule = LoadLibraryW (file_utf16);
+#elif HAVE_API_SUPPORT_WIN32_LOAD_PACKAGED_LIBRARY
 		hModule = LoadPackagedLibrary (file_utf16, NULL);
+#else
+		g_assert_not_reached ();
 #endif
 		if (!hModule)
 			last_error = GetLastError ();
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
 		SetErrorMode (last_sem);
 #endif
 
@@ -72,10 +75,10 @@ mono_dl_open_file (const char *file, int flags)
 		if (!hModule)
 			SetLastError (last_error);
 	} else {
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-		hModule = GetModuleHandle (NULL);
+#if HAVE_API_SUPPORT_WIN32_GET_MODULE_HANDLE
+		hModule = GetModuleHandleW (NULL);
 #else
-		g_error("Not supported");
+		g_assert_not_reached ();
 #endif
 	}
 	return hModule;

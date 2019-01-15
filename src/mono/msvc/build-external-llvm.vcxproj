@@ -18,6 +18,11 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="build-init.vcxproj">
+      <Project>{92ae7622-5f58-4234-9a26-9ec71876b3f4}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C3D4C623-55F8-4653-980D-61AA629B4E1D}</ProjectGuid>
     <RootNamespace>buildexternalllvm</RootNamespace>
@@ -153,20 +158,27 @@
     <_LLVMCFlags>$(_LLVMCFlags.Trim())</_LLVMCFlags>
     <_LLVMCFlags Condition="'$(_LLVMCFlags)' != ''">-D$(_LLVMCFlags.Replace(" "," -D"))</_LLVMCFlags>
     <_LLVMEnableAsserts>-DLLVM_ENABLE_ASSERTIONS=Off</_LLVMEnableAsserts>
-    <_LLVMEnableAsserts Condition="'$(MONO_ENABLE_LLVM_ASSERTS)' == 'true'" >-DLLVM_ENABLE_ASSERTIONS=On</_LLVMEnableAsserts>
+    <_LLVMEnableAsserts Condition="'$(MONO_ENABLE_LLVM_ASSERTS)' == 'true'">-DLLVM_ENABLE_ASSERTIONS=On</_LLVMEnableAsserts>
     <_LLVMAdditionalCMakeArgs>$(_LLVMEnableAsserts)</_LLVMAdditionalCMakeArgs>
     <_LLVMBuildCommand>build-external-llvm.bat &quot;$(_LLVMSourceDir)&quot; &quot;$(_LLVMBuildDir)&quot; &quot;$(_LLVMInstallDir)&quot; &quot;$(_MonoOutputDir)&quot; &quot;$(_LLVMCFlags)&quot; &quot;$(_LLVMAdditionalCMakeArgs)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_LLVMBuildCommand>
   </PropertyGroup>
   <Target Name="_AfterBuildExternalLLVM" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableInternalLLVM)' == 'true'">
-    <Exec Command="$(_LLVMBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot;">
+    <Exec Command="$(_LLVMBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot; &quot;$(_MonoExternalBuildForceMSBuild)&quot;">
       <Output TaskParameter="ExitCode" PropertyName="_BuildExternalLLVMExitCode" />
     </Exec>
   </Target>
   <Target Name="_AfterCleanExternalLLVM" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableInternalLLVM)' == 'true'">
-    <Exec Command="$(_LLVMBuildCommand) &quot;Clean&quot; &quot;$(MSBuildBinPath)\&quot;">
+    <Exec Command="$(_LLVMBuildCommand) &quot;Clean&quot; &quot;$(MSBuildBinPath)\&quot; &quot;$(_MonoExternalBuildForceMSBuild)&quot;">
       <Output TaskParameter="ExitCode" PropertyName="_CleanExternalLLVMExitCode" />
     </Exec>
   </Target>
   <Target Name="AfterBuild" DependsOnTargets="_ConfigureExternalMonoLLVMBuildEnvironment;_AfterBuildExternalLLVM" />
   <Target Name="AfterClean" DependsOnTargets="_ConfigureExternalMonoLLVMBuildEnvironment;_AfterCleanExternalLLVM" />
+
+  <Target Name="_GetLLVMConfig" DependsOnTargets="_ConfigureExternalMonoLLVMBuildEnvironment" Returns="@(_GetLLVMConfigOutputItems)">
+    <ItemGroup>
+      <_GetLLVMConfigOutputItems Include="$(_MonoLLVMConfig)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

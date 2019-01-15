@@ -271,6 +271,8 @@ struct sigcontext {
 #undef MONO_SIGNAL_USE_UCONTEXT_T
 #endif
 
+MONO_DISABLE_WARNING(4324) // 'struct_name' : structure was padded due to __declspec(align())
+
 typedef struct {
 	host_mgreg_t gregs [AMD64_NREG];
 #if defined(MONO_HAVE_SIMD_REG)
@@ -279,6 +281,8 @@ typedef struct {
 	double fregs [AMD64_XMM_NREG];
 #endif
 } MonoContext;
+
+MONO_RESTORE_WARNING
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->gregs [AMD64_RIP] = (host_mgreg_t)(gsize)(ip); } while (0);
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->gregs [AMD64_RBP] = (host_mgreg_t)(gsize)(bp); } while (0);

@@ -32,7 +32,9 @@ mkdir "%CONFIG_H_TEMP%\.." 2>nul
 set CONFIG_H_TEMP="%CONFIG_H_TEMP%"
 
 REM Backup existing config.h into cygconfig.h if its not already replaced.
-findstr /i /r /c:"#include *\"cygconfig.h\"" %CONFIG_H% >nul || copy /y %CONFIG_h% %CYG_CONFIG_H%
+if exist %CONFIG_H% (
+	findstr /i /r /c:"#include *\"cygconfig.h\"" %CONFIG_H% >nul || copy /y %CONFIG_h% %CYG_CONFIG_H%
+)
 
 :: Extract MONO_VERSION from configure.ac.
 for /f "delims=[] tokens=2" %%a in ('findstr /b /c:"AC_INIT(mono, [" %CONFIGURE_AC%') do (

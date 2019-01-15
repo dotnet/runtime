@@ -18,6 +18,11 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="build-init.vcxproj">
+      <Project>{92ae7622-5f58-4234-9a26-9ec71876b3f4}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E41DDF41-0916-454B-A7C2-6E410E45CAFD}</ProjectGuid>
     <RootNamespace>buildexternalbtls</RootNamespace>
@@ -155,12 +160,12 @@
     <_BtlsBuildCommand>build-external-btls.bat &quot;$(_MonoBtlsSourceDir)&quot; &quot;$(_BtlsSourceDir)&quot; &quot;$(_BtlsBuildDir)&quot; &quot;$(_MonoOutputDir)&quot; &quot;$(_BtlsCFlags)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_BtlsBuildCommand>
   </PropertyGroup>
   <Target Name="_AfterBuildExternalBtls" Condition="'$(MONO_ENABLE_BTLS)' == 'true'">
-    <Exec Command="$(_BtlsBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot;">
+    <Exec Command="$(_BtlsBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot; &quot;$(_MonoExternalBuildForceMSBuild)&quot;">
       <Output TaskParameter="ExitCode" PropertyName="_BuildExternalBtlsExitCode" />
     </Exec>
   </Target>
   <Target Name="_AfterCleanExternalBtls" Condition="'$(MONO_ENABLE_BTLS)' == 'true'">
-    <Exec Command="$(_BtlsBuildCommand) &quot;Clean&quot; &quot;$(MSBuildBinPath)\&quot;">
+    <Exec Command="$(_BtlsBuildCommand) &quot;Clean&quot; &quot;$(MSBuildBinPath)\&quot; &quot;$(_MonoExternalBuildForceMSBuild)&quot;">
       <Output TaskParameter="ExitCode" PropertyName="_CleanExternalBtlsExitCode" />
     </Exec>
   </Target>

@@ -26,7 +26,6 @@
 #include "mono/metadata/verify-internals.h"
 #include "mono/utils/checked-build.h"
 
-
 #define CHECK_ADD4_OVERFLOW_UN(a, b) ((guint32)(0xFFFFFFFFU) - (guint32)(b) < (guint32)(a))
 #define CHECK_ADD8_OVERFLOW_UN(a, b) ((guint64)(0xFFFFFFFFFFFFFFFFUL) - (guint64)(b) < (guint64)(a))
 
@@ -242,10 +241,12 @@ load_cattr_type (MonoImage *image, MonoType *t, gboolean header, const char *p, 
 	if (header) {
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
+MONO_DISABLE_WARNING(4310) // cast truncates constant value
 		if (*p == (char)0xFF) {
 			*end = p + 1;
 			return NULL;
 		}
+MONO_RESTORE_WARNING
 	}
 
 	if (!decode_blob_value_checked (p, boundp, slen, &p, error))
@@ -381,10 +382,12 @@ handle_enum:
 	case MONO_TYPE_STRING:
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
+MONO_DISABLE_WARNING (4310) // cast truncates constant value
 		if (*p == (char)0xFF) {
 			*end = p + 1;
 			return NULL;
 		}
+MONO_RESTORE_WARNING
 		if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
 			return NULL;
 		if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
