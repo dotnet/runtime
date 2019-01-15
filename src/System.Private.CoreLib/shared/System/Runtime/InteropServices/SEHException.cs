@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices
 {
     /// <summary>
     /// Exception for Structured Exception Handler exceptions.
-    /// </summary>    
+    /// </summary>
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SEHException : ExternalException
@@ -19,13 +19,13 @@ namespace System.Runtime.InteropServices
             HResult = HResults.E_FAIL;
         }
 
-        public SEHException(String message)
+        public SEHException(string message)
             : base(message)
         {
             HResult = HResults.E_FAIL;
         }
 
-        public SEHException(String message, Exception inner)
+        public SEHException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.E_FAIL;
