@@ -78,7 +78,6 @@
 #cmakedefine01 HAVE_GREGSET_T
 #cmakedefine01 HAVE___GREGSET_T
 #cmakedefine01 HAVE_FPSTATE_GLIBC_RESERVED1
-#cmakedefine01 HAVE_SIGINFO_T
 #cmakedefine01 HAVE_UCONTEXT_T
 #cmakedefine01 HAVE_PTHREAD_RWLOCK_T
 #cmakedefine01 HAVE_PRWATCH_T
