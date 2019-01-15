@@ -21,13 +21,13 @@ namespace System.Runtime.InteropServices
             HResult = HResults.COR_E_INVALIDCOMOBJECT;
         }
 
-        public InvalidComObjectException(String message)
+        public InvalidComObjectException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_INVALIDCOMOBJECT;
         }
 
-        public InvalidComObjectException(String message, Exception inner)
+        public InvalidComObjectException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_INVALIDCOMOBJECT;
