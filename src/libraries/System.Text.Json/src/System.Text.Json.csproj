@@ -8,19 +8,49 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Json\BitStack.cs" />
-    <Compile Include="System\Text\Json\ConsumeNumberResult.cs" />
-    <Compile Include="System\Text\Json\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\JsonCommentHandling.cs" />
     <Compile Include="System\Text\Json\JsonConstants.cs" />
-    <Compile Include="System\Text\Json\JsonReaderException.cs" />
-    <Compile Include="System\Text\Json\JsonReaderHelper.cs" />
-    <Compile Include="System\Text\Json\JsonReaderOptions.cs" />
-    <Compile Include="System\Text\Json\JsonReaderState.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
-    <Compile Include="System\Text\Json\Utf8JsonReader.cs" />
-    <Compile Include="System\Text\Json\Utf8JsonReader.MultiSegment.cs" />
-    <Compile Include="System\Text\Json\Utf8JsonReader.TryGet.cs" />
+    <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
+    <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderHelper.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderOptions.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderState.cs" />
+    <Compile Include="System\Text\Json\Reader\Utf8JsonReader.cs" />
+    <Compile Include="System\Text\Json\Reader\Utf8JsonReader.MultiSegment.cs" />
+    <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterHelper.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Escaping.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Transcoding.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterOptions.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterState.cs" />
+    <Compile Include="System\Text\Json\Writer\SequenceValidity.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.DateTime.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.DateTimeOffset.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Decimal.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Double.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Float.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Guid.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Helpers.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Literal.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.SignedNumber.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.String.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.UnsignedNumber.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Comment.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.DateTime.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.DateTimeOffset.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Decimal.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Double.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Float.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Guid.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Helpers.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Literal.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.SignedNumber.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
@@ -30,6 +60,7 @@
     <ProjectReference Include="..\..\System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
     <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup>
