@@ -39,6 +39,9 @@ jobs:
         name: Hosted Ubuntu 1604
       ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
         name: dnceng-linux-internal-temp
+      # FreeBSD builds only in the internal project
+      ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
+        name: dnceng-freebsd-internal
       ${{ if and(eq(parameters.osGroup, 'OSX'), ne(variables['System.TeamProject'], 'public')) }}:
         name: Hosted Mac Internal
       ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
@@ -56,6 +59,8 @@ jobs:
 
     ${{ if eq(parameters.osGroup, 'Linux') }}:
       agentOs: Ubuntu
+    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+      agentOs: FreeBSD
     ${{ if eq(parameters.osGroup, 'OSX') }}:
       agentOs: MacOS
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
