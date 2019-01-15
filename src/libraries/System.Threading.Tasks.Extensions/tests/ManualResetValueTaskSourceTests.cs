@@ -258,6 +258,7 @@ namespace System.Threading.Tasks.Sources.Tests
                     i,
                     ValueTaskSourceOnCompletedFlags.None);
                 mrvts.Reset();
+                mres.Wait();
                 mres.Reset();
             }
         }
@@ -282,6 +283,7 @@ namespace System.Threading.Tasks.Sources.Tests
                     i,
                     ValueTaskSourceOnCompletedFlags.None);
                 mrvts.SetResult(42);
+                mres.Wait();
                 mrvts.Reset();
                 mres.Reset();
             }
