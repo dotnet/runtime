@@ -16,6 +16,7 @@
 #include "perfcounters.h"
 #include "eventtrace.h"
 #include "virtualcallstub.h"
+#include "utilcode.h"
 
 #if defined(_TARGET_X86_)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -203,10 +204,23 @@ static inline void UpdatePerformanceMetrics(CrawlFrame *pcfThisFrame, BOOL bIsRe
     ETW::ExceptionLog::ExceptionThrown(pcfThisFrame, bIsRethrownException, bIsNewException);
 }
 
-void ShutdownEEAndExitProcess()
+#ifdef FEATURE_PAL
+static LONG volatile g_termination_triggered = 0;
+
+void HandleTerminationRequest(int terminationExitCode)
 {
-    ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
+    // We set a non-zero exit code to indicate the process didn't terminate cleanly.
+    // This value can be changed by the user by setting Environment.ExitCode in the
+    // ProcessExit event. We only start termination on the first SIGTERM signal
+    // to ensure we don't overwrite an exit code already set in ProcessExit.
+    if (InterlockedCompareExchange(&g_termination_triggered, 1, 0) == 0)
+    {
+        SetLatchedExitCode(terminationExitCode);
+
+        ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
+    }
 }
+#endif
 
 void InitializeExceptionHandling()
 {
@@ -229,7 +243,7 @@ void InitializeExceptionHandling()
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
 
     // Register handler for termination requests (e.g. SIGTERM)
-    PAL_SetTerminationRequestHandler(ShutdownEEAndExitProcess);
+    PAL_SetTerminationRequestHandler(HandleTerminationRequest);
 #endif // FEATURE_PAL
 }
 
