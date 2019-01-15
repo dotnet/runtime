@@ -534,7 +534,7 @@ int getNumberOfSlots()
     if (!IsServerHeap())
         return 1;
 
-    return GCToOSInterface::GetCurrentProcessCpuCount();
+    return GCToOSInterface::GetTotalProcessorCount();
 }
 
 class HandleTableBucketHolder
