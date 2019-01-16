@@ -55,6 +55,9 @@
     <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp</TargetGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
     <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
+    <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)</HostArch>
+    <ArchGroup Condition="'$(ArchGroup)' == '' AND '$(HostArch)' == 'Arm'">arm</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == '' AND '$(HostArch)' == 'Arm64'">arm64</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
 
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
@@ -286,6 +289,9 @@
 
     <!-- Rhel 6 and FreeBSD doesn't support the source control git package so disable SourceLink -->
     <EnableSourceLink Condition="$(RuntimeOS.StartsWith('rhel.6')) OR '$(_runtimeOSFamily)' == 'FreeBSD'">false</EnableSourceLink>
+    <!-- is is not supported on ARM platforms either. -->
+    <EnableSourceLink Condition="'$(HostArch)' == 'Arm' OR '$(HostArch)' == 'Arm64'">false</EnableSourceLink>
+
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
