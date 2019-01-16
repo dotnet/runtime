@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
@@ -14,7 +12,14 @@ namespace System
     {
         public bool Contains(string value)
         {
-            return (IndexOf(value, StringComparison.Ordinal) >= 0);
+            if (value == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+
+            return SpanHelpers.IndexOf(
+                ref _firstChar,
+                Length,
+                ref value._firstChar,
+                value.Length) >= 0;
         }
 
         public bool Contains(string value, StringComparison comparisonType)
