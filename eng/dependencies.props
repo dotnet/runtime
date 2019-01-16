@@ -9,9 +9,9 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>528234f0de15b714b0f439f77285196e6d932cf7</CoreFxCurrentRef>
-    <ProjectNTfsCurrentRef>528234f0de15b714b0f439f77285196e6d932cf7</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>528234f0de15b714b0f439f77285196e6d932cf7</ProjectNTfsTestILCCurrentRef>
+    <CoreFxCurrentRef>80bf64639edfd74a945ce40e9b903ef9767635e7</CoreFxCurrentRef>
+    <ProjectNTfsCurrentRef>80bf64639edfd74a945ce40e9b903ef9767635e7</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>80bf64639edfd74a945ce40e9b903ef9767635e7</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
     <BuildToolsCurrentRef>984a541f1d8f243a704fe4074e4b60c6cc3278f7</BuildToolsCurrentRef>
@@ -29,11 +29,11 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview.19064.4</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19064.4</MicrosoftNETCorePlatformsPackageVersion>
-    <ProjectNTfsExpectedPrerelease>beta-27315-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-27315-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27315-00</ProjectNTfsTestILCPackageVersion>
+    <CoreFxExpectedPrerelease>preview.19066.1</CoreFxExpectedPrerelease>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19066.1</MicrosoftNETCorePlatformsPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-27316-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-27316-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27316-00</ProjectNTfsTestILCPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
