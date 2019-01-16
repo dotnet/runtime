@@ -448,6 +448,11 @@ llvm_runtime_sources = \
 endif
 endif
 
+if ENABLE_NETCORE
+netcore_sources = \
+	main-core.c
+endif
+
 common_sources = \
 	mini.c			\
 	mini-runtime.c	\
@@ -732,7 +737,7 @@ endif
 # This library is shared between mono and mono-sgen, since the code in mini/ doesn't contain
 # compile time dependencies on boehm/sgen.
 #
-libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
+libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources) $(netcore_sources)
 libmini_la_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@
 if ENABLE_LLVM
 libmini_la_LIBADD = libmini-cxx.la
