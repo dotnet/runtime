@@ -168,8 +168,10 @@ namespace Microsoft.Extensions.Hosting
 
         private void BuildAppConfiguration()
         {
-            var configBuilder = new ConfigurationBuilder();
-            configBuilder.AddConfiguration(_hostConfiguration);
+            var configBuilder = new ConfigurationBuilder()
+                .SetBasePath(_hostingEnvironment.ContentRootPath)
+                .AddConfiguration(_hostConfiguration);
+
             foreach (var buildAction in _configureAppConfigActions)
             {
                 buildAction(_hostBuilderContext, configBuilder);
