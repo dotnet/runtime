@@ -11,11 +11,11 @@
 #include <mono/utils/mono-publib.h>
 #include "marshal.h"
 
-#define MONO_ICALL_TABLE_CALLBACKS_VERSION 1
+#define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
 
 typedef struct {
 	int version;
-	gpointer (*lookup) (char *classname, char *methodname, char *sigstart, gboolean *uses_handles);
+	gpointer (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, gboolean *uses_handles);
 	const char* (*lookup_icall_symbol) (gpointer func);
 } MonoIcallTableCallbacks;
 

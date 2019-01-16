@@ -1923,6 +1923,27 @@ mono_regression_test_step (int verbose_level, const char *image, const char *met
 
 	return mono_exec_regression_internal (verbose_level, 1, images, FALSE) == 0;
 }
+
+#ifdef ENABLE_ICALL_SYMBOL_MAP
+/* Print the icall table as JSON */
+static void
+print_icall_table (void)
+{
+	// We emit some dummy values to make the code simpler
+
+	printf ("[\n{ \"klass\": \"\", \"icalls\": [");
+#define NOHANDLES(inner) inner
+#define HANDLES(id, name, func, ...)	printf ("\t,{ \"name\": \"%s\", \"func\": \"%s_raw\", \"handles\": true }\n", name, #func);
+#define HANDLES_REUSE_WRAPPER		HANDLES
+#define MONO_HANDLE_REGISTER_ICALL(...) /* nothing  */
+#define ICALL_TYPE(id,name,first) printf ("]},\n { \"klass\":\"%s\", \"icalls\": [{} ", name);
+#define ICALL(id,name,func) printf ("\t,{ \"name\": \"%s\", \"func\": \"%s\", \"handles\": false }\n", name, #func);
+#include <mono/metadata/icall-def.h>
+
+	printf ("]}\n]\n");
+}
+#endif
+
 /**
  * mono_main:
  * \param argc number of arguments in the argv array
@@ -2305,6 +2326,14 @@ mono_main (int argc, char* argv[])
 			mono_enable_interp (NULL);
 		} else if (strncmp (argv [i], "--interp=", 9) == 0) {
 			mono_enable_interp (argv [i] + 9);
+		} else if (strcmp (argv [i], "--print-icall-table") == 0) {
+#ifdef ENABLE_ICALL_SYMBOL_MAP
+			print_icall_table ();
+			exit (0);
+#else
+			fprintf (stderr, "--print-icall-table requires a runtime configured with the --enable-icall-symbol-map option.\n");
+			exit (1);
+#endif
 		} else if (strncmp (argv [i], "--assembly-loader=", strlen("--assembly-loader=")) == 0) {
 			gchar *arg = argv [i] + strlen ("--assembly-loader=");
 			if (strcmp (arg, "strict") == 0)

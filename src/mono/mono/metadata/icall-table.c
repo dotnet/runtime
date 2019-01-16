@@ -223,7 +223,7 @@ find_class_icalls (const char *name)
 }
 
 static gpointer
-icall_table_lookup (char *classname, char *methodname, char *sigstart, gboolean *uses_handles)
+icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, gboolean *uses_handles)
 {
 	const IcallTypeDesc *imap = NULL;
 	gpointer res;

@@ -8439,6 +8439,10 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mo
 	sigstart [siglen + 2] = 0;
 	g_free (tmpsig);
 
+	/* mono_marshal_get_native_wrapper () depends on this */
+	if (method->klass == mono_defaults.string_class && !strcmp (method->name, ".ctor"))
+		return (gpointer)ves_icall_System_String_ctor_RedirectToCreateString;
+
 	mono_icall_lock ();
 
 	res = g_hash_table_lookup (icall_hash, mname);
@@ -8473,18 +8477,13 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mo
 		return res;
 	}
 
-
 	if (!icall_table.lookup) {
 		mono_icall_unlock ();
 		g_free (classname);
 		/* Fail only when the result is actually used */
-		/* mono_marshal_get_native_wrapper () depends on this */
-		if (method->klass == mono_defaults.string_class && !strcmp (method->name, ".ctor"))
-			return (gpointer)ves_icall_System_String_ctor_RedirectToCreateString;
-		else
-			return (gpointer)no_icall_table;
+		return (gpointer)no_icall_table;
 	} else {
-		res = icall_table.lookup (classname, sigstart - mlen, sigstart, uses_handles);
+		res = icall_table.lookup (method, classname, sigstart - mlen, sigstart, uses_handles);
 		g_free (classname);
 
 		mono_icall_unlock ();
