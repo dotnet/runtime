@@ -19,14 +19,14 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void InsertUInt16129()
+        private static void ShuffleHighUInt161()
         {
-            var test = new InsertScalarTest__InsertUInt16129();
+            var test = new ImmUnaryOpTest__ShuffleHighUInt161();
 
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
-                test.RunBasicScenario();
+                test.RunBasicScenario_UnsafeRead();
 
                 if (Sse2.IsSupported)
                 {
@@ -38,7 +38,7 @@ namespace JIT.HardwareIntrinsics.X86
                 }
 
                 // Validates calling via reflection works, using Unsafe.Read
-                test.RunReflectionScenario();
+                test.RunReflectionScenario_UnsafeRead();
 
                 if (Sse2.IsSupported)
                 {
@@ -53,7 +53,7 @@ namespace JIT.HardwareIntrinsics.X86
                 test.RunClsVarScenario();
 
                 // Validates passing a local works, using Unsafe.Read
-                test.RunLclVarScenario();
+                test.RunLclVarScenario_UnsafeRead();
 
                 if (Sse2.IsSupported)
                 {
@@ -89,31 +89,28 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class InsertScalarTest__InsertUInt16129
+    public sealed unsafe class ImmUnaryOpTest__ShuffleHighUInt161
     {
         private struct TestStruct
         {
             public Vector128<UInt16> _fld;
-            public UInt16 _scalarFldData;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (ushort)0; }
+                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetUInt16(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref testStruct._fld), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
-
-                testStruct._scalarFldData = (ushort)2;
 
                 return testStruct;
             }
 
-            public void RunStructFldScenario(InsertScalarTest__InsertUInt16129 testClass)
+            public void RunStructFldScenario(ImmUnaryOpTest__ShuffleHighUInt161 testClass)
             {
-                var result = Sse2.Insert(_fld, _scalarFldData, 129);
+                var result = Sse2.ShuffleHigh(_fld, 1);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(_fld, _scalarFldData, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
             }
         }
 
@@ -123,29 +120,27 @@ namespace JIT.HardwareIntrinsics.X86
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<UInt16>>() / sizeof(UInt16);
 
         private static UInt16[] _data = new UInt16[Op1ElementCount];
-        private static UInt16 _scalarClsData = (ushort)2;
 
         private static Vector128<UInt16> _clsVar;
 
         private Vector128<UInt16> _fld;
-        private UInt16 _scalarFldData = (ushort)2;
 
         private SimpleUnaryOpTest__DataTable<UInt16, UInt16> _dataTable;
 
-        static InsertScalarTest__InsertUInt16129()
+        static ImmUnaryOpTest__ShuffleHighUInt161()
         {
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (ushort)0; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetUInt16(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref _clsVar), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
         }
 
-        public InsertScalarTest__InsertUInt16129()
+        public ImmUnaryOpTest__ShuffleHighUInt161()
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (ushort)0; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetUInt16(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref _fld), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (ushort)0; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetUInt16(); }
             _dataTable = new SimpleUnaryOpTest__DataTable<UInt16, UInt16>(_data, new UInt16[RetElementCount], LargestVectorSize);
         }
 
@@ -153,171 +148,152 @@ namespace JIT.HardwareIntrinsics.X86
 
         public bool Succeeded { get; set; }
 
-        public void RunBasicScenario()
+        public void RunBasicScenario_UnsafeRead()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = Sse2.Insert(
+            var result = Sse2.ShuffleHigh(
                 Unsafe.Read<Vector128<UInt16>>(_dataTable.inArrayPtr),
-                (ushort)2,
-                129
+                1
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, (ushort)2, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
-        public unsafe void RunBasicScenario_Load()
+        public void RunBasicScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            UInt16 localData = (ushort)2;
-            UInt16* ptr = &localData;
-
-            var result = Sse2.Insert(
+            var result = Sse2.ShuffleHigh(
                 Sse2.LoadVector128((UInt16*)(_dataTable.inArrayPtr)),
-                *ptr,
-                129
+                1
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, *ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
-        public unsafe void RunBasicScenario_LoadAligned()
+        public void RunBasicScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
 
-            UInt16 localData = (ushort)2;
-            UInt16* ptr = &localData;
-
-            var result = Sse2.Insert(
+            var result = Sse2.ShuffleHigh(
                 Sse2.LoadAlignedVector128((UInt16*)(_dataTable.inArrayPtr)),
-                *ptr,
-                129
+                1
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, *ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
-        public void RunReflectionScenario()
+        public void RunReflectionScenario_UnsafeRead()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Sse2).GetMethod(nameof(Sse2.Insert), new Type[] { typeof(Vector128<UInt16>), typeof(UInt16), typeof(byte) })
+            var result = typeof(Sse2).GetMethod(nameof(Sse2.ShuffleHigh), new Type[] { typeof(Vector128<UInt16>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<UInt16>>(_dataTable.inArrayPtr),
-                                        (ushort)2,
-                                        (byte)129
+                                        (byte)1
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt16>)(result));
-            ValidateResult(_dataTable.inArrayPtr, (ushort)2, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof(Sse2).GetMethod(nameof(Sse2.Insert), new Type[] { typeof(Vector128<UInt16>), typeof(UInt16), typeof(byte) })
+            var result = typeof(Sse2).GetMethod(nameof(Sse2.ShuffleHigh), new Type[] { typeof(Vector128<UInt16>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Sse2.LoadVector128((UInt16*)(_dataTable.inArrayPtr)),
-                                        (ushort)2,
-                                        (byte)129
+                                        (byte)1
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt16>)(result));
-            ValidateResult(_dataTable.inArrayPtr, (ushort)2, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
 
-            var result = typeof(Sse2).GetMethod(nameof(Sse2.Insert), new Type[] { typeof(Vector128<UInt16>), typeof(UInt16), typeof(byte) })
+            var result = typeof(Sse2).GetMethod(nameof(Sse2.ShuffleHigh), new Type[] { typeof(Vector128<UInt16>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Sse2.LoadAlignedVector128((UInt16*)(_dataTable.inArrayPtr)),
-                                        (ushort)2,
-                                        (byte)129
+                                        (byte)1
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt16>)(result));
-            ValidateResult(_dataTable.inArrayPtr, (ushort)2, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = Sse2.Insert(
+            var result = Sse2.ShuffleHigh(
                 _clsVar,
-                _scalarClsData,
-                129
+                1
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar, _scalarClsData,_dataTable.outArrayPtr);
+            ValidateResult(_clsVar, _dataTable.outArrayPtr);
         }
 
-        public void RunLclVarScenario()
+        public void RunLclVarScenario_UnsafeRead()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario));
-
-            UInt16 localData = (ushort)2;
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
             var firstOp = Unsafe.Read<Vector128<UInt16>>(_dataTable.inArrayPtr);
-            var result = Sse2.Insert(firstOp, localData, 129);
+            var result = Sse2.ShuffleHigh(firstOp, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            UInt16 localData = (ushort)2;
-
             var firstOp = Sse2.LoadVector128((UInt16*)(_dataTable.inArrayPtr));
-            var result = Sse2.Insert(firstOp, localData, 129);
+            var result = Sse2.ShuffleHigh(firstOp, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
-            UInt16 localData = (ushort)2;
-
             var firstOp = Sse2.LoadAlignedVector128((UInt16*)(_dataTable.inArrayPtr));
-            var result = Sse2.Insert(firstOp, localData, 129);
+            var result = Sse2.ShuffleHigh(firstOp, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new InsertScalarTest__InsertUInt16129();
-            var result = Sse2.Insert(test._fld, test._scalarFldData, 129);
+            var test = new ImmUnaryOpTest__ShuffleHighUInt161();
+            var result = Sse2.ShuffleHigh(test._fld, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, test._scalarFldData, _dataTable.outArrayPtr);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Sse2.Insert(_fld, _scalarFldData, 129);
+            var result = Sse2.ShuffleHigh(_fld, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld, _scalarFldData, _dataTable.outArrayPtr);
+            ValidateResult(_fld, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
@@ -325,10 +301,10 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Sse2.Insert(test._fld, test._scalarFldData, 129);
+            var result = Sse2.ShuffleHigh(test._fld, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, test._scalarFldData, _dataTable.outArrayPtr);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
         public void RunStructFldScenario()
@@ -347,7 +323,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             try
             {
-                RunBasicScenario();
+                RunBasicScenario_UnsafeRead();
             }
             catch (PlatformNotSupportedException)
             {
@@ -360,7 +336,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector128<UInt16> firstOp, UInt16 scalarData, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<UInt16> firstOp, void* result, [CallerMemberName] string method = "")
         {
             UInt16[] inArray = new UInt16[Op1ElementCount];
             UInt16[] outArray = new UInt16[RetElementCount];
@@ -368,10 +344,10 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.WriteUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray[0]), firstOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
 
-            ValidateResult(inArray, scalarData, outArray, method);
+            ValidateResult(inArray, outArray, method);
         }
 
-        private void ValidateResult(void* firstOp, UInt16 scalarData, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
         {
             UInt16[] inArray = new UInt16[Op1ElementCount];
             UInt16[] outArray = new UInt16[RetElementCount];
@@ -379,25 +355,32 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
 
-            ValidateResult(inArray, scalarData, outArray, method);
+            ValidateResult(inArray, outArray, method);
         }
 
-        private void ValidateResult(UInt16[] firstOp,  UInt16 scalarData, UInt16[] result, [CallerMemberName] string method = "")
+        private void ValidateResult(UInt16[] firstOp, UInt16[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
-            for (var i = 0; i < RetElementCount; i++)
+            if (firstOp[0] != result[0])
             {
-                if ((i == 1 ? result[i] != scalarData : result[i] != 0))
+                succeeded = false;
+            }
+            else
+            {
+                for (var i = 1; i < RetElementCount; i++)
                 {
-                    succeeded = false;
-                    break;
+                    if ((i <= 3 ? (firstOp[i] != result[i]) : (firstOp[5] != result[4])))
+                    {
+                        succeeded = false;
+                        break;
+                    }
                 }
             }
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Sse2)}.{nameof(Sse2.Insert)}<UInt16>(Vector128<UInt16><9>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sse2)}.{nameof(Sse2.ShuffleHigh)}<UInt16>(Vector128<UInt16><9>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);

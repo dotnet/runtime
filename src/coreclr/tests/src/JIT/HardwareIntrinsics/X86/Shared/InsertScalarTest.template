@@ -26,7 +26,7 @@ namespace JIT.HardwareIntrinsics.X86
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
-                test.RunBasicScenario_UnsafeRead();
+                test.RunBasicScenario();
 
                 if ({LoadIsa}.IsSupported)
                 {
@@ -38,7 +38,7 @@ namespace JIT.HardwareIntrinsics.X86
                 }
 
                 // Validates calling via reflection works, using Unsafe.Read
-                test.RunReflectionScenario_UnsafeRead();
+                test.RunReflectionScenario();
 
                 if ({LoadIsa}.IsSupported)
                 {
@@ -53,7 +53,7 @@ namespace JIT.HardwareIntrinsics.X86
                 test.RunClsVarScenario();
 
                 // Validates passing a local works, using Unsafe.Read
-                test.RunLclVarScenario_UnsafeRead();
+                test.RunLclVarScenario();
 
                 if ({LoadIsa}.IsSupported)
                 {
@@ -94,6 +94,7 @@ namespace JIT.HardwareIntrinsics.X86
         private struct TestStruct
         {
             public {Op1VectorType}<{Op1BaseType}> _fld;
+            public {Op1BaseType} _scalarFldData;
 
             public static TestStruct Create()
             {
@@ -102,15 +103,17 @@ namespace JIT.HardwareIntrinsics.X86
                 for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
+                testStruct._scalarFldData = {Data};
+
                 return testStruct;
             }
 
             public void RunStructFldScenario(InsertScalarTest__{Method}{RetBaseType}{Imm} testClass)
             {
-                var result = {Isa}.{Method}(_fld, {Data}, {Imm});
+                var result = {Isa}.{Method}(_fld, _scalarFldData, {Imm});
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(_fld, _scalarFldData, testClass._dataTable.outArrayPtr);
             }
         }
 
@@ -120,10 +123,12 @@ namespace JIT.HardwareIntrinsics.X86
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
 
         private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
+        private static {Op1BaseType} _scalarClsData = {Data};
 
         private static {Op1VectorType}<{Op1BaseType}> _clsVar;
 
         private {Op1VectorType}<{Op1BaseType}> _fld;
+        private {Op1BaseType} _scalarFldData = {Data};
 
         private SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}> _dataTable;
 
@@ -148,9 +153,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         public bool Succeeded { get; set; }
 
-        public void RunBasicScenario_UnsafeRead()
+        public void RunBasicScenario()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
 
             var result = {Isa}.{Method}(
                 Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
@@ -159,40 +164,46 @@ namespace JIT.HardwareIntrinsics.X86
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, {Data}, _dataTable.outArrayPtr);
         }
 
-        public void RunBasicScenario_Load()
+        public unsafe void RunBasicScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
+            {Op1BaseType} localData = {Data};
+            {Op1BaseType}* ptr = &localData;
+
             var result = {Isa}.{Method}(
                 {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
-                {Data},
+                *ptr,
                 {Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, *ptr, _dataTable.outArrayPtr);
         }
 
-        public void RunBasicScenario_LoadAligned()
+        public unsafe void RunBasicScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
 
+            {Op1BaseType} localData = {Data};
+            {Op1BaseType}* ptr = &localData;
+
             var result = {Isa}.{Method}(
                 {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
-                {Data},
+                *ptr,
                 {Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, *ptr, _dataTable.outArrayPtr);
         }
 
-        public void RunReflectionScenario_UnsafeRead()
+        public void RunReflectionScenario()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
 
             var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({RetBaseType}), typeof(byte) })
                                      .Invoke(null, new object[] {
@@ -202,7 +213,7 @@ namespace JIT.HardwareIntrinsics.X86
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, {Data}, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_Load()
@@ -217,7 +228,7 @@ namespace JIT.HardwareIntrinsics.X86
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, {Data}, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_LoadAligned()
@@ -232,7 +243,7 @@ namespace JIT.HardwareIntrinsics.X86
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, {Data}, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
@@ -241,45 +252,51 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = {Isa}.{Method}(
                 _clsVar,
-                {Data},
+                _scalarClsData,
                 {Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar, _dataTable.outArrayPtr);
+            ValidateResult(_clsVar, _scalarClsData,_dataTable.outArrayPtr);
         }
 
-        public void RunLclVarScenario_UnsafeRead()
+        public void RunLclVarScenario()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario));
+
+            {Op1BaseType} localData = {Data};
 
             var firstOp = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr);
-            var result = {Isa}.{Method}(firstOp, {Data}, {Imm});
+            var result = {Isa}.{Method}(firstOp, localData, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
+            {Op1BaseType} localData = {Data};
+
             var firstOp = {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr));
-            var result = {Isa}.{Method}(firstOp, {Data}, {Imm});
+            var result = {Isa}.{Method}(firstOp, localData, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
+            {Op1BaseType} localData = {Data};
+
             var firstOp = {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr));
-            var result = {Isa}.{Method}(firstOp, {Data}, {Imm});
+            var result = {Isa}.{Method}(firstOp, localData, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
@@ -287,20 +304,20 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
             var test = new InsertScalarTest__{Method}{RetBaseType}{Imm}();
-            var result = {Isa}.{Method}(test._fld, {Data}, {Imm});
+            var result = {Isa}.{Method}(test._fld, test._scalarFldData, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, _dataTable.outArrayPtr);
+            ValidateResult(test._fld, test._scalarFldData, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = {Isa}.{Method}(_fld, {Data}, {Imm});
+            var result = {Isa}.{Method}(_fld, _scalarFldData, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld, _dataTable.outArrayPtr);
+            ValidateResult(_fld, _scalarFldData, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
@@ -308,10 +325,10 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = {Isa}.{Method}(test._fld, {Data}, {Imm});
+            var result = {Isa}.{Method}(test._fld, test._scalarFldData, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, _dataTable.outArrayPtr);
+            ValidateResult(test._fld, test._scalarFldData, _dataTable.outArrayPtr);
         }
 
         public void RunStructFldScenario()
@@ -330,7 +347,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             try
             {
-                RunBasicScenario_UnsafeRead();
+                RunBasicScenario();
             }
             catch (PlatformNotSupportedException)
             {
@@ -343,7 +360,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult({Op1VectorType}<{Op1BaseType}> firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> firstOp, {Op1BaseType} scalarData, void* result, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -351,10 +368,10 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), firstOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(inArray, scalarData, outArray, method);
         }
 
-        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* firstOp, {Op1BaseType} scalarData, void* result, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -362,10 +379,10 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(inArray, scalarData, outArray, method);
         }
 
-        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1BaseType}[] firstOp,  {Op1BaseType} scalarData, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 

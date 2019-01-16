@@ -9291,15 +9291,19 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         goto GOT_DSP;
     }
 
-    // Is there a large constant operand?
+    // `addc` is used for two kinds if instructions
+    // 1. ins like ADD that can have reg/mem and const versions both and const version needs to modify the opcode for
+    // large constant operand (e.g., imm32)
+    // 2. certain SSE/AVX ins have const operand as control bits that is always 1-Byte (imm8) even if `size` > 1-Byte
     if (addc && (size > EA_1BYTE))
     {
         ssize_t cval = addc->cnsVal;
 
         // Does the constant fit in a byte?
+        // SSE/AVX do not need to modify opcode
         if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
         {
-            if (id->idInsFmt() != IF_ARW_SHF)
+            if (id->idInsFmt() != IF_ARW_SHF && !IsSSEOrAVXInstruction(ins))
             {
                 code |= 2;
             }
@@ -9551,7 +9555,7 @@ GOT_DSP:
 
                     if (addc)
                     {
-                        // It is of the form "ins [disp], immed"
+                        // It is of the form "ins [disp], imm" or "ins reg, [disp], imm"
                         // For emitting relocation, we also need to take into account of the
                         // additional bytes of code emitted for immed val.
 
@@ -10108,16 +10112,20 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
     assert(ins != INS_imul || id->idReg1() == REG_EAX || size == EA_4BYTE || size == EA_8BYTE);
 
-    // Is there a large constant operand?
+    // `addc` is used for two kinds if instructions
+    // 1. ins like ADD that can have reg/mem and const versions both and const version needs to modify the opcode for
+    // large constant operand (e.g., imm32)
+    // 2. certain SSE/AVX ins have const operand as control bits that is always 1-Byte (imm8) even if `size` > 1-Byte
     if (addc && (size > EA_1BYTE))
     {
         ssize_t cval = addc->cnsVal;
 
         // Does the constant fit in a byte?
+        // SSE/AVX do not need to modify opcode
         if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
         {
             if ((id->idInsFmt() != IF_SRW_SHF) && (id->idInsFmt() != IF_RRW_SRD_CNS) &&
-                (id->idInsFmt() != IF_RWR_RRD_SRD_CNS))
+                (id->idInsFmt() != IF_RWR_RRD_SRD_CNS) && !IsSSEOrAVXInstruction(ins))
             {
                 code |= 2;
             }
@@ -10551,14 +10559,18 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         code = AddRexWPrefix(ins, code);
     }
 
-    // Is there a large constant operand?
+    // `addc` is used for two kinds if instructions
+    // 1. ins like ADD that can have reg/mem and const versions both and const version needs to modify the opcode for
+    // large constant operand (e.g., imm32)
+    // 2. certain SSE/AVX ins have const operand as control bits that is always 1-Byte (imm8) even if `size` > 1-Byte
     if (addc && (size > EA_1BYTE))
     {
         ssize_t cval = addc->cnsVal;
         // Does the constant fit in a byte?
         if ((signed char)cval == cval && addc->cnsReloc == false && ins != INS_mov && ins != INS_test)
         {
-            if (id->idInsFmt() != IF_MRW_SHF)
+            // SSE/AVX do not need to modify opcode
+            if (id->idInsFmt() != IF_MRW_SHF && !IsSSEOrAVXInstruction(ins))
             {
                 code |= 2;
             }
@@ -10787,7 +10799,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (addc)
         {
-            // It is of the form "ins [disp], immed"
+            // It is of the form "ins [disp], imm" or "ins reg, [disp], imm"
             // For emitting relocation, we also need to take into account of the
             // additional bytes of code emitted for immed val.
 
@@ -12964,6 +12976,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_RRW_ARD_CNS:
         case IF_RWR_ARD_CNS:
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeRM(ins);
 
@@ -13023,6 +13036,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RRD_ARD_CNS:
         case IF_RWR_RRD_ARD_RRD:
         {
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeRM(ins);
             if (EncodedBySSE38orSSE3A(ins))
@@ -13122,6 +13136,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_RRW_SRD_CNS:
         case IF_RWR_SRD_CNS:
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsCns(id, &cnsVal);
             code = insCodeRM(ins);
 
@@ -13276,6 +13291,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_RRW_MRD_CNS:
         case IF_RWR_MRD_CNS:
+            assert(IsSSEOrAVXInstruction(ins));
             emitGetInsDcmCns(id, &cnsVal);
             code = insCodeRM(ins);
 
