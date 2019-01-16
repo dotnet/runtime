@@ -7424,7 +7424,11 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (MonoError 
 {
 	gchar *path;
 
-	path = g_build_path (G_DIR_SEPARATOR_S, mono_get_config_dir (), "mono", mono_get_runtime_info ()->framework_version, "machine.config", NULL);
+	const char *mono_cfg_dir = mono_get_config_dir ();
+	if (!mono_cfg_dir)
+		return mono_string_new_handle (mono_domain_get (), "", error);
+
+	path = g_build_path (G_DIR_SEPARATOR_S, mono_cfg_dir, "mono", mono_get_runtime_info ()->framework_version, "machine.config", NULL);
 
 	mono_icall_make_platform_path (path);
 
@@ -7519,7 +7523,11 @@ ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_machine_con
 MonoStringHandle
 ves_icall_System_Web_Util_ICalls_get_machine_install_dir (MonoError *error)
 {
-	char *path = g_path_get_dirname (mono_get_config_dir ());
+	const char *mono_cfg_dir = mono_get_config_dir ();
+	if (!mono_cfg_dir)
+		return mono_string_new_handle (mono_domain_get (), "", error);
+
+	char *path = g_path_get_dirname (mono_cfg_dir);
 
 	mono_icall_make_platform_path (path);
 

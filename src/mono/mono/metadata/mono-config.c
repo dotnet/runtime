@@ -642,9 +642,14 @@ mono_config_for_assembly_internal (MonoImage *assembly)
 	g_free (cfg_name);
 
 	cfg_name = g_strdup_printf ("%s.config", mono_image_get_name (assembly));
+	const char *mono_cfg_dir = mono_get_config_dir ();
+	if (!mono_cfg_dir) {
+		g_free (cfg_name);
+		return;
+	}
 
 	for (i = 0; (aname = get_assembly_filename (assembly, i)) != NULL; ++i) {
-		cfg = g_build_filename (mono_get_config_dir (), "mono", "assemblies", aname, cfg_name, NULL);
+		cfg = g_build_filename (mono_cfg_dir, "mono", "assemblies", aname, cfg_name, NULL);
 		got_it += mono_config_parse_file_with_context (&state, cfg);
 		g_free (cfg);
 
@@ -687,9 +692,12 @@ mono_config_parse (const char *filename) {
 		return;
 	}
 
-	mono_cfg = g_build_filename (mono_get_config_dir (), "mono", "config", NULL);
-	mono_config_parse_file (mono_cfg);
-	g_free (mono_cfg);
+	const char *mono_cfg_dir = mono_get_config_dir ();
+	if (mono_cfg_dir) {
+		mono_cfg = g_build_filename (mono_cfg_dir, "mono", "config", NULL);
+		mono_config_parse_file (mono_cfg);
+		g_free (mono_cfg);
+	}
 
 #if !defined(TARGET_WIN32)
 	home = g_get_home_dir ();
