@@ -16,6 +16,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["MaskLoad.Single"] = MaskLoadSingle,
                 ["MaskStore.Double"] = MaskStoreDouble,
                 ["MaskStore.Single"] = MaskStoreSingle,
+                ["PermuteVar.Single"] = PermuteVarSingle,
+                ["PermuteVar.Double"] = PermuteVarDouble,
             };
         }
     }

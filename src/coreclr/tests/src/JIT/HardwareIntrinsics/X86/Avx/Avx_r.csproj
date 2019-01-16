@@ -127,6 +127,8 @@
     <Compile Include="Permute2x128.UInt64.2.cs" />
     <Compile Include="Permute2x128.Single.2.cs" />
     <Compile Include="Permute2x128.Double.2.cs" />
+    <Compile Include="PermuteVar.Single.cs" />
+    <Compile Include="PermuteVar.Double.cs" />
     <Compile Include="RoundCurrentDirection.Double.cs" />
     <Compile Include="RoundCurrentDirection.Single.cs" />
     <Compile Include="RoundToNearestInteger.Double.cs" />
