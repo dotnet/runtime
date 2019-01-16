@@ -20,4 +20,5 @@ MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.remove_Unlo
 MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.SetProfileOptimizationRoot(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.StartProfileOptimization(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.Unload()' does not exist in the implementation but it does exist in the contract.
-Total Issues: 21
+TypesMustExist : Type 'System.Runtime.Loader.AssemblyDependencyResolver' does not exist in the implementation but it does exist in the contract.
+Total Issues: 22
