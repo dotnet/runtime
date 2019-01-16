@@ -26,7 +26,7 @@ namespace JIT.HardwareIntrinsics.X86
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
-                test.RunBasicScenario_UnsafeRead();
+                test.RunBasicScenario();
 
                 if (Sse2.IsSupported)
                 {
@@ -38,7 +38,7 @@ namespace JIT.HardwareIntrinsics.X86
                 }
 
                 // Validates calling via reflection works, using Unsafe.Read
-                test.RunReflectionScenario_UnsafeRead();
+                test.RunReflectionScenario();
 
                 if (Sse2.IsSupported)
                 {
@@ -53,7 +53,7 @@ namespace JIT.HardwareIntrinsics.X86
                 test.RunClsVarScenario();
 
                 // Validates passing a local works, using Unsafe.Read
-                test.RunLclVarScenario_UnsafeRead();
+                test.RunLclVarScenario();
 
                 if (Sse2.IsSupported)
                 {
@@ -94,6 +94,7 @@ namespace JIT.HardwareIntrinsics.X86
         private struct TestStruct
         {
             public Vector128<Int64> _fld;
+            public Int64 _scalarFldData;
 
             public static TestStruct Create()
             {
@@ -102,15 +103,17 @@ namespace JIT.HardwareIntrinsics.X86
                 for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetInt64(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref testStruct._fld), ref Unsafe.As<Int64, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
+                testStruct._scalarFldData = (long)2;
+
                 return testStruct;
             }
 
             public void RunStructFldScenario(InsertScalarTest__InsertInt641 testClass)
             {
-                var result = Sse41.X64.Insert(_fld, (long)2, 1);
+                var result = Sse41.X64.Insert(_fld, _scalarFldData, 1);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(_fld, _scalarFldData, testClass._dataTable.outArrayPtr);
             }
         }
 
@@ -120,10 +123,12 @@ namespace JIT.HardwareIntrinsics.X86
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Int64>>() / sizeof(Int64);
 
         private static Int64[] _data = new Int64[Op1ElementCount];
+        private static Int64 _scalarClsData = (long)2;
 
         private static Vector128<Int64> _clsVar;
 
         private Vector128<Int64> _fld;
+        private Int64 _scalarFldData = (long)2;
 
         private SimpleUnaryOpTest__DataTable<Int64, Int64> _dataTable;
 
@@ -148,9 +153,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         public bool Succeeded { get; set; }
 
-        public void RunBasicScenario_UnsafeRead()
+        public void RunBasicScenario()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
 
             var result = Sse41.X64.Insert(
                 Unsafe.Read<Vector128<Int64>>(_dataTable.inArrayPtr),
@@ -159,40 +164,46 @@ namespace JIT.HardwareIntrinsics.X86
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, (long)2, _dataTable.outArrayPtr);
         }
 
-        public void RunBasicScenario_Load()
+        public unsafe void RunBasicScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
+            Int64 localData = (long)2;
+            Int64* ptr = &localData;
+
             var result = Sse41.X64.Insert(
                 Sse2.LoadVector128((Int64*)(_dataTable.inArrayPtr)),
-                (long)2,
+                *ptr,
                 1
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, *ptr, _dataTable.outArrayPtr);
         }
 
-        public void RunBasicScenario_LoadAligned()
+        public unsafe void RunBasicScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
 
+            Int64 localData = (long)2;
+            Int64* ptr = &localData;
+
             var result = Sse41.X64.Insert(
                 Sse2.LoadAlignedVector128((Int64*)(_dataTable.inArrayPtr)),
-                (long)2,
+                *ptr,
                 1
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, *ptr, _dataTable.outArrayPtr);
         }
 
-        public void RunReflectionScenario_UnsafeRead()
+        public void RunReflectionScenario()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
 
             var result = typeof(Sse41.X64).GetMethod(nameof(Sse41.X64.Insert), new Type[] { typeof(Vector128<Int64>), typeof(Int64), typeof(byte) })
                                      .Invoke(null, new object[] {
@@ -202,7 +213,7 @@ namespace JIT.HardwareIntrinsics.X86
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Int64>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, (long)2, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_Load()
@@ -217,7 +228,7 @@ namespace JIT.HardwareIntrinsics.X86
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Int64>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, (long)2, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_LoadAligned()
@@ -232,7 +243,7 @@ namespace JIT.HardwareIntrinsics.X86
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Int64>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, (long)2, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
@@ -241,45 +252,51 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = Sse41.X64.Insert(
                 _clsVar,
-                (long)2,
+                _scalarClsData,
                 1
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar, _dataTable.outArrayPtr);
+            ValidateResult(_clsVar, _scalarClsData,_dataTable.outArrayPtr);
         }
 
-        public void RunLclVarScenario_UnsafeRead()
+        public void RunLclVarScenario()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario));
+
+            Int64 localData = (long)2;
 
             var firstOp = Unsafe.Read<Vector128<Int64>>(_dataTable.inArrayPtr);
-            var result = Sse41.X64.Insert(firstOp, (long)2, 1);
+            var result = Sse41.X64.Insert(firstOp, localData, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
+            Int64 localData = (long)2;
+
             var firstOp = Sse2.LoadVector128((Int64*)(_dataTable.inArrayPtr));
-            var result = Sse41.X64.Insert(firstOp, (long)2, 1);
+            var result = Sse41.X64.Insert(firstOp, localData, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
+            Int64 localData = (long)2;
+
             var firstOp = Sse2.LoadAlignedVector128((Int64*)(_dataTable.inArrayPtr));
-            var result = Sse41.X64.Insert(firstOp, (long)2, 1);
+            var result = Sse41.X64.Insert(firstOp, localData, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, localData, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
@@ -287,20 +304,20 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
             var test = new InsertScalarTest__InsertInt641();
-            var result = Sse41.X64.Insert(test._fld, (long)2, 1);
+            var result = Sse41.X64.Insert(test._fld, test._scalarFldData, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, _dataTable.outArrayPtr);
+            ValidateResult(test._fld, test._scalarFldData, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Sse41.X64.Insert(_fld, (long)2, 1);
+            var result = Sse41.X64.Insert(_fld, _scalarFldData, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld, _dataTable.outArrayPtr);
+            ValidateResult(_fld, _scalarFldData, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
@@ -308,10 +325,10 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Sse41.X64.Insert(test._fld, (long)2, 1);
+            var result = Sse41.X64.Insert(test._fld, test._scalarFldData, 1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, _dataTable.outArrayPtr);
+            ValidateResult(test._fld, test._scalarFldData, _dataTable.outArrayPtr);
         }
 
         public void RunStructFldScenario()
@@ -330,7 +347,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             try
             {
-                RunBasicScenario_UnsafeRead();
+                RunBasicScenario();
             }
             catch (PlatformNotSupportedException)
             {
@@ -343,7 +360,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector128<Int64> firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<Int64> firstOp, Int64 scalarData, void* result, [CallerMemberName] string method = "")
         {
             Int64[] inArray = new Int64[Op1ElementCount];
             Int64[] outArray = new Int64[RetElementCount];
@@ -351,10 +368,10 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.WriteUnaligned(ref Unsafe.As<Int64, byte>(ref inArray[0]), firstOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(inArray, scalarData, outArray, method);
         }
 
-        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* firstOp, Int64 scalarData, void* result, [CallerMemberName] string method = "")
         {
             Int64[] inArray = new Int64[Op1ElementCount];
             Int64[] outArray = new Int64[RetElementCount];
@@ -362,16 +379,16 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<Int64>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(inArray, scalarData, outArray, method);
         }
 
-        private void ValidateResult(Int64[] firstOp, Int64[] result, [CallerMemberName] string method = "")
+        private void ValidateResult(Int64[] firstOp,  Int64 scalarData, Int64[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                if ((i == 1 ? result[i] != 2 : result[i] != firstOp[i]))
+                if ((i == 1 ? result[i] != scalarData : result[i] != firstOp[i]))
                 {
                     succeeded = false;
                     break;
