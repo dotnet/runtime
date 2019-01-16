@@ -11,6 +11,12 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
 
+#ifndef ENABLE_NETCORE
+#define MONO_ASSEMBLY_CORLIB_NAME "mscorlib"
+#else
+#define MONO_ASSEMBLY_CORLIB_NAME "System.Private.CoreLib"
+#endif
+
 /* Flag bits for mono_assembly_names_equal_flags (). */
 typedef enum {
 	/* Default comparison: all fields must match */

@@ -15,6 +15,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/object.h>
@@ -79,10 +80,10 @@ default_platform_check (const char *image_name)
 		return (strcmp (mono_defaults.corlib->name, image_name) == 0);
 	} else {
 		/* this can get called even before we load corlib (e.g. the EXE itself) */
-		const char *corlib = "mscorlib.dll";
+		const char *corlib = MONO_ASSEMBLY_CORLIB_NAME ".dll";
 		int ilen = strlen (image_name);
 		int clen = strlen (corlib);
-		return ((ilen >= clen) && (strcmp ("mscorlib.dll", image_name + ilen - clen) == 0));
+		return ((ilen >= clen) && (strcmp (corlib, image_name + ilen - clen) == 0));
 	}
 }
 

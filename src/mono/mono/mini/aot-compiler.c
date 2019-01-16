@@ -4277,7 +4277,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
  	}
 
-	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
+	if (mono_is_corlib_image (acfg->image->assembly->image)) {
 		int nallocators;
 
 		/* Runtime invoke wrappers */
@@ -7185,7 +7185,7 @@ emit_trampolines (MonoAotCompile *acfg)
 	g_assert (acfg->image->assembly);
 
 	/* Currently, we emit most trampolines into the mscorlib AOT image. */
-	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
+	if (mono_is_corlib_image(acfg->image->assembly->image)) {
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 		MonoTrampInfo *info;
 

@@ -1456,7 +1456,7 @@ load_reference_by_aname_refonly_asmctx (MonoAssemblyName *aname, MonoAssembly *a
 	*status = MONO_IMAGE_OK;
 	{
 		/* We use the loaded corlib */
-		if (!strcmp (aname->name, "mscorlib")) {
+		if (!strcmp (aname->name, MONO_ASSEMBLY_CORLIB_NAME)) {
 			MonoAssemblyByNameRequest req;
 			mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
 			req.requesting_assembly = assm;
@@ -2800,7 +2800,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 
 	mono_assembly_fill_assembly_name (image, &ass->aname);
 
-	if (mono_defaults.corlib && strcmp (ass->aname.name, "mscorlib") == 0) {
+	if (mono_defaults.corlib && strcmp (ass->aname.name, MONO_ASSEMBLY_CORLIB_NAME) == 0) {
 		// MS.NET doesn't support loading other mscorlibs
 		g_free (ass);
 		g_free (base_dir);
@@ -4294,7 +4294,11 @@ mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname,
 	/* Currently we retrieve the loaded corlib for reflection 
 	 * only requests, like a common reflection only assembly 
 	 */
-	if (strcmp (aname->name, "mscorlib") == 0 || strcmp (aname->name, "mscorlib.dll") == 0) {
+	gboolean name_is_corlib = strcmp (aname->name, MONO_ASSEMBLY_CORLIB_NAME) == 0;
+#ifndef NETCORE_LOADER
+	name_is_corlib |= strcmp (aname->name, "mscorlib.dll") == 0;
+#endif
+	if (name_is_corlib) {
 		return mono_assembly_load_corlib (mono_get_runtime_info (), status);
 	}
 
