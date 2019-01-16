@@ -8,10 +8,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.ILAsm">
-      <Version>$(MicrosoftNetCoreIlasmPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreILAsmPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.ILDAsm">
-      <Version>$(MicrosoftNetCoreIlasmPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreILAsmPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
 </Project>

@@ -29,5 +29,8 @@
     <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27314-4</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview-27314-4</MicrosoftNETCoreDotNetHostPackageVersion>
     <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview-27314-4</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <!-- Coreclr dependencies -->
+    <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview-27315-73</MicrosoftNETCoreILAsmPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27315-73</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
   </PropertyGroup>
 </Project>
