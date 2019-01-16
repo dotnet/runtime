@@ -8,7 +8,8 @@
 
   <PropertyGroup>
     <HelixArchitecture>$(BuildArch)</HelixArchitecture>
-    <HelixConfiguration>$(BuildType)</HelixConfiguration>
+    <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(BuildType)</HelixConfiguration>
+    <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(BuildType)-$(Scenario)</HelixConfiguration>
 
     <IsExternal>$(_IsExternal)</IsExternal>
     <IsExternal Condition=" '$(IsExternal)' == '' ">true</IsExternal>
@@ -29,57 +30,70 @@
 
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <CoreRootDirectory>$(TestWorkingDir)\Tests\Core_Root</CoreRootDirectory>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <HelixPythonPath>%HELIX_PYTHONPATH%</HelixPythonPath>
-    <RunnerScript>%HELIX_CORRELATION_PAYLOAD%\runtest_helix.py</RunnerScript>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <HelixPythonPath>$HELIX_PYTHONPATH</HelixPythonPath>
-    <RunnerScript>$HELIX_CORRELATION_PAYLOAD/runtest_helix.py</RunnerScript>
+    <TestEnvFileExtension Condition=" '$(TargetsWindows)' == 'true' ">.cmd</TestEnvFileExtension>
+    <TestEnvFileExtension Condition=" '$(TargetsWindows)' != 'true' ">.sh</TestEnvFileExtension>
   </PropertyGroup>
 
   <ItemGroup>
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
     <XUnitWrapperDlls Include="$(TestWorkingDir)\**\*.XUnitWrapper.dll" />
+    <Scenarios Include="$(_Scenarios.Split(','))" />
   </ItemGroup>
 
-  <Target Name="CopyRunnerScriptToCoreRootDirectory" BeforeTargets="SubmitTestsToHelix">
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)\runtest_helix.py" DestinationFolder="$(CoreRootDirectory)" />
+  <Target Name="CreateTestEnvFiles">
+    <!-- This target will create one __TestEnv file per XUnitWrapper/Scenario combination -->
+    <ItemGroup>
+      <_XUnitWrapperDirectoryWithScenario Include="@(XUnitWrapperDlls->'%(RootDir)%(Directory)')">
+        <Scenario>%(Scenarios.Identity)</Scenario>
+      </_XUnitWrapperDirectoryWithScenario>
+
+      <_TestEnvProjectsToBuild Include=".\testenvironment.proj">
+        <Properties>Scenario=%(_XUnitWrapperDirectoryWithScenario.Scenario);TestEnvFileName=%(Identity)\SetStressModes_%(Scenario)$(TestEnvFileExtension);TargetsWindows=$(TargetsWindows)</Properties>
+      </_TestEnvProjectsToBuild>
+    </ItemGroup>
+
+    <MSBuild Projects="@(_TestEnvProjectsToBuild)" Targets="CreateTestEnvFile" BuildInParallel="false" StopOnFirstFailure="true" UnloadProjectsOnCompletion="true" />
   </Target>
 
-  <Target Name="SubmitTestsToHelix">
+  <Target Name="SubmitTestsToHelix" DependsOnTargets="CreateTestEnvFiles">
     <ItemGroup>
-      <Scenarios Include="$(_Scenarios.Split(','))" />
-      <ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <Properties>Scenario=%(_Scenarios.Identity)</Properties>
-      </ProjectsToBuild>
+      <_ProjectsToBuild Include="$(MSBuildProjectFile)">
+        <Properties>Scenario=%(Scenarios.Identity)</Properties>
+      </_ProjectsToBuild>
     </ItemGroup>
+
     <PropertyGroup>
-      <BuildInParallel>false</BuildInParallel>
-      <BuildInParallel Condition=" '@(ProjectsToBuild->Count())' > '1' ">true</BuildInParallel>
+      <_BuildInParallel>false</_BuildInParallel>
+      <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' > '1' ">true</_BuildInParallel>
     </PropertyGroup>
-    <MSBuild Projects="@(ProjectsToBuild)" Targets="Test" BuildInParallel="$(BuildInParallel)" StopOnFirstFailure="false" UnloadProjectsOnCompletion="true" />
+
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" UnloadProjectsOnCompletion="true" />
   </Target>
 
   <Target Name="BuildHelixWorkItem" BeforeTargets="Test">
     <PropertyGroup>
-      <!-- The "normal" scenario is just a way to include the default
-           (empty) scenario when specifying multiple scenarios at
-           once. From here, on, treat it as the empty scenario so that
-           job names will not have a scenario prefix and the runtest
-           script doesn't have to define a "normal" scenario. -->
-      <Scenario Condition=" '$(Scenario)' == 'normal' "></Scenario>
-      <TestRunNamePrefix Condition=" '$(Scenario)' == '' ">$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
-      <TestRunNamePrefix Condition=" '$(Scenario)' != '' ">$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
+      <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
+      <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
+      <_XUnitRunnerArgs>-parallel collections -nocolor -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing</_XUnitRunnerArgs>
     </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
+      <_CoreRun>%CORE_ROOT%\CoreRun.exe</_CoreRun>
+      <_XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</_XUnitRunnerDll>
+      <_HelixPreCommands>set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%;set __TestEnv=%HELIX_WORKITEM_PAYLOAD%\SetStressModes_$(Scenario)$(TestEnvFileExtension);type %__TestEnv%</_HelixPreCommands>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
+      <_CoreRun>$CORE_ROOT/corerun</_CoreRun>
+      <_XUnitRunnerDll>$CORE_ROOT/xunit.console.dll</_XUnitRunnerDll>
+      <_HelixPreCommands>export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD;export __TestEnv=$HELIX_WORKITEM_PAYLOAD/SetStressModes_$(Scenario)$(TestEnvFileExtension);cat $__TestEnv</_HelixPreCommands>
+    </PropertyGroup>
+
     <ItemGroup>
       <HelixWorkItem Include="@(XUnitWrapperDlls->'%(FileName)'->Replace('.XUnitWrapper', ''))">
         <PayloadDirectory>%(RootDir)%(Directory)</PayloadDirectory>
-        <Command Condition=" '$(Scenario)' == '' ">$(HelixPythonPath) $(RunnerScript) -wrapper %(FileName)%(Extension)</Command>
-        <Command Condition=" '$(Scenario)' != '' ">$(HelixPythonPath) $(RunnerScript) -wrapper %(FileName)%(Extension) -scenario $(Scenario)</Command>
+        <PreCommands>$(_HelixPreCommands)</PreCommands>
+        <Command>$(_CoreRun) $(_XUnitRunnerDll) %(FileName)%(Extension) $(_XUnitRunnerArgs)</Command>
         <Timeout>$([System.TimeSpan]::FromMinutes($(TimeoutInMinutes)))</Timeout>
       </HelixWorkItem>
     </ItemGroup>
