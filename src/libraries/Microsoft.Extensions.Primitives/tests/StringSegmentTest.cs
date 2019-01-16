@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -845,6 +845,67 @@ namespace Microsoft.Extensions.Primitives
 
             // Assert
             Assert.True(result > 0, $"{segment} should be greater than {candidate}");
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashCode_ReturnsSameValueForEqualSubstringsData))]
+        public void StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(StringSegment segment1, StringSegment segment2)
+        {
+            // Arrange
+            var comparer = StringSegmentComparer.Ordinal;
+
+            // Act
+            var hashCode1 = comparer.GetHashCode(segment1);
+            var hashCode2 = comparer.GetHashCode(segment2);
+
+            // Assert
+            Assert.Equal(hashCode1, hashCode2);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashCode_ReturnsSameValueForEqualSubstringsData))]
+        public void StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForEqualSubstrings(StringSegment segment1, StringSegment segment2)
+        {
+            // Arrange
+            var comparer = StringSegmentComparer.OrdinalIgnoreCase;
+
+            // Act
+            var hashCode1 = comparer.GetHashCode(segment1);
+            var hashCode2 = comparer.GetHashCode(segment2);
+
+            // Assert
+            Assert.Equal(hashCode1, hashCode2);
+        }
+
+        [Fact]
+        public void StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForDifferentlyCasedStrings()
+        {
+            // Arrange
+            var segment1 = new StringSegment("abc");
+            var segment2 = new StringSegment("Abcd", 0, 3);
+            var comparer = StringSegmentComparer.OrdinalIgnoreCase;
+
+            // Act
+            var hashCode1 = comparer.GetHashCode(segment1);
+            var hashCode2 = comparer.GetHashCode(segment2);
+
+            // Assert
+            Assert.Equal(hashCode1, hashCode2);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashCode_ReturnsDifferentValuesForInequalSubstringsData))]
+        public void StringSegmentComparerOrdinal_GetHashCode_ReturnsDifferentValuesForInequalSubstrings(StringSegment segment1, StringSegment segment2)
+        {
+            // Arrange
+            var comparer = StringSegmentComparer.Ordinal;
+
+            // Act
+            var hashCode1 = comparer.GetHashCode(segment1);
+            var hashCode2 = comparer.GetHashCode(segment2);
+
+            // Assert
+            Assert.NotEqual(hashCode1, hashCode2);
         }
 
         [Fact]

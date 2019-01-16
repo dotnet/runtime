@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -10,6 +10,7 @@ namespace Microsoft.Extensions.Primitives
     {
         public static StringSegmentComparer Ordinal { get; }
             = new StringSegmentComparer(StringComparison.Ordinal, StringComparer.Ordinal);
+
         public static StringSegmentComparer OrdinalIgnoreCase { get; }
             = new StringSegmentComparer(StringComparison.OrdinalIgnoreCase, StringComparer.OrdinalIgnoreCase);
 
@@ -34,8 +35,17 @@ namespace Microsoft.Extensions.Primitives
 
         public int GetHashCode(StringSegment obj)
         {
-            // TODO: PERF; Note that .NET Core strings use randomized hash codes for security reasons.
+#if NETCOREAPP
+            return string.GetHashCode(obj.AsSpan(), Comparison);
+#else
+            if (!obj.HasValue)
+            {
+                return 0;
+            }
+
+            // .NET Core strings use randomized hash codes for security reasons. Consequently we must materialize the StringSegment as a string
             return Comparer.GetHashCode(obj.Value);
+#endif
         }
     }
 }

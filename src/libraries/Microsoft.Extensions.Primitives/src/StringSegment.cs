@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            int textLength = text.Length;
+            var textLength = text.Length;
             if (!HasValue || Length != textLength)
             {
                 return false;
@@ -229,16 +229,20 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <inheritdoc />
-        /// <remarks>
-        /// This GetHashCode is expensive since it allocates on every call.
-        /// However this is required to ensure we retain any behavior (such as hash code randomization) that
-        /// string.GetHashCode has.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            // TODO: PERF; Note that .NET Core strings use randomized hash codes for security reasons.
+#if NETCOREAPP
+            return string.GetHashCode(AsSpan());
+#elif NETSTANDARD
+            // This GetHashCode is expensive since it allocates on every call.
+            // However this is required to ensure we retain any behavior (such as hash code randomization) that
+            // string.GetHashCode has.
             return Value?.GetHashCode() ?? 0;
+#else
+#error Target frameworks need to be updated.
+#endif
+
         }
 
         /// <summary>
@@ -290,8 +294,8 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            bool result = false;
-            int textLength = text.Length;
+            var result = false;
+            var textLength = text.Length;
 
             if (HasValue && Length >= textLength)
             {
@@ -315,9 +319,9 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            bool result = false;
-            int textLength = text.Length;
-            int comparisonLength = Offset + Length - textLength;
+            var result = false;
+            var textLength = text.Length;
+            var comparisonLength = Offset + Length - textLength;
 
             if (HasValue && comparisonLength > 0)
             {
@@ -531,7 +535,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 while (trimmedStart < length)
                 {
-                    char c = p[trimmedStart];
+                    var c = p[trimmedStart];
 
                     if (!char.IsWhiteSpace(c))
                     {
@@ -558,7 +562,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 while (trimmedEnd >= offset)
                 {
-                    char c = p[trimmedEnd];
+                    var c = p[trimmedEnd];
 
                     if (!char.IsWhiteSpace(c))
                     {
