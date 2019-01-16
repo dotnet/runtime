@@ -498,14 +498,17 @@ CheckCardTable
 SkipEphemeralCheck
         ; Check if we need to update the card table
         ldr      x12, wbs_card_table
-        add      x15, x12, x14, lsr #11
-        ldrb     w12, [x15]
-        cmp      x12, 0xFF
+
+        ; x15 := offset within card table
+        lsr      x15, x14, #11
+
+        ldrb     w16, [x12, x15]
+        cmp      w16, 0xFF
         beq      Exit
 
 UpdateCardTable
-        mov      x12, 0xFF
-        strb     w12, [x15]
+        mov      x16, 0xFF
+        strb     w16, [x12, x15]
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 #error Need to implement for ARM64
@@ -513,7 +516,7 @@ UpdateCardTable
 
 Exit
         add      x14, x14, 8
-        ret      lr          
+        ret      lr
     WRITE_BARRIER_END JIT_WriteBarrier
 
 ;------------------------------------------------
