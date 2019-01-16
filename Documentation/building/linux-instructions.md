@@ -1,14 +1,63 @@
 Build CoreCLR on Linux
 ======================
 
-This guide will walk you through building CoreCLR on Linux.  We'll start by showing how to set up your environment from scratch.
+This guide will walk you through building CoreCLR on Linux.  Before building there is environment setup that needs to happen to pull in all the dependencies required by the build.  There are two suggested ways to go about doing this. First you are able to use the Docker environments provided by https://github.com/dotnet/dotnet-buildtools-prereqs-docker, or you can set up the environment yourself. The documentation will go over both ways of building. Note that using docker only allows you to leverage our existing images which have a setup environment.
+
+[Build using Docker](#Build-using-Docker)
+
+[Build with own environment](#Environment)
+
+Build using Docker
+==================
+
+Install Docker, see https://docs.docker.com/install/
+
+Building using Docker will require that you choose the correct image for your environment. Note that the OS is strictly speaking not extremely important, for example if you are on Ubuntu 18.04 and build using the Ubuntu 16.04 x64 image there should be no issues. The target architecture is more important, as building arm32 using the x64 image will not work, there will be missing rootfs components required by the build. See [Docker Images](#Docker-Images) for more information on choosing an image to build with.
+
+Please note that when choosing an image choosing the same image as the host os you are running on you willa allow you to run the product/tests outside of the docker container you built in.
+
+Once you have chosen an image the build is one command run from the root of the coreclr repository:
+
+```sh
+docker run --rm -v /home/dotnet-bot/coreclr:/coreclr -w /coreclr microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544 ./build.sh
+```
+
+Dissecting the command:
+
+`--rm: erase the created container after use`
+
+`-v: mount the coreclr repository under /coreclr`
+
+`-w: set /coreclr as working directory for the container`
+
+`microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544: image name`
+
+`./build.sh: command to be run in the container`
+
+If you are attempting to cross build for arm/arm64 then use the crossrootfs location to set the ROOTFS_DIR. The command would add `-e ROOTFS_DIR=<crossrootfs location>`. See [Docker Images](#Docker-Images) for the crossrootfs location. In addition you will need to specify `cross`.
+
+```sh
+docker run --rm -v /home/dotnet-bot/coreclr:/coreclr -w /coreclr -e ROOTFS_DIR=/crossrootfs/arm64 microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921 ./build.sh arm64 cross
+```
+
+Note that instructions on building the crossrootfs location can be found at https://github.com/dotnet/coreclr/blob/master/Documentation/building/cross-building.md. These instructions are suggested only if there are plans to change the rootfs, or the Docker images for arm/arm64 are insufficient for you build.
+
+Docker Images
+=============
+
+| OS             | Target Arch | Image location | crossrootfs location |
+| -------------- | ----------- | -------------- | -------------------- |
+| Ubuntu 16.04   | x64         | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544` | - |
+| Alpine         | x64         | `microsoft/dotnet-buildtools-prereqs:alpine-3.6-e2521f8-20180716231200` | - |
+| CentOS 6 (build for RHEL 6) | x64 | `microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331` | - |
+| CentOS 7 (build for RHEL 7) | x64 | `microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424` | - | 
+| Ubuntu 14.04   | arm32(armhf) | `microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420` | `/crossrootfs/arm` |
+| Ubuntu 16.04   | arm64 (aarch64) | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921` | `/crossrootfs/arm64` |
 
 Environment
 ===========
 
-These instructions are written assuming the Ubuntu 14.04 LTS, since that's the distro the team uses. Pull Requests are welcome to address other environments as long as they don't break the ability to use Ubuntu 14.04 LTS.
-
-There have been reports of issues when using other distros or versions of Ubuntu (e.g. [Issue 95](https://github.com/dotnet/coreclr/issues/95)). If you're on another distribution, consider using docker's `ubuntu:14.04` image.
+These instructions are written assuming the Ubuntu 16.04/18.04 LTS, since that's the distro the team uses. Pull Requests are welcome to address other environments as long as they don't break the ability to use Ubuntu 16.04/18.04 LTS.
 
 Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([Issue 536](https://github.com/dotnet/coreclr/issues/536)).
 
@@ -32,12 +81,6 @@ Install the following packages for the toolchain:
 - libkrb5-dev
 - libnuma-dev (optional, enables numa support)
 
-In order to get clang-3.9, llvm-3.9 and lldb-3.9 on Ubuntu 14.04, we need to add an additional package source:
-
-    ~$ echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
-    ~$ wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-    ~$ sudo apt-get update
-
 Note: ARM clang has a known issue with CompareExchange
 ([#15074](https://github.com/dotnet/coreclr/issues/15074)), so for ARM you must
 use clang-4.0 or higher.  Moreover, when building with clang-5.0, the
@@ -57,11 +100,6 @@ Then install the packages you need:
 
     ~$ sudo apt-get install cmake llvm-3.9 clang-3.9 lldb-3.9 liblldb-3.9-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev libnuma-dev libkrb5-dev
 
-The lldb 3.9 package needs a lib file symbolic link fixed:
-
-    cd /usr/lib/llvm-3.9/lib
-    sudo ln -s ../../x86_64-linux-gnu/liblldb-3.9.so.1 liblldb-3.9.so.1
-
 You now have all the required components.
 
 If you are using Fedora, then you will need to install the following packages:
@@ -71,7 +109,7 @@ If you are using Fedora, then you will need to install the following packages:
 Git Setup
 ---------
 
-This guide assumes that you've cloned the corefx and coreclr repositories into `~/git/corefx` and `~/git/coreclr` on your Linux machine. If your setup is different, you'll need to pay careful attention to the commands you run. In this guide, I'll always show what directory I'm in.
+This guide assumes that you've cloned the coreclr repository.
 
 Set the maximum number of file-handles
 --------------------------------------
@@ -88,7 +126,7 @@ Build the Runtime and Microsoft Core Library
 To build the runtime on Linux, run build.sh from the root of the coreclr repository:
 
 ```
-ellismg@linux:~/git/coreclr$ ./build.sh
+./build.sh
 ```
 
 After the build is completed, there should some files placed in `bin/Product/Linux.x64.Debug`.  The ones we are interested in are:
@@ -97,122 +135,23 @@ After the build is completed, there should some files placed in `bin/Product/Lin
 * `libcoreclr.so`: The CoreCLR runtime itself.
 * `System.Private.CoreLib.dll`: Microsoft Core Library.
 
-Build the Framework
+Create the Core_Root
 ===================
 
+The Core_Root folder will have the built binaries, from `build.sh` and it will also include the CoreFX packages required to run tests.
+
 ```
-ellismg@linux:~/git/corefx$ ./build.sh
+./build-test.sh generatelayoutonly
 ```
 
-After the build is complete you will be able to find the output in the `bin` folder.
+After the build is complete you will be able to find the output in the `bin/tests/Linux.x64.Debug/Tests/Core_Root` folder.
 
-Build for ARM/Linux
+Running a single test
 ===================
 
-The CI system and official builds use Docker to build ARM for Linux (for example, see the latest build [here](https://ci.dot.net/job/dotnet_coreclr/job/master/job/arm_cross_checked_ubuntu/lastSuccessfulBuild/consoleText)). The Docker container has pre-built rootfs directories containing the required tools. To build this way, do the following:
+After `build-test.sh` is run, corerun from the Core_Root folder is ready to be run. This can be done by using the full absolute path to corerun, or by setting an environment variable to the Core_Root folder.
 
-* Install Docker, probably Community Edition, on Windows, Mac, or Linux, from https://www.docker.com/. Some useful post-install setup is:
-  * Linux: add your user to the docker group, this will avoid running docker with `sudo`:
-
-    `sudo usermod -a <your account name> -G docker`
-
-  * Windows: switch to Linux containers. This can be done by right clicking on the Docker icon in the lower right corner and clicking "Switch to Linux containers".
-* Build using the Docker container (this is a `bash` script, for simplicity):
-
-```
-ROOT=/Users/me/git/coreclr
-DOCKER_ARGS="run -i --rm -v ${ROOT}:/mnt/coreclr -w /mnt/coreclr -e ROOTFS_DIR=/crossrootfs/arm microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420"
-docker ${DOCKER_ARGS} /mnt/coreclr/build.sh arm checked cross
-docker ${DOCKER_ARGS} /mnt/coreclr/build-test.sh arm checked cross generatelayoutonly
-```
-
-Make sure you update the `ROOT` environment to point to your git clone of the coreclr repo.
-
-The current Docker tag being used by the CI can be found in the `getDockerImageName` function in the [netci.groovy](https://github.com/dotnet/coreclr/blob/master/netci.groovy) file.
-
-Libunwind issue
----------------
-ARM libunwind versions before 1.3 require a fix. The fix allows libunwind not to break when it is ordered to access inaccessible memory locations. See [this](https://github.com/dotnet/coreclr/pull/3923) issue for history.
-
-If required, first import the patch from the libunwind upstream: http://git.savannah.gnu.org/gitweb/?p=libunwind.git;a=commit;h=770152268807e460184b4152e23aba9c86601090.
-
-Then, expand the coverage of the upstream patch by:
-
-```
-diff --git a/src/arm/Ginit.c b/src/arm/Ginit.c
-index 1ed3dbf..c643032 100644
---- a/src/arm/Ginit.c
-+++ b/src/arm/Ginit.c
-@@ -128,6 +128,11 @@ access_mem (unw_addr_space_t as, unw_word_t addr, unw_word_t *val, int write,
- {
-   if (write)
-     {
-+      /* validate address */
-+      const struct cursor *c = (const struct cursor *) arg;
-+      if (c && validate_mem(addr))
-+        return -1;
-+
-       Debug (16, "mem[%x] <- %x\n", addr, *val);
-       *(unw_word_t *) addr = *val;
-     }
-```
-
-Additional optimization levels for ARM/Linux: -Oz and -Ofast
-------------------------------------------------------------
-
-This instruction is to enable additional optimization levels such as -Oz and -Ofast on ARM/Linux. The below table shows what we have to enable for the code optimization of the CoreCLR run-time either the size or speed on embedded devices. 
-
-| **Content** | **Build Mode** | **Clang/LLVM (Linux)** |
-| --- | --- | --- |
-| -O0 | Debug | Disable optimization to generate the most debuggable code |
-| -O1 | - | Optimize for code size and execution time |
-| -O2 | Checked | Optimize more for code size and execution time |
-| -O3 | Release | Optimize more for code size and execution time to make program run faster |
-| -Oz | - | Optimize more to reduce code size further |
-| -Ofast | - | Enable all the optimizations from O3 along with other aggressive optimizations |
-
-If you want to focus on the size reduction for low-end devices, you have to modify clang-compile-override.txt to enable -Oz flag in the release build as following: 
-
-```
---- a/src/pal/tools/clang-compiler-override.txt
-+++ b/src/pal/tools/clang-compiler-override.txt
-@@ -3,13 +3,13 @@ SET (CMAKE_C_FLAGS_DEBUG_INIT          "-g -O0")
- SET (CLR_C_FLAGS_CHECKED_INIT          "-g -O2")
- # Refer to the below instruction to support __thread with -O2/-O3 on Linux/ARM
- # https://github.com/dotnet/coreclr/blob/master/Documentation/building/linux-instructions.md
--SET (CMAKE_C_FLAGS_RELEASE_INIT        "-g -O3")
-+SET (CMAKE_C_FLAGS_RELEASE_INIT        "-g -Oz")
- SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT "-g -O2")
-
- SET (CMAKE_CXX_FLAGS_INIT                "-Wall -Wno-null-conversion -std=c++11")
- SET (CMAKE_CXX_FLAGS_DEBUG_INIT          "-g -O0")
- SET (CLR_CXX_FLAGS_CHECKED_INIT          "-g -O2")
--SET (CMAKE_CXX_FLAGS_RELEASE_INIT        "-g -O3")
-+SET (CMAKE_CXX_FLAGS_RELEASE_INIT        "-g -Oz")
- SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "-g -O2")
-
- SET (CLR_DEFINES_DEBUG_INIT              DEBUG _DEBUG _DBG URTBLDENV_FRIENDLY=Checked BUILDENV_
-```
-
-
-If you want to focus on the speed optimization for high-end devices, you have to modify clang-compile-override.txt to enable -Ofast flag in the release build as following: 
-```
---- a/src/pal/tools/clang-compiler-override.txt
-+++ b/src/pal/tools/clang-compiler-override.txt
-@@ -3,13 +3,13 @@ SET (CMAKE_C_FLAGS_DEBUG_INIT          "-g -O0")
- SET (CLR_C_FLAGS_CHECKED_INIT          "-g -O2")
- # Refer to the below instruction to support __thread with -O2/-O3 on Linux/ARM
- # https://github.com/dotnet/coreclr/blob/master/Documentation/building/linux-instructions.md
--SET (CMAKE_C_FLAGS_RELEASE_INIT        "-g -O3")
-+SET (CMAKE_C_FLAGS_RELEASE_INIT        "-g -Ofast")
- SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT "-g -O2")
-
- SET (CMAKE_CXX_FLAGS_INIT                "-Wall -Wno-null-conversion -std=c++11")
- SET (CMAKE_CXX_FLAGS_DEBUG_INIT          "-g -O0")
- SET (CLR_CXX_FLAGS_CHECKED_INIT          "-g -O2")
--SET (CMAKE_CXX_FLAGS_RELEASE_INIT        "-g -O3")
-+SET (CMAKE_CXX_FLAGS_RELEASE_INIT        "-g -Ofast")
- SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "-g -O2")
-
- SET (CLR_DEFINES_DEBUG_INIT              DEBUG _DEBUG _DBG URTBLDENV_FRIENDLY=Checked BUILDENV_
+```sh
+export CORE_ROOT=/home/dotnet-bot/coreclr/bin/tests/Linux.x64.Debug/Tests/Core_Root
+$CORE_ROOT/corerun hello_world.dll
 ```
