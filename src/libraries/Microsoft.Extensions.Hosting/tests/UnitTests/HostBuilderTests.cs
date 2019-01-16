@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -97,6 +98,27 @@ namespace Microsoft.Extensions.Hosting
                 Assert.NotNull(config);
                 Assert.Equal("value1", config["key1"]);
                 Assert.Equal("value3", config["key2"]);
+            }
+        }
+
+        [Fact]
+        public void CanConfigureAppConfigurationFromFile()
+        {
+            // Needs to look in the project directory like VS would
+            var projectDir = Path.Combine(TestPathUtilities.GetSolutionRootDirectory("Hosting"),
+                "Hosting/test");
+            var hostBuilder = new HostBuilder()
+                .UseContentRoot(projectDir)
+                .ConfigureAppConfiguration((context, configBuilder) =>
+                {
+                    configBuilder.AddJsonFile("appSettings.json", optional: false);
+                });
+
+            using (var host = hostBuilder.Build())
+            {
+                var config = host.Services.GetService<IConfiguration>();
+                Assert.NotNull(config);
+                Assert.Equal("value", config["key"]);
             }
         }
 
