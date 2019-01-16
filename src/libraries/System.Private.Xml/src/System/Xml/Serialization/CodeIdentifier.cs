@@ -34,7 +34,7 @@ namespace System.Xml.Serialization
             if (identifier.Length <= 2)
                 return CultureInfo.InvariantCulture.TextInfo.ToUpper(identifier);
             else if (char.IsLower(identifier[0]))
-                return char.ToUpperInvariant(identifier[0]) + identifier.Substring(1);
+                return string.Concat(char.ToUpperInvariant(identifier[0]).ToString(), identifier.AsSpan(1));
             else
                 return identifier;
         }
@@ -48,7 +48,7 @@ namespace System.Xml.Serialization
             if (identifier.Length <= 2)
                 return CultureInfo.InvariantCulture.TextInfo.ToLower(identifier);
             else if (char.IsUpper(identifier[0]))
-                return char.ToLower(identifier[0]) + identifier.Substring(1);
+                return string.Concat(char.ToLower(identifier[0]).ToString(), identifier.AsSpan(1));
             else
                 return identifier;
         }

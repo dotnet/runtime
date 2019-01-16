@@ -18,6 +18,7 @@
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Globalization" />
     <Reference Include="System.IO" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Text.Encoding" />
