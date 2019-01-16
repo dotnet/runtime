@@ -7540,10 +7540,11 @@ namespace System.Data.SqlClient
                                     // Take care of releasing the locks
                                     if (releaseConnectionLock)
                                     {
-                                        task.ContinueWith(_ =>
-                                        {
-                                            _connHandler._parserLock.Release();
-                                        }, TaskScheduler.Default);
+                                        task.ContinueWith(
+                                            (_, state) => ((SqlInternalConnectionTds)state)._parserLock.Release(),
+                                            state: _connHandler,
+                                            TaskScheduler.Default
+                                        );
                                         releaseConnectionLock = false;
                                     }
 
@@ -7652,7 +7653,6 @@ namespace System.Data.SqlClient
                         startRpc,
                         startParam
                       ),
-                connectionToDoom: _connHandler,
                 onFailure: exc => TdsExecuteRPC_OnFailure(exc, stateObj)
             );
         }
@@ -8684,9 +8684,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    return AsyncHelper.CreateContinuationTask<int, TdsParserStateObject>(unterminatedWriteTask,
-                        WriteInt, 0, stateObj,
-                        connectionToDoom: _connHandler);
+                    return AsyncHelper.CreateContinuationTask<int, TdsParserStateObject>(unterminatedWriteTask, WriteInt, 0, stateObj);
                 }
             }
             else
