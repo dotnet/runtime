@@ -9,7 +9,7 @@ namespace System.Net.Http.HPack
         // http://httpwg.org/specs/rfc7541.html#rfc.section.4.1
         public const int RfcOverhead = 32;
 
-        public HeaderField(Span<byte> name, Span<byte> value)
+        public HeaderField(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
             // TODO: We're allocating here on every new table entry.
             // That means a poorly-behaved server could cause us to allocate repeatedly.
