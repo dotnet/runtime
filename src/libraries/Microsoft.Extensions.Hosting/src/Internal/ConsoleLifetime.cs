@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     {
         private readonly ManualResetEvent _shutdownBlock = new ManualResetEvent(false);
         private CancellationTokenRegistration _applicationStartedRegistration;
+        private CancellationTokenRegistration _applicationStoppingRegistration;
 
         public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostingEnvironment environment, IApplicationLifetime applicationLifetime)
             : this(options, environment, applicationLifetime, NullLoggerFactory.Instance) { }
@@ -26,7 +27,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             Options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             Environment = environment ?? throw new ArgumentNullException(nameof(environment));
             ApplicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
-            Logger = loggerFactory.CreateLogger("Microsoft.Extensions.Hosting.Host");
+            Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
         }
 
         private ConsoleLifetimeOptions Options { get; }
@@ -46,6 +47,11 @@ namespace Microsoft.Extensions.Hosting.Internal
                     ((ConsoleLifetime)state).OnApplicationStarted();
                 },
                 this);
+                _applicationStoppingRegistration = ApplicationLifetime.ApplicationStopping.Register(state =>
+                {
+                    ((ConsoleLifetime)state).OnApplicationStopping();
+                },
+                this);
             }
 
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
@@ -60,6 +66,11 @@ namespace Microsoft.Extensions.Hosting.Internal
             Logger.LogInformation("Application started. Press Ctrl+C to shut down.");
             Logger.LogInformation("Hosting environment: {envName}", Environment.EnvironmentName);
             Logger.LogInformation("Content root path: {contentRoot}", Environment.ContentRootPath);
+        }
+
+        private void OnApplicationStopping()
+        {
+            Logger.LogInformation("Application is shutting down...");
         }
 
         private void OnProcessExit(object sender, EventArgs e)
@@ -88,6 +99,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             Console.CancelKeyPress -= OnCancelKeyPress;
 
             _applicationStartedRegistration.Dispose();
+            _applicationStoppingRegistration.Dispose();
         }
     }
 }
