@@ -215,7 +215,8 @@
     <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
     <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
     <_portableOS>linux</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'win'">win</_portableOS>
+    <_portableOS Condition="'$(RuntimeOS)' == 'linux-musl'">linux-musl</_portableOS>
+    <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' OR '$(OSGroup)' == 'Windows_NT'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'osx'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'WebAssembly'">webassembly</_portableOS>
@@ -231,8 +232,7 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(ToolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <_portableOS Condition="'$(OSGroup)' == 'Unix' AND '$(_runtimeOSFamily)' != 'osx' AND '$(_runtimeOSFamily)' != 'FreeBSD'">linux</_portableOS>
-    <_portableOS Condition="'$(OSGroup)' == 'Windows_NT'">win</_portableOS>
+    <_portableOS Condition="'$(OSGroup)' == 'Unix' AND '$(_runtimeOSFamily)' != 'osx' AND '$(_runtimeOSFamily)' != 'FreeBSD' AND '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
 
     <_packageRID/>
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(ArchGroup)</_packageRID>

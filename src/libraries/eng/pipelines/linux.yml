@@ -43,7 +43,7 @@ jobs:
               _helixQueues: $(alpineQueues)
               _dockerContainer: alpine_36_container
               _buildScriptPrefix: ''
-              _buildExtraArguments: /p:RuntimeOS=linux-musl /p:PortableBuild=false
+              _buildExtraArguments: /p:RuntimeOS=linux-musl
 
       pool:
         name: Hosted Ubuntu 1604
@@ -78,7 +78,7 @@ jobs:
               _framework: netcoreapp
               _dockerContainer: alpine_36_container
               _buildScriptPrefix: ''
-              _buildExtraArguments: /p:RuntimeOS=linux-musl /p:PortableBuild=false
+              _buildExtraArguments: /p:RuntimeOS=linux-musl
 
           arm_Release:
             _BuildConfig: Release
