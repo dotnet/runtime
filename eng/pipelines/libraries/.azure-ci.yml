@@ -1,5 +1,6 @@
 # Disable triggers for now. TODO: add right merge triggers.
-trigger: none
+trigger:
+- master
 
 # TODO: add paths to exclude CI when modifying docs or stuff not affecting the build
 pr:
