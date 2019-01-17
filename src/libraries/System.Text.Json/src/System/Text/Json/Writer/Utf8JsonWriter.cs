@@ -75,7 +75,7 @@ namespace System.Text.Json
         /// be captured by the caller and passed back in to the <see cref="Utf8JsonWriter"/> ctor with more data.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when there is JSON data that has been written and buffered but not yet flushed to the <see cref="IBufferWriter{T}" />.	
+        /// Thrown when there is JSON data that has been written and buffered but not yet flushed to the <see cref="IBufferWriter{Byte}" />.	
         /// Getting the state for creating a new <see cref="Utf8JsonWriter"/> without first committing the data that has been written	
         /// would result in an inconsistent state. Call Flush before getting the current state.	
         /// </exception>
@@ -106,11 +106,11 @@ namespace System.Text.Json
         /// <summary>
         /// Constructs a new <see cref="Utf8JsonWriter"/> instance with a specified <paramref name="bufferWriter"/>.
         /// </summary>
-        /// <param name="bufferWriter">An instance of <see cref="IBufferWriter{T}" /> used as a destination for writing JSON text into.</param>
+        /// <param name="bufferWriter">An instance of <see cref="IBufferWriter{Byte}" /> used as a destination for writing JSON text into.</param>
         /// <param name="state">If this is the first call to the ctor, pass in a default state. Otherwise,
         /// capture the state from the previous instance of the <see cref="Utf8JsonWriter"/> and pass that back.</param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown when the instance of <see cref="IBufferWriter{T}" /> that is passed in is null.
+        /// Thrown when the instance of <see cref="IBufferWriter{Byte}" /> that is passed in is null.
         /// </exception>
         /// <remarks>
         /// Since this type is a ref struct, it is a stack-only type and all the limitations of ref structs apply to it.
@@ -142,7 +142,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Advances the underlying <see cref="IBufferWriter{T}" /> based on what has been written so far.
+        /// Advances the underlying <see cref="IBufferWriter{Byte}" /> based on what has been written so far.
         /// </summary>
         /// <param name="isFinalBlock">Let's the writer know whether more data will be written. This is used to validate
         /// that the JSON written so far is structurally valid if no more data is to follow.</param>
