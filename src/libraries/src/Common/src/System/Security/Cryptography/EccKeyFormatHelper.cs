@@ -225,7 +225,7 @@ namespace System.Security.Cryptography
                         keyParameters.Value.Encode(writer);
                         if (!writer.TryEncode(verify, out int written) ||
                             written != algIdParameters.Length ||
-                            !algIdParameters.SequenceEqual(verify.AsSpan(0, written)))
+                            !algIdParameters.SequenceEqual(new ReadOnlySpan<byte>(verify, 0, written)))
                         {
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }

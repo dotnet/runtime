@@ -35,7 +35,7 @@ namespace System.Net
             else
             {
                 return new IPAddress(
-                    new Span<byte>(nativeIPAddress.Address, Interop.Sys.IPv6AddressBytes),
+                    new ReadOnlySpan<byte>(nativeIPAddress.Address, Interop.Sys.IPv6AddressBytes),
                     (long)nativeIPAddress.ScopeId);
             }
         }

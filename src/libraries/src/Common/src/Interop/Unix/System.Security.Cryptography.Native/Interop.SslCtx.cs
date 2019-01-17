@@ -62,7 +62,7 @@ internal static partial class Interop
             foreach (SslApplicationProtocol protocol in applicationProtocols)
             {
                 buffer[offset++] = (byte)(protocol.Protocol.Length);
-                protocol.Protocol.Span.CopyTo(new Span<byte>(buffer).Slice(offset));
+                protocol.Protocol.Span.CopyTo(buffer.AsSpan(offset));
                 offset += protocol.Protocol.Length;
             }
 

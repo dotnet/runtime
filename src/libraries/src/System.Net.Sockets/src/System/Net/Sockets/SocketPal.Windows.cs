@@ -356,7 +356,7 @@ namespace System.Net.Sockets
         public static unsafe IPPacketInformation GetIPPacketInformation(Interop.Winsock.ControlDataIPv6* controlBuffer)
         {
             IPAddress address = controlBuffer->length != UIntPtr.Zero ?
-                new IPAddress(new Span<byte>(controlBuffer->address, Interop.Winsock.IPv6AddressLength)) :
+                new IPAddress(new ReadOnlySpan<byte>(controlBuffer->address, Interop.Winsock.IPv6AddressLength)) :
                 IPAddress.IPv6None;
 
             return new IPPacketInformation(address, (int)controlBuffer->index);
