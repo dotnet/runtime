@@ -100,12 +100,20 @@ jobs:
         $(CommonMSBuildArgs)
     steps:
 
+    - script: df -h
+      displayName: Check space (df -h)
+      continueOnError: true
+
     # Build binary and nuget packages
     - script: $(RunArguments)
         ./build.sh
         $(BuildArguments)
       displayName: Build
       workingDirectory: '$(Build.SourcesDirectory)'
+
+    - script: df -h
+      displayName: Check space (df -h)
+      continueOnError: true
 
     # Publish only if internal and not PR 
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
@@ -125,6 +133,9 @@ jobs:
         inputs:
           SourceFolder: '$(Build.SourcesDirectory)/bin/obj/linux-x64.$(_BuildConfig)/sharedFrameworkPublish'
           TargetFolder: '$(Build.StagingDirectory)/sharedFrameworkPublish'
+      - script: df -h
+        displayName: Check space (df -h)
+        continueOnError: true
       - script: docker 
           $(CommonDebianRunCommand)
           /root/coresetup/build.proj
@@ -132,12 +143,18 @@ jobs:
           $(CommonMSBuildArgs)
         displayName: Build traversal build dependencies - Ubuntu 14.04
         workingDirectory: '$(Build.SourcesDirectory)'
+      - script: df -h
+        displayName: Check space (df -h)
+        continueOnError: true
 
       # Debian packaging
       - script: docker 
           $(DebianPackagingCommand)
         displayName: 'Package Runtime packages and Runtime Dep - Ubuntu 14.04'
         workingDirectory: '$(Build.SourcesDirectory)'
+      - script: df -h
+        displayName: Check space (df -h)
+        continueOnError: true
 
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
         - script: docker
@@ -150,6 +167,9 @@ jobs:
           displayName: 'Publish Runtime and Runtime Dep - Ubuntu 14.04'
           workingDirectory: '$(Build.SourcesDirectory)'
           condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+        - script: df -h
+          displayName: Check space (df -h)
+          continueOnError: true
 
       # Package and publish for each debian distros
       - ${{ each debdistrorid in parameters.packageDistroListDeb }}:
@@ -157,6 +177,9 @@ jobs:
             $(DebianPackagingCommand) /p:BuildRuntimeDebs=false
             /p:OutputRid=${{ debdistrorid }}-${{ parameters.targetArchitecture }}
           displayName: 'Package Runtime Dep - ${{ debdistrorid }}'
+        - script: df -h
+          displayName: Check space (df -h)
+          continueOnError: true
         - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
           - script: docker
               $(CommonDebianRunCommand)
@@ -169,6 +192,9 @@ jobs:
             displayName: 'Publish Runtime Dep - ${{ debdistrorid }}'
             workingDirectory: '$(Build.SourcesDirectory)'
             condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+          - script: df -h
+            displayName: Check space (df -h)
+            continueOnError: true
 
       # RPM Packaging
       - script: docker
@@ -181,6 +207,9 @@ jobs:
       - script: docker 
           $(RpmPackagingCommand)
         displayName: Package Runtime Dep - Rhel7
+      - script: df -h
+        displayName: Check space (df -h)
+        continueOnError: true
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
         - script: docker 
             $(CommonRpmRunCommand) 
@@ -199,6 +228,9 @@ jobs:
             $(RpmPackagingCommand) /p:BuildRuntimeRpms=false
             /p:OutputRid=${{ rpmdistrorid }}-${{ parameters.targetArchitecture }}
           displayName: 'Package Runtime Dep - ${{ rpmdistrorid }}'
+        - script: df -h
+          displayName: Check space (df -h)
+          continueOnError: true
         - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
           - script: docker
               $(CommonRpmRunCommand)
@@ -211,6 +243,9 @@ jobs:
             displayName: 'Publish Runtime Dep -${{ rpmdistrorid }}'
             workingDirectory: '$(Build.SourcesDirectory)'
             condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+          - script: df -h
+            displayName: Check space (df -h)
+            continueOnError: true
     - task: CopyFiles@2
       displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
       inputs:
@@ -229,8 +264,17 @@ jobs:
       continueOnError: true
       condition: succeededOrFailed()
 
+    - script: df -h
+      displayName: Check space (df -h)
+      condition: always()
+      continueOnError: true
+
     # Force clean up machine in case any docker images are left behind
     - ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64')}}:
       - script: docker system prune -f
         displayName: Run Docker clean up
         condition: succeededOrFailed()
+      - script: df -h
+        displayName: Check space (df -h)
+        condition: always()
+        continueOnError: true
