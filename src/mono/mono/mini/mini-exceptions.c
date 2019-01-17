@@ -126,6 +126,7 @@ static gboolean mono_current_thread_has_handle_block_guard (void);
 static gboolean mono_install_handler_block_guard (MonoThreadUnwindState *ctx);
 static void mono_uninstall_current_handler_block_guard (void);
 static gboolean mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data);
+static void throw_exception (MonoObject *ex, gboolean rethrow);
 
 static void mono_summarize_managed_stack (MonoThreadSummary *out);
 static void mono_summarize_unmanaged_stack (MonoThreadSummary *out);
@@ -2541,6 +2542,11 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		res = handle_exception_first_pass (&ctx_cp, obj, &first_filter_idx, &ji, &prev_ji, non_exception, &catch_frame);
 
 		if (res == MONO_FIRST_PASS_UNHANDLED) {
+			if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
+				/* Reached the top interpreted frames, but there might be native frames above us */
+				throw_exception (obj, TRUE);
+				g_assert_not_reached ();
+			}
 			if (mini_get_debug_options ()->break_on_exc)
 				G_BREAKPOINT ();
 			mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);

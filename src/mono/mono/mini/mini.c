@@ -4205,6 +4205,12 @@ mono_llvm_cpp_throw_exception (void)
 	g_assert_not_reached ();
 }
 
+void
+mono_llvm_cpp_catch_exception (MonoLLVMInvokeCallback cb, gpointer arg, gboolean *out_thrown)
+{
+	g_assert_not_reached ();
+}
+
 #endif
 
 #ifdef DISABLE_JIT

@@ -25,6 +25,7 @@
 #include "mini.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
+#include "llvmonly-runtime.h"
 
 #define ALLOW_PARTIAL_SHARING TRUE
 //#define ALLOW_PARTIAL_SHARING FALSE
@@ -1069,8 +1070,8 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 			sig = mono_method_signature_internal (method);
 			gsig = mono_method_signature_internal (gmethod);
 
-			addr = mini_add_method_wrappers_llvmonly (method, addr, TRUE, FALSE, &arg);
-			return mini_create_llvmonly_ftndesc (domain, addr, arg);
+			addr = mini_llvmonly_add_method_wrappers (method, addr, TRUE, FALSE, &arg);
+			return mini_llvmonly_create_ftndesc (domain, addr, arg);
 		}
 
 		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (addr), NULL);
@@ -2107,12 +2108,12 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jinfo_get_method (ji)));
 		if (callee_gsharedvt) {
 			/* No need for a wrapper */
-			return mini_create_llvmonly_ftndesc (domain, addr, mini_method_get_rgctx (m));
+			return mini_llvmonly_create_ftndesc (domain, addr, mini_method_get_rgctx (m));
 		} else {
-			addr = mini_add_method_wrappers_llvmonly (m, addr, TRUE, FALSE, &arg);
+			addr = mini_llvmonly_add_method_wrappers (m, addr, TRUE, FALSE, &arg);
 
 			/* Returns an ftndesc */
-			return mini_create_llvmonly_ftndesc (domain, addr, arg);
+			return mini_llvmonly_create_ftndesc (domain, addr, arg);
 		}
 	}
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE: {
@@ -2142,10 +2143,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		return_val_if_nok (error, NULL);
 		if (mono_llvm_only) {
 			gpointer arg = NULL;
-			addr = mini_add_method_wrappers_llvmonly (method, addr, FALSE, FALSE, &arg);
+			addr = mini_llvmonly_add_method_wrappers (method, addr, FALSE, FALSE, &arg);
 
 			/* Returns an ftndesc */
-			return mini_create_llvmonly_ftndesc (domain, addr, arg);
+			return mini_llvmonly_create_ftndesc (domain, addr, arg);
 		} else {
 			return mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
 		}
@@ -2309,12 +2310,12 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 					sig = mono_method_signature_internal (jinfo_get_method (callee_ji));
 					gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, -1, FALSE);
-					MonoFtnDesc *out_wrapper_arg = mini_create_llvmonly_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
+					MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
 
 					/* Returns an ftndesc */
-					addr = mini_create_llvmonly_ftndesc (domain, out_wrapper, out_wrapper_arg);
+					addr = mini_llvmonly_create_ftndesc (domain, out_wrapper, out_wrapper_arg);
 				} else {
-					addr = mini_create_llvmonly_ftndesc (domain, addr, mini_method_get_rgctx (method));
+					addr = mini_llvmonly_create_ftndesc (domain, addr, mini_method_get_rgctx (method));
 				}
 			} else {
 				addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, vcall_offset, FALSE);
@@ -2357,15 +2358,15 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 					 * might not exist at all in IL, so the AOT compiler cannot generate the wrappers
 					 * for it.
 					 */
-					addr = mini_create_llvmonly_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
+					addr = mini_llvmonly_create_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
 				} else if (mini_is_gsharedvt_variable_signature (gsig)) {
 					gpointer in_wrapper = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, -1, FALSE);
 
-					gpointer in_wrapper_arg = mini_create_llvmonly_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
+					gpointer in_wrapper_arg = mini_llvmonly_create_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
 
-					addr = mini_create_llvmonly_ftndesc (domain, in_wrapper, in_wrapper_arg);
+					addr = mini_llvmonly_create_ftndesc (domain, in_wrapper, in_wrapper_arg);
 				} else {
-					addr = mini_create_llvmonly_ftndesc (domain, addr, mini_method_get_rgctx (method));
+					addr = mini_llvmonly_create_ftndesc (domain, addr, mini_method_get_rgctx (method));
 				}
 			} else if (call_sig == mono_method_signature_internal (method)) {
 			} else {

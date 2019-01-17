@@ -18,4 +18,15 @@ mono_llvm_cpp_throw_exception (void)
 #endif
 }
 
+void
+mono_llvm_cpp_catch_exception (MonoLLVMInvokeCallback cb, gpointer arg, gboolean *out_thrown)
+{
+	*out_thrown = FALSE;
+	try {
+		cb (arg);
+	} catch (int*) {
+		*out_thrown = TRUE;
+	}
+}
+
 }

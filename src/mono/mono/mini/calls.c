@@ -10,6 +10,7 @@
 #include "mini.h"
 #include "ir-emit.h"
 #include "mini-runtime.h"
+#include "llvmonly-runtime.h"
 #include "mini-llvm.h"
 #include "jit-icalls.h"
 #include <mono/metadata/abi-details.h>
@@ -701,7 +702,7 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		icall_args [0] = vtable_ins;
 		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
 		/* Make the icall return the vtable slot value to save some code space */
-		ins = mono_emit_jit_icall (cfg, mono_init_vtable_slot, icall_args);
+		ins = mono_emit_jit_icall (cfg, mini_llvmonly_init_vtable_slot, icall_args);
 		ins->dreg = slot_reg;
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, non_null_bb);
 
@@ -809,9 +810,9 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		icall_args [2] = mini_emit_get_rgctx_method (cfg, context_used,
 													 cmethod, MONO_RGCTX_INFO_METHOD);
 		if (is_iface)
-			ftndesc_ins = mono_emit_jit_icall (cfg, mono_resolve_generic_virtual_iface_call, icall_args);
+			ftndesc_ins = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_generic_virtual_iface_call, icall_args);
 		else
-			ftndesc_ins = mono_emit_jit_icall (cfg, mono_resolve_generic_virtual_call, icall_args);
+			ftndesc_ins = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_generic_virtual_call, icall_args);
 		ftndesc_ins->dreg = ftndesc_reg;
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
@@ -835,9 +836,9 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 
 	g_assert (is_gsharedvt);
 	if (is_iface)
-		call_target = mono_emit_jit_icall (cfg, mono_resolve_iface_call_gsharedvt, icall_args);
+		call_target = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_iface_call_gsharedvt, icall_args);
 	else
-		call_target = mono_emit_jit_icall (cfg, mono_resolve_vcall_gsharedvt, icall_args);
+		call_target = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_vcall_gsharedvt, icall_args);
 
 	/*
 	 * Pass the extra argument even if the callee doesn't receive it, most

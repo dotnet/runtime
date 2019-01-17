@@ -529,6 +529,8 @@ common_sources = \
 	intrinsics.c \
 	mini-profiler.c	\
 	interp-stubs.c \
+	llvmonly-runtime.h \
+	llvmonly-runtime.c \
 	aot-runtime.h	\
 	ee.h \
 	mini-runtime.h

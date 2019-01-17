@@ -66,6 +66,8 @@
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/aot-runtime.h>
+#include <mono/mini/llvm-runtime.h>
+#include <mono/mini/llvmonly-runtime.h>
 #include <mono/mini/jit-icalls.h>
 #include <mono/mini/debugger-agent.h>
 #include <mono/mini/ee.h>
@@ -1958,6 +1960,92 @@ exit_icall:
 	return sp;
 }
 
+typedef struct {
+	int pindex;
+	gpointer jit_wrapper;
+	gpointer *args;
+	MonoFtnDesc *ftndesc;
+} JitCallCbData;
+
+static void
+jit_call_cb (gpointer arg)
+{
+	JitCallCbData *cb_data = (JitCallCbData*)arg;
+	gpointer jit_wrapper = cb_data->jit_wrapper;
+	int pindex = cb_data->pindex;
+	gpointer *args = cb_data->args;
+	MonoFtnDesc ftndesc = *cb_data->ftndesc;
+
+	switch (pindex) {
+	case 0: {
+		typedef void (*T)(gpointer);
+		T func = (T)jit_wrapper;
+
+		func (&ftndesc);
+		break;
+	}
+	case 1: {
+		typedef void (*T)(gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], &ftndesc);
+		break;
+	}
+	case 2: {
+		typedef void (*T)(gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], &ftndesc);
+		break;
+	}
+	case 3: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], &ftndesc);
+		break;
+	}
+	case 4: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], &ftndesc);
+		break;
+	}
+	case 5: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], &ftndesc);
+		break;
+	}
+	case 6: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], &ftndesc);
+		break;
+	}
+	case 7: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], &ftndesc);
+		break;
+	}
+	case 8: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], args [7], &ftndesc);
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+}
+
 static MONO_NEVER_INLINE stackval *
 do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpFrame *frame, InterpMethod *rmethod, MonoError *error)
 {
@@ -2067,76 +2155,28 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 
 	interp_push_lmf (&ext, frame);
 
-	switch (pindex) {
-	case 0: {
-		typedef void (*T)(gpointer);
-		T func = (T)rmethod->jit_wrapper;
+	JitCallCbData cb_data;
+	memset (&cb_data, 0, sizeof (cb_data));
+	cb_data.jit_wrapper = rmethod->jit_wrapper;
+	cb_data.pindex = pindex;
+	cb_data.args = args;
+	cb_data.ftndesc = &ftndesc;
 
-		func (&ftndesc);
-		break;
+	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
+		/* Catch the exception thrown by the native code using a try-catch */
+		gboolean thrown = FALSE;
+		mono_llvm_cpp_catch_exception (jit_call_cb, &cb_data, &thrown);
+		interp_pop_lmf (&ext);
+		if (thrown) {
+			MonoObject *obj = mono_llvm_load_exception ();
+			g_assert (obj);
+			mono_error_set_exception_instance (error, (MonoException*)obj);
+			return sp;
+		}
+	} else {
+		jit_call_cb (&cb_data);
+		interp_pop_lmf (&ext);
 	}
-	case 1: {
-		typedef void (*T)(gpointer, gpointer);
-		T func = (T)rmethod->jit_wrapper;
-
-		func (args [0], &ftndesc);
-		break;
-	}
-	case 2: {
-		typedef void (*T)(gpointer, gpointer, gpointer);
-		T func = (T)rmethod->jit_wrapper;
-
-		func (args [0], args [1], &ftndesc);
-		break;
-	}
-	case 3: {
-		typedef void (*T)(gpointer, gpointer, gpointer, gpointer);
-		T func = (T)rmethod->jit_wrapper;
-
-		func (args [0], args [1], args [2], &ftndesc);
-		break;
-	}
-	case 4: {
-		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer);
-		T func = (T)rmethod->jit_wrapper;
-
-		func (args [0], args [1], args [2], args [3], &ftndesc);
-		break;
-	}
-	case 5: {
-		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
-		T func = (T)rmethod->jit_wrapper;
-
-		func (args [0], args [1], args [2], args [3], args [4], &ftndesc);
-		break;
-	}
-	case 6: {
-		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
-		T func = (T)rmethod->jit_wrapper;
-
-		func (args [0], args [1], args [2], args [3], args [4], args [5], &ftndesc);
-		break;
-	}
-	case 7: {
-		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
-		T func = (T)rmethod->jit_wrapper;
-
-		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], &ftndesc);
-		break;
-	}
-	case 8: {
-		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
-		T func = (T)rmethod->jit_wrapper;
-
-		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], args [7], &ftndesc);
-		break;
-	}
-	default:
-		g_assert_not_reached ();
-		break;
-	}
-
-	interp_pop_lmf (&ext);
 
 	MonoType *rtype = rmethod->rtype;
 	switch (rtype->type) {
@@ -2571,9 +2611,9 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	gpointer entry_arg = imethod;
 	if (unbox)
 		entry_arg = (gpointer)(((gsize)entry_arg) | 1);
-	MonoFtnDesc *entry_ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), entry_func, entry_arg);
+	MonoFtnDesc *entry_ftndesc = mini_llvmonly_create_ftndesc (mono_domain_get (), entry_func, entry_arg);
 
-	addr = mini_create_llvmonly_ftndesc (mono_domain_get (), entry_wrapper, entry_ftndesc);
+	addr = mini_llvmonly_create_ftndesc (mono_domain_get (), entry_wrapper, entry_ftndesc);
 
 	info = domain_jit_info (domain);
 	mono_domain_lock (domain);
@@ -2831,6 +2871,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		sp->data.p = clause_args->filter_exception;
 		sp++;
 	}
+
+	//g_print ("(%p) Call %s\n", mono_thread_internal_current (), mono_method_get_full_name (frame->imethod->method));
 
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 

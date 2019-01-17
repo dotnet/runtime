@@ -78,6 +78,8 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\intrinsics.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-profiler.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp-stubs.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MonoSourceLocation)\mono\mini\Makefile.am.in" />

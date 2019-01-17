@@ -32,6 +32,22 @@ public class InterpOnly : InterpOnlyIFace
 	public virtual Type virt<T> () {
 		return typeof(T);
 	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int throw_into_interp () {
+		try {
+			Array.Sort (null);
+			return 1;
+		} catch (Exception ex) {
+			return 0;
+		}
+		return 2;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int throw_from_interp () {
+		throw new ArgumentNullException ();
+	}
 }
 
 public struct InterpOnlyStruct : InterpOnlyIFace

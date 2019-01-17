@@ -57,4 +57,18 @@ public class BitcodeMixedTests
 		var res = typeof (InterpOnly).GetMethod ("entry_1").Invoke (null, new object [] { 1 });
 		return (int)res;
 	}
+
+	public static int test_0_eh_throw_into_interp () {
+		return InterpOnly.throw_into_interp ();
+	}
+
+	public static int test_0_eh_throw_from_interp () {
+		try {
+			InterpOnly.throw_from_interp ();
+			return 1;
+		} catch (ArgumentNullException ex) {
+			return 0;
+		}
+		return 2;
+	}
 }

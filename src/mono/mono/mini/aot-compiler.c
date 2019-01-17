@@ -12485,7 +12485,7 @@ static const char *preinited_jit_icalls[] = {
 	"mono_aot_init_gshared_method_mrgctx",
 	"mono_aot_init_gshared_method_vtable",
 	"mono_llvm_throw_corlib_exception",
-	"mono_init_vtable_slot",
+	"mini_llvmonly_init_vtable_slot",
 	"mono_helper_ldstr_mscorlib"
 };
 
