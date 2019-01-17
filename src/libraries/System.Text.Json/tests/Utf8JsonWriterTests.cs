@@ -2917,10 +2917,10 @@ namespace System.Text.Json.Tests
             value.Fill((byte)'b');
 
             var output = new ArrayBufferWriter(1024);
-            var jsonUtf8 = new Utf8JsonWriter(output, state);
 
             try
             {
+                var jsonUtf8 = new Utf8JsonWriter(output, state);
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WriteString(key, DateTime.Now, escape: false);
                 Assert.True(false, $"Expected ArgumentException for data too large wasn't thrown. KeyLength: {key.Length}");
@@ -2929,6 +2929,7 @@ namespace System.Text.Json.Tests
 
             try
             {
+                var jsonUtf8 = new Utf8JsonWriter(output, state);
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteStringValue(value, escape: false);
                 Assert.True(false, $"Expected ArgumentException for data too large wasn't thrown. ValueLength: {value.Length}");
