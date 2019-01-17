@@ -656,7 +656,7 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            WriteCore(new Span<byte>(buffer, offset, count));
+            WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
