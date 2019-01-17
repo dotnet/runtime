@@ -38,7 +38,7 @@ namespace System.Text
             m_ChunkOffset = 0;
         }
 
-        internal void ReplaceBufferUtf8Internal(Span<byte> source)
+        internal void ReplaceBufferUtf8Internal(ReadOnlySpan<byte> source)
         {
             if (source.Length > m_MaxCapacity)
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_Capacity);

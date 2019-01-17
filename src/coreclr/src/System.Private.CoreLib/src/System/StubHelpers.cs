@@ -45,7 +45,7 @@ namespace System.StubHelpers
 
         internal static char ConvertToManaged(byte nativeChar)
         {
-            Span<byte> bytes = new Span<byte>(ref nativeChar, 1);
+            var bytes = new ReadOnlySpan<byte>(ref nativeChar, 1);
             string str = Encoding.Default.GetString(bytes);
             return str[0];
         }
@@ -204,7 +204,7 @@ namespace System.StubHelpers
 
             byte* pBytes = (byte*)pNative;
             int nbBytes = string.strlen(pBytes);
-            sb.ReplaceBufferUtf8Internal(new Span<byte>(pBytes, nbBytes));
+            sb.ReplaceBufferUtf8Internal(new ReadOnlySpan<byte>(pBytes, nbBytes));
         }
     }
 
