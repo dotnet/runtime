@@ -24,7 +24,7 @@ using Internal.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 using Internal.Threading.Tasks;
 
-#if !CORECLR
+#if CORERT
 using Thread = Internal.Runtime.Augments.RuntimeThread;
 #endif
 
