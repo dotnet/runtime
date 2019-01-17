@@ -169,7 +169,7 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.VisualBasic",
+    "Name": "Microsoft.VisualBasic.Core",
     "Description": "Provides types that support the Visual Basic runtime",
     "CommonTypes": [
       "Microsoft.VisualBasic.Strings",
