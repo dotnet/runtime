@@ -143,7 +143,7 @@ namespace System.Drawing
             _stream.Write(buffer, 0, bufsz);
             ArrayPool<byte>.Shared.Return(buffer);
 #else
-            Span<byte> buffer = new Span<byte>(buf, bufsz);
+            var buffer = new ReadOnlySpan<byte>(buf, bufsz);
             _stream.Write(buffer);
 #endif
             return bufsz;
