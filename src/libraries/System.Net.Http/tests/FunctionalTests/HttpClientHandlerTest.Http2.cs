@@ -517,6 +517,110 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        private static async Task<int> EstablishConnectionAndProcessOneRequestAsync(HttpClient client, Http2LoopbackServer server)
+        {
+            // Establish connection and send initial request/response to ensure connection is available for subsequent use
+            Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+            await server.EstablishConnectionAsync();
+
+            int streamId = await server.ReadRequestHeaderAsync();
+            await server.SendDefaultResponseAsync(streamId);
+
+            HttpResponseMessage response = await sendTask;
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(0, (await response.Content.ReadAsByteArrayAsync()).Length);
+
+            return streamId;
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GoAwayFrame_NoPendingStreams_ConnectionClosed()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                int streamId = await EstablishConnectionAndProcessOneRequestAsync(client, server);
+
+                // Send GOAWAY.
+                GoAwayFrame goAwayFrame = new GoAwayFrame(streamId, 0, new byte[0], 0);
+                await server.WriteFrameAsync(goAwayFrame);
+
+                // The client should close the connection.
+                await server.WaitForConnectionShutdownAsync();
+
+                // New request should cause a new connection
+                await EstablishConnectionAndProcessOneRequestAsync(client, server);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GoAwayFrame_AllPendingStreamsValid_RequestsSucceedAndConnectionClosed()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                await EstablishConnectionAndProcessOneRequestAsync(client, server);
+
+                // Issue three requests
+                Task<HttpResponseMessage> sendTask1 = client.GetAsync(server.Address);
+                Task<HttpResponseMessage> sendTask2 = client.GetAsync(server.Address);
+                Task<HttpResponseMessage> sendTask3 = client.GetAsync(server.Address);
+
+                // Receive three requests
+                int streamId1 = await server.ReadRequestHeaderAsync();
+                int streamId2 = await server.ReadRequestHeaderAsync();
+                int streamId3 = await server.ReadRequestHeaderAsync();
+
+                Assert.True(streamId1 < streamId2);
+                Assert.True(streamId2 < streamId3);
+
+                // Send various partial responses
+
+                // First response: Don't send anything yet
+
+                // Second response: Send headers, no body yet
+                await server.SendDefaultResponseHeadersAsync(streamId2);
+
+                // Third response: Send headers, partial body
+                await server.SendDefaultResponseHeadersAsync(streamId3);
+                await server.SendResponseBodyAsync(streamId3, new byte[5], endStream: false);
+
+                // Send a GOAWAY frame that indicates that we will process all three streams
+                GoAwayFrame goAwayFrame = new GoAwayFrame(streamId3, 0, new byte[0], 0);
+                await server.WriteFrameAsync(goAwayFrame);
+
+                // Finish sending responses
+                await server.SendDefaultResponseHeadersAsync(streamId1);
+                await server.SendResponseBodyAsync(streamId1, new byte[10], endStream: true);
+                await server.SendResponseBodyAsync(streamId2, new byte[10], endStream: true);
+                await server.SendResponseBodyAsync(streamId3, new byte[5], endStream: true);
+
+                // Receive all responses
+                HttpResponseMessage response1 = await sendTask1;
+                Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+                Assert.Equal(10, (await response1.Content.ReadAsByteArrayAsync()).Length);
+                HttpResponseMessage response2 = await sendTask2;
+                Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+                Assert.Equal(10, (await response2.Content.ReadAsByteArrayAsync()).Length);
+                HttpResponseMessage response3 = await sendTask3;
+                Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
+                Assert.Equal(10, (await response3.Content.ReadAsByteArrayAsync()).Length);
+
+                // Now that all pending responses have been sent, the client should close the connection.
+                await server.WaitForConnectionShutdownAsync();
+
+                // New request should cause a new connection
+                await EstablishConnectionAndProcessOneRequestAsync(client, server);
+            }
+        }
+
         private static async Task<int> ReadToEndOfStream(Http2LoopbackServer server, int streamId)
         {
             int bytesReceived = 0;
