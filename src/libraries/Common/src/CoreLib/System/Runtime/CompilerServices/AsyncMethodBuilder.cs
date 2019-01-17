@@ -24,6 +24,10 @@ using Internal.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 using Internal.Threading.Tasks;
 
+#if !CORECLR
+using Thread = Internal.Runtime.Augments.RuntimeThread;
+#endif
+
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
@@ -562,12 +566,12 @@ namespace System.Runtime.CompilerServices
             /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
             public Action MoveNextAction => _moveNextAction ?? (_moveNextAction = new Action(MoveNext));
 
-            internal sealed override void ExecuteFromThreadPool(RuntimeThread threadPoolThread) => MoveNext(threadPoolThread);
+            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext() => MoveNext(threadPoolThread: null);
 
-            private void MoveNext(RuntimeThread threadPoolThread)
+            private void MoveNext(Thread threadPoolThread)
             {
                 Debug.Assert(!IsCompleted);
 
@@ -983,8 +987,8 @@ namespace System.Runtime.CompilerServices
 
             // enregistrer variables with 0 post-fix so they can be used in registers without EH forcing them to stack
             // Capture references to Thread Contexts
-            RuntimeThread currentThread0 = RuntimeThread.CurrentThread;
-            RuntimeThread currentThread = currentThread0;
+            Thread currentThread0 = Thread.CurrentThread;
+            Thread currentThread = currentThread0;
             ExecutionContext previousExecutionCtx0 = currentThread0.ExecutionContext;
 
             // Store current ExecutionContext and SynchronizationContext as "previousXxx".
@@ -1001,7 +1005,7 @@ namespace System.Runtime.CompilerServices
             {
                 // Re-enregistrer variables post EH with 1 post-fix so they can be used in registers rather than from stack
                 SynchronizationContext previousSyncCtx1 = previousSyncCtx;
-                RuntimeThread currentThread1 = currentThread;
+                Thread currentThread1 = currentThread;
                 // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
                 if (previousSyncCtx1 != currentThread1.SynchronizationContext)
                 {
