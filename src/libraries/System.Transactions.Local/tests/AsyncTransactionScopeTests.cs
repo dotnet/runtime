@@ -5,6 +5,8 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,10 +14,8 @@ using Xunit.Abstractions;
 
 namespace System.Transactions.Tests
 {
-    public class AsyncTransactionScopeTests : IDisposable
+    public class AsyncTransactionScopeTests : RemoteExecutorTestBase
     {
-        private readonly ITestOutputHelper output;
-
         // Number of threads to create
         private const int iterations = 5;
 
@@ -25,16 +25,16 @@ namespace System.Transactions.Tests
         private static bool s_throwExceptionDefaultOrBeforeAwait;
         private static bool s_throwExceptionAfterAwait;
 
-        public AsyncTransactionScopeTests(ITestOutputHelper output)
+        public AsyncTransactionScopeTests()
         {
-            this.output = output;
             // Make sure we start with Transaction.Current = null.
             Transaction.Current = null;
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
             Transaction.Current = null;
+            base.Dispose(disposing);
         }
 
         /// <summary>
@@ -97,20 +97,18 @@ namespace System.Transactions.Tests
         [InlineData(53)]
         [InlineData(54)]
         [ActiveIssue(31913, TargetFrameworkMonikers.Uap)]
-        public async Task AsyncTSTest(int variation)
+        public void AsyncTSTest(int variation)
         {
-            await Task.Run(delegate
+            RemoteInvoke(variationString =>
             {
                 using (var listener = new TestEventListener(new Guid("8ac2d80a-1f1a-431b-ace4-bff8824aef0b"), System.Diagnostics.Tracing.EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-                    bool success = false;
                     try
                     {
                         listener.RunWithCallback(events.Enqueue, () =>
                         {
-                            switch (variation)
+                            switch (int.Parse(variationString))
                             {
                                 // Running exception test first to make sure any unintentional leak in ambient transaction during exception will be detected when subsequent test are run.
                                 case 0:
@@ -423,17 +421,19 @@ namespace System.Transactions.Tests
                                     }
                             }
                         });
-                        success = true;
                     }
-                    finally
+                    catch (Exception exc)
                     {
-                        if (!success)
+                        var sb = new StringBuilder();
+                        sb.AppendLine("Test failed with events:");
+                        foreach (EventWrittenEventArgs actualevent in events)
                         {
-                            HelperFunctions.DisplaySysTxTracing(output, events);
+                            sb.AppendLine($"{actualevent.Opcode} : {string.Format(actualevent.Message, actualevent.Payload.ToArray())}");
                         }
+                        throw new Exception(sb.ToString(), exc);
                     }
                 }
-            });
+            }, variation.ToString()).Dispose();
         }
 
         [Theory]
