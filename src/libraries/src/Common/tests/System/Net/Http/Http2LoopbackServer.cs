@@ -17,6 +17,7 @@ namespace System.Net.Test.Common
     public class Http2LoopbackServer : IDisposable
     {
         private Socket _listenSocket;
+        private Socket _connectionSocket;
         private Stream _connectionStream;
         private Http2Options _options;
         private Uri _uri;
@@ -80,6 +81,31 @@ namespace System.Net.Test.Common
             await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length).ConfigureAwait(false);
         }
 
+        // Read until the buffer is full
+        // Return false on EOF, throw on partial read
+        private async Task<bool> FillBufferAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            int readBytes = await _connectionStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            if (readBytes == 0)
+            {
+                return false;
+            }
+
+            buffer = buffer.Slice(readBytes);
+            while (buffer.Length > 0)
+            {
+                readBytes = await _connectionStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                if (readBytes == 0)
+                {
+                    throw new Exception("Connection closed when expecting more data.");
+                }
+
+                buffer = buffer.Slice(readBytes);
+            }
+
+            return true;
+        }
+
         public async Task<Frame> ReadFrameAsync(TimeSpan timeout)
         {
             // Prep the timeout cancellation token.
@@ -87,32 +113,18 @@ namespace System.Net.Test.Common
 
             // First read the frame headers, which should tell us how long the rest of the frame is.
             byte[] headerBytes = new byte[Frame.FrameHeaderLength];
-
-            int totalReadBytes = 0;
-            while(totalReadBytes < Frame.FrameHeaderLength)
+            if (!await FillBufferAsync(headerBytes, timeoutCts.Token).ConfigureAwait(false))
             {
-                int readBytes = await _connectionStream.ReadAsync(headerBytes, totalReadBytes, Frame.FrameHeaderLength - totalReadBytes, timeoutCts.Token).ConfigureAwait(false);
-                totalReadBytes += readBytes;
-                if (readBytes == 0)
-                {
-                    throw new Exception("Connection stream closed while attempting to read frame header.");
-                }
+                return null;
             }
 
             Frame header = Frame.ReadFrom(headerBytes);
 
             // Read the data segment of the frame, if it is present.
             byte[] data = new byte[header.Length];
-
-            totalReadBytes = 0;
-            while(totalReadBytes < header.Length)
+            if (header.Length > 0 && !await FillBufferAsync(data, timeoutCts.Token).ConfigureAwait(false))
             {
-                int readBytes = await _connectionStream.ReadAsync(data, totalReadBytes, header.Length - totalReadBytes, timeoutCts.Token).ConfigureAwait(false);
-                totalReadBytes += readBytes;
-                if (readBytes == 0)
-                {
-                    throw new Exception("Connection stream closed while attempting to read frame body.");
-                }
+                throw new Exception("Connection stream closed while attempting to read frame body.");
             }
 
             if (_ignoreSettingsAck && header.Type == FrameType.Settings && header.Flags == FrameFlags.Ack)
@@ -149,7 +161,13 @@ namespace System.Net.Test.Common
         // Returns the first 24 bytes read, which should be the connection preface.
         public async Task<string> AcceptConnectionAsync()
         {
-            _connectionStream = new NetworkStream(await _listenSocket.AcceptAsync().ConfigureAwait(false), true);
+            if (_connectionSocket != null)
+            {
+                throw new InvalidOperationException("Connection already established");
+            }
+
+            _connectionSocket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
+            _connectionStream = new NetworkStream(_connectionSocket, true);
 
             if (_options.UseSsl)
             {
@@ -174,17 +192,11 @@ namespace System.Net.Test.Common
                 }
                 _connectionStream = sslStream;
             }
+
             byte[] prefix = new byte[24];
-            
-            int totalReadBytes = 0;
-            while(totalReadBytes < Frame.FrameHeaderLength)
+            if (!await FillBufferAsync(prefix).ConfigureAwait(false))
             {
-                int readBytes = await _connectionStream.ReadAsync(prefix, totalReadBytes, prefix.Length).ConfigureAwait(false);;
-                totalReadBytes += readBytes;
-                if (readBytes == 0)
-                {
-                    throw new Exception("Connection stream closed while attempting to read connection preface.");
-                }
+                throw new Exception("Connection stream closed while attempting to read connection preface.");
             }
 
             return System.Text.Encoding.UTF8.GetString(prefix, 0, prefix.Length);
@@ -234,6 +246,32 @@ namespace System.Net.Test.Common
             ExpectSettingsAck();
         }
 
+        // This will wait for the client to close the connection,
+        // and ignore any meaningless frames -- i.e. WINDOW_UPDATE or expected SETTINGS ACK --
+        // that we see while waiting for the client to close.
+        // Only call this after sending a GOAWAY.
+        public async Task WaitForConnectionShutdownAsync()
+        {
+            IgnoreWindowUpdates();
+
+            // Shutdown our send side, so the client knows there won't be any more frames coming.
+            _connectionSocket.Shutdown(SocketShutdown.Send);
+
+            Frame frame = await ReadFrameAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+            if (frame != null)
+            {
+                throw new Exception($"Unexpected frame received while waiting for client shutdown: {frame}");
+            }
+
+            _connectionStream.Close();
+
+            _connectionSocket = null;
+            _connectionStream = null;
+
+            _ignoreSettingsAck = false;
+            _ignoreWindowUpdates = false;
+        }
+
         public async Task<int> ReadRequestHeaderAsync()
         {
             // Receive HEADERS frame for request.
@@ -257,6 +295,12 @@ namespace System.Net.Test.Common
 
             HeadersFrame headersFrame = new HeadersFrame(headers, FrameFlags.EndHeaders | FrameFlags.EndStream, 0, 0, 0, streamId);
             await WriteFrameAsync(headersFrame).ConfigureAwait(false);
+        }
+
+        public async Task SendResponseBodyAsync(int streamId, byte[] data, bool endStream = false)
+        {
+            DataFrame dataFrame = new DataFrame(data, endStream ? FrameFlags.EndStream : FrameFlags.None, 0, streamId);
+            await WriteFrameAsync(dataFrame).ConfigureAwait(false);
         }
 
         public void Dispose()
