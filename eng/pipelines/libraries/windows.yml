@@ -136,7 +136,7 @@ jobs:
         ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           name: dotnet-internal-temp
         ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-          name: Hosted VS2017
+          name: dotnet-external-temp
 
       submitToHelix: false
       enableMicrobuild: ${{ parameters.isOfficialBuild }}
