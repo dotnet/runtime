@@ -330,8 +330,11 @@ namespace System.Resources
             Debug.Assert(name != null, "name shouldn't be null; check caller");
 
             string nameSpace = _mediator.LocationInfo?.Namespace;
-            string delimiter = (nameSpace != null && name != null) ? Type.Delimiter.ToString() : null;
-            string resourceName = string.Concat(nameSpace, delimiter, name);
+
+            char c = Type.Delimiter;
+            string resourceName = nameSpace != null && name != null ?
+                string.Concat(nameSpace, new ReadOnlySpan<char>(ref c, 1), name) :
+                string.Concat(nameSpace, name);
 
             string canonicalName = null;
             foreach (string existingName in satellite.GetManifestResourceNames())
