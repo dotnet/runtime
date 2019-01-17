@@ -11,7 +11,7 @@
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19066.2</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.3</NETStandardLibraryPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27316-71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27316-72</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
