@@ -2490,7 +2490,7 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter(1024);
                 var jsonUtf8 = new Utf8JsonWriter(output, state);
 
-                ReadOnlySpan<char> keyUtf16 = keyString;
+                ReadOnlySpan<char> keyUtf16 = keyString.AsSpan();
                 ReadOnlySpan<byte> keyUtf8 = Encoding.UTF8.GetBytes(keyString);
 
                 jsonUtf8.WriteStartObject();
@@ -2652,7 +2652,7 @@ namespace System.Text.Json.Tests
 
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            ReadOnlySpan<char> keyUtf16 = keyString;
+            ReadOnlySpan<char> keyUtf16 = keyString.AsSpan();
             ReadOnlySpan<byte> keyUtf8 = Encoding.UTF8.GetBytes(keyString);
 
             for (int i = 0; i < 6; i++)
@@ -2745,7 +2745,7 @@ namespace System.Text.Json.Tests
 
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            ReadOnlySpan<char> keyUtf16 = keyString;
+            ReadOnlySpan<char> keyUtf16 = keyString.AsSpan();
             ReadOnlySpan<byte> keyUtf8 = Encoding.UTF8.GetBytes(keyString);
 
             for (int i = 0; i < 6; i++)
@@ -2838,7 +2838,7 @@ namespace System.Text.Json.Tests
 
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            ReadOnlySpan<char> keyUtf16 = keyString;
+            ReadOnlySpan<char> keyUtf16 = keyString.AsSpan();
             ReadOnlySpan<byte> keyUtf8 = Encoding.UTF8.GetBytes(keyString);
 
             for (int i = 0; i < 6; i++)
