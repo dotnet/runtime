@@ -3571,15 +3571,6 @@
   <data name="SynchronizationLockException_MisMatchedWrite" xml:space="preserve">
     <value>The write lock is being released without being held.</value>
   </data>
-  <data name="ConcurrentStack_PushPopRange_CountOutOfRange" xml:space="preserve">
-    <value>The count argument must be greater than or equal to zero.</value>
-  </data>
-  <data name="ConcurrentStack_PushPopRange_InvalidCount" xml:space="preserve">
-    <value>The sum of the startIndex and count arguments must be less than or equal to the collection's Count.</value>
-  </data>
-  <data name="ConcurrentStack_PushPopRange_StartOutOfRange" xml:space="preserve">
-    <value>The startIndex argument must be greater than or equal to zero.</value>
-  </data>
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
   </data>
