@@ -31,6 +31,8 @@
     <Compile Include="MaskLoad.Single.cs" />
     <Compile Include="MaskStore.Double.cs" />
     <Compile Include="MaskStore.Single.cs" />
+    <Compile Include="PermuteVar.Single.cs" />
+    <Compile Include="PermuteVar.Double.cs" />
     <Compile Include="Program.Avx_Vector128.cs" />
     <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
