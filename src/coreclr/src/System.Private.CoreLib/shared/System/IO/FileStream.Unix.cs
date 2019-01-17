@@ -597,13 +597,13 @@ namespace System.IO
                 int spaceRemaining = _bufferLength - _writePos;
                 if (spaceRemaining >= source.Length)
                 {
-                    source.CopyTo(new Span<byte>(GetBuffer()).Slice(_writePos));
+                    source.CopyTo(GetBuffer().AsSpan(_writePos));
                     _writePos += source.Length;
                     return;
                 }
                 else if (spaceRemaining > 0)
                 {
-                    source.Slice(0, spaceRemaining).CopyTo(new Span<byte>(GetBuffer()).Slice(_writePos));
+                    source.Slice(0, spaceRemaining).CopyTo(GetBuffer().AsSpan(_writePos));
                     _writePos += spaceRemaining;
                     source = source.Slice(spaceRemaining);
                 }

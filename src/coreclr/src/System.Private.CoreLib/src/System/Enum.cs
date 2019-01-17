@@ -269,7 +269,7 @@ namespace System
             const int SeparatorStringLength = 2; // ", "
             string result = string.FastAllocateString(checked(resultLength + (SeparatorStringLength * (foundItemsCount - 1))));
 
-            Span<char> resultSpan = MemoryMarshal.CreateSpan(ref result.GetRawStringData(), result.Length);
+            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
             string name = names[foundItems[--foundItemsCount]];
             name.AsSpan().CopyTo(resultSpan);
             resultSpan = resultSpan.Slice(name.Length);
