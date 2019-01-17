@@ -39,7 +39,6 @@
     <!-- Permit the following implementation-only assemblies -->
     <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
       <Value>
-        Microsoft.VisualBasic;
         System.Diagnostics.DiagnosticSource;
         System.Private.DataContractSerialization;
         System.Private.Uri;
