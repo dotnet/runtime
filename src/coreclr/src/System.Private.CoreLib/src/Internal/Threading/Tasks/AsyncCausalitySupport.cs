@@ -57,6 +57,18 @@ namespace Internal.Threading.Tasks
         {
             AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, task.Id, AsyncCausalityStatus.Error);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void TraceSynchronousWorkStart(Task task)
+        {
+            AsyncCausalityTracer.TraceSynchronousWorkStart(CausalityTraceLevel.Required, task.Id, CausalitySynchronousWork.Execution);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void TraceSynchronousWorkCompletion()
+        {
+            AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalityTraceLevel.Required, CausalitySynchronousWork.Execution);
+        }
     }
 }
 
