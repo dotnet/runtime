@@ -112,6 +112,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["Permute2x128.UInt32.2"] = Permute2x128UInt322,
                 ["Permute2x128.Int64.2"] = Permute2x128Int642,
                 ["Permute2x128.UInt64.2"] = Permute2x128UInt642,
+                ["PermuteVar.Single"] = PermuteVarSingle,
+                ["PermuteVar.Double"] = PermuteVarDouble,
                 ["RoundCurrentDirection.Double"] = RoundCurrentDirectionDouble,
                 ["RoundCurrentDirection.Single"] = RoundCurrentDirectionSingle,
                 ["RoundToNearestInteger.Double"] = RoundToNearestIntegerDouble,
