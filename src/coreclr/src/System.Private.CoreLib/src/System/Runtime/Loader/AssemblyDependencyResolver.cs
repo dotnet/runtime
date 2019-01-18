@@ -64,6 +64,7 @@ namespace System.Runtime.Loader
                 {
                     // Reset the error write to the one used before
                     corehost_set_error_writer(previousErrorWriterPtr);
+                    GC.KeepAlive(errorWriter);
                 }
             }
             catch (EntryPointNotFoundException entryPointNotFoundException)
@@ -289,13 +290,13 @@ namespace System.Runtime.Loader
         }
 #endif
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet = HostpolicyCharSet)]
         internal delegate void corehost_resolve_component_dependencies_result_fn(
             string assembly_paths,
             string native_search_paths,
             string resource_search_paths);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet = HostpolicyCharSet)]
         internal delegate void corehost_error_writer_fn(
             string message);
 
