@@ -6,8 +6,8 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\PasteArguments.cs">
-      <Link>Common\System\PasteArguments.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
+      <Link>Common\CoreLib\System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
       <Link>Common\System\IO\StringParser.cs</Link>
@@ -49,14 +49,14 @@
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="..\..\Common\src\System\PasteArguments.Windows.cs">
-      <Link>Common\System\PasteArguments.Windows.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Windows.cs">
+      <Link>Common\CoreLib\System\PasteArguments.Windows.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- UNIX -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="..\..\Common\src\System\PasteArguments.Unix.cs">
-      <Link>Common\System\PasteArguments.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Unix.cs">
+      <Link>Common\CoreLib\System\PasteArguments.Unix.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

@@ -12,7 +12,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixName.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.GetUnixName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixVersion.cs">
@@ -47,10 +47,10 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetNativeSystemInfo.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetNativeSystemInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
     </Compile>
   </ItemGroup>

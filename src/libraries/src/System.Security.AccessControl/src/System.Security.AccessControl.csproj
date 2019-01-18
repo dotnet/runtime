@@ -89,7 +89,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenProcessToken_IntPtr.cs">
       <Link>Common\Interop\Interop.OpenProcessToken_IntPtrs.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Interop.GetCurrentProcess_IntPtr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.SetThreadToken.cs">
