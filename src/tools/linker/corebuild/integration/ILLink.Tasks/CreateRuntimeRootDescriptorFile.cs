@@ -110,7 +110,7 @@ namespace ILLink.Tasks
 			// from namespace.h
 			foreach (string namespaceDef in namespaces) {
 				if (namespaceDef.StartsWith ("#define")) {
-					char [] separators = { '"', ' ' };
+					char [] separators = { '"', ' ', '\t' };
 					string [] namespaceDefElements = namespaceDef.Split (separators, StringSplitOptions.RemoveEmptyEntries);
 					int startIndex = "g_".Length;
 					// E.g., if namespaceDefElements [1] is "g_RuntimeNS", lhs is "Runtime".
@@ -138,7 +138,7 @@ namespace ILLink.Tasks
 			foreach (string def in types) {
 				string [] defElements = null;
 				if (def.StartsWith ("DEFINE_") || def.StartsWith ("// DEFINE_")) {
-					char [] separators = { ',', '(', ')', ' ', '/' };
+					char [] separators = { ',', '(', ')', ' ', '\t', '/' };
 					defElements = def.Split (separators, StringSplitOptions.RemoveEmptyEntries);
 				}
 
@@ -195,7 +195,7 @@ namespace ILLink.Tasks
 			foreach (string def in corTypes) {
 				// E.g., TYPEINFO(ELEMENT_TYPE_VOID,         "System", "Void",          0,              TYPE_GC_NONE,   false,  true,   false,  false,  false) // 0x01
 				if (def.StartsWith ("TYPEINFO(")) {
-					char [] separators = { ',', '(', ')', '"', ' ' };
+					char [] separators = { ',', '(', ')', '"', ' ', '\t' };
 					string [] defElements = def.Split (separators, StringSplitOptions.RemoveEmptyEntries);
 					string classId = null;
 					string classNamespace = defElements [2]; // System
@@ -212,7 +212,7 @@ namespace ILLink.Tasks
 			foreach (string def in excTypes) {
 				// E.g., DEFINE_EXCEPTION(g_InteropNS,          MarshalDirectiveException,      false,  COR_E_MARSHALDIRECTIVE)
 				if (def.StartsWith ("DEFINE_EXCEPTION(")) {
-					char [] separators = { ',', '(', ')', ' ' };
+					char [] separators = { ',', '(', ')', ' ', '\t' };
 					string [] defElements = def.Split (separators, StringSplitOptions.RemoveEmptyEntries);
 					string classId = null;
 					string classNamespace = defElements [1]; // g_InteropNS
