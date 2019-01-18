@@ -159,19 +159,19 @@ error_t TP_getenv_s(size_t* pReturnValue, LPWSTR buffer, size_t sizeInWords, LPC
     return 0;
 }
 
-error_t TP_putenv_s(LPTSTR name, LPTSTR value)
+error_t TP_putenv_s(LPWSTR name, LPWSTR value)
 {
     if (NULL == name || NULL == value) return 1;
 
 #ifdef WINDOWS
-    if( 0 != _putenv_s(name, value))
+    if( 0 != _wputenv_s(name, value))
         return 2;
     else
         return 0;
 #else
     int retVal = 0;
-    char *assignment = (char*) malloc(sizeof(char) * (strlen(name) + strlen(value) + 1));
-    sprintf(assignment, "%s=%s", name, value);
+    char *assignment = (char*) malloc(sizeof(char) * (wcslen(name) + wcslen(value) + 1));
+    sprintf(assignment, "%s=%s", HackyConvertToSTR(name), HackyConvertToSTR(value));
 
     if (0 != putenv(assignment))
         retVal = 2;
@@ -445,18 +445,18 @@ BSTR TP_SysAllocString(LPCWSTR psz)
 #else
     if(psz == NULL)
         return NULL;
-    return TP_SysAllocStringLen(psz, (DWORD)wcslen(psz));
+    return CoreClrBStrAlloc(psz, (DWORD)wcslen(psz));
 #endif
 }
 
-BSTR TP_SysAllocStringLen(LPCWSTR psz, size_t len)
+BSTR CoreClrBStrAlloc(LPCWSTR psz, size_t len)
 {
     ULONG cbTotal = 0;
 
     if (FAILED(CbSysStringSize((ULONG)len, FALSE, &cbTotal)))
         return NULL;
 
-    BSTR bstr = (BSTR)TP_CoTaskMemAlloc(cbTotal);
+    BSTR bstr = (BSTR)CoreClrAlloc(cbTotal);
 
     if(bstr != NULL){
 
@@ -480,7 +480,7 @@ BSTR TP_SysAllocStringLen(LPCWSTR psz, size_t len)
     return bstr; 
 }
 
-BSTR TP_SysAllocStringByteLen(LPCSTR psz, size_t len)
+BSTR CoreClrBStrAlloc(LPCSTR psz, size_t len)
 {
 #ifdef WINDOWS    
     return SysAllocStringByteLen(psz, (UINT)len);
@@ -491,7 +491,7 @@ BSTR TP_SysAllocStringByteLen(LPCSTR psz, size_t len)
     if (FAILED(CbSysStringSize(len, TRUE, &cbTotal)))
         return NULL;
 
-    bstr = (BSTR)TP_CoTaskMemAlloc(cbTotal);
+    bstr = (BSTR)CoreClrAlloc(cbTotal);
 
     if (bstr != NULL) {
 #if defined(_WIN64)
@@ -515,14 +515,14 @@ BSTR TP_SysAllocStringByteLen(LPCSTR psz, size_t len)
 #endif    
 }
 
-void TP_SysFreeString(BSTR bstr)
+void CoreClrBStrFree(BSTR bstr)
 {
 #ifdef WINDOWS    
     return SysFreeString(bstr);
 #else
     if (bstr == NULL)
       return;
-    TP_CoTaskMemFree((BYTE *)bstr - sizeof(DWORD_PTR));  
+    CoreClrFree((BYTE *)bstr - sizeof(DWORD_PTR));  
 #endif    
 }
 
@@ -552,4 +552,64 @@ DWORD TP_SysStringLen(BSTR bstr)
       return 0;
     return (unsigned int)((((DWORD *)bstr)[-1]) / sizeof(OLECHAR));
 #endif
+}
+
+size_t TP_strncpy_s(char* strDest, size_t numberOfElements, const char *strSource, size_t count)
+{
+    // NOTE: Need to pass count + 1 since strncpy_s does not count null,
+    // while snprintf does. 
+    return snprintf(strDest, count + 1, "%s", strSource);
+}
+
+size_t TP_strcpy_s(char *dest, size_t n, char const *src)
+{
+    return snprintf(dest, n, "%s", src);
+}
+
+int TP_wcsncpy_s(LPWSTR strDestination, size_t size1, LPCWSTR strSource, size_t size2)
+{
+    // copy sizeInBytes bytes of strSource into strDestination
+    if (NULL == strDestination || NULL == strSource) return 1;
+
+    size_t cnt = 0;
+    while (cnt < size1 && '\0' != strSource[cnt])
+    {
+        strDestination[cnt] = strSource[cnt];
+        cnt++;
+    }
+
+    strDestination[cnt] = '\0';
+    return 0;
+}
+
+int TP_wcsncpy_s(LPWSTR strDestination, size_t size1, LPCWSTR strSource)
+{
+    return wcsncpy_s(strDestination, size1, strSource, 0);
+}
+
+int TP_wcsncmp(LPCWSTR str1, LPCWSTR str2,size_t len)
+{
+    // < 0 str1 less than str2
+    // 0  str1 identical to str2
+    // > 0 str1 greater than str2
+    if (NULL == str1 && NULL != str2) return -1;
+    if (NULL != str1 && NULL == str2) return 1;
+    if (NULL == str1 && NULL == str2) return 0;
+
+    while (*str1 == *str2 && '\0' != *str1 && '\0' != *str2 && len--!= 0)
+    {
+        str1++;
+        str2++;
+    }
+
+    if ('\0' == *str1 && '\0' == *str2) return 0;
+    if ('\0' != *str1) return -1;
+    if ('\0' != *str2) return 1;
+
+    return (*str1 > *str2) ? 1 : -1;
+}
+
+int TP_wmemcmp(LPCWSTR str1, LPCWSTR str2,size_t len)
+{
+    return wcsncmp(str1, str2, len);
 }

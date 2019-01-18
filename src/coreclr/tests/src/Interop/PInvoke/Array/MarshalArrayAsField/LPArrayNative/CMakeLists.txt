@@ -1,9 +1,9 @@
-#VCXPROJ 
+ 
 cmake_minimum_required (VERSION 2.6) 
 project (MarshalArrayByValArrayNative) 
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
 include_directories("../..")
-include_directories(${INC_PLATFORM_DIR})
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
 set(SOURCES 
     MarshalArrayByValArrayNative.cpp 
 ) 

@@ -35,7 +35,7 @@ extern "C" DLL_EXPORT BSTR STDMETHODCALLTYPE Marshal_In(/*[in]*/ BSTR s)
         printf("\tThe length of Actual:%zd\n", len);
     }
 
-    return TP_SysAllocStringByteLen(strReturn, lenstrReturn);
+    return CoreClrBStrAlloc(strReturn, lenstrReturn);
 }
 
 //Test Method2
@@ -66,18 +66,18 @@ extern "C" DLL_EXPORT BSTR STDMETHODCALLTYPE Marshal_InOut(/*[In,Out]*/ BSTR s)
     *((UINT *)s - 1) = (UINT) TP_SysStringByteLen(s);
 
     //Return
-    return TP_SysAllocStringByteLen(strReturn, lenstrReturn);
+    return CoreClrBStrAlloc(strReturn, lenstrReturn);
 }
 extern "C" DLL_EXPORT BSTR STDMETHODCALLTYPE Marshal_Out(/*[Out]*/ BSTR s)
 {
-    s = TP_SysAllocStringByteLen(strNative, lenstrNative);
+    s = CoreClrBStrAlloc(strNative, lenstrNative);
 
     //In-Place Change
     memcpy((char *)s, strNative, lenstrNative);
     *((UINT *)s - 1) = (UINT) TP_SysStringByteLen(s);
 
     //Return
-    return TP_SysAllocStringByteLen(strReturn, lenstrReturn);
+    return CoreClrBStrAlloc(strReturn, lenstrReturn);
 }
 
 extern "C" DLL_EXPORT BSTR STDMETHODCALLTYPE MarshalPointer_In(/*[in]*/ BSTR *s)
@@ -101,7 +101,7 @@ extern "C" DLL_EXPORT BSTR STDMETHODCALLTYPE MarshalPointer_In(/*[in]*/ BSTR *s)
         printf("\tThe length of Actual:%zd\n", len);
     }
 
-    return TP_SysAllocStringByteLen(strReturn, lenstrReturn);
+    return CoreClrBStrAlloc(strReturn, lenstrReturn);
 }
 
 extern "C" DLL_EXPORT BSTR STDMETHODCALLTYPE MarshalPointer_InOut(/*[in,out]*/ BSTR *s)
@@ -128,15 +128,15 @@ extern "C" DLL_EXPORT BSTR STDMETHODCALLTYPE MarshalPointer_InOut(/*[in,out]*/ B
     }
 
     //Allocate New
-    TP_SysFreeString(*s);
-    *s = TP_SysAllocStringByteLen(strNative, lenstrNative);
+    CoreClrBStrFree(*s);
+    *s = CoreClrBStrAlloc(strNative, lenstrNative);
 
     //Return
-    return TP_SysAllocStringByteLen(strReturn, lenstrReturn);
+    return CoreClrBStrAlloc(strReturn, lenstrReturn);
 }
 
 extern "C" DLL_EXPORT BSTR STDMETHODCALLTYPE MarshalPointer_Out(/*[out]*/ BSTR *s)
 {
-    *s = TP_SysAllocStringByteLen(strNative, lenstrNative);
-    return TP_SysAllocStringByteLen(strReturn, lenstrReturn);
+    *s = CoreClrBStrAlloc(strNative, lenstrNative);
+    return CoreClrBStrAlloc(strReturn, lenstrReturn);
 }
