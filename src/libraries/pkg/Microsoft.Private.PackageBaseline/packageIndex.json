@@ -424,10 +424,11 @@
     "netstandard": {
       "InboxOn": {
         "netcoreapp2.0": "2.0.0.0",
+        "netcoreapp3.0": "2.1.0.0",
         "net461": "2.0.0.0",
         "netstandard2.0": "2.0.0.0",
         "uap10.0.16299": "2.0.0.0",
-        "uap10.0.16300": "2.0.1.0"
+        "uap10.0.16300": "2.1.0.0"
       }
     },
     "NETStandard.Library": {
