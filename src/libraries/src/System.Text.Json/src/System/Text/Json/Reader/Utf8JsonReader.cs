@@ -694,22 +694,13 @@ namespace System.Text.Json
 
             if (_consumed >= (uint)_buffer.Length)
             {
-                if (!_isNotPrimitive)
-                {
-                    return true;
-                }
-                if (IsLastSpan)
-                {
-                    ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, _buffer[_consumed - 1]);
-                }
-                return false;
+                Debug.Assert(IsLastSpan);
+
+                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, _buffer[_consumed - 1]);
             }
 
-            // TODO: https://github.com/dotnet/corefx/issues/33294
-            if (JsonConstants.Delimiters.IndexOf(_buffer[_consumed]) < 0)
-            {
-                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, _buffer[_consumed]);
-            }
+            Debug.Assert(JsonConstants.Delimiters.IndexOf(_buffer[_consumed]) >= 0);
+
             return true;
         }
 
@@ -1067,7 +1058,7 @@ namespace System.Text.Json
                 if (IsLastSpan)
                 {
                     // A payload containing a single value: "0" is valid
-                    // If we are v with multi-value JSON,
+                    // If we are dealing with multi-value JSON,
                     // ConsumeNumber will validate that we have a delimiter following the "0".
                     return ConsumeNumberResult.Success;
                 }
