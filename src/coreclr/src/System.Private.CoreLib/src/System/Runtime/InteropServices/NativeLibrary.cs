@@ -9,9 +9,25 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using Win32Native = Microsoft.Win32.Win32Native;
 using System.Diagnostics;
+using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
+    /// <summary>
+    /// A delegate used to resolve native libraries via callback.
+    /// </summary>
+    /// <param name="libraryName">The native library to resolve</param>
+    /// <param name="assembly">The assembly requesting the resolution</param>
+    /// <param name="searchPath">
+    ///     The DllImportSearchPathsAttribute on the PInvoke, if any. 
+    ///     Otherwise, the DllImportSearchPathsAttribute on the assembly, if any. 
+    ///     Otherwise null.
+    /// </param>
+    /// <returns>The handle for the loaded native library on success, null on failure</returns>  
+    public delegate IntPtr DllImportResolver(string libraryName,
+                                             Assembly assembly,
+                                             DllImportSearchPath? searchPath);
+
     /// <summary>
     /// APIs for managing Native Libraries 
     /// </summary>
@@ -58,7 +74,9 @@ namespace System.Runtime.InteropServices
         /// Otherwise, the flags specified by the DefaultDllImportSearchPaths attribute on the 
         /// calling assembly (if any) are used. 
         /// This LoadLibrary() method does not invoke the managed call-backs for native library resolution: 
+        /// * The per-assembly registered callback 
         /// * AssemblyLoadContext.LoadUnmanagedDll()
+        /// * AssemblyLoadContext.ResolvingUnmanagedDllEvent
         /// </summary>
         /// <param name="libraryName">The name of the native library to be loaded</param>
         /// <param name="assembly">The assembly loading the native library</param>
@@ -117,7 +135,6 @@ namespace System.Runtime.InteropServices
         /// No action if the input handle is null.
         /// </summary>
         /// <param name="handle">The native library handle to be freed</param>
-        /// <exception cref="System.InvalidOperationException">If the operation fails</exception>
         public static void Free(IntPtr handle)
         {
             FreeLib(handle);
@@ -159,6 +176,78 @@ namespace System.Runtime.InteropServices
 
             address = GetSymbol(handle, name, throwOnError: false);
             return address != IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Map from assembly to native-library resolver.
+        /// Interop specific fields and properties are generally not added to Assembly class.
+        /// Therefore, this table uses weak assembly pointers to indirectly achieve 
+        /// similar behavior.
+        /// </summary>
+        private static ConditionalWeakTable<Assembly, DllImportResolver> s_nativeDllResolveMap = null;
+
+        /// <summary>
+        /// Set a callback for resolving native library imports from an assembly.
+        /// This per-assembly resolver is the first attempt to resolve native library loads 
+        /// initiated by this assembly.
+        ///
+        /// Only one resolver can be registered per assembly. 
+        /// Trying to register a second resolver fails with InvalidOperationException.
+        /// </summary>
+        /// <param name="assembly">The assembly for which the resolver is registered</param>
+        /// <param name="resolver">The resolver callback to register</param>
+        /// <exception cref="System.ArgumentNullException">If assembly or resolver is null</exception>
+        /// <exception cref="System.ArgumentException">If a resolver is already set for this assembly</exception>
+        public static void SetDllImportResolver(Assembly assembly, DllImportResolver resolver)
+        {
+            if (assembly == null)
+                throw new ArgumentNullException(nameof(assembly));
+            if (resolver == null)
+                throw new ArgumentNullException(nameof(resolver));
+            if (!(assembly is RuntimeAssembly))
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
+
+            if (s_nativeDllResolveMap == null)
+            {
+                Interlocked.CompareExchange(ref s_nativeDllResolveMap,
+                    new ConditionalWeakTable<Assembly, DllImportResolver>(), null);
+            }
+
+            try
+            {
+                s_nativeDllResolveMap.Add(assembly, resolver);
+            }
+            catch (ArgumentException)
+            {
+                // ConditionalWealTable throws ArgumentException if the Key already exists
+                throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondResolver);
+            }
+        }
+
+        /// <summary>
+        /// The helper function that calls the per-assembly native-library resolver 
+        /// if one is registered for this assembly.
+        /// </summary>
+        /// <param name="libraryName">The native library to load</param>
+        /// <param name="assembly">The assembly trying load the native library</param>
+        /// <param name="hasDllImportSearchPathFlags">If the pInvoke has DefaultDllImportSearchPathAttribute</param>
+        /// <param name="dllImportSearchPathFlags">If hasdllImportSearchPathFlags is true, the flags in 
+        ///                                       DefaultDllImportSearchPathAttribute; meaningless otherwise </param>
+        /// <returns>The handle for the loaded library on success. Null on failure.</returns>  
+        internal static IntPtr LoadLibraryCallbackStub(string libraryName, Assembly assembly,
+                                                       bool hasDllImportSearchPathFlags, uint dllImportSearchPathFlags)
+        {
+            if (s_nativeDllResolveMap == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            if (!s_nativeDllResolveMap.TryGetValue(assembly, out DllImportResolver resolver))
+            {
+                return IntPtr.Zero;
+            }
+
+            return resolver(libraryName, assembly, hasDllImportSearchPathFlags ? (DllImportSearchPath?)dllImportSearchPathFlags : null);
         }
 
         /// External functions that implement the NativeLibrary interface

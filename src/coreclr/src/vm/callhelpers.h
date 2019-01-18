@@ -566,6 +566,7 @@ enum DispatchCallSimpleFlags
 #define STRINGREF_TO_ARGHOLDER(x) (LPVOID)STRINGREFToObject(x)
 #define PTR_TO_ARGHOLDER(x) (LPVOID)x
 #define DWORD_TO_ARGHOLDER(x)   (LPVOID)(SIZE_T)x
+#define BOOL_TO_ARGHOLDER(x) DWORD_TO_ARGHOLDER(!!(x))   
 
 #define INIT_VARIABLES(count)                               \
         DWORD   __numArgs = count;                          \
