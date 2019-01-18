@@ -78,3 +78,34 @@
 
 * Since the source package contains types marked as internal, please be intentional with the use of `InternalsVisibleTo`.
   It is acceptable to use it where necessary but something we wanted to highlight as an area of consideration.
+
+## Sample Netstandard Library Project File
+
+```csproj
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Suppress warnings for CLSCompliant OR add this attribute-->
+    <!-- <CLSCompliant>true</CLSCompliant> -->
+    <NoWarn>3021</NoWarn>
+    <!-- Suppress warnings for S.T.Json types already defined in .NET Core 3.0, if your TFM is .NET Core 3.0+ (not recommended)
+         OR preferably only conditionally include the package reference -->
+    <!-- <NoWarn>0436</NoWarn> -->
+  </PropertyGroup>
+
+  <!-- If you are multi-targeting and include netcoreapp3.0 in your TFM, make sure this ItemGroup is only condtionally included. -->
+  <!-- Note, the version numbers need to be filled in. -->
+  <ItemGroup>
+    <!-- Do not expose this dependency outside of your package to projects that might be consuming it (i.e. within deps.json). -->
+    <PackageReference Include="Microsoft.Bcl.Json.Sources" Version="...">
+      <PrivateAssets>All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="..." />
+    <PackageReference Include="System.Memory" Version="..." />
+  </ItemGroup>
+
+</Project>
+```
