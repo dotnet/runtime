@@ -130,16 +130,15 @@ jobs:
         timeoutInMinutes: 30
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-          isExternal: false
           # Access token variable for internal project from the
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
           helixQueues: ${{ parameters.helixQueuesInternal }}
           ${{ if eq(parameters.helixQueuesInternal, '') }}:
             condition: false
+
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          isExternal: true
-          creator: coreclr/pulls
+          creator: coreclr-pulls
           helixQueues: ${{ parameters.helixQueuesPublic }}
           ${{ if eq(parameters.helixQueuesPublic, '') }}:
             condition: false

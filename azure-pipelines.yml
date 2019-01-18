@@ -126,7 +126,7 @@ jobs:
       jobParameters:
         priority: 0
         scenarios: 'normal,no_tiered_compilation'
-        timeoutInMinutes: 120
+        timeoutInMinutes: 240
 
 # Pri1 (CI)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
@@ -137,7 +137,7 @@ jobs:
       jobParameters:
         priority: 1
         scenarios: 'normal,no_tiered_compilation'
-        timeoutInMinutes: 240
+        timeoutInMinutes: 360
 
 # Pri1 crossgen (CI)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
@@ -149,7 +149,7 @@ jobs:
         priority: 1
         crossgen: true
         scenarios: 'normal,no_tiered_compilation'
-        timeoutInMinutes: 240
+        timeoutInMinutes: 360
 
 # Pri1 (Manual)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'Manual')) }}:
@@ -160,7 +160,7 @@ jobs:
       jobParameters:
         priority: 1
         scenarios: 'normal,no_tiered_compilation,jitstress1,jitstress2,jitstress1_tiered,jitstress2_tiered'
-        timeoutInMinutes: 300
+        timeoutInMinutes: 480
 
 #
 # Release test builds (Official Build)
@@ -174,8 +174,8 @@ jobs:
       buildConfig: release
       jobParameters:
         priority: 1
-        timeoutInMinutes: 240
         scenarios: 'normal,no_tiered_compilation'
+        timeoutInMinutes: 360
 
 # Pri1 crossgen (Official Build)
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -186,8 +186,8 @@ jobs:
       jobParameters:
         priority: 1
         crossgen: true
-        timeoutInMinutes: 240
         scenarios: 'normal,no_tiered_compilation'
+        timeoutInMinutes: 360
 
 
 # Publish build information to Build Assets Registry
