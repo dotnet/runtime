@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using AsyncCausalityStatus = System.Threading.Tasks.AsyncCausalityStatus;
-using CausalityTraceLevel = System.Threading.Tasks.CausalityTraceLevel;
 
 namespace Internal.Threading.Tasks
 {
@@ -56,18 +51,6 @@ namespace Internal.Threading.Tasks
         public static void TraceOperationCompletedError(Task task)
         {
             AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, task.Id, AsyncCausalityStatus.Error);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void TraceSynchronousWorkStart(Task task)
-        {
-            AsyncCausalityTracer.TraceSynchronousWorkStart(CausalityTraceLevel.Required, task.Id, CausalitySynchronousWork.Execution);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void TraceSynchronousWorkCompletion()
-        {
-            AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalityTraceLevel.Required, CausalitySynchronousWork.Execution);
         }
     }
 }
