@@ -59,7 +59,8 @@ jobs:
     osGroup: Linux
     osIdentifier: Linux_rhel6
     containerName: centos6_x64_build_image
-    helixQueuesPublic: 'RedHat.6.Amd64.Open'
+    # TODO: enable RedHat.6.Amd64.Open
+    # when https://github.com/dotnet/core-eng/issues/4100 is resolved
     helixQueuesInternal: 'RedHat.6.Amd64'
     ${{ insert }}: ${{ parameters.jobParameters }}
 

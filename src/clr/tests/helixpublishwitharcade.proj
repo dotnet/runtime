@@ -11,11 +11,8 @@
     <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(BuildType)</HelixConfiguration>
     <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(BuildType)-$(Scenario)</HelixConfiguration>
 
-    <IsExternal>$(_IsExternal)</IsExternal>
-    <IsExternal Condition=" '$(IsExternal)' == '' ">true</IsExternal>
-
-    <Creator Condition=" '$(IsExternal)' == 'true' ">$(_Creator)</Creator>
-    <HelixAccessToken Condition=" '$(IsExternal)' != 'true' ">$(_HelixAccessToken)</HelixAccessToken>
+    <Creator>$(_Creator)</Creator>
+    <HelixAccessToken>$(_HelixAccessToken)</HelixAccessToken>
     <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
 
     <EnableAzurePipelinesReporter>$(_PublishTestResults)</EnableAzurePipelinesReporter>

@@ -4,7 +4,6 @@ parameters:
   archType: ''
   osGroup: ''
   buildConfig: ''
-  isExternal: ''
   creator: ''
   publishTestResults: ''
   helixAccessToken: ''
@@ -25,7 +24,6 @@ steps:
       __BuildArch: ${{ parameters.archType }}
       __BuildOS: ${{ parameters.osGroup }}
       __BuildType: ${{ parameters.buildConfig }}
-      _IsExternal: ${{ parameters.isExternal }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
       _HelixAccessToken: ${{ parameters.helixAccessToken }}
@@ -47,7 +45,6 @@ steps:
       __BuildArch: ${{ parameters.archType }}
       __BuildOS: ${{ parameters.osGroup }}
       __BuildType: ${{ parameters.buildConfig }}
-      _IsExternal: ${{ parameters.isExternal }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
       _HelixAccessToken: ${{ parameters.helixAccessToken }}
