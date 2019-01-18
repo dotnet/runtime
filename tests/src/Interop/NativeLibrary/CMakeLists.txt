@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 project (NativeLibrary)
-include_directories(${INC_PLATFORM_DIR})
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
 set(SOURCES NativeLibrary.cpp)
 
 # add the executable

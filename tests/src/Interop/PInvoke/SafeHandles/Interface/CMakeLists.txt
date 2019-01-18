@@ -1,9 +1,8 @@
-#VCXPROJ 
+ 
 cmake_minimum_required (VERSION 2.6) 
 project (PInvoke_SafeHandle_MarshalAs_Interface) 
-include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
-include_directories("..")
-include_directories(${INC_PLATFORM_DIR}) 
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
+include_directories("..") 
 set(SOURCES 
     InterfaceNative.cpp 
 ) 

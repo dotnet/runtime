@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <xplatform.h>
+#include <platformdefines.h>
 
 LPCWSTR strManaged = W("Managed\0String\0");
 LPCWSTR strNative = W(" Native\0String\0");

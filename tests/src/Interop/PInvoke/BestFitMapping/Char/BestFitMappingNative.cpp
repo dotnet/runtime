@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <xplatform.h>
+#include <platformdefines.h>
 
 
 extern "C" bool DLL_EXPORT STDMETHODCALLTYPE Char_In(char c)

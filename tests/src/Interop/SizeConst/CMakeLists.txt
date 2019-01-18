@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 project (SizeConstNative)
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
 set(SOURCES SizeConstNative.cpp)
 
 # add the executable
