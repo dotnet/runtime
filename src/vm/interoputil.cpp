@@ -897,9 +897,9 @@ void FillExceptionData(
 #endif // CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------------
-//returns true if pImport has DefaultDllImportSearchPathsAttribute
-//if true, also returns dllImportSearchPathFlag and searchAssemblyDirectory values.
-BOOL GetDefaultDllImportSearchPathsAttributeValue(IMDInternalImport *pImport, mdToken token, DWORD * pDllImportSearchPathFlag)
+// If pImport has the DefaultDllImportSearchPathsAttribute, 
+// set the value of the attribute in pDlImportSearchPathFlags and return true.
+BOOL GetDefaultDllImportSearchPathsAttributeValue(IMDInternalImport *pImport, mdToken token, DWORD * pDllImportSearchPathFlags)
 {
     CONTRACTL
     {
@@ -929,7 +929,7 @@ BOOL GetDefaultDllImportSearchPathsAttributeValue(IMDInternalImport *pImport, md
     args[0].InitEnum(SERIALIZATION_TYPE_U4, (ULONG)0);
 
     ParseKnownCaArgs(ca, args, lengthof(args));
-    *pDllImportSearchPathFlag = args[0].val.u4;
+    *pDllImportSearchPathFlags = args[0].val.u4;
     return TRUE;
 }
 
