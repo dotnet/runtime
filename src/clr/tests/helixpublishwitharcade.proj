@@ -69,6 +69,8 @@
 
   <Target Name="BuildHelixWorkItem" BeforeTargets="Test">
     <PropertyGroup>
+      <EnableXUnitReporter>true</EnableXUnitReporter>
+      <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
       <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
       <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
       <_XUnitRunnerArgs>-parallel collections -nocolor -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing</_XUnitRunnerArgs>
