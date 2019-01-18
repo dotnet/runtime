@@ -181,13 +181,19 @@ WCHAR* getResultFileName(const WCHAR* folderPath, WCHAR* executableName, const W
     const size_t maxAcceptablePathLength =
         MAX_PATH - 50; // subtract 50 because excel doesn't like paths longer then 230.
 
-    if (dataFileNameLength > maxAcceptablePathLength)
+#ifdef FEATURE_PAL
+        assert(executableNameLength == 0);
+#endif // FEATURE_PAL
+
+    if (dataFileNameLength > maxAcceptablePathLength || executableNameLength == 0)
     {
         // The path name is too long; creating the file will fail. This can happen because we use the command line,
         // which for ngen includes lots of environment variables, for example.
         // Shorten the executable file name and add a random string to it to avoid collisions.
 
         const size_t randStringLength = 8;
+
+#ifndef FEATURE_CORECLR
 
         size_t lengthToBeDeleted = (dataFileNameLength - maxAcceptablePathLength) + randStringLength;
 
@@ -200,6 +206,8 @@ WCHAR* getResultFileName(const WCHAR* folderPath, WCHAR* executableName, const W
 
         executableNameLength -= lengthToBeDeleted;
         executableName[executableNameLength] = 0;
+
+#endif // FEATURE_CORECLR
 
         executableNameLength += randStringLength;
         WCHAR randNumberString[randStringLength + 1];

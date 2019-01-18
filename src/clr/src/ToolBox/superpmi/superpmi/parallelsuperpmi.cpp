@@ -631,11 +631,11 @@ int doParallelSuperPMI(CommandLine::Options& o)
         {
             if (o.applyDiff)
             {
-                LogInfo(g_AsmDiffsSummaryFormatString, loaded, jitted, failed, diffs);
+                LogInfo(g_AsmDiffsSummaryFormatString, loaded, jitted, failed, excluded, diffs);
             }
             else
             {
-                LogInfo(g_SummaryFormatString, loaded, jitted, failed);
+                LogInfo(g_SummaryFormatString, loaded, jitted, failed, excluded);
             }
         }
 
