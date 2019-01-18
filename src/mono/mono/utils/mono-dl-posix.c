@@ -65,6 +65,8 @@ mono_dl_open_file (const char *file, int flags)
 	/* Bionic doesn't support NULL filenames */
 	if (!file)
 		return NULL;
+	if (!g_file_test (file, G_FILE_TEST_EXISTS))
+		return NULL;
 #endif
 #if defined(_AIX)
 	/*
