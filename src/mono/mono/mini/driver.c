@@ -2810,6 +2810,7 @@ mono_runtime_set_execution_mode (MonoEEMode mode)
 		break;
 
 	case MONO_AOT_MODE_NORMAL:
+	case MONO_AOT_MODE_NONE:
 		break;
 
 	default:
@@ -2824,11 +2825,13 @@ void
 mono_jit_set_aot_mode (MonoAotMode mode)
 {
 	/* we don't want to set mono_aot_mode twice */
-	g_assert (mono_aot_mode == MONO_AOT_MODE_NONE);
+	static gboolean inited;
+
+	g_assert (!inited);
 	mono_aot_mode = mode;
+	inited = TRUE;
 	
 	mono_runtime_set_execution_mode ((MonoEEMode)mode);
-
 }
 
 mono_bool
