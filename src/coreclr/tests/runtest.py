@@ -67,7 +67,6 @@ else:
     import urllib.request
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
-
 from coreclr_arguments import *
 
 ################################################################################
@@ -149,6 +148,25 @@ file_name_cache = defaultdict(lambda: None)
 ################################################################################
 # Classes
 ################################################################################
+
+class TempFile:
+    def __init__(self, extension):
+        self.file = None
+        self.file_name = None
+        self.extension = extension
+
+    def __enter__(self):
+        self.file = tempfile.NamedTemporaryFile(delete=False, suffix=self.extension)
+
+        self.file_name = self.file.name
+
+        return self.file_name
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            os.remove(self.file_name)
+        except:
+            print("Error failed to delete: {}.".format(self.file_name))
 
 class DebugEnv:
     def __init__(self, 
@@ -441,7 +459,7 @@ def create_and_use_test_env(_os, env, func):
 
     for key in env:
         value = env[key]
-        if "complus" in key.lower():
+        if "complus" in key.lower() or "superpmi" in key.lower():
             complus_vars[key] = value
 
     if len(list(complus_vars.keys())) > 0:
