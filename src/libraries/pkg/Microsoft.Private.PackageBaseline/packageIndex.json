@@ -27,6 +27,9 @@
         "net45": "4.0.0.0"
       }
     },
+    "Microsoft.Bcl.Json.Sources": {
+      "InboxOn": {}
+    },
     "Microsoft.Build": {
       "InboxOn": {
         "net45": "4.0.0.0"
@@ -4179,7 +4182,7 @@
       ],
       "BaselineVersion": "4.6.0",
       "InboxOn": {
-        "net45": "4.0.0.0", 
+        "net45": "4.0.0.0",
         "net451": "4.0.10.0",
         "portable46-win81+wp81+wpa81": "4.0.0.0",
         "portable46-win81+wp81": "4.0.0.0",
