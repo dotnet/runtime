@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <xplatform.h>
+#include <platformdefines.h>
 
 #pragma warning( push )
 #pragma warning( disable : 4996)

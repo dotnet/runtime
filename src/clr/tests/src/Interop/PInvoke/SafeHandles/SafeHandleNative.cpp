@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <windows.h>
 #include <xplatform.h>
+#include <platformdefines.h>
 #include "StructDefs.h" //all the unmanaged struct defs are in this file
 
 //Global Handle Return Value

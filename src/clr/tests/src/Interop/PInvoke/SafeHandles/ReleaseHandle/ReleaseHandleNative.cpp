@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <windows.h>
 #include <xplatform.h>
+#include <platformdefines.h>
 
 bool g_myResourceReleaseMethodCalled = false;
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "ClientTests.h"
+#include <platformdefines.h>
 #include <vector>
 #include <sstream>
 
@@ -188,7 +189,7 @@ namespace
     };
 
     // BSTR string
-    using BStr = AnyStr<OLECHAR, &CoreClrBstrAlloc, &CoreClrBstrFree>;
+    using BStr = AnyStr<OLECHAR, &CoreClrBStrAlloc, &CoreClrBStrFree>;
 
     // Wide string
     using WStr = AnyStr<WCHAR, &CoreClrAlloc, &CoreClrFree>;

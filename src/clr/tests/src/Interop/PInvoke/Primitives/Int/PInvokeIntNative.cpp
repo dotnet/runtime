@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <xplatform.h>
+#include <platformdefines.h>
 
 int intManaged = 1000;
 int intNative = 2000;

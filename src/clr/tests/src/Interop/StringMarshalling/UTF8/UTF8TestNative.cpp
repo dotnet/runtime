@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <xplatform.h>
+#include <platformdefines.h>
 
 const int NSTRINGS = 6;
 #ifdef _WIN32

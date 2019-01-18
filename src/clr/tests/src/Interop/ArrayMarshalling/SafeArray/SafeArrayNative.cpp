@@ -5,7 +5,6 @@
 #include <xplatform.h>
 #include <oleauto.h>
 #include <algorithm>
-#include <platformdefines.h>
 
 #define RETURN_IF_FAILED(x) if(FAILED(hr = (x))) { return hr; }
 
@@ -139,7 +138,7 @@ HRESULT Reverse(StringType str, StringType *res)
 HRESULT ReverseBSTR(BSTR str, BSTR *res)
 {
     size_t strDataLen = TP_SysStringByteLen(str);
-    BSTR resLocal = TP_SysAllocStringByteLen(reinterpret_cast<LPCSTR>(str), strDataLen);
+    BSTR resLocal = CoreClrBStrAlloc(reinterpret_cast<LPCSTR>(str), strDataLen);
     if (resLocal == nullptr)
         return E_INVALIDARG;
 

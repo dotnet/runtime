@@ -4,6 +4,7 @@
 
 
 #include <stdio.h>
+#include <memory.h>
 #include <stdlib.h>
 #include <string.h>
 #include <cstdint>
@@ -11,11 +12,31 @@
 #ifndef _PLATFORMDEFINES__H
 #define _PLATFORMDEFINES__H
 
+#ifdef _MSC_VER
+// Our tests don't care about secure CRT
+#define _CRT_SECURE_NO_WARNINGS 1
+#endif
+
+
+// Ensure that both UNICODE and _UNICODE are set.
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+#ifndef UNICODE
+#define UNICODE
+#endif
+
+#include <wchar.h>
+
 //
 // types and constants
 //
 #ifdef WINDOWS
+
+#define NOMINMAX
+
 #include <windows.h>
+#include <combaseapi.h>
 
 #define FS_SEPERATOR L"\\"
 #define PATH_DELIMITER L";"
@@ -73,6 +94,10 @@ typedef unsigned int ULONG, *PULONG;
 #define WINAPI  __stdcall
 #endif
 
+#ifndef STDMETHODCALLTYPE
+#define STDMETHODCALLTYPE
+#endif
+
 #ifndef _MSC_VER
 #if __i386__
 #define __stdcall __attribute__((stdcall))
@@ -102,17 +127,14 @@ LPWSTR HackyConvertToWSTR(const char* pszInput);
 typedef pthread_t THREAD_ID;
 typedef void* (*MacWorker)(void*);
 typedef DWORD __stdcall (*LPTHREAD_START_ROUTINE)(void*);
-#ifdef UNICODE
 typedef WCHAR TCHAR;
-#else // ANSI
-typedef char TCHAR;
-#endif // UNICODE
 typedef char* LPSTR;
 typedef const char* LPCSTR;
 typedef TCHAR* LPTSTR;
 typedef const TCHAR* LPCTSTR;
 typedef void* FARPROC;
-typedef void* HMODULE;
+typedef void* HANDLE;
+typedef HANDLE HMODULE;
 typedef void* ULONG_PTR;
 typedef int error_t;
 typedef void* LPVOID;
@@ -142,13 +164,59 @@ void TP_JoinThread(THREAD_ID tThread);
 void TP_DebugBreak();
 DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer);
 
+
+size_t TP_strncpy_s(char* strDest, size_t numberOfElements, const char *strSource, size_t count);
+size_t TP_strcpy_s(char *dest, size_t n, char const *src);
+int    TP_wcsncpy_s(LPWSTR strDestination, size_t size1, LPCWSTR strSource, size_t size2);
+int    TP_wcsncpy_s(LPWSTR strDestination, size_t size1, LPCWSTR strSource);
+int    TP_wcsncmp(LPCWSTR str1, LPCWSTR str2,size_t len);
+int    TP_wmemcmp(LPCWSTR str1, LPCWSTR str2,size_t len);
+
 typedef WCHAR* BSTR;
-BSTR TP_SysAllocStringByteLen(LPCSTR psz, size_t len);
-void TP_SysFreeString(BSTR bstr);
+
+BSTR CoreClrBStrAlloc(LPCSTR psz, size_t len);
+BSTR CoreClrBStrAlloc(LPCWSTR psz, size_t len);
+
+inline void *CoreClrBStrAlloc(size_t cb)
+{
+    // A null is automatically applied in the SysAllocStringByteLen API.
+    // Remove a single OLECHAR for the implied null.
+    // https://docs.microsoft.com/en-us/previous-versions/windows/desktop/api/oleauto/nf-oleauto-sysallocstringbytelen
+    if (cb >= sizeof(OLECHAR))
+        cb -= sizeof(OLECHAR);
+
+    return CoreClrBStrAlloc((LPCSTR)nullptr, cb);
+}
+
+void CoreClrBStrFree(BSTR bstr);
+
+inline void CoreClrBStrFree(void* p)
+{
+    CoreClrBStrFree((BSTR)p);
+}
+
 size_t TP_SysStringByteLen(BSTR bstr);
-BSTR TP_SysAllocStringLen(LPCWSTR psz, size_t len);
 BSTR TP_SysAllocString(LPCWSTR psz);
 DWORD TP_SysStringLen(BSTR bstr);
+
+
+inline void *CoreClrAlloc(size_t cb)
+{
+#ifdef WINDOWS
+    return ::CoTaskMemAlloc(cb);
+#else
+    return ::malloc(cb);
+#endif
+}
+
+inline void CoreClrFree(void *p)
+{
+#ifdef WINDOWS
+    return ::CoTaskMemFree(p);
+#else
+    return ::free(p);
+#endif
+}
 
 //
 // Method redirects
@@ -158,8 +226,6 @@ DWORD TP_SysStringLen(BSTR bstr);
 #define TP_LoadLibraryW(l) LoadLibraryW(l)
 #define TP_LoadLibraryA(l) LoadLibraryA(l)
 #define TP_GetProcAddress(m,e) GetProcAddress(m,e)
-#define TP_CoTaskMemAlloc(t) CoTaskMemAlloc(t)
-#define TP_CoTaskMemFree(t) CoTaskMemFree(t)
 #define TP_DebugBreak() DebugBreak()
 #define TP_rand rand
 #define TP_srand srand
@@ -176,8 +242,6 @@ DWORD TP_SysStringLen(BSTR bstr);
 #define TP_LoadLibraryW(l) dlopen(l, 0)
 #define TP_LoadLibraryA(l) dlopen(l, 0)
 #define TP_GetProcAddress(m,e) dlsym(m,e)
-#define TP_CoTaskMemAlloc(t) malloc(t)
-#define TP_CoTaskMemFree(t) free(t)
 #define TP_rand arc4random
 #define TP_srand srandom
 #define wcscpy_s TP_scpy_s
@@ -185,13 +249,19 @@ DWORD TP_SysStringLen(BSTR bstr);
 #define GetFullPathNameW(fname,buflen,buf,filepart)  TP_GetFullPathName(fname,buflen,buf)
 #define wcslen TP_slen
 #define _wgetenv_s TP_getenv_s
-#define _putenv_s TP_putenv_s
+#define _wputenv_s TP_putenv_s
 #define ZeroMemory TP_ZeroMemory
 #define _itow_s TP_itow_s
 #define _itoa_s TP_itoa_s
 #define wcsstr TP_sstr
 #define strcmp TP_scmp_s
 #define wcscmp TP_wcmp_s
+#define strncpy_s TP_strncpy_s
+#define strcpy_s TP_strcpy_s
+#define wcsncpy_s TP_wcsncpy_s
+#define wcsncpy_s TP_wcsncpy_s
+#define wcsncmp TP_wcsncmp
+#define wmemcmp TP_wmemcmp
 #endif
 
 #endif
