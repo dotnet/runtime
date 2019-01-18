@@ -466,6 +466,7 @@
 #define IDS_EE_HWINTRINSIC_NGEN_DISALLOWED      0x1ac7
 #define IDS_CLASSLOAD_MI_FINAL_IMPL             0x1ac8
 #define IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE        0x1ac9
+#define IDS_CLASSLOAD_UNSUPPORTED_DISPATCH      0x1aca
 
 #define BFA_INVALID_TOKEN_TYPE                  0x2001
 #define BFA_INVALID_TOKEN                       0x2003
