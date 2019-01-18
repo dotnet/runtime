@@ -1,6 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-
 
 namespace System.Runtime.Intrinsics.Arm.Arm64
 {
@@ -10,6 +13,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     /// Arm64 CPU indicate support for this feature by setting
     /// ID_AA64PFR0_EL1.AdvSIMD == 0 or better.
     /// </summary>
+    [Intrinsic]
     [CLSCompliant(false)]
     public static class Simd
     {
