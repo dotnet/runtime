@@ -578,7 +578,7 @@ namespace System.Runtime.CompilerServices
                 bool loggingOn = AsyncCausalitySupport.LoggingOn;
                 if (loggingOn)
                 {
-                    AsyncCausalitySupport.TraceSynchronousWorkStart(this);
+                    AsyncCausalityTracer.TraceSynchronousWorkStart(CausalityTraceLevel.Required, this.Id, CausalitySynchronousWork.Execution);
                 }
 
                 ExecutionContext context = Context;
@@ -619,7 +619,7 @@ namespace System.Runtime.CompilerServices
 
                 if (loggingOn)
                 {
-                    AsyncCausalitySupport.TraceSynchronousWorkCompletion();
+                    AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalityTraceLevel.Required, CausalitySynchronousWork.Execution);
                 }
             }
 
