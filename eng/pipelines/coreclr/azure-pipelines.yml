@@ -23,6 +23,11 @@ resources:
   - container: centos6_x64_build_image
     image: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
 
+trigger: none
+
+pr:
+- master
+
 jobs:
 
 ##   The following is the matrix of test runs that we have. This is
