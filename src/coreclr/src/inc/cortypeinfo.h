@@ -4,6 +4,14 @@
 
 // This describes information about the COM+ primitive types
 
+//
+// Note: This file gets parsed by the Mono IL Linker (https://github.com/mono/linker/) which may throw an exception during parsing.
+// Specifically, this (https://github.com/mono/linker/blob/master/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to 
+// parse this header, and it may throw an exception while doing that. If you edit this file and get a build failure on msbuild.exe D:\repos\coreclr\build.proj
+// you might want to check out the parser linked above.
+//
+
+
 #define NO_SIZE ((BYTE)-1)
 
 // TYPEINFO(type (CorElementType),  namespace, class,          size,                 gcType,         isArray,isPrim, isFloat,isModifier,isGenVariable)
