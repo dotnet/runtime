@@ -722,7 +722,7 @@ namespace System.Runtime.CompilerServices
             // only log if we have a real task that was previously created
             if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
             {
-                System.Threading.Tasks.Task.RemoveFromActiveTasks(m_task.Id);
+                System.Threading.Tasks.Task.RemoveFromActiveTasks(m_task);
             }
         }
 
