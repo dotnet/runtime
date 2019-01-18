@@ -1120,6 +1120,37 @@ Dictionary::PopulateEntry(
                 if (!pResolvedMD)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 
+#if FEATURE_DEFAULT_INTERFACES
+                // If we resolved the constrained call on a value type into a method on a reference type, this is a
+                // default interface method implementation.
+                // In such case we would need to box the value type before we can dispatch to the implementation.
+                // This would require us to make a "boxing stub". For now we leave the boxing stubs unimplemented.
+                // It's not clear if anyone would need them and the implementation complexity is not worth it at this time.
+                if (!pResolvedMD->GetMethodTable()->IsValueType() && constraintType.GetMethodTable()->IsValueType())
+                {
+                    SString assemblyName;
+
+                    constraintType.GetMethodTable()->GetAssembly()->GetDisplayName(assemblyName);
+
+                    SString strInterfaceName;
+                    TypeString::AppendType(strInterfaceName, ownerType);
+
+                    SString strMethodName;
+                    TypeString::AppendMethod(strMethodName, pMethod, pMethod->GetMethodInstantiation());
+
+                    SString strTargetClassName;
+                    TypeString::AppendType(strTargetClassName, constraintType.GetMethodTable());
+
+                    COMPlusThrow(
+                        kNotSupportedException,
+                        IDS_CLASSLOAD_UNSUPPORTED_DISPATCH,
+                        strMethodName,
+                        strInterfaceName,
+                        strTargetClassName,
+                        assemblyName);
+                }
+#endif
+
                 result = (CORINFO_GENERIC_HANDLE)pResolvedMD->GetMultiCallableAddrOfCode();
             }
             else
