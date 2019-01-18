@@ -27,18 +27,18 @@
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="System\PlatformDetection.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(CommonPath)\System\PasteArguments.cs">
-      <Link>Common\System\PasteArguments.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
+      <Link>Common\CoreLib\System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="System\AssertExtensions.cs" />
     <Compile Include="System\TheoryExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\PasteArguments.Windows.cs">
-      <Link>Common\System\PasteArguments.Windows.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Windows.cs">
+      <Link>Common\CoreLib\System\PasteArguments.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs</Link>
@@ -73,11 +73,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\PasteArguments.Unix.cs">
-      <Link>Common\System\PasteArguments.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Unix.cs">
+      <Link>Common\CoreLib\System\PasteArguments.Unix.cs</Link>
     </Compile>
     <Compile Include="System\AdminHelpers.Unix.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
