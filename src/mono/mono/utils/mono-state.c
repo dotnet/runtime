@@ -416,6 +416,16 @@ mono_native_state_add_thread (MonoStateWriter *writer, MonoThreadSummary *thread
 
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
+	mono_state_writer_object_key (writer, "offset_free_hash");
+	mono_state_writer_printf(writer, "\"0x%" PRIx64 "\",\n", thread->hashes.offset_free_hash);
+
+	assert_has_space (writer);
+	mono_state_writer_indent (writer);
+	mono_state_writer_object_key (writer, "offset_rich_hash");
+	mono_state_writer_printf(writer, "\"0x%" PRIx64 "\",\n", thread->hashes.offset_rich_hash);
+
+	assert_has_space (writer);
+	mono_state_writer_indent (writer);
 	mono_state_writer_object_key (writer, "crashed");
 	mono_state_writer_printf(writer, "%s,\n", crashing_thread ? "true" : "false");
 
