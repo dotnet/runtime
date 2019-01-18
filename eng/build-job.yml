@@ -92,7 +92,7 @@ jobs:
 
     # Sign on Windows
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.osGroup, 'Windows_NT')) }}:
-      - script: powershell eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:BuildOS=$(osGroup) /p:BuildArch=$(archType) /p:BuildType=$(buildConfig) /p:DotNetSignType=%_SignType% -projects $(Build.SourcesDirectory)\eng\empty.proj
+      - script: powershell eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:BuildOS=$(osGroup) /p:BuildArch=$(archType) /p:BuildType=$(buildConfigUpper) /p:DotNetSignType=%_SignType% -projects $(Build.SourcesDirectory)\eng\empty.proj
         displayName: Sign Binaries
 
       - task: PublishBuildArtifacts@1
