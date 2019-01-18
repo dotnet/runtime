@@ -93,7 +93,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static Task WhenAllCompletedOrAnyFailed(params Task[] tasks)
         {
-            return TaskTimeoutExtensions.WhenAllOrAnyFailed(tasks);
+            return TaskTimeoutExtensions.WhenAllOrAnyFailed(tasks, PlatformDetection.IsArmProcess || PlatformDetection.IsArm64Process ? PassingTestTimeoutMilliseconds * 5 : PassingTestTimeoutMilliseconds);
         }
 
         public static Task WhenAllCompletedOrAnyFailedWithTimeout(int timeoutInMilliseconds, params Task[] tasks)
