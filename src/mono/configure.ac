@@ -760,6 +760,9 @@ AC_ARG_WITH(jumptables, [  --with-jumptables=yes,no      enable/disable support 
 AC_ARG_WITH(core,       [  --with-core=only       controls whether to build Mono as a .NET Core runtime (defaults to no)],[],[with_core=no])
 if test x$with_core = xonly; then
     AC_DEFINE(ENABLE_NETCORE,1,[Enables the support for .NET Core Features in the MonoVM])
+    mono_feature_disable_remoting='yes'
+    mono_feature_disable_reflection_emit_save='yes'
+    mono_feature_disable_appdomains='yes'
 fi
 AM_CONDITIONAL(ENABLE_NETCORE, test x$with_core = xonly)
 

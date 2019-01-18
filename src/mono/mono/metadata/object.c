@@ -4898,9 +4898,13 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 	 * a thread started in unmanaged world.
 	 * https://msdn.microsoft.com/en-us/library/system.appdomainunloadedexception(v=vs.110).aspx#Anchor_6
 	 */
-	if (klass == mono_defaults.threadabortexception_class ||
+	gboolean no_event = (klass == mono_defaults.threadabortexception_class);
+#ifndef ENABLE_NETCORE
+	no_event = no_event ||
 			(klass == mono_class_get_appdomain_unloaded_exception_class () &&
-			mono_thread_info_current ()->runtime_thread))
+			mono_thread_info_current ()->runtime_thread);
+#endif
+	if (no_event)
 		return;
 
 	field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "UnhandledException", NULL);
