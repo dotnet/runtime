@@ -10787,6 +10787,8 @@ BOOL MethodTableBuilder::HasDefaultInterfaceImplementation(bmtRTType *pDeclType,
     {
         bmtRTType * pCurItf = bmtInterface->pInterfaceMap[i].GetInterfaceType();
 
+        Module * pCurIntfModule = pCurItf->GetMethodTable()->GetModule();
+
         // Go over the methods on the interface
         MethodTable::IntroducedMethodIterator methIt(pCurItf->GetMethodTable());
         for (; methIt.IsValid(); methIt.Next())
@@ -10810,11 +10812,11 @@ BOOL MethodTableBuilder::HasDefaultInterfaceImplementation(bmtRTType *pDeclType,
 
                 // Find out what interface this default implementation is implementing
                 mdToken tkParent;
-                IfFailThrow(GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
+                IfFailThrow(pCurIntfModule->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
 
                 // We can only load the approximate interface at this point
                 MethodTable * pPotentialInterfaceMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-                    GetModule(),
+                    pCurIntfModule,
                     tkParent,
                     &bmtGenerics->typeContext,
                     ClassLoader::ThrowIfNotFound,
@@ -10831,7 +10833,7 @@ BOOL MethodTableBuilder::HasDefaultInterfaceImplementation(bmtRTType *pDeclType,
                         return TRUE;
 
                     // If this is generic, we need to compare under substitutions
-                    Substitution curItfSubs(tkParent, GetModule(), &pCurItf->GetSubstitution());
+                    Substitution curItfSubs(tkParent, pCurIntfModule, &pCurItf->GetSubstitution());
 
                     // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
                     TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
