@@ -23,7 +23,7 @@ namespace Internal.Threading.Tasks
         public static void RemoveFromActiveTasks(Task task)
         {
             if (Task.s_asyncDebuggingEnabled)
-                Task.RemoveFromActiveTasks(task.Id);
+                Task.RemoveFromActiveTasks(task);
         }
 
         public static bool LoggingOn
