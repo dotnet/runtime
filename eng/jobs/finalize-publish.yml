@@ -58,6 +58,18 @@ jobs:
       continueOnError: false
       condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
+    - powershell: |
+        $prefix = "refs/heads/"
+        $branch = "$(Build.SourceBranch)"
+        $branchName = $branch
+        if ($branchName.StartsWith($prefix))
+        {
+          $branchName = $branchName.Substring($prefix.Length)
+        }
+        Write-Host "For Build.SourceBranch $branch, FullBranchName is $branchName"
+        Write-Host "##vso[task.setvariable variable=FullBranchName;]$branchName"
+      displayName: Find true SourceBranchName
+
     - task: MSBuild@1
       displayName: Publish (no PublishType)
       inputs: 
@@ -73,6 +85,7 @@ jobs:
         /p:StabilizePackageVersion=$(IsStable) 
         /p:TargetArchitecture=x64
         $(_BlobFeedArgs) 
+        $(_DotNetVersionsArgs)
         $(_CommonPublishArgs) 
         $(_NugetFeedArgs) 
         $(_SymbolServerArgs) 
