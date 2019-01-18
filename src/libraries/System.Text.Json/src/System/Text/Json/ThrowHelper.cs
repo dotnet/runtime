@@ -292,6 +292,9 @@ namespace System.Text.Json
                 case ExceptionResource.ZeroDepthAtEnd:
                     message = SR.Format(SR.ZeroDepthAtEnd, json.CurrentDepth);
                     break;
+                case ExceptionResource.ExpectedJsonTokens:
+                    message = SR.ExpectedJsonTokens;
+                    break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");
                     break;
@@ -416,5 +419,6 @@ namespace System.Text.Json
         FailedToGetMinimumSizeSpan,
         FailedToGetLargerSpan,
         CannotWritePropertyWithinArray,
+        ExpectedJsonTokens
     }
 }
