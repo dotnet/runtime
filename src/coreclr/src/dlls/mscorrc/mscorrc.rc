@@ -761,6 +761,7 @@ BEGIN
     IDS_CLASSLOAD_MI_BAD_SIG                "Type '%1' from assembly '%2' contains an invalid method implementation signature."
     IDS_CLASSLOAD_MI_FINAL_IMPL             "Method implementation on an interface '%1' from assembly '%2' must be a final method."
     IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE        "Could not call method '%1' on interface '%2' with type '%3' from assembly '%4' because there are multiple incompatible interface methods overriding this method."
+    IDS_CLASSLOAD_UNSUPPORTED_DISPATCH      "Could not make constrained call to method '%1' on interface '%2' with type '%3' from assembly '%4'. Dispatch to default interface methods is not supported in this situation."
 
     IDS_CLASSLOAD_MISSINGMETHODRVA          "Could not load type '%1' from assembly '%2' because the method '%3' has no implementation (no RVA)."
     SECURITY_E_INCOMPATIBLE_EVIDENCE        "Assembly '%1' already loaded without additional security evidence."
