@@ -47,11 +47,6 @@
       <Output TaskParameter="SigningMetadata" ItemName="ItemsToSign" />
     </ReadSigningRequired>
 
-    <!-- Temporarily disable signing CoreLib due to https://github.com/dotnet/arcade/issues/1582 -->
-    <ItemGroup>
-      <ItemsToSign Remove="$(BinDir)System.Private.CoreLib.dll" />
-    </ItemGroup>
-
     <Message Importance="High" Text="Attempting to sign %(ItemsToSign.Identity) with authenticode='%(ItemsToSign.Authenticode)' and strongname='%(ItemsToSign.StrongName)'" />
   </Target>
 

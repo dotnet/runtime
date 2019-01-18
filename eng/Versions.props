@@ -11,6 +11,11 @@
     <!-- Libs -->
   </PropertyGroup>
   <PropertyGroup>
+    <!-- Override arcade package version to use most recent signing
+         package -->
+    <MicrosoftDotNetSignToolVersion>1.0.0-beta.19067.6</MicrosoftDotNetSignToolVersion>
+  </PropertyGroup>
+  <PropertyGroup>
     <RestoreSources>
       $(RestoreSources);
       https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
