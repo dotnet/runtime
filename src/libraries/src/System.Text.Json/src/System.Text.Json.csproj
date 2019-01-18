@@ -69,4 +69,30 @@
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
+
+  <!-- The Source Package will call into this target in order to retrieve the compiled resources file as
+       it will need to be part of the source package contents. -->
+  <Target Name="GetSourcesToPackage" Returns="@(_sourceToPackage)" DependsOnTargets="Compile">
+
+      <PropertyGroup>
+        <_sourcePackageTargetLines><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ItemGroup Condition="'%24(ExcludeEmbeddedResourceFromPackage)' != 'true'">@(EmbeddedResource->'
+    <EmbeddedResource Include="%24(MSBuildThisFileDirectory)%(FileName)%(Extension)" ManifestResourceName="%(ManifestResourceName)" />', '')
+  </ItemGroup>
+</Project>]]>
+        </_sourcePackageTargetLines>
+        <_targetsFileName>Microsoft.Bcl.Json.Sources.targets</_targetsFileName>
+        <_generatedSourcePackageTargetPath>$(IntermediateOutputPath)/$(_targetsFileName)</_generatedSourcePackageTargetPath>
+      </PropertyGroup>
+
+      <WriteLinesToFile Lines="$(_sourcePackageTargetLines)" File="$(_generatedSourcePackageTargetPath)" Overwrite="True" />
+
+      <ItemGroup>
+        <_sourceToExclude Include="@(Compile)" Condition="$([System.String]::Copy('%(Compile.Identity)').ToLower().EndsWith('assemblyinfo.cs'))" />
+        <_sourceToPackage Include="@(Compile->'%(FullPath)')" PackagePath="contentFiles/cs/netstandard2.0/%(FileName)%(Extension)" Exclude="@(_sourceToExclude)"/>
+        <_sourceToPackage Condition="'%(Extension)' == '.resx'" Include="@(EmbeddedResource->'%(FullPath)')"  PackagePath="build/netstandard2.0/%(FileName)%(Extension)" />
+        <_sourceToPackage Include="$(_generatedSourcePackageTargetPath)" PackagePath="build/netstandard2.0/$(_targetsFileName)" />
+      </ItemGroup>
+  </Target>
 </Project>

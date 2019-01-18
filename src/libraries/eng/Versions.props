@@ -17,6 +17,7 @@
   <PropertyGroup>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.19066.1</MicrosoftDotNetApiCompatPackageVersion>
+    <MicrosoftDotNetSourceRewriterPackageVersion>1.0.0-beta.19066.1</MicrosoftDotNetSourceRewriterPackageVersion>
     <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.19066.1</MicrosoftDotNetCodeAnalysisPackageVersion>
     <MicrosoftDotNetGenAPIPackageVersion>1.0.0-beta.19066.1</MicrosoftDotNetGenAPIPackageVersion>
     <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.19066.1</MicrosoftDotNetGenFacadesPackageVersion>

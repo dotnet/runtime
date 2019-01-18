@@ -25,6 +25,7 @@
     <PackageReference Include="$(BuildToolsPackage)" Version="$(BuildToolsPackageVersion)" />
     <PackageReference Include="$(PublishSymbolsPackage)" Version="$(PublishSymbolsPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.SourceRewriter" Version="$(MicrosoftDotNetSourceRewriterPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedPackageVersion)" />
