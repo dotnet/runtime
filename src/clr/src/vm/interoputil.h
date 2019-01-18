@@ -136,9 +136,9 @@ void FillExceptionData(
     _In_opt_ IRestrictedErrorInfo* pRestrictedErrorInfo);
 
 //---------------------------------------------------------------------------
-//returns true if pImport has DefaultDllImportSearchPathsAttribute
-//if true, also returns dllImportSearchPathFlag and searchAssemblyDirectory values.
-BOOL GetDefaultDllImportSearchPathsAttributeValue(IMDInternalImport *pImport, mdToken token, DWORD * pDlImportSearchPathFlag);
+// If pImport has the DefaultDllImportSearchPathsAttribute, 
+// set the value of the attribute in pDlImportSearchPathFlags and return true.
+BOOL GetDefaultDllImportSearchPathsAttributeValue(IMDInternalImport *pImport, mdToken token, DWORD * pDlImportSearchPathFlags);
 
 //---------------------------------------------------------------------------
 // Returns the index of the LCID parameter if one exists and -1 otherwise.

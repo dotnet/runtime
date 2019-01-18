@@ -2428,7 +2428,10 @@
   <data name="InvalidOperation_CannotImportGlobalFromDifferentModule" xml:space="preserve">
     <value>Unable to import a global method or field from a different module.</value>
   </data>
-  <data name="InvalidOperation_CannotRemoveLastFromEmptyCollection" xml:space="preserve">
+  <data name="InvalidOperation_CannotRegisterSecondResolver" xml:space="preserve">
+    <value>A resolver is already set for the assembly.</value>
+  </data>
+    <data name="InvalidOperation_CannotRemoveLastFromEmptyCollection" xml:space="preserve">
     <value>Cannot remove the last element from an empty collection.</value>
   </data>
   <data name="InvalidOperation_CannotRestoreUnsupressedFlow" xml:space="preserve">
