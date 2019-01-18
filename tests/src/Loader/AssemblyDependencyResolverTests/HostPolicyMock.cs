@@ -28,7 +28,7 @@ namespace AssemblyDependencyResolverTests
         [DllImport("hostpolicy", CharSet = HostpolicyCharSet)]
         private static extern IntPtr Get_corehost_set_error_writer_lastSet_error_writer();
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet = HostpolicyCharSet)]
         internal delegate void Callback_corehost_resolve_component_dependencies(
             string component_main_assembly_path);
 
@@ -39,7 +39,7 @@ namespace AssemblyDependencyResolverTests
         private static Type _assemblyDependencyResolverType;
         private static Type _corehost_error_writer_fnType;
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet = HostpolicyCharSet)]
         public delegate void ErrorWriterDelegate(string message);
 
         public static string DeleteExistingHostpolicy(string coreRoot)
@@ -88,11 +88,13 @@ namespace AssemblyDependencyResolverTests
 
         internal class MockValues_corehost_resolve_componet_dependencies : IDisposable
         {
+            private Callback_corehost_resolve_component_dependencies callback;
+
             public Action<string> Callback
             {
                 set
                 {
-                    var callback = new Callback_corehost_resolve_component_dependencies(value);
+                    callback = new Callback_corehost_resolve_component_dependencies(value);
                     if (callback != null)
                     {
                         Set_corehost_resolve_component_dependencies_Callback(
@@ -113,6 +115,8 @@ namespace AssemblyDependencyResolverTests
                     string.Empty,
                     string.Empty);
                 Set_corehost_resolve_component_dependencies_Callback(IntPtr.Zero);
+                GC.KeepAlive(callback);
+                callback = null;
             }
         }
 
