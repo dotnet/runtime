@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <Objbase.h>
 #include <xplatform.h>
+#include <platformdefines.h>
 
 //
 // Standard function to call the managed COM.

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 #include <stdio.h>
 #include <xplatform.h>
+#include <platformdefines.h>
 
 extern "C" DLL_EXPORT bool __cdecl CheckFcnPtr(bool(STDMETHODCALLTYPE *fcnptr)(__int64))
 {

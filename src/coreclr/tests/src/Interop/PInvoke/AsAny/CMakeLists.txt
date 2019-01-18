@@ -1,7 +1,6 @@
 cmake_minimum_required (VERSION 2.6) 
 project (AsAnyNative) 
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
-include_directories(${INC_PLATFORM_DIR}) 
 set(SOURCES 
     AsAnyNative.cpp 
 ) 

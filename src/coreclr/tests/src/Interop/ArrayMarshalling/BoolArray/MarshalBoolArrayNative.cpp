@@ -3,6 +3,7 @@
 //
 
 #include <xplatform.h>
+#include <platformdefines.h>
 #include <stdio.h>
 #include <stdlib.h>
 

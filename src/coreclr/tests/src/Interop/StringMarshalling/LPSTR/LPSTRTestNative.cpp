@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 #include <xplatform.h>
+#include <platformdefines.h>
+
 const char* strManaged = "Managed\0String\0";
 size_t   lenstrManaged = 7; // the length of strManaged
 

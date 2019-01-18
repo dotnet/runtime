@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include <xplatform.h>
 #include <platformdefines.h>
 
 WCHAR strManaged[] = W("Managed\0String\0");
@@ -69,7 +70,7 @@ extern "C" DLL_EXPORT BSTR MarshalPointer_InOut(/*[in,out]*/BSTR *s)
     }
 
     //Allocate New
-    TP_SysFreeString(*s);
+    CoreClrBStrFree(*s);
     *s = TP_SysAllocString(strNative);
 
     //Return
@@ -97,7 +98,7 @@ extern "C" DLL_EXPORT BOOL __cdecl RPinvoke_DelMarshal_InOut(Test_DelMarshal_InO
         return FALSE;
     }
 
-    TP_SysFreeString(str);
+    CoreClrBStrFree(str);
     return TRUE;
 }
 
@@ -211,7 +212,7 @@ extern "C" DLL_EXPORT BOOL MarshalPointer_Struct_InOut(Person* person)
 typedef BOOL (* Test_DelMarshal_Struct_In)(Person person);
 extern "C" DLL_EXPORT BOOL RPInvoke_DelMarshal_Struct_In(Test_DelMarshal_Struct_In d)
 {
-    Person * pPerson = (Person *)TP_CoTaskMemAlloc(sizeof(Person));
+    Person * pPerson = (Person *)CoreClrAlloc(sizeof(Person));
     pPerson->age = 21;
     pPerson->name =  TP_SysAllocString(strNative);
     
@@ -227,7 +228,7 @@ extern "C" DLL_EXPORT BOOL RPInvoke_DelMarshal_Struct_In(Test_DelMarshal_Struct_
 typedef BOOL (* Test_DelMarshalPointer_Struct_InOut)(Person * person);
 extern "C" DLL_EXPORT BOOL RPInvoke_DelMarshalStructPointer_InOut(Test_DelMarshalPointer_Struct_InOut d)
 {
-    Person * pPerson = (Person *)TP_CoTaskMemAlloc(sizeof(Person));
+    Person * pPerson = (Person *)CoreClrAlloc(sizeof(Person));
     pPerson->age = 21;
     pPerson->name =  TP_SysAllocString(strNative);
 
