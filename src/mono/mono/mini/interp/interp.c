@@ -537,19 +537,48 @@ get_target_imethod (GSList *list, InterpMethod *imethod)
 	return NULL;
 }
 
-static InterpMethod*
-get_virtual_method_fast (MonoObject *obj, InterpMethod *imethod, int slot)
+static gpointer*
+get_method_table (MonoObject *obj, int offset, int *slot)
 {
-	gpointer *table = obj->vtable->interp_vtable;
+	if (offset >= 0) {
+		*slot = offset;
+		return obj->vtable->interp_vtable;
+	} else {
+		*slot = -offset;
+		return obj->vtable->interp_itable;
+	}
+}
+
+static gpointer*
+alloc_method_table (MonoObject *obj, int offset)
+{
+	gpointer *table;
+
+	if (offset >= 0) {
+		table = mono_domain_alloc0 (obj->vtable->domain, m_class_get_vtable_size (obj->vtable->klass) * sizeof (gpointer));
+		obj->vtable->interp_vtable = table;
+	} else {
+		table = mono_domain_alloc0 (obj->vtable->domain, sizeof (gpointer) * MONO_IMT_SIZE);
+		obj->vtable->interp_itable = table;
+	}
+
+	return table;
+}
+
+static InterpMethod*
+get_virtual_method_fast (MonoObject *obj, InterpMethod *imethod, int offset)
+{
+	gpointer *table;
+	int slot;
+
+	table = get_method_table (obj, offset, &slot);
 
 	if (!table) {
 		/* Lazily allocate method table */
 		mono_domain_lock (obj->vtable->domain);
-		table = obj->vtable->interp_vtable;
-		if (!table) {
-			table = mono_domain_alloc0 (obj->vtable->domain, m_class_get_vtable_size (obj->vtable->klass) * sizeof (gpointer));
-			obj->vtable->interp_vtable = table;
-		}
+		table = get_method_table (obj, offset, &slot);
+		if (!table)
+			table = alloc_method_table (obj, offset);
 		mono_domain_unlock (obj->vtable->domain);
 	}
 
@@ -558,7 +587,7 @@ get_virtual_method_fast (MonoObject *obj, InterpMethod *imethod, int slot)
 		/* Lazily initialize the method table slot */
 		mono_domain_lock (obj->vtable->domain);
 		if (!table [slot]) {
-			if (imethod->method->is_inflated)
+			if (imethod->method->is_inflated || offset < 0)
 				table [slot] = append_imethod (obj->vtable->domain, NULL, imethod, target_imethod);
 			else
 				table [slot] = (gpointer) ((gsize)target_imethod | 0x1);
@@ -3247,10 +3276,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			stackval *endsp = sp;
 			int slot;
 
+			// FIXME Have it handle also remoting calls and use a single opcode for virtual calls
+
 			frame->ip = ip;
 
 			imethod = (InterpMethod*)rtm->data_items [* (guint16 *)(ip + 1)];
-			slot = *(guint16*)(ip + 2);
+			slot = *(gint16*)(ip + 2);
 			ip += 3;
 			sp->data.p = vt_sp;
 			child_frame.retval = sp;
