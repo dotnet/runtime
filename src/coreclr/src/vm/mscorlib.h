@@ -493,6 +493,8 @@ DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER, GetDelega
 DEFINE_METHOD(MARSHAL,              ALLOC_CO_TASK_MEM,                 AllocCoTaskMem,                SM_Int_RetIntPtr)
 DEFINE_FIELD(MARSHAL,               SYSTEM_MAX_DBCS_CHAR_SIZE,         SystemMaxDBCSCharSize)
 
+DEFINE_CLASS(NATIVELIBRARY, Interop, NativeLibrary)
+DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallbackStub, SM_Str_AssemblyBase_Bool_UInt_RetIntPtr)
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
