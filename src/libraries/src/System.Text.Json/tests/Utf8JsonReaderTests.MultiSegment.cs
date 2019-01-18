@@ -202,6 +202,25 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void EmptyJsonWithinSequenceIsInvalid()
+        {
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(new byte[0], 1);
+            var json = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
+
+            try
+            {
+                while (json.Read())
+                    ;
+                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+            }
+            catch (JsonReaderException ex)
+            {
+                Assert.Equal(0, ex.LineNumber);
+                Assert.Equal(0, ex.BytePositionInLine);
+            }
+        }
+
         private static void SpanSequenceStatesAreEqualInvalidJson(byte[] dataUtf8, ReadOnlySequence<byte> sequence, int maxDepth, JsonCommentHandling commentHandling)
         {
             var stateSpan = new JsonReaderState(maxDepth: maxDepth, options: new JsonReaderOptions { CommentHandling = commentHandling });

@@ -165,6 +165,9 @@
   <data name="ExpectedFalse" xml:space="preserve">
     <value>'{0}' is an invalid JSON literal. Expected the literal 'false'.</value>
   </data>
+  <data name="ExpectedJsonTokens" xml:space="preserve">
+    <value>The input does not contain any JSON tokens. Expected the input to start with a valid JSON token, when isFinalBlock is true.</value>
+  </data>
   <data name="ExpectedNextDigitEValueNotFound" xml:space="preserve">
     <value>'{0}' is an invalid end of a number. Expected 'E' or 'e'.</value>
   </data>
