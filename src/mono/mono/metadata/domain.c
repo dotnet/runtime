@@ -713,8 +713,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.internal_thread_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "InternalThread");
 
-	mono_defaults.appdomain_class = mono_class_load_from_name (
-                mono_defaults.corlib, "System", "AppDomain");
+	mono_defaults.appdomain_class = mono_class_get_appdomain_class ();
 
 #ifndef DISABLE_REMOTING
 	mono_defaults.transparent_proxy_class = mono_class_load_from_name (
