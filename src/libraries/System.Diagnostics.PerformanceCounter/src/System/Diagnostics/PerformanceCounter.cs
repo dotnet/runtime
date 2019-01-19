@@ -211,9 +211,11 @@ namespace System.Diagnostics
                     // This is the same thing that NextSample does, except that it doesn't try to get the actual counter
                     // value.  If we wanted the counter value, we would need to have an instance name. 
                     Initialize();
-                    CategorySample categorySample = PerformanceCounterLib.GetCategorySample(currentMachineName, currentCategoryName);
-                    CounterDefinitionSample counterSample = categorySample.GetCounterDefinitionSample(_counterName);
-                    _counterType = counterSample._counterType;
+                    using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(currentMachineName, currentCategoryName))
+                    {
+                        CounterDefinitionSample counterSample = categorySample.GetCounterDefinitionSample(_counterName);
+                        _counterType = counterSample._counterType;
+                    }
                 }
 
                 return (PerformanceCounterType)_counterType;
@@ -542,22 +544,26 @@ namespace System.Diagnostics
             string currentMachineName = _machineName;
 
             Initialize();
-            CategorySample categorySample = PerformanceCounterLib.GetCategorySample(currentMachineName, currentCategoryName);
-            CounterDefinitionSample counterSample = categorySample.GetCounterDefinitionSample(_counterName);
-            _counterType = counterSample._counterType;
-            if (!categorySample._isMultiInstance)
-            {
-                if (_instanceName != null && _instanceName.Length != 0)
-                    throw new InvalidOperationException(SR.Format(SR.InstanceNameProhibited, _instanceName));
 
-                return counterSample.GetSingleValue();
-            }
-            else
-            {
-                if (_instanceName == null || _instanceName.Length == 0)
-                    throw new InvalidOperationException(SR.Format(SR.InstanceNameRequired));
 
-                return counterSample.GetInstanceValue(_instanceName);
+            using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(currentMachineName, currentCategoryName))
+            {
+                CounterDefinitionSample counterSample = categorySample.GetCounterDefinitionSample(_counterName);
+                _counterType = counterSample._counterType;
+                if (!categorySample._isMultiInstance)
+                {
+                    if (_instanceName != null && _instanceName.Length != 0)
+                        throw new InvalidOperationException(SR.Format(SR.InstanceNameProhibited, _instanceName));
+
+                    return counterSample.GetSingleValue();
+                }
+                else
+                {
+                    if (_instanceName == null || _instanceName.Length == 0)
+                        throw new InvalidOperationException(SR.Format(SR.InstanceNameRequired));
+
+                    return counterSample.GetInstanceValue(_instanceName);
+                }
             }
         }
 

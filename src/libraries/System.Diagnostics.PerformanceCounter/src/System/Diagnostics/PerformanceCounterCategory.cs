@@ -105,19 +105,21 @@ namespace System.Diagnostics
         {
             get
             {
-                CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName);
-
-                // If we get MultiInstance, we can be confident it is correct.  If it is single instance, though
-                // we need to check if is a custom category and if the IsMultiInstance value is set in the registry.
-                // If not we return Unknown
-                if (categorySample._isMultiInstance)
-                    return PerformanceCounterCategoryType.MultiInstance;
-                else
+                using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName))
                 {
-                    if (PerformanceCounterLib.IsCustomCategory(".", _categoryName))
-                        return PerformanceCounterLib.GetCategoryType(".", _categoryName);
+
+                    // If we get MultiInstance, we can be confident it is correct.  If it is single instance, though
+                    // we need to check if is a custom category and if the IsMultiInstance value is set in the registry.
+                    // If not we return Unknown
+                    if (categorySample._isMultiInstance)
+                        return PerformanceCounterCategoryType.MultiInstance;
                     else
-                        return PerformanceCounterCategoryType.SingleInstance;
+                    {
+                        if (PerformanceCounterLib.IsCustomCategory(".", _categoryName))
+                            return PerformanceCounterLib.GetCategoryType(".", _categoryName);
+                        else
+                            return PerformanceCounterCategoryType.SingleInstance;
+                    }
                 }
             }
         }
@@ -440,16 +442,18 @@ namespace System.Diagnostics
         /// <internalonly/>
         internal static string[] GetCounterInstances(string categoryName, string machineName)
         {
-            CategorySample categorySample = PerformanceCounterLib.GetCategorySample(machineName, categoryName);
-            if (categorySample._instanceNameTable.Count == 0)
-                return Array.Empty<string>();
+            using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(machineName, categoryName))
+            {
+                if (categorySample._instanceNameTable.Count == 0)
+                    return Array.Empty<string>();
 
-            string[] instanceNames = new string[categorySample._instanceNameTable.Count];
-            categorySample._instanceNameTable.Keys.CopyTo(instanceNames, 0);
-            if (instanceNames.Length == 1 && instanceNames[0] == PerformanceCounterLib.SingleInstanceName)
-                return Array.Empty<string>();
+                string[] instanceNames = new string[categorySample._instanceNameTable.Count];
+                categorySample._instanceNameTable.Keys.CopyTo(instanceNames, 0);
+                if (instanceNames.Length == 1 && instanceNames[0] == PerformanceCounterLib.SingleInstanceName)
+                    return Array.Empty<string>();
 
-            return instanceNames;
+                return instanceNames;
+            }
         }
 
         /// <summary>
@@ -531,8 +535,10 @@ namespace System.Diagnostics
             if (_categoryName == null)
                 throw new InvalidOperationException(SR.Format(SR.CategoryNameNotSet));
 
-            CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName);
-            return categorySample._instanceNameTable.ContainsKey(instanceName);
+            using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName))
+            {
+                return categorySample._instanceNameTable.ContainsKey(instanceName);
+            }
         }
 
         /// <summary>
@@ -573,8 +579,10 @@ namespace System.Diagnostics
             if (_categoryName == null)
                 throw new InvalidOperationException(SR.Format(SR.CategoryNameNotSet));
 
-            CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName);
-            return categorySample.ReadCategory();
+            using (CategorySample categorySample = PerformanceCounterLib.GetCategorySample(_machineName, _categoryName))
+            {
+                return categorySample.ReadCategory();
+            }
         }
     }
 

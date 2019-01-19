@@ -339,4 +339,16 @@
   <data name="Perflib_InvalidOperation_CounterRefValue" xml:space="preserve">
     <value>Cannot locate raw counter data location for CounterSet '{0}', Counter '{1}, in Instance '{2}'.</value>
   </data>
+  <data name="Arg_DllInitFailure" xml:space="preserve">
+    <value>One machine (either '{0}' or local) may not have remote administration enabled, or both machines may not be running the remote registry service.</value>
+  </data>
+  <data name="Arg_RegKeyNoRemoteConnect" xml:space="preserve">
+    <value>No remote connection to '{0}' while trying to read the registry.</value>
+  </data>
+  <data name="ObjectDisposed_CategorySampleClosed" xml:space="preserve">
+    <value>Cannot access a closed category sample.</value>
+  </data>
+  <data name="UnauthorizedAccess_RegistryKeyGeneric_Key" xml:space="preserve">
+    <value>Access to the registry key '{0}' is denied.</value>
+  </data>
 </root>
