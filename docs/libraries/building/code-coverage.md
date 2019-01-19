@@ -61,6 +61,11 @@ And then once the run completes:
 
     $(TestPath)\report\index.htm
 
+**Note:** If you only want to measure the coverage of your local changes (that haven't been pushed to git), run:
+
+    dotnet msbuild /t:BuildAndTest /p:Coverage=true /p:CoverageSourceLink=false
+
+
 ## Code coverage with System.Private.CoreLib code
 
 Some of the libraries for which contracts and tests live in the corefx repo are actually fully or partially implemented in the core runtime library in another repo, e.g. the implementation that backs the System.Runtime contract is in System.Private.CoreLib.dll in either the coreclr or corert repo. Test projects for code that lives, fully or partially, in System.Private.CoreLib, should have the property `TestRuntime` set to `true` in order to obtain proper code coverage reports.
