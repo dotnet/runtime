@@ -214,16 +214,19 @@ namespace System.Threading.Tasks
         internal static bool AddToActiveTasks(Task task)
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
+
+            int taskId = task.Id;
             lock (s_activeTasksLock)
             {
-                s_currentActiveTasks[task.Id] = task;
+                s_currentActiveTasks[taskId] = task;
             }
             //always return true to keep signature as bool for backwards compatibility
             return true;
         }
 
-        internal static void RemoveFromActiveTasks(int taskId)
+        internal static void RemoveFromActiveTasks(Task task)
         {
+            int taskId = task.Id;
             lock (s_activeTasksLock)
             {
                 s_currentActiveTasks.Remove(taskId);
@@ -1744,14 +1747,12 @@ namespace System.Threading.Tasks
             }
 
             if (s_asyncDebuggingEnabled)
-            {
                 AddToActiveTasks(this);
-            }
 
             if (AsyncCausalityTracer.LoggingOn && (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0)
             {
                 //For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, this.Id, "Task: " + m_action.Method.Name, 0);
+                AsyncCausalityTracer.TraceOperationCreation(this, "Task: " + m_action.Method.Name);
             }
 
 
@@ -2108,12 +2109,10 @@ namespace System.Threading.Tasks
             {
                 completionState = TASK_STATE_FAULTED;
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, this.Id, AsyncCausalityStatus.Error);
+                    AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Error);
 
                 if (Task.s_asyncDebuggingEnabled)
-                {
-                    RemoveFromActiveTasks(this.Id);
-                }
+                    RemoveFromActiveTasks(this);
             }
             else if (IsCancellationRequested && IsCancellationAcknowledged)
             {
@@ -2126,23 +2125,19 @@ namespace System.Threading.Tasks
 
                 completionState = TASK_STATE_CANCELED;
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, this.Id, AsyncCausalityStatus.Canceled);
+                    AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Canceled);
 
                 if (Task.s_asyncDebuggingEnabled)
-                {
-                    RemoveFromActiveTasks(this.Id);
-                }
+                    RemoveFromActiveTasks(this);
             }
             else
             {
                 completionState = TASK_STATE_RAN_TO_COMPLETION;
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, this.Id, AsyncCausalityStatus.Completed);
+                    AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
                 if (Task.s_asyncDebuggingEnabled)
-                {
-                    RemoveFromActiveTasks(this.Id);
-                }
+                    RemoveFromActiveTasks(this);
             }
 
             // Use Interlocked.Exchange() to effect a memory fence, preventing
@@ -2418,7 +2413,7 @@ namespace System.Threading.Tasks
 
             bool loggingOn = AsyncCausalityTracer.LoggingOn;
             if (loggingOn)
-                AsyncCausalityTracer.TraceSynchronousWorkStart(CausalityTraceLevel.Required, this.Id, CausalitySynchronousWork.Execution);
+                AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.Execution);
 
             try
             {
@@ -2461,7 +2456,7 @@ namespace System.Threading.Tasks
                 }
 
                 if (loggingOn)
-                    AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalityTraceLevel.Required, CausalitySynchronousWork.Execution);
+                    AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.Execution);
 
                 Finish(true);
             }
@@ -3210,12 +3205,10 @@ namespace System.Threading.Tasks
             }
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, this.Id, AsyncCausalityStatus.Canceled);
+                AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Canceled);
 
             if (Task.s_asyncDebuggingEnabled)
-            {
-                RemoveFromActiveTasks(this.Id);
-            }
+                RemoveFromActiveTasks(this);
 
             // Notify parents, fire continuations, other cleanup.
             FinishStageThree();
@@ -3268,7 +3261,7 @@ namespace System.Threading.Tasks
             }
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceSynchronousWorkStart(CausalityTraceLevel.Required, this.Id, CausalitySynchronousWork.CompletionNotification);
+                AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.CompletionNotification);
 
             // Skip synchronous execution of continuations if this task's thread was aborted
             bool canInlineContinuations = !(((m_stateFlags & TASK_STATE_THREAD_WAS_ABORTED) != 0) ||
@@ -3388,7 +3381,7 @@ namespace System.Threading.Tasks
         private void LogFinishCompletionNotification()
         {
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalityTraceLevel.Required, CausalitySynchronousWork.CompletionNotification);
+                AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.CompletionNotification);
         }
 
         #region Continuation methods
@@ -5445,12 +5438,10 @@ namespace System.Threading.Tasks
             {
                 this.Token = token;
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, this.Id, "Task.Delay", 0);
+                    AsyncCausalityTracer.TraceOperationCreation(this, "Task.Delay");
 
                 if (Task.s_asyncDebuggingEnabled)
-                {
                     AddToActiveTasks(this);
-                }
             }
 
             internal readonly CancellationToken Token;
@@ -5469,12 +5460,11 @@ namespace System.Threading.Tasks
                 else
                 {
                     if (AsyncCausalityTracer.LoggingOn)
-                        AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, this.Id, AsyncCausalityStatus.Completed);
+                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
                     if (Task.s_asyncDebuggingEnabled)
-                    {
-                        RemoveFromActiveTasks(this.Id);
-                    }
+                        RemoveFromActiveTasks(this);
+
                     setSucceeded = TrySetResult(default);
                 }
 
@@ -5636,12 +5626,10 @@ namespace System.Threading.Tasks
                 Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
 
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, this.Id, "Task.WhenAll", 0);
+                    AsyncCausalityTracer.TraceOperationCreation(this, "Task.WhenAll");
 
                 if (s_asyncDebuggingEnabled)
-                {
                     AddToActiveTasks(this);
-                }
 
                 m_tasks = tasks;
                 m_count = tasks.Length;
@@ -5656,7 +5644,7 @@ namespace System.Threading.Tasks
             public void Invoke(Task completedTask)
             {
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationRelation(CausalityTraceLevel.Important, this.Id, CausalityRelation.Join);
+                    AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Join);
 
                 // Decrement the count, and only continue to complete the promise if we're the last one.
                 if (Interlocked.Decrement(ref m_count) == 0)
@@ -5705,12 +5693,11 @@ namespace System.Threading.Tasks
                     else
                     {
                         if (AsyncCausalityTracer.LoggingOn)
-                            AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, this.Id, AsyncCausalityStatus.Completed);
+                            AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
                         if (Task.s_asyncDebuggingEnabled)
-                        {
-                            RemoveFromActiveTasks(this.Id);
-                        }
+                            RemoveFromActiveTasks(this);
+
                         TrySetResult(default);
                     }
                 }
@@ -5882,12 +5869,10 @@ namespace System.Threading.Tasks
                 m_count = tasks.Length;
 
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, this.Id, "Task.WhenAll", 0);
+                    AsyncCausalityTracer.TraceOperationCreation(this, "Task.WhenAll");
 
                 if (s_asyncDebuggingEnabled)
-                {
                     AddToActiveTasks(this);
-                }
 
                 foreach (var task in tasks)
                 {
@@ -5899,7 +5884,7 @@ namespace System.Threading.Tasks
             public void Invoke(Task ignored)
             {
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationRelation(CausalityTraceLevel.Important, this.Id, CausalityRelation.Join);
+                    AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Join);
 
                 // Decrement the count, and only continue to complete the promise if we're the last one.
                 if (Interlocked.Decrement(ref m_count) == 0)
@@ -5954,12 +5939,11 @@ namespace System.Threading.Tasks
                     else
                     {
                         if (AsyncCausalityTracer.LoggingOn)
-                            AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, this.Id, AsyncCausalityStatus.Completed);
+                            AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
                         if (Task.s_asyncDebuggingEnabled)
-                        {
-                            RemoveFromActiveTasks(this.Id);
-                        }
+                            RemoveFromActiveTasks(this);
+
                         TrySetResult(results);
                     }
                 }
@@ -6516,12 +6500,10 @@ namespace System.Threading.Tasks
             _state = STATE_WAITING_ON_OUTER_TASK;
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, this.Id, "Task.Unwrap", 0);
+                AsyncCausalityTracer.TraceOperationCreation(this, "Task.Unwrap");
 
             if (Task.s_asyncDebuggingEnabled)
-            {
                 AddToActiveTasks(this);
-            }
 
             // Link ourselves to the outer task.
             // If the outer task has already completed, take the fast path
@@ -6629,7 +6611,7 @@ namespace System.Threading.Tasks
             Debug.Assert(task != null && task.IsCompleted, "TrySetFromTask: Expected task to have completed.");
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationRelation(CausalityTraceLevel.Important, this.Id, CausalityRelation.Join);
+                AsyncCausalityTracer.TraceOperationRelation(this, CausalityRelation.Join);
 
             bool result = false;
             switch (task.Status)
@@ -6658,12 +6640,10 @@ namespace System.Threading.Tasks
                     var taskTResult = task as Task<TResult>;
 
                     if (AsyncCausalityTracer.LoggingOn)
-                        AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, this.Id, AsyncCausalityStatus.Completed);
+                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
                     if (Task.s_asyncDebuggingEnabled)
-                    {
-                        RemoveFromActiveTasks(this.Id);
-                    }
+                        RemoveFromActiveTasks(this);
 
                     result = TrySetResult(taskTResult != null ? taskTResult.Result : default);
                     break;
