@@ -39,7 +39,7 @@
     <!-- for callstack line numbers -->
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.5.0" />
     <PackageReference Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" Version="2.1.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
 
     <!-- Test Data -->
     <PackageReference Include="System.IO.Compression.TestData" Version="1.0.6-prerelease" />
