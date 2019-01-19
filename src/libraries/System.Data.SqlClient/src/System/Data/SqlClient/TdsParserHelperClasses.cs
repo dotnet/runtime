@@ -350,42 +350,42 @@ namespace System.Data.SqlClient
 
         public bool IsReadOnly
         {
-            get => (flags & _SqlMetadataFlags.IsReadOnlyMask ) == _SqlMetadataFlags.None;
+            get => flags.HasFlag(_SqlMetadataFlags.IsReadOnlyMask);
         }
 
         public bool IsDifferentName
         {
-            get => (flags & _SqlMetadataFlags.IsDifferentName) == _SqlMetadataFlags.IsDifferentName;
+            get => flags.HasFlag(_SqlMetadataFlags.IsDifferentName);
             set => Set(_SqlMetadataFlags.IsDifferentName, value);
         }
 
         public bool IsKey
         {
-            get => (flags & _SqlMetadataFlags.IsKey) == _SqlMetadataFlags.IsKey;
+            get => flags.HasFlag(_SqlMetadataFlags.IsKey);
             set => Set(_SqlMetadataFlags.IsKey, value);
         }
 
         public bool IsHidden
         {
-            get => (flags & _SqlMetadataFlags.IsHidden) == _SqlMetadataFlags.IsHidden;
+            get => flags.HasFlag(_SqlMetadataFlags.IsHidden);
             set => Set(_SqlMetadataFlags.IsHidden, value);
         }
 
         public bool IsExpression
         {
-            get => (flags & _SqlMetadataFlags.IsExpression) == _SqlMetadataFlags.IsExpression;
+            get => flags.HasFlag(_SqlMetadataFlags.IsExpression);
             set => Set(_SqlMetadataFlags.IsExpression, value);
         }
 
         public bool IsIdentity
         {
-            get => (flags & _SqlMetadataFlags.IsIdentity) == _SqlMetadataFlags.IsIdentity;
+            get => flags.HasFlag(_SqlMetadataFlags.IsIdentity);
             set => Set(_SqlMetadataFlags.IsIdentity, value);
         }
 
         public bool IsColumnSet
         {
-            get => (flags & _SqlMetadataFlags.IsColumnSet) == _SqlMetadataFlags.IsColumnSet;
+            get => flags.HasFlag(_SqlMetadataFlags.IsColumnSet);
             set => Set(_SqlMetadataFlags.IsColumnSet, value);
         }
 
