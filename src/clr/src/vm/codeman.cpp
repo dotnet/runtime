@@ -631,7 +631,7 @@ BOOL EEJitManager::CodeHeapIterator::Next()
             // LoaderAllocator filter
             if (m_pLoaderAllocator && m_pCurrent)
             {
-                LoaderAllocator *pCurrentLoaderAllocator = m_pCurrent->GetLoaderAllocatorForCode();
+                LoaderAllocator *pCurrentLoaderAllocator = m_pCurrent->GetLoaderAllocator();
                 if(pCurrentLoaderAllocator != m_pLoaderAllocator)
                     continue;
             }
@@ -2281,7 +2281,7 @@ void CodeHeapRequestInfo::Init()
     } CONTRACTL_END;
 
     if (m_pAllocator == NULL)
-        m_pAllocator = m_pMD->GetLoaderAllocatorForCode();
+        m_pAllocator = m_pMD->GetLoaderAllocator();
     m_isDynamicDomain = (m_pMD != NULL) ? m_pMD->IsLCGMethod() : false;
     m_isCollectible = m_pAllocator->IsCollectible() ? true : false;
     m_throwOnOutOfMemoryWithinRange = true;
@@ -4986,7 +4986,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
 
     if (pLoaderAllocator == NULL)
     {
-        pLoaderAllocator = pMD->GetLoaderAllocatorForCode();
+        pLoaderAllocator = pMD->GetLoaderAllocator();
     }
     _ASSERTE(pLoaderAllocator != NULL);
 
