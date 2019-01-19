@@ -38,6 +38,12 @@ jobs:
     variables:
     - name: osIdentifier
       value: ${{ parameters.osIdentifier }}
+    - name: stripSymbolsArg
+      value: ''
+    # Strip symbols only on the release build
+    - ${{ if eq(parameters.buildConfig, 'Release') }}:
+      - name: stripSymbolsArg
+        value: '-stripsymbols'
     - name: portableBuildArg
       value: ''
     # Ensure that we produce os-specific packages for the following distros:
@@ -78,7 +84,7 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build.sh $(buildConfig) $(archType) $(crossArg) -skiptests -skipnuget $(clangArg)
+      - script: ./build.sh $(buildConfig) $(archType) $(crossArg) -skiptests -skipnuget $(clangArg) $(stripSymbolsArg)
         displayName: Build product
         ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
           env:
