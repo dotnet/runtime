@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -311,7 +312,17 @@ namespace System.Text.Json.Tests
             while (json.Read())
             {
                 if (json.TokenType == JsonTokenType.Number || json.TokenType == JsonTokenType.Comment || json.TokenType == JsonTokenType.PropertyName)
+                {
                     builder.Append(Encoding.UTF8.GetString(json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan.ToArray()));
+                    if (json.HasValueSequence)
+                    {
+                        Assert.True(json.ValueSpan == default);
+                    }
+                    else
+                    {
+                        Assert.True(json.ValueSequence.IsEmpty);
+                    }
+                }
             }
 
             Assert.Equal(expectedWithComments, builder.ToString());
@@ -323,7 +334,17 @@ namespace System.Text.Json.Tests
             while (json.Read())
             {
                 if (json.TokenType == JsonTokenType.Number || json.TokenType == JsonTokenType.Comment || json.TokenType == JsonTokenType.PropertyName)
+                {
                     builder.Append(Encoding.UTF8.GetString(json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan.ToArray()));
+                    if (json.HasValueSequence)
+                    {
+                        Assert.True(json.ValueSpan == default);
+                    }
+                    else
+                    {
+                        Assert.True(json.ValueSequence.IsEmpty);
+                    }
+                }
             }
 
             Assert.Equal(expectedWithoutComments, builder.ToString());
@@ -358,9 +379,152 @@ namespace System.Text.Json.Tests
                     // Check if the TokenType is a primitive "value", i.e. String, Number, True, False, and Null
                     Assert.True(json.TokenType >= JsonTokenType.String && json.TokenType <= JsonTokenType.Null);
                     Assert.Equal(expectedString, Encoding.UTF8.GetString(json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan.ToArray()));
+
+                    if (json.HasValueSequence)
+                    {
+                        Assert.True(json.ValueSpan == default);
+                    }
+                    else
+                    {
+                        Assert.True(json.ValueSequence.IsEmpty);
+                    }
                 }
 
                 Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, "{\"property name\": [\"value 1\", \"value 2 across sequence\", 12345, 1234567890, true, false, null]}")]
+        [InlineData(1, "[{\"property name\": [\"value 1\", \"value 2 across sequence\", 12345, 1234567890, true, false, null]}]")]
+        [InlineData(2, "{\"property name\": [// comment value\r\n\"value 2 across sequence\"// another comment value\r\n]}")]
+        public static void CheckOnlyOneOfValueSpanOrSequenceIsSet(int testCase, string jsonString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            bool[] expectedHasValueSequence = null;
+            bool[] expectedHasValueSequenceSkip = null;
+            bool[] expectedHasValueSequenceAllow = null;
+
+            ReadOnlySequence<byte> sequence;
+            switch (testCase)
+            {
+                case 0:
+                    Debug.Assert(dataUtf8.Length == 95);
+                    byte[][] buffers = new byte[6][];
+                    buffers[0] = dataUtf8.AsSpan(0, 10).ToArray();
+                    buffers[1] = dataUtf8.AsSpan(10, 28).ToArray();
+                    buffers[2] = dataUtf8.AsSpan(38, 32).ToArray();
+                    buffers[3] = dataUtf8.AsSpan(70, 23).ToArray();
+                    buffers[4] = dataUtf8.AsSpan(93, 1).ToArray();
+                    buffers[5] = dataUtf8.AsSpan(94, 1).ToArray();
+                    sequence = BufferFactory.Create(buffers);
+                    expectedHasValueSequence = new bool [] {false, true, false, false, true, false, true, false, false, false, false, false };
+                    break;
+                case 1:
+                    Debug.Assert(dataUtf8.Length == 97);
+                    buffers = new byte[7][];
+                    buffers[0] = dataUtf8.AsSpan(0, 39).ToArray();
+                    buffers[1] = dataUtf8.AsSpan(39, 22).ToArray();
+                    buffers[2] = dataUtf8.AsSpan(61, 18).ToArray();
+                    buffers[3] = dataUtf8.AsSpan(79, 7).ToArray();
+                    buffers[4] = dataUtf8.AsSpan(86, 7).ToArray();
+                    buffers[5] = dataUtf8.AsSpan(93, 3).ToArray();
+                    buffers[6] = dataUtf8.AsSpan(96, 1).ToArray();
+                    sequence = BufferFactory.Create(buffers);
+                    expectedHasValueSequence = new bool[] { false, false, false, false, false, true, true, false, true, true, true, false, false, false };
+                    break;
+                case 2:
+                    Debug.Assert(dataUtf8.Length == 90);
+                    buffers = new byte[5][];
+                    buffers[0] = dataUtf8.AsSpan(0, 36).ToArray();
+                    buffers[1] = dataUtf8.AsSpan(36, 13).ToArray();
+                    buffers[2] = dataUtf8.AsSpan(49, 30).ToArray();
+                    buffers[3] = dataUtf8.AsSpan(79, 9).ToArray();
+                    buffers[4] = dataUtf8.AsSpan(88, 2).ToArray();
+                    sequence = BufferFactory.Create(buffers);
+                    expectedHasValueSequenceSkip = new bool[] { false, false, false, true,  false, false };
+                    expectedHasValueSequenceAllow = new bool[] { false, false, false, true, true, true, false, false };
+                    break;
+                default:
+                    return;
+            }
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                if (commentHandling == JsonCommentHandling.Disallow && testCase == 2)
+                {
+                    continue;
+                }
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                var json = new Utf8JsonReader(sequence, isFinalBlock: true, state);
+
+                int index = 0;
+
+                while (json.Read())
+                {
+                    if (testCase == 0 || testCase == 1)
+                    {
+                        Assert.True(expectedHasValueSequence[index] == json.HasValueSequence, $"{commentHandling}, {testCase}, {index}, {json.HasValueSequence}");
+                    }
+                    else
+                    {
+                        if (commentHandling == JsonCommentHandling.Skip)
+                        {
+                            Assert.True(expectedHasValueSequenceSkip[index] == json.HasValueSequence, $"{commentHandling}, {testCase}, {index}, {json.HasValueSequence}");
+                        }
+                        else
+                        {
+                            Assert.True(expectedHasValueSequenceAllow[index] == json.HasValueSequence, $"{commentHandling}, {testCase}, {index}, {json.HasValueSequence}");
+                        }
+                    }
+                    if (json.HasValueSequence)
+                    {
+                        Assert.True(json.ValueSpan == default, $"Escaped ValueSpan to be empty when HasValueSequence is true. Test case: {testCase}");
+                        Assert.False(json.ValueSequence.IsEmpty, $"Escaped ValueSequence to not be empty when HasValueSequence is true. Test case: {testCase}");
+                    }
+                    else
+                    {
+                        Assert.True(json.ValueSequence.IsEmpty, $"Escaped ValueSequence to be empty when HasValueSequence is false. Test case: {testCase}");
+                        Assert.False(json.ValueSpan == default, $"Escaped ValueSpan to not be empty when HasValueSequence is false. Test case: {testCase}");
+                    }
+
+                    index++;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("\"abcdefg\"")]
+        [InlineData("12345")]
+        [InlineData("12345.0e-3")]
+        [InlineData("true")]
+        [InlineData("false")]
+        [InlineData("null")]
+        public static void CheckOnlyOneOfValueSpanOrSequenceIsSetSingleValue(string jsonString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                var json = new Utf8JsonReader(sequence, isFinalBlock: true, state);
+
+                Assert.False(json.HasValueSequence);
+                Assert.True(json.ValueSpan == default);
+                Assert.True(json.ValueSequence.IsEmpty);
+
+                Assert.True(json.Read());
+                Assert.True(json.HasValueSequence);
+                Assert.True(json.ValueSpan == default);
+                Assert.False(json.ValueSequence.IsEmpty);
+
+                // Subsequent calls to Read clears the value properties since Read returned false.
+                Assert.False(json.Read());
+                Assert.False(json.HasValueSequence);
+                Assert.True(json.ValueSpan == default);
+                Assert.True(json.ValueSequence.IsEmpty);
             }
         }
     }
