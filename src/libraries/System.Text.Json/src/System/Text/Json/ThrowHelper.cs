@@ -397,6 +397,41 @@ namespace System.Text.Json
 
             return message;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static FormatException GetFormatException(NumericType numericType)
+        {
+            string message = "";
+
+            switch (numericType)
+            {
+                case NumericType.Int32:
+                    message = SR.FormatInt32;
+                    break;
+                case NumericType.Int64:
+                    message = SR.FormatInt64;
+                    break;
+                case NumericType.UInt32:
+                    message = SR.FormatUInt32;
+                    break;
+                case NumericType.UInt64:
+                    message = SR.FormatUInt64;
+                    break;
+                case NumericType.Single:
+                    message = SR.FormatSingle;
+                    break;
+                case NumericType.Double:
+                    message = SR.FormatDouble;
+                    break;
+                case NumericType.Decimal:
+                    message = SR.FormatDecimal;
+                    break;
+                default:
+                    Debug.Fail($"The NumericType enum value: {numericType} is not part of the switch. Add the appropriate case and exception message.");
+                    break;
+            }
+            return new FormatException(message);
+        }
     }
 
     internal enum ExceptionResource
@@ -435,5 +470,16 @@ namespace System.Text.Json
         FailedToGetLargerSpan,
         CannotWritePropertyWithinArray,
         ExpectedJsonTokens
+    }
+
+    internal enum NumericType
+    {
+        Int32,
+        Int64,
+        UInt32,
+        UInt64,
+        Single,
+        Double,
+        Decimal
     }
 }
