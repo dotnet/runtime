@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -350,6 +352,149 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
             Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData("{\"message\":\"Hello, I am \\\"Ahson!\\\"\"}")]
+        [InlineData("{\"nam\\\"e\":\"ah\\\"son\"}")]
+        [InlineData("{\"Here is a string: \\\"\\\"\":\"Here is a\",\"Here is a back slash\\\\\":[\"Multiline\\r\\n String\\r\\n\",\"\\tMul\\r\\ntiline String\",\"\\\"somequote\\\"\\tMu\\\"\\\"l\\r\\ntiline\\\"another\\\" String\\\\\"],\"str\":\"\\\"\\\"\"}")]
+        [InlineData("[\"\\u0030\\u0031\\u0032\\u0033\\u0034\\u0035\", \"\\u0000\\u002B\", \"a\\u005C\\u0072b\", \"a\\\\u005C\\u0072b\", \"a\\u008E\\u008Fb\", \"a\\uD803\\uDE6Db\", \"a\\uD834\\uDD1Eb\", \"a\\\\uD834\\\\uDD1Eb\"]")]
+        [InlineData("{\"message\":\"Hello /a/b/c \\/ \\r\\b\\n\\f\\t\\/\"}")]
+        [InlineData(null)]  // Large randomly generated string
+        public static void TestingGetString(string jsonString)
+        {
+            if (jsonString == null)
+            {
+                var random = new Random(42);
+                var charArray = new char[500];
+                charArray[0] = '"';
+                for (int i = 1; i < charArray.Length; i++)
+                {
+                    charArray[i] = (char)random.Next('?', '\\'); // ASCII values (between 63 and 91) that don't need to be escaped.
+                }
+
+                charArray[256] = '\\';
+                charArray[257] = '"';
+                charArray[charArray.Length - 1] = '"';
+                jsonString = new string(charArray);
+            }
+
+            var expectedPropertyNames = new List<string>();
+            var expectedValues = new List<string>();
+
+            var jsonNewtonsoft = new JsonTextReader(new StringReader(jsonString));
+            while (jsonNewtonsoft.Read())
+            {
+                if (jsonNewtonsoft.TokenType == JsonToken.String)
+                {
+                    expectedValues.Add(jsonNewtonsoft.Value.ToString());
+                }
+                else if (jsonNewtonsoft.TokenType == JsonToken.PropertyName)
+                {
+                    expectedPropertyNames.Add(jsonNewtonsoft.Value.ToString());
+                }
+            }
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            var actualPropertyNames = new List<string>();
+            var actualValues = new List<string>();
+
+            var json = new Utf8JsonReader(dataUtf8, true, default);
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.String)
+                {
+                    actualValues.Add(json.GetStringValue());
+                }
+                else if (json.TokenType == JsonTokenType.PropertyName)
+                {
+                    actualPropertyNames.Add(json.GetStringValue());
+                }
+            }
+
+            Assert.Equal(expectedPropertyNames.Count, actualPropertyNames.Count);
+            for (int i = 0; i < expectedPropertyNames.Count; i++)
+            {
+                Assert.Equal(expectedPropertyNames[i], actualPropertyNames[i]);
+            }
+
+            Assert.Equal(expectedValues.Count, actualValues.Count);
+            for (int i = 0; i < expectedValues.Count; i++)
+            {
+                Assert.Equal(expectedValues[i], actualValues[i]);
+            }
+
+            Assert.Equal(dataUtf8.Length, json.BytesConsumed);
+            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData("\"a\\uDD1E\"")]
+        [InlineData("\"a\\uDD1Eb\"")]
+        [InlineData("\"a\\uD834\"")]
+        [InlineData("\"a\\uD834\\u0030\"")]
+        [InlineData("\"a\\uD834\\uD834\"")]
+        [InlineData("\"a\\uD834b\"")]
+        [InlineData("\"a\\uDD1E\\uD834b\"")]
+        [InlineData("\"a\\\\uD834\\uDD1Eb\"")]
+        [InlineData("\"a\\uDD1E\\\\uD834b\"")]
+        public static void TestingGetStringInvalidUTF16(string jsonString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
+
+                Assert.True(json.Read());
+                Assert.Equal(JsonTokenType.String, json.TokenType);
+                try
+                {
+                    string val = json.GetStringValue();
+                    Assert.True(false, "Expected InvalidOperationException when trying to get string value for invalid UTF-16 JSON text.");
+                }
+                catch (InvalidOperationException) { }
+            }
+        }
+
+
+
+        [Theory]
+        [MemberData(nameof(InvalidUTF8Strings))]
+        public static void TestingGetStringInvalidUTF8(byte[] dataUtf8)
+        {
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
+
+                // It is expected that the Utf8JsonReader won't throw an exception here
+                Assert.True(json.Read());
+                Assert.Equal(JsonTokenType.String, json.TokenType);
+
+                while (json.Read())
+                    ;
+
+                json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
+
+                while (json.Read())
+                {
+                    if (json.TokenType == JsonTokenType.String)
+                    {
+                        try
+                        {
+                            string val = json.GetStringValue();
+                            Assert.True(false, "Expected InvalidOperationException when trying to get string value for invalid UTF-8 JSON text.");
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            Assert.Equal(ex.InnerException.GetType(), typeof(DecoderFallbackException));
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -340,6 +340,21 @@ namespace System.Text.Json
             throw new ArgumentException(SR.Format(SR.CannotWriteInvalidUTF16, $"0x{charAsInt:X2}"));
         }
 
+        public static void ThrowInvalidOperationException_ReadInvalidUTF16(int charAsInt)
+        {
+            throw new InvalidOperationException(SR.Format(SR.CannotReadInvalidUTF16, $"0x{charAsInt:X2}"));
+        }
+
+        public static void ThrowInvalidOperationException_ReadInvalidUTF16()
+        {
+            throw new InvalidOperationException(SR.CannotReadIncompleteUTF16);
+        }
+
+        public static InvalidOperationException GetInvalidOperationException_ReadInvalidUTF8(DecoderFallbackException innerException)
+        {
+            return new InvalidOperationException(SR.CannotTranscodeInvalidUtf8, innerException);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static InvalidOperationException GetInvalidOperationException(ExceptionResource resource, int currentDepth, byte token, JsonTokenType tokenType)
         {
