@@ -13,7 +13,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
-    internal static class JsonReaderHelper
+    internal static partial class JsonReaderHelper
     {
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {

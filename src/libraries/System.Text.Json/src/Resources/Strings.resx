@@ -123,14 +123,23 @@
   <data name="CallFlushToAvoidDataLoss" xml:space="preserve">
     <value>The JSON writer needs to be flushed before getting the current state. There are {0} bytes that have not been committed to the output.</value>
   </data>
+  <data name="CannotReadIncompleteUTF16" xml:space="preserve">
+    <value>Cannot read incomplete UTF-16 JSON text as string with missing low surrogate.</value>
+  </data>
+  <data name="CannotReadInvalidUTF16" xml:space="preserve">
+    <value>Cannot read invalid UTF-16 JSON text as string. Invalid surrogate value: '{0}'.</value>
+  </data>
   <data name="CannotStartObjectArrayAfterPrimitiveOrClose" xml:space="preserve">
     <value>Cannot write the start of an object/array after a single JSON value or outside of an existing closed object/array. Current token type is '{0}'.</value>
   </data>
   <data name="CannotStartObjectArrayWithoutProperty" xml:space="preserve">
     <value>Cannot write the start of an object or array without a property name. Current token type is '{0}'.</value>
   </data>
+  <data name="CannotTranscodeInvalidUtf8" xml:space="preserve">
+    <value>Cannot transcode invalid UTF-8 JSON text to UTF-16 string.</value>
+  </data>
   <data name="CannotWriteInvalidUTF16" xml:space="preserve">
-    <value>Cannot write invalid UTF-16 text as JSON. Invalid surrogate pair: '{0}'.</value>
+    <value>Cannot write invalid UTF-16 text as JSON. Invalid surrogate value: '{0}'.</value>
   </data>
   <data name="CannotWriteInvalidUTF8" xml:space="preserve">
     <value>Cannot write invalid UTF-8 text as JSON. Invalid input: '{0}'.</value>
