@@ -318,7 +318,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (Task.s_asyncDebuggingEnabled)
                 {
-                    Task.RemoveFromActiveTasks(innerTask.Id);
+                    Task.RemoveFromActiveTasks(innerTask);
                 }
 
                 TplEtwProvider innerEtwLog = TplEtwProvider.Log;
