@@ -216,7 +216,7 @@ namespace System.Text.Json.Tests
                 if (json.HasValueSequence)
                 {
                     Assert.True(json.ValueSpan == default);
-                    if ((tokenType != JsonTokenType.String && tokenType != JsonTokenType.PropertyName) || json.GetStringValue().Length != 0)
+                    if ((tokenType != JsonTokenType.String && tokenType != JsonTokenType.PropertyName) || json.GetString().Length != 0)
                     {
                         // Empty strings could still make this true, i.e. ""
                         Assert.False(json.ValueSequence.IsEmpty);
@@ -225,7 +225,7 @@ namespace System.Text.Json.Tests
                 else
                 {
                     Assert.True(json.ValueSequence.IsEmpty);
-                    if ((tokenType != JsonTokenType.String && tokenType != JsonTokenType.PropertyName) || json.GetStringValue().Length != 0)
+                    if ((tokenType != JsonTokenType.String && tokenType != JsonTokenType.PropertyName) || json.GetString().Length != 0)
                     {
                         // Empty strings could still make this true, i.e. ""
                         Assert.False(json.ValueSpan == default);
