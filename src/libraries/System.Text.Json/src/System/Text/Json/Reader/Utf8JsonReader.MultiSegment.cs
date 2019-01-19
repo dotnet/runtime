@@ -81,6 +81,8 @@ namespace System.Text.Json
         {
             bool retVal = false;
             HasValueSequence = false;
+            ValueSpan = default;
+            ValueSequence = default;
 
             if (!HasMoreDataMultiSegment())
             {
@@ -266,6 +268,9 @@ namespace System.Text.Json
                 {
                     break;
                 }
+                // _currentPosition needs to point to last non-empty segment
+                // Since memory.Length == 0, we need to revert back to previous.
+                _currentPosition = copy;
             }
 
             if (_isFinalBlock)
@@ -286,6 +291,7 @@ namespace System.Text.Json
             {
                 _bitStack.SetFirstBit();
                 _tokenType = JsonTokenType.StartObject;
+                ValueSpan = _buffer.Slice(_consumed, 1);
                 _consumed++;
                 _bytePositionInLine++;
                 _inObject = true;
@@ -295,6 +301,7 @@ namespace System.Text.Json
             {
                 _bitStack.ResetFirstBit();
                 _tokenType = JsonTokenType.StartArray;
+                ValueSpan = _buffer.Slice(_consumed, 1);
                 _consumed++;
                 _bytePositionInLine++;
                 _isNotPrimitive = true;
@@ -2400,7 +2407,6 @@ namespace System.Text.Json
             }
             else
             {
-
                 ValueSpan = _buffer.Slice(previousConsumed, i + 3); // Include the slash/asterisk and final slash at the end of the comment as part of it.
             }
 
