@@ -39,15 +39,6 @@ variables:
         /p:SymbolPackagesUrl=$(_PublishBlobFeedUrl)
         /p:TransportFeedAccessToken=$(dotnetfeed-storage-access-key-1)
 
-    - name: _DotNetVersionsArgs
-      value: >-
-        /p:GitHubUser=dotnet-build-bot
-        /p:GitHubEmail=dotnet-build-bot@microsoft.com
-        /p:GitHubAuthToken=$(AccessToken-dotnet-build-bot-public-repo)
-        /p:VersionsRepoOwner=dotnet
-        /p:VersionsRepo=versions
-        /p:VersionsRepoPath=build-info/dotnet/core-setup/$(FullBranchName)
-
     # Symbol Server update
     - name: _SymbolServerPath
       value: https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection
