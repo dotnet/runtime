@@ -43,6 +43,12 @@ mono_is_power_of_two (guint32 val)
 	    dest->inst_c0 = arg1->inst_c0 op arg2->inst_c0;	\
         break;
 
+#define FOLD_FBINOP(name, op) \
+	case name: \
+	dest->inst_p0 = (double *)mono_domain_alloc (cfg->domain, sizeof (double)); \
+	*(double *)dest->inst_p0 = (*((double *) arg1->inst_p0)) op (*((double *) arg2->inst_p0)); \
+	break;
+
 #define FOLD_BINOPC(name,op,cast)	\
 	case name:	\
 	    dest->inst_c0 = (cast)arg1->inst_c0 op (cast)arg2->inst_c0;	\
@@ -89,6 +95,18 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 		dest = ins;
 
 	switch (ins->opcode) {
+	case OP_FADD:
+	case OP_FMUL:
+		if (arg2->opcode == OP_R8CONST && arg2->opcode == OP_R8CONST){
+			ALLOC_DEST (cfg, dest, ins);
+			switch (ins->opcode) {
+				FOLD_FBINOP (OP_FADD, +);
+				FOLD_FBINOP (OP_FMUL, *);
+			}
+			dest->opcode = OP_R8CONST;
+			MONO_INST_NULLIFY_SREGS (dest);		
+		}
+		break;
 	case OP_IMUL:
 	case OP_IADD:
 	case OP_IAND:

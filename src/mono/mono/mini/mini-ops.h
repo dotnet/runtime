@@ -715,6 +715,18 @@ MINI_OP(OP_SINF,     "sinf", FREG, FREG, NONE)
 MINI_OP(OP_COSF,     "cosf", FREG, FREG, NONE)
 MINI_OP(OP_ABSF,     "absf", FREG, FREG, NONE)
 MINI_OP(OP_SQRTF,    "sqrtf", FREG, FREG, NONE)
+
+/* Operations that can be computed at constants at JIT time  */
+MINI_OP(OP_ACOS,     "acos", FREG, FREG, NONE)
+MINI_OP(OP_SINH,     "sinh", FREG, FREG, NONE)
+MINI_OP(OP_ACOSH,    "acosh", FREG, FREG, NONE)
+MINI_OP(OP_ASIN,     "asin", FREG, FREG, NONE)
+MINI_OP(OP_ASINH,    "asinh", FREG, FREG, NONE)
+MINI_OP(OP_ATANH,    "atanh2", FREG, FREG, NONE)
+MINI_OP(OP_CBRT,     "cbrt", FREG, FREG, NONE)
+MINI_OP(OP_COSH,     "cosh", FREG, FREG, NONE)
+MINI_OP(OP_TANH,     "tanh", FREG, FREG, NONE)
+
 /* to optimize strings */
 MINI_OP(OP_STRLEN, "strlen", IREG, IREG, NONE)
 MINI_OP(OP_NEWARR, "newarr", IREG, IREG, NONE)

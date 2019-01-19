@@ -4,6 +4,7 @@
 
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
+#include <math.h>
 
 #ifndef DISABLE_JIT
 
@@ -1162,6 +1163,133 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		 * all inputs:
 		 * http://everything2.com/?node_id=1051618
 		 */
+
+		/*
+		 * Constant folding for various Math methods.
+		 * we avoid folding constants that when computed would raise an error, in
+		 * case the user code was expecting to get that error raised
+		 */
+		if (fsig->param_count == 1 && args [0]->opcode == OP_R8CONST){
+			double source = *(double *)args [0]->inst_p0;
+			int opcode = 0;
+			const char *mname = cmethod->name;
+			char c = mname [0];
+			
+			if (c == 'A'){
+				if (strcmp (mname, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
+					opcode = OP_ABS;
+				} else if (strcmp (mname, "Asin") == 0){
+					if (fabs (source) <= 1)
+						opcode = OP_ASIN;
+				} else if (strcmp (mname, "Asinh") == 0){
+					opcode = OP_ASINH;
+				} else if (strcmp (mname, "Acos") == 0){
+					if (fabs (source) <= 1)
+						opcode = OP_ACOS;
+				} else if (strcmp (mname, "Acosh") == 0){
+					if (source >= 1)
+						opcode = OP_ACOSH;
+				} else if (strcmp (mname, "Atan") == 0){
+					opcode = OP_ATAN;
+				} else if (strcmp (mname, "Atanh") == 0){
+					if (fabs (source) < 1)
+						opcode = OP_ATANH;
+				} 
+			} else if (c == 'C'){
+				if (strcmp (mname, "Cos") == 0) {
+					if (!isinf (source))
+						opcode = OP_COS;
+				} else if (strcmp (mname, "Cbrt") == 0){
+					opcode = OP_CBRT;
+				} else if (strcmp (mname, "Cosh") == 0){
+					opcode = OP_COSH;
+				}
+			} else if (c == 'R'){
+				if (strcmp (mname, "Round") == 0)
+					opcode = OP_ROUND;
+			} else if (c == 'S'){
+				if (strcmp (mname, "Sin") == 0) {
+					if (!isinf (source))
+						opcode = OP_SIN;
+				} else if (strcmp (mname, "Sqrt") == 0) {
+					if (source >= 0)
+						opcode = OP_SQRT;
+				} else if (strcmp (mname, "Sinh") == 0){
+					opcode = OP_SINH;
+				}
+			} else if (c == 'T'){
+				if (strcmp (mname, "Tan") == 0){
+					if (!isinf (source))
+						opcode = OP_TAN;
+				} else if (strcmp (mname, "Tanh") == 0){
+					opcode = OP_TANH;
+				}
+			}
+
+			if (opcode) {
+				double *dest = (double *) mono_domain_alloc (cfg->domain, sizeof (double));
+				double result;
+				MONO_INST_NEW (cfg, ins, OP_R8CONST);
+				ins->type = STACK_R8;
+				ins->dreg = mono_alloc_dreg (cfg, (MonoStackType) ins->type);
+				ins->inst_p0 = dest;
+				
+				switch (opcode){
+				case OP_ABS:
+					result = fabs (source);
+					break;
+				case OP_ACOS:
+					result = acos (source);
+					break;
+				case OP_ACOSH:
+					result = acosh (source);
+					break;
+				case OP_ASIN:
+					result = asin (source);
+					break;
+				case OP_ASINH:
+					result= asinh (source);
+					break;
+				case OP_ATAN:
+					result = atan (source);
+					break;
+				case OP_ATANH:
+					result = atanh (source);
+					break;
+				case OP_CBRT:
+					result = cbrt (source);
+					break;
+				case OP_COS:
+					result = cos (source);
+					break;
+				case OP_COSH:
+					result = cosh (source);
+					break;
+				case OP_ROUND:
+					result = round (source);
+					break;
+				case OP_SIN:
+					result = sin (source);
+					break;
+				case OP_SINH:
+					result = sinh (source);
+					break;
+				case OP_SQRT:
+					result = sqrt (source);
+					break;
+				case OP_TAN:
+					result = tan (source);
+					break;
+				case OP_TANH:
+					result = tanh (source);
+					break;
+				}
+				*dest = result;
+				MONO_ADD_INS (cfg->cbb, ins);
+				NULLIFY_INS (args [0]);
+				return ins;
+			}
+		}
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality")) {
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		MONO_INST_NEW (cfg, ins, OP_PCEQ);
