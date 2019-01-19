@@ -10,19 +10,14 @@ namespace System.Text.Json
 {
     public ref partial struct Utf8JsonReader
     {
-        // Reject any invalid UTF-8 data rather than silently replacing.
-        private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-
         /// <summary>
-        /// Reads the next JSON token value from the source transcoded as a <see cref="string"/>.
+        /// Reads the next JSON token value from the source, unescaped, and transcoded as a <see cref="string"/>.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of the JSON token that is not a string
         /// (i.e. other than <see cref="JsonTokenType.String"/> or <see cref="JsonTokenType.PropertyName"/>).
         /// <seealso cref="TokenType" />
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// Thrown if invalid UTF-8 byte sequences are detected while transcoding.
+        /// I will also throw when the JSON string contains invalid UTF-8 bytes, or invalid UTF-16 surrogates.
         /// </exception>
         public string GetStringValue()
         {
@@ -33,23 +28,12 @@ namespace System.Text.Json
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
 
-#if BUILDING_INBOX_LIBRARY
-            // TODO: https://github.com/dotnet/corefx/issues/33292
-            return s_utf8Encoding.GetString(span);
-#else
-            if (span.IsEmpty)
+            int idx = span.IndexOf(JsonConstants.BackSlash);
+            if (idx != -1)
             {
-                return string.Empty;
+                return JsonReaderHelper.GetUnescapedString(span, idx);
             }
-            unsafe
-            {
-                fixed (byte* bytePtr = span)
-                {
-                    // TODO: https://github.com/dotnet/corefx/issues/33292
-                    return s_utf8Encoding.GetString(bytePtr, span.Length);
-                }
-            }
-#endif
+            return JsonReaderHelper.TranscodeHelper(span);
         }
 
         /// <summary>

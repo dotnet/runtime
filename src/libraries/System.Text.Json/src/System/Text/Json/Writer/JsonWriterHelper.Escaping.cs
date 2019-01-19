@@ -151,7 +151,7 @@ namespace System.Text.Json
                         // Divide by 0x400 to shift right by 10 in order to find the surrogate pairs from the scalar
                         // High surrogate = ((scalar -  0x10000) / 0x400) + D800
                         // Low surrogate = ((scalar -  0x10000) % 0x400) + DC00
-                        int quotient = Math.DivRem(scalar - JsonConstants.UnicodePlane01StartValue, JsonConstants.ShiftRightBy10, out int remainder);
+                        int quotient = Math.DivRem(scalar - JsonConstants.UnicodePlane01StartValue, JsonConstants.BitShiftBy10, out int remainder);
                         int firstChar = quotient + JsonConstants.HighSurrogateStartValue;
                         int nextChar = remainder + JsonConstants.LowSurrogateStartValue;
                         bool result = Utf8Formatter.TryFormat(firstChar, destination.Slice(written), out int bytesWritten, format: s_hexStandardFormat);
@@ -179,22 +179,6 @@ namespace System.Text.Json
         private static bool IsUtf8ContinuationByte(byte value) => (value & 0xC0) == 0x80;
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
-        /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsInRangeInclusive(byte value, byte lowerBound, byte upperBound)
-            => ((byte)(value - lowerBound) <= (byte)(upperBound - lowerBound));
-
-        /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
-        /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsInRangeInclusive(uint value, uint lowerBound, uint upperBound)
-            => (value - lowerBound) <= (upperBound - lowerBound);
-
-        /// <summary>
         /// Returns <see langword="true"/> iff the low word of <paramref name="char"/> is a UTF-16 surrogate.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -218,7 +202,7 @@ namespace System.Text.Json
             // - Multi-byte sequences which are improperly terminated (no continuation byte when one is
             //   expected) are reported as invalid sequences up to and including the last seen continuation byte.
 
-            Debug.Assert(IsValidUnicodeScalar(ReplacementChar));
+            Debug.Assert(JsonHelpers.IsValidUnicodeScalar(ReplacementChar));
             rune = ReplacementChar;
 
             if (data.IsEmpty)
@@ -233,13 +217,13 @@ namespace System.Text.Json
             if (IsAsciiValue(firstByte))
             {
                 // ASCII byte = well-formed one-byte sequence.
-                Debug.Assert(IsValidUnicodeScalar(firstByte));
+                Debug.Assert(JsonHelpers.IsValidUnicodeScalar(firstByte));
                 rune = firstByte;
                 numBytesConsumed = 1;
                 return SequenceValidity.WellFormed;
             }
 
-            if (!IsInRangeInclusive(firstByte, (byte)0xC2U, (byte)0xF4U))
+            if (!JsonHelpers.IsInRangeInclusive(firstByte, (byte)0xC2U, (byte)0xF4U))
             {
                 // Standalone continuation byte or "always invalid" byte = ill-formed one-byte sequence.
                 goto InvalidOneByteSequence;
@@ -266,7 +250,7 @@ namespace System.Text.Json
             {
                 // Well-formed two-byte sequence.
                 uint scalar = (((uint)firstByte & 0x1FU) << 6) | ((uint)secondByte & 0x3FU);
-                Debug.Assert(IsValidUnicodeScalar(scalar));
+                Debug.Assert(JsonHelpers.IsValidUnicodeScalar(scalar));
                 rune = (int)scalar;
                 numBytesConsumed = 2;
                 return SequenceValidity.WellFormed;
@@ -297,7 +281,7 @@ namespace System.Text.Json
                     {
                         // Well-formed three-byte sequence.
                         scalar |= (uint)thirdByte & 0x3FU;
-                        Debug.Assert(IsValidUnicodeScalar(scalar));
+                        Debug.Assert(JsonHelpers.IsValidUnicodeScalar(scalar));
                         rune = (int)scalar;
                         numBytesConsumed = 3;
                         return SequenceValidity.WellFormed;
@@ -315,8 +299,8 @@ namespace System.Text.Json
                 // Need to check for overlong or out-of-range sequences.
 
                 uint scalar = (((uint)firstByte & 0x07U) << 18) | (((uint)secondByte & 0x3FU) << 12);
-                Debug.Assert(IsValidUnicodeScalar(scalar));
-                if (!IsInRangeInclusive(scalar, 0x10000U, 0x10FFFFU))
+                Debug.Assert(JsonHelpers.IsValidUnicodeScalar(scalar));
+                if (!JsonHelpers.IsInRangeInclusive(scalar, 0x10000U, 0x10FFFFU))
                 {
                     goto OverlongOutOfRangeOrSurrogateSequence;
                 }
@@ -347,7 +331,7 @@ namespace System.Text.Json
                             {
                                 // Well-formed four-byte sequence.
                                 scalar |= (((uint)thirdByte & 0x3FU) << 6) | ((uint)fourthByte & 0x3FU);
-                                Debug.Assert(IsValidUnicodeScalar(scalar));
+                                Debug.Assert(JsonHelpers.IsValidUnicodeScalar(scalar));
                                 rune = (int)scalar;
                                 numBytesConsumed = 4;
                                 return SequenceValidity.WellFormed;
@@ -421,7 +405,7 @@ namespace System.Text.Json
         private static void EscapeNextChars(ReadOnlySpan<char> value, int firstChar, Span<char> destination, ref int consumed, ref int written)
         {
             int nextChar = -1;
-            if (IsInRangeInclusive(firstChar, JsonConstants.HighSurrogateStartValue, JsonConstants.LowSurrogateEndValue))
+            if (JsonHelpers.IsInRangeInclusive(firstChar, JsonConstants.HighSurrogateStartValue, JsonConstants.LowSurrogateEndValue))
             {
                 consumed++;
                 if (value.Length <= consumed || firstChar >= JsonConstants.LowSurrogateStartValue)
@@ -430,7 +414,7 @@ namespace System.Text.Json
                 }
 
                 nextChar = value[consumed];
-                if (!IsInRangeInclusive(nextChar, JsonConstants.LowSurrogateStartValue, JsonConstants.LowSurrogateEndValue))
+                if (!JsonHelpers.IsInRangeInclusive(nextChar, JsonConstants.LowSurrogateStartValue, JsonConstants.LowSurrogateEndValue))
                 {
                     ThrowHelper.ThrowArgumentException_InvalidUTF16(nextChar);
                 }
@@ -482,31 +466,10 @@ namespace System.Text.Json
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsInRangeInclusive(int ch, int start, int end)
-        {
-            return (uint)(ch - start) <= (uint)(end - start);
-        }
-
         /// <summary>
         /// A scalar that represents the Unicode replacement character U+FFFD.
         /// </summary>
         private const int ReplacementChar = 0xFFFD;
-
-        /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is a valid Unicode scalar
-        /// value, i.e., is in [ U+0000..U+D7FF ], inclusive; or [ U+E000..U+10FFFF ], inclusive.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsValidUnicodeScalar(uint value)
-        {
-            // By XORing the incoming value with 0xD800, surrogate code points
-            // are moved to the range [ U+0000..U+07FF ], and all valid scalar
-            // values are clustered into the single range [ U+0800..U+10FFFF ],
-            // which allows performing a single fast range check.
-
-            return IsInRangeInclusive(value ^ 0xD800U, 0x800U, 0x10FFFFU);
-        }
 
 #if !BUILDING_INBOX_LIBRARY
         private static int WriteHex(int value, Span<char> destination, int written)
