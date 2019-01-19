@@ -126,13 +126,16 @@ namespace ObjectStackAllocation
 
             CallTestAndVerifyAllocation(AllocateClassWithNestedStructAndAddFields, 24, expectedAllocationKind);
 
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckTypeNoHelper, 1, expectedAllocationKind);
-
             CallTestAndVerifyAllocation(AllocateSimpleClassWithGCFieldAndAddFields, 12, expectedAllocationKind);
 
             CallTestAndVerifyAllocation(AllocateSimpleClassAndAssignRefToAField, 12, expectedAllocationKind);
 
             CallTestAndVerifyAllocation(TestMixOfReportingAndWriteBarriers, 34, expectedAllocationKind);
+
+            // The object is currently allocated on the stack when this method is jitted and on the heap when it's R2R-compiled.
+            // The reason is that we always do the type check via helper in R2R mode, which blocks stack allocation.
+            // We don't have to use a helper in this case (even for R2R), https://github.com/dotnet/coreclr/issues/22086 tracks fixing that.
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckTypeNoHelper, 1, AllocationKind.Undefined);
 
             // The remaining tests currently never allocate on the stack
             if (expectedAllocationKind == AllocationKind.Stack) {
