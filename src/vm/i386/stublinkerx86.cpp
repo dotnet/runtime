@@ -6430,7 +6430,7 @@ Stub * StubLinkerCPU::CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
         EncodeGCOffsets(pSl, gcLayout);
     }
 
-    LoaderHeap* pHeap = pMD->GetLoaderAllocatorForCode()->GetStubHeap();
+    LoaderHeap* pHeap = pMD->GetLoaderAllocator()->GetStubHeap();
     return pSl->Link(pHeap);
 }
 #endif // DACCESS_COMPILE
@@ -6805,7 +6805,7 @@ BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
     _ASSERTE(m_rel32 == REL32_JMP_SELF);
 
     // Use pMD == NULL to allocate the jump stub in non-dynamic heap that has the same lifetime as the precode itself
-    INT32 newRel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, ((MethodDesc *)GetMethodDesc())->GetLoaderAllocatorForCode());
+    INT32 newRel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, ((MethodDesc *)GetMethodDesc())->GetLoaderAllocator());
 
     _ASSERTE(IS_ALIGNED(&m_rel32, sizeof(INT32)));
     FastInterlockExchange((LONG *)&m_rel32, (LONG)newRel32);
