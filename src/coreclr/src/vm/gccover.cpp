@@ -82,7 +82,7 @@ void SetupAndSprinkleBreakpoints(
 {
     // Allocate room for the GCCoverageInfo and copy of the method instructions
     size_t memSize = sizeof(GCCoverageInfo) + methodRegionInfo.hotSize + methodRegionInfo.coldSize;
-    GCCoverageInfo* gcCover = (GCCoverageInfo*)(void*) pMD->GetLoaderAllocatorForCode()->GetHighFrequencyHeap()->AllocAlignedMem(memSize, CODE_SIZE_ALIGN);
+    GCCoverageInfo* gcCover = (GCCoverageInfo*)(void*) pMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocAlignedMem(memSize, CODE_SIZE_ALIGN);
 
     memset(gcCover, 0, sizeof(GCCoverageInfo));
 

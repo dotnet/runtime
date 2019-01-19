@@ -224,13 +224,6 @@ BaseDomain *MethodDesc::GetDomain()
 #ifndef DACCESS_COMPILE
 
 //*******************************************************************************
-LoaderAllocator * MethodDesc::GetLoaderAllocatorForCode()
-{
-    return GetLoaderAllocator();
-}
-
-
-//*******************************************************************************
 LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 {
     if (GetLoaderModule()->IsCollectible())

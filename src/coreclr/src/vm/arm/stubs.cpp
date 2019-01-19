@@ -3334,7 +3334,7 @@ Stub * StubLinkerCPU::CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
         pSl->ThumbEmitJumpRegister(thumbRegLr);
     }
 
-    LoaderHeap* pHeap = pMD->GetLoaderAllocatorForCode()->GetStubHeap();
+    LoaderHeap* pHeap = pMD->GetLoaderAllocator()->GetStubHeap();
     return pSl->Link(pHeap);
 }
 

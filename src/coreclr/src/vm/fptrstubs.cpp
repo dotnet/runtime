@@ -123,7 +123,7 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
     // 
     {
         AllocMemTracker amt;
-        Precode* pNewPrecode = Precode::Allocate(type, pMD, pMD->GetLoaderAllocatorForCode(), &amt);
+        Precode* pNewPrecode = Precode::Allocate(type, pMD, pMD->GetLoaderAllocator(), &amt);
    
         if (target != NULL)
         {
