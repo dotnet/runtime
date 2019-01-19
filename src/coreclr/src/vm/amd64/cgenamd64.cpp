@@ -634,7 +634,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
         // If a domain is provided, the MethodDesc mustn't yet be set up to have one, or it must match the MethodDesc's domain,
         // unless we're in a compilation domain (NGen loads assemblies as domain-bound but compiles them as domain neutral).
         PRECONDITION(!pLoaderAllocator || !pMethod || pMethod->GetMethodDescChunk()->GetMethodTablePtr()->IsNull() || 
-            pLoaderAllocator == pMethod->GetMethodDescChunk()->GetFirstMethodDesc()->GetLoaderAllocatorForCode() || IsCompilationProcess());
+            pLoaderAllocator == pMethod->GetMethodDescChunk()->GetFirstMethodDesc()->GetLoaderAllocator() || IsCompilationProcess());
     }
     CONTRACTL_END;
 

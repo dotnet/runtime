@@ -479,7 +479,7 @@ void Precode::Reset()
     WRAPPER_NO_CONTRACT;
 
     MethodDesc* pMD = GetMethodDesc();
-    Init(GetType(), pMD, pMD->GetLoaderAllocatorForCode());
+    Init(GetType(), pMD, pMD->GetLoaderAllocator());
     ClrFlushInstructionCache(this, SizeOf());
 }
 

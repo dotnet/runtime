@@ -524,13 +524,6 @@ public:
 
     PTR_LoaderAllocator GetLoaderAllocator();
 
-    // GetLoaderAllocatorForCode returns the allocator with the responsibility for allocation.
-    // This is called from GetMulticallableAddrOfCode when allocating a small trampoline stub for the method.
-    // Normally a method in a shared domain will allocate memory for stubs in the shared domain.
-    // That has to be different for DynamicMethod as they need to be allocated always in the AppDomain
-    // that created the method.
-    LoaderAllocator * GetLoaderAllocatorForCode();
-
     // GetDomainSpecificLoaderAllocator returns the collectable loader allocator for collectable types
     // and the loader allocator in the current domain for non-collectable types
     LoaderAllocator * GetDomainSpecificLoaderAllocator();

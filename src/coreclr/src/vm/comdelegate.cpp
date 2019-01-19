@@ -1018,7 +1018,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         else
 #ifdef HAS_THISPTR_RETBUF_PRECODE
         if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
-            pTargetCode = pTargetMethod->GetLoaderAllocatorForCode()->GetFuncPtrStubs()->GetFuncPtrStub(pTargetMethod, PRECODE_THISPTR_RETBUF);
+            pTargetCode = pTargetMethod->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pTargetMethod, PRECODE_THISPTR_RETBUF);
         else
 #endif // HAS_THISPTR_RETBUF_PRECODE
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfCode();
@@ -1882,7 +1882,7 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
         }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
         else if (pMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
-            method = pMeth->GetLoaderAllocatorForCode()->GetFuncPtrStubs()->GetFuncPtrStub(pMeth, PRECODE_THISPTR_RETBUF);
+            method = pMeth->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMeth, PRECODE_THISPTR_RETBUF);
 #endif // HAS_THISPTR_RETBUF_PRECODE
 
         gc.refThis->SetTarget(gc.target);
