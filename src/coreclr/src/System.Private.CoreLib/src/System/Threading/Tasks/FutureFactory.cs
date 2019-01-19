@@ -552,12 +552,11 @@ namespace System.Threading.Tasks
                 else
                 {
                     if (AsyncCausalityTracer.LoggingOn)
-                        AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, promise.Id, AsyncCausalityStatus.Completed);
+                        AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Completed);
 
                     if (Task.s_asyncDebuggingEnabled)
-                    {
-                        Task.RemoveFromActiveTasks(promise.Id);
-                    }
+                        Task.RemoveFromActiveTasks(promise);
+
                     if (requiresSynchronization)
                     {
                         promise.TrySetResult(result);
@@ -675,12 +674,10 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>((object)null, creationOptions);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, promise.Id, "TaskFactory.FromAsync", 0);
+                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync");
 
             if (Task.s_asyncDebuggingEnabled)
-            {
                 Task.AddToActiveTasks(promise);
-            }
 
             // Just specify this task as detached. No matter what happens, we want endMethod 
             // to be called -- even if the parent is canceled.  So we don't want to flow 
@@ -693,12 +690,10 @@ namespace System.Threading.Tasks
                 default, TaskCreationOptions.None, InternalTaskOptions.None, null);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Verbose, t.Id, "TaskFactory.FromAsync Callback", 0);
+                AsyncCausalityTracer.TraceOperationCreation(t, "TaskFactory.FromAsync Callback");
 
             if (Task.s_asyncDebuggingEnabled)
-            {
                 Task.AddToActiveTasks(t);
-            }
 
             if (asyncResult.IsCompleted)
             {
@@ -794,12 +789,10 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
+                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
 
             if (Task.s_asyncDebuggingEnabled)
-            {
                 Task.AddToActiveTasks(promise);
-            }
 
             try
             {
@@ -819,12 +812,10 @@ namespace System.Threading.Tasks
             catch
             {
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, promise.Id, AsyncCausalityStatus.Error);
+                    AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Error);
 
                 if (Task.s_asyncDebuggingEnabled)
-                {
-                    Task.RemoveFromActiveTasks(promise.Id);
-                }
+                    Task.RemoveFromActiveTasks(promise);
 
                 // Make sure we don't leave promise "dangling".
                 promise.TrySetResult(default);
@@ -916,12 +907,10 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
+                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
 
             if (Task.s_asyncDebuggingEnabled)
-            {
                 Task.AddToActiveTasks(promise);
-            }
 
             try
             {
@@ -940,12 +929,10 @@ namespace System.Threading.Tasks
             catch
             {
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, promise.Id, AsyncCausalityStatus.Error);
+                    AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Error);
 
                 if (Task.s_asyncDebuggingEnabled)
-                {
-                    Task.RemoveFromActiveTasks(promise.Id);
-                }
+                    Task.RemoveFromActiveTasks(promise);
 
                 // Make sure we don't leave promise "dangling".
                 promise.TrySetResult(default);
@@ -1045,12 +1032,10 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
+                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
 
             if (Task.s_asyncDebuggingEnabled)
-            {
                 Task.AddToActiveTasks(promise);
-            }
 
             try
             {
@@ -1069,12 +1054,10 @@ namespace System.Threading.Tasks
             catch
             {
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, promise.Id, AsyncCausalityStatus.Error);
+                    AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Error);
 
                 if (Task.s_asyncDebuggingEnabled)
-                {
-                    Task.RemoveFromActiveTasks(promise.Id);
-                }
+                    Task.RemoveFromActiveTasks(promise);
 
                 // Make sure we don't leave promise "dangling".
                 promise.TrySetResult(default);
@@ -1182,12 +1165,10 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
+                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
 
             if (Task.s_asyncDebuggingEnabled)
-            {
                 Task.AddToActiveTasks(promise);
-            }
 
             try
             {
@@ -1206,12 +1187,10 @@ namespace System.Threading.Tasks
             catch
             {
                 if (AsyncCausalityTracer.LoggingOn)
-                    AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, promise.Id, AsyncCausalityStatus.Error);
+                    AsyncCausalityTracer.TraceOperationCompletion(promise, AsyncCausalityStatus.Error);
 
                 if (Task.s_asyncDebuggingEnabled)
-                {
-                    Task.RemoveFromActiveTasks(promise.Id);
-                }
+                    Task.RemoveFromActiveTasks(promise);
 
                 // Make sure we don't leave the promise "dangling".
                 promise.TrySetResult(default);

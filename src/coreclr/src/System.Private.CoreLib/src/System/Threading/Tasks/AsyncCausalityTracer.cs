@@ -14,37 +14,6 @@ using WFD = Windows.Foundation.Diagnostics;
 
 namespace System.Threading.Tasks
 {
-    internal enum CausalityTraceLevel
-    {
-        Required = WFD.CausalityTraceLevel.Required,
-        Important = WFD.CausalityTraceLevel.Important,
-        Verbose = WFD.CausalityTraceLevel.Verbose
-    }
-
-    internal enum AsyncCausalityStatus
-    {
-        Canceled = WFD.AsyncCausalityStatus.Canceled,
-        Completed = WFD.AsyncCausalityStatus.Completed,
-        Error = WFD.AsyncCausalityStatus.Error,
-        Started = WFD.AsyncCausalityStatus.Started
-    }
-
-    internal enum CausalityRelation
-    {
-        AssignDelegate = WFD.CausalityRelation.AssignDelegate,
-        Join = WFD.CausalityRelation.Join,
-        Choice = WFD.CausalityRelation.Choice,
-        Cancel = WFD.CausalityRelation.Cancel,
-        Error = WFD.CausalityRelation.Error
-    }
-
-    internal enum CausalitySynchronousWork
-    {
-        CompletionNotification = WFD.CausalitySynchronousWork.CompletionNotification,
-        ProgressNotification = WFD.CausalitySynchronousWork.ProgressNotification,
-        Execution = WFD.CausalitySynchronousWork.Execution
-    }
-
     internal static class AsyncCausalityTracer
     {
         internal static void EnableToETW(bool enabled)
@@ -129,14 +98,15 @@ namespace System.Threading.Tasks
         // The TraceXXX methods should be called only if LoggingOn property returned true
         //
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Tracking is slow path. Disable inlining for it.
-        internal static void TraceOperationCreation(CausalityTraceLevel traceLevel, int taskId, string operationName, ulong relatedContext)
+        internal static void TraceOperationCreation(Task task, string operationName)
         {
             try
             {
+                int taskId = task.Id;
                 if ((f_LoggingOn & Loggers.ETW) != 0)
-                    TplEtwProvider.Log.TraceOperationBegin(taskId, operationName, (long)relatedContext);
+                    TplEtwProvider.Log.TraceOperationBegin(taskId, operationName, RelatedContext: 0);
                 if ((f_LoggingOn & Loggers.CausalityTracer) != 0)
-                    s_TracerFactory.TraceOperationCreation((WFD.CausalityTraceLevel)traceLevel, s_CausalitySource, s_PlatformId, GetOperationId((uint)taskId), operationName, relatedContext);
+                    s_TracerFactory.TraceOperationCreation(WFD.CausalityTraceLevel.Required, s_CausalitySource, s_PlatformId, GetOperationId((uint)taskId), operationName, relatedContext: 0);
             }
             catch (Exception ex)
             {
@@ -146,14 +116,15 @@ namespace System.Threading.Tasks
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static void TraceOperationCompletion(CausalityTraceLevel traceLevel, int taskId, AsyncCausalityStatus status)
+        internal static void TraceOperationCompletion(Task task, AsyncCausalityStatus status)
         {
             try
             {
+                int taskId = task.Id;
                 if ((f_LoggingOn & Loggers.ETW) != 0)
                     TplEtwProvider.Log.TraceOperationEnd(taskId, status);
                 if ((f_LoggingOn & Loggers.CausalityTracer) != 0)
-                    s_TracerFactory.TraceOperationCompletion((WFD.CausalityTraceLevel)traceLevel, s_CausalitySource, s_PlatformId, GetOperationId((uint)taskId), (WFD.AsyncCausalityStatus)status);
+                    s_TracerFactory.TraceOperationCompletion(WFD.CausalityTraceLevel.Required, s_CausalitySource, s_PlatformId, GetOperationId((uint)taskId), (WFD.AsyncCausalityStatus)status);
             }
             catch (Exception ex)
             {
@@ -163,14 +134,15 @@ namespace System.Threading.Tasks
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static void TraceOperationRelation(CausalityTraceLevel traceLevel, int taskId, CausalityRelation relation)
+        internal static void TraceOperationRelation(Task task, CausalityRelation relation)
         {
             try
             {
+                int taskId = task.Id;
                 if ((f_LoggingOn & Loggers.ETW) != 0)
                     TplEtwProvider.Log.TraceOperationRelation(taskId, relation);
                 if ((f_LoggingOn & Loggers.CausalityTracer) != 0)
-                    s_TracerFactory.TraceOperationRelation((WFD.CausalityTraceLevel)traceLevel, s_CausalitySource, s_PlatformId, GetOperationId((uint)taskId), (WFD.CausalityRelation)relation);
+                    s_TracerFactory.TraceOperationRelation(WFD.CausalityTraceLevel.Important, s_CausalitySource, s_PlatformId, GetOperationId((uint)taskId), (WFD.CausalityRelation)relation);
             }
             catch (Exception ex)
             {
@@ -180,14 +152,15 @@ namespace System.Threading.Tasks
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static void TraceSynchronousWorkStart(CausalityTraceLevel traceLevel, int taskId, CausalitySynchronousWork work)
+        internal static void TraceSynchronousWorkStart(Task task, CausalitySynchronousWork work)
         {
             try
             {
+                int taskId = task.Id;
                 if ((f_LoggingOn & Loggers.ETW) != 0)
                     TplEtwProvider.Log.TraceSynchronousWorkBegin(taskId, work);
                 if ((f_LoggingOn & Loggers.CausalityTracer) != 0)
-                    s_TracerFactory.TraceSynchronousWorkStart((WFD.CausalityTraceLevel)traceLevel, s_CausalitySource, s_PlatformId, GetOperationId((uint)taskId), (WFD.CausalitySynchronousWork)work);
+                    s_TracerFactory.TraceSynchronousWorkStart(WFD.CausalityTraceLevel.Required, s_CausalitySource, s_PlatformId, GetOperationId((uint)taskId), (WFD.CausalitySynchronousWork)work);
             }
             catch (Exception ex)
             {
@@ -197,14 +170,14 @@ namespace System.Threading.Tasks
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static void TraceSynchronousWorkCompletion(CausalityTraceLevel traceLevel, CausalitySynchronousWork work)
+        internal static void TraceSynchronousWorkCompletion(CausalitySynchronousWork work)
         {
             try
             {
                 if ((f_LoggingOn & Loggers.ETW) != 0)
                     TplEtwProvider.Log.TraceSynchronousWorkEnd(work);
                 if ((f_LoggingOn & Loggers.CausalityTracer) != 0)
-                    s_TracerFactory.TraceSynchronousWorkCompletion((WFD.CausalityTraceLevel)traceLevel, s_CausalitySource, (WFD.CausalitySynchronousWork)work);
+                    s_TracerFactory.TraceSynchronousWorkCompletion(WFD.CausalityTraceLevel.Required, s_CausalitySource, (WFD.CausalitySynchronousWork)work);
             }
             catch (Exception ex)
             {
