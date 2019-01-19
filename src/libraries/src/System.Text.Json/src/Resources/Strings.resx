@@ -237,6 +237,21 @@
   <data name="PropertyNameTooLarge" xml:space="preserve">
     <value>The JSON property name of length {0} is too large and not supported by the JSON writer.</value>
   </data>
+  <data name="FormatDecimal" xml:space="preserve">
+    <value>The JSON value is either too large or too small for a Decimal.</value>
+  </data>
+  <data name="FormatDouble" xml:space="preserve">
+    <value>The JSON value is either too large or too small for a Double.</value>
+  </data>
+  <data name="FormatInt32" xml:space="preserve">
+    <value>The JSON value is either of incorrect numeric format, or too large or too small for an Int32.</value>
+  </data>
+  <data name="FormatInt64" xml:space="preserve">
+    <value>The JSON value is either of incorrect numeric format, or too large or too small for an Int64.</value>
+  </data>
+  <data name="FormatSingle" xml:space="preserve">
+    <value>The JSON value is either too large or too small for a Single.</value>
+  </data>
   <data name="RequiredDigitNotFoundAfterDecimal" xml:space="preserve">
     <value>'{0}' is invalid within a number, immediately after a decimal point ('.'). Expected a digit ('0'-'9').</value>
   </data>
@@ -254,5 +269,11 @@
   </data>
   <data name="ZeroDepthAtEnd" xml:space="preserve">
     <value>Expected CurrentDepth ({0}) to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed.</value>
+  </data>
+  <data name="FormatUInt32" xml:space="preserve">
+    <value>The JSON value is either of incorrect numeric format, or too large or too small for a UInt32.</value>
+  </data>
+  <data name="FormatUInt64" xml:space="preserve">
+    <value>The JSON value is either of incorrect numeric format, or too large or too small for a UInt64.</value>
   </data>
 </root>
