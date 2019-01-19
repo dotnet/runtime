@@ -38,19 +38,19 @@ namespace Internal.Threading.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TraceOperationCreation(Task task, string operationName)
         {
-            AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, task.Id, operationName, 0);
+            AsyncCausalityTracer.TraceOperationCreation(task, operationName);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TraceOperationCompletedSuccess(Task task)
         {
-            AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, task.Id, AsyncCausalityStatus.Completed);
+            AsyncCausalityTracer.TraceOperationCompletion(task, AsyncCausalityStatus.Completed);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TraceOperationCompletedError(Task task)
         {
-            AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, task.Id, AsyncCausalityStatus.Error);
+            AsyncCausalityTracer.TraceOperationCompletion(task, AsyncCausalityStatus.Error);
         }
     }
 }

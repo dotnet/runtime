@@ -6,37 +6,6 @@ using System.Diagnostics;
 
 namespace System.Threading.Tasks
 {
-    internal enum CausalityTraceLevel
-    {
-        Required = 0,
-        Important = 1,
-        Verbose = 2,
-    }
-
-    internal enum AsyncCausalityStatus
-    {
-        Started = 0,
-        Completed = 1,
-        Canceled = 2,
-        Error = 3,
-    }
-
-    internal enum CausalityRelation
-    {
-        AssignDelegate = 0,
-        Join = 1,
-        Choice = 2,
-        Cancel = 3,
-        Error = 4,
-    }
-
-    internal enum CausalitySynchronousWork
-    {
-        CompletionNotification = 0,
-        ProgressNotification = 1,
-        Execution = 2,
-    }
-
     //
     // Empty implementation of AsyncCausality events
     //
@@ -50,27 +19,27 @@ namespace System.Threading.Tasks
         }
 
         [Conditional("NOOP_ASYNCCASUALITYTRACER")]
-        public static void TraceOperationCreation(CausalityTraceLevel traceLevel, int taskId, string operationName, ulong relatedContext)
+        public static void TraceOperationCreation(Task task, string operationName)
         {
         }
 
         [Conditional("NOOP_ASYNCCASUALITYTRACER")]
-        public static void TraceOperationCompletion(CausalityTraceLevel traceLevel, int taskId, AsyncCausalityStatus status)
+        public static void TraceOperationCompletion(Task task, AsyncCausalityStatus status)
         {
         }
 
         [Conditional("NOOP_ASYNCCASUALITYTRACER")]
-        public static void TraceOperationRelation(CausalityTraceLevel traceLevel, int taskId, CausalityRelation relation)
+        public static void TraceOperationRelation(Task task, CausalityRelation relation)
         {
         }
 
         [Conditional("NOOP_ASYNCCASUALITYTRACER")]
-        public static void TraceSynchronousWorkStart(CausalityTraceLevel traceLevel, int taskId, CausalitySynchronousWork work)
+        public static void TraceSynchronousWorkStart(Task task, CausalitySynchronousWork work)
         {
         }
 
         [Conditional("NOOP_ASYNCCASUALITYTRACER")]
-        public static void TraceSynchronousWorkCompletion(CausalityTraceLevel traceLevel, CausalitySynchronousWork work)
+        public static void TraceSynchronousWorkCompletion(CausalitySynchronousWork work)
         {
         }
     }

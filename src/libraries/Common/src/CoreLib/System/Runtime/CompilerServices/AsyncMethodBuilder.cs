@@ -11,7 +11,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 #if FEATURE_COMINTEROP
@@ -22,7 +21,6 @@ using System.Threading.Tasks;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
-using Internal.Threading.Tasks;
 
 #if CORERT
 using Thread = Internal.Runtime.Augments.RuntimeThread;
@@ -95,9 +93,9 @@ namespace System.Runtime.CompilerServices
         /// <summary>Completes the method builder successfully.</summary>
         public void SetResult()
         {
-            if (AsyncCausalitySupport.LoggingOn)
+            if (AsyncCausalityTracer.LoggingOn)
             {
-                AsyncCausalitySupport.TraceOperationCompletedSuccess(this.Task);
+                AsyncCausalityTracer.TraceOperationCompletion(this.Task, AsyncCausalityStatus.Completed);
             }
 
             // Mark the builder as completed.  As this is a void-returning method, this mostly
@@ -121,9 +119,9 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
             }
 
-            if (AsyncCausalitySupport.LoggingOn)
+            if (AsyncCausalityTracer.LoggingOn)
             {
-                AsyncCausalitySupport.TraceOperationCompletedError(this.Task);
+                AsyncCausalityTracer.TraceOperationCompletion(this.Task, AsyncCausalityStatus.Error);
             }
 
             if (_synchronizationContext != null)
@@ -575,10 +573,10 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(!IsCompleted);
 
-                bool loggingOn = AsyncCausalitySupport.LoggingOn;
+                bool loggingOn = AsyncCausalityTracer.LoggingOn;
                 if (loggingOn)
                 {
-                    AsyncCausalityTracer.TraceSynchronousWorkStart(CausalityTraceLevel.Required, this.Id, CausalitySynchronousWork.Execution);
+                    AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.Execution);
                 }
 
                 ExecutionContext context = Context;
@@ -619,7 +617,7 @@ namespace System.Runtime.CompilerServices
 
                 if (loggingOn)
                 {
-                    AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalityTraceLevel.Required, CausalitySynchronousWork.Execution);
+                    AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.Execution);
                 }
             }
 
@@ -698,7 +696,7 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(m_task != null, "Expected non-null task");
 
-            if (AsyncCausalitySupport.LoggingOn || System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
+            if (AsyncCausalityTracer.LoggingOn || System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
             {
                 LogExistingTaskCompletion();
             }
@@ -714,9 +712,9 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(m_task != null);
 
-            if (AsyncCausalitySupport.LoggingOn)
+            if (AsyncCausalityTracer.LoggingOn)
             {
-                AsyncCausalitySupport.TraceOperationCompletedSuccess(m_task);
+                AsyncCausalityTracer.TraceOperationCompletion(m_task, AsyncCausalityStatus.Completed);
             }
 
             // only log if we have a real task that was previously created
