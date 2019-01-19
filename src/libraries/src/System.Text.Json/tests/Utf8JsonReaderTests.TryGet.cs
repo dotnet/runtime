@@ -674,11 +674,11 @@ namespace System.Text.Json.Tests
             {
                 if (json.TokenType == JsonTokenType.String)
                 {
-                    actualValues.Add(json.GetStringValue());
+                    actualValues.Add(json.GetString());
                 }
                 else if (json.TokenType == JsonTokenType.PropertyName)
                 {
-                    actualPropertyNames.Add(json.GetStringValue());
+                    actualPropertyNames.Add(json.GetString());
                 }
             }
 
@@ -721,7 +721,7 @@ namespace System.Text.Json.Tests
                 Assert.Equal(JsonTokenType.String, json.TokenType);
                 try
                 {
-                    string val = json.GetStringValue();
+                    string val = json.GetString();
                     Assert.True(false, "Expected InvalidOperationException when trying to get string value for invalid UTF-16 JSON text.");
                 }
                 catch (InvalidOperationException) { }
@@ -754,7 +754,7 @@ namespace System.Text.Json.Tests
                     {
                         try
                         {
-                            string val = json.GetStringValue();
+                            string val = json.GetString();
                             Assert.True(false, "Expected InvalidOperationException when trying to get string value for invalid UTF-8 JSON text.");
                         }
                         catch (InvalidOperationException ex)
