@@ -1391,9 +1391,8 @@ namespace System
                     results.Add(strings[j]);
                 }
             }
-            string[] value = new string[results.Count];
-            results.CopyTo(0, value, 0, results.Count);
-            return (value);
+
+            return results.ToArray();
         }
 
         // This is a placeholder for an MDA to detect when the user is using a
