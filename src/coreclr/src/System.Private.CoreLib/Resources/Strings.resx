@@ -3655,4 +3655,13 @@
   <data name="InvalidOp_InvalidNewEnumVariant" xml:space="preserve">
     <value>The returned enumerator does not implement IEnumVARIANT.</value>
   </data>
+  <data name="Argument_NotIsomorphic" xml:space="preserve">
+    <value>Object contains non-primitive or non-blittable data.</value>
+  </data>
+  <data name="Argument_StructArrayTooLarge" xml:space="preserve">
+    <value>Array size exceeds addressing limitations.</value>
+  </data>
+  <data name="IndexOutOfRange_ArrayWithOffset" xml:space="preserve">
+    <value>ArrayWithOffset: offset exceeds array size.</value>
+  </data>
 </root>

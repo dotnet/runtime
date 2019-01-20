@@ -4,15 +4,22 @@
 
 using System.Collections.Generic;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Security;
 using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using Win32Native = Microsoft.Win32.Win32Native;
+using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.InteropServices.ComTypes;
 using System.StubHelpers;
+
+using Internal.Runtime.CompilerServices;
+
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif // BIT64
 
 namespace System.Runtime.InteropServices
 {
@@ -238,15 +245,25 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// IMPORTANT NOTICE: This method does not do any verification on the array.
-        /// It must be used with EXTREME CAUTION since passing in an array that is
-        /// not pinned or in the fixed heap can cause unexpected results.
+        /// It must be used with EXTREME CAUTION since passing in invalid index or
+        /// an array that is not pinned can cause unexpected results.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index);
-
-        public static IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
+        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
         {
-            return UnsafeAddrOfPinnedArrayElement((Array)arr, index);
+            if (arr == null)
+                throw new ArgumentNullException(nameof(arr));
+
+            void* pRawData = Unsafe.AsPointer(ref arr.GetRawArrayData());
+            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
+        }
+
+        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
+        {
+            if (arr == null)
+                throw new ArgumentNullException(nameof(arr));
+
+            void* pRawData = Unsafe.AsPointer(ref arr.GetRawSzArrayData());
+            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
         }
 
         public static void Copy(int[] source, int startIndex, IntPtr destination, int length)
@@ -289,8 +306,17 @@ namespace System.Runtime.InteropServices
             CopyToNative(source, startIndex, destination, length);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void CopyToNative(object source, int startIndex, IntPtr destination, int length);
+        private static unsafe void CopyToNative<T>(T[] source, int startIndex, IntPtr destination, int length)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            if (destination == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(destination));
+
+            // The rest of the argument validation is done by CopyTo
+
+            new Span<T>(source, startIndex, length).CopyTo(new Span<T>((void*)destination, length));
+        }
 
         public static void Copy(IntPtr source, int[] destination, int startIndex, int length)
         {
@@ -332,9 +358,22 @@ namespace System.Runtime.InteropServices
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void CopyToManaged(IntPtr source, object destination, int startIndex, int length);
-        
+        private static unsafe void CopyToManaged<T>(IntPtr source, T[] destination, int startIndex, int length)
+        {
+            if (source == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(source));
+            if (destination == null)
+                throw new ArgumentNullException(nameof(destination));
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            // The rest of the argument validation is done by CopyTo
+
+            new Span<T>((void*)source, length).CopyTo(new Span<T>(destination, startIndex, length));
+        }
+
         public static byte ReadByte(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadByte(nativeHome, offset));
@@ -836,6 +875,9 @@ namespace System.Runtime.InteropServices
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsPinnable(object obj);
 
 #if FEATURE_COMINTEROP
         /// <summary>

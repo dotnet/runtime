@@ -274,7 +274,7 @@
 #define IDS_EE_NOTISOMORPHIC                    0x17e1
 
 #define IDS_EE_COPY_OUTOFRANGE                  0x17e3
-#define IDS_EE_ARRAYWITHOFFSETOVERFLOW          0x17e5
+
 #define IDS_EE_NOCUSTOMMARSHALER                0x17e7
 #define IDS_EE_SIZECONTROLOUTOFRANGE            0x17e8
 #define IDS_EE_SIZECONTROLBADTYPE               0x17e9
