@@ -277,10 +277,8 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\FutureFactory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\Task.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskContinuation.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TPLETWProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.cs" />
