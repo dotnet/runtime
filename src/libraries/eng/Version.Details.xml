@@ -2,17 +2,17 @@
 <Dependencies>
   <ProductDependencies></ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.NETCore.App" Version="3.0.0-preview-27319-5">
+    <Dependency Name="Microsoft.NETCore.App" Version="3.0.0-preview-27320-3">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>77066b383663df8d6df2e9f85e29514787678fc5</Sha>
+      <Sha>30e15aaab8c25121203c6bc25ef4cc33f767e578</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="3.0.0-preview-27319-5">
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="3.0.0-preview-27320-3">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>77066b383663df8d6df2e9f85e29514787678fc5</Sha>
+      <Sha>30e15aaab8c25121203c6bc25ef4cc33f767e578</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="3.0.0-preview-27319-5">
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="3.0.0-preview-27320-3">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>77066b383663df8d6df2e9f85e29514787678fc5</Sha>
+      <Sha>30e15aaab8c25121203c6bc25ef4cc33f767e578</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview-27316-72">
       <Uri>https://github.com/dotnet/coreclr</Uri>
