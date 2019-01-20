@@ -2614,11 +2614,7 @@ namespace System
         public override Type[] GetInterfaces()
         {
             RuntimeType[] candidates = Cache.GetInterfaceList(MemberListType.All, null);
-            Type[] interfaces = new Type[candidates.Length];
-            for (int i = 0; i < candidates.Length; i++)
-                JitHelpers.UnsafeSetArrayElement(interfaces, i, candidates[i]);
-
-            return interfaces;
+            return new ReadOnlySpan<Type>(candidates).ToArray();
         }
 
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
@@ -3430,11 +3426,7 @@ namespace System
             string[] ret = Enum.InternalGetNames(this);
 
             // Make a copy since we can't hand out the same array since users can modify them
-            string[] retVal = new string[ret.Length];
-
-            Array.Copy(ret, 0, retVal, 0, ret.Length);
-
-            return retVal;
+            return new ReadOnlySpan<string>(ret).ToArray();
         }
 
         public override Array GetEnumValues()

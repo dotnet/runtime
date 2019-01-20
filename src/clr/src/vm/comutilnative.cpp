@@ -850,37 +850,6 @@ FCIMPL1(FC_BOOL_RET, Buffer::IsPrimitiveTypeArray, ArrayBase *arrayUNSAFE)
 }
 FCIMPLEND
 
-// Gets a particular byte out of the array.  The array can't be an array of Objects - it
-// must be a primitive array.
-FCIMPL2(FC_UINT8_RET, Buffer::GetByte, ArrayBase *arrayUNSAFE, INT32 index)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(arrayUNSAFE != NULL);
-    _ASSERTE(index >=0 && index < ((INT32)(arrayUNSAFE->GetComponentSize() * arrayUNSAFE->GetNumComponents())));
-
-    UINT8 bData = *((BYTE*)arrayUNSAFE->GetDataPtr() + index);
-    return bData;
-}
-FCIMPLEND
-
-// Sets a particular byte in an array.  The array can't be an array of Objects - it
-// must be a primitive array.
-//
-// Semantically the bData argment is of type BYTE but FCallCheckSignature expects the 
-// type to be UINT8 and raises an error if this isn't this case when 
-// COMPlus_ConsistencyCheck is set.
-FCIMPL3(VOID, Buffer::SetByte, ArrayBase *arrayUNSAFE, INT32 index, UINT8 bData)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(arrayUNSAFE != NULL);
-    _ASSERTE(index >=0 && index < ((INT32)(arrayUNSAFE->GetComponentSize() * arrayUNSAFE->GetNumComponents())));
-    
-    *((BYTE*)arrayUNSAFE->GetDataPtr() + index) = (BYTE) bData;
-}
-FCIMPLEND
-
 // Returns the length in bytes of an array containing
 // primitive type elements
 FCIMPL1(INT32, Buffer::ByteLength, ArrayBase* arrayUNSAFE)

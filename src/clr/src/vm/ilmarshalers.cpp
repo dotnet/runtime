@@ -3464,10 +3464,8 @@ void ILArrayWithOffsetMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCo
     EmitLoadNativeValue(pslILEmit);                 // dest
 
     pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
+    pslILEmit->EmitCALL(METHOD__ARRAY__GET_RAW_ARRAY_DATA, 1, 1);
     pslILEmit->EmitCONV_I();
-    pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
-    pslILEmit->EmitCALL(METHOD__ARRAY__GET_DATA_PTR_OFFSET_INTERNAL, 1, 1);
-    pslILEmit->EmitADD(); // TODO Phase5: Use UnsafeAddrOfPinnedArrayElement
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitLDFLD(tokArrayWithOffset_m_offset);
@@ -3510,10 +3508,8 @@ void ILArrayWithOffsetMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* ps
     pslILEmit->EmitSTLOC(m_dwPinnedLocalNum);
 
     pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
+    pslILEmit->EmitCALL(METHOD__ARRAY__GET_RAW_ARRAY_DATA, 1, 1);
     pslILEmit->EmitCONV_I();
-    pslILEmit->EmitLDLOC(m_dwPinnedLocalNum);
-    pslILEmit->EmitCALL(METHOD__ARRAY__GET_DATA_PTR_OFFSET_INTERNAL, 1, 1);
-    pslILEmit->EmitADD(); // TODO Phase5: Use UnsafeAddrOfPinnedArrayElement
 
     pslILEmit->EmitLDLOC(m_dwOffsetLocalNum);
     pslILEmit->EmitADD();                           // dest

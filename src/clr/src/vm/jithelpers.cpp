@@ -5741,18 +5741,6 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
 //
 //========================================================================
 
-FCIMPL3(void, JitHelpers::UnsafeSetArrayElement, PtrArray* pPtrArrayUNSAFE, INT32 index, Object* objectUNSAFE) { 
-    FCALL_CONTRACT;
-
-    PTRARRAYREF pPtrArray = (PTRARRAYREF)pPtrArrayUNSAFE;
-    OBJECTREF object = (OBJECTREF)objectUNSAFE;
-    
-    _ASSERTE(index < (INT32)pPtrArray->GetNumComponents());
-    
-    pPtrArray->SetAt(index, object);
-}
-FCIMPLEND
-
 #ifdef _TARGET_ARM_
 // This function is used from the FCallMemcpy for GC polling
 EXTERN_C VOID FCallMemCpy_GCPoll()

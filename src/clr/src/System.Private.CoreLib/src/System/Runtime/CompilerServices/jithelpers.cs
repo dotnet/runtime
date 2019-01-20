@@ -99,10 +99,6 @@ namespace System.Runtime.CompilerServices
             return x.CompareTo(y);
         }
 
-        // Set the given element in the array without any type or range checks
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void UnsafeSetArrayElement(object[] target, int index, object element);
-
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
