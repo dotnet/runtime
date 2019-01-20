@@ -2,20 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//
-//
-//
-// As with TaskFactory, TaskFactory<TResult> encodes common factory patterns into helper methods.
-//
-// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-using System;
-using System.Security;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Diagnostics;
-using System.Runtime.Versioning;
 
 namespace System.Threading.Tasks
 {
@@ -543,11 +530,7 @@ namespace System.Threading.Tasks
                 }
                 else if (ex != null)
                 {
-                    bool bWonSetException = promise.TrySetException(ex);
-                    if (bWonSetException && ex is ThreadAbortException)
-                    {
-                        promise.m_contingentProperties.m_exceptionsHolder.MarkAsHandled(false);
-                    }
+                    promise.TrySetException(ex);
                 }
                 else
                 {
@@ -796,7 +779,6 @@ namespace System.Threading.Tasks
 
             try
             {
-                //This is 4.5 behaviour
                 //if we don't require synchronization, a faster set result path is taken
                 var asyncResult = beginMethod(iar =>
                 {
@@ -1250,7 +1232,7 @@ namespace System.Threading.Tasks
         private sealed class FromAsyncTrimPromise<TInstance> : Task<TResult> where TInstance : class
         {
             /// <summary>A cached delegate used as the callback for the BeginXx method.</summary>
-            internal readonly static AsyncCallback s_completeFromAsyncResult = CompleteFromAsyncResult;
+            internal static readonly AsyncCallback s_completeFromAsyncResult = CompleteFromAsyncResult;
 
             /// <summary>A reference to the object on which the begin/end methods are invoked.</summary>
             private TInstance m_thisRef;
@@ -1305,6 +1287,10 @@ namespace System.Threading.Tasks
             /// <param name="thisRef">The target instance on which the end method should be called.</param>
             /// <param name="endMethod">The end method to call to retrieve the result.</param>
             /// <param name="asyncResult">The IAsyncResult for the async operation.</param>
+            /// <param name="requiresSynchronization">
+            /// Whether completing the task requires synchronization.  This should be true
+            /// unless absolutely sure that the task has not yet been handed out to any consumers.
+            /// </param>
             internal void Complete(
                 TInstance thisRef, Func<TInstance, IAsyncResult, TResult> endMethod, IAsyncResult asyncResult,
                 bool requiresSynchronization)
