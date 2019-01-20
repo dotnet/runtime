@@ -133,21 +133,29 @@ FCIMPL1(INT64, ArrayNative::GetLongLengthNoRank, ArrayBase* array)
 FCIMPLEND
 
 
-FCIMPL1(INT32, ArrayNative::GetDataPtrOffsetInternal, ArrayBase* array)
+FCIMPL1(void*, ArrayNative::GetRawArrayData, ArrayBase* array)
 {
     FCALL_CONTRACT;
 
     VALIDATEOBJECT(array);
 
-    if (array == NULL)
-        FCThrow(kNullReferenceException);
+    _ASSERTE(array != NULL);
 
-    return ArrayBase::GetDataPtrOffset(array->GetMethodTable());
+    return array->GetDataPtr();
 }
 FCIMPLEND
 
+FCIMPL1(INT32, ArrayNative::GetElementSize, ArrayBase* array)
+{
+    FCALL_CONTRACT;
 
+    VALIDATEOBJECT(array);
 
+    _ASSERTE(array != NULL);
+
+    return (INT32)array->GetComponentSize();
+}
+FCIMPLEND
 
 
 

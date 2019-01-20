@@ -60,15 +60,6 @@ namespace System
             return _ByteLength(array);
         }
 
-        // Gets a particular byte out of the array.  The array must be an
-        // array of primitives.
-        //
-        // This essentially does the following:
-        // return ((byte*)array) + index.
-        //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern byte _GetByte(Array array, int index);
-
         public static byte GetByte(Array array, int index)
         {
             // Is the array present?
@@ -80,20 +71,11 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
             // Is the index in valid range of the array?
-            if (index < 0 || index >= _ByteLength(array))
+            if ((uint)index >= (uint)_ByteLength(array))
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            return _GetByte(array, index);
+            return Unsafe.Add<byte>(ref array.GetRawArrayData(), index);
         }
-
-        // Sets a particular byte in an the array.  The array must be an
-        // array of primitives.
-        //
-        // This essentially does the following:
-        // *(((byte*)array) + index) = value.
-        //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void _SetByte(Array array, int index, byte value);
 
         public static void SetByte(Array array, int index, byte value)
         {
@@ -106,11 +88,10 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
             // Is the index in valid range of the array?
-            if (index < 0 || index >= _ByteLength(array))
+            if ((uint)index >= (uint)_ByteLength(array))
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            // Make the FCall to do the work
-            _SetByte(array, index, value);
+            Unsafe.Add<byte>(ref array.GetRawArrayData(), index) = value;
         }
 
         // This is currently used by System.IO.UnmanagedMemoryStream

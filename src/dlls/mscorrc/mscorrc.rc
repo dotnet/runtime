@@ -821,7 +821,6 @@ BEGIN
     CORSECATTR_E_BAD_ACTION                 "Security custom attribute has invalid SecurityAction."
     
     IDS_EE_COPY_OUTOFRANGE                   "Requested range extends past the end of the array."
-    IDS_EE_ARRAYWITHOFFSETOVERFLOW           "ArrayWithOffset: offset exceeds array size."
     IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
     IDS_EE_SIZECONTROLOUTOFRANGE            "Array size control parameter index is out of range."
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
