@@ -569,6 +569,8 @@ namespace System.Data.SqlClient
 
 
             SqlStatistics statistics = null;
+            try
+            {
             statistics = SqlStatistics.StartTimer(Statistics);
 
             // only prepare if batch with parameters
@@ -626,8 +628,11 @@ namespace System.Data.SqlClient
                     }
                 }
             }
-
-            SqlStatistics.StopTimer(statistics);
+            }
+            finally
+            {
+                SqlStatistics.StopTimer(statistics);
+            }
         }
 
         private void InternalPrepare()
