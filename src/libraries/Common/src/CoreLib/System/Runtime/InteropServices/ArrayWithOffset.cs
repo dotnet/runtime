@@ -4,19 +4,50 @@
 
 using System.Runtime.CompilerServices;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System.Runtime.InteropServices
 {
     public struct ArrayWithOffset
     {
+        private object m_array;
+        private int m_offset;
+        private int m_count;
+
         // From MAX_SIZE_FOR_INTEROP in mlinfo.h
         private const int MaxSizeForInterop = 0x7ffffff0;
 
         public ArrayWithOffset(object array, int offset)
         {
+            int totalSize = 0;
+            if (array != null)
+            {
+                if (!(array is Array arrayObj) || (arrayObj.Rank != 1) || !Marshal.IsPinnable(arrayObj))
+                {
+                    throw new ArgumentException(SR.Argument_NotIsomorphic);
+                }
+
+                nuint nativeTotalSize = (nuint)arrayObj.LongLength * (nuint)arrayObj.GetElementSize();
+                if (nativeTotalSize > MaxSizeForInterop)
+                {
+                    throw new ArgumentException(SR.Argument_StructArrayTooLarge);
+                }
+
+                totalSize = (int)nativeTotalSize;
+            }
+
+            if ((uint)offset > (uint)totalSize)
+            {
+                throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayWithOffset);
+            }
+
             m_array = array;
             m_offset = offset;
-            m_count = 0;
-            m_count = CalculateCount();
+            m_count = totalSize - offset;
         }
 
         public object GetArray() => m_array;
@@ -44,58 +75,5 @@ namespace System.Runtime.InteropServices
         {
             return !(a == b);
         }
-
-#if CORECLR // TODO: Cleanup
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern int CalculateCount();
-#else
-        private int CalculateCount()
-        {
-            if (m_array == null)
-            {
-                if (m_offset != 0)
-                {
-                    throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayWithOffset);
-                }
-
-                return 0;
-            }
-            else
-            {
-                Array arrayObj = m_array as Array;
-                if (arrayObj == null)
-                {
-                    throw new ArgumentException(SR.Argument_NotIsomorphic);
-                }
-
-                if (arrayObj.Rank != 1)
-                {
-                    throw new ArgumentException(SR.Argument_NotIsomorphic);
-                }
-
-                if (!arrayObj.IsBlittable())
-                {
-                    throw new ArgumentException(SR.Argument_NotIsomorphic);
-                }
-
-                int totalSize = checked(arrayObj.Length * arrayObj.GetElementSize());
-                if (totalSize > MaxSizeForInterop)
-                {
-                    throw new ArgumentException(SR.Argument_StructArrayTooLarge);
-                }
-
-                if (m_offset > totalSize)
-                {
-                    throw new IndexOutOfRangeException(SR.IndexOutOfRange_ArrayWithOffset);
-                }
-
-                return totalSize - m_offset;
-            }
-        }
-#endif // !CORECLR
-
-        private object m_array;
-        private int m_offset;
-        private int m_count;
     }
 }
