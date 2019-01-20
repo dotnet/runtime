@@ -555,7 +555,10 @@ namespace System
         public extern int GetLowerBound(int dimension);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern int GetDataPtrOffsetInternal();
+        internal extern ref byte GetRawArrayData();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern int GetElementSize();
 
         // Number of elements in the Array.
         int ICollection.Count

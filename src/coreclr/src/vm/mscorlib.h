@@ -92,7 +92,7 @@ DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandl
 
 DEFINE_CLASS(ARRAY,                 System,                 Array)
 DEFINE_PROPERTY(ARRAY,              LENGTH,                 Length,                     Int)
-DEFINE_METHOD(ARRAY,                GET_DATA_PTR_OFFSET_INTERNAL, GetDataPtrOffsetInternal, IM_RetInt)
+DEFINE_METHOD(ARRAY,                GET_RAW_ARRAY_DATA,     GetRawArrayData, IM_RetRefByte)
 
 DEFINE_CLASS(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)                 
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
