@@ -473,7 +473,7 @@ typedef struct {
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 
 
-#if defined(TARGET_APPLETVOS)
+#if defined(HOST_TVOS)
 /* No signals */
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #endif
