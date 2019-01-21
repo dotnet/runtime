@@ -2588,7 +2588,8 @@ if test x$host_win32 = xno; then
 	if test "x$with_sigaltstack" != "xyes"; then
 		AC_MSG_RESULT(disabled)
 	elif test "x$cross_compiling" = "xyes"; then
-		AC_MSG_RESULT(cross compiling, assuming yes)
+		AC_MSG_RESULT(cross compiling, assuming no)
+		with_sigaltstack=no
 	else
 		AC_TRY_RUN([
 			#include <stdio.h>
