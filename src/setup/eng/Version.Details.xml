@@ -15,9 +15,9 @@
     <PinnedDependency Name="NETStandard.Library" Version="2.0.3">
       <Uri>https://github.com/dotnet/standard</Uri>
     </PinnedDependency>
-    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview-27320-72">
+    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview-27321-71">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>9615305aac285a9e611d4768e89f7b5a251d1db8</Sha>
+      <Sha>a5c5feb8939ae6ae10d9d2b7f2bc8d43ed99bc38</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
