@@ -39,6 +39,9 @@ namespace Mono.Linker.Steps {
 			case MethodAction.ConvertToThrow:
 				RewriteBodyToLinkedAway (method);
 				break;
+			case MethodAction.ConvertToFalse:
+				RewriteBodyToFalse (method);
+				break;
 			}
 		}
 
@@ -57,6 +60,16 @@ namespace Mono.Linker.Steps {
 				throw new NotImplementedException ();
 
 			method.Body = CreateStubBody (method);
+
+			ClearDebugInformation (method);
+		}
+
+		void RewriteBodyToFalse (MethodDefinition method)
+		{
+			if (!method.IsIL)
+				throw new NotImplementedException ();
+
+			method.Body = CreateReturnFalseBody (method);
 
 			ClearDebugInformation (method);
 		}
@@ -102,6 +115,18 @@ namespace Mono.Linker.Steps {
 				throw new NotImplementedException (method.ReturnType.FullName);
 			}
 
+			il.Emit (OpCodes.Ret);
+			return body;
+		}
+
+		MethodBody CreateReturnFalseBody (MethodDefinition method)
+		{
+			if (method.ReturnType.MetadataType != MetadataType.Boolean)
+				throw new NotImplementedException ();
+
+			var body = new MethodBody (method);
+			var il = body.GetILProcessor ();
+			il.Emit (OpCodes.Ldc_I4_0);
 			il.Emit (OpCodes.Ret);
 			return body;
 		}

@@ -5,8 +5,29 @@ namespace Mono.Linker.Steps
 {
 	public class RemoveFeaturesStep : BaseStep
 	{
+		//
+		// When any of the features bellow is set, the linker will remove the code and change
+		// the behaviour of the program but it should not cause it to crash
+		//
+
 		public bool FeatureCOM { get; set; }
 		public bool FeatureETW { get; set; }
+
+		//
+		// Manually overrides System.Globalization.Invariant mode
+		// https://github.com/dotnet/corefx/blob/master/Documentation/architecture/globalization-invariant-mode.md
+		//
+		public bool FeatureGlobalization { get; set; }
+
+		readonly static string[] MonoCollationResources = new [] {
+			"collation.cjkCHS.bin",
+			"collation.cjkCHT.bin",
+			"collation.cjkJA.bin",
+			"collation.cjkKO.bin",
+			"collation.cjkKOlv2.bin",
+			"collation.core.bin",
+			"collation.tailoring.bin"
+		};
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
@@ -15,6 +36,11 @@ namespace Mono.Linker.Steps
 
 			foreach (var type in assembly.MainModule.Types)
 				ProcessType (type);
+
+			if (FeatureGlobalization) {
+				foreach (var res in MonoCollationResources)
+					Context.Annotations.AddResourceToRemove (assembly, res);
+			}
 		}
 
 		void ProcessType (TypeDefinition type)
@@ -36,6 +62,9 @@ namespace Mono.Linker.Steps
 					type.IsImport = false;
 				}
 			}
+
+			if (FeatureGlobalization)
+				ExcludeMonoCollation (type);
 
 			foreach (var field in type.Fields)
 				RemoveCustomAttributes (field);
@@ -122,6 +151,29 @@ namespace Mono.Linker.Steps
 
 				if (!skip)
 					annotations.SetAction (method, MethodAction.ConvertToThrow);
+			}
+		}
+
+		void ExcludeMonoCollation (TypeDefinition type)
+		{
+			var annotations = Context.Annotations;
+
+			switch (type.Name) {
+			case "SimpleCollator" when type.Namespace == "Mono.Globalization.Unicode":
+				foreach (var method in type.Methods) {
+					annotations.SetAction (method, MethodAction.ConvertToThrow);
+				}
+
+				break;
+			case "CompareInfo" when type.Namespace == "System.Globalization":
+				foreach (var method in type.Methods) {
+					if (method.Name == "get_UseManagedCollation") {
+						annotations.SetAction (method, MethodAction.ConvertToFalse);
+						break;
+					}
+				}
+
+				break;
 			}
 		}
 
