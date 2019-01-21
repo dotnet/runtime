@@ -8013,12 +8013,48 @@ is_concrete_type (MonoType *t)
 	return TRUE;
 }
 
+static MonoMethodSignature*
+get_concrete_sig (MonoMethodSignature *sig)
+{
+	gboolean concrete = TRUE;
+
+	if (!sig->has_type_parameters)
+		return sig;
+
+	/* For signatures created during generic sharing, convert them to a concrete signature if possible */
+	MonoMethodSignature *copy = mono_metadata_signature_dup (sig);
+	int i;
+
+	//printf ("%s\n", mono_signature_full_name (sig));
+
+	if (sig->ret->byref)
+		copy->ret = m_class_get_this_arg (mono_defaults.int_class);
+	else
+		copy->ret = mini_get_underlying_type (sig->ret);
+	if (!is_concrete_type (copy->ret))
+		concrete = FALSE;
+	for (i = 0; i < sig->param_count; ++i) {
+		if (sig->params [i]->byref) {
+			MonoType *t = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->params [i]));
+			t = mini_get_underlying_type (t);
+			copy->params [i] = m_class_get_this_arg (mono_class_from_mono_type_internal (t));
+		} else {
+			copy->params [i] = mini_get_underlying_type (sig->params [i]);
+		}
+		if (!is_concrete_type (copy->params [i]))
+			concrete = FALSE;
+	}
+	copy->has_type_parameters = 0;
+	if (!concrete)
+		return NULL;
+	return copy;
+}
+
 /* LOCKING: Assumes the loader lock is held */
 static void
 add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean gsharedvt_in, gboolean gsharedvt_out, gboolean interp_in)
 {
 	MonoMethod *wrapper;
-	gboolean concrete = TRUE;
 	gboolean add_in = gsharedvt_in;
 	gboolean add_out = gsharedvt_out;
 
@@ -8038,36 +8074,9 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 	if (add_out)
 		g_hash_table_insert (acfg->gsharedvt_out_signatures, sig, sig);
 
-	if (sig->has_type_parameters) {
-		/* For signatures created during generic sharing, convert them to a concrete signature if possible */
-		MonoMethodSignature *copy = mono_metadata_signature_dup (sig);
-		int i;
-
-		//printf ("%s\n", mono_signature_full_name (sig));
-
-		if (sig->ret->byref)
-			copy->ret = m_class_get_this_arg (mono_defaults.int_class);
-		else
-			copy->ret = mini_get_underlying_type (sig->ret);
-		if (!is_concrete_type (copy->ret))
-			concrete = FALSE;
-		for (i = 0; i < sig->param_count; ++i) {
-			if (sig->params [i]->byref) {
-				MonoType *t = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->params [i]));
-				t = mini_get_underlying_type (t);
-				copy->params [i] = m_class_get_this_arg (mono_class_from_mono_type_internal (t));
-			} else {
-				copy->params [i] = mini_get_underlying_type (sig->params [i]);
-			}
-			if (!is_concrete_type (copy->params [i]))
-				concrete = FALSE;
-		}
-		copy->has_type_parameters = 0;
-		if (!concrete)
-			return;
-		sig = copy;
-	}
-
+	sig = get_concrete_sig (sig);
+	if (!sig)
+		return;
 	//printf ("%s\n", mono_signature_full_name (sig));
 
 	if (gsharedvt_in) {
@@ -8078,6 +8087,7 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 		wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
 		add_extra_method (acfg, wrapper);
 	}
+
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 	if (interp_in) {
 		wrapper = mini_get_interp_in_wrapper (sig);
@@ -8380,6 +8390,12 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			MonoMethodSignature *sig = mono_metadata_signature_dup ((MonoMethodSignature*)l->data);
 
 			/* These only need in wrappers */
+			add_gsharedvt_wrappers (acfg, sig, TRUE, FALSE, FALSE);
+		}
+
+		for (l = cfg->interp_in_signatures; l; l = l->next) {
+			MonoMethodSignature *sig = mono_metadata_signature_dup ((MonoMethodSignature*)l->data);
+
 			add_gsharedvt_wrappers (acfg, sig, TRUE, FALSE, FALSE);
 		}
 	} else if (mono_aot_mode_is_full (&acfg->aot_opts) && mono_aot_mode_is_interp (&acfg->aot_opts)) {

@@ -1506,6 +1506,7 @@ typedef struct {
 	int *gsharedvt_vreg_to_idx;
 
 	GSList *signatures;
+	GSList *interp_in_signatures;
 
 	/* GC Maps */
    

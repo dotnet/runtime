@@ -392,11 +392,12 @@ callvirt_to_call (int opcode)
 }
 
 static gboolean
-can_enter_interp (MonoCompile *cfg, MonoMethod *method)
+can_enter_interp (MonoCompile *cfg, MonoMethod *method, gboolean virtual_)
 {
 	if (method->wrapper_type)
 		return FALSE;
-	if (m_class_get_image (method->klass) == m_class_get_image (cfg->method->klass))
+	/* Virtual calls from corlib can go outside corlib */
+	if ((m_class_get_image (method->klass) == m_class_get_image (cfg->method->klass)) && !virtual_)
 		return FALSE;
 
 	/* See needs_extra_arg () in mini-llvm.c */
@@ -417,7 +418,6 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	gboolean might_be_remote = FALSE;
 #endif
 	gboolean virtual_ = this_ins != NULL;
-	gboolean enable_for_aot = TRUE;
 	int context_used;
 	MonoCallInst *call;
 	int rgctx_reg = 0;
@@ -464,7 +464,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	if (cfg->llvm_only && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 		return mini_emit_llvmonly_virtual_call (cfg, method, sig, 0, args);
 
-	if (cfg->llvm_only && cfg->interp && !virtual_ && !tailcall && can_enter_interp (cfg, method)) {
+	if (cfg->llvm_only && cfg->interp && !virtual_ && !tailcall && can_enter_interp (cfg, method, FALSE)) {
 		MonoInst *ftndesc = mini_emit_get_rgctx_method (cfg, -1, method, MONO_RGCTX_INFO_METHOD_FTNDESC);
 
 		/* This call might need to enter the interpreter so make it indirect */
@@ -523,8 +523,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			return (MonoInst*)call;
 		}
 
-		if ((!cfg->compile_aot || enable_for_aot) && 
-			(!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
+		if ((!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
 			 (MONO_METHOD_IS_FINAL (method) &&
 			  method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) &&
 			!(mono_class_is_marshalbyref (method->klass) && context_used)) {
@@ -544,17 +543,24 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			}
 #endif
 
-			if (!method->string_ctor)
-				MONO_EMIT_NEW_CHECK_THIS (cfg, this_reg);
-
-			call->inst.opcode = callvirt_to_call (call->inst.opcode);
+			virtual_ = FALSE;
 		} else if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && MONO_METHOD_IS_FINAL (method)) {
 			/*
 			 * the method is virtual, but we can statically dispatch since either
 			 * it's class or the method itself are sealed.
 			 * But first we need to ensure it's not a null reference.
 			 */
-			MONO_EMIT_NEW_CHECK_THIS (cfg, this_reg);
+			virtual_ = FALSE;
+		}
+
+		if (!virtual_ && cfg->llvm_only && cfg->interp && !tailcall && can_enter_interp (cfg, method, FALSE)) {
+			MonoInst *ftndesc = mini_emit_get_rgctx_method (cfg, -1, method, MONO_RGCTX_INFO_METHOD_FTNDESC);
+
+			/* This call might need to enter the interpreter so make it indirect */
+			return mini_emit_llvmonly_calli (cfg, sig, args, ftndesc);
+		} else if (!virtual_) {
+			if (!method->string_ctor)
+				MONO_EMIT_NEW_CHECK_THIS (cfg, this_reg);
 
 			call->inst.opcode = callvirt_to_call (call->inst.opcode);
 		} else {
@@ -657,6 +663,10 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	guint32 slot;
 	int offset;
 	gboolean special_array_interface = m_class_is_array_special_interface (cmethod->klass);
+
+	if (cfg->interp && can_enter_interp (cfg, cmethod, TRUE))
+		/* Need wrappers for this signature to be able to enter interpreter */
+		cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, fsig);
 
 	/*
 	 * In llvm-only mode, vtables contain function descriptors instead of
