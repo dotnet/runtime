@@ -49,7 +49,7 @@ namespace System
                 //
                 SerializeSubstitute(zone.Id, serializedText);
                 serializedText.Append(Sep);
-                serializedText.Append(zone.BaseUtcOffset.TotalMinutes.ToString(CultureInfo.InvariantCulture));
+                serializedText.AppendSpanFormattable(zone.BaseUtcOffset.TotalMinutes, format: default, CultureInfo.InvariantCulture);
                 serializedText.Append(Sep);
                 SerializeSubstitute(zone.DisplayName, serializedText);
                 serializedText.Append(Sep);
@@ -62,11 +62,11 @@ namespace System
                 foreach (AdjustmentRule rule in rules)
                 {
                     serializedText.Append(Lhs);
-                    serializedText.Append(rule.DateStart.ToString(DateTimeFormat, DateTimeFormatInfo.InvariantInfo));
+                    serializedText.AppendSpanFormattable(rule.DateStart, DateTimeFormat, DateTimeFormatInfo.InvariantInfo);
                     serializedText.Append(Sep);
-                    serializedText.Append(rule.DateEnd.ToString(DateTimeFormat, DateTimeFormatInfo.InvariantInfo));
+                    serializedText.AppendSpanFormattable(rule.DateEnd, DateTimeFormat, DateTimeFormatInfo.InvariantInfo);
                     serializedText.Append(Sep);
-                    serializedText.Append(rule.DaylightDelta.TotalMinutes.ToString(CultureInfo.InvariantCulture));
+                    serializedText.AppendSpanFormattable(rule.DaylightDelta.TotalMinutes, format: default, CultureInfo.InvariantCulture);
                     serializedText.Append(Sep);
                     // serialize the TransitionTime's
                     SerializeTransitionTime(rule.DaylightTransitionStart, serializedText);
@@ -76,7 +76,7 @@ namespace System
                     if (rule.BaseUtcOffsetDelta != TimeSpan.Zero)
                     {
                         // Serialize it only when BaseUtcOffsetDelta has a value to reduce the impact of adding rule.BaseUtcOffsetDelta
-                        serializedText.Append(rule.BaseUtcOffsetDelta.TotalMinutes.ToString(CultureInfo.InvariantCulture));
+                        serializedText.AppendSpanFormattable(rule.BaseUtcOffsetDelta.TotalMinutes, format: default, CultureInfo.InvariantCulture);
                         serializedText.Append(Sep);
                     }
                     if (rule.NoDaylightTransitions)
@@ -155,20 +155,20 @@ namespace System
                 serializedText.Append(Lhs);
                 serializedText.Append(time.IsFixedDateRule ? '1' : '0');
                 serializedText.Append(Sep);
-                serializedText.Append(time.TimeOfDay.ToString(TimeOfDayFormat, DateTimeFormatInfo.InvariantInfo));
+                serializedText.AppendSpanFormattable(time.TimeOfDay, TimeOfDayFormat, DateTimeFormatInfo.InvariantInfo);
                 serializedText.Append(Sep);
-                serializedText.Append(time.Month.ToString(CultureInfo.InvariantCulture));
+                serializedText.AppendSpanFormattable(time.Month, format: default, CultureInfo.InvariantCulture);
                 serializedText.Append(Sep);
                 if (time.IsFixedDateRule)
                 {
-                    serializedText.Append(time.Day.ToString(CultureInfo.InvariantCulture));
+                    serializedText.AppendSpanFormattable(time.Day, format: default, CultureInfo.InvariantCulture);
                     serializedText.Append(Sep);
                 }
                 else
                 {
-                    serializedText.Append(time.Week.ToString(CultureInfo.InvariantCulture));
+                    serializedText.AppendSpanFormattable(time.Week, format: default, CultureInfo.InvariantCulture);
                     serializedText.Append(Sep);
-                    serializedText.Append(((int)time.DayOfWeek).ToString(CultureInfo.InvariantCulture));
+                    serializedText.AppendSpanFormattable((int)time.DayOfWeek, format: default, CultureInfo.InvariantCulture);
                     serializedText.Append(Sep);
                 }
                 serializedText.Append(Rhs);
