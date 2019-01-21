@@ -33,6 +33,7 @@ namespace Mono.Linker {
 		Parse,
 		ForceParse,
 		ConvertToStub,
-		ConvertToThrow
+		ConvertToThrow,
+		ConvertToFalse
 	}
 }
