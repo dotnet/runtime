@@ -356,7 +356,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             var codeATemp = new InternalPrimitiveTypeE[19];
             codeATemp[(int)TypeCode.Empty] = InternalPrimitiveTypeE.Invalid;
             codeATemp[(int)TypeCode.Object] = InternalPrimitiveTypeE.Invalid;
-            codeATemp[2] = InternalPrimitiveTypeE.Invalid; // TODO: Change 2 to (int)TypeCode.DBNull when it's available
+            codeATemp[(int)TypeCode.DBNull] = InternalPrimitiveTypeE.Invalid;
             codeATemp[(int)TypeCode.Boolean] = InternalPrimitiveTypeE.Boolean;
             codeATemp[(int)TypeCode.Char] = InternalPrimitiveTypeE.Char;
             codeATemp[(int)TypeCode.SByte] = InternalPrimitiveTypeE.SByte;
