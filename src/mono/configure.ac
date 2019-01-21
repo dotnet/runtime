@@ -760,9 +760,7 @@ AC_ARG_WITH(jumptables, [  --with-jumptables=yes,no      enable/disable support 
 AC_ARG_WITH(core,       [  --with-core=only       controls whether to build Mono as a .NET Core runtime (defaults to no)],[],[with_core=no])
 if test x$with_core = xonly; then
     AC_DEFINE(ENABLE_NETCORE,1,[Enables the support for .NET Core Features in the MonoVM])
-    mono_feature_disable_remoting='yes'
-    mono_feature_disable_reflection_emit_save='yes'
-    mono_feature_disable_appdomains='yes'
+    with_runtime_preset=netcore
 fi
 AM_CONDITIONAL(ENABLE_NETCORE, test x$with_core = xonly)
 
@@ -1184,6 +1182,12 @@ AOT_BUILD_ATTRS=$INVARIANT_AOT_OPTIONS
 
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
+elif test x$with_runtime_preset = xnetcore; then
+   DISABLE_MCS_DOCS_default=yes
+
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_reflection_emit_save='yes'
+   mono_feature_disable_appdomains='yes'
 elif test x$with_runtime_preset = xnet_4_x; then
    with_profile4_x_default=yes
    TEST_PROFILE=net_4_x

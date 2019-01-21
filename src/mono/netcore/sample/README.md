@@ -5,11 +5,9 @@
 ### Build Mono
 
 ```
-./configure --with-core=yes
+./configure --with-core=only
 make
 ```
-
-This will fail but that's ok at this point
 
 ### Prepare dependencies
 

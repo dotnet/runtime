@@ -208,6 +208,7 @@ int coreclr_execute_assembly (void* hostHandle, unsigned int domainId,
 
 	*ptr = NULL;
 
+	mono_parse_env_options (&mono_argc, &mono_argv);
 	*exitCode = mono_main (mono_argc, mono_argv);
 
 	return 0;
