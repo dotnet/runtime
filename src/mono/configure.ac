@@ -5855,7 +5855,7 @@ AC_CONFIG_COMMANDS([nolock-libtool], [sed -e 's/lock_old_archive_extraction=yes/
 AC_CONFIG_COMMANDS([clean-llvm], [rm -f llvm/llvm_config.mk])
 
 # Anything involving -Werror must be done late because autoconf depends on compiling with warnings to be success.
-if test x"$GCC" = xyes && "x$with_jemalloc" != "xyes"; then
+if test x"$GCC" = xyes -a "x$with_jemalloc" != "xyes"; then
 
 	# incompatible-pointer-types requires gcc circa 5.x
 
@@ -5870,6 +5870,8 @@ if test x"$GCC" = xyes && "x$with_jemalloc" != "xyes"; then
 		AC_MSG_RESULT(no)
 		CFLAGS=$ORIG_CFLAGS
 	])
+
+	CFLAGS="$CFLAGS -Werror=return-type"
 fi
 
 #
