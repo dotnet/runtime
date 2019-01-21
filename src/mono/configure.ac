@@ -4115,6 +4115,13 @@ case "$host" in
 		# When this is enabled, it leads to very strange crashes at runtime (gcc-3.4.4)
 		have_visibility_hidden=no
 		INTL="intl"
+		case "$host" in
+			x86_64*mingw*)
+				# Old Boehm fails to compile for x86_64-mingw.
+				# It is trivial to fix, but just silently drop it.
+				boehm_supported=false
+				;;
+		esac
 		;;
 	macppc-*-openbsd* | powerpc*-*-linux* | powerpc-*-openbsd* | \
         powerpc-*-sysv* | powerpc-*-darwin* | powerpc-*-netbsd* | \
