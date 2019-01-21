@@ -87,10 +87,8 @@ internal static partial class Interop
             IntPtr clientCallBackInfo,
             size_t numEvents,
             byte** eventPaths,
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
-            FSEventStreamEventFlags[] eventFlags,
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
-            FSEventStreamEventId[] eventIds);
+            FSEventStreamEventFlags* eventFlags,
+            FSEventStreamEventId* eventIds);
 
         /// <summary>
         /// Internal wrapper to create a new EventStream to listen to events from the core OS (such as File System events).
