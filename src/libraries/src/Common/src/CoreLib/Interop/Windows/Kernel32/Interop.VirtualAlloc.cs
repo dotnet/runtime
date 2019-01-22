@@ -20,7 +20,7 @@ internal partial class Interop
         internal static extern unsafe void* VirtualAlloc(void* BaseAddress, UIntPtr Size, int AllocationType, int Protection);
 #else
         [DllImport(Libraries.Kernel32)]
-        internal static extern unsafe void* VirtualAlloc(void* address, UIntPtr numBytes, int commitOrReserve, int pageProtectionMode);
+        internal static extern unsafe void* VirtualAlloc(void* lpAddress, UIntPtr dwSize, int flAllocationType, int flProtect);
 #endif
     }
 }
