@@ -606,7 +606,7 @@ namespace System.Diagnostics.Tracing
         #endregion
     }
 
-#if ES_BUILD_STANDALONE || ES_BUILD_PN
+#if ES_BUILD_STANDALONE
     /******************************** SUPPORT *****************************/
     /// <summary>
     /// This is supplied by the framework.   It is has the semantics that the value is copied to any new Tasks that is created
@@ -615,11 +615,7 @@ namespace System.Diagnostics.Tracing
     /// only get your thread local copy which means that you never have races.  
     /// </summary>
     /// 
-#if ES_BUILD_STANDALONE
     [EventSource(Name = "Microsoft.Tasks.Nuget")]
-#else
-    [EventSource(Name = "System.Diagnostics.Tracing.TplEtwProvider")]
-#endif
     internal class TplEtwProvider : EventSource
     {
         public class Keywords
