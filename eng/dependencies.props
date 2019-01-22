@@ -9,7 +9,7 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>78e9fb247edce5058f5e9ed294fec8baf7731f60</CoreFxCurrentRef>
+    <CoreFxCurrentRef>014ee1cf5a94b882a24848bbc6f0364e4193241e</CoreFxCurrentRef>
     <ProjectNTfsCurrentRef>78e9fb247edce5058f5e9ed294fec8baf7731f60</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>78e9fb247edce5058f5e9ed294fec8baf7731f60</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
@@ -29,8 +29,8 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview.19070.4</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19070.4</MicrosoftNETCorePlatformsPackageVersion>
+    <CoreFxExpectedPrerelease>preview.19071.1</CoreFxExpectedPrerelease>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19071.1</MicrosoftNETCorePlatformsPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-27321-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-27321-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27321-00</ProjectNTfsTestILCPackageVersion>
