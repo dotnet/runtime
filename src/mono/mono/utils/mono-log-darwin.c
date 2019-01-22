@@ -100,7 +100,7 @@ mono_log_write_asl (const char *log_domain, GLogLevelFlags level, mono_bool hdr,
 		message);
 
 	if (level & G_LOG_LEVEL_ERROR)
-		abort();
+		g_assert_abort ();
 }
 
 void

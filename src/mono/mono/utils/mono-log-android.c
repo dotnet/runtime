@@ -73,7 +73,7 @@ mono_log_write_logcat (const char *log_domain, GLogLevelFlags level, mono_bool h
 
 	__android_log_write (apriority, log_domain, message);
 	if (apriority == ANDROID_LOG_FATAL)
-		abort ();
+		g_assert_abort ();
 }
 
 /**

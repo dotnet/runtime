@@ -9,6 +9,8 @@
 
 #include "mono-compiler.h"
 #include "mono-logger-internals.h"
+#include <mono/utils/mono-threads-debug.h>
+
 
 typedef struct {
 	GLogLevelFlags	level;
@@ -545,24 +547,26 @@ mono_dump_mem (gpointer d, int len)
 	guint8 *data = (guint8 *) d;
 
 	for (int off = 0; off < len; off += 0x10) {
-		char *line = g_strdup_printf ("%p  ", data + off);
+		g_async_safe_printf("%p  ", data + off);
 
 		for (int i = 0; i < 0x10; i++) {
-			if ((i + off) >= len)
-				line = g_strdup_printf ("%s   ", line);
-			else
-				line = g_strdup_printf ("%s%02x ", line, data [off + i]);
+			if ((i + off) >= len) {
+				g_async_safe_printf("%s", "   ");
+			} else {
+				g_async_safe_printf("%02x ", data [off + i]);
+			}
 		}
 
-		line = g_strdup_printf ("%s ", line);
+		g_async_safe_printf(" ");
 
 		for (int i = 0; i < 0x10; i++) {
-			if ((i + off) >= len)
-				line = g_strdup_printf ("%s ", line);
-			else
-				line = g_strdup_printf ("%s%c", line, conv_ascii_char (data [off + i]));
+			if ((i + off) >= len) {
+				g_async_safe_printf("%s", " ");
+			} else {
+				g_async_safe_printf("%c", conv_ascii_char (data [off + i]));
+			}
 		}
 
-		mono_runtime_printf_err ("%s", line);
+		g_async_safe_printf ("\n");
 	}
 }

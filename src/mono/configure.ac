@@ -544,6 +544,8 @@ AC_PROG_LD_GNU
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h sys/uio.h sys/param.h sys/sysctl.h libproc.h sys/prctl.h copyfile.h)
 AC_CHECK_HEADERS(sys/param.h sys/socket.h sys/ipc.h sys/utsname.h alloca.h ucontext.h pwd.h sys/select.h netinet/tcp.h netinet/in.h unistd.h sys/types.h link.h asm/sigcontext.h sys/inotify.h arpa/inet.h complex.h unwind.h)
+AC_CHECK_HEADER(unistd.h, [HAVE_UNISTD_H=1], [HAVE_UNISTD_H=0])
+AC_SUBST(HAVE_UNISTD_H)
 AC_CHECK_HEADERS([linux/netlink.h linux/rtnetlink.h],
                   [], [], [#include <stddef.h>
 		  #include <sys/socket.h>
@@ -4759,8 +4761,6 @@ elif test x$target_ios = xno; then
 AC_CHECK_FUNCS(strndup getpwuid_r)
 fi
 
-AM_CONDITIONAL(NEED_VASPRINTF, test x$ac_cv_func_vasprintf = xno || test x$with_overridable_allocators = xyes)
-
 AC_SEARCH_LIBS(sqrtf, m)
 
 # nanosleep may not be part of libc, also search it in other libraries
@@ -5346,7 +5346,7 @@ dnl **********************
 dnl *** checked builds ***
 dnl **********************
 
-AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable checked build (expensive asserts), configure with a comma-separated LIST of checked build modules and then include that same list in the environment variable MONO_CHECK_MODE at runtime. Recognized checked build modules: all, gc, metadata, thread, private_types],[
+AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable checked build (expensive asserts), configure with a comma-separated LIST of checked build modules and then include that same list in the environment variable MONO_CHECK_MODE at runtime. Recognized checked build modules: all, gc, metadata, thread, private_types, crash_reporting],[
 
 	if test x$enable_checked_build != x ; then
 		AC_DEFINE(ENABLE_CHECKED_BUILD,1,[Enable checked build])
@@ -5360,6 +5360,7 @@ AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable check
 		eval "mono_checked_build_test_enable_metadata='yes'"
 		eval "mono_checked_build_test_enable_thread='yes'"
 		eval "mono_checked_build_test_enable_private_types='yes'"
+		eval "mono_checked_build_test_enable_crash_reporting='yes'"
 	fi
 
 	if test "x$mono_checked_build_test_enable_gc" = "xyes"; then
@@ -5377,9 +5378,19 @@ AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable check
 	if test "x$mono_checked_build_test_enable_private_types" = "xyes"; then
 		AC_DEFINE(ENABLE_CHECKED_BUILD_PRIVATE_TYPES, 1, [Enable private types checked build])
 	fi
+
+	if test "x$mono_checked_build_test_enable_crash_reporting" = "xyes"; then
+		# Required
+		with_overridable_allocators=yes
+		AC_DEFINE(ENABLE_OVERRIDABLE_ALLOCATORS,1,[Overridable allocator support enabled])
+
+		AC_DEFINE(ENABLE_CHECKED_BUILD_CRASH_REPORTING, 1, [Enable private types checked build])
+	fi
 ], [])
 
 dnl End of checked builds
+
+AM_CONDITIONAL(NEED_VASPRINTF, test x$ac_cv_func_vasprintf = xno || test x$with_overridable_allocators = xyes)
 
 AC_CHECK_HEADER([malloc.h], 
 		[AC_DEFINE([HAVE_USR_INCLUDE_MALLOC_H], [1], 

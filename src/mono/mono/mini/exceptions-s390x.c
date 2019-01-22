@@ -515,10 +515,14 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		address = (char *)ip - (char *)ji->code_start;
 
 		memcpy(&regs, &ctx->uc_mcontext.gregs, sizeof(regs));
-		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start,
+		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start,
 						   (guint8 *) ji->code_start + ji->code_size,
 						   ip, NULL, regs, 16, save_locations,
 						   MONO_MAX_IREGS, &cfa);
+
+		if (!success)
+			return FALSE;
+
 		memcpy (&new_ctx->uc_mcontext.gregs, &regs, sizeof(regs));
 		MONO_CONTEXT_SET_IP(new_ctx, regs[14] - 2);
 		MONO_CONTEXT_SET_BP(new_ctx, cfa);

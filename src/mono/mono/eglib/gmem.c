@@ -48,11 +48,23 @@ g_mem_set_vtable (GMemVTable* vtable)
 	sGMemVTable.free = vtable->free ? vtable->free : free;
 }
 
+void
+g_mem_get_vtable (GMemVTable* vtable)
+{
+	*vtable = sGMemVTable;
+}
+
 #define G_FREE_INTERNAL sGMemVTable.free
 #define G_REALLOC_INTERNAL sGMemVTable.realloc
 #define G_CALLOC_INTERNAL sGMemVTable.calloc
 #define G_MALLOC_INTERNAL sGMemVTable.malloc
 #else
+
+void
+g_mem_get_vtable (GMemVTable* vtable)
+{
+	memset (vtable, 0, sizeof (*vtable));
+}
 
 void
 g_mem_set_vtable (GMemVTable* vtable)

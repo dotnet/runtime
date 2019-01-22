@@ -447,10 +447,13 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		for (int i = 0; i < 8; i++)
 			(regs + MONO_MAX_IREGS) [i] = *((host_mgreg_t*)&new_ctx->fregs [8 + i]);
 
-		mono_unwind_frame (unwind_info, unwind_info_len, (guint8*)ji->code_start,
+		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8*)ji->code_start,
 						   (guint8*)ji->code_start + ji->code_size,
 						   (guint8*)ip, NULL, regs, MONO_MAX_IREGS + 8,
 						   save_locations, MONO_MAX_IREGS, (guint8**)&cfa);
+
+		if (!success)
+			return FALSE;
 
 		memcpy (&new_ctx->regs, regs, sizeof (host_mgreg_t) * 32);
 		for (int i = 0; i < 8; i++)

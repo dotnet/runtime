@@ -270,26 +270,26 @@ dump_threads (void)
 {
 	MonoThreadInfo *cur = mono_thread_info_current ();
 
-	MOSTLY_ASYNC_SAFE_PRINTF ("STATE CUE CARD: (? means a positive number, usually 1 or 2, * means any number)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x0\t- starting (GOOD, unless the thread is running managed code)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x1\t- detached (GOOD, unless the thread is running managed code)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x2\t- running (BAD, unless it's the gc thread)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?03\t- async suspended (GOOD)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?04\t- self suspended (GOOD)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?05\t- async suspend requested (BAD)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x6\t- blocking (BAD, unless there's no suspend initiator)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?07\t- blocking async suspended (GOOD)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?08\t- blocking self suspended (GOOD)\n");
-	MOSTLY_ASYNC_SAFE_PRINTF ("\t0x?09\t- blocking suspend requested (BAD in coop; GOOD in hybrid)\n");
+	g_async_safe_printf ("STATE CUE CARD: (? means a positive number, usually 1 or 2, * means any number)\n");
+	g_async_safe_printf ("\t0x0\t- starting (GOOD, unless the thread is running managed code)\n");
+	g_async_safe_printf ("\t0x1\t- detached (GOOD, unless the thread is running managed code)\n");
+	g_async_safe_printf ("\t0x2\t- running (BAD, unless it's the gc thread)\n");
+	g_async_safe_printf ("\t0x?03\t- async suspended (GOOD)\n");
+	g_async_safe_printf ("\t0x?04\t- self suspended (GOOD)\n");
+	g_async_safe_printf ("\t0x?05\t- async suspend requested (BAD)\n");
+	g_async_safe_printf ("\t0x6\t- blocking (BAD, unless there's no suspend initiator)\n");
+	g_async_safe_printf ("\t0x?07\t- blocking async suspended (GOOD)\n");
+	g_async_safe_printf ("\t0x?08\t- blocking self suspended (GOOD)\n");
+	g_async_safe_printf ("\t0x?09\t- blocking suspend requested (BAD in coop; GOOD in hybrid)\n");
 
 	FOREACH_THREAD_SAFE_ALL (info) {
 #ifdef TARGET_MACH
 		char thread_name [256] = { 0 };
 		pthread_getname_np (mono_thread_info_get_tid (info), thread_name, 255);
 
-		MOSTLY_ASYNC_SAFE_PRINTF ("--thread %p id %p [%p] (%s) state %x  %s\n", info, (void *) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, thread_name, info->thread_state, info == cur ? "GC INITIATOR" : "" );
+		g_async_safe_printf ("--thread %p id %p [%p] (%s) state %x  %s\n", info, (void *) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, thread_name, info->thread_state, info == cur ? "GC INITIATOR" : "" );
 #else
-		MOSTLY_ASYNC_SAFE_PRINTF ("--thread %p id %p [%p] state %x  %s\n", info, (void *) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, info->thread_state, info == cur ? "GC INITIATOR" : "" );
+		g_async_safe_printf ("--thread %p id %p [%p] state %x  %s\n", info, (void *) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, info->thread_state, info == cur ? "GC INITIATOR" : "" );
 #endif
 	} FOREACH_THREAD_SAFE_END
 }
@@ -314,7 +314,7 @@ mono_threads_wait_pending_operations (void)
 
 			dump_threads ();
 
-			MOSTLY_ASYNC_SAFE_PRINTF ("WAITING for %d threads, got %d suspended\n", (int)pending_suspends, i);
+			g_async_safe_printf ("WAITING for %d threads, got %d suspended\n", (int)pending_suspends, i);
 			g_error ("suspend_thread suspend took %d ms, which is more than the allowed %d ms", (int)mono_stopwatch_elapsed_ms (&suspension_time), sleepAbortDuration);
 		}
 		mono_stopwatch_stop (&suspension_time);

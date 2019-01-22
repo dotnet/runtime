@@ -54,6 +54,10 @@
 #include <malloc.h>
 #endif
 
+#ifdef G_HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #ifndef offsetof
 #   define offsetof(s_name,n_name) (size_t)(char *)&(((s_name*)0)->m_name)
 #endif
@@ -304,6 +308,7 @@ typedef struct {
 } GMemVTable;
 
 void g_mem_set_vtable (GMemVTable* vtable);
+void g_mem_get_vtable (GMemVTable* vtable);
 
 struct _GMemChunk {
 	guint alloc_size;
@@ -762,7 +767,10 @@ const char *   g_get_assertion_message (void);
 
 typedef void (*GLogFunc) (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data);
 typedef void (*GPrintFunc) (const gchar *string);
+typedef void (*GAbortFunc) (void);
 
+void       g_assertion_disable_global   (GAbortFunc func);
+void       g_assert_abort               (void);
 void       g_log_default_handler     (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data);
 GLogFunc   g_log_set_default_handler (GLogFunc log_func, gpointer user_data);
 GPrintFunc g_set_print_handler       (GPrintFunc func);
@@ -1118,6 +1126,49 @@ gboolean   g_file_test (const gchar *filename, GFileTest test);
 #define g_ascii_isalnum isalnum
 
 gchar *g_mkdtemp (gchar *tmpl);
+
+
+/*
+ * Low-level write-based printing functions
+ */
+static inline gint
+g_async_safe_vfprintf (int handle, gchar const *format, va_list args)
+{
+	char print_buff [1024];
+	print_buff [0] = '\0';
+	g_vsnprintf (print_buff, sizeof(print_buff), format, args);
+	int ret = g_write (handle, print_buff, (guint32) strlen (print_buff));
+
+	return ret;
+}
+
+static inline gint
+g_async_safe_fprintf (int handle, gchar const *format, ...)
+{
+	va_list args;
+	va_start (args, format);
+	int ret = g_async_safe_vfprintf (handle, format, args);
+	va_end (args);
+	return ret;
+}
+
+static inline gint
+g_async_safe_vprintf (gchar const *format, va_list args)
+{
+	return g_async_safe_vfprintf (1, format, args);
+}
+
+static inline gint
+g_async_safe_printf (gchar const *format, ...)
+{
+	va_list args;
+	va_start (args, format);
+	int ret = g_async_safe_vfprintf (1, format, args);
+	va_end (args);
+
+	return ret;
+}
+
 
 /*
  * Pattern matching
