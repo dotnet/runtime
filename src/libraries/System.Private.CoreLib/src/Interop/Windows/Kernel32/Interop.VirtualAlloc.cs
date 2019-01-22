@@ -15,7 +15,12 @@ internal partial class Interop
         internal const int MEM_FREE = 0x10000;
         internal const int PAGE_READWRITE = 0x04;
 
+#if ENABLE_WINRT
+        [DllImport(Libraries.Kernel32, EntryPoint = "VirtualAllocFromApp")]
+        internal static extern unsafe void* VirtualAlloc(void* BaseAddress, UIntPtr Size, int AllocationType, int Protection);
+#else
         [DllImport(Libraries.Kernel32)]
         internal static extern unsafe void* VirtualAlloc(void* address, UIntPtr numBytes, int commitOrReserve, int pageProtectionMode);
+#endif
     }
 }
