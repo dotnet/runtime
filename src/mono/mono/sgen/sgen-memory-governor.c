@@ -137,9 +137,11 @@ get_heap_size (void)
 }
 
 gboolean
-sgen_need_major_collection (mword space_needed)
+sgen_need_major_collection (mword space_needed, gboolean *forced)
 {
 	size_t heap_size;
+
+	*forced = FALSE;
 
 	if (sgen_get_concurrent_collection_in_progress ()) {
 		heap_size = get_heap_size ();
@@ -169,6 +171,7 @@ sgen_need_major_collection (mword space_needed)
 
 	heap_size = get_heap_size ();
 
+	*forced = heap_size > soft_heap_limit;
 	return heap_size > major_collection_trigger_size;
 }
 

@@ -25,7 +25,7 @@ void sgen_memgov_major_collection_end (gboolean forced, gboolean concurrent, con
 void sgen_memgov_collection_start (int generation);
 void sgen_memgov_collection_end (int generation, gint64 stw);
 
-gboolean sgen_need_major_collection (mword space_needed);
+gboolean sgen_need_major_collection (mword space_needed, gboolean *forced);
 
 
 typedef enum {
