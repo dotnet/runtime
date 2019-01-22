@@ -1057,6 +1057,8 @@ namespace System.Net.Sockets.Tests
             receiver.Connect(sender.LocalEndPoint); // only receive from sender
             EndPoint receiverEndPoint = receiver.LocalEndPoint;
 
+            Barrier b = new Barrier(2);
+
             Task receiveTask = Task.Run(() =>
             {
                 using (receiver)
@@ -1069,6 +1071,8 @@ namespace System.Net.Sockets.Tests
                     }
                     // receive data as SegmentCount (> IOV_MAX) 1-byte segments.
                     SocketError error;
+                    // Signal we are ready to receive.
+                    b.SignalAndWait();
                     int bytesReceived = receiver.Receive(receiveSegments, SocketFlags.None, out error);
 
                     if (error == SocketError.Success)
@@ -1088,12 +1092,16 @@ namespace System.Net.Sockets.Tests
             using (sender)
             {
                 sender.Connect(receiverEndPoint);
+
+                // Synchronize and wait for receiving task to be ready.
+                b.SignalAndWait();
+
                 var sendBuffer = new byte[SegmentCount];
                 for (int i = 0; i < 10; i++) // UDPRedundancy
                 {
                     int bytesSent = sender.Send(sendBuffer);
                     Assert.Equal(SegmentCount, bytesSent);
-                    await Task.WhenAny(receiveTask, Task.Delay(1));
+                    await Task.WhenAny(receiveTask, Task.Delay(3));
                     if (receiveTask.IsCompleted)
                     {
                         break;
