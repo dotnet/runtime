@@ -48,9 +48,9 @@ namespace System
                 AddAttributesToList(attributeList, attributes, types);
                 baseProp = GetParentDefinition(baseProp, indexParamTypes);
             }
-            Array array = CreateAttributeArrayHelper(type, attributeList.Count);
-            Array.Copy(attributeList.ToArray(), 0, array, 0, attributeList.Count);
-            return (Attribute[])array;
+            Attribute[] array = CreateAttributeArrayHelper(type, attributeList.Count);
+            attributeList.CopyTo(array, 0);
+            return array;
         }
 
         private static bool InternalIsDefined(PropertyInfo element, Type attributeType, bool inherit)
@@ -143,9 +143,9 @@ namespace System
                     AddAttributesToList(attributeList, attributes, types);
                     baseEvent = GetParentDefinition(baseEvent);
                 }
-                Array array = CreateAttributeArrayHelper(type, attributeList.Count);
-                Array.Copy(attributeList.ToArray(), 0, array, 0, attributeList.Count);
-                return (Attribute[])array;
+                Attribute[] array = CreateAttributeArrayHelper(type, attributeList.Count);
+                attributeList.CopyTo(array, 0);
+                return array;
             }
             else
                 return attributes;
