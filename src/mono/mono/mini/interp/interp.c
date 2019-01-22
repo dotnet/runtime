@@ -567,6 +567,12 @@ get_virtual_method_fast (MonoObject *obj, InterpMethod *imethod, int offset)
 {
 	gpointer *table;
 
+#ifndef DISABLE_REMOTING
+	/* FIXME Remoting */
+	if (mono_object_is_transparent_proxy (obj))
+		return get_virtual_method (imethod, obj);
+#endif
+
 	table = get_method_table (obj, offset);
 
 	if (!table) {
