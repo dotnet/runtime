@@ -2621,13 +2621,13 @@ VirtualCallStubManager::TraceResolver(
     CONSISTENCY_CHECK(CheckPointer(pMT));
 
 
-    DispatchSlot slot(pMT->FindDispatchSlot(token, TRUE /* throwOnConflict */));
+    DispatchSlot slot(pMT->FindDispatchSlot(token, FALSE /* throwOnConflict */));
 
     if (slot.IsNull() && IsInterfaceToken(token) && pMT->IsComObjectType())
     {
         MethodDesc * pItfMD = GetInterfaceMethodDescFromToken(token);
         CONSISTENCY_CHECK(pItfMD->GetMethodTable()->GetSlot(pItfMD->GetSlot()) == pItfMD->GetMethodEntryPoint());
-        slot = pItfMD->GetMethodTable()->FindDispatchSlot(pItfMD->GetSlot(), TRUE /* throwOnConflict */);
+        slot = pItfMD->GetMethodTable()->FindDispatchSlot(pItfMD->GetSlot(), FALSE /* throwOnConflict */);
     }
 
     // The dispatch slot's target may change due to code versioning shortly after it was retrieved above for the trace. This
@@ -2636,7 +2636,9 @@ VirtualCallStubManager::TraceResolver(
     // all native code versions, even if they aren't the one that was reported by this trace, see
     // DebuggerController::PatchTrace() under case TRACE_MANAGED. This alleviates the StubManager from having to prevent the
     // race that occurs here.
-    return (StubManager::TraceStub(slot.GetTarget(), trace));
+    //
+    // If the dispatch slot is null, we assume it's because of a diamond case in default interface method dispatch.
+    return slot.IsNull() ? FALSE : (StubManager::TraceStub(slot.GetTarget(), trace));
 }
 
 #ifndef DACCESS_COMPILE 
