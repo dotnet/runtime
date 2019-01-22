@@ -1821,7 +1821,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass)) {
 				/* FIXME Use fastpath also for MBRO. Asserts in mono_method_get_vtable_slot */
 				if (mono_class_is_interface (target_method->klass))
-					ADD_CODE(td, -mono_method_get_imt_slot (target_method));
+					ADD_CODE(td, -2 * MONO_IMT_SIZE + mono_method_get_imt_slot (target_method));
 				else
 					ADD_CODE(td, mono_method_get_vtable_slot (target_method));
 			}

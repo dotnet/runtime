@@ -538,14 +538,12 @@ get_target_imethod (GSList *list, InterpMethod *imethod)
 }
 
 static gpointer*
-get_method_table (MonoObject *obj, int offset, int *slot)
+get_method_table (MonoObject *obj, int offset)
 {
 	if (offset >= 0) {
-		*slot = offset;
 		return obj->vtable->interp_vtable;
 	} else {
-		*slot = -offset;
-		return obj->vtable->interp_itable;
+		return (gpointer*)obj->vtable;
 	}
 }
 
@@ -558,8 +556,7 @@ alloc_method_table (MonoObject *obj, int offset)
 		table = mono_domain_alloc0 (obj->vtable->domain, m_class_get_vtable_size (obj->vtable->klass) * sizeof (gpointer));
 		obj->vtable->interp_vtable = table;
 	} else {
-		table = mono_domain_alloc0 (obj->vtable->domain, sizeof (gpointer) * MONO_IMT_SIZE);
-		obj->vtable->interp_itable = table;
+		table = (gpointer*)obj->vtable;
 	}
 
 	return table;
@@ -569,44 +566,43 @@ static InterpMethod*
 get_virtual_method_fast (MonoObject *obj, InterpMethod *imethod, int offset)
 {
 	gpointer *table;
-	int slot;
 
-	table = get_method_table (obj, offset, &slot);
+	table = get_method_table (obj, offset);
 
 	if (!table) {
 		/* Lazily allocate method table */
 		mono_domain_lock (obj->vtable->domain);
-		table = get_method_table (obj, offset, &slot);
+		table = get_method_table (obj, offset);
 		if (!table)
 			table = alloc_method_table (obj, offset);
 		mono_domain_unlock (obj->vtable->domain);
 	}
 
-	if (!table [slot]) {
+	if (!table [offset]) {
 		InterpMethod *target_imethod = get_virtual_method (imethod, obj);
 		/* Lazily initialize the method table slot */
 		mono_domain_lock (obj->vtable->domain);
-		if (!table [slot]) {
+		if (!table [offset]) {
 			if (imethod->method->is_inflated || offset < 0)
-				table [slot] = append_imethod (obj->vtable->domain, NULL, imethod, target_imethod);
+				table [offset] = append_imethod (obj->vtable->domain, NULL, imethod, target_imethod);
 			else
-				table [slot] = (gpointer) ((gsize)target_imethod | 0x1);
+				table [offset] = (gpointer) ((gsize)target_imethod | 0x1);
 		}
 		mono_domain_unlock (obj->vtable->domain);
 	}
 
-	if ((gsize)table [slot] & 0x1) {
+	if ((gsize)table [offset] & 0x1) {
 		/* Non generic virtual call. Only one method in slot */
-		return (InterpMethod*) ((gsize)table [slot] & ~0x1);
+		return (InterpMethod*) ((gsize)table [offset] & ~0x1);
 	} else {
 		/* Virtual generic or interface call. Multiple methods in slot */
-		InterpMethod *target_imethod = get_target_imethod ((GSList*)table [slot], imethod);
+		InterpMethod *target_imethod = get_target_imethod ((GSList*)table [offset], imethod);
 
 		if (!target_imethod) {
 			target_imethod = get_virtual_method (imethod, obj);
 			mono_domain_lock (obj->vtable->domain);
-			if (!get_target_imethod ((GSList*)table [slot], imethod))
-				table [slot] = append_imethod (obj->vtable->domain, (GSList*)table [slot], imethod, target_imethod);
+			if (!get_target_imethod ((GSList*)table [offset], imethod))
+				table [offset] = append_imethod (obj->vtable->domain, (GSList*)table [offset], imethod, target_imethod);
 			mono_domain_unlock (obj->vtable->domain);
 		}
 		return target_imethod;

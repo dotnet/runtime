@@ -4108,6 +4108,12 @@ mono_interp_to_native_trampoline (gpointer addr, gpointer ccontext)
 	mini_get_interp_callbacks ()->to_native_trampoline (addr, ccontext);
 }
 
+static gboolean
+mini_is_interpreter_enabled ()
+{
+	return mono_use_interpreter;
+}
+
 static const char*
 mono_get_runtime_build_version (void);
 
@@ -4203,6 +4209,7 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mono_use_interpreter)
 		callbacks.interp_get_remoting_invoke = mini_get_interp_callbacks ()->get_remoting_invoke;
 #endif
+	callbacks.is_interpreter_enabled = mini_is_interpreter_enabled;
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
 
 #ifndef DISABLE_CRASH_REPORTING
