@@ -16,6 +16,6 @@ internal partial class Interop
         }
 
         [DllImport(Libraries.Kernel32, SetLastError = true, EntryPoint = "GlobalMemoryStatusEx")]
-        private static extern bool GlobalMemoryStatusExNative(ref MEMORYSTATUSEX buffer);
+        private static extern bool GlobalMemoryStatusExNative(ref MEMORYSTATUSEX lpBuffer);
     }
 }
