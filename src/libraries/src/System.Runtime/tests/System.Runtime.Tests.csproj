@@ -207,6 +207,9 @@
       <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+    <Compile Include="System\ExitCodeTests.Unix.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx' And '$(TargetGroup)' != 'netstandard'">
     <Compile Include="System\HashCodeTests.netcoreapp.cs" />
     <Compile Include="Helpers.netcoreapp.cs" />
