@@ -10,6 +10,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32)]
-        unsafe internal static extern bool VirtualFree(void* address, UIntPtr numBytes, int pageFreeMode);
+        unsafe internal static extern bool VirtualFree(void* lpAddress, UIntPtr dwSize, int dwFreeType);
     }
 }
