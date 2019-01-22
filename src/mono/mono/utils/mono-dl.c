@@ -284,10 +284,11 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 	int idx;
 	const char *prefix;
 	const char *suffix;
-	gboolean first_call;
+	gboolean need_prefix = TRUE, need_suffix = TRUE;
 	int prlen;
 	int suffixlen;
 	char *res;
+	int iteration;
 
 	if (!iter)
 		return NULL;
@@ -301,37 +302,52 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 	  libsomething.so.1.1 or libsomething.so - testing it algorithmically would be an overkill
 	  here.
 	 */
-	idx = GPOINTER_TO_UINT (*iter);
+	iteration = GPOINTER_TO_UINT (*iter);
+	idx = iteration;
 	if (idx == 0) {
-		first_call = TRUE;
+		/* Name */
+		need_prefix = FALSE;
+		need_suffix = FALSE;
 		suffix = "";
-		suffixlen = 0;
-	} else {
-		idx--;
-		if (mono_dl_get_so_suffixes () [idx][0] == '\0')
-			return NULL;
-		first_call = FALSE;
-		suffix = mono_dl_get_so_suffixes () [idx];
+	} else if (idx == 1) {
+#if NETCORE
+		/* netcore system libs have a suffix but no prefix */
+		need_prefix = FALSE;
+		need_suffix = TRUE;
+		suffix = mono_dl_get_so_suffixes () [0];
 		suffixlen = strlen (suffix);
+#else
+		suffix = mono_dl_get_so_suffixes () [idx - 1];
+		if (suffix [0] == '\0')
+			return NULL;
+#endif
+	} else {
+		/* Prefix.Name.suffix */
+		suffix = mono_dl_get_so_suffixes () [idx - 2];
+		if (suffix [0] == '\0')
+			return NULL;
 	}
 
-	prlen = strlen (mono_dl_get_so_prefix ());
-	if (prlen && strncmp (name, mono_dl_get_so_prefix (), prlen) != 0)
-		prefix = mono_dl_get_so_prefix ();
-	else
+	if (need_prefix) {
+		prlen = strlen (mono_dl_get_so_prefix ());
+		if (prlen && strncmp (name, mono_dl_get_so_prefix (), prlen) != 0)
+			prefix = mono_dl_get_so_prefix ();
+		else
+			prefix = "";
+	} else {
 		prefix = "";
+	}
 
-	if (first_call || (suffixlen && strstr (name, suffix) == (name + strlen (name) - suffixlen)))
+	suffixlen = strlen (suffix);
+	if (need_suffix && (suffixlen && strstr (name, suffix) == (name + strlen (name) - suffixlen)))
 		suffix = "";
 
 	if (directory && *directory)
 		res = g_strconcat (directory, G_DIR_SEPARATOR_S, prefix, name, suffix, NULL);
 	else
 		res = g_strconcat (prefix, name, suffix, NULL);
-	++idx;
-	if (!first_call)
-		idx++;
-	*iter = GUINT_TO_POINTER (idx);
+	++iteration;
+	*iter = GUINT_TO_POINTER (iteration);
 	return res;
 }
 
