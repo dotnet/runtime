@@ -1034,6 +1034,26 @@ FCIMPL1(int, GCInterface::GetGeneration, Object* objUNSAFE)
 }
 FCIMPLEND
 
+/*================================GetSegmentSize========-=======================
+**Action: Returns the maximum GC heap segment size
+**Returns: The maximum segment size of either the normal heap or the large object heap, whichever is bigger
+==============================================================================*/
+FCIMPL0(UINT64, GCInterface::GetSegmentSize)
+{
+    FCALL_CONTRACT;
+
+    IGCHeap * pGC = GCHeapUtilities::GetGCHeap();
+    size_t segment_size = pGC->GetValidSegmentSize(false);
+    size_t large_segment_size = pGC->GetValidSegmentSize(true);
+    _ASSERTE(segment_size < SIZE_T_MAX && large_segment_size < SIZE_T_MAX);
+    if (segment_size < large_segment_size)
+        segment_size = large_segment_size;
+
+    FC_GC_POLL_RET();
+    return (UINT64) segment_size;
+}
+FCIMPLEND
+
 /*================================CollectionCount=================================
 **Action: Returns the number of collections for this generation since the begining of the life of the process
 **Returns: The collection count.
