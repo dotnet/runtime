@@ -93,11 +93,7 @@ namespace System.Runtime
         {
             unsafe
             {
-#if ENABLE_WINRT
-                void* pMemory = Interop.mincore.VirtualAllocFromApp(null, numBytes, Interop.Kernel32.MEM_COMMIT, Interop.Kernel32.PAGE_READWRITE);
-#else
                 void* pMemory = Interop.Kernel32.VirtualAlloc(null, numBytes, Interop.Kernel32.MEM_COMMIT, Interop.Kernel32.PAGE_READWRITE);
-#endif
                 if (pMemory != null)
                 {
                     bool r = Interop.Kernel32.VirtualFree(pMemory, UIntPtr.Zero, Interop.Kernel32.MEM_RELEASE);
