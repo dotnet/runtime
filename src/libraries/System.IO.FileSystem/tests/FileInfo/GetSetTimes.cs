@@ -23,17 +23,13 @@ namespace System.IO.Tests
         public FileInfo GetNonZeroMilliseconds()
         {
             FileInfo fileinfo = new FileInfo(GetTestFilePath());
-            for (int i = 0; i < 5; i++)
+            fileinfo.Create().Dispose();
+
+            if (fileinfo.LastWriteTime.Millisecond == 0)
             {
-                fileinfo.Create().Dispose();
-                if (fileinfo.LastWriteTime.Millisecond != 0)
-                    break;
-
-                // This case should only happen 1/1000 times, unless the OS/Filesystem does
-                // not support millisecond granularity.
-
-                // If it's 1/1000, or low granularity, this may help:
-                Thread.Sleep(1234);
+                DateTime dt = fileinfo.LastWriteTime;
+                dt = dt.AddMilliseconds(1);
+                fileinfo.LastWriteTime = dt;
             }
 
             Assert.NotEqual(0, fileinfo.LastWriteTime.Millisecond);
