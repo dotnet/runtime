@@ -1489,8 +1489,25 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+    // If this type is marked by [Intrinsic] attribute, it may be specially treated by the runtime/compiler
+    // SIMD types have [Intrinsic] attribute, for example
+    //
+    // We check this here fairly early to ensure other downstream checks on these types can be slightly more efficient.
+    if (GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly())
+    {
+        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(),
+            g_CompilerServicesIntrinsicAttribute,
+            NULL,
+            NULL);
+
+        if (hr == S_OK)
+        {
+            bmtProp->fIsIntrinsicType = true;
+        }
+    }
+
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
-    if (GetModule()->IsSystem() && !bmtGenerics->HasInstantiation())
+    if (bmtProp->fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
         LPCUTF8 className;
         LPCUTF8 nameSpace;
@@ -1519,23 +1536,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 #endif
-
-    // If this type is marked by [Intrinsic] attribute, it may be specially treated by the runtime/compiler
-    // Currently, only SIMD types have [Intrinsic] attribute
-    //
-    // We check this here fairly early to ensure other downstream checks on these types can be slightly more efficient.
-    if (GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly())
-    {
-        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(),
-            g_CompilerServicesIntrinsicAttribute,
-            NULL,
-            NULL);
-
-        if (hr == S_OK)
-        {
-            bmtProp->fIsIntrinsicType = true;
-        }
-    }
 
     // Com Import classes are special. These types must derive from System.Object,
     // and we then substitute the parent with System._ComObject.
