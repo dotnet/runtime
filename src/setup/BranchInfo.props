@@ -12,7 +12,7 @@
     <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
 
     <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
-    <ReleaseBrandSuffix>Preview 1</ReleaseBrandSuffix>
+    <ReleaseBrandSuffix>Preview</ReleaseBrandSuffix>
     <Channel>master</Channel>
     <ContainerName>dotnet</ContainerName>
     <ChecksumContainerName>$(ContainerName)</ChecksumContainerName>
