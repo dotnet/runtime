@@ -2,21 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//
-//
-//
-// EventSource for TPL.
-//
-// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Security;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
-
 using Internal.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
@@ -24,8 +11,11 @@ namespace System.Threading.Tasks
     /// <summary>Provides an event source for tracing TPL information.</summary>
     [EventSource(
         Name = "System.Threading.Tasks.TplEventSource",
-        Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5",
-        LocalizationResources = "FxResources.System.Private.CoreLib.SR")]
+        Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5"
+#if CORECLR
+        ,LocalizationResources = "FxResources.System.Private.CoreLib.SR"
+#endif
+        )]
     internal sealed class TplEtwProvider : EventSource
     {
         /// Used to determine if tasks should generate Activity IDs for themselves
