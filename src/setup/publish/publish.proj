@@ -32,7 +32,7 @@
 
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
-          DependsOnTargets="PublishCoreHostPackages;SetupPublishSymbols;PublishSymbols;FinalizeBuildInAzure" />
+          DependsOnTargets="PublishCoreHostPackages;SetupPublishSymbols;PublishSymbols;FinalizeBuildInAzure;UpdateVersionsRepo" />
     
   <Target Name="GetPackagesToSign" DependsOnTargets="GatherShippingPackages">
     <ItemGroup>
