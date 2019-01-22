@@ -5244,7 +5244,7 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 }
 
 MonoReflectionMethodHandle
-ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType_native (MonoMethod *method, MonoType *type, MonoBoolean generic_check, MonoError *error)
+ves_icall_System_Reflection_RuntimeMethodInfo_GetMethodFromHandleInternalType_native (MonoMethod *method, MonoType *type, MonoBoolean generic_check, MonoError *error)
 {
 	error_init (error);
 	MonoClass *klass;
@@ -5266,7 +5266,7 @@ ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType_native (M
 }
 
 MonoReflectionMethodBodyHandle
-ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal (MonoMethod *method, MonoError *error)
+ves_icall_System_Reflection_RuntimeMethodInfo_GetMethodBodyInternal (MonoMethod *method, MonoError *error)
 {
 	error_init (error);
 	return mono_method_body_get_object_handle (mono_domain_get (), method, error);
