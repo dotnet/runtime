@@ -90,19 +90,8 @@
 namespace Microsoft.Win32
 {
     using System;
-    using System.Security;
-    using System.Text;
-    using System.Configuration.Assemblies;
     using System.Runtime.InteropServices;
-    using System.Threading;
     using Microsoft.Win32.SafeHandles;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.Versioning;
-
-    using BOOL = System.Int32;
-    using DWORD = System.UInt32;
-    using ULONG = System.UInt32;
 
     /**
      * Win32 encapsulation for System.Private.CoreLib.
@@ -129,33 +118,6 @@ namespace Microsoft.Win32
             internal byte wReserved;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct MEMORYSTATUSEX
-        {
-            // The length field must be set to the size of this data structure.
-            internal int length;
-            internal int memoryLoad;
-            internal ulong totalPhys;
-            internal ulong availPhys;
-            internal ulong totalPageFile;
-            internal ulong availPageFile;
-            internal ulong totalVirtual;
-            internal ulong availVirtual;
-            internal ulong availExtendedVirtual;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct MEMORY_BASIC_INFORMATION
-        {
-            internal void* BaseAddress;
-            internal void* AllocationBase;
-            internal uint AllocationProtect;
-            internal UIntPtr RegionSize;
-            internal uint State;
-            internal uint Protect;
-            internal uint Type;
-        }
-
         internal const string ADVAPI32 = "advapi32.dll";
 
         [DllImport(Interop.Libraries.Kernel32, EntryPoint = "LocalAlloc")]
@@ -164,26 +126,8 @@ namespace Microsoft.Win32
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static extern IntPtr LocalFree(IntPtr handle);
 
-        internal static bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX buffer)
-        {
-            buffer.length = Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-            return GlobalMemoryStatusExNative(ref buffer);
-        }
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, EntryPoint = "GlobalMemoryStatusEx")]
-        private static extern bool GlobalMemoryStatusExNative([In, Out] ref MEMORYSTATUSEX buffer);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static extern unsafe UIntPtr VirtualQuery(void* address, ref MEMORY_BASIC_INFORMATION buffer, UIntPtr sizeOfBuffer);
-
-        // VirtualAlloc should generally be avoided, but is needed in 
-        // the MemoryFailPoint implementation (within a CER) to increase the 
-        // size of the page file, ignoring any host memory allocators.
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static extern unsafe void* VirtualAlloc(void* address, UIntPtr numBytes, int commitOrReserve, int pageProtectionMode);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static extern unsafe bool VirtualFree(void* address, UIntPtr numBytes, int pageFreeMode);
+        [DllImport(Interop.Libraries.Kernel32)]
+        internal static extern IntPtr LocalReAlloc(IntPtr handle, IntPtr sizetcbBytes, int uFlags);
 
         [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode)]
         internal static extern IntPtr SysAllocStringLen(string src, int len);  // BSTR
@@ -212,13 +156,6 @@ namespace Microsoft.Win32
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static extern IntPtr GetStdHandle(int nStdHandle);  // param is NOT a handle, but it returns one!
-
-        internal const int PAGE_READWRITE = 0x04;
-
-        internal const int MEM_COMMIT = 0x1000;
-        internal const int MEM_RESERVE = 0x2000;
-        internal const int MEM_RELEASE = 0x8000;
-        internal const int MEM_FREE = 0x10000;
 
         [DllImport(Interop.Libraries.Kernel32)]
         internal static extern unsafe int WideCharToMultiByte(uint cp, uint flags, char* pwzSource, int cchSource, byte* pbDestBuffer, int cbDestBuffer, IntPtr null1, IntPtr null2);
@@ -260,9 +197,6 @@ namespace Microsoft.Win32
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
         internal static extern uint ExpandEnvironmentStringsW(string lpSrc, ref char lpDst, uint nSize);
-
-        [DllImport(Interop.Libraries.Kernel32)]
-        internal static extern IntPtr LocalReAlloc(IntPtr handle, IntPtr sizetcbBytes, int uFlags);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

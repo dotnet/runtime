@@ -104,6 +104,9 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsServerGC();
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern ulong GetSegmentSize();
+
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _AddMemoryPressure(ulong bytesAllocated);
 
