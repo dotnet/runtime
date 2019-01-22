@@ -786,6 +786,7 @@ FCFuncStart(gGCInterfaceFuncs)
     QCFuncElement("_StartNoGCRegion", GCInterface::StartNoGCRegion)
     QCFuncElement("_EndNoGCRegion", GCInterface::EndNoGCRegion)
     FCFuncElement("IsServerGC", SystemNative::IsServerGC)
+    FCFuncElement("GetSegmentSize", GCInterface::GetSegmentSize)
     QCFuncElement("_AddMemoryPressure", GCInterface::_AddMemoryPressure)
     QCFuncElement("_RemoveMemoryPressure", GCInterface::_RemoveMemoryPressure)
     FCFuncElement("GetGeneration", GCInterface::GetGeneration)
@@ -798,10 +799,6 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("_ReRegisterForFinalize", GCInterface::ReRegisterForFinalize)
 
     FCFuncElement("_GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
-FCFuncEnd()
-
-FCFuncStart(gMemoryFailPointFuncs)
-    FCFuncElement("GetMemorySettings", COMMemoryFailPoint::GetMemorySettings)
 FCFuncEnd()
 
 FCFuncStart(gInteropMarshalFuncs)
@@ -1250,7 +1247,6 @@ FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("Mda", "System", gMda)
 #endif
 FCClassElement("MdUtf8String", "System", gMdUtf8String)
-FCClassElement("MemoryFailPoint", "System.Runtime", gMemoryFailPointFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
 #ifdef FEATURE_COMINTEROP

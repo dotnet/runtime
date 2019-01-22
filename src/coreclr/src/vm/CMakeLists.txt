@@ -298,7 +298,6 @@ set(VM_SOURCES_WKS
     comdatetime.cpp
     comdependenthandle.cpp
     comdynamic.cpp
-    commemoryfailpoint.cpp
     commodule.cpp
     compatibilityswitch.cpp
     comsynchronizable.cpp
@@ -414,7 +413,6 @@ set(VM_HEADERS_WKS
     comdatetime.h
     comdependenthandle.h
     comdynamic.h
-    commemoryfailpoint.h
     commodule.h
     compatibilityswitch.h
     comsynchronizable.h
