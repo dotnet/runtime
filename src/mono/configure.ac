@@ -476,6 +476,11 @@ fi
 
 AC_SUBST(PLATFORM_AOT_SUFFIX)
 
+if test -z "$HOST_WASM_TRUE"; then :
+AC_DEFINE(HAVE_UTIME)
+AC_DEFINE(HAVE_UTIMES)
+fi
+
 ## PLATFORM_AOT_SUFFIX not so simple for windows :-)
 
 AC_CHECK_TOOL(CC, gcc, gcc)
