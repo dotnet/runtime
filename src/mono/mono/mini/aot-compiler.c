@@ -12496,10 +12496,10 @@ static void aot_dump (MonoAotCompile *acfg)
 }
 
 static const char *preinited_jit_icalls[] = {
-	"mono_aot_init_llvm_method",
-	"mono_aot_init_gshared_method_this",
-	"mono_aot_init_gshared_method_mrgctx",
-	"mono_aot_init_gshared_method_vtable",
+	"mini_llvmonly_init_method",
+	"mini_llvmonly_init_gshared_method_this",
+	"mini_llvmonly_init_gshared_method_mrgctx",
+	"mini_llvmonly_init_gshared_method_vtable",
 	"mono_llvm_throw_corlib_exception",
 	"mini_llvmonly_init_vtable_slot",
 	"mono_helper_ldstr_mscorlib"

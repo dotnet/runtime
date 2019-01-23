@@ -4599,92 +4599,29 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	return FALSE;
 }
 
-static void
-init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context)
+/*
+ * mono_aot_init_llvmonly_method:
+ *
+ *   Initialize the method identified by METHOD_INDEX in llvmonly mode.
+ * If LOOKUP_CONTEXT is TRUE, assume the method is in extra_methods, and load the context from there.
+ */
+gboolean
+mono_aot_init_llvmonly_method (gpointer aot_module, guint32 method_index, MonoClass *init_class, MonoGenericContext *context,
+							   gboolean lookup_context, MonoError *error)
 {
-	ERROR_DECL (error);
-	gboolean res;
+	MonoAotModule *amodule = (MonoAotModule*)aot_module;
+	MonoMethod *method = NULL;
 
-	res = init_method (amodule, method_index, method, init_class, context, error);
-	if (!res || !is_ok (error)) {
-		MonoException *ex = mono_error_convert_to_exception (error);
-		/* Its okay to raise in llvmonly mode */
-		if (ex)
-			mono_llvm_throw_exception ((MonoObject*)ex);
+	if (lookup_context) {
+		amodule_lock (amodule);
+		method = (MonoMethod *)g_hash_table_lookup (amodule->extra_methods, GUINT_TO_POINTER (method_index));
+		amodule_unlock (amodule);
+
+		g_assert (method);
+		context = mono_method_get_context (method);
+		g_assert (context);
 	}
-}
-
-void
-mono_aot_init_llvm_method (gpointer aot_module, guint32 method_index)
-{
-	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-
-	init_llvmonly_method (amodule, method_index, NULL, NULL, NULL);
-}
-
-void
-mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, MonoObject *this_obj)
-{
-	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	MonoClass *klass;
-	MonoGenericContext *context;
-	MonoMethod *method;
-
-	// FIXME:
-	g_assert (this_obj);
-	klass = this_obj->vtable->klass;
-
-	/* 
-	 * We can't obtain the context from THIS_OBJ since it can point to a child class etc., so
-	 * we depend on these methods to be called indirectly which causes them to be added
-	 * to extra_methods.
-	 */
-	amodule_lock (amodule);
-	method = (MonoMethod *)g_hash_table_lookup (amodule->extra_methods, GUINT_TO_POINTER (method_index));
-	amodule_unlock (amodule);
-
-	g_assert (method);
-	context = mono_method_get_context (method);
-	g_assert (context);
-
-	init_llvmonly_method (amodule, method_index, NULL, klass, context);
-}
-
-void
-mono_aot_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
-{
-	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	MonoGenericContext context = { NULL, NULL };
-	MonoClass *klass = rgctx->class_vtable->klass;
-
-	if (mono_class_is_ginst (klass))
-		context.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
-	else if (mono_class_is_gtd (klass))
-		context.class_inst = mono_class_get_generic_container (klass)->context.class_inst;
-	context.method_inst = rgctx->method_inst;
-
-	init_llvmonly_method (amodule, method_index, NULL, rgctx->class_vtable->klass, &context);
-}
-
-void
-mono_aot_init_gshared_method_vtable (gpointer aot_module, guint32 method_index, MonoVTable *vtable)
-{
-	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	MonoClass *klass;
-	MonoGenericContext *context;
-	MonoMethod *method;
-
-	klass = vtable->klass;
-
-	amodule_lock (amodule);
-	method = (MonoMethod *)g_hash_table_lookup (amodule->extra_methods, GUINT_TO_POINTER (method_index));
-	amodule_unlock (amodule);
-
-	g_assert (method);
-	context = mono_method_get_context (method);
-	g_assert (context);
-
-	init_llvmonly_method (amodule, method_index, NULL, klass, context);
+	return init_method (amodule, method_index, method, init_class, context, error);
 }
 
 /*

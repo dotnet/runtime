@@ -2917,10 +2917,10 @@ emit_init_icall_wrapper (MonoLLVMModule *module, const char *name, const char *i
 static void
 emit_init_icall_wrappers (MonoLLVMModule *module)
 {
-	module->init_method = emit_init_icall_wrapper (module, "init_method", "mono_aot_init_llvm_method", 0);
-	module->init_method_gshared_mrgctx = emit_init_icall_wrapper (module, "init_method_gshared_mrgctx", "mono_aot_init_gshared_method_mrgctx", 1);
-	module->init_method_gshared_this = emit_init_icall_wrapper (module, "init_method_gshared_this", "mono_aot_init_gshared_method_this", 2);
-	module->init_method_gshared_vtable = emit_init_icall_wrapper (module, "init_method_gshared_vtable", "mono_aot_init_gshared_method_vtable", 3);
+	module->init_method = emit_init_icall_wrapper (module, "init_method", "mini_llvmonly_init_method", 0);
+	module->init_method_gshared_mrgctx = emit_init_icall_wrapper (module, "init_method_gshared_mrgctx", "mini_llvmonly_init_gshared_method_mrgctx", 1);
+	module->init_method_gshared_this = emit_init_icall_wrapper (module, "init_method_gshared_this", "mini_llvmonly_init_gshared_method_this", 2);
+	module->init_method_gshared_vtable = emit_init_icall_wrapper (module, "init_method_gshared_vtable", "mini_llvmonly_init_gshared_method_vtable", 3);
 }
 
 static void
