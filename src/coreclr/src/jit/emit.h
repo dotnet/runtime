@@ -216,14 +216,12 @@ private:
     unsigned  codePos; // the code position within the IG (see emitCurOffset())
 };
 
-#ifndef LEGACY_BACKEND
 enum class emitDataAlignment
 {
     None,
     Preferred,
     Required
 };
-#endif
 
 /************************************************************************/
 /*          The following describes an instruction group                */
