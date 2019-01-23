@@ -1139,6 +1139,7 @@ tramp_info_equal (gconstpointer a, gconstpointer b)
 		tramp1->addr == tramp2->addr && tramp1->sig == tramp2->sig && tramp1->gsig == tramp2->gsig;
 }
 
+static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_0, "Mono", "ValueTuple");
 static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_1, "Mono", "ValueTuple`1");
 static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_2, "Mono", "ValueTuple`2");
 static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_3, "Mono", "ValueTuple`3");
@@ -1186,10 +1187,13 @@ get_wrapper_shared_vtype (MonoType *t)
 		if (findex >= 16)
 			break;
 	}
-	if (findex == 0 || findex > 5)
+	if (findex > 5)
 		return NULL;
 
 	switch (findex) {
+	case 0:
+		tuple_class = mono_class_get_valuetuple_0_class ();
+		break;
 	case 1:
 		tuple_class = mono_class_get_valuetuple_1_class ();
 		break;

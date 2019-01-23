@@ -480,7 +480,9 @@ typedef struct {
 		// symbolicated string on release builds
 		const char *name;
 #endif
-
+		const char *filename;
+		guint32 image_size;
+		guint32 time_date_stamp;
 	} managed_data;
 	struct {
 		intptr_t ip;
@@ -512,7 +514,6 @@ typedef struct {
 
 	char name [MONO_MAX_THREAD_NAME_LEN];
 
-	intptr_t managed_thread_ptr;
 	intptr_t info_addr;
 	intptr_t native_thread_id;
 

@@ -36,6 +36,86 @@ extern GCStats mono_gc_stats;
 #include <sys/sysctl.h>
 #include <fcntl.h>
 
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif
+
+// Fixme: put behind preprocessor symbol?
+static void
+assert_not_reached_mem (const char *msg)
+{
+	g_async_safe_printf ("%s\n", msg);
+
+#if 0
+	pid_t crashed_pid = getpid ();
+	// Break here
+	g_async_safe_printf ("Attach to PID %d. Supervisor thread will signal us shortly.\n", crashed_pid);
+	while (TRUE) {
+		// Sleep for 1 second.
+		g_usleep (1000 * 1000);
+	}
+#endif
+
+	g_error (msg);
+}
+
+static void
+assert_not_reached_fn_ptr_free (gpointer ptr)
+{
+	// Wrap the macro to provide as a function pointer
+	assert_not_reached_mem ("Attempted to call free during merp dump");
+}
+
+static gpointer
+assert_not_reached_fn_ptr_malloc (gsize size)
+{
+	// Wrap the macro to provide as a function pointer
+	assert_not_reached_mem ("Attempted to call malloc during merp dump");
+	return NULL;
+}
+
+static gpointer
+assert_not_reached_fn_ptr_realloc (gpointer obj, gsize size)
+{
+	// Wrap the macro to provide as a function pointer
+	assert_not_reached_mem ("Attempted to call realloc during merp dump");
+	return NULL;
+}
+
+static gpointer
+assert_not_reached_fn_ptr_calloc (gsize n, gsize x)
+{
+	// Wrap the macro to provide as a function pointer
+	assert_not_reached_mem ("Attempted to call calloc during merp dump");
+	return NULL;
+}
+
+void
+mono_summarize_toggle_assertions (gboolean enable)
+{
+#if defined(ENABLE_CHECKED_BUILD_CRASH_REPORTING) && defined (ENABLE_OVERRIDABLE_ALLOCATORS)
+	static GMemVTable g_mem_vtable_backup;
+	static gboolean saved;
+
+	if (enable) {
+		g_mem_get_vtable (&g_mem_vtable_backup);
+		saved = TRUE;
+
+		GMemVTable g_mem_vtable_assert = { assert_not_reached_fn_ptr_malloc, assert_not_reached_fn_ptr_realloc, assert_not_reached_fn_ptr_free, assert_not_reached_fn_ptr_calloc };
+		g_mem_set_vtable (&g_mem_vtable_assert);
+	} else if (saved) {
+		g_mem_set_vtable (&g_mem_vtable_backup);
+		saved = FALSE;
+	}
+
+	mono_memory_barrier ();
+#endif
+}
+
 typedef struct {
 	const char *directory;
 	MonoSummaryStage level;
@@ -98,12 +178,18 @@ mono_summarize_timeline_phase_log (MonoSummaryStage next)
 			out_level = MonoSummarySuspendHandshake;
 			break;
 		case MonoSummarySuspendHandshake:
-			out_level = MonoSummaryDumpTraversal;
+			out_level = MonoSummaryUnmanagedStacks;
 			break;
-		case MonoSummaryDumpTraversal:
+		case MonoSummaryUnmanagedStacks:
+			out_level = MonoSummaryManagedStacks;
+			break;
+		case MonoSummaryManagedStacks:
 			out_level = MonoSummaryStateWriter;
 			break;
 		case MonoSummaryStateWriter:
+			out_level = MonoSummaryStateWriterDone;
+			break;
+		case MonoSummaryStateWriterDone:
 #ifdef TARGET_OSX
 			if (mono_merp_enabled ()) {
 				out_level = MonoSummaryMerpWriter;
@@ -124,10 +210,10 @@ mono_summarize_timeline_phase_log (MonoSummaryStage next)
 			break;
 
 		case MonoSummaryDone:
-			MOSTLY_ASYNC_SAFE_PRINTF ("Trying to log crash reporter timeline, already at done %d\n", log.level);
+			g_async_safe_printf ("Trying to log crash reporter timeline, already at done %d\n", log.level);
 			return;
 		default:
-			MOSTLY_ASYNC_SAFE_PRINTF ("Trying to log crash reporter timeline, illegal state %d\n", log.level);
+			g_async_safe_printf ("Trying to log crash reporter timeline, illegal state %d\n", log.level);
 			return;
 	}
 
@@ -154,6 +240,62 @@ mono_summarize_timeline_phase_log (MonoSummaryStage next)
 	return;
 }
 
+static void
+mem_file_name (long tag, char *name, size_t limit)
+{
+	name [0] = '\0';
+	pid_t pid = getpid ();
+	g_snprintf (name, limit, "mono_crash.mem.%d.%lx.blob", pid, tag);
+}
+
+gboolean
+mono_state_alloc_mem (MonoStateMem *mem, long tag, size_t size)
+{
+	char name [100];
+	mem_file_name (tag, name, sizeof (name));
+
+	memset (mem, 0, sizeof (*mem));
+	mem->tag = tag;
+	mem->size = size;
+
+	mem->handle = g_open (name, O_RDWR | O_CREAT | O_EXCL, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	if (mem->handle < 1)
+		return FALSE;
+
+	lseek (mem->handle, mem->size, SEEK_SET);
+	g_write (mem->handle, "", 1);
+
+	mem->mem = (gpointer *) mmap (0, mem->size, PROT_READ | PROT_WRITE, MAP_SHARED, mem->handle, 0);
+	if (mem->mem == GINT_TO_POINTER (-1))
+		g_assert_not_reached ();
+
+	return TRUE;
+}
+
+void
+mono_state_free_mem (MonoStateMem *mem)
+{
+	if (!mem->mem)
+		return;
+
+  msync(mem->mem, mem->size, MS_SYNC);
+	munmap (mem->mem, mem->size);
+
+	// Note: We aren't calling msync on this file.
+	// There is no guarantee that we're going to persist
+	// changes to it at all, in the case that we fail before
+	// removing it. Don't try to debug where in the crash we were
+	// by the file contents.
+	if (mem->handle)
+		close (mem->handle);
+	else
+		g_async_safe_printf ("NULL handle mono-state mem on freeing\n");
+
+	char name [100];
+	mem_file_name (mem->tag, name, sizeof (name));
+	unlink (name);
+}
+
 static gboolean 
 timeline_has_level (const char *directory, char *log_file, size_t log_file_size, gboolean clear, MonoSummaryStage stage)
 {
@@ -171,13 +313,21 @@ mono_summarize_timeline_read_level (const char *directory, gboolean clear)
 {
 	char out_file [200];
 
+	if (!directory)
+		directory = log.directory;
+
+	if (!directory)
+		return MonoSummaryNone;
+
 	// Make sure that clear gets to erase all of these files if they exist
 	gboolean has_level_done = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryDone);
 	gboolean has_level_cleanup = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryCleanup);
 	gboolean has_level_merp_invoke = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryMerpInvoke);
 	gboolean has_level_merp_writer = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryMerpWriter);
 	gboolean has_level_state_writer = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryStateWriter);
-	gboolean has_level_dump_traversal = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryDumpTraversal);
+	gboolean has_level_state_writer_done = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryStateWriterDone);
+	gboolean has_level_managed_stacks = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryManagedStacks);
+	gboolean has_level_unmanaged_stacks = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryUnmanagedStacks);
 	gboolean has_level_suspend_handshake = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummarySuspendHandshake);
 	gboolean has_level_setup = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummarySetup);
 
@@ -189,10 +339,14 @@ mono_summarize_timeline_read_level (const char *directory, gboolean clear)
 		return MonoSummaryMerpInvoke;
 	else if (has_level_merp_writer)
 		return MonoSummaryMerpWriter;
+	else if (has_level_state_writer_done)
+		return MonoSummaryStateWriterDone;
 	else if (has_level_state_writer)
 		return MonoSummaryStateWriter;
-	else if (has_level_dump_traversal)
-		return MonoSummaryDumpTraversal;
+	else if (has_level_managed_stacks)
+		return MonoSummaryManagedStacks;
+	else if (has_level_unmanaged_stacks)
+		return MonoSummaryUnmanagedStacks;
 	else if (has_level_suspend_handshake)
 		return MonoSummarySuspendHandshake;
 	else if (has_level_setup)
@@ -200,11 +354,6 @@ mono_summarize_timeline_read_level (const char *directory, gboolean clear)
 	else
 		return MonoSummaryNone;
 }
-
-#define MONO_MAX_SUMMARY_LEN 500000
-static gchar static_dump_str [MONO_MAX_SUMMARY_LEN];
-
-static MonoStateWriter static_writer;
 
 static void 
 assert_has_space (MonoStateWriter *writer)
@@ -326,6 +475,21 @@ mono_native_state_add_frame (MonoStateWriter *writer, MonoFrameSummary *frame)
 
 		assert_has_space (writer);
 		mono_state_writer_indent (writer);
+		mono_state_writer_object_key (writer, "filename");
+		mono_state_writer_printf(writer, "\"%s\",\n", frame->managed_data.filename);
+
+		assert_has_space (writer);
+		mono_state_writer_indent (writer);
+		mono_state_writer_object_key (writer, "sizeofimage");
+		mono_state_writer_printf(writer, "\"0x%x\",\n", frame->managed_data.image_size);
+
+		assert_has_space (writer);
+		mono_state_writer_indent (writer);
+		mono_state_writer_object_key (writer, "timestamp");
+		mono_state_writer_printf(writer, "\"0x%x\",\n", frame->managed_data.time_date_stamp);
+
+		assert_has_space (writer);
+		mono_state_writer_indent (writer);
 		mono_state_writer_object_key (writer, "il_offset");
 		mono_state_writer_printf(writer, "\"0x%05x\"\n", frame->managed_data.il_offset);
 
@@ -416,13 +580,18 @@ mono_native_state_add_thread (MonoStateWriter *writer, MonoThreadSummary *thread
 
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
-	mono_state_writer_object_key (writer, "crashed");
-	mono_state_writer_printf(writer, "%s,\n", crashing_thread ? "true" : "false");
+	mono_state_writer_object_key (writer, "offset_free_hash");
+	mono_state_writer_printf(writer, "\"0x%" PRIx64 "\",\n", thread->hashes.offset_free_hash);
 
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
-	mono_state_writer_object_key (writer, "managed_thread_ptr");
-	mono_state_writer_printf(writer, "\"0x%" PRIx64 "\",\n", (guint64) thread->managed_thread_ptr);
+	mono_state_writer_object_key (writer, "offset_rich_hash");
+	mono_state_writer_printf(writer, "\"0x%" PRIx64 "\",\n", thread->hashes.offset_rich_hash);
+
+	assert_has_space (writer);
+	mono_state_writer_indent (writer);
+	mono_state_writer_object_key (writer, "crashed");
+	mono_state_writer_printf(writer, "%s,\n", crashing_thread ? "true" : "false");
 
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
@@ -542,8 +711,6 @@ mono_native_state_add_ee_info  (MonoStateWriter *writer)
 #define MONO_ARCHITECTURE MONO_ARCH_ARCHITECTURE
 #endif
 
-static char *mono_runtime_build_info;
-
 static void
 mono_native_state_add_version (MonoStateWriter *writer)
 {
@@ -556,9 +723,7 @@ mono_native_state_add_version (MonoStateWriter *writer)
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
 	mono_state_writer_object_key (writer, "version");
-	if (!mono_runtime_build_info)
-		mono_runtime_build_info = mono_get_runtime_callbacks ()->get_runtime_build_info ();
-	mono_state_writer_printf(writer, "\"%s\",\n", mono_runtime_build_info);
+	mono_state_writer_printf(writer, "\"(%s) (%s)\",\n", VERSION, mono_get_runtime_callbacks ()->get_runtime_build_version ());
 
 	assert_has_space (writer);
 	mono_state_writer_indent (writer);
@@ -813,28 +978,24 @@ mono_state_writer_init (MonoStateWriter *writer, gchar *output_str, int len)
 }
 
 void
-mono_summarize_native_state_begin (gchar *mem, int size)
+mono_summarize_native_state_begin (MonoStateWriter *writer, gchar *mem, int size)
 {
-	// Shared global mutable memory, only use when VM crashing
-	if (!mem)
-		mono_state_writer_init (&static_writer, static_dump_str, MONO_MAX_SUMMARY_LEN);
-	else
-		mono_state_writer_init (&static_writer, mem, size);
-
-	mono_native_state_init (&static_writer);
+	g_assert (mem);
+	mono_state_writer_init (writer, mem, size);
+	mono_native_state_init (writer);
 }
 
 char *
-mono_summarize_native_state_end (void)
+mono_summarize_native_state_end (MonoStateWriter *writer)
 {
-	return mono_native_state_emit (&static_writer);
+	return mono_native_state_emit (writer);
 }
 
 void
-mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *ctx, gboolean crashing_thread)
+mono_summarize_native_state_add_thread (MonoStateWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean crashing_thread)
 {
 	static gboolean not_first_thread = FALSE;
-	mono_native_state_add_thread (&static_writer, thread, ctx, !not_first_thread, crashing_thread);
+	mono_native_state_add_thread (writer, thread, ctx, !not_first_thread, crashing_thread);
 	not_first_thread = TRUE;
 }
 

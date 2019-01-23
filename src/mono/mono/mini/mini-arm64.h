@@ -140,7 +140,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_TRAMPOLINE 1
 #define MONO_ARCH_USE_SIGACTION 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
-#ifdef TARGET_APPLETVOS
+#ifdef HOST_TVOS
 #define MONO_ARCH_HAS_NO_PROPER_MONOCTX 1
 #endif
 #define MONO_ARCH_HAVE_CONTEXT_SET_INT_REG 1
@@ -183,7 +183,7 @@ typedef struct {
 
 #endif
 
-#if defined(TARGET_APPLETVOS) || defined(TARGET_IOS)
+#if defined(TARGET_IOS)
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 

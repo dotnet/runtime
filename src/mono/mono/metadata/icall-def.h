@@ -664,8 +664,6 @@ HANDLES(FILEDI_2, "internal_from_handle_type", ves_icall_System_Reflection_Field
 
 ICALL_TYPE(MBASE, "System.Reflection.MethodBase", MBASE_1)
 HANDLES(MBASE_1, "GetCurrentMethod", ves_icall_GetCurrentMethod, MonoReflectionMethod, 0, ())
-HANDLES(MBASE_2, "GetMethodBodyInternal", ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal, MonoReflectionMethodBody, 1, (MonoMethod_ptr))
-HANDLES(MBASE_4, "GetMethodFromHandleInternalType_native", ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType_native, MonoReflectionMethod, 3, (MonoMethod_ptr, MonoType_ptr, MonoBoolean))
 
 ICALL_TYPE(MODULE, "System.Reflection.Module", MODULE_1)
 HANDLES(MODULE_1, "Close", ves_icall_System_Reflection_Module_Close, void, 1, (MonoReflectionModule))
@@ -698,10 +696,8 @@ HANDLES(MEVIN_1, "get_event_info", ves_icall_MonoEventInfo_get_event_info, void,
 ICALL_TYPE(MFIELD, "System.Reflection.MonoField", MFIELD_1)
 HANDLES(MFIELD_1, "GetFieldOffset", ves_icall_MonoField_GetFieldOffset, gint32, 1, (MonoReflectionField))
 HANDLES(MFIELD_2, "GetParentType", ves_icall_MonoField_GetParentType, MonoReflectionType, 2, (MonoReflectionField, MonoBoolean))
-
 ICALL(MFIELD_5, "GetRawConstantValue", ves_icall_MonoField_GetRawConstantValue)
 HANDLES(MFIELD_9, "GetTypeModifiers", ves_icall_System_Reflection_FieldInfo_GetTypeModifiers, MonoArray, 2, (MonoReflectionField, MonoBoolean))
-
 ICALL(MFIELD_3, "GetValueInternal", ves_icall_MonoField_GetValueInternal)
 HANDLES(MFIELD_6, "ResolveType", ves_icall_MonoField_ResolveType, MonoReflectionType, 1, (MonoReflectionField))
 HANDLES(MFIELD_4, "SetValueInternal", ves_icall_MonoField_SetValueInternal, void, 3, (MonoReflectionField, MonoObject, MonoObject))
@@ -743,6 +739,10 @@ HANDLES(MPROPI_2, "get_property_info", ves_icall_MonoPropertyInfo_get_property_i
 
 ICALL_TYPE(RTFIELD, "System.Reflection.RtFieldInfo", RTFIELD_1)
 ICALL(RTFIELD_1, "UnsafeGetValue", ves_icall_MonoField_GetValueInternal)
+
+ICALL_TYPE(RMETHODINFO, "System.Reflection.RuntimeMethodInfo", RMETHODINFO_1)
+HANDLES(RMETHODINFO_1, "GetMethodBodyInternal", ves_icall_System_Reflection_RuntimeMethodInfo_GetMethodBodyInternal, MonoReflectionMethodBody, 1, (MonoMethod_ptr))
+HANDLES(RMETHODINFO_2, "GetMethodFromHandleInternalType_native", ves_icall_System_Reflection_RuntimeMethodInfo_GetMethodFromHandleInternalType_native, MonoReflectionMethod, 3, (MonoMethod_ptr, MonoType_ptr, MonoBoolean))
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
 HANDLES(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue, MonoObject, 1, (MonoObject))

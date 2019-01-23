@@ -476,7 +476,7 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) (gpointer)(gsize)((ctx)->regs [ARMREG_FP])
 #define MONO_CONTEXT_GET_SP(ctx) (gpointer)(gsize)((ctx)->regs [ARMREG_SP])
 
-#if defined (HOST_APPLETVOS)
+#if defined (HOST_TVOS)
 
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { \
 	arm_unified_thread_state_t thread_state;	\

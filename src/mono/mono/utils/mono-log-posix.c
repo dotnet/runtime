@@ -82,7 +82,7 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 	syslog (mapSyslogLevel(level), "%s", message);
 
 	if (level & G_LOG_LEVEL_ERROR)
-		abort();
+		g_assert_abort ();
 }
 
 /**

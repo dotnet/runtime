@@ -729,6 +729,7 @@ typedef struct {
 	gpointer (*create_ftnptr) (MonoDomain *domain, gpointer addr);
 	gpointer (*get_addr_from_ftnptr) (gpointer descr);
 	char*    (*get_runtime_build_info) (void);
+	const char*    (*get_runtime_build_version) (void);
 	gpointer (*get_vtable_trampoline) (MonoVTable *vtable, int slot_index);
 	gpointer (*get_imt_trampoline) (MonoVTable *vtable, int imt_slot_index);
 	gboolean (*imt_entry_inited) (MonoVTable *vtable, int imt_slot_index);
@@ -747,6 +748,7 @@ typedef struct {
 	gpointer (*interp_get_remoting_invoke) (MonoMethod *method, gpointer imethod, MonoError *error);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	void     (*install_state_summarizer) (void);
+	gboolean (*is_interpreter_enabled) (void);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);

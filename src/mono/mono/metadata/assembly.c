@@ -4303,9 +4303,10 @@ mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname,
 	 * only requests, like a common reflection only assembly 
 	 */
 	gboolean name_is_corlib = strcmp (aname->name, MONO_ASSEMBLY_CORLIB_NAME) == 0;
-#ifndef NETCORE_LOADER
-	name_is_corlib |= strcmp (aname->name, "mscorlib.dll") == 0;
-#endif
+	/* Assembly.Load (new AssemblyName ("mscorlib.dll")) (respectively,
+	 * "System.Private.CoreLib.dll" for netcore) is treated the same as
+	 * "mscorlib" (resp "System.Private.CoreLib"). */
+	name_is_corlib = name_is_corlib || strcmp (aname->name, MONO_ASSEMBLY_CORLIB_NAME ".dll") == 0;
 	if (name_is_corlib) {
 		return mono_assembly_load_corlib (mono_get_runtime_info (), status);
 	}

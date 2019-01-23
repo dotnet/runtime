@@ -581,10 +581,13 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			for (i = MONO_PPC_FIRST_SAVED_GREG; i < MONO_MAX_IREGS; ++i)
 				regs [i] = ctx->regs [i];
 
-			mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
+			gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 							   (guint8*)ji->code_start + ji->code_size,
 							   ip, NULL, regs, ppc_lr + 1,
 							   save_locations, MONO_MAX_IREGS, &cfa);
+
+			if (!success)
+				return FALSE;
 
 			/* we substract 4, so that the IP points into the call instruction */
 			MONO_CONTEXT_SET_IP (new_ctx, regs [ppc_lr] - 4);

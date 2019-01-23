@@ -448,10 +448,13 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		for (i = 0; i < MONO_MAX_IREGS; ++i)
 			regs [i] = new_ctx->sc_regs [i];
 
-		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
+		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 						   (guint8*)ji->code_start + ji->code_size,
 						   ip, NULL, regs, MONO_MAX_IREGS,
 						   save_locations, MONO_MAX_IREGS, &cfa);
+
+		if (!success)
+			return FALSE;
 
 		for (i = 0; i < MONO_MAX_IREGS; ++i)
 			new_ctx->sc_regs [i] = regs [i];

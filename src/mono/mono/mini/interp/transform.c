@@ -1802,6 +1802,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 		if (calli)
 			ADD_CODE(td, native ? ((op != -1) ? MINT_CALLI_NAT_FAST : MINT_CALLI_NAT) : MINT_CALLI);
+		else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass))
+			ADD_CODE(td, is_void ? MINT_VCALLVIRT_FAST : MINT_CALLVIRT_FAST);
 		else if (is_virtual)
 			ADD_CODE(td, is_void ? MINT_VCALLVIRT : MINT_CALLVIRT);
 		else
@@ -1816,6 +1818,13 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			return_val_if_nok (error, FALSE);
 			if (csignature->call_convention == MONO_CALL_VARARG)
 				ADD_CODE(td, get_data_item_index (td, (void *)csignature));
+			else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass)) {
+				/* FIXME Use fastpath also for MBRO. Asserts in mono_method_get_vtable_slot */
+				if (mono_class_is_interface (target_method->klass))
+					ADD_CODE(td, -2 * MONO_IMT_SIZE + mono_method_get_imt_slot (target_method));
+				else
+					ADD_CODE(td, mono_method_get_vtable_slot (target_method));
+			}
 		}
 	}
 	td->ip += 5;

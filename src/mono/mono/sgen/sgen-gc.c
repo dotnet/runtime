@@ -2476,19 +2476,20 @@ sgen_ensure_free_space (size_t size, int generation)
 {
 	int generation_to_collect = -1;
 	const char *reason = NULL;
+	gboolean forced = FALSE;
 
 	if (generation == GENERATION_OLD) {
-		if (sgen_need_major_collection (size)) {
+		if (sgen_need_major_collection (size, &forced)) {
 			reason = "LOS overflow";
 			generation_to_collect = GENERATION_OLD;
 		}
 	} else {
 		if (sgen_degraded_mode) {
-			if (sgen_need_major_collection (size)) {
+			if (sgen_need_major_collection (size, &forced)) {
 				reason = "Degraded mode overflow";
 				generation_to_collect = GENERATION_OLD;
 			}
-		} else if (sgen_need_major_collection (size)) {
+		} else if (sgen_need_major_collection (size, &forced)) {
 			reason = sgen_concurrent_collection_in_progress ? "Forced finish concurrent collection" : "Minor allowance";
 			generation_to_collect = GENERATION_OLD;
 		} else {
@@ -2506,7 +2507,7 @@ sgen_ensure_free_space (size_t size, int generation)
 
 	if (generation_to_collect == -1)
 		return;
-	sgen_perform_collection (size, generation_to_collect, reason, FALSE, TRUE);
+	sgen_perform_collection (size, generation_to_collect, reason, forced, TRUE);
 }
 
 /*
@@ -3081,13 +3082,15 @@ sgen_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
 void
 sgen_gc_collect (int generation)
 {
+	gboolean forced;
+
 	LOCK_GC;
 	if (generation > 1)
 		generation = 1;
 	sgen_perform_collection (0, generation, "user request", TRUE, TRUE);
 	/* Make sure we don't exceed heap size allowance by promoting */
-	if (generation == GENERATION_NURSERY && sgen_need_major_collection (0))
-		sgen_perform_collection (0, GENERATION_OLD, "Minor allowance", FALSE, TRUE);
+	if (generation == GENERATION_NURSERY && sgen_need_major_collection (0, &forced))
+		sgen_perform_collection (0, GENERATION_OLD, "Minor allowance", forced, TRUE);
 	UNLOCK_GC;
 }
 

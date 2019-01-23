@@ -45,8 +45,8 @@
 
 #define BZERO_WORDS(dest,words) do {			\
 		void * volatile *__d = (void* volatile*)(dest);		\
-		int __n = (words);			\
-		int __i;				\
+		size_t __n = (words);			\
+		size_t __i;				\
 		for (__i = 0; __i < __n; ++__i)		\
 			__d [__i] = NULL;		\
 	} while (0)
@@ -119,8 +119,8 @@ mono_gc_bzero_atomic (void *dest, size_t size)
 #define MEMMOVE_WORDS_UPWARD(dest,src,words) do {	\
 		void * volatile *__d = (void* volatile*)(dest);		\
 		void **__s = (void**)(src);		\
-		int __n = (int)(words);			\
-		int __i;				\
+		size_t __n = (words);			\
+		size_t __i;				\
 		for (__i = 0; __i < __n; ++__i)		\
 			__d [__i] = __s [__i];		\
 	} while (0)
@@ -128,9 +128,9 @@ mono_gc_bzero_atomic (void *dest, size_t size)
 #define MEMMOVE_WORDS_DOWNWARD(dest,src,words) do {	\
 		void * volatile *__d = (void* volatile*)(dest);		\
 		void **__s = (void**)(src);		\
-		int __n = (int)(words);			\
-		int __i;				\
-		for (__i = __n - 1; __i >= 0; --__i)	\
+		size_t __n = (words);			\
+		size_t __i;				\
+		for (__i = __n; __i-- > 0;)		\
 			__d [__i] = __s [__i];		\
 	} while (0)
 

@@ -1960,6 +1960,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	guint32 vtable_size, class_size;
 	gpointer iter;
 	gpointer *interface_offsets;
+	gboolean use_interpreter = callbacks.is_interpreter_enabled ();
 
 	mono_loader_lock (); /*FIXME mono_class_init_internal acquires it*/
 	mono_domain_lock (domain);
@@ -2029,6 +2030,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 
 	if (m_class_get_interface_offsets_count (klass)) {
 		imt_table_bytes = sizeof (gpointer) * (MONO_IMT_SIZE);
+		/* Interface table for the interpreter */
+		if (use_interpreter)
+			imt_table_bytes *= 2;
 		UnlockedIncrement (&mono_stats.imt_number_of_tables);
 		UnlockedAdd (&mono_stats.imt_tables_size, imt_table_bytes);
 	} else {
@@ -2042,6 +2046,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 
 	interface_offsets = alloc_vtable (domain, vtable_size, imt_table_bytes);
 	vt = (MonoVTable*) ((char*)interface_offsets + imt_table_bytes);
+	/* If on interp, skip the interp interface table */
+	if (use_interpreter)
+		interface_offsets = (gpointer*)((char*)interface_offsets + imt_table_bytes / 2);
 	g_assert (!((gsize)vt & 7));
 
 	vt->klass = klass;
@@ -2313,7 +2320,8 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	uint8_t *bitmap = NULL;
 	int bsize;
 	size_t imt_table_bytes;
-	
+	gboolean use_interpreter = callbacks.is_interpreter_enabled ();
+
 #ifdef COMPRESSED_INTERFACE_BITMAP
 	int bcsize;
 #endif
@@ -2363,6 +2371,8 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	}
 
 	imt_table_bytes = sizeof (gpointer) * MONO_IMT_SIZE;
+	if (use_interpreter)
+		imt_table_bytes *= 2;
 	UnlockedIncrement (&mono_stats.imt_number_of_tables);
 	UnlockedAdd (&mono_stats.imt_tables_size, imt_table_bytes);
 
@@ -2374,8 +2384,12 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	pvt = (MonoVTable*) ((char*)interface_offsets + imt_table_bytes);
 	g_assert (!((gsize)pvt & 7));
 
+	if (use_interpreter)
+		interface_offsets = (gpointer*)((char*)interface_offsets + imt_table_bytes / 2);
+
 	memcpy (pvt, vt, MONO_SIZEOF_VTABLE + m_class_get_vtable_size (klass) * sizeof (gpointer));
 
+	pvt->interp_vtable = NULL;
 	pvt->klass = mono_defaults.transparent_proxy_class;
 
 	MONO_PROFILER_RAISE (vtable_loading, (pvt));

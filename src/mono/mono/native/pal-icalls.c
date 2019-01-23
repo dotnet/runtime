@@ -6,7 +6,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
 
-#if !defined (HOST_WATCHOS) && !defined (TARGET_APPLETVOS) /* These platforms don't support async suspend and do not need this code for now */
+#if !defined (HOST_WATCHOS) && !defined (HOST_TVOS) /* These platforms don't support async suspend and do not need this code for now */
 
 #include <config.h>
 #include <glib.h>
@@ -80,4 +80,4 @@ ves_icall_Interop_RunLoop_CFRunLoopRun (void)
 
 #endif
 
-#endif /* !defined (HOST_WATCHOS) && !defined (TARGET_APPLETVOS) */
+#endif /* !defined (HOST_WATCHOS) && !defined (HOST_TVOS) */

@@ -536,8 +536,10 @@ typedef struct {
  * N was saved, or NULL, if it was not saved by this frame.
  * MARK_LOCATIONS should contain the locations marked by mono_emit_unwind_op_mark_loc (), if any.
  * This function is signal safe.
+ *
+ * It returns FALSE on failure
  */
-void
+gboolean
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, guint8 **mark_locations,
 				   mono_unwind_reg_t *regs, int nregs,
@@ -595,7 +597,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				reg = decode_uleb128 (p, &p);
 				hwreg = mono_dwarf_reg_to_hw_reg (reg);
 				offset = decode_sleb128 (p, &p);
-				g_assert (reg < NUM_DWARF_REGS);
+				if (reg >= NUM_DWARF_REGS) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				reg_saved [hwreg] = TRUE;
 				locations [hwreg].loc_type = LOC_OFFSET;
 				locations [hwreg].offset = offset * DWARF_DATA_ALIGN;
@@ -604,7 +609,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				reg = decode_uleb128 (p, &p);
 				hwreg = mono_dwarf_reg_to_hw_reg (reg);
 				offset = decode_uleb128 (p, &p);
-				g_assert (reg < NUM_DWARF_REGS);
+				if (reg >= NUM_DWARF_REGS) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				reg_saved [hwreg] = TRUE;
 				locations [hwreg].loc_type = LOC_OFFSET;
 				locations [hwreg].offset = offset * DWARF_DATA_ALIGN;
@@ -626,7 +634,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				p += 4;
 				break;
 			case DW_CFA_remember_state:
-				g_assert (state_stack_pos == 0);
+				if (state_stack_pos != 0) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				memcpy (&state_stack [0].locations, &locations, sizeof (locations));
 				memcpy (&state_stack [0].reg_saved, &reg_saved, sizeof (reg_saved));
 				state_stack [0].cfa_reg = cfa_reg;
@@ -634,7 +645,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				state_stack_pos ++;
 				break;
 			case DW_CFA_restore_state:
-				g_assert (state_stack_pos == 1);
+				if (state_stack_pos != 1) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				state_stack_pos --;
 				memcpy (&locations, &state_stack [0].locations, sizeof (locations));
 				memcpy (&reg_saved, &state_stack [0].reg_saved, sizeof (reg_saved));
@@ -642,16 +656,21 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				cfa_offset = state_stack [0].cfa_offset;
 				break;
 			case DW_CFA_mono_advance_loc:
-				g_assert (mark_locations [0]);
+				if (!mark_locations [0]) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				pos = mark_locations [0] - start_ip;
 				break;
 			default:
-				g_assert_not_reached ();
+				mono_runtime_printf_err ("Unwind failure. Illegal value for switch statement, assertion at %s %d\n.", __FILE__, __LINE__);
+				return FALSE;
 			}
 			break;
 		}
 		default:
-			g_assert_not_reached ();
+			mono_runtime_printf_err ("Unwind failure. Illegal value for switch statement, assertion at %s %d\n.", __FILE__, __LINE__);
+			return FALSE;
 		}
 	}
 
@@ -661,13 +680,16 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	if (cfa_reg == -1) {
 		mono_runtime_printf_err ("Unset cfa_reg in method %s. Memory around ip (%p):", mono_get_method_from_ip (ip), ip);
 		mono_dump_mem (ip - 0x10, 0x40);
-		g_assert_not_reached ();
+		return FALSE;
 	}
 	cfa_val = (guint8*)regs [mono_dwarf_reg_to_hw_reg (cfa_reg)] + cfa_offset;
 	for (hwreg = 0; hwreg < NUM_HW_REGS; ++hwreg) {
 		if (reg_saved [hwreg] && locations [hwreg].loc_type == LOC_OFFSET) {
 			int dwarfreg = mono_hw_reg_to_dwarf_reg (hwreg);
-			g_assert (hwreg < nregs);
+			if (hwreg >= nregs) {
+				mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+				return FALSE;
+			}
 			if (IS_DOUBLE_REG (dwarfreg))
 				regs [hwreg] = *(guint64*)(cfa_val + locations [hwreg].offset);
 			else
@@ -678,6 +700,9 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	}
 
 	*out_cfa = cfa_val;
+
+	// Success
+	return TRUE;
 }
 
 void

@@ -33,7 +33,7 @@ mono_threads_suspend_init (void)
 	mono_threads_init_dead_letter ();
 }
 
-#if defined(HOST_WATCHOS) || defined(HOST_TVOS)
+#if defined(HOST_WATCHOS)
 
 gboolean
 mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
@@ -58,7 +58,7 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 {
 }
 
-#else /* defined(HOST_WATCHOS) || defined(HOST_TVOS) */
+#else /* defined(HOST_WATCHOS) */
 
 gboolean
 mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
@@ -192,7 +192,7 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 	g_assert (ret == KERN_SUCCESS);
 }
 
-#endif /* defined(HOST_WATCHOS) || defined(HOST_TVOS) */
+#endif /* defined(HOST_WATCHOS) */
 
 void
 mono_threads_suspend_register (MonoThreadInfo *info)

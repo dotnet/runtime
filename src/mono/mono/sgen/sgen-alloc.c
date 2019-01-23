@@ -73,8 +73,9 @@ alloc_degraded (GCVTable vtable, size_t size, gboolean for_mature)
 		SGEN_ATOMIC_ADD_P (sgen_degraded_mode, size);
 		sgen_ensure_free_space (size, GENERATION_OLD);
 	} else {
-		if (sgen_need_major_collection (size))
-			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure", !for_mature, TRUE);
+		gboolean forced;
+		if (sgen_need_major_collection (size, &forced))
+			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure", !for_mature || forced, TRUE);
 	}
 
 

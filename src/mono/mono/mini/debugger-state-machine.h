@@ -58,7 +58,7 @@ mono_debugger_log_suspend (DebuggerTlsData *tls);
 #if 0
 #define DEBUGGER_STATE_MACHINE_DEBUG(level, ...)
 #else
-#define DEBUGGER_STATE_MACHINE_DEBUG(level, ...) MOSTLY_ASYNC_SAFE_PRINTF(__VA_ARGS__)
+#define DEBUGGER_STATE_MACHINE_DEBUG(level, ...) g_async_safe_printf(__VA_ARGS__)
 #endif
 
 void

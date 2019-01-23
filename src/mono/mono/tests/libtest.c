@@ -9,6 +9,10 @@
 #include <math.h>
 #include <setjmp.h>
 
+#ifndef HOST_WIN32
+#include <dlfcn.h>
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #include "initguid.h"
@@ -7574,6 +7578,9 @@ static MonoObject* (*sym_mono_gchandle_get_target) (guint32 gchandle);
 static guint32 (*sym_mono_gchandle_new) (MonoObject *, mono_bool pinned);
 static void (*sym_mono_gchandle_free) (guint32 gchandle);
 static void (*sym_mono_raise_exception) (MonoException *ex);
+static void (*sym_mono_domain_unload) (gpointer);
+static void (*sym_mono_threads_exit_gc_safe_region_unbalanced) (gpointer, gpointer *);
+static void (*null_function_ptr) (void);
 
 static void
 mono_test_init_symbols (void)
@@ -7590,6 +7597,10 @@ mono_test_init_symbols (void)
 	sym_mono_gchandle_free = (void (*) (guint32 gchandle)) (lookup_mono_symbol ("mono_gchandle_free"));
 
 	sym_mono_raise_exception = (void (*) (MonoException *)) (lookup_mono_symbol ("mono_raise_exception"));
+
+	sym_mono_domain_unload = (void (*) (gpointer)) (lookup_mono_symbol ("mono_domain_unload"));
+
+	sym_mono_threads_exit_gc_safe_region_unbalanced = (void (*) (gpointer, gpointer *)) (lookup_mono_symbol ("mono_threads_exit_gc_safe_region_unbalanced"));
 
 	sym_inited = 1;
 }
@@ -7669,6 +7680,62 @@ mono_test_cominterop_ccw_queryinterface (MonoComObject *pUnk)
 
 	// Return true if we can't get INotImplemented
 	return pUnk == NULL && hr == S_OK;
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashSnprintf (void)
+{
+	fprintf (stderr, "Before overwrite\n");
+
+	char buff [1] = { '\0' };
+	char overflow [1] = { 'a' }; // Not null-terminated
+	g_snprintf (buff, sizeof(buff) * 10, "THISSHOULDOVERRUNTERRIBLY%s", overflow);
+	g_snprintf ((char *) GINT_TO_POINTER(-1), sizeof(buff) * 10, "THISSHOULDOVERRUNTERRIBLY%s", overflow);
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashDladdr (void)
+{
+#ifndef HOST_WIN32
+	dlopen (GINT_TO_POINTER(-1), -1);
+#endif
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashMalloc (void)
+{
+	void *mem = malloc (sizeof (char) * 10);
+	memset (mem, sizeof (mem) * 10, 'A');
+	int x = 100;
+	g_free (&x);
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashNullFp (void)
+{
+	null_function_ptr ();
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashDomainUnload (void)
+{
+	mono_test_init_symbols ();
+	sym_mono_domain_unload (GINT_TO_POINTER (-1));
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashUnbalancedGCSafe (void)
+{
+	mono_test_init_symbols ();
+	gpointer foo = GINT_TO_POINTER (-1);
+	gpointer bar = GINT_TO_POINTER (-2);
+	sym_mono_threads_exit_gc_safe_region_unbalanced (foo, &bar);
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashUnhandledExceptionHook (void)
+{
+	g_assert_not_reached ();
 }
 
 #ifdef __cplusplus

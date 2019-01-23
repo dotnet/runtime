@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>		/* in_addr_t */
 
-#if defined (HOST_IOS) || defined (HOST_WATCHOS) || defined (HOST_APPLETVOS)
+#if defined (HOST_IOS) || defined (HOST_WATCHOS) || defined (HOST_TVOS)
 // The iOS SDK does not provide the net/route.h header but using the Darwin version works fine.
 #include "../../support/ios/net/route.h"
 #else
