@@ -140,6 +140,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SDKLookup
                 .And
                 .HaveStdErrContaining("It was not possible to find any installed dotnet SDKs")
                 .And
+                .HaveStdErrContaining("aka.ms/dotnet-download")
+                .And
                 .NotHaveStdErrContaining("Checking if resolved SDK dir");
 
             // Add SDK versions

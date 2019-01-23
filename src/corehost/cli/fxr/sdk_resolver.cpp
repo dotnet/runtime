@@ -285,7 +285,7 @@ bool sdk_resolver_t::resolve_sdk_dotnet_path(
     {
         trace::error(_X("  It was not possible to find any installed dotnet SDKs"));
         trace::error(_X("  Did you mean to run dotnet SDK commands? Please install dotnet SDK from:"));
-        trace::error(_X("      %s"), DOTNET_CORE_GETTING_STARTED_URL);
+        trace::error(_X("      %s"), DOTNET_CORE_DOWNLOAD_URL);
     }
     return false;
 }
