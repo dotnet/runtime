@@ -653,17 +653,6 @@ namespace System.Threading
             catch (ThreadAbortException tae)
             {
                 //
-                // This is here to catch the case where this thread is aborted between the time we exit the finally block in the dispatch
-                // loop, and the time we execute the work item.  QueueUserWorkItemCallback uses this to update its accounting of whether
-                // it was executed or not (in debug builds only).  Task uses this to communicate the ThreadAbortException to anyone
-                // who waits for the task to complete.
-                //
-                if (outerWorkItem is Task task)
-                {
-                    task.MarkAbortedFromThreadPool(tae);
-                }
-
-                //
                 // In this case, the VM is going to request another thread on our behalf.  No need to do it twice.
                 //
                 needAnotherThread = false;
