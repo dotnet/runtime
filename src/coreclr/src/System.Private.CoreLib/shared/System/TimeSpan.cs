@@ -499,7 +499,7 @@ namespace System
             // Rounding to the nearest tick is as close to the result we would have with unlimited
             // precision as possible, and so likely to have the least potential to surprise.
             double ticks = Math.Round(timeSpan.Ticks * factor);
-            if (ticks > long.MaxValue | ticks < long.MinValue)
+            if (ticks > long.MaxValue || ticks < long.MinValue)
             {
                 throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             }
@@ -517,7 +517,7 @@ namespace System
             }
 
             double ticks = Math.Round(timeSpan.Ticks / divisor);
-            if (ticks > long.MaxValue | ticks < long.MinValue || double.IsNaN(ticks))
+            if (ticks > long.MaxValue || ticks < long.MinValue || double.IsNaN(ticks))
             {
                 throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             }
