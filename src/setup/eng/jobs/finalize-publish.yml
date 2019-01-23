@@ -41,6 +41,11 @@ jobs:
     timeoutInMinutes: 120
     variables:
       _PublishType: ${{ parameters._PublishType}}
+
+      # Disable MSBuild node reuse in case this build is running on a persistent agent.
+      # Use environment variable rather than /nr:false to make sure internal Execs that run MSBuild
+      # commands also disable node reuse.
+      MSBUILDDISABLENODEREUSE: 1
     steps:
 
     # Initialize tooling
