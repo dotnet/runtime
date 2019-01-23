@@ -230,7 +230,7 @@ g_find_program_in_path (const gchar *program)
 #endif
 
 	g_return_val_if_fail (program != NULL, NULL);
-	x = p = g_strdup (g_getenv ("PATH"));
+	x = p = g_getenv ("PATH");
 
 	if (x == NULL || *x == '\0') {
 		curdir = g_get_current_dir ();
