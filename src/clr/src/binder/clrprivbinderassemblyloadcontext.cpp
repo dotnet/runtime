@@ -259,7 +259,6 @@ void CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease(INT_PTR ptrM
         GC_NOTRIGGER;
         THROWS;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

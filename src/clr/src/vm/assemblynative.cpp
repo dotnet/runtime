@@ -27,7 +27,6 @@
 #include "interoputil.h"
 #include "frames.h"
 #include "typeparse.h"
-#include "stackprobe.h"
 
 #include "appdomainnative.hpp"
 #include "../binder/inc/clrprivbindercoreclr.h"

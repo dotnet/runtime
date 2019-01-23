@@ -297,7 +297,6 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
         {
             MODE_ANY;
         }
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
@@ -356,7 +355,6 @@ void ValidateFetchObjrefForHandle(OBJECTREF objref, ADIndex appDomainIndex)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_DEBUG_ONLY;
 
@@ -374,7 +372,6 @@ void ValidateAssignObjrefForHandle(OBJECTREF objref, ADIndex appDomainIndex)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_DEBUG_ONLY;
 
@@ -432,7 +429,6 @@ void HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT; 
         CAN_TAKE_LOCK;     // because of TableFreeSingleHandleToCache
     }
     CONTRACTL_END;
@@ -478,7 +474,6 @@ void HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -590,7 +585,6 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
@@ -646,7 +640,6 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     // unwrap the objectref we were given

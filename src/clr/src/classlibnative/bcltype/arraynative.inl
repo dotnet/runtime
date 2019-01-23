@@ -21,7 +21,6 @@ FORCEINLINE void InlinedForwardGCSafeCopyHelper(void *dest, const void *src, siz
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -156,7 +155,6 @@ FORCEINLINE void InlinedBackwardGCSafeCopyHelper(void *dest, const void *src, si
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -294,7 +292,6 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

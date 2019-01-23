@@ -23,7 +23,6 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
     // that we won't trigger without having setup a frame.
     // STATIC_CONTRACT_TRIGGER
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;    // function probes before it does any work
 
     // side effect the compiler can't remove
     if (FC_NO_TAILCALL != 1)
@@ -67,7 +66,6 @@ NOINLINE LPVOID __FCThrowArgument(LPVOID __me, RuntimeExceptionKind reKind, LPCW
     // that we won't trigger without having setup a frame.
     // STATIC_CONTRACT_TRIGGER
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;    // function probes before it does any work
 
     // side effect the compiler can't remove
     if (FC_NO_TAILCALL != 1)
@@ -119,7 +117,6 @@ NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect)
         // This isn't strictly true... But the guarentee that we make here is 
         // that we won't trigger without having setup a frame.
         UNCHECKED(GC_NOTRIGGER);
-        SO_TOLERANT;    // function probes before it does any work
     } CONTRACTL_END;
 
     FC_CAN_TRIGGER_GC();

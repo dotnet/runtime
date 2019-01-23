@@ -1475,18 +1475,15 @@ PTR_Module Module::ComputePreferredZapModule(Module * pDefinitionModule,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
     PTR_Module  ret = NULL;
-    INTERIOR_STACK_PROBE_NOTHROW_CHECK_THREAD(DontCallDirectlyForceStackOverflow());
 
     ret = Module::ComputePreferredZapModuleHelper( pDefinitionModule,
                                                    classInst,
                                                    methodInst );
-    END_INTERIOR_STACK_PROBE;
     return ret;
 }
 
@@ -1661,7 +1658,6 @@ PTR_Module Module::ComputePreferredZapModule(TypeKey *pKey)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -1687,15 +1683,12 @@ PTR_Module Module::GetPreferredZapModuleForMethodTable(MethodTable *pMT)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
     PTR_Module pRet=NULL;
-
-    INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD(10, NO_FORBIDGC_LOADER_USE_ThrowSO(););
 
     if (pMT->IsArray())
     {
@@ -1713,7 +1706,6 @@ PTR_Module Module::GetPreferredZapModuleForMethodTable(MethodTable *pMT)
         // then its loader module is simply the module containing its TypeDef
         pRet= pMT->GetModule();
     }
-    END_INTERIOR_STACK_PROBE;
     return pRet;
 }
 
@@ -1725,7 +1717,6 @@ PTR_Module Module::GetPreferredZapModuleForTypeDesc(PTR_TypeDesc pTD)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1749,7 +1740,6 @@ PTR_Module Module::GetPreferredZapModuleForTypeHandle(TypeHandle t)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1767,7 +1757,6 @@ PTR_Module Module::GetPreferredZapModuleForMethodDesc(const MethodDesc *pMD)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1796,7 +1785,6 @@ PTR_Module Module::GetPreferredZapModuleForFieldDesc(FieldDesc * pFD)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1814,7 +1802,6 @@ BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEFile *file)
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_ANY;
             SUPPORTS_DAC;
         }
@@ -1893,7 +1880,6 @@ DomainAssembly* Module::FindDomainAssembly(AppDomain *pDomain)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -1932,7 +1918,6 @@ DomainFile *Module::FindDomainFile(AppDomain *pDomain)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -2767,7 +2752,6 @@ BOOL Module::IsPreV4Assembly()
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -4357,7 +4341,6 @@ BOOL Module::IsSigInIL(PCCOR_SIGNATURE signature)
         FORBID_FAULT;
         MODE_ANY;
         NOTHROW;
-        SO_TOLERANT;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -5727,7 +5710,6 @@ PTR_TADDR LookupMapBase::GetElementPtr(DWORD rid)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -5788,7 +5770,6 @@ INT32 LookupMapBase::GetNextCompressedEntry(BitStreamReader *pTableStream, INT32
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(MapIsCompressed());
     }
@@ -5818,7 +5799,6 @@ TADDR LookupMapBase::GetValueFromCompressedMap(DWORD rid)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(MapIsCompressed());
     }
@@ -6173,7 +6153,6 @@ HRESULT Module::GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPC
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -6304,7 +6283,6 @@ BOOL Module::MightContainMatchingProperty(mdProperty tkProperty, ULONG nameHash)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -10034,7 +10012,6 @@ BYTE *Module::GetNativeFixupBlobData(RVA rva)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -10182,7 +10159,6 @@ BOOL Module::IsZappedCode(PCODE code)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -10217,7 +10193,6 @@ BOOL Module::IsZappedPrecode(PCODE code)
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -10241,7 +10216,6 @@ PCCOR_SIGNATURE Module::GetEncodedSig(RVA fixupRva, Module **ppDefiningModule)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
         POSTCONDITION(CheckPointer(RETVAL));
         SUPPORTS_DAC;
     }
@@ -10268,7 +10242,6 @@ PCCOR_SIGNATURE Module::GetEncodedSigIfLoaded(RVA fixupRva, Module **ppDefiningM
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_INTOLERANT;
         POSTCONDITION(CheckPointer(RETVAL));
         SUPPORTS_DAC;
     }
@@ -14160,10 +14133,6 @@ void Module::ExpandAll()
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    //This is called from inside EEStartupHelper, so it breaks the SO rules.  However, this is debug only
-    //(and only supported for limited jit testing), so it's ok here.
-    CONTRACT_VIOLATION(SOToleranceViolation);
 
     //If the EE isn't started yet, it's not safe to jit.  We fail in COM jitting a p/invoke.
     if (!g_fEEStarted)

@@ -1278,7 +1278,6 @@ HRESULT EEConfig::GetConfigValueCallback(__in_z LPCWSTR pKey, __deref_out_opt LP
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT; 
         PRECONDITION(CheckPointer(pValue)); 
         PRECONDITION(CheckPointer(pKey)); 
     } CONTRACT_END;
@@ -1312,7 +1311,6 @@ HRESULT EEConfig::GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch di
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT; // TODO: Verify this does not do anything that would make it so_intolerant
         PRECONDITION(CheckPointer(pValue)); 
         PRECONDITION(CheckPointer(pKey)); 
     } CONTRACT_END;
@@ -1330,9 +1328,7 @@ HRESULT EEConfig::GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch di
         ConfigStringHashtable* table = iter.Next();
         if(table != NULL)
         {
-            BEGIN_SO_INTOLERANT_CODE_NOTHROW(pThread, RETURN E_FAIL;)
             pair = table->Lookup(pKey);
-            END_SO_INTOLERANT_CODE
             if(pair != NULL)
             {
                 *pValue = pair->value;
@@ -1347,9 +1343,7 @@ HRESULT EEConfig::GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch di
             table != NULL;
             table = iter.Next())
         {
-            BEGIN_SO_INTOLERANT_CODE_NOTHROW(pThread, RETURN E_FAIL;)
             pair = table->Lookup(pKey);
-            END_SO_INTOLERANT_CODE
             if(pair != NULL)
             {
                 *pValue = pair->value;
@@ -1363,9 +1357,7 @@ HRESULT EEConfig::GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch di
             table != NULL;
             table = iter.Previous())
         {
-            BEGIN_SO_INTOLERANT_CODE_NOTHROW(pThread, RETURN E_FAIL;)
             pair = table->Lookup(pKey);
-            END_SO_INTOLERANT_CODE
             if(pair != NULL)
             {
                 *pValue = pair->value;

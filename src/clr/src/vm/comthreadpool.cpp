@@ -131,7 +131,7 @@ FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorSetMaxThreads,DWORD workerThreads, DWO
     FCALL_CONTRACT;
 
     BOOL bRet = FALSE;
-    HELPER_METHOD_FRAME_BEGIN_RET_0(); // Eventually calls BEGIN_SO_INTOLERANT_CODE_NOTHROW
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
 
     bRet = ThreadpoolMgr::SetMaxThreads(workerThreads,completionPortThreads);
     HELPER_METHOD_FRAME_END();    
@@ -155,7 +155,7 @@ FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorSetMinThreads,DWORD workerThreads, DWO
     FCALL_CONTRACT;
 
     BOOL bRet = FALSE;
-    HELPER_METHOD_FRAME_BEGIN_RET_0(); // Eventually calls BEGIN_SO_INTOLERANT_CODE_NOTHROW
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
 
     bRet = ThreadpoolMgr::SetMinThreads(workerThreads,completionPortThreads);
     HELPER_METHOD_FRAME_END();    
@@ -388,7 +388,7 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
     gc.waitObject = (WAITHANDLEREF) ObjectToOBJECTREF(waitObjectUNSAFE);
     gc.state = (OBJECTREF) stateUNSAFE;
     gc.registeredWaitObject = (OBJECTREF) registeredWaitObjectUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);  // Eventually calls BEGIN_SO_INTOLERANT_CODE_NOTHROW
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     if(gc.waitObject == NULL)
         COMPlusThrow(kArgumentNullException);
@@ -487,7 +487,7 @@ FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorUnregisterWait, LPVOID WaitHandle, Obj
 
     BOOL retVal = false;
     SAFEHANDLEREF refSH = (SAFEHANDLEREF) ObjectToOBJECTREF(objectToNotify);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refSH); // Eventually calls BEGIN_SO_INTOLERANT_CODE_NOTHROW
+    HELPER_METHOD_FRAME_BEGIN_RET_1(refSH);
 
     HANDLE hWait = (HANDLE) WaitHandle;
     HANDLE hObjectToNotify = NULL;
@@ -541,7 +541,7 @@ FCIMPL1(void, ThreadPoolNative::CorWaitHandleCleanupNative, LPVOID WaitHandle)
 {
     FCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0(); // Eventually calls BEGIN_SO_INTOLERANT_CODE_NOTHROW
+    HELPER_METHOD_FRAME_BEGIN_0();
 
     HANDLE hWait = (HANDLE)WaitHandle;
     ThreadpoolMgr::WaitHandleCleanup(hWait);
@@ -570,8 +570,6 @@ void SetAsyncResultProperties(
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
-
 }
 
 VOID BindIoCompletionCallBack_Worker(LPVOID args)
@@ -579,7 +577,6 @@ VOID BindIoCompletionCallBack_Worker(LPVOID args)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_INTOLERANT;
 
     DWORD        ErrorCode = ((BindIoCompletion_Args *)args)->ErrorCode;
     DWORD        numBytesTransferred = ((BindIoCompletion_Args *)args)->numBytesTransferred;
@@ -639,7 +636,6 @@ void __stdcall BindIoCompletionCallbackStubEx(DWORD ErrorCode,
         THROWS;
         MODE_ANY;
         GC_TRIGGERS;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
@@ -688,7 +684,7 @@ FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorBindIoCompletionCallback, HANDLE fileH
 
     BOOL retVal = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0(); // Eventually calls BEGIN_SO_INTOLERANT_CODE_NOTHROW
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
 
     HANDLE hFile = (HANDLE) fileHandle;
     DWORD errCode = 0;
@@ -721,7 +717,7 @@ FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorPostQueuedCompletionStatus, LPOVERLAPP
 
     BOOL res = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(overlapped); // Eventually calls BEGIN_SO_INTOLERANT_CODE_NOTHROW
+    HELPER_METHOD_FRAME_BEGIN_RET_1(overlapped);
 
     // OS doesn't signal handle, so do it here
     lpOverlapped->Internal = 0;
@@ -793,7 +789,6 @@ VOID WINAPI AppDomainTimerCallback(PVOID callbackState, BOOLEAN timerOrWaitFired
         THROWS;
         MODE_ANY;
         GC_TRIGGERS;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 

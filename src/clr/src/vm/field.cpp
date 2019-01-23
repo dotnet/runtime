@@ -143,7 +143,6 @@ TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGener
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -169,15 +168,7 @@ TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGener
              );
 
     // == FailIfNotLoaded, can also assert that the thing is restored
-    TypeHandle th = NULL;
-
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), return NULL);
-    {
-        th = sig.GetLastTypeHandleThrowing(ClassLoader::DontLoadTypes, level, dropGenericArgumentLevel);
-    }
-    END_SO_INTOLERANT_CODE;
-
-    return th;
+    return sig.GetLastTypeHandleThrowing(ClassLoader::DontLoadTypes, level, dropGenericArgumentLevel);
 }
 #else //simplified version
 TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGenericArgumentLevel)
@@ -209,7 +200,6 @@ void* FieldDesc::GetStaticAddress(void *base)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;      // Needed by profiler and server GC
     }
     CONTRACTL_END;
@@ -232,7 +222,6 @@ MethodTable * FieldDesc::GetExactDeclaringType(MethodTable * ownerOrSubType)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -260,7 +249,6 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
         PRECONDITION(IsStatic());
         PRECONDITION(GetEnclosingMethodTable()->IsRestored_NoLogging());
     }
@@ -281,15 +269,9 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 
         PTR_VOID retVal = NULL;
 
-        // BEGIN_SO_INTOLERANT_CODE will throw if we don't have enough stack
-        // and GetStaticAddressHandle has no failure semantics, so we need
-        // to just do the SO policy (e.g. rip the appdomain or process).
-        CONTRACT_VIOLATION(ThrowsViolation)
-
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
-        BEGIN_SO_INTOLERANT_CODE(GetThread());
         {
             GCX_COOP();
             // This routine doesn't have a failure semantic - but Resolve*Field(...) does.
@@ -297,7 +279,6 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
             CONTRACT_VIOLATION(ThrowsViolation|FaultViolation|GCViolation);   //B#25680 (Fix Enc violations)
             retVal = (void *)(pModule->ResolveOrAllocateField(NULL, pFD));
         }
-        END_SO_INTOLERANT_CODE;
 #endif // !DACCESS_COMPILE
         return retVal;
     }
@@ -465,9 +446,7 @@ PTR_VOID FieldDesc::GetAddressNoThrowNoGC(PTR_VOID o)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
         PRECONDITION(!IsEnCNew());
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -542,7 +521,6 @@ void *FieldDesc::GetAddressGuaranteedInHeap(void *o)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

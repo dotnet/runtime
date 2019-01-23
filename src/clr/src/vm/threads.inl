@@ -82,7 +82,6 @@ inline void Thread::SetKickOffDomainId(ADID ad)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -95,7 +94,6 @@ inline ADID Thread::GetKickOffDomainId()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -108,7 +106,6 @@ inline OBJECTHANDLE Thread::GetThreadCurrNotification()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -123,7 +120,6 @@ inline void Thread::SetThreadCurrNotification(OBJECTHANDLE handle)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -137,7 +133,6 @@ inline void Thread::ClearThreadCurrNotification()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -152,7 +147,6 @@ inline OBJECTREF Thread::GetExposedObjectRaw()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -163,14 +157,7 @@ inline OBJECTREF Thread::GetExposedObjectRaw()
 inline void Thread::FinishSOWork()
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_STACK_PROBE
-    if (HasThreadStateNC(TSNC_SOWorkNeeded))
-    {
-        ResetThreadStateNC(TSNC_SOWorkNeeded);
-    }
-#else
     _ASSERTE(!HasThreadStateNC(TSNC_SOWorkNeeded));
-#endif
 }
 
 #ifdef FEATURE_COMINTEROP

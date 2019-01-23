@@ -119,12 +119,8 @@ class Frame;
 class Exception;
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
-VOID DECLSPEC_NORETURN RealCOMPlusThrowSO();
 
 #include <excepcpu.h>
-#include "stackprobe.h"
-
-
 
 //==========================================================================
 // Macros to allow catching exceptions from within the EE. These are lightweight
@@ -357,13 +353,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER                                                 \
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE                                            \
     /* The purpose of the INSTALL_UNWIND_AND_CONTINUE_HANDLER is to translate an exception to a managed */ \
-    /* exception before it hits managed code.  The transition to SO_INTOLERANT code does not logically belong here. */ \
-    /* However, we don't want to miss any probe points and the intersection between a probe point and installing */ \
-    /* an  INSTALL_UNWIND_AND_CONTINUE_HANDLER is very high.  The probes are very cheap, so we can tolerate */ \
-    /* those few places where we are probing and don't need to. */ \
-    /* Ideally, we would instead have an encompassing ENTER_SO_INTOLERANT_CODE macro that would */ \
-    /* include INSTALL_UNWIND_AND_CONTINUE_HANDLER */                                       \
-    BEGIN_SO_INTOLERANT_CODE(GET_THREAD());
+    /* exception before it hits managed code. */
 
 // Optimized version for helper method frame. Avoids redundant GetThread() calls.
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(pHelperFrame)                           \
@@ -374,8 +364,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
             SCAN_EHMARKER_TRY();                                                            \
-            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH);                                            \
-            BEGIN_SO_INTOLERANT_CODE(GET_THREAD());
+            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH);
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE                                      \
             DEBUG_ASSURE_NO_RETURN_END(IUACH)                                               \
@@ -399,8 +388,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     }                                                                                       \
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
-    END_SO_INTOLERANT_CODE;                                                                 \
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;                                         \
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
 
 #endif // DACCESS_COMPILE || CROSSGEN_COMPILE
 
@@ -444,9 +432,6 @@ extern DWORD g_ExceptionLine;
 #define COMPlusThrowHR           if(THROWLOG() && 0) { } else RealCOMPlusThrowHR
 #define COMPlusThrowWin32        if(THROWLOG() && 0) { } else RealCOMPlusThrowWin32
 #define COMPlusThrowOM           if(THROWLOG() && 0) { } else RealCOMPlusThrowOM
-#ifdef FEATURE_STACK_PROBE
-#define COMPlusThrowSO           if(THROWLOG() && 0) { } else RealCOMPlusThrowSO
-#endif
 #define COMPlusThrowArithmetic   if(THROWLOG() && 0) { } else RealCOMPlusThrowArithmetic
 #define COMPlusThrowArgumentNull if(THROWLOG() && 0) { } else RealCOMPlusThrowArgumentNull
 #define COMPlusThrowArgumentOutOfRange if(THROWLOG() && 0) { } else RealCOMPlusThrowArgumentOutOfRange
@@ -469,9 +454,6 @@ extern DWORD g_ExceptionLine;
 #endif
 #define COMPlusThrowWin32                   RealCOMPlusThrowWin32
 #define COMPlusThrowOM                      RealCOMPlusThrowOM
-#ifdef FEATURE_STACK_PROBE
-#define COMPlusThrowSO                      RealCOMPlusThrowSO
-#endif
 #define COMPlusThrowArithmetic              RealCOMPlusThrowArithmetic
 #define COMPlusThrowArgumentNull            RealCOMPlusThrowArgumentNull
 #define COMPlusThrowArgumentOutOfRange      RealCOMPlusThrowArgumentOutOfRange
@@ -523,14 +505,12 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
   {                                                 \
     MAKE_CURRENT_THREAD_AVAILABLE();                \
     BEGIN_GCX_ASSERT_PREEMP;                        \
-    BEGIN_SO_INTOLERANT_CODE(CURRENT_THREAD);       \
     CoopTransitionHolder __CoopTransition(CURRENT_THREAD); \
     DEBUG_ASSURE_NO_RETURN_BEGIN(COOP_TRANSITION)
 
 #define COOPERATIVE_TRANSITION_END()                \
     DEBUG_ASSURE_NO_RETURN_END(COOP_TRANSITION)     \
     __CoopTransition.SuppressRelease();             \
-    END_SO_INTOLERANT_CODE;                         \
     END_GCX_ASSERT_PREEMP;                          \
   }
 

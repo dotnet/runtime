@@ -771,7 +771,6 @@ FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
        NOTHROW;    // Used by reverse COM IL stubs, so we must not throw exceptions back to COM
        DISABLED(GC_TRIGGERS); // FCALLS with HELPER frames have issues with GC_TRIGGERS
        MODE_COOPERATIVE;
-       SO_TOLERANT;
     } CONTRACTL_END;
 
     int retVal = 0;
@@ -791,7 +790,6 @@ FCIMPL1(int, MarshalNative::GetHRForException_WinRT, Object* eUNSAFE)
        NOTHROW;    // Used by reverse COM IL stubs, so we must not throw exceptions back to COM
        DISABLED(GC_TRIGGERS); // FCALLS with HELPER frames have issues with GC_TRIGGERS
        MODE_COOPERATIVE;
-       SO_TOLERANT;
     } CONTRACTL_END;
 
     int retVal = 0;

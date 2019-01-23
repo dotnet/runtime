@@ -45,7 +45,6 @@ CLRException::~CLRException()
         {
             CAN_TAKE_LOCK;         // because of DestroyHandle
         }
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -159,12 +158,6 @@ OBJECTREF CLRException::GetThrowable()
 
     if (throwable == NULL)
     {
-        // We need to disable the backout stack validation at this point since GetThrowable can 
-        // take arbitrarily large amounts of stack for different exception types; however we know 
-        // for a fact that we will never go through this code path if the exception is a stack 
-        // overflow exception since we already handled that case above with the pre-allocated SO exception.
-        DISABLE_BACKOUT_STACK_VALIDATION;
-
         class RestoreLastException
         {
             Thread *m_pThread;
@@ -230,7 +223,6 @@ OBJECTREF CLRException::GetThrowable()
     }
     
     {
-        DISABLE_BACKOUT_STACK_VALIDATION;
         if (throwable == NULL)
         {
             STRESS_LOG0(LF_EH, LL_INFO100, "CLRException::GetThrowable: We have failed to track exceptions accurately through the system.\n");
@@ -282,21 +274,11 @@ HRESULT CLRException::GetHR()
         DISABLED(NOTHROW);
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
-    HRESULT hr = E_FAIL;
-
-    BEGIN_SO_INTOLERANT_CODE(GetThread());
-
-// Is it legal to switch to GCX_COOP in a SO_TOLERANT region?
     GCX_COOP();
-    hr = GetExceptionHResult(GetThrowable());
-
-    END_SO_INTOLERANT_CODE;
-
-    return hr;
+    return GetExceptionHResult(GetThrowable());
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -307,7 +289,6 @@ HRESULT CLRException::SetErrorInfo()
         GC_TRIGGERS;
         NOTHROW;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -368,7 +349,6 @@ IErrorInfo *CLRException::GetErrorInfo()
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -379,9 +359,6 @@ IErrorInfo *CLRException::GetErrorInfo()
     // Not all codepaths expect to have it initialized (e.g. hosting APIs).
     if (g_fComStarted)
     {
-        // We probe here for SO since GetThrowable and GetComIPFromObjectRef are SO intolerant
-        BEGIN_SO_INTOLERANT_CODE(GetThread());
-
         // Get errorinfo only when our SO probe succeeds
         {
             // Switch to coop mode since GetComIPFromObjectRef requires that
@@ -400,8 +377,6 @@ IErrorInfo *CLRException::GetErrorInfo()
 
             GCPROTECT_END();
         }
-        
-        END_SO_INTOLERANT_CODE;
     }
     else
     {
@@ -550,7 +525,6 @@ BOOL CLRException::IsPreallocatedExceptionObject(OBJECTREF o)
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -590,7 +564,6 @@ BOOL CLRException::IsPreallocatedExceptionHandle(OBJECTHANDLE h)
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -625,7 +598,6 @@ OBJECTHANDLE CLRException::GetPreallocatedHandleForObject(OBJECTREF o)
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -667,7 +639,6 @@ OBJECTREF CLRException::GetBestOutOfMemoryException()
     {
         NOTHROW;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -677,15 +648,11 @@ OBJECTREF CLRException::GetBestOutOfMemoryException()
     {
         FAULT_NOT_FATAL();
 
-        BEGIN_SO_INTOLERANT_CODE(GetThread());
-
         EXCEPTIONREF pOutOfMemory = (EXCEPTIONREF)AllocateObject(g_pOutOfMemoryExceptionClass);
         pOutOfMemory->SetHResult(COR_E_OUTOFMEMORY);
         pOutOfMemory->SetXCode(EXCEPTION_COMPLUS);
 
         retVal = pOutOfMemory;
-
-        END_SO_INTOLERANT_CODE;
     }
     EX_CATCH
     {
@@ -708,7 +675,6 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         GC_TRIGGERS;
         NOTHROW;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
@@ -885,7 +851,6 @@ OBJECTREF CLRException::GetThrowableFromExceptionRecord(EXCEPTION_RECORD *pExcep
         GC_NOTRIGGER;
         NOTHROW;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -902,7 +867,6 @@ void CLRException::HandlerState::CleanupTry()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     if (m_pThread != NULL)
     {
@@ -932,7 +896,6 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * sz
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     bool fVMInitialized = g_fEEStarted?true:false;
     Exception::HandlerState::SetupCatch(INDEBUG_COMMA(szFile) lineNum, fVMInitialized);
@@ -948,7 +911,7 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * sz
     
     if (!DidCatchCxx())
     {
-        if (IsSOExceptionCode(exceptionCode))
+        if (exceptionCode == STATUS_STACK_OVERFLOW)
         {
             // Handle SO exception
             // 
@@ -988,7 +951,6 @@ void CLRException::HandlerState::SucceedCatch()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     LOG((LF_EH, LL_INFO100, "EX_CATCH catch succeeded (CLRException::HandlerState)\n"));
 
@@ -2545,7 +2507,6 @@ void GetLastThrownObjectExceptionFromThread_Internal(Exception **ppException)
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        SO_TOLERANT;    // no risk of an SO after we've allocated the object here
     }
     CONTRACTL_END;
 

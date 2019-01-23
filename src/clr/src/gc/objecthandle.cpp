@@ -257,7 +257,6 @@ void CALLBACK PinObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, ui
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     UNREFERENCED_PARAMETER(pExtraInfo);
 
@@ -856,7 +855,6 @@ void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF objref)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;

@@ -62,10 +62,6 @@ extern "C" HRESULT STDMETHODCALLTYPE AttachProfiler(
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         CAN_TAKE_LOCK;
-
-        // This is the entrypoint into the EE by a trigger process.  As such, this
-        // is profiling-specific and not considered mainline EE code.
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 

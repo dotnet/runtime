@@ -198,7 +198,6 @@ inline const SString &PEFile::GetPath()
         NOTHROW;
         CANNOT_TAKE_LOCK;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -404,7 +403,6 @@ inline IMDInternalImport *PEFile::GetMDImportWithRef()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_INTOLERANT;
     }
     CONTRACT_END;
 */
@@ -421,7 +419,6 @@ inline IMDInternalImport *PEFile::GetMDImportWithRef()
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
         CAN_TAKE_LOCK;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
@@ -664,7 +661,6 @@ inline void PEFile::MarkNativeImageInvalidIfOwned()
 
 inline BOOL PEFile::IsILOnly()
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
@@ -685,16 +681,12 @@ inline BOOL PEFile::IsILOnly()
     {
         BOOL retVal = FALSE;
 
-        BEGIN_SO_INTOLERANT_CODE(GetThread());
-
         //don't want to touch the IL image unless we already have
         ReleaseHolder<PEImage> pNativeImage = GetNativeImageWithRef();
         if (pNativeImage)
         {
             retVal = pNativeImage->IsNativeILILOnly();
         }
-
-        END_SO_INTOLERANT_CODE;
 
         return retVal;
     }
@@ -1079,7 +1071,6 @@ inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -1117,7 +1108,6 @@ inline BOOL PEFile::HasNativeImage()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
         SUPPORTS_DAC;
     }
@@ -1138,7 +1128,6 @@ inline BOOL PEFile::HasNativeOrReadyToRunImage()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
         SUPPORTS_DAC;
     }
@@ -1170,7 +1159,6 @@ inline BOOL PEFile::IsLoaded(BOOL bAllowNative/*=TRUE*/)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1201,7 +1189,6 @@ inline PTR_PEImageLayout PEFile::GetLoadedNative()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -1230,7 +1217,6 @@ inline PEImage *PEFile::GetPersistentNativeImage()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
         SUPPORTS_DAC;
     }
@@ -1267,7 +1253,6 @@ inline BOOL PEFile::HasNativeImageMetadata()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACT_END;

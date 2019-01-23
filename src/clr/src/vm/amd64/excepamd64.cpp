@@ -158,7 +158,6 @@ RtlVirtualUnwind (
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } 
     CONTRACTL_END;
 
@@ -194,7 +193,6 @@ RtlVirtualUnwind_Worker (
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } 
     CONTRACTL_END;
 

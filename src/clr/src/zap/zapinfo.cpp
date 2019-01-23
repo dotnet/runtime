@@ -475,8 +475,6 @@ void ZapInfo::CompileMethod()
 #ifdef ALLOW_SXS_JIT_NGEN
     if (m_zapper->m_alternateJit)
     {
-        REMOVE_STACK_GUARD;
-
         res = m_zapper->m_alternateJit->compileMethod( this,
                                                      &m_currentMethodInfo,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
@@ -492,8 +490,6 @@ void ZapInfo::CompileMethod()
 
     if (FAILED(res))
     {
-        REMOVE_STACK_GUARD;
-
         ICorJitCompiler * pCompiler = m_zapper->m_pJitCompiler;
         res = pCompiler->compileMethod(this,
                                     &m_currentMethodInfo,

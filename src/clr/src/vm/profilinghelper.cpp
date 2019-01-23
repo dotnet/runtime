@@ -165,7 +165,6 @@ BOOL CORProfilerBypassSecurityChecks()
         NOTHROW;
         GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 

@@ -121,7 +121,7 @@ The QCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllis
 	BOOL QCALLTYPE FooNative::Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
 	{
 	    // All QCalls should have QCALL_CONTRACT.
-	    // It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE; SO_TOLERANT.
+	    // It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
 	    QCALL_CONTRACT;
 
 	    // Optionally, use QCALL_CHECK instead and the expanded form of the contract

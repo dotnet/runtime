@@ -160,7 +160,6 @@ BOOL PEDecoder::HasNTHeaders() const
         GC_NOTRIGGER;
         SUPPORTS_DAC;
         PRECONDITION(HasContents());
-        SO_TOLERANT;
     }
     CONTRACT_END;
 
@@ -243,7 +242,6 @@ CHECK PEDecoder::CheckNTHeaders() const
         GC_NOTRIGGER;
         SUPPORTS_DAC;
         PRECONDITION(HasContents());
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -392,7 +390,6 @@ CHECK PEDecoder::CheckSection(COUNT_T previousAddressEnd, COUNT_T addressStart, 
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -450,7 +447,6 @@ BOOL PEDecoder::HasWriteableSections() const
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -482,7 +478,6 @@ CHECK PEDecoder::CheckDirectoryEntry(int entry, int forbiddenFlags, IsNullOK ok)
         PRECONDITION(HasDirectoryEntry(entry));
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -501,7 +496,6 @@ CHECK PEDecoder::CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags, 
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -518,7 +512,6 @@ CHECK PEDecoder::CheckRva(RVA rva, COUNT_T size, int forbiddenFlags, IsNullOK ok
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -557,7 +550,6 @@ CHECK PEDecoder::CheckRva(RVA rva, IsNullOK ok) const
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -684,7 +676,6 @@ CHECK PEDecoder::CheckInternalAddress(SIZE_T address, IsNullOK ok) const
         PRECONDITION(CheckNTHeaders());
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -704,7 +695,6 @@ CHECK PEDecoder::CheckInternalAddress(SIZE_T address, COUNT_T size, IsNullOK ok)
         PRECONDITION(CheckNTHeaders());
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -730,7 +720,6 @@ RVA PEDecoder::InternalAddressToRva(SIZE_T address) const
         NOTHROW;
         GC_NOTRIGGER;
         POSTCONDITION(CheckRva(RETVAL));
-        SO_TOLERANT;
     }
     CONTRACT_END;
 
@@ -758,7 +747,6 @@ IMAGE_SECTION_HEADER *PEDecoder::FindSection(LPCSTR sectionName) const
         NOTHROW;
         GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
-        SO_TOLERANT;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
@@ -810,7 +798,6 @@ IMAGE_SECTION_HEADER *PEDecoder::RvaToSection(RVA rva) const
         CANNOT_TAKE_LOCK;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_END;
 
@@ -846,7 +833,6 @@ IMAGE_SECTION_HEADER *PEDecoder::OffsetToSection(COUNT_T fileOffset) const
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_END;
 
@@ -878,7 +864,6 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
         PRECONDITION(CheckRva(rva, NULL_OK));
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
         SUPPORTS_DAC;
     }
@@ -930,7 +915,6 @@ BOOL PEDecoder::PointerInPE(PTR_CVOID data) const
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -1011,7 +995,6 @@ inline PTR_STORAGESTREAM NextStorageStream(PTR_STORAGESTREAM pSS)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -1032,7 +1015,6 @@ CHECK PEDecoder::CheckCorHeader() const
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -1852,7 +1834,6 @@ BOOL PEDecoder::HasNativeHeader() const
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_END;
 
@@ -1871,7 +1852,6 @@ CHECK PEDecoder::CheckNativeHeader() const
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_CHECK_END;
 
@@ -1955,7 +1935,6 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -2382,7 +2361,6 @@ CORCOMPILE_CODE_MANAGER_ENTRY *PEDecoder::GetNativeCodeManagerTable() const
         SUPPORTS_DAC;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACT_END;
 
@@ -2400,7 +2378,6 @@ PCODE PEDecoder::GetNativeHotCode(COUNT_T * pSize) const
         SUPPORTS_DAC;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACT_END;
 
@@ -2421,7 +2398,6 @@ PCODE PEDecoder::GetNativeCode(COUNT_T * pSize) const
         SUPPORTS_DAC;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACT_END;
 
@@ -2732,15 +2708,12 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
 		ANNOTATION_DEBUG_ONLY;                                          \
-		STATIC_CONTRACT_CANNOT_TAKE_LOCK;                               \
-		ANNOTATION_FN_SO_NOT_MAINLINE;
+		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 
 #if defined(DACCESS_COMPILE) || defined(FEATURE_PAL)
     return TRUE;
 #else
-
-    CONTRACT_VIOLATION(SOToleranceViolation);
 
     // Contracts in ConfigDWORD do WszLoadLibrary(MSCOREE_SHIM_W).
     // This check prevents recursion.

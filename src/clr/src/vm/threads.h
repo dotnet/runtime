@@ -1564,25 +1564,6 @@ public:
         return (m_State & TS_Detached);
     }
 
-#ifdef FEATURE_STACK_PROBE
-//---------------------------------------------------------------------------------------
-//
-// IsSOTolerant - Is the current thread in SO Tolerant region?
-//
-// Arguments:
-//    pLimitFrame: the limit of search for frames
-//
-// Return Value:
-//    TRUE if in SO tolerant region.
-//    FALSE if in SO intolerant region.
-// 
-// Note:
-//    We walk our frame chain to decide.  If HelperMethodFrame is seen first, we are in tolerant
-//    region.  If EnterSOIntolerantCodeFrame is seen first, we are in intolerant region.
-//
-    BOOL IsSOTolerant(void * pLimitFrame);
-#endif
-
 #ifdef _DEBUG
     class DisableSOCheckInHCALL
     {
@@ -1790,7 +1771,6 @@ public:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_ANY;
             SUPPORTS_DAC;
         }
@@ -1817,7 +1797,6 @@ public:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_ANY;
             SUPPORTS_DAC;
         }
@@ -2529,7 +2508,6 @@ public:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
@@ -2651,7 +2629,6 @@ public:
 
     DWORD       GetThreadId()
     {
-        STATIC_CONTRACT_SO_TOLERANT;
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(m_ThreadId != UNINITIALIZED_THREADID);
         return m_ThreadId;
@@ -3455,7 +3432,6 @@ public:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_ANY;
         }
         CONTRACTL_END;
@@ -3511,16 +3487,6 @@ public:
     // stack overflow exception.
     BOOL DetermineIfGuardPagePresent();
 
-#ifdef FEATURE_STACK_PROBE
-    // CanResetStackTo will return TRUE if the given stack pointer is far enough away from the guard page to proper
-    // restore the guard page with RestoreGuardPage.
-    BOOL CanResetStackTo(LPCVOID stackPointer);
-
-    // IsStackSpaceAvailable will return true if there are the given number of stack pages available on the stack.
-    BOOL IsStackSpaceAvailable(float numPages);
-
-#endif
-    
     // Returns the amount of stack available after an SO but before the OS rips the process.
     static UINT_PTR GetStackGuarantee();
 
@@ -4623,27 +4589,6 @@ public:
 #endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 #endif // HAVE_GCCOVER
 
-#if defined(_DEBUG) && defined(FEATURE_STACK_PROBE)
-    class ::BaseStackGuard;
-private:
-    // This field is used for debugging purposes to allow easy access to the stack guard
-    // chain and also in SO-tolerance checking to quickly determine if a guard is in place.
-    BaseStackGuard *m_pCurrentStackGuard;
-
-public:
-    BaseStackGuard *GetCurrentStackGuard()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pCurrentStackGuard;
-    }
-
-    void SetCurrentStackGuard(BaseStackGuard *pGuard)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pCurrentStackGuard = pGuard;
-    }
-#endif
-
 private:
     BOOL m_fCompletionPortDrained;
 public:
@@ -5398,7 +5343,6 @@ private:
         {
             THROWS;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_ANY;
         }
         CONTRACTL_END;
@@ -6606,29 +6550,6 @@ class GCForbidLoaderUseHolder
 #define FORBIDGC_LOADER_USE_ENABLED() (sizeof(YouCannotUseThisHere) != 0)
 #endif  // _DEBUG_IMPL
 #endif // DACCESS_COMPILE
-
-#ifdef FEATURE_STACK_PROBE
-#ifdef _DEBUG_IMPL
-inline void NO_FORBIDGC_LOADER_USE_ThrowSO()
-{
-    WRAPPER_NO_CONTRACT;
-    if (FORBIDGC_LOADER_USE_ENABLED())
-    {
-        //if you hitting this assert maybe a failure was injected at the place
-        // it won't occur in a real-world scenario, see VSW 397871
-        // then again maybe it 's a bug at the place FORBIDGC_LOADER_USE_ENABLED was set
-        _ASSERTE(!"Unexpected SO, please read the comment");
-    }
-    else
-        COMPlusThrowSO();
-}
-#else
-inline void NO_FORBIDGC_LOADER_USE_ThrowSO()
-{
-        COMPlusThrowSO();
-}
-#endif
-#endif
 
 // There is an MDA which can detect illegal reentrancy into the CLR.  For instance, if you call managed
 // code from a native vectored exception handler, this might cause a reverse PInvoke to occur.  But if the

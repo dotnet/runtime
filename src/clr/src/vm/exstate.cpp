@@ -151,7 +151,6 @@ OBJECTREF ThreadExceptionState::GetThrowable()
         MODE_COOPERATIVE;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -177,7 +176,6 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
         if ((throwable == NULL) || CLRException::IsPreallocatedExceptionObject(throwable)) NOTHROW; else THROWS; // From CreateHandle
         GC_NOTRIGGER;
         if (throwable == NULL) MODE_ANY; else MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -207,13 +205,9 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
         }
         else
         {
-            BEGIN_SO_INTOLERANT_CODE(GetThread());
-            {
-                AppDomain* pDomain = GetMyThread()->GetDomain();
-                PREFIX_ASSUME(pDomain != NULL);
-                hNewThrowable = pDomain->CreateHandle(throwable);
-            }
-            END_SO_INTOLERANT_CODE;
+            AppDomain* pDomain = GetMyThread()->GetDomain();
+            PREFIX_ASSUME(pDomain != NULL);
+            hNewThrowable = pDomain->CreateHandle(throwable);
         }
 
 #ifdef WIN64EXCEPTIONS

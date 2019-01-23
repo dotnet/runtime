@@ -148,7 +148,6 @@ public:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_ANY;
             SUPPORTS_DAC;
         }

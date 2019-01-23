@@ -582,7 +582,6 @@ class Stub
                 NOTHROW;
                 GC_NOTRIGGER;
                 FORBID_FAULT;
-                SO_TOLERANT;
             }
             CONTRACTL_END
 

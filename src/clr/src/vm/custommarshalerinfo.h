@@ -87,7 +87,6 @@ public:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;

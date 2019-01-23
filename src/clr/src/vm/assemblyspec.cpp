@@ -454,7 +454,6 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
         THROWS;
         MODE_COOPERATIVE;
         GC_TRIGGERS;
-        SO_INTOLERANT;
         PRECONDITION(IsProtectedByGCFrame (pAsmName));
     }
     CONTRACTL_END;

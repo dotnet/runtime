@@ -1196,7 +1196,6 @@ BOOL IsStructMarshalable(TypeHandle th)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(!th.IsNull());
     }
     CONTRACTL_END;

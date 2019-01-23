@@ -2608,7 +2608,6 @@ public:
             GC_NOTRIGGER;
             SUPPORTS_DAC;
             CANNOT_TAKE_LOCK;
-            SO_TOLERANT;
         }
         CONTRACT_END;
 

@@ -31,7 +31,6 @@ static StackWalkAction FrameCallback(CrawlFrame *pCF, void *pData)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(CheckPointer(pData, NULL_OK));
         PRECONDITION(pMD->GetMethodTable() != NULL);

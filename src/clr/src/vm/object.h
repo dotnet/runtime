@@ -785,7 +785,6 @@ public:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
@@ -1141,7 +1140,6 @@ protected:
             NOTHROW;
             MODE_COOPERATIVE;
             GC_NOTRIGGER;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -1161,7 +1159,6 @@ public:
             NOTHROW;
             MODE_COOPERATIVE;
             GC_NOTRIGGER;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -1176,7 +1173,6 @@ public:
             NOTHROW;
             MODE_COOPERATIVE;
             GC_NOTRIGGER;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -1190,7 +1186,6 @@ public:
             NOTHROW;
             MODE_COOPERATIVE;
             GC_NOTRIGGER;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -2262,7 +2257,6 @@ public:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;

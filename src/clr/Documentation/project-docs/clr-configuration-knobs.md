@@ -816,7 +816,6 @@ Name | Description | Type | Class | Default Value | Flags
 `MscorsnLogging` | Enables strong name logging | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `NativeImageRequire` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
 `NestedEhOom` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`NO_SO_NOT_MAINLINE` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
 `NoGuiOnAssert` |  | `DWORD` | `INTERNAL` | `INTERNAL_NoGuiOnAssert_Default` | REGUTIL_default
 `NoProcedureSplitting` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
 `NoStringInterning` | Disallows string interning. I see no value in it anymore. | `DWORD` | `INTERNAL` | `1` | REGUTIL_default

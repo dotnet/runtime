@@ -156,7 +156,6 @@ inline SBuffer::SBuffer(ImmutableFlag immutable, const BYTE *buffer, COUNT_T siz
         POSTCONDITION(Equals(buffer, size));
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC_HOST_ONLY;
     } 
     CONTRACT_END;
@@ -174,13 +173,10 @@ inline SBuffer::~SBuffer()
     {
         NOTHROW;
         DESTRUCTOR_CHECK;
-        SO_TOLERANT;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC_HOST_ONLY;
     }
     CONTRACT_END;
-    VALIDATE_BACKOUT_STACK_CONSUMPTION;  
 
     if (IsAllocated())
     {
@@ -337,7 +333,6 @@ inline COUNT_T SBuffer::GetAllocation() const
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } 
     CONTRACT_END;
@@ -669,7 +664,6 @@ inline BOOL SBuffer::Equals(const SBuffer &compare) const
         PRECONDITION(compare.Check());
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } 
     CONTRACT_END;
 
@@ -685,7 +679,6 @@ inline BOOL SBuffer::Equals(const BYTE *compare, COUNT_T size) const
         PRECONDITION(CheckSize(size));
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } 
     CONTRACT_END;
 
@@ -855,7 +848,6 @@ inline void SBuffer::TweakSize(COUNT_T size)
         POSTCONDITION(GetSize() == size);
         POSTCONDITION(CheckInvariant(*this));
         NOTHROW;
-        SO_TOLERANT;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     } 
@@ -1014,14 +1006,11 @@ inline void SBuffer::DeleteBuffer(BYTE *buffer, COUNT_T allocation)
     {
         PRECONDITION(CheckSize(allocation));
         POSTCONDITION(CheckPointer(buffer));
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC_HOST_ONLY;
     } 
     CONTRACT_END;
-    VALIDATE_BACKOUT_STACK_CONSUMPTION;  
 
     CONSISTENCY_CHECK(CheckBuffer(buffer, allocation));
 
@@ -1048,7 +1037,6 @@ inline CHECK SBuffer::CheckBuffer(const BYTE *buffer, COUNT_T allocation) const
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
         PRECONDITION(CheckPointer(buffer));
     }
@@ -1362,7 +1350,6 @@ inline void SBuffer::SetRepresentationField(int value)
         PRECONDITION((value & ~REPRESENTATION_MASK) == 0);
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC_HOST_ONLY;
     } 
     CONTRACT_END;

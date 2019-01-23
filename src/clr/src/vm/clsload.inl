@@ -68,7 +68,6 @@ inline void AccessCheckOptions::Initialize(
 {
     CONTRACTL 
     {
-        SO_TOLERANT;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;

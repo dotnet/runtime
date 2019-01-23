@@ -252,10 +252,6 @@ ErrExit:
 // Thus Release() is in a satellite lib.
 ULONG RegMeta::Release()
 {
-    // This is called during cleanup.  We can not fail this call by probing.
-    // As long as we make sure the cleanup does not use too much space through 
-    // BEGIN_CLEANUP_ENTRYPOINT, we are OK.
-    CONTRACT_VIOLATION (SOToleranceViolation);
     BEGIN_CLEANUP_ENTRYPOINT;
 
 #if defined(FEATURE_METADATA_IN_VM)

@@ -256,7 +256,6 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::GetCurrentThreadsCallStac
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -296,7 +295,6 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -4409,7 +4407,6 @@ extern "C"
             MODE_ANY;
             CAN_TAKE_LOCK;
             STATIC_CONTRACT_FAULT;
-            SO_NOT_MAINLINE;
         } CONTRACTL_END;
 
         // Mark that we are the special ETWRundown thread.  Currently all this does
@@ -4983,7 +4980,6 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -5067,7 +5063,6 @@ HRESULT ETW::CodeSymbolLog::GetInMemorySymbolsLength(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -5150,7 +5145,6 @@ HRESULT ETW::CodeSymbolLog::ReadInMemorySymbols(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -6246,7 +6240,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        SO_NOT_MAINLINE;
     } CONTRACTL_END;
 
     Module *pModule = NULL;
@@ -6647,7 +6640,6 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 

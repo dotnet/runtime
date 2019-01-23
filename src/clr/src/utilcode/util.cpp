@@ -44,8 +44,7 @@ void InitWinRTStatus()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
-    
+
     WinRTStatusEnum winRTStatus = WINRT_STATUS_UNSUPPORTED;
 
     const WCHAR wszComBaseDll[] = W("\\combase.dll");
@@ -931,7 +930,6 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL
     {
         NOTHROW;
-        SO_TOLERANT;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -1033,7 +1031,6 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL
     {
         NOTHROW;
-        SO_TOLERANT;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -1089,7 +1086,6 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL
     {
         NOTHROW;
-        SO_TOLERANT;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -1159,7 +1155,6 @@ retry:
     CONTRACTL
     {
         NOTHROW;
-        SO_TOLERANT;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -1269,7 +1264,6 @@ int GetCurrentProcessCpuCount()
     CONTRACTL
     {
         NOTHROW;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -1324,7 +1318,6 @@ DWORD_PTR GetCurrentProcessCpuMask()
     CONTRACTL
     {
         NOTHROW;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -1867,7 +1860,6 @@ HRESULT validateOneArg(
     CONTRACTL
     {
         NOTHROW;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -1883,7 +1875,6 @@ HRESULT validateOneArg(
     HRESULT     hr = S_OK;              // Value returned.
     BOOL        bRepeat = TRUE;         // MODOPT and MODREQ belong to the arg after them
     
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
     while(bRepeat)
     {
         bRepeat = FALSE;
@@ -2078,8 +2069,6 @@ HRESULT validateOneArg(
         }   // switch (ulElementType)
     } // end while(bRepeat)
 ErrExit:
-    
-    END_SO_INTOLERANT_CODE;
     return hr;
 }   // validateOneArg()
 

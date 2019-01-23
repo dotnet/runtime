@@ -39,7 +39,6 @@
 #include "listlock.h"
 #include "methodimpl.h"
 #include "guidfromname.h"
-#include "stackprobe.h"
 #include "encee.h"
 #include "encee.h"
 #include "comsynchronizable.h"

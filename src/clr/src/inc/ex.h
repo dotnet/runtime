@@ -21,7 +21,6 @@
 #include "winwrap.h"
 #include "corerror.h"
 #include "stresslog.h"
-#include "genericstackprobe.h"
 #include "staticcontract.h"
 #include "entrypoints.h"
 
@@ -126,12 +125,6 @@ DWORD GetCurrentExceptionCode();
 //   duing exception handling.  Return TRUE if the current exception is hard or soft SO.
 // ---------------------------------------------------------------------------
 bool IsCurrentExceptionSO();
-
-// ---------------------------------------------------------------------------
-//   Return TRUE if the current exception is hard( or soft) SO. Soft SO
-//   is defined when the stack probing code is enabled (FEATURE_STACK_PROBE)
-// ---------------------------------------------------------------------------
-bool IsSOExceptionCode(DWORD exceptionCode);
 
 // ---------------------------------------------------------------------------
 //   Standard exception hierarchy & infrastructure for library code & EE
@@ -847,13 +840,10 @@ void ExThrowTrap(const char *fcn, const char *file, int line, const char *szType
 
 #endif
 
-#define HANDLE_SO_TOLERANCE_FOR_THROW
-
 #define EX_THROW(_type, _args)                                                          \
     {                                                                                   \
         FAULT_NOT_FATAL();                                                              \
                                                                                         \
-        HANDLE_SO_TOLERANCE_FOR_THROW;                                                  \
         _type * ___pExForExThrow =  new _type _args ;                                   \
                 /* don't embed file names in retail to save space and avoid IP */       \
                 /* a findstr /n will allow you to locate it in a pinch */               \
@@ -880,7 +870,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
     {                                                                                   \
         FAULT_NOT_FATAL();                                                              \
                                                                                         \
-        HANDLE_SO_TOLERANCE_FOR_THROW;                                                  \
         Exception *_inner2 = ExThrowWithInnerHelper(_inner);                            \
         _type *___pExForExThrow =  new _type _args ;                                    \
         ___pExForExThrow->SetInnerException(_inner2);                                   \
@@ -948,7 +937,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
         PAL_CPP_CATCH_ALL                                                               \
         {                                                                               \
             SCAN_EHMARKER_CATCH();                                                      \
-            VALIDATE_BACKOUT_STACK_CONSUMPTION;                                         \
             __defaultException_t __defaultException;                                    \
             CHECK::ResetAssert();                                                       \
             ExceptionHolder __pException(__state.m_pExceptionPtr);                      \
@@ -990,7 +978,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             __state.m_pExceptionPtr = __pExceptionRaw;                              \
             SCAN_EHMARKER_END_CATCH();                                              \
             SCAN_IGNORE_THROW_MARKER;                                               \
-            VALIDATE_BACKOUT_STACK_CONSUMPTION;                                     \
             __defaultException_t __defaultException;                                \
             CHECK::ResetAssert();                                                   \
             ExceptionHolder __pException(__state.m_pExceptionPtr);                  \
@@ -1059,18 +1046,10 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             }                                                                           \
             SCAN_EHMARKER_END_CATCH();                                                  \
         }                                                                               \
-        EX_ENDTRY                                                                       \
-            
+        EX_ENDTRY
+
 #define EX_ENDTRY                                                                       \
-        PAL_CPP_ENDTRY                                                                  \
-        if (__state.DidCatch())                                                         \
-        {                                                                               \
-            RESTORE_SO_TOLERANCE_STATE;                                                 \
-        }                                                                               \
-        if (__state.DidCatchSO())                                                       \
-        {                                                                               \
-            HANDLE_STACKOVERFLOW_AFTER_CATCH;                                           \
-        }
+        PAL_CPP_ENDTRY
 
 #define EX_RETHROW                                                                      \
         {                                                                               \
@@ -1297,6 +1276,10 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 //   exception. This will allow the stack to unwind point, and so we won't be jeopardizing a
 //   second stack overflow.
 //===================================================================================
+#ifndef VM_NO_SO_INFRASTRUCTURE_CODE
+#define VM_NO_SO_INFRASTRUCTURE_CODE(x)
+#endif
+
 #define EX_HOOK                                          \
     EX_CATCH                                             \
     {                                                    \
@@ -1310,9 +1293,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
     if (!__state.DidCatchSO())                           \
         EX_RETHROW;                                      \
     EX_END_CATCH_FOR_HOOK;                               \
-    SO_INFRASTRUCTURE_CODE(if (__state.DidCatchSO()))    \
-        SO_INFRASTRUCTURE_CODE(ThrowStackOverflow();)    \
-    }                                                    \
+    }
 
 // ---------------------------------------------------------------------------
 // Inline implementations. Pay no attention to that man behind the curtain.
@@ -1321,7 +1302,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 inline Exception::HandlerState::HandlerState()
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     STATIC_CONTRACT_SUPPORTS_DAC;
 

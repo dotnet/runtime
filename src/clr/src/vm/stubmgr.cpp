@@ -421,7 +421,6 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
         NOTHROW;
         CAN_TAKE_LOCK;     // CheckIsStub_Internal can enter SimpleRWLock
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -434,10 +433,6 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
     {
         return FALSE;
     }
-
-    CONTRACT_VIOLATION(SOToleranceViolation);
-    // @todo : this might not have a thread
-    //    BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), return FALSE);
 
     struct Param
     {
@@ -484,11 +479,9 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
 #ifdef DACCESS_COMPILE
     PAL_ENDTRY
 #else
-    EX_END_CATCH(SwallowAllExceptions);        
-#endif    
+    EX_END_CATCH(SwallowAllExceptions);
+#endif
 
-    //END_SO_INTOLERANT_CODE;
-    
     return param.fIsStub;
 }
 
@@ -1586,7 +1579,6 @@ RangeSectionStubManager::GetStubKind(PCODE stubStartAddress)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

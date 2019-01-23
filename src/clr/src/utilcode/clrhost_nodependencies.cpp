@@ -172,8 +172,6 @@ ClrDebugState *CLRInitDebugState()
     // and has low perf impact.
     static ClrDebugState gBadClrDebugState;
     gBadClrDebugState.ViolationMaskSet( AllViolation );
-    // SO_INFRASTRUCTURE_CODE() Macro to remove SO infrastructure code during build
-    SO_INFRASTRUCTURE_CODE(gBadClrDebugState.BeginSOTolerant();)
     gBadClrDebugState.SetOkToThrow();
 
     ClrDebugState *pNewClrDebugState = NULL;
@@ -340,8 +338,6 @@ ClrDebugState *CLRInitDebugState()
 
 LPVOID ClrAllocInProcessHeapBootstrap (DWORD dwFlags, SIZE_T dwBytes)
 {
-    STATIC_CONTRACT_SO_INTOLERANT;
-
 #if defined(SELF_NO_HOST)
     static HANDLE hHeap = NULL;
 
@@ -366,8 +362,6 @@ FastAllocInProcessHeapFunc __ClrAllocInProcessHeap = (FastAllocInProcessHeapFunc
 
 BOOL ClrFreeInProcessHeapBootstrap (DWORD dwFlags, LPVOID lpMem)
 {
-    STATIC_CONTRACT_SO_INTOLERANT;
-
 #if defined(SELF_NO_HOST)
     static HANDLE hHeap = NULL;
 
@@ -406,7 +400,6 @@ operator new(size_t n)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory allocation itself should be SO-tolerant.  But we must protect the use of it.
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     void * result = ClrAllocInProcessHeap(0, S_SIZE_T(n));
@@ -427,7 +420,6 @@ operator new[](size_t n)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory allocation itself should be SO-tolerant.  But we must protect the use of it.
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     void * result = ClrAllocInProcessHeap(0, S_SIZE_T(n));
@@ -449,7 +441,6 @@ void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory allocation itself should be SO-tolerant.  But we must protect the use of it.
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
@@ -469,7 +460,6 @@ void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory allocation itself should be SO-tolerant.  But we must protect the use of it.
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
@@ -488,7 +478,6 @@ operator delete(void *p) NOEXCEPT
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory management routines should be SO-tolerant.
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     if (p != NULL)
@@ -501,7 +490,6 @@ operator delete[](void *p) NOEXCEPT
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory management routines should be SO-tolerant.
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     if (p != NULL)
@@ -529,7 +517,6 @@ void * __cdecl operator new(size_t n, const CExecutable&)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory management routines should be SO-tolerant.
 
     HANDLE hExecutableHeap = ClrGetProcessExecutableHeap();
     if (hExecutableHeap == NULL) {
@@ -553,7 +540,6 @@ void * __cdecl operator new[](size_t n, const CExecutable&)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory management routines should be SO-tolerant.
 
     HANDLE hExecutableHeap = ClrGetProcessExecutableHeap();
     if (hExecutableHeap == NULL) {
@@ -573,7 +559,6 @@ void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory management routines should be SO-tolerant.
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
@@ -591,7 +576,6 @@ void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;    // The memory management routines should be SO-tolerant.
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
@@ -667,7 +651,6 @@ IExecutionEngine *GetExecutionEngine()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
     SUPPORTS_DAC_HOST_ONLY;
        
     if (g_pExecutionEngine == NULL)
@@ -701,7 +684,6 @@ IExecutionEngine *GetExecutionEngine()
 
 IEEMemoryManager * GetEEMemoryManager()
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
@@ -747,7 +729,6 @@ void ClrFlsAssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
 LPVOID *ClrFlsGetBlockGeneric()
 {
     WRAPPER_NO_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     return (LPVOID *) GetExecutionEngine()->TLS_GetDataBlock();
 }

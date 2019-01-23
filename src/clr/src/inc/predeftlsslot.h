@@ -55,8 +55,6 @@ enum PredefinedTlsSlots
     TlsIdx_PEXCEPTION_RECORD,
     TlsIdx_PCONTEXT,
 
-    TlsIdx_SOIntolerantTransitionHandler, // The thread is entering SO intolerant code.  This one is used by
-                                          // Thread::IsSOIntolerant to decide the SO mode of the thread.
     MAX_PREDEFINED_TLS_SLOT
 };
 

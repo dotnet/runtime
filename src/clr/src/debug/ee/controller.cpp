@@ -958,7 +958,6 @@ DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
         CONSTRUCTOR_CHECK;
@@ -993,7 +992,6 @@ void DebuggerController::DeleteAllControllers()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -1016,7 +1014,6 @@ DebuggerController::~DebuggerController()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
         DESTRUCTOR_CHECK;
@@ -1051,7 +1048,6 @@ void DebuggerController::Delete()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -1108,7 +1104,6 @@ void DebuggerController::DisableAll()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -1185,7 +1180,6 @@ void DebuggerController::Dequeue()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -1234,7 +1228,6 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         THROWS; // from GetJitInfo
         GC_NOTRIGGER;
         MODE_ANY; // don't really care what mode we're in.
@@ -1662,7 +1655,6 @@ BOOL DebuggerController::CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address,
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE; // take Controller lock.
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -2022,7 +2014,6 @@ void DebuggerController::AddPatchToStartOfLatestMethod(MethodDesc * fd)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         THROWS; // from GetJitInfo
         GC_NOTRIGGER;
         MODE_ANY; // don't really care what mode we're in.
@@ -2050,7 +2041,6 @@ BOOL DebuggerController::AddBindAndActivateNativeManagedPatch(MethodDesc * fd,
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         THROWS; // from GetJitInfo
         GC_NOTRIGGER;
         MODE_ANY; // don't really care what mode we're in.
@@ -2077,7 +2067,6 @@ BOOL DebuggerController::AddBindAndActivatePatchForMethodDesc(MethodDesc *fd,
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY; // don't really care what mode we're in.
@@ -2160,7 +2149,6 @@ void DebuggerController::RemovePatchesFromModule(Module *pModule, AppDomain *pAp
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -2217,7 +2205,6 @@ bool DebuggerController::ModuleHasPatches( Module* pModule )
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -2572,7 +2559,6 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         // @todo - should this throw or not?
         NOTHROW;
 
@@ -3112,7 +3098,6 @@ void DebuggerController::EnableSingleStep()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3149,7 +3134,6 @@ BOOL DebuggerController::IsSingleStepEnabled(Thread *pThread)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3172,7 +3156,6 @@ void DebuggerController::EnableSingleStep(Thread *pThread)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3194,7 +3177,6 @@ void DebuggerController::DisableSingleStep()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3296,7 +3278,6 @@ void DebuggerController::EnableExceptionHook()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3313,7 +3294,6 @@ void DebuggerController::DisableExceptionHook()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3340,7 +3320,6 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
     // This can only modify controller's internal state. Can't send managed debug events.
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         GC_NOTRIGGER;
         NOTHROW;
         MODE_ANY;
@@ -3405,7 +3384,6 @@ void DebuggerController::EnableUnwind(FramePointer fp)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3464,7 +3442,6 @@ bool DebuggerController::DispatchUnwind(Thread *thread,
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER; // don't send IPC events
         MODE_COOPERATIVE; // TriggerUnwind always is coop
@@ -3578,7 +3555,6 @@ void DebuggerController::EnableTraceCall(FramePointer maxFrame)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3616,7 +3592,6 @@ VOID DebuggerController::PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID*
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3647,7 +3622,6 @@ void DebuggerController::DisableTraceCall()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3834,7 +3808,6 @@ void DebuggerController::EnableMethodEnter()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -3867,7 +3840,6 @@ void DebuggerController::DisableMethodEnter()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -4030,7 +4002,6 @@ bool DebuggerController::SendEvent(Thread *thread, bool fIpChanged)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         SENDEVENT_CONTRACT_ITEMS;
     }
@@ -4092,7 +4063,6 @@ void ThisFunctionMayHaveTriggerAGC()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         GC_TRIGGERS;
         NOTHROW;
     }
@@ -4119,7 +4089,6 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
 {
     CONTRACTL
     {
-        SO_INTOLERANT;
         NOTHROW;
 
         // If this exception is for the debugger, then we may trigger a GC.
@@ -4695,7 +4664,6 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
         // Patch skippers only operate on patches set in managed code. But the infrastructure may have
@@ -4996,7 +4964,6 @@ bool DebuggerBreakpoint::SendEvent(Thread *thread, bool fIpChanged)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         SENDEVENT_CONTRACT_ITEMS;
     }
@@ -6648,7 +6615,6 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         WRAPPER(THROWS);
         GC_NOTRIGGER;
         PRECONDITION(ThisIsHelperThreadWorker()); // Only help initializes a stepper.
@@ -7540,7 +7506,6 @@ void DebuggerStepper::TriggerUnwind(Thread *thread,
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         THROWS; // from GetJitInfo
         GC_NOTRIGGER; // don't send IPC events
         MODE_COOPERATIVE; // TriggerUnwind always is coop
@@ -7679,7 +7644,6 @@ bool DebuggerStepper::SendEvent(Thread *thread, bool fIpChanged)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         SENDEVENT_CONTRACT_ITEMS;
     }
@@ -8307,7 +8271,6 @@ bool DebuggerThreadStarter::SendEvent(Thread *thread, bool fIpChanged)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         SENDEVENT_CONTRACT_ITEMS;
     }
@@ -8519,7 +8482,6 @@ bool DebuggerUserBreakpoint::SendEvent(Thread *thread, bool fIpChanged)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         SENDEVENT_CONTRACT_ITEMS;
     }
@@ -8604,7 +8566,6 @@ bool DebuggerFuncEvalComplete::SendEvent(Thread *thread, bool fIpChanged)
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         THROWS;
         SENDEVENT_CONTRACT_ITEMS;
     }
@@ -8949,7 +8910,6 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         SENDEVENT_CONTRACT_ITEMS;
     }

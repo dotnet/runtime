@@ -69,7 +69,6 @@ Each and every callback wrapper must have some common gunk at the top.  Here's a
 
         // Yay!
         ASSERT_NO_EE_LOCKS_HELD();
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
@@ -167,7 +166,6 @@ Each and every Info function must have some common gunk at the top.  Here's an e
 
         // Yay!
         CANNOT_TAKE_LOCK;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
     PROFILER_TO_CLR_ENTRYPOINT_SYNC((LF_CORPROF,

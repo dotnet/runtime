@@ -86,7 +86,6 @@ class ArrayListBase
     void Set(DWORD index, PTR_VOID element) 
     { 
         WRAPPER_NO_CONTRACT; 
-        STATIC_CONTRACT_SO_INTOLERANT;
         *GetPtr(index) = element; 
     }
 
@@ -102,7 +101,6 @@ class ArrayListBase
     void Init()
     {
         LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_INTOLERANT;
         
         m_count = 0;
         m_firstBlock.m_next = NULL;
@@ -112,7 +110,6 @@ class ArrayListBase
     void Destroy()
     {
         WRAPPER_NO_CONTRACT;
-        STATIC_CONTRACT_SO_INTOLERANT;
         Clear();
     }
 
@@ -153,7 +150,6 @@ class ArrayListBase
         static Iterator Create(ArrayListBlock* block, DWORD remaining)
         {
             LIMITED_METHOD_DAC_CONTRACT;
-            STATIC_CONTRACT_SO_INTOLERANT;
             Iterator i;
             i.m_block = block;
             i.m_index = (DWORD) -1;
@@ -188,15 +184,12 @@ class ArrayListBase
 
     Iterator Iterate()
     {
-        STATIC_CONTRACT_SO_INTOLERANT;
         WRAPPER_NO_CONTRACT;
         return Iterator::Create((ArrayListBlock*)&m_firstBlock, m_count);
     }
 
     ConstIterator Iterate() const
     {
-        STATIC_CONTRACT_SO_INTOLERANT;
-
         // Const cast is safe because ConstIterator does not expose any way to modify the block
         ArrayListBlock *pFirstBlock = const_cast<ArrayListBlock *>(reinterpret_cast<const ArrayListBlock *>(&m_firstBlock));
         return ConstIterator(pFirstBlock, m_count);
@@ -277,14 +270,12 @@ public:
 #ifndef DACCESS_COMPILE
     ArrayList()
     {
-        STATIC_CONTRACT_SO_INTOLERANT;
         WRAPPER_NO_CONTRACT;
         Init();
     }
 
     ~ArrayList()
     {
-        STATIC_CONTRACT_SO_INTOLERANT;
         WRAPPER_NO_CONTRACT;
         Destroy();
     }

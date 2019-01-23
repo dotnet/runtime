@@ -69,7 +69,6 @@ inline PTR_LCGMethodResolver DynamicMethodDesc::GetLCGMethodResolver()
         GC_NOTRIGGER;
         NOTHROW;
         PRECONDITION(IsLCGMethod());
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -84,7 +83,6 @@ inline PTR_ILStubResolver DynamicMethodDesc::GetILStubResolver()
         GC_NOTRIGGER;
         NOTHROW;
         PRECONDITION(IsILStub());
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -99,7 +97,6 @@ inline PTR_DynamicMethodDesc MethodDesc::AsDynamicMethodDesc()
         GC_NOTRIGGER;
         NOTHROW;
         PRECONDITION(IsDynamicMethod());
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

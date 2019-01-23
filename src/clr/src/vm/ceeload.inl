@@ -400,7 +400,6 @@ inline MethodDesc *Module::LookupMethodDef(mdMethodDef token)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
         SUPPORTS_DAC;
     }

@@ -206,7 +206,6 @@ inline UINT_PTR EEToProfInterfaceImpl::LookupClientIDFromCache(FunctionID functi
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;

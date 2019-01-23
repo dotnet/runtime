@@ -99,7 +99,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_INTOLERANT;
         }
         CONTRACTL_END;
 
@@ -196,7 +195,6 @@ public:
             GC_NOTRIGGER;
             MODE_ANY;
             SUPPORTS_DAC;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 

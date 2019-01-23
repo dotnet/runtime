@@ -3694,7 +3694,6 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
         MODE_COOPERATIVE;
         GC_TRIGGERS;
         THROWS;
-        SO_NOT_MAINLINE;
 
         PRECONDITION(CheckPointer(pDE));
     }

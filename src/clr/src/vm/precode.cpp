@@ -110,7 +110,6 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -167,7 +166,6 @@ BOOL Precode::IsCorrectMethodDesc(MethodDesc *  pMD)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -198,7 +196,6 @@ BOOL Precode::IsPointingToPrestub(PCODE target)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -234,7 +231,6 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     PCODE pTarget = NULL;

@@ -95,10 +95,8 @@ private:
             CONTRACTL
             {
                 NOTHROW;
-                SO_TOLERANT;
             }
             CONTRACTL_END;
-            VALIDATE_BACKOUT_STACK_CONSUMPTION;               
 
             if (m_next) 
                 delete m_next; 

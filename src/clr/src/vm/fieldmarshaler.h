@@ -396,7 +396,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
         CONTRACT_END;

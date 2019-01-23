@@ -1139,7 +1139,6 @@ static VOID __stdcall DReleaseTarget(IUnknown *punk)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

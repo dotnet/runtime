@@ -972,7 +972,6 @@ FCIMPL1(int, GCInterface::WaitForFullGCApproach, int millisecondsTimeout)
         THROWS;
         MODE_COOPERATIVE;
         DISABLED(GC_TRIGGERS);  // can't use this in an FCALL because we're in forbid gc mode until we setup a H_M_F.
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -997,7 +996,6 @@ FCIMPL1(int, GCInterface::WaitForFullGCComplete, int millisecondsTimeout)
         THROWS;
         MODE_COOPERATIVE;
         DISABLED(GC_TRIGGERS);  // can't use this in an FCALL because we're in forbid gc mode until we setup a H_M_F.
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1279,7 +1277,6 @@ FCIMPLEND
 
 FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) {
     WRAPPER_NO_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     UINT64 oldMemValue;
     UINT64 newMemValue;
@@ -1300,7 +1297,6 @@ FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) 
 
 FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend) {
     WRAPPER_NO_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     UINT64 oldMemValue;
     UINT64 newMemValue;
@@ -1879,7 +1875,6 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     _ASSERTE(mt != NULL);
@@ -2038,7 +2033,6 @@ static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     INT32 hashCode = 0;
@@ -2254,7 +2248,6 @@ static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     PCODE actual = pMT->GetRestoredSlot(slot);

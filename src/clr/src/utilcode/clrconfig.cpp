@@ -100,7 +100,6 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
@@ -206,7 +205,6 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT; // Need this to be tolerant to stack overflows since REGUTIL::GetConfigDWORD was too. (This replaces calls to REGUTIL::GetConfigDWORD) 
     }
     CONTRACTL_END;
 

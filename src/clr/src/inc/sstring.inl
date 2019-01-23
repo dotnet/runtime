@@ -58,7 +58,6 @@ inline SString::SString()
         CONSTRUCTOR_CHECK;
         POSTCONDITION(IsEmpty());
         NOTHROW;
-        SO_TOLERANT;
         GC_NOTRIGGER;
     }
     CONTRACT_END;
@@ -66,7 +65,6 @@ inline SString::SString()
     RETURN;
 #else
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 #endif
@@ -621,7 +619,6 @@ inline const SString &SString::Empty()
         NOTHROW;
         GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -629,7 +626,6 @@ inline const SString &SString::Empty()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 #endif
 
@@ -1183,7 +1179,6 @@ inline BOOL SString::IsEmpty() const
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
         NOTHROW;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     SS_CONTRACT_END;
@@ -1199,7 +1194,6 @@ inline BOOL SString::IsASCII() const
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
         NOTHROW;
-        SO_TOLERANT;
     }
     SS_CONTRACT_END;
 
@@ -1519,7 +1513,6 @@ inline COUNT_T SString::SizeToCount(COUNT_T size) const
         PRECONDITION(CheckSize(size));
         SS_POSTCONDITION(CountToSize(RETVAL) == size);
         NOTHROW;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     SS_CONTRACT_END;
@@ -1536,7 +1529,6 @@ inline COUNT_T SString::GetBufferSizeInCharIncludeNullChar() const
 {
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     return (GetSize() >> GetCharacterSizeShift());

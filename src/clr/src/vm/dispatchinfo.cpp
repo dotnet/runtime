@@ -2306,7 +2306,6 @@ void DispatchInfo::MarshalParamNativeToManaged(DispatchMemberInfo *pMemberInfo, 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
     
@@ -2359,7 +2358,6 @@ void DispatchInfo::MarshalReturnValueManagedToNative(DispatchMemberInfo *pMember
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
     
@@ -3017,7 +3015,6 @@ MethodDesc* DispatchInfo::GetInvokeMemberMD()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -3034,7 +3031,6 @@ OBJECTREF DispatchInfo::GetReflectionObject()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
     
@@ -3182,7 +3178,6 @@ DISPID DispatchInfo::GenerateDispID()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
     
@@ -3670,7 +3665,6 @@ MethodDesc* DispatchExInfo::GetInvokeMemberMD()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;

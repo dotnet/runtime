@@ -1281,8 +1281,6 @@ void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr)
 
 BOOL OnGcCoverageInterrupt(PCONTEXT regs)
 {
-    SO_NOT_MAINLINE_FUNCTION;
-
     // So that you can set counted breakpoint easily;
     GCcoverCount++;
     forceStack[0]= &regs;                // This is so I can see it fastchecked

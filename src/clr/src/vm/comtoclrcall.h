@@ -133,7 +133,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             PRECONDITION(IsFieldCall());
         }
         CONTRACT_END;
@@ -149,7 +148,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             PRECONDITION(IsMethodCall());
         }
         CONTRACT_END;
@@ -249,7 +247,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             PRECONDITION(!IsFieldCall());
             PRECONDITION(CheckPointer(m_pMD));
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
@@ -267,7 +264,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             PRECONDITION(!IsFieldCall());
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             SUPPORTS_DAC;
@@ -298,7 +294,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             PRECONDITION(IsFieldCall());
             PRECONDITION(CheckPointer(m_pFD));
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
@@ -331,7 +326,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             PRECONDITION(IsMethodCall());
             PRECONDITION(CheckPointer(m_pMD));
         }
@@ -348,7 +342,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             PRECONDITION(m_flags & enum_NativeInfoInitialized);
             SUPPORTS_DAC;
         }
@@ -377,7 +370,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             PRECONDITION(IsMethodCall());
             PRECONDITION(CheckPointer(m_pMD));
         }

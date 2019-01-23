@@ -756,8 +756,7 @@ BOOL IsHostRegisteredForEvent(EClrEvent event);
 #define InternalSetupForComCall(CannotEnterRetVal, OOMRetVal, SORetVal, CheckCanRunManagedCode) \
 SetupThreadForComCall(OOMRetVal);                       \
 if (CheckCanRunManagedCode && !CanRunManagedCode())     \
-    return CannotEnterRetVal;                           \
-SO_INTOLERANT_CODE_NOTHROW(CURRENT_THREAD, return SORetVal)
+    return CannotEnterRetVal;
 
 #define SetupForComCallHRNoHostNotif() InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, true)
 #define SetupForComCallHRNoHostNotifNoCheckCanRunManagedCode() InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, false)
@@ -777,7 +776,6 @@ InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFL
 if (CheckCanRunManagedCode && !CanRunManagedCode())                         \
     return CannotEnterRetVal;                                               \
 SetupThreadForComCall(OOMRetVal);                                           \
-BEGIN_SO_INTOLERANT_CODE_NOTHROW(CURRENT_THREAD, SORetVal)                  \
 
 #define BeginSetupForComCallHRWithEscapingCorruptingExceptions()            \
 HRESULT __hr = S_OK;                                                        \
@@ -788,7 +786,6 @@ if (SUCCEEDED(__hr))                                                        \
 
 #define EndSetupForComCallHRWithEscapingCorruptingExceptions()              \
 }                                                                           \
-END_SO_INTOLERANT_CODE;                                                     \
                                                                             \
 if (FAILED(__hr))                                                           \
 {                                                                           \

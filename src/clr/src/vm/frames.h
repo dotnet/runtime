@@ -1678,7 +1678,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE; // Frame MethodDesc should be always updated in cooperative mode to avoid racing with GC stackwalk
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 

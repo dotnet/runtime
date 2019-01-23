@@ -314,7 +314,6 @@ LPVOID CQuickHeap::Alloc(UINT sz)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;    // So long as we cleanup the heap when we're done, all the memory goes with it
         INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
@@ -2055,7 +2054,6 @@ HMODULE CLRGetModuleHandle(LPCWSTR lpModuleFileName)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     HMODULE hMod = WszGetModuleHandle(lpModuleFileName);
     return hMod;
@@ -2068,7 +2066,6 @@ HMODULE CLRGetCurrentModuleHandle()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     HMODULE hMod = WszGetModuleHandle(NULL);
     return hMod;
@@ -2226,7 +2223,6 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     HMODULE hMod;
     UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
@@ -2249,12 +2245,7 @@ HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName)
     DWORD dwLastError = 0;
     HMODULE hmod = 0;
 
-    // This method should be marked "throws" due to the probe here.
-    STATIC_CONTRACT_VIOLATION(ThrowsViolation);
-
-    BEGIN_SO_TOLERANT_CODE(GetThread());
     hmod = CLRLoadLibraryWorker(lpLibFileName, &dwLastError);
-    END_SO_TOLERANT_CODE;
 
     SetLastError(dwLastError);
     return hmod;
@@ -2269,7 +2260,6 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     HMODULE hMod;
     UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
@@ -2294,10 +2284,8 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
     DWORD lastError = ERROR_SUCCESS;
     HMODULE hmod = NULL;
 
-    BEGIN_SO_TOLERANT_CODE(GetThread());
     hmod = CLRLoadLibraryExWorker(lpLibFileName, hFile, dwFlags, &lastError);
-    END_SO_TOLERANT_CODE;
-   
+
     SetLastError(lastError);
     return hmod;
 }
@@ -2310,7 +2298,6 @@ BOOL CLRFreeLibrary(HMODULE hModule)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     return FreeLibrary(hModule);
 }
@@ -2321,7 +2308,6 @@ VOID CLRFreeLibraryAndExitThread(HMODULE hModule,DWORD dwExitCode)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     // This is no-return
     FreeLibraryAndExitThread(hModule,dwExitCode);
@@ -2791,7 +2777,6 @@ void DACRaiseException(TADDR *args, UINT argCount)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     struct Param
     {
@@ -2817,7 +2802,6 @@ void DACNotifyExceptionHelper(TADDR *args, UINT argCount)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2876,7 +2860,6 @@ void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr, TADDR NativeCodeLoc
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -2891,7 +2874,6 @@ void DACNotify::DoJITPitchingNotification(MethodDesc *MethodDescPtr)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -2909,7 +2891,6 @@ void DACNotify::DoModuleLoadNotification(Module *ModulePtr)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -2927,7 +2908,6 @@ void DACNotify::DoModuleUnloadNotification(Module *ModulePtr)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -2945,7 +2925,6 @@ void DACNotify::DoExceptionNotification(Thread* ThreadPtr)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -2963,7 +2942,6 @@ void DACNotify::DoGCNotification(const GcEvtArgs& args)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -2981,7 +2959,6 @@ void DACNotify::DoExceptionCatcherEnterNotification(MethodDesc *MethodDescPtr, D
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -3201,7 +3178,6 @@ BOOL EnableARM()
         // can be called on a COOP thread and it has a GC_NOTRIGGER contract. 
         // We should use the AD unload thread to call this function on.
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -3215,11 +3191,6 @@ BOOL EnableARM()
             Thread *pThread = NULL;
             CONTRACT_VIOLATION(GCViolation);
 
-            // I am returning TRUE here so the caller will NOT enable
-            // ARM - if we can't take the thread store lock, something
-            // is already kind of messed up so no need to proceed with
-            // enabling ARM.
-            BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), return TRUE);
             // Take the thread store lock while we enumerate threads.
             ThreadStoreLockHolder tsl ;
 
@@ -3229,8 +3200,6 @@ BOOL EnableARM()
                     continue;
                 pThread->QueryThreadProcessorUsage();
             }
-
-            END_SO_INTOLERANT_CODE;
         }
         g_fEnableARM = TRUE;
     }

@@ -1797,7 +1797,6 @@ public:
     {
         CONTRACTL
         {
-            SO_NOT_MAINLINE;
             NOTHROW;
             SENDEVENT_CONTRACT_ITEMS;
         }

@@ -40,7 +40,6 @@ void DebuggerModule::PickPrimaryModule()
 {
     CONTRACTL
     {
-        SO_NOT_MAINLINE;
         NOTHROW;
         GC_NOTRIGGER;
     }
