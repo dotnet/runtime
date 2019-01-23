@@ -57,6 +57,8 @@ namespace System.Text.Json
         public const int MaximumFormatDateTimeLength = 27;    // StandardFormat 'O', e.g. 2017-06-12T05:30:45.7680000
         public const int MaximumFormatDateTimeOffsetLength = 33;  // StandardFormat 'O', e.g. 2017-06-12T05:30:45.7680000-07:00
 
+        internal const char ScientificNotationFormat = 'e';
+
         // Encoding Helpers
         public const char HighSurrogateStart = '\ud800';
         public const char HighSurrogateEnd = '\udbff';

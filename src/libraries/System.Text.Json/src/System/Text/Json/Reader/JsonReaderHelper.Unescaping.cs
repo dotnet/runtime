@@ -70,7 +70,47 @@ namespace System.Text.Json
             }
         }
 
-        private static void Unescape(ReadOnlySpan<byte> source, Span<byte> destination, int idx, out int written)
+        internal static int GetUtf8ByteCount(ReadOnlySpan<char> text)
+        {
+#if BUILDING_INBOX_LIBRARY
+            return s_utf8Encoding.GetByteCount(text);
+#else
+            if (text.IsEmpty)
+            {
+                return 0;
+            }
+            unsafe
+            {
+                fixed (char* charPtr = text)
+                {
+                    return s_utf8Encoding.GetByteCount(charPtr, text.Length);
+                }
+            }
+#endif
+        }
+
+        internal static int GetUtf8FromText(ReadOnlySpan<char> text, Span<byte> dest)
+        {
+#if BUILDING_INBOX_LIBRARY
+            return s_utf8Encoding.GetBytes(text, dest);
+#else
+            if (text.IsEmpty)
+            {
+                return 0;
+            }
+
+            unsafe
+            {
+                fixed (char* charPtr = text)
+                fixed (byte* destPtr = dest)
+                {
+                    return s_utf8Encoding.GetBytes(charPtr, text.Length, destPtr, dest.Length);
+                }
+            }
+#endif
+        }
+
+        internal static void Unescape(ReadOnlySpan<byte> source, Span<byte> destination, int idx, out int written)
         {
             Debug.Assert(idx >= 0 && idx < source.Length);
             Debug.Assert(source[idx] == JsonConstants.BackSlash);
