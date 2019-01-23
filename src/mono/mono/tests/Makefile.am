@@ -1380,7 +1380,9 @@ PROFILE_DISABLED_TESTS += \
 	dynamic-method-resurrection.exe	\
 	assembly_append_ordering.exe \
 	assemblyresolve_event5.exe	\
-	dynamic-method-churn.exe
+	dynamic-method-churn.exe \
+	bug-666008.exe \
+	bug-685908.exe
 
 # Test which needs System.Web support
 PROFILE_DISABLED_TESTS += \
