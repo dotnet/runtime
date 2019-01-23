@@ -1030,12 +1030,12 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructCharSetUnicodeSequenti
     CharSetUnicodeSequential argstr;
 
     WCHAR* strSource = (WCHAR*)(W("change string"));
-    size_t len = wcslen(strSource);
+    size_t len = TP_slen(strSource);
     LPCWSTR temp = (LPCWSTR)CoreClrAlloc(sizeof(WCHAR)*(len+1));
     if(temp != NULL)
     {
         //wcscpy((WCHAR*)temp, (len+1)*sizeof(WCHAR), strSource);
-        wcscpy_s((WCHAR*)temp,len+1,strSource);
+        TP_scpy_s((WCHAR*)temp,len+1,strSource);
         argstr.f1 = temp;
         argstr.f2 = 'n';
     }
@@ -1065,12 +1065,12 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructCharSetUnicodeSeque
     CharSetUnicodeSequential argstr;
 
     WCHAR* strSource = (WCHAR*)(W("change string"));
-    size_t len = wcslen(strSource);
+    size_t len = TP_slen(strSource);
     LPCWSTR temp = (LPCWSTR)CoreClrAlloc(sizeof(WCHAR)*(len+1));
     if(temp != NULL)
     {
         //wcscpy((WCHAR*)temp, (len+1)*sizeof(WCHAR), strSource);
-        wcscpy_s((WCHAR*)temp,len+1,strSource);
+        TP_scpy_s((WCHAR*)temp,len+1,strSource);
         argstr.f1 = temp;
         argstr.f2 = 'n';
     }
@@ -1118,12 +1118,12 @@ extern "C" DLL_EXPORT BOOL _cdecl MarshalStructCharSetUnicodeSequentialByVal_Cde
     }
 
     WCHAR* strSource = (WCHAR*)(W("change string"));
-    size_t len = wcslen(strSource);
+    size_t len = TP_slen(strSource);
     LPCWSTR temp = (LPCWSTR)CoreClrAlloc(sizeof(WCHAR)*(len+1));
     if(temp != NULL)
     {
         //wcscpy((WCHAR*)temp, (len+1)*sizeof(WCHAR), strSource);
-        wcscpy_s((WCHAR*)temp,len+1,strSource);
+        TP_scpy_s((WCHAR*)temp,len+1,strSource);
         argstr.f1 = temp;
         argstr.f2 = 'n';
     }
@@ -1145,12 +1145,12 @@ extern "C" DLL_EXPORT BOOL __stdcall MarshalStructCharSetUnicodeSequentialByVal_
     }
 
     WCHAR* strSource = (WCHAR*)(W("change string"));
-    size_t len = wcslen(strSource);
+    size_t len = TP_slen(strSource);
     LPCWSTR temp = (LPCWSTR)CoreClrAlloc(sizeof(WCHAR)*(len+1));
     if(temp != NULL)
     {
         //wcscpy((WCHAR*)temp, (len+1)*sizeof(WCHAR), strSource);
-        wcscpy_s((WCHAR*)temp,len+1,strSource);
+        TP_scpy_s((WCHAR*)temp,len+1,strSource);
         argstr.f1 = temp;
         argstr.f2 = 'n';
     }
@@ -1167,12 +1167,12 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructCharSetUnicodeSequenti
     //Init
     CharSetUnicodeSequential argstr{};
     WCHAR* strSource = (WCHAR*)(W("change string"));
-    size_t len =wcslen(strSource);
+    size_t len =TP_slen(strSource);
     LPCWSTR temp = (LPCWSTR)CoreClrAlloc(sizeof(WCHAR)*(len+1));
     if(temp != NULL)
     {
         //wcscpy((WCHAR*)temp, (len+1)*sizeof(WCHAR), strSource);
-        wcscpy_s((WCHAR*)temp,len+1,strSource);
+        TP_scpy_s((WCHAR*)temp,len+1,strSource);
         argstr.f1 = temp;
         argstr.f2 = 'n';
     }
@@ -1188,7 +1188,7 @@ extern "C" DLL_EXPORT BOOL _cdecl DoCallBack_MarshalStructCharSetUnicodeSequenti
     }
 
     //Verify the value unchanged
-    if(0 != wcscmp(const_cast<WCHAR*>(argstr.f1), const_cast<WCHAR*>(W("change string"))) || argstr.f2 != L'n')
+    if(0 != TP_wcmp_s(const_cast<WCHAR*>(argstr.f1), const_cast<WCHAR*>(W("change string"))) || argstr.f2 != L'n')
     {
         printf("The parameter for DoCallBack_MarshalStructCharSetUnicodeSequentialByVal_Cdecl is wrong\n");
         return FALSE;
@@ -1202,12 +1202,12 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructCharSetUnicodeSeque
     //Init
     CharSetUnicodeSequential argstr{};
     WCHAR* strSource = (WCHAR*)(W("change string"));
-    size_t len =wcslen(strSource);
+    size_t len =TP_slen(strSource);
     LPCWSTR temp = (LPCWSTR)CoreClrAlloc(sizeof(WCHAR)*(len+1));
     if(temp != NULL)
     {
         //wcscpy((WCHAR*)temp, (len+1)*sizeof(WCHAR), strSource);
-        wcscpy_s((WCHAR*)temp,len+1,strSource);
+        TP_scpy_s((WCHAR*)temp,len+1,strSource);
         argstr.f1 = temp;
         argstr.f2 = 'n';
     }
@@ -1223,7 +1223,7 @@ extern "C" DLL_EXPORT BOOL __stdcall DoCallBack_MarshalStructCharSetUnicodeSeque
     }
 
     //Verify the value unchanged
-    if(0 != wcscmp(const_cast<WCHAR*>(argstr.f1), const_cast<WCHAR*>(W("change string"))) || argstr.f2 != L'n')
+    if(0 != TP_wcmp_s(const_cast<WCHAR*>(argstr.f1), const_cast<WCHAR*>(W("change string"))) || argstr.f2 != L'n')
     {
         printf("The parameter for DoCallBack_MarshalStructCharSetUnicodeSequentialByVal_StdCall is wrong\n");
         return FALSE;

@@ -15,8 +15,8 @@ size_t lenstrNative = 7; //the len of strNative
 extern "C" DLL_EXPORT bool STDMETHODCALLTYPE MarshalStringPointer_InOut(/*[in,out]*/LPWSTR *s)
 {
     //Check the Input
-    size_t len = wcslen(*s);
-    if((len != lenstrManaged)||(wcsncmp(*s,strManaged, lenstrManaged)!=0))
+    size_t len = TP_slen(*s);
+    if((len != lenstrManaged)||(TP_wcsncmp(*s,strManaged, lenstrManaged)!=0))
     {
         printf("Error in Function MarshalStringPointer_InOut\n");
 
@@ -40,7 +40,7 @@ extern "C" DLL_EXPORT bool STDMETHODCALLTYPE MarshalStringPointer_InOut(/*[in,ou
     size_t length = lenstrNative + 1;
     *s = (LPWSTR)CoreClrAlloc(length * sizeof(WCHAR));
     memset(*s,'\0',length * sizeof(WCHAR));
-    wcsncpy_s(*s,length,strNative,lenstrNative);
+    TP_wcsncpy_s(*s,length,strNative,lenstrNative);
 
     //Return
     return true;

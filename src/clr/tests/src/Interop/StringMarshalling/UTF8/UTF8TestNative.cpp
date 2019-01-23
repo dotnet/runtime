@@ -23,7 +23,7 @@ char* utf16_to_utf8(const wchar_t *srcstring)
     if ((srcstring == NULL) || (*srcstring == L'\0')) {
         return 0;
     }
-    size_t cchUTF16 = wcslen(srcstring) + 1;
+    size_t cchUTF16 = TP_slen(srcstring) + 1;
     int cbUTF8 = WideCharToMultiByte(CP_UTF8, 0,
         srcstring,
         (int)cchUTF16,

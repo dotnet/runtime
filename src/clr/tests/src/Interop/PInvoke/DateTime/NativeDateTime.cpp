@@ -37,7 +37,7 @@ extern "C" BOOL VerifySeqStruct(struct Stru_Seq_DateAsStructAsFld* StDate)
 {
     BSTR str;
     VarBstrFromDate(StDate->dt, LCID_ENGLISH, VAR_FOURDIGITYEARS, &str);
-    if(wcscmp(L"7/4/2008", (wchar_t *)str) != 0 )
+    if(TP_wcmp_s(L"7/4/2008", (wchar_t *)str) != 0 )
     {
         wprintf(L"FAILURE! InDATE expected '07/04/2008' but received: %s\n", str);
         return FALSE;
@@ -47,7 +47,7 @@ extern "C" BOOL VerifySeqStruct(struct Stru_Seq_DateAsStructAsFld* StDate)
         wprintf(L"FAILURE! iInt expected 100 but received: %d\n", StDate->iInt);
         return FALSE;
     }
-    if(wcscmp(L"Managed", (wchar_t *)(StDate->bstr)) != 0 )
+    if(TP_wcmp_s(L"Managed", (wchar_t *)(StDate->bstr)) != 0 )
     {
         wprintf(L"FAILURE! bstr expected 'Managed' but received: %s\n", StDate->bstr);
         return FALSE;
@@ -59,7 +59,7 @@ extern "C" BOOL VerifyExpStruct(struct Stru_Exp_DateAsStructAsFld* StDate)
 {
     BSTR str;
     VarBstrFromDate(StDate->dt, LCID_ENGLISH, VAR_FOURDIGITYEARS, &str);
-    if(wcscmp(L"7/4/2008", (wchar_t *)str) != 0 )
+    if(TP_wcmp_s(L"7/4/2008", (wchar_t *)str) != 0 )
     {
         wprintf(L"FAILURE! InDATE expected '07/04/2008' but received: %s\n", str);
         return FALSE;
@@ -92,7 +92,7 @@ extern "C" DLL_EXPORT BOOL __stdcall Marshal_In_stdcall(DATE d)
 
     VarBstrFromDate(d, LCID_ENGLISH, VAR_FOURDIGITYEARS, &str);
 
-    if(wcscmp(L"7/4/2008", (wchar_t *)str) != 0 )
+    if(TP_wcmp_s(L"7/4/2008", (wchar_t *)str) != 0 )
     {
         wprintf(L"FAILURE! InDATE expected '07/04/2008' but received: %s\n", str);
         return FALSE;
@@ -113,7 +113,7 @@ extern "C" DLL_EXPORT BOOL __cdecl Marshal_InOut_cdecl(/*[in,out]*/ DATE* d)
 
     VarBstrFromDate(*d, LCID_ENGLISH, VAR_FOURDIGITYEARS, &str);
 
-    if(wcscmp(L"7/4/2008", (wchar_t *)str) != 0 )
+    if(TP_wcmp_s(L"7/4/2008", (wchar_t *)str) != 0 )
     {
         wprintf(L"FAILURE! InDATE expected '07/04/2008' but received: %s\n", str);
         return FALSE;
@@ -169,7 +169,7 @@ extern "C" DLL_EXPORT BOOL __cdecl RevP_Marshal_InOut_cdecl(Datetime_Del_Marshal
     
     //Verify the changes are visible
     VarBstrFromDate(ptoD, LCID_ENGLISH, VAR_FOURDIGITYEARS, &str);
-    if(wcscmp(L"8/14/1947", (wchar_t *)str) != 0 )
+    if(TP_wcmp_s(L"8/14/1947", (wchar_t *)str) != 0 )
     {
         wprintf(L"FAILURE! RevP_Marshal_InOut_cdecl : InDATE expected '8/14/1947' but received: %s\n", str);
         return FALSE;
@@ -186,7 +186,7 @@ extern "C" DLL_EXPORT BOOL __stdcall RevP_Marshal_Ret_stdcall(Datetime_Del_Marsh
     date = d();
 
     VarBstrFromDate(date, LCID_ENGLISH, VAR_FOURDIGITYEARS, &str);
-    if(wcscmp(L"7/4/2008", (wchar_t *)str) != 0 )
+    if(TP_wcmp_s(L"7/4/2008", (wchar_t *)str) != 0 )
     {
         wprintf(L"FAILURE! RevP_Marshal_Ret_stdcall : InDATE expected '07/04/2008' but received: %s\n", str);
         return FALSE;
