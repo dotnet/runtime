@@ -1944,6 +1944,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     switch (scenario) {
                         case 'innerloop':
                             if (configuration == 'Checked') {
+                                isDefaultTrigger = true
                                 isArm64PrivateJob = true
                             }
                             break

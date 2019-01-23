@@ -135,7 +135,7 @@ jobs:
     archType: arm
     osGroup: Windows_NT
     osIdentifier: Windows_NT
-    helixQueuesPublic: 'Windows.10.Arm64.Open'
+    # TODO: return back Windows.10.Arm64.Open
     helixQueuesInternal: 'Windows.10.Arm64'
     ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -145,6 +145,6 @@ jobs:
     archType: arm64
     osGroup: Windows_NT
     osIdentifier: Windows_NT
-    helixQueuesPublic: 'Windows.10.Arm64.Open'
+    # TODO: return back Windows.10.Arm64.Open
     helixQueuesInternal: 'Windows.10.Arm64'
     ${{ insert }}: ${{ parameters.jobParameters }}
