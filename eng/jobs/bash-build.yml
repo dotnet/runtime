@@ -98,6 +98,11 @@ jobs:
         /p:UsePrebuiltPortableBinariesForInstallers=true
         /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/
         $(CommonMSBuildArgs)
+
+      # Disable MSBuild node reuse in case this build is running on a persistent agent.
+      # Use environment variable rather than /nr:false to make sure internal Execs that run MSBuild
+      # commands also disable node reuse.
+      MSBUILDDISABLENODEREUSE: 1
     steps:
 
     - script: df -h
