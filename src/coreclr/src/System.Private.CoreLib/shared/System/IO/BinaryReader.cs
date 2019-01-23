@@ -150,7 +150,7 @@ namespace System.IO
 
             int charsRead = 0;
             int numBytes = 0;
-            long posSav = posSav = 0;
+            long posSav = 0;
 
             if (_stream.CanSeek)
             {
