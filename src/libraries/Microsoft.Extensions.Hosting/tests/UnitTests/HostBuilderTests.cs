@@ -19,6 +19,20 @@ namespace Microsoft.Extensions.Hosting
     public class HostBuilderTests
     {
         [Fact]
+        public void DefaultConfigIsMutable()
+        {
+            var host = new HostBuilder()
+                .Build();
+
+            using (host)
+            {
+                var config = host.Services.GetRequiredService<IConfiguration>();
+                config["key1"] = "value";
+                Assert.Equal("value", config["key1"]);
+            }
+        }
+
+        [Fact]
         public void ConfigureHostConfigurationPropagated()
         {
             var host = new HostBuilder()

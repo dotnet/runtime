@@ -125,7 +125,9 @@ namespace Microsoft.Extensions.Hosting
 
         private void BuildHostConfiguration()
         {
-            var configBuilder = new ConfigurationBuilder();
+            var configBuilder = new ConfigurationBuilder()
+                .AddInMemoryCollection(); // Make sure there's some default storage since there are no default providers
+
             foreach (var buildAction in _configureHostConfigActions)
             {
                 buildAction(configBuilder);
