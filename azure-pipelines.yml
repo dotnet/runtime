@@ -80,16 +80,6 @@ jobs:
   ################################################################################
   # Build Bash legs (Linux and FreeBSD)
   ################################################################################
-# - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-#   - template: /eng/jobs/bash-build.yml
-#     parameters:
-#       displayName: Build_FreeBSD_x64
-#       disableCrossgen: true
-#       osGroup: FreeBSD
-#       portableBuild: true
-#       skipTests: true
-#       targetArchitecture: x64
-
 - template: /eng/jobs/bash-build.yml
   parameters:
     crossBuild: true
