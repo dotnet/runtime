@@ -8,6 +8,7 @@
 #include "config.h"
 #include "utils/mono-proclib.h"
 #include "utils/mono-time.h"
+#include "utils/mono-errno.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -1032,7 +1033,7 @@ mono_pe_file_map (gunichar2 *filename, gint32 *map_size, void **handle)
 
 		located_filename = mono_portability_find_file (filename_ext, TRUE);
 		if (!located_filename) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 
 			g_async_safe_printf ("%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
 			goto error;

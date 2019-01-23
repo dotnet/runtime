@@ -54,6 +54,7 @@
 #include "utils/strenc.h"
 #include "utils/refcount.h"
 #include "icall-decl.h"
+#include "utils/mono-errno.h"
 
 #define NANOSECONDS_PER_MICROSECOND 1000LL
 #define TICKS_PER_MICROSECOND 10L
@@ -294,7 +295,7 @@ _wapi_open (const gchar *pathname, gint flags, mode_t mode)
 			located_filename = mono_portability_find_file (pathname, TRUE);
 
 			if (located_filename == NULL) {
-				errno = saved_errno;
+				mono_set_errno (saved_errno);
 				return -1;
 			}
 
@@ -321,7 +322,7 @@ _wapi_access (const gchar *pathname, gint mode)
 		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
 
 		if (located_filename == NULL) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 			return -1;
 		}
 
@@ -347,7 +348,7 @@ _wapi_chmod (const gchar *pathname, mode_t mode)
 		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
 
 		if (located_filename == NULL) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 			return -1;
 		}
 
@@ -374,7 +375,7 @@ _wapi_utime (const gchar *filename, const struct utimbuf *buf)
 		gchar *located_filename = mono_portability_find_file (filename, TRUE);
 
 		if (located_filename == NULL) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 			return -1;
 		}
 
@@ -401,7 +402,7 @@ _wapi_utimes (const gchar *filename, const struct timeval times[2])
 		gchar *located_filename = mono_portability_find_file (filename, TRUE);
 
 		if (located_filename == NULL) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 			return -1;
 		}
 
@@ -428,7 +429,7 @@ _wapi_unlink (const gchar *pathname)
 		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
 
 		if (located_filename == NULL) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 			return -1;
 		}
 
@@ -464,7 +465,7 @@ _wapi_rename (const gchar *oldpath, const gchar *newpath)
 				g_free (located_oldpath);
 				g_free (located_newpath);
 
-				errno = saved_errno;
+				mono_set_errno (saved_errno);
 				return -1;
 			}
 
@@ -492,7 +493,7 @@ _wapi_stat (const gchar *path, struct stat *buf)
 		gchar *located_filename = mono_portability_find_file (path, TRUE);
 
 		if (located_filename == NULL) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 			return -1;
 		}
 
@@ -518,7 +519,7 @@ _wapi_lstat (const gchar *path, struct stat *buf)
 		gchar *located_filename = mono_portability_find_file (path, TRUE);
 
 		if (located_filename == NULL) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 			return -1;
 		}
 
@@ -562,7 +563,7 @@ _wapi_rmdir (const gchar *pathname)
 		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
 
 		if (located_filename == NULL) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 			return -1;
 		}
 
@@ -588,7 +589,7 @@ _wapi_chdir (const gchar *path)
 		gchar *located_filename = mono_portability_find_file (path, TRUE);
 
 		if (located_filename == NULL) {
-			errno = saved_errno;
+			mono_set_errno (saved_errno);
 			return -1;
 		}
 
@@ -776,7 +777,7 @@ _wapi_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
 			errnum = EACCES;
 		}
 
-		errno = errnum;
+		mono_set_errno (errnum);
 		return -1;
 	}
 
@@ -2136,7 +2137,7 @@ gboolean mono_w32file_delete(const gunichar2 *name)
 		if (errno == EROFS) {
 			MonoIOStat stat;
 			if (mono_w32file_get_attributes_ex (name, &stat)) //The file exists, so must be due the RO file system
-				errno = EROFS;
+				mono_set_errno (EROFS);
 		}
 		_wapi_set_last_path_error_from_errno (NULL, filename);
 	} else {

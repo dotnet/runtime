@@ -11,6 +11,7 @@
 #include <glib.h>
 #include <string.h>
 #include <errno.h>
+#include <mono/utils/mono-errno.h>
 #include <ctype.h>
 #include <stdlib.h>
 
@@ -56,7 +57,7 @@ mono_gc_parse_environment_string_extract_number (const char *str, size_t *out)
 			break;
 	}
 
-	errno = 0;
+	mono_set_errno (0);
 	val = strtol (str, &endptr, 10);
 
 	if ((errno == ERANGE && (val == LONG_MAX || val == LONG_MIN))

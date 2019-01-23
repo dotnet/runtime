@@ -46,6 +46,7 @@
 #include <glib.h>
 #include <ctype.h>
 #include <errno.h>
+#include <mono/utils/mono-errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -309,7 +310,7 @@ globextend(const gchar *path, mono_w32file_unix_glob_t *pglob, size_t *limitp)
 	/* Broken on opensuse 11 */
 	if ((pglob->gl_flags & W32FILE_UNIX_GLOB_LIMIT) &&
 	    newsize + *limitp >= ARG_MAX) {
-		errno = 0;
+		mono_set_errno (0);
 		return(W32FILE_UNIX_GLOB_NOSPACE);
 	}
 #endif

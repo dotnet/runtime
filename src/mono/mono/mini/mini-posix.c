@@ -60,6 +60,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/attach.h>
 #include <mono/utils/mono-math.h>
+#include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -283,7 +284,7 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 	if (mono_thread_info_get_small_id () == -1 ||
 	    !mono_domain_get () ||
 	    !mono_tls_get_jit_tls ()) {
-		errno = old_errno;
+		mono_set_errno (old_errno);
 		return;
 	}
 
@@ -302,7 +303,7 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
 
-	errno = old_errno;
+	mono_set_errno (old_errno);
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }

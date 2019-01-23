@@ -35,6 +35,7 @@
 #include <mono/utils/w32api.h>
 
 #include <errno.h>
+#include <mono/utils/mono-errno.h>
 
 #if defined(__MACH__)
 #include <mono/utils/mach-support.h>
@@ -900,7 +901,7 @@ mono_thread_info_init (size_t info_size)
 	g_assert (res);
 
 	if ((sleepLimit = g_getenv ("MONO_SLEEP_ABORT_LIMIT")) != NULL) {
-		errno = 0;
+		mono_set_errno (0);
 		long threshold = strtol(sleepLimit, NULL, 10);
 		if ((errno == 0) && (threshold >= 40))  {
 			sleepAbortDuration = threshold;
