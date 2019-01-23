@@ -277,5 +277,11 @@ namespace Internal.Runtime.Augments
 
         public void Start() => AsThread().Start();
         public void Start(object parameter) => AsThread().Start(parameter);
+
+        public void ResetThreadPoolThread()
+        {
+            // Currently implemented in unmanaged method Thread::InternalReset and
+            // called internally from the ThreadPool in NotifyWorkItemComplete.
+        }
     }
 }

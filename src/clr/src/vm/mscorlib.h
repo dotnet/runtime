@@ -846,7 +846,7 @@ DEFINE_CLASS(IOCB_HELPER,              Threading,            _IOCompletionCallba
 DEFINE_METHOD(IOCB_HELPER,             PERFORM_IOCOMPLETION_CALLBACK,        PerformIOCompletionCallback,          SM_UInt_UInt_PtrNativeOverlapped_RetVoid)
 
 DEFINE_CLASS(TPWAITORTIMER_HELPER,              Threading,            _ThreadPoolWaitOrTimerCallback)
-DEFINE_METHOD(TPWAITORTIMER_HELPER,             PERFORM_WAITORTIMER_CALLBACK,        PerformWaitOrTimerCallback,          SM_Obj_Bool_RetVoid)
+DEFINE_METHOD(TPWAITORTIMER_HELPER,             PERFORM_WAITORTIMER_CALLBACK,        PerformWaitOrTimerCallback,          SM__ThreadPoolWaitOrTimerCallback_Bool_RetVoid)
 
 DEFINE_CLASS(TP_WAIT_CALLBACK,         Threading,              _ThreadPoolWaitCallback)
 DEFINE_METHOD(TP_WAIT_CALLBACK,        PERFORM_WAIT_CALLBACK,               PerformWaitCallback,                   SM_RetBool)
