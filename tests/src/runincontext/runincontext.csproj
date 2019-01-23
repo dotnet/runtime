@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
+    <UseAppHost>false</UseAppHost>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="runincontext.cs" />
+  </ItemGroup>
+
+</Project>
