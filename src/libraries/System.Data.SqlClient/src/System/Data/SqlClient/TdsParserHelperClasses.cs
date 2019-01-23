@@ -285,14 +285,14 @@ namespace System.Data.SqlClient
         {
             None = 0,
 
-            Updatable = 1,
-            UpdateableUnknown = 2,
-            IsDifferentName = 4,
-            IsKey = 8,
-            IsHidden = 16,
-            IsExpression = 32,
-            IsIdentity = 64,
-            IsColumnSet = 128,
+            Updatable = 1 << 0,
+            UpdateableUnknown = 1 << 1,
+            IsDifferentName = 1 << 2,
+            IsKey = 1 << 3,
+            IsHidden = 1 << 4,
+            IsExpression = 1 << 5,
+            IsIdentity = 1 << 6,
+            IsColumnSet = 1 << 7,
 
             IsReadOnlyMask = (Updatable | UpdateableUnknown) // two bit field (0 is read only, 1 is updatable, 2 is updatability unknown)
         }
@@ -550,8 +550,8 @@ namespace System.Data.SqlClient
         private enum SqlMetaDataPrivFlags : byte
         {
             None = 0,
-            IsNullable = 1,
-            IsMultiValued = 2
+            IsNullable = 1 << 1,
+            IsMultiValued = 1 << 2
         }
 
         internal SqlDbType type;    // SqlDbType enum value
