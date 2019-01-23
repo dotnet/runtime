@@ -86,12 +86,12 @@ public: // IStringTesting
         if (a == nullptr || b == nullptr)
             return E_POINTER;
 
-        size_t aLen = ::wcslen(a);
-        size_t bLen = ::wcslen(b);
+        size_t aLen = ::TP_slen(a);
+        size_t bLen = ::TP_slen(b);
         auto buf = (LPWSTR)::CoTaskMemAlloc((aLen + bLen + 1) * sizeof(*b));
 
-        ::wcscpy_s(buf, aLen + 1, a);
-        ::wcscpy_s(buf + aLen, bLen + 1, b);
+        ::TP_scpy_s(buf, aLen + 1, a);
+        ::TP_scpy_s(buf + aLen, bLen + 1, b);
 
         *pRetVal = buf;
         return S_OK;
@@ -108,8 +108,8 @@ public: // IStringTesting
         UINT bLen = ::SysStringLen(b);
         BSTR buf = ::SysAllocStringByteLen(nullptr, (aLen + bLen) * sizeof(a[0]));
 
-        ::wcscpy_s(buf, aLen + 1, a);
-        ::wcscpy_s(buf + aLen, bLen + 1, b);
+        ::TP_scpy_s(buf, aLen + 1, a);
+        ::TP_scpy_s(buf + aLen, bLen + 1, b);
 
         *pRetVal = buf;
         return S_OK;
@@ -206,7 +206,7 @@ public: // IStringTesting
     {
         HRESULT hr;
         RETURN_IF_FAILED(Reverse(*a, pRetVal));
-        ReverseInplace(::wcslen(*a), *a);
+        ReverseInplace(::TP_slen(*a), *a);
         return S_OK;
     }
     DEF_FUNC(Reverse_LPWStr_InRef)(
@@ -237,7 +237,7 @@ public: // IStringTesting
     {
         HRESULT hr;
         RETURN_IF_FAILED(Reverse(a, pRetVal));
-        ReverseInplace(::wcslen(a), a);
+        ReverseInplace(::TP_slen(a), a);
         return S_OK;
     }
     DEF_FUNC(Reverse_SB_LPWStr_Ref)(
@@ -246,7 +246,7 @@ public: // IStringTesting
     {
         HRESULT hr;
         RETURN_IF_FAILED(Reverse(*a, pRetVal));
-        ReverseInplace(::wcslen(*a), *a);
+        ReverseInplace(::TP_slen(*a), *a);
         return S_OK;
     }
     DEF_FUNC(Reverse_SB_LPWStr_InRef)(
@@ -255,7 +255,7 @@ public: // IStringTesting
     {
         HRESULT hr;
         RETURN_IF_FAILED(Reverse(*a, pRetVal));
-        ReverseInplace(::wcslen(*a), *a);
+        ReverseInplace(::TP_slen(*a), *a);
         return S_OK;
     }
     DEF_FUNC(Reverse_SB_LPWStr_Out)(
@@ -264,14 +264,14 @@ public: // IStringTesting
     {
         HRESULT hr;
         RETURN_IF_FAILED(Reverse(a, b));
-        ReverseInplace(::wcslen(a), a);
+        ReverseInplace(::TP_slen(a), a);
         return S_OK;
     }
     DEF_FUNC(Reverse_SB_LPWStr_OutAttr)(
         /*[in,out]*/ LPWSTR a,
         /*[out]*/ LPWSTR b)
     {
-        size_t len = ::wcslen(a);
+        size_t len = ::TP_slen(a);
         ReverseInplace(len, a);
         size_t byteLen = (len + 1) * sizeof(*a);
         ::memcpy_s(b, byteLen, a, byteLen);

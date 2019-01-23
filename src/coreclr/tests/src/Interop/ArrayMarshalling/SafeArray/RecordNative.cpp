@@ -24,7 +24,7 @@ public:
 
         BlittableRecord* pData = (BlittableRecord*)pvData;
 
-        if (wcscmp(szFieldName, W("a")) == 0)
+        if (TP_wcmp_s(szFieldName, W("a")) == 0)
         {
             VariantClear(pvarField);
             V_VT(pvarField) = VT_I4;
@@ -207,7 +207,7 @@ public:
 
         NonBlittableRecord* pData = (NonBlittableRecord*)pvData;
 
-        if (wcscmp(szFieldName, W("b")) == 0)
+        if (TP_wcmp_s(szFieldName, W("b")) == 0)
         {
             VariantClear(pvarField);
             V_VT(pvarField) = VT_BOOL;
