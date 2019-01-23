@@ -555,7 +555,7 @@ DEFINE_METASIG_T(SM(Str_AssemblyBase_IntPtr_RetIntPtr, s C(ASSEMBLYBASE) I, I))
 DEFINE_METASIG_T(SM(Str_AssemblyBase_Bool_UInt_RetIntPtr, s C(ASSEMBLYBASE) F K, I))
 
 // ThreadPool
-DEFINE_METASIG(SM(Obj_Bool_RetVoid, j F, v))
+DEFINE_METASIG_T(SM(_ThreadPoolWaitOrTimerCallback_Bool_RetVoid, C(TPWAITORTIMER_HELPER) F, v))
 
 // For FailFast
 DEFINE_METASIG(SM(Str_RetVoid, s, v))
