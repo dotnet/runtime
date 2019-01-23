@@ -30,6 +30,28 @@ namespace System.Text.Json
             return (newLines, lastLineFeedIndex);
         }
 
+        internal static JsonValueType ToValueType(this JsonTokenType tokenType)
+        {
+            switch (tokenType)
+            {
+                case JsonTokenType.None:
+                    return JsonValueType.Undefined;
+                case JsonTokenType.StartArray:
+                    return JsonValueType.Array;
+                case JsonTokenType.StartObject:
+                    return JsonValueType.Object;
+                case JsonTokenType.String:
+                case JsonTokenType.Number:
+                case JsonTokenType.True:
+                case JsonTokenType.False:
+                case JsonTokenType.Null:
+                    return (JsonValueType)((byte)tokenType - 3);
+                default:
+                    Debug.Fail($"No mapping for token type {tokenType}");
+                    return JsonValueType.Undefined;
+            }
+        }
+
         // A digit is valid if it is in the range: [0..9]
         // Otherwise, return false.
         public static bool IsDigit(byte nextByte) => (uint)(nextByte - '0') <= '9' - '0';
