@@ -29,7 +29,6 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     SCAN_IGNORE_FAULT;      // due to the contract checking logic itself.
     SCAN_IGNORE_TRIGGER;
     SCAN_IGNORE_LOCK;
-    SCAN_IGNORE_SO;
     
     // Many of the checks below result in calls to GetThread()
     // that work just fine if GetThread() returns NULL, so temporarily

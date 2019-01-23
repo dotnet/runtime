@@ -427,7 +427,6 @@ class ListLockBase
     BOOL HasLock()
     {
         WRAPPER_NO_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
         return(m_Crst.OwnedByCurrentThread());
     }
 #endif

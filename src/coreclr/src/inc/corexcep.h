@@ -22,12 +22,6 @@
 
 #define EXCEPTION_HIJACK  0xe0434f4e    // 0xe0000000 | 'COM'+1
 
-#ifdef FEATURE_STACK_PROBE
-#define EXCEPTION_SOFTSO  0xe053534f    // 0xe0000000 | 'SSO'
-                                        // We can not throw internal C++ exception through managed frame.
-                                        // At boundary, we will raise an exception with this error code
-#endif
-
 #if defined(_DEBUG)
 #define EXCEPTION_INTERNAL_ASSERT 0xe0584d4e // 0xe0000000 | 'XMN'
                                         // An internal Assert will raise this exception when the config

@@ -165,7 +165,6 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
                            MethodTable* pElemMT)
 {
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_SO_INTOLERANT;
 
     // Ensure that the array element type is fully loaded before executing its code
     pElemMT->EnsureInstanceActive();
@@ -283,7 +282,6 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayTypeNoGC(const BASEARRAY
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
         PRECONDITION(pSrc != NULL);
         PRECONDITION(pDest != NULL);
     }
@@ -888,7 +886,6 @@ void memmoveGCRefs(void *dest, const void *src, size_t len)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -916,7 +913,6 @@ void ArrayNative::ArrayCopyNoTypeCheck(BASEARRAYREF pSrc, unsigned int srcIndex,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
         PRECONDITION(pSrc != NULL);
         PRECONDITION(srcIndex >= 0);
         PRECONDITION(pDest != NULL);

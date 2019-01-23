@@ -143,7 +143,6 @@ BOOL CompareCLSID(UPTR u1, UPTR u2)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -2770,7 +2769,6 @@ AppDomain *SystemDomain::GetAppDomainAtId(ADID index)
         if (!SystemDomain::IsUnderDomainLock() && !IsGCThread()) { MODE_COOPERATIVE;} else { DISABLED(MODE_ANY);}
 #endif
         GC_NOTRIGGER;
-        SO_TOLERANT;
         NOTHROW;
     }
     CONTRACTL_END;
@@ -3152,7 +3150,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -3294,7 +3291,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
 StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
     MethodDesc *pFunc = pCf->GetFunction();
 
     /* We asked to be called back only for functions */
@@ -4739,7 +4735,6 @@ public:
     void Invoke()
     {
         WRAPPER_NO_CONTRACT;
-        STATIC_CONTRACT_SO_INTOLERANT;
         SetupThread();
         pThis->LoadDomainAssembly(pSpec, pFile, targetLevel);
     }
@@ -6202,10 +6197,6 @@ EndTry2:;
             }
 
             {
-                // This is not executed for SO exceptions so we need to disable the backout
-                // stack validation to prevent false violations from being reported.
-                DISABLE_BACKOUT_STACK_VALIDATION;
-
                 BOOL fFailure = PostBindResolveAssembly(pSpec, &NewSpec, ex->GetHR(), &pFailedSpec);
                 if (fFailure)
                 {
@@ -6753,7 +6744,6 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
@@ -7096,11 +7086,9 @@ DWORD DomainLocalModule::GetClassFlags(MethodTable* pMT, DWORD iClassIndex /*=(D
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
-    {   // SO tolerance exception for debug-only assertion.
-        CONTRACT_VIOLATION(SOToleranceViolation);
+    {
         CONSISTENCY_CHECK(GetDomainFile()->GetModule() == pMT->GetModuleForStatics());
     }
 
@@ -7796,7 +7784,6 @@ UINT32 BaseDomain::LookupTypeID(PTR_MethodTable pMT)
 {
     CONTRACTL {
         NOTHROW;
-        SO_TOLERANT;
         WRAPPER(GC_TRIGGERS);
         PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
@@ -7808,7 +7795,6 @@ UINT32 BaseDomain::LookupTypeID(PTR_MethodTable pMT)
 PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
     CONTRACTL {
         NOTHROW;
-        SO_TOLERANT;
         WRAPPER(GC_TRIGGERS);
         CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
     } CONTRACTL_END;
@@ -7827,7 +7813,6 @@ void BaseDomain::RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     m_typeIDMap.RemoveTypes(pLoaderAllocator);

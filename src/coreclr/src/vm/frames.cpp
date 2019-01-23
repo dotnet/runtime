@@ -389,7 +389,6 @@ VOID Frame::Push()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -403,7 +402,6 @@ VOID Frame::Push(Thread *pThread)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -439,7 +437,6 @@ VOID Frame::Pop()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -453,7 +450,6 @@ VOID Frame::Pop(Thread *pThread)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -480,7 +476,6 @@ void Frame::PopIfChained()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -618,7 +613,6 @@ MethodDesc* StubDispatchFrame::GetFunction()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     MethodDesc * pMD = m_pMD;
@@ -904,7 +898,6 @@ GCFrame::GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -918,7 +911,6 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -932,7 +924,6 @@ void GCFrame::Init(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL m
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1603,7 +1594,6 @@ void HelperMethodFrame::Push()
         if (m_Attribs & FRAME_ATTR_NO_THREAD_ABORT) NOTHROW; else THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     //
@@ -1636,7 +1626,6 @@ void HelperMethodFrame::Pop()
         if (m_Attribs & FRAME_ATTR_NO_THREAD_ABORT) NOTHROW; else THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     Thread * pThread = m_pThread;
@@ -1661,7 +1650,6 @@ NOINLINE void HelperMethodFrame::PushSlowHelper()
         if (m_Attribs & FRAME_ATTR_NO_THREAD_ABORT) NOTHROW; else THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     if (!(m_Attribs & FRAME_ATTR_NO_THREAD_ABORT))
@@ -1680,7 +1668,6 @@ NOINLINE void HelperMethodFrame::PopSlowHelper()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     m_pThread->HandleThreadAbort();
@@ -1738,7 +1725,6 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         if ((hostCallPreference == AllowHostCalls) && !m_MachState.isValid()) { HOST_CALLS; } else { HOST_NOCALLS; }
         SUPPORTS_DAC;
     } CONTRACTL_END;

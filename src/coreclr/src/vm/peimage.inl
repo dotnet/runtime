@@ -29,7 +29,6 @@ inline ULONG PEImage::AddRef()
 inline const SString &PEImage::GetPath()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     return m_path;
 }
@@ -37,7 +36,6 @@ inline const SString &PEImage::GetPath()
 inline void PEImage::SetModuleFileNameHintForDAC()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    STATIC_CONTRACT_SO_INTOLERANT;
 
     // Grab module name only for triage dumps where full paths are excluded
     // because may contain PII data.

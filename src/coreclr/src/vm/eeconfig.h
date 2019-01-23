@@ -118,7 +118,6 @@ public:
                 GC_NOTRIGGER;
                 // MODE_ANY;
                 FORBID_FAULT;
-                SO_TOLERANT; 
             } CONTRACTL_END;
             
             pEnd = &(pList->m_pElement);
@@ -137,7 +136,6 @@ public:
                 GC_NOTRIGGER;
                 // MODE_ANY;
                 FORBID_FAULT;
-                SO_TOLERANT; 
                 POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             } CONTRACT_END;
         
@@ -154,8 +152,7 @@ public:
                 NOTHROW;
                 GC_NOTRIGGER;
                 FORBID_FAULT;
-                // MODE_ANY;
-                SO_TOLERANT; 
+                // MODE_ANY; 
                 POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             } CONTRACT_END;
 

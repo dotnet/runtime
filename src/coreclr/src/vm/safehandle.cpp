@@ -247,7 +247,6 @@ void SafeHandle::SetHandle(LPVOID handle)
         THROWS;
         MODE_COOPERATIVE;
         INSTANCE_CHECK;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     _ASSERTE(IsFullyInitialized());

@@ -20,7 +20,6 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -108,7 +107,6 @@ bool isRetAddr(TADDR retAddr, TADDR* whereCalled)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 

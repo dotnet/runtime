@@ -68,7 +68,6 @@ extern "C" void STDCALL JIT_WriteBarrierReg_PostGrow();// JIThelp.asm/JIThelp.s
 #ifdef _DEBUG 
 extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     WRAPPER_NO_CONTRACT;
 
     static BOOL fVerifyHeap = -1;
@@ -103,7 +102,6 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 
 __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
@@ -197,7 +195,6 @@ Epilog:
 
 extern "C" __declspec(naked) Object* F_CALL_CONV JIT_IsInstanceOfClass(MethodTable *pMT, Object *pObject)
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
@@ -256,7 +253,6 @@ extern "C" __declspec(naked) Object* F_CALL_CONV JIT_IsInstanceOfClass(MethodTab
 
 extern "C" __declspec(naked) Object* F_CALL_CONV JIT_ChkCastClass(MethodTable *pMT, Object *pObject)
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
@@ -296,7 +292,6 @@ extern "C" __declspec(naked) Object* F_CALL_CONV JIT_ChkCastClass(MethodTable *p
 
 extern "C" __declspec(naked) Object* F_CALL_CONV JIT_ChkCastClassSpecial(MethodTable *pMT, Object *pObject)
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
@@ -378,7 +373,6 @@ void STDCALL JIT_TailCallHelper(Thread * pThread)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     pThread->UnhijackThread();
@@ -783,7 +777,6 @@ HCIMPL2_RAW(Object*, UnframedAllocateObjectArray, MethodTable *pArrayMT, DWORD c
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
     } CONTRACTL_END;
 
     return OBJECTREFToObject(AllocateArrayEx(pArrayMT,
@@ -804,7 +797,6 @@ HCIMPL2_RAW(Object*, UnframedAllocatePrimitiveArray, CorElementType type, DWORD 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
     } CONTRACTL_END;
 
     return OBJECTREFToObject( AllocatePrimitiveArray(type, cElements, FALSE) );

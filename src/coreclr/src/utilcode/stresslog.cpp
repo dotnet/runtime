@@ -249,7 +249,6 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -278,7 +277,6 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return NULL);
     StressLogLockHolder lockh(theLog.lock, FALSE);
 
     class NestedCaller
@@ -325,8 +323,6 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
     if (noFLSNow == FALSE && theLog.facilitiesToLog != 0)
         msgs = CreateThreadStressLogHelper();
 
-    END_SO_INTOLERANT_CODE;
-
     return msgs;
 }
 
@@ -336,7 +332,6 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_INTOLERANT;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -534,7 +529,6 @@ void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, v
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
 	// Asserts in this function cause infinite loops in the asserting mechanism.
 	// Just use debug breaks instead.
@@ -638,7 +632,6 @@ void StressLog::LogMsg (unsigned level, unsigned facility, int cArgs, const char
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // Any stresslog LogMsg could theoretically create a new stress log and thus

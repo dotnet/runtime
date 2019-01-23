@@ -196,7 +196,6 @@ void EventReporter::AddDescription(__in WCHAR *pString)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -220,7 +219,6 @@ void EventReporter::AddDescription(SString& s)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -276,7 +274,6 @@ void EventReporter::BeginStackTrace()
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -370,7 +367,6 @@ void EventReporter::AddFailFastStackTrace(SString& s)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -544,7 +540,6 @@ StackWalkAction LogCallstackForEventReporterCallback(
     {
         THROWS;
         GC_TRIGGERS;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

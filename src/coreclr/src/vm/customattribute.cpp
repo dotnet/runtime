@@ -866,7 +866,6 @@ FCIMPL5(VOID, COMCustomAttribute::ParseAttributeUsageAttribute, PVOID pData, ULO
     int inherited = 0;
     int allowMultiple = 1;    
         
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), FCThrowVoid(kStackOverflowException));
     {
         CustomAttributeParser ca(pData, cData);
         
@@ -897,7 +896,6 @@ FCIMPL5(VOID, COMCustomAttribute::ParseAttributeUsageAttribute, PVOID pData, ULO
         *pInherited = namedArgs[inherited].val.boolean == TRUE;
         *pAllowMultiple = namedArgs[allowMultiple].val.boolean == TRUE;
     }
-    END_SO_INTOLERANT_CODE;    
 }
 FCIMPLEND
 

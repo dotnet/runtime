@@ -280,7 +280,6 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc, PCODE pCode)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;

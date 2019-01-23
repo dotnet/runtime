@@ -119,7 +119,6 @@ inline void Object::EnumMemoryRegions(void)
 FORCEINLINE bool Object::TryEnterObjMonitorSpinHelper()
 {
     CONTRACTL{
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
@@ -162,7 +161,6 @@ inline /* static */ TypeHandle ArrayBase::GetTypeHandle(MethodTable * pMT)
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -182,9 +180,6 @@ inline /* static */ TypeHandle ArrayBase::GetTypeHandle(MethodTable * pMT)
     // if we have allocated an array object of type T then the ArrayTypeDesc
     // for T[] is available and restored
 
-    // @todo  This should be turned into a probe with a hard SO when we have one
-    // See also: ArrayBase::SetArrayMethodTable, ArrayBase::SetArrayMethodTableForLargeObject and MethodTable::DoFullyLoad
-    CONTRACT_VIOLATION(SOToleranceViolation);
     // == FailIfNotLoadedOrNotRestored
     TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(pMT->GetApproxArrayElementTypeHandle(), kind, rank, ClassLoader::DontLoadTypes);  
     CONSISTENCY_CHECK(!arrayType.IsNull()); 
@@ -275,7 +270,6 @@ inline /* static */ unsigned ArrayBase::GetLowerBoundsOffset(MethodTable* pMT)
 // type is stored in the array or not
 inline TypeHandle ArrayBase::GetArrayElementTypeHandle() const 
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
@@ -329,7 +323,6 @@ inline TypeHandle Object::GetTypeHandle()
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -348,7 +341,6 @@ inline TypeHandle Object::GetGCSafeTypeHandle() const
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

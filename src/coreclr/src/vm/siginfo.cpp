@@ -1090,9 +1090,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
     }
     else
     {
-        // This function is recursive, so it must have an interior probe
-        INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD(10, NO_FORBIDGC_LOADER_USE_ThrowSO(););
-
 #ifdef _DEBUG_IMPL
         // This verifies that we won't try and load a type
         // if FORBIDGC_LOADER_USE_ENABLED is true.
@@ -1351,10 +1348,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             if (!ClrSafeInt<DWORD>::multiply(ntypars, sizeof(TypeHandle), dwAllocaSize))
                 ThrowHR(COR_E_OVERFLOW);
 
-            if ((dwAllocaSize/GetOsPageSize()+1) >= 2)
-            {
-                DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD((10+dwAllocaSize/GetOsPageSize()+1), NO_FORBIDGC_LOADER_USE_ThrowSO(););
-            }
             TypeHandle *thisinst = (TypeHandle*) _alloca(dwAllocaSize);
 
             // Finally we gather up the type arguments themselves, loading at the level specified for generic arguments
@@ -1631,11 +1624,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 {
                     ThrowHR(COR_E_OVERFLOW);
                 }
-                
-                if ((cAllocaSize/GetOsPageSize()+1) >= 2)
-                {
-                    DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD((10+cAllocaSize/GetOsPageSize()+1), NO_FORBIDGC_LOADER_USE_ThrowSO(););
-                }
 
                 TypeHandle *retAndArgTypes = (TypeHandle*) _alloca(cAllocaSize);
                 bool fReturnTypeOrParameterNotLoaded = false;
@@ -1711,7 +1699,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pOrigModule);
     }
 
-    END_INTERIOR_STACK_PROBE;
     }
     
     RETURN thRet;
@@ -2389,7 +2376,6 @@ CorElementType SigPointer::PeekElemTypeNormalized(Module* pModule, const SigType
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -2399,7 +2385,6 @@ CorElementType SigPointer::PeekElemTypeNormalized(Module* pModule, const SigType
 
     if (type == ELEMENT_TYPE_VALUETYPE)
     {
-        BEGIN_SO_INTOLERANT_CODE(GetThread());
         {
             // Everett C++ compiler can generate a TypeRef with RS=0
             // without respective TypeDef for unmanaged valuetypes,
@@ -2416,7 +2401,6 @@ CorElementType SigPointer::PeekElemTypeNormalized(Module* pModule, const SigType
             if (pthValueType != NULL)
                 *pthValueType = th;
         }
-        END_SO_INTOLERANT_CODE;
     }
 
     return(type);
@@ -2436,7 +2420,6 @@ SigPointer::PeekElemTypeClosed(
         GC_NOTRIGGER;
         FORBID_FAULT;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -2522,7 +2505,6 @@ mdTypeRef SigPointer::PeekValueTypeTokenClosed(Module *pModule, const SigTypeCon
         PRECONDITION(PeekElemTypeClosed(NULL, pTypeContext) == ELEMENT_TYPE_VALUETYPE);
         FORBID_FAULT;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -3063,7 +3045,6 @@ BOOL IsTypeDefExternallyVisible(mdToken tk, Module *pModule, DWORD dwAttrClass)
         NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 

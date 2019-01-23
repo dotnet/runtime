@@ -132,7 +132,6 @@ FindStubFunctionEntry (
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -345,7 +344,6 @@ StubLinker::StubLinker()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -391,7 +389,6 @@ VOID StubLinker::EmitBytes(const BYTE *pBytes, UINT numBytes)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -457,7 +454,6 @@ VOID StubLinker::Emit16(unsigned __int16 val)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -479,7 +475,6 @@ VOID StubLinker::Emit32(unsigned __int32 val)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -522,7 +517,6 @@ VOID StubLinker::EmitPtr(const VOID *val)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -547,7 +541,6 @@ CodeLabel* StubLinker::NewCodeLabel()
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -589,7 +582,6 @@ VOID StubLinker::EmitLabel(CodeLabel* pCodeLabel)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -614,7 +606,6 @@ CodeLabel* StubLinker::EmitNewCodeLabel()
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -633,7 +624,6 @@ VOID StubLinker::EmitPatchLabel()
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -655,7 +645,6 @@ UINT32 StubLinker::GetLabelOffset(CodeLabel *pLabel)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -674,7 +663,6 @@ CodeLabel* StubLinker::NewExternalCodeLabel(LPVOID pExternalAddress)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;   
 
         PRECONDITION(CheckPointer(pExternalAddress));
     }
@@ -707,7 +695,6 @@ VOID StubLinker::EmitLabelRef(CodeLabel* target, const InstructionFormat & instr
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -739,7 +726,6 @@ CodeRun *StubLinker::GetLastCodeRunIfAny()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -782,7 +768,6 @@ VOID StubLinker::AppendCodeElement(CodeElement *pCodeElement)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -801,7 +786,6 @@ static BOOL LabelCanReach(LabelRef *pLabelRef)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -938,7 +922,6 @@ int StubLinker::CalculateSize(int* pGlobalSize)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1232,7 +1215,6 @@ VOID StubLinker::UnwindAllocStack (SHORT FrameSizeIncrement)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     if (! ClrSafeInt<SHORT>::addition(m_stackSize, FrameSizeIncrement, m_stackSize))
@@ -1280,7 +1262,6 @@ UNWIND_CODE *StubLinker::AllocUnwindInfo (UCHAR Op, UCHAR nExtraSlots /*= 0*/)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     _ASSERTE(Op < sizeof(UnwindOpExtraSlotTable));

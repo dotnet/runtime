@@ -37,7 +37,6 @@
 #include "dllimportcallback.h"
 #include "listlock.h"
 #include "methodimpl.h"
-#include "stackprobe.h"
 #include "encee.h"
 #include "comsynchronizable.h"
 #include "customattribute.h"

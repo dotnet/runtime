@@ -295,7 +295,6 @@ template <typename T>
 T Min(T v1, T v2)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     return v1 < v2 ? v1 : v2;
 }
 
@@ -303,7 +302,6 @@ template <typename T>
 T Max(T v1, T v2)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     return v1 > v2 ? v1 : v2;
 }
 
@@ -322,7 +320,6 @@ T Max(T v1, T v2)
 inline UINT AlignUp(UINT value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return (value+alignment-1)&~(alignment-1);
 }
@@ -331,7 +328,6 @@ inline UINT AlignUp(UINT value, UINT alignment)
 inline ULONG AlignUp(ULONG value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return (value+alignment-1)&~(alignment-1);
 }
@@ -340,7 +336,6 @@ inline ULONG AlignUp(ULONG value, UINT alignment)
 inline UINT64 AlignUp(UINT64 value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return (value+alignment-1)&~(UINT64)(alignment-1);
 }
@@ -348,7 +343,6 @@ inline UINT64 AlignUp(UINT64 value, UINT alignment)
 inline UINT AlignDown(UINT value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return (value&~(alignment-1));
 }
@@ -357,7 +351,6 @@ inline UINT AlignDown(UINT value, UINT alignment)
 inline ULONG AlignDown(ULONG value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return (value&~(ULONG)(alignment-1));
 }
@@ -366,7 +359,6 @@ inline ULONG AlignDown(ULONG value, UINT alignment)
 inline UINT64 AlignDown(UINT64 value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return (value&~(UINT64)(alignment-1));
 }
@@ -394,7 +386,6 @@ inline UINT AlignmentPad(UINT64 value, UINT alignment)
 inline UINT AlignmentTrim(UINT value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return value&(alignment-1);
 }
@@ -405,7 +396,6 @@ inline UINT AlignmentTrim(UINT value, UINT alignment)
 inline UINT AlignmentTrim(ULONG value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return value&(alignment-1);
 }
@@ -414,7 +404,6 @@ inline UINT AlignmentTrim(ULONG value, UINT alignment)
 inline UINT AlignmentTrim(UINT64 value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
     return ((UINT)value)&(alignment-1);
 }

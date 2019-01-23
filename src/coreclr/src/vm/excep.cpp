@@ -81,7 +81,6 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(CheckPointer(pExceptionRecord));
     } CONTRACTL_END;
@@ -375,7 +374,6 @@ HRESULT GetExceptionHResult(OBJECTREF throwable)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -402,7 +400,6 @@ DWORD GetExceptionXCode(OBJECTREF throwable)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -2766,14 +2763,7 @@ VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow
         // We should throw c++ exception instead.
         ThrowOutOfMemory();
     }
-#ifdef FEATURE_STACK_PROBE
-    else if (throwable == CLRException::GetPreallocatedStackOverflowException())
-    {
-        ThrowStackOverflow();
-    }
-#else
     _ASSERTE(throwable != CLRException::GetPreallocatedStackOverflowException());
-#endif
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     if (!g_pConfig->LegacyCorruptedStateExceptionsPolicy())
@@ -2984,58 +2974,12 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
             RaiseException(code, flags, argCount, args);
         }
 
-        // Probe for sufficient stack.
-        PUSH_STACK_PROBE_FOR_THROW(pParam->pThread);
-
-#ifndef STACK_GUARDS_DEBUG
         // This needs to be both here and inside the handler below
         // enable preemptive mode before call into OS
         GCX_PREEMP_NO_DTOR();
 
         // In non-debug, we can just raise the exception once we've probed.
         RaiseException(code, flags, argCount, args);
-
-#else
-        // In a debug build, we need to unwind our probe structure off the stack.
-        BaseStackGuard *pThrowGuard = NULL;
-        // Stach away the address of the guard we just pushed above in PUSH_STACK_PROBE_FOR_THROW
-        SAVE_ADDRESS_OF_STACK_PROBE_FOR_THROW(pThrowGuard);
-
-        // Add the stack guard reference to the structure below so that it can be accessed within
-        // PAL_TRY as well
-        struct ParamInner
-        {
-            ULONG code;
-            ULONG flags;
-            ULONG argCount;
-            ULONG_PTR *args;
-            BaseStackGuard *pGuard;
-        } param;
-        param.code = code;
-        param.flags = flags;
-        param.argCount = argCount;
-        param.args = args;
-        param.pGuard = pThrowGuard;
-
-        PAL_TRY(ParamInner *, pParam, &param)
-        {
-            // enable preemptive mode before call into OS
-            GCX_PREEMP_NO_DTOR();
-
-            RaiseException(pParam->code, pParam->flags, pParam->argCount, pParam->args);
-
-            // We never return from RaiseException, so shouldn't have to call SetNoException.
-            // However, in the debugger we can, and if we don't call SetNoException we get
-            // a short-circuit return assert.
-            RESET_EXCEPTION_FROM_STACK_PROBE_FOR_THROW(pParam->pGuard);
-        }
-        PAL_FINALLY
-        {
-            // pop the guard that we pushed above in PUSH_STACK_PROBE_FOR_THROW
-            POP_STACK_PROBE_FOR_THROW(pThrowGuard);
-        }
-        PAL_ENDTRY
-#endif
     }
     PAL_EXCEPT_FILTER (RaiseExceptionFilter)
     {
@@ -3071,14 +3015,7 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
         // We should throw c++ exception instead.
         ThrowOutOfMemory();
     }
-#ifdef FEATURE_STACK_PROBE
-    else if (throwable == CLRException::GetPreallocatedStackOverflowException())
-    {
-        ThrowStackOverflow();
-    }
-#else
     _ASSERTE(throwable != CLRException::GetPreallocatedStackOverflowException());
-#endif
 
     // TODO: Do we need to install COMPlusFrameHandler here?
     INSTALL_COMPLUS_EXCEPTION_HANDLER();
@@ -3171,18 +3108,6 @@ STRINGREF GetResourceStringFromManaged(STRINGREF key)
     gc.key = key;
     gc.ret = NULL;
 
-    // The standard probe isn't good enough here. It's possible that we only have ~14 pages of stack
-    // left. By the time we transition to the default domain and start fetching this resource string,
-    // another 12 page probe could fail.
-    // This failing probe would cause us to unload the default appdomain, which would cause us
-    // to take down the process.
-
-    // Instead, let's probe for a lots more stack to make sure that doesn' happen.
-
-    // We need to have enough stack to survive 2 more probes... the original entrypoint back
-    // into mscorwks after we go into managed code, and a "large" probe that protects the GC
-
-    INTERIOR_STACK_PROBE_FOR(GetThread(), DEFAULT_ENTRY_PROBE_AMOUNT * 2);
     GCPROTECT_BEGIN(gc);
 
     MethodDescCallSite getResourceStringLocal(METHOD__ENVIRONMENT__GET_RESOURCE_STRING_LOCAL);
@@ -3199,9 +3124,6 @@ STRINGREF GetResourceStringFromManaged(STRINGREF key)
     END_DOMAIN_TRANSITION;
 
     GCPROTECT_END();
-
-    END_INTERIOR_STACK_PROBE;
-
 
     return gc.ret;
 }
@@ -3264,7 +3186,6 @@ void FreeExceptionData(ExceptionData *pedata)
     {
         NOTHROW; 
         GC_TRIGGERS; 
-        SO_TOLERANT; 
     }
     CONTRACTL_END;
 
@@ -3556,7 +3477,6 @@ void StackTraceInfo::Init()
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -3577,7 +3497,6 @@ void StackTraceInfo::FreeStackTrace()
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -3760,12 +3679,8 @@ void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
         NOTHROW;
         DISABLED(GC_TRIGGERS);  // some Frames' ExceptionUnwind methods trigger  :(
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
-
-    // @todo - Remove this and add a hard SO probe as can't throw from here.
-    CONTRACT_VIOLATION(SOToleranceViolation);
 
     Frame* pFrame = pThread->m_pFrame;
     if (pFrame < pvLimitSP)
@@ -3846,7 +3761,6 @@ BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
 BOOL IsUncatchable(OBJECTREF *pThrowable)
 {
     CONTRACTL {
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
@@ -3879,7 +3793,7 @@ BOOL IsUncatchable(OBJECTREF *pThrowable)
 
 BOOL IsStackOverflowException(Thread* pThread, EXCEPTION_RECORD* pExceptionRecord)
 {
-    if (IsSOExceptionCode(pExceptionRecord->ExceptionCode))
+    if (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
     {
         return true;
     }
@@ -4415,7 +4329,6 @@ static SpinLock initLock;
 void DECLSPEC_NORETURN RaiseDeadLockException()
 {
     STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_SO_TOLERANT;
 
 // Disable the "initialization of static local vars is no thread safe" error
 #ifdef _MSC_VER
@@ -4505,7 +4418,6 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -4579,7 +4491,6 @@ LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, PVOID pv)
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -5192,8 +5103,6 @@ LONG InternalUnhandledExceptionFilter(
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    // We don't need to be SO-robust for an unhandled exception
-    SO_NOT_MAINLINE_FUNCTION;
 
     LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter: at sp %p.\n", GetCurrentSP()));
 
@@ -5276,13 +5185,10 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
     LONG ret = -1;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return EXCEPTION_CONTINUE_SEARCH;);
 
     // Invoke the UEF worker to perform unhandled exception processing
     ret = InternalUnhandledExceptionFilter_Worker (pExceptionInfo);
@@ -5297,9 +5203,6 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
         LOG((LF_EH, LL_INFO100, "EntryPointFilter: setting TSNC_ProcessedUnhandledException\n"));
         pThread->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
     }
-
-
-    END_SO_INTOLERANT_CODE;
     
     return ret;
 }
@@ -5328,8 +5231,6 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    // We don't need to be SO-robust for an unhandled exception
-    SO_NOT_MAINLINE_FUNCTION;
 
     LONG retVal = EXCEPTION_CONTINUE_SEARCH;
 
@@ -6385,7 +6286,6 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -6419,18 +6319,6 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
     }
 
     // Question: Should we also check for (pThread->m_PreventAsync == 0)
-
-#if !defined(WIN64EXCEPTIONS) && defined(FEATURE_STACK_PROBE)
-    // On Win64, this function is called by our exception handling code which has probed.
-    // But on X86, this is called from JIT code directly.  We probe here so that
-    // we can restore the state of the thread below.
-    if (GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeUnloadAppDomain)
-    {
-        // In case of SO, we will skip the managed code.
-        CONTRACT_VIOLATION(ThrowsViolation);
-        RetailStackProbe(ADJUST_PROBE(DEFAULT_ENTRY_PROBE_AMOUNT), pThread);
-    }
-#endif // !WIN64EXCEPTIONS && FEATURE_STACK_PROBE
 
     pThread->SetThrowControlForThread(Thread::InducedThreadRedirectAtEndOfCatch);
     if (!pThread->ReadyForAbort())
@@ -6509,7 +6397,6 @@ BOOL IsThreadHijackedForThreadStop(Thread* pThread, EXCEPTION_RECORD* pException
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -6551,7 +6438,6 @@ void AdjustContextForThreadStop(Thread* pThread,
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -6613,7 +6499,6 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -6643,12 +6528,6 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
     {
         EX_TRY
         {
-            // We need to disable the backout stack validation at this point since CreateThrowable can
-            // take arbitrarily large amounts of stack for different exception types; however we know
-            // for a fact that we will never go through this code path if the exception is a stack
-            // overflow exception since we already handled that case above with the pre-allocated SO exception.
-            DISABLE_BACKOUT_STACK_VALIDATION;
-
             FAULT_NOT_FATAL();
 
             ThreadPreventAsyncHolder preventAsync;
@@ -6851,7 +6730,6 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
     LIMITED_METHOD_CONTRACT;
 
 #ifdef DEBUGGING_SUPPORTED
-    SO_NOT_MAINLINE_FUNCTION;
 
 #ifdef _TARGET_ARM_
     // On ARM we don't have any reliable hardware support for single stepping so it is emulated in software.
@@ -7275,7 +7153,6 @@ bool ShouldHandleManagedFault(
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -7471,7 +7348,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     }
 #endif // defined(WIN64EXCEPTIONS) && defined(FEATURE_HIJACK)
 
-    if (IsSOExceptionCode(pExceptionInfo->ExceptionRecord->ExceptionCode))
+    if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
     {
         //
         // Not an Out-of-memory situation, so no need for a forbid fault region here
@@ -7480,18 +7357,6 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     }
 
     LONG retVal = 0;
-
-#ifdef FEATURE_STACK_PROBE
-    // See if we've got enough stack to handle this exception
-
-    // There isn't much stack left to attempt to report an exception. Let's trigger a hard
-    // SO, so we clear the guard page and give us at least another page of stack to work with.
-
-    if (pThread && !pThread->IsStackSpaceAvailable(ADJUST_PROBE(1)))
-    {
-        DontCallDirectlyForceStackOverflow();
-    }
-#endif // FEATURE_STACK_PROBE
 
     // We can't probe here, because we won't return from the CLRVectoredExceptionHandlerPhase2
     // on WIN64
@@ -7614,8 +7479,6 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
 
         BOOL fExternalException = FALSE;
 
-        BEGIN_SO_INTOLERANT_CODE_NOPROBE;
-
         {
             // ExecutionManager::IsManagedCode takes a spinlock.  Since we're in the middle of throwing,
             // we'll allow the lock, even if a caller didn't expect it.
@@ -7624,8 +7487,6 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
             fExternalException = (!ExecutionManager::IsManagedCode(GetIP(pExceptionInfo->ContextRecord)) &&
                                   !IsIPInModule(g_pMSCorEE, GetIP(pExceptionInfo->ContextRecord)));
         }
-
-        END_SO_INTOLERANT_CODE_NOPROBE;
 
         if (fExternalException)
         {
@@ -7793,7 +7654,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 PCODE ip = (PCODE)GetIP(pContext);
                 if (IsIPInModule(g_pMSCorEE, ip) || IsIPInModule(GCHeapUtilities::GetGCModule(), ip))
                 {
-                    CONTRACT_VIOLATION(ThrowsViolation|FaultViolation|SOToleranceViolation);
+                    CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
 
                     //
                     // If you're debugging, set the debugger to catch first-chance AV's, then simply hit F5 or
@@ -8390,7 +8251,6 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     Thread* pThread = GetThread();
 
@@ -8412,13 +8272,11 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     if (!NingenEnabled())
     {
         CONTRACT_VIOLATION(ThrowsViolation);
-        BEGIN_SO_INTOLERANT_CODE(pThread);
     // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
     // while we are still within the context of the catch block. This will help diagnose
     // cases where the last thrown object is NULL.
     OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
     CONSISTENCY_CHECK(orThrowable != NULL);
-        END_SO_INTOLERANT_CODE;
     }
 #endif
 }
@@ -8432,14 +8290,6 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
-
-    // We really should probe before switching to cooperative mode, although there's no chance
-    // we'll SO in doing that as we've just caught an exception.  We can't probe just
-    // yet though, because we want to avoid reprobing on an SO exception and we need to switch
-    // to cooperative to check the throwable for an SO as well as the pException object (as the
-    // pException could be a LastThrownObjectException.)  Blech.
-    CONTRACT_VIOLATION(SOToleranceViolation);
 
     GCX_COOP();
 
@@ -8459,12 +8309,8 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else if (orThrowable->GetMethodTable() == g_pStackOverflowExceptionClass)
         {
-#ifdef FEATURE_STACK_PROBE
-            EEPolicy::HandleSoftStackOverflow();
-#else
             /* The parameters of the function do not matter here */
             EEPolicy::HandleStackOverflow(SOD_UnmanagedFrameHandler, NULL);
-#endif
         }
     }
 
@@ -8478,7 +8324,6 @@ void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PCONTEXT pContext)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -8493,10 +8338,10 @@ void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PCONTEXT pContext)
     if (CExecutionEngine::CheckThreadStateNoCreate(TlsIdx_PEXCEPTION_RECORD))
     {
         BOOL fSave = TRUE;
-        if (!IsSOExceptionCode(pRecord->ExceptionCode))
+        if (pRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
         {
             DWORD dwLastExceptionCode = (DWORD)(SIZE_T) (ClrFlsGetValue(TlsIdx_EXCEPTION_CODE));
-            if (IsSOExceptionCode(dwLastExceptionCode))
+            if (dwLastExceptionCode == STATUS_STACK_OVERFLOW)
             {
                 PEXCEPTION_RECORD lastRecord =
                     static_cast<PEXCEPTION_RECORD> (ClrFlsGetValue(TlsIdx_PEXCEPTION_RECORD));
@@ -8874,7 +8719,6 @@ BOOL IsException(MethodTable *pMT) {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -8897,7 +8741,6 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -11063,7 +10906,6 @@ void EHWatsonBucketTracker::SaveIpForWatsonBucket(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
@@ -11106,7 +10948,6 @@ PTR_VOID EHWatsonBucketTracker::RetrieveWatsonBuckets()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
@@ -11130,7 +10971,6 @@ void EHWatsonBucketTracker::ClearWatsonBucketDetails()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(IsWatsonEnabled());
     }
     CONTRACTL_END;
@@ -11202,7 +11042,6 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         NOTHROW;
-        SO_TOLERANT;
         PRECONDITION(GetThread() != NULL);
         PRECONDITION(oThrowable != NULL);
     }
@@ -11253,7 +11092,6 @@ BOOL CEHelper::IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fChe
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -11501,7 +11339,6 @@ BOOL CEHelper::IsProcessCorruptedStateException(OBJECTREF oThrowable)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
         PRECONDITION(oThrowable != NULL);
     }
     CONTRACTL_END;
@@ -11549,7 +11386,6 @@ void CEHelper::SetupCorruptionSeverityForActiveExceptionInUnwindPass(Thread *pCu
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(!fIsFirstPass); // This method should only be called during an unwind
         PRECONDITION(pCurThread != NULL);
     }
@@ -11891,7 +11727,6 @@ void CEHelper::MarkLastActiveExceptionCorruptionSeverityForReraiseReuse()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(GetThread() != NULL);
     }
     CONTRACTL_END;
@@ -12789,7 +12624,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM()
         DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
         CANNOT_TAKE_LOCK;
         MODE_ANY;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -13236,44 +13070,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 
 #endif // FEATURE_COMINTEROP
 
-
-#ifdef FEATURE_STACK_PROBE
-//==========================================================================
-// Throw a StackOverflowError
-//==========================================================================
-VOID DECLSPEC_NORETURN RealCOMPlusThrowSO()
-{
-    CONTRACTL
-    {
-        // This should be throws... But it isn't because a SO doesn't technically
-        // fall into the same THROW/NOTHROW conventions as the rest of the contract
-        // infrastructure.
-        NOTHROW;
-
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // We only use BreakOnSO if we are in debug mode, so we'll only checking if the
-    // _DEBUG flag is set.
-#ifdef _DEBUG
-    static int breakOnSO = -1;
-
-    if (breakOnSO == -1)
-        breakOnSO = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BreakOnSO);
-
-    if (breakOnSO != 0)
-    {
-        _ASSERTE(!"SO occurred");
-    }
-#endif
-
-    ThrowStackOverflow();
-}
-#endif
-
 //==========================================================================
 // Throw an InvalidCastException
 //==========================================================================
@@ -13317,7 +13113,6 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
     } CONTRACTL_END;
 
      Module *pModuleTypeFrom = thCastFrom.GetModule();

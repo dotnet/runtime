@@ -364,7 +364,6 @@ BOOL isJumpRel32(PCODE pCode)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -383,7 +382,6 @@ PCODE decodeJump32(PCODE pBuffer)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -399,7 +397,6 @@ BOOL isJumpRel64(PCODE pCode)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -417,7 +414,6 @@ PCODE decodeJump64(PCODE pBuffer)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -730,7 +726,6 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         PRECONDITION(pCode != GetPreStubEntryPoint());
     } CONTRACTL_END;
 
@@ -811,7 +806,6 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
         MODE_ANY;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         PRECONDITION((offsetNum > 0) && (offsetNum < 20));  /* we only allow reasonable offsetNums 1..19 */
     }
     CONTRACTL_END;
@@ -851,8 +845,6 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
 #ifdef _DEBUG
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
-
-    BEGIN_SO_INTOLERANT_CODE(CURRENT_THREAD);
 
     _ASSERTE(IS_ALIGNED((size_t)pThunk, sizeof(INT64)));
 
@@ -919,9 +911,6 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
     }
 
     // Ready to return
-
-    END_SO_INTOLERANT_CODE;
-   
     return pCode;
 }
 

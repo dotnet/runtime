@@ -141,7 +141,6 @@ void IBCLogger::LogAccessThreadSafeHelperStatic(const void * p, pfnIBCAccessCall
 void IBCLogger::LogAccessThreadSafeHelper(const void * p, pfnIBCAccessCallback callback)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
     CONTRACT_VIOLATION( HostViolation );
 
     /* For the Global Class we may see p == NULL */
@@ -183,7 +182,6 @@ CrstStatic* IBCLogger::GetSync()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -258,7 +256,6 @@ static const int c_minCountIncr  =   8;
 ThreadLocalIBCInfo::ThreadLocalIBCInfo()
 {
     LIMITED_METHOD_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
     
     m_fCallbackFailed        = false;
     m_fProcessingDelayedList = false;
@@ -290,7 +287,6 @@ void ThreadLocalIBCInfo::DeleteDelayedCallbacks()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -318,7 +314,6 @@ void ThreadLocalIBCInfo::FlushDelayedCallbacks()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -338,7 +333,6 @@ DelayCallbackTable * ThreadLocalIBCInfo::GetPtrDelayList()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -357,7 +351,6 @@ int ThreadLocalIBCInfo::ProcessDelayedCallbacks()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -430,7 +423,6 @@ void ThreadLocalIBCInfo::CallbackHelper(const void * p, pfnIBCAccessCallback cal
         GC_NOTRIGGER;
         MODE_ANY;
         CAN_TAKE_LOCK;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -506,7 +498,6 @@ void IBCLogger::LogMethodAccessHelper(const MethodDesc* pMD, ULONG flagNum)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
         PRECONDITION(g_IBCLogger.InstrEnabled());
     }
     CONTRACTL_END;
@@ -592,7 +583,6 @@ void IBCLogger::LogMethodAccessWrapper(IBCLogger* pLogger, const void * pValue1,
 void IBCLogger::LogMethodDescAccessHelper(const MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogMethodAccessHelper(pMD, ReadMethodDesc);
 }
@@ -600,7 +590,6 @@ void IBCLogger::LogMethodDescAccessHelper(const MethodDesc *pMD)
 void IBCLogger::LogMethodDescWriteAccessHelper(MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogMethodAccessHelper(pMD, ReadMethodDesc);
     LogMethodAccessHelper(pMD, WriteMethodDesc);
@@ -609,7 +598,6 @@ void IBCLogger::LogMethodDescWriteAccessHelper(MethodDesc *pMD)
 void IBCLogger::LogMethodPrecodeAccessHelper(MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogMethodAccessHelper(pMD, ReadMethodPrecode);
 }
@@ -617,7 +605,6 @@ void IBCLogger::LogMethodPrecodeAccessHelper(MethodDesc *pMD)
 void IBCLogger::LogMethodPrecodeWriteAccessHelper(MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogMethodAccessHelper(pMD, ReadMethodPrecode);
     LogMethodAccessHelper(pMD, WriteMethodPrecode);
@@ -631,7 +618,6 @@ void IBCLogger::LogMethodCodeAccessHelper(MethodDesc *pMD)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
         PRECONDITION(g_IBCLogger.InstrEnabled());
     }
     CONTRACTL_END;
@@ -647,7 +633,6 @@ void IBCLogger::LogNDirectCodeAccessHelper(MethodDesc *pMD)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
         PRECONDITION(g_IBCLogger.InstrEnabled());
     }
     CONTRACTL_END;
@@ -661,7 +646,6 @@ void IBCLogger::LogNDirectCodeAccessHelper(MethodDesc *pMD)
 void IBCLogger::LogMethodGCInfoAccessHelper(MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     _ASSERTE(InstrEnabled());
 
@@ -673,7 +657,6 @@ void IBCLogger::LogMethodGCInfoAccessHelper(MethodDesc *pMD)
 void IBCLogger::LogMethodTableAccessHelper(MethodTable const * pMT) 
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogTypeAccessHelper(pMT, ReadMethodTable);
 }
@@ -682,7 +665,6 @@ void IBCLogger::LogMethodTableAccessHelper(MethodTable const * pMT)
 void IBCLogger::LogTypeMethodTableAccessHelper(const TypeHandle *th) 
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogTypeAccessHelper(*th, ReadMethodTable);
 }
@@ -691,7 +673,6 @@ void IBCLogger::LogTypeMethodTableAccessHelper(const TypeHandle *th)
 void IBCLogger::LogTypeMethodTableWriteableAccessHelper(const TypeHandle *th) 
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogTypeAccessHelper(*th, ReadTypeDesc);
     LogTypeAccessHelper(*th, WriteTypeDesc);
@@ -705,7 +686,6 @@ void IBCLogger::LogTypeAccessHelper(TypeHandle th, ULONG flagNum)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
         PRECONDITION(g_IBCLogger.InstrEnabled());
     }
     CONTRACTL_END;
@@ -790,7 +770,6 @@ void IBCLogger::LogTypeAccessWrapper(IBCLogger* pLogger, const void * pValue, co
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -801,7 +780,6 @@ void IBCLogger::LogTypeAccessWrapper(IBCLogger* pLogger, const void * pValue, co
 void IBCLogger::LogMethodTableWriteableDataAccessHelper(MethodTable const * pMT) 
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogTypeAccessHelper(pMT, ReadMethodTable);
     LogTypeAccessHelper(pMT, ReadMethodTableWriteableData);
@@ -811,7 +789,6 @@ void IBCLogger::LogMethodTableWriteableDataAccessHelper(MethodTable const * pMT)
 void IBCLogger::LogMethodTableWriteableDataWriteAccessHelper(MethodTable *pMT) 
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogTypeAccessHelper(pMT, ReadMethodTable);
     LogTypeAccessHelper(pMT, WriteMethodTableWriteableData);
@@ -820,7 +797,6 @@ void IBCLogger::LogMethodTableWriteableDataWriteAccessHelper(MethodTable *pMT)
 void IBCLogger::LogMethodTableNonVirtualSlotsAccessHelper(MethodTable const * pMT) 
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogTypeAccessHelper(pMT, ReadMethodTable);
     LogTypeAccessHelper(pMT, ReadNonVirtualSlots);
@@ -830,7 +806,6 @@ void IBCLogger::LogMethodTableNonVirtualSlotsAccessHelper(MethodTable const * pM
 void IBCLogger::LogEEClassAndMethodTableAccessHelper(MethodTable * pMT)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     if (pMT == NULL)
         return;
@@ -849,7 +824,6 @@ void IBCLogger::LogEEClassAndMethodTableAccessHelper(MethodTable * pMT)
 void IBCLogger::LogEEClassCOWTableAccessHelper(MethodTable * pMT)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     if (pMT == NULL)
         return;
@@ -869,7 +843,6 @@ void IBCLogger::LogEEClassCOWTableAccessHelper(MethodTable * pMT)
 void IBCLogger::LogFieldDescsAccessHelper(FieldDesc * pFD)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     MethodTable * pMT = pFD->GetApproxEnclosingMethodTable_NoLogging();
 
@@ -886,7 +859,6 @@ void IBCLogger::LogFieldDescsAccessHelper(FieldDesc * pFD)
 void IBCLogger::LogDispatchMapAccessHelper(MethodTable *pMT) 
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
     
     LogTypeAccessHelper(pMT, ReadMethodTable);
     LogTypeAccessHelper(pMT, ReadDispatchMap);
@@ -895,7 +867,6 @@ void IBCLogger::LogDispatchMapAccessHelper(MethodTable *pMT)
 void IBCLogger::LogDispatchTableAccessHelper(MethodTable *pMT)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogTypeAccessHelper(pMT, ReadMethodTable);
     LogTypeAccessHelper(pMT, ReadDispatchMap);
@@ -905,7 +876,6 @@ void IBCLogger::LogDispatchTableAccessHelper(MethodTable *pMT)
 void IBCLogger::LogDispatchTableSlotAccessHelper(DispatchSlot *pDS)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
    
     if (pDS->IsNull())
         return;
@@ -919,7 +889,6 @@ void IBCLogger::LogDispatchTableSlotAccessHelper(DispatchSlot *pDS)
 void IBCLogger::LogFieldMarshalersReadAccessHelper(MethodTable * pMT)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     if (pMT == NULL)
         return;
@@ -939,7 +908,6 @@ void IBCLogger::LogFieldMarshalersReadAccessHelper(MethodTable * pMT)
 void IBCLogger::LogCCtorInfoReadAccessHelper(MethodTable *pMT) 
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
     LogTypeAccessHelper(pMT, ReadCCtorInfo);
 }
 
@@ -947,7 +915,6 @@ void IBCLogger::LogCCtorInfoReadAccessHelper(MethodTable *pMT)
 void IBCLogger::LogTypeHashTableAccessHelper(const TypeHandle *th)
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     LogTypeAccessHelper(*th, ReadTypeHashTable);
 }
@@ -960,7 +927,6 @@ void IBCLogger::LogClassHashTableAccessHelper(EEClassHashEntry *pEntry)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
         PRECONDITION(g_IBCLogger.InstrEnabled());
     }
     CONTRACTL_END;
@@ -1017,7 +983,6 @@ void IBCLogger::LogMetaDataAccessHelper(const void * addr)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
         PRECONDITION(g_IBCLogger.InstrEnabled());
     }
     CONTRACTL_END;
@@ -1050,7 +1015,6 @@ void IBCLogger::LogMetaDataSearchAccessHelper(const void * result)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
         PRECONDITION(g_IBCLogger.InstrEnabled());
     }
     CONTRACTL_END;
@@ -1083,7 +1047,6 @@ void IBCLogger::LogCerMethodListReadAccessHelper(MethodDesc *pMD)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
         PRECONDITION(g_IBCLogger.InstrEnabled());
     }
     CONTRACTL_END;
@@ -1094,7 +1057,6 @@ void IBCLogger::LogCerMethodListReadAccessHelper(MethodDesc *pMD)
 void IBCLogger::LogRidMapAccessHelper( RidMapLogData data )
 {
     WRAPPER_NO_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     data.First()->LogTokenAccess( data.Second(), RidMap );
 }
@@ -1107,7 +1069,6 @@ void IBCLogger::LogRVADataAccessHelper(FieldDesc *pFD)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
         PRECONDITION(g_IBCLogger.InstrEnabled());
     }
     CONTRACTL_END;

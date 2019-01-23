@@ -23,7 +23,6 @@ void ThreadLocalBlock::FreeTLM(SIZE_T i, BOOL isThreadShuttingdown)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -81,7 +80,6 @@ void ThreadLocalBlock::FreeTable()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -243,7 +241,6 @@ DWORD ThreadLocalModule::GetClassFlags(MethodTable* pMT, DWORD iClassIndex) // i
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     if (pMT->IsDynamicStatics())
@@ -288,7 +285,6 @@ void ThreadLocalBlock::AddPinningHandleToList(OBJECTHANDLE oh)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -302,7 +298,6 @@ void ThreadLocalBlock::FreePinningHandles()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

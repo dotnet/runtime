@@ -1206,7 +1206,6 @@ public:
             WRAPPER(GC_TRIGGERS);
             MODE_COOPERATIVE;
             PRECONDITION(CheckPointer(m_ppThis));
-            SO_TOLERANT;
         }
         CONTRACT_END;
 
@@ -1295,7 +1294,6 @@ public:
             INSTANCE_CHECK;
             POSTCONDITION(CheckPointer(RETVAL));
             SUPPORTS_DAC;
-            SO_TOLERANT;
         }
         CONTRACT_END;
         
@@ -1552,7 +1550,6 @@ public:
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_COOPERATIVE;
-            SO_TOLERANT;
         }
         CONTRACT_END;
         
@@ -1694,7 +1691,6 @@ public:
             MODE_ANY;
             PRECONDITION(CheckPointer(pUnk));
             POSTCONDITION(CheckPointer(RETVAL));
-            SO_TOLERANT;
             SUPPORTS_DAC;
         }
         CONTRACT_END;
@@ -1719,7 +1715,6 @@ public:
             SUPPORTS_DAC;
             INSTANCE_CHECK;
             POSTCONDITION(CheckPointer(RETVAL));
-            SO_TOLERANT;
         }
         CONTRACT_END;
         
@@ -1773,7 +1768,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -1794,7 +1788,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -1819,7 +1812,6 @@ public:
             NOTHROW;
             GC_TRIGGERS;
             MODE_ANY;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -1841,13 +1833,11 @@ private:
             NOTHROW;
             GC_TRIGGERS;
             MODE_ANY;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
         if (!CanRunManagedCode())
             return;
-        SO_INTOLERANT_CODE_NOTHROW(GetThread(), return; );
 
         m_pWrap->Cleanup();
     }
@@ -1860,7 +1850,6 @@ public:
             NOTHROW;
             GC_TRIGGERS;
             MODE_ANY;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
         
@@ -2183,7 +2172,6 @@ inline ULONG ComCallWrapper::AddRef()
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        SO_TOLERANT;
         INSTANCE_CHECK;
     }
     CONTRACTL_END;
@@ -2204,7 +2192,6 @@ inline ULONG ComCallWrapper::Release()
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        SO_TOLERANT;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(m_pSimpleWrapper));
     }
@@ -2331,7 +2318,6 @@ inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
         PRECONDITION(CheckPointer(pUnk));
         POSTCONDITION(CheckPointer(RETVAL));
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACT_END;
     

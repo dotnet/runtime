@@ -595,7 +595,6 @@ MethodDesc* ECall::MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoi
         GC_NOTRIGGER;
         MODE_ANY;
         HOST_NOCALLS;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -633,7 +632,6 @@ CorInfoIntrinsics ECall::GetIntrinsicID(MethodDesc* pMD)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(pMD->IsFCall());
     }
     CONTRACTL_END;
@@ -737,7 +735,6 @@ void HCallAssert(void*& cache, void* target)
 {
     CONTRACTL
     {
-        SO_TOLERANT;     // STATIC_CONTRACT_DEBUG_ONLY
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;

@@ -18,7 +18,6 @@ inline CLRException::HandlerState::HandlerState(Thread * pThread)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     m_pThread = pThread;
     if (m_pThread == NULL)
@@ -39,7 +38,6 @@ inline CLRException::HandlerState::HandlerState(Thread * pThread, CLRException::
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
     _ASSERTE(pThread != NULL);
 
     m_pThread = pThread;

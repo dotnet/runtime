@@ -325,7 +325,6 @@ NOINLINE OBJECTHANDLE AcquireWeakHandleSpinLockSpin(WEAKREFERENCEREF pThis)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -371,7 +370,6 @@ FORCEINLINE OBJECTHANDLE AcquireWeakHandleSpinLock(WEAKREFERENCEREF pThis)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -581,7 +579,6 @@ static FORCEINLINE OBJECTREF GetWeakReferenceTarget(WEAKREFERENCEREF pThis)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

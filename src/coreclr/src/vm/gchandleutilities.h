@@ -267,7 +267,6 @@ inline void DestroyHandleCommon(OBJECTHANDLE handle, HandleType type)
         GC_NOTRIGGER;
         MODE_ANY;
         CAN_TAKE_LOCK;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -375,7 +374,6 @@ inline void DestroyWinRTWeakHandle(OBJECTHANDLE handle)
         GC_NOTRIGGER;
         MODE_ANY;
         CAN_TAKE_LOCK;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

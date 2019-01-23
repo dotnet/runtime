@@ -471,7 +471,6 @@ FORCEINLINE void AwareLock::SpinWait(const YieldProcessorNormalizationInfo &norm
 FORCEINLINE bool AwareLock::TryEnterHelper(Thread* pCurThread)
 {
     CONTRACTL{
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -496,7 +495,6 @@ FORCEINLINE bool AwareLock::TryEnterHelper(Thread* pCurThread)
 FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper(Thread *pCurThread)
 {
     CONTRACTL{
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -540,7 +538,6 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper
 FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterInsideSpinLoopHelper(Thread *pCurThread)
 {
     CONTRACTL{
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -568,7 +565,6 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterInsideSpinLoopHelper
 FORCEINLINE bool AwareLock::TryEnterAfterSpinLoopHelper(Thread *pCurThread)
 {
     CONTRACTL{
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -592,7 +588,6 @@ FORCEINLINE bool AwareLock::TryEnterAfterSpinLoopHelper(Thread *pCurThread)
 FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread* pCurThread)
 {
     CONTRACTL{
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
@@ -676,7 +671,6 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
 FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThread)
 {
     CONTRACTL {
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -717,7 +711,6 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
 FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread* pCurThread)
 {
     CONTRACTL {
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;

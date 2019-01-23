@@ -16,7 +16,6 @@
 #include "typeparse.h"
 #include "typestring.h"
 #include "assemblynative.hpp"
-#include "stackprobe.h"
 #include "fstring.h"
 
 //
@@ -68,7 +67,6 @@ HRESULT STDMETHODCALLTYPE TypeNameFactory::ParseTypeName(LPCWSTR szTypeName, DWO
 {
     CONTRACTL
     {
-        SO_TOLERANT;
         WRAPPER(THROWS);
     }CONTRACTL_END;
 
@@ -76,7 +74,6 @@ HRESULT STDMETHODCALLTYPE TypeNameFactory::ParseTypeName(LPCWSTR szTypeName, DWO
         return E_INVALIDARG;
 
 	HRESULT hr = S_OK;
-	BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
 
     *ppTypeName = NULL;
     *pError = (DWORD)-1;
@@ -102,8 +99,6 @@ HRESULT STDMETHODCALLTYPE TypeNameFactory::ParseTypeName(LPCWSTR szTypeName, DWO
         }
     }
 
-	END_SO_INTOLERANT_CODE;
-
     return hr;
 }
 
@@ -124,8 +119,6 @@ HRESULT STDMETHODCALLTYPE TypeNameFactory::GetTypeNameBuilder(ITypeNameBuilder**
 
     HRESULT hr = S_OK;
 
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-
     ITypeNameBuilder* pTypeNameBuilder = new (nothrow) TypeNameBuilderWrapper();
 
     if (pTypeNameBuilder)
@@ -139,8 +132,6 @@ HRESULT STDMETHODCALLTYPE TypeNameFactory::GetTypeNameBuilder(ITypeNameBuilder**
         hr = E_OUTOFMEMORY;
     }
 
-    END_SO_INTOLERANT_CODE;
-
     return hr;
 }
 
@@ -153,14 +144,10 @@ SString* TypeName::ToString(SString* pBuf, BOOL bAssemblySpec, BOOL bSignature, 
 
     PRECONDITION(!bGenericArguments & !bSignature &! bAssemblySpec);
 
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return pBuf);
-    {
     TypeNameBuilder tnb(pBuf);
 
     for (COUNT_T i = 0; i < m_names.GetCount(); i ++)
         tnb.AddName(m_names[i]->GetUnicode());
-    }
-    END_SO_INTOLERANT_CODE;
 
     return pBuf;
 }
@@ -181,10 +168,8 @@ DWORD STDMETHODCALLTYPE TypeName::Release()
     {
         THROWS;
         GC_TRIGGERS;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
-    VALIDATE_BACKOUT_STACK_CONSUMPTION;
 
     m_count--; 
 
@@ -201,10 +186,8 @@ TypeName::~TypeName()
     {
         THROWS;
         GC_TRIGGERS;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
-    VALIDATE_BACKOUT_STACK_CONSUMPTION;
  
     for(COUNT_T i = 0; i < m_genericArguments.GetCount(); i ++)
         m_genericArguments[i]->Release();
@@ -243,7 +226,6 @@ HRESULT STDMETHODCALLTYPE TypeName::GetNames(DWORD count, BSTR* bszName, DWORD* 
 {
     CONTRACTL
     {
-        SO_TOLERANT;
         WRAPPER(THROWS);
     }CONTRACTL_END;
 
@@ -260,12 +242,8 @@ HRESULT STDMETHODCALLTYPE TypeName::GetNames(DWORD count, BSTR* bszName, DWORD* 
     if (!bszName)
         return E_INVALIDARG;
 
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-    {
     for (COUNT_T i = 0; i < m_names.GetCount(); i ++)
         bszName[i] = SysAllocString(m_names[i]->GetUnicode());
-    }
-    END_SO_INTOLERANT_CODE;
 
     return hr;
 }
@@ -343,7 +321,6 @@ HRESULT STDMETHODCALLTYPE TypeName::GetAssemblyName(BSTR* pszAssemblyName)
 {
     CONTRACTL
     {
-        SO_TOLERANT;
         WRAPPER(THROWS);
     }CONTRACTL_END;
 
@@ -352,14 +329,9 @@ HRESULT STDMETHODCALLTYPE TypeName::GetAssemblyName(BSTR* pszAssemblyName)
     if (pszAssemblyName == NULL)
         return E_INVALIDARG;
 
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-    {
     *pszAssemblyName = SysAllocString(m_assembly.GetUnicode());
-    }
-    END_SO_INTOLERANT_CODE;
-
     if (*pszAssemblyName == NULL)
-        hr= E_OUTOFMEMORY;
+        hr = E_OUTOFMEMORY;
 
     return hr;
 }
@@ -1430,18 +1402,6 @@ TypeHandle TypeName::GetTypeFromAsm()
     if (pKeepAlive == NULL)
         pAsmRef = NULL;
 
-    //requires a lot of space
-    DECLARE_INTERIOR_STACK_PROBE;
-    // This function is recursive, so it must have an interior probe
-    if (bThrowIfNotFound)
-    {
-        DO_INTERIOR_STACK_PROBE_FOR_CHECK_THREAD(12);
-    }
-    else
-    {
-        DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD(12, goto Exit;);
-    }
-
     // An explicit assembly has been specified so look for the type there
     if (!GetAssembly()->IsEmpty()) 
     {
@@ -1643,8 +1603,6 @@ TypeHandle TypeName::GetTypeFromAsm()
 
 Exit:
     ;
-    END_INTERIOR_STACK_PROBE;
-    
     GCPROTECT_END();
 
     RETURN th;

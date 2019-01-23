@@ -37,7 +37,6 @@ static TypeHandle NullableTypeOfByref(TypeHandle th) {
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -527,6 +526,7 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
         }
     }
 DoneCreateInstance:
+    ;
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(rv);
 }
@@ -1040,10 +1040,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
 
     Thread * pThread = GET_THREAD();
 
-    // Make sure we have enough room on the stack for this. Note that we will need the stack amount twice - once to build the stack
-    // and second time to actually make the call.
-    INTERIOR_STACK_PROBE_FOR(pThread, 1 + static_cast<UINT>((2 * nAllocaSize) / GetOsPageSize()) + static_cast<UINT>(HOLDER_CODE_NORMAL_STACK_LIMIT));
-
     LPBYTE pAlloc = (LPBYTE)_alloca(nAllocaSize);
 
     LPBYTE pTransitionBlock = pAlloc + TransitionBlock::GetNegSpaceSize();
@@ -1394,10 +1390,10 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     if (pProtectValueClassFrame != NULL)
         pProtectValueClassFrame->Pop(pThread);
 
-    END_INTERIOR_STACK_PROBE;
     }
 
 Done:
+    ;
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.retVal);
@@ -2189,14 +2185,9 @@ void ExecuteCodeWithGuaranteedCleanupHelper (ECWGC_GC *gc)
     }
     PAL_ENDTRY;
 
-#ifdef FEATURE_STACK_PROBE
-    if (param.fStackOverflow)   
-        COMPlusThrowSO();
-#else
     //This will not be set as clr to managed transition code will terminate the
     //process if there is an SO before SODetectionFilter() is called.
     _ASSERTE(!param.fStackOverflow);
-#endif
 }
 
 //

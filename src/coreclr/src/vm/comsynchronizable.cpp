@@ -189,7 +189,6 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
         GC_TRIGGERS;
         THROWS;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -211,7 +210,6 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
     pThread = GetThread();
     _ASSERTE(pThread);
     GCPROTECT_BEGIN(gc);
-    BEGIN_SO_INTOLERANT_CODE(pThread);
 
     gc.orDelegate = ObjectFromHandle(args->share->m_Threadable);
     gc.orThreadStartArg = ObjectFromHandle(args->share->m_ThreadStartArg);
@@ -249,7 +247,6 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
     }
 	STRESS_LOG2(LF_SYNC, LL_INFO10, "Managed thread exiting normally for delegate %p Type %pT\n", OBJECTREFToObject(gc.orDelegate), (size_t) gc.orDelegate->GetMethodTable());
 
-    END_SO_INTOLERANT_CODE;
     GCPROTECT_END();
 }
 
@@ -288,15 +285,11 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
     ULONG retVal = 0;
     // Before we do anything else, get Setup so that we have a real thread.
-
-    // Our thread isn't setup yet, so we can't use the standard probe
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return E_FAIL);
 
     KickOffThread_Args args;
     // don't have a separate var becuase this can be updated in the worker
@@ -380,8 +373,6 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
 
         DestroyThread(pThread);
     }
-
-    END_SO_INTOLERANT_CODE;
 
     return retVal;
 }

@@ -682,7 +682,6 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 

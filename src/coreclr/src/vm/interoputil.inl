@@ -14,7 +14,6 @@ inline BOOL ComInterfaceSlotIs(IUnknown* pUnk, int slot, LPVOID pvFunction)
         GC_NOTRIGGER;
         FORBID_FAULT;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
@@ -63,7 +62,6 @@ FORCEINLINE ComCallWrapper* MapIUnknownToWrapper(IUnknown* pUnk)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pUnk, NULL_OK));
     }
     CONTRACT_END;

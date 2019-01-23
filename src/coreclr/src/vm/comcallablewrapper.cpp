@@ -1004,12 +1004,10 @@ LONGLONG SimpleComCallWrapper::ReleaseImplWithLogging(LONGLONG * pRefCount)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
     LONGLONG newRefCount;
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), goto NoLog );
 
     StackSString ssMessage;
     ComCallWrapper *pWrap = GetMainWrapper();
@@ -1020,14 +1018,7 @@ LONGLONG SimpleComCallWrapper::ReleaseImplWithLogging(LONGLONG * pRefCount)
 
     LogRefCount(pWrap, ssMessage, GET_EXT_COM_REF(newRefCount));
 
-    END_SO_INTOLERANT_CODE;
     return newRefCount;
-
-#ifdef FEATURE_STACK_PROBE  // this code is unreachable if FEATURE_STACK_PROBE is not defined
-NoLog:
-    // Decrement the ref count
-    return ::InterlockedDecrement64(pRefCount);
-#endif // FEATURE_STACK_PROBE
 }
 
 
@@ -1743,7 +1734,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
         MODE_ANY;                                           \
         NOTHROW;                                            \
         GC_NOTRIGGER;                                       \
-        SO_TOLERANT;                                        \
         POSTCONDITION(RETVAL == !!IsEqualGUID(iid, riid));  \
     }                                                       \
     CONTRACT_END;                                           \
@@ -1899,7 +1889,6 @@ void SimpleComCallWrapper::ResetOuter()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1921,7 +1910,6 @@ IUnknown* SimpleComCallWrapper::GetOuter()
         GC_NOTRIGGER;
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        SO_TOLERANT;
     }
     CONTRACT_END;
 

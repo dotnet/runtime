@@ -169,7 +169,6 @@ BYTE *CHashTable::Find(                 // Index of struct in m_pcEntries.
     CONTRACTL
     {
         NOTHROW;
-        SO_TOLERANT;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     }

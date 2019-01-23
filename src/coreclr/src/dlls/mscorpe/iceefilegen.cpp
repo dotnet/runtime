@@ -446,8 +446,6 @@ HRESULT ICeeFileGen::GetHeaderInfo (HCEEFILE ceeFile, PIMAGE_NT_HEADERS *ppNtHea
 
 HRESULT ICeeFileGen::GenerateCeeFile (HCEEFILE ceeFile)
 {
-    SO_NOT_MAINLINE_FUNCTION;
-
     TESTANDRETURNPOINTER(ceeFile);
 
     CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);

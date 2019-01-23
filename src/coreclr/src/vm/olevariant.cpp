@@ -1112,12 +1112,9 @@ void VariantData::NewVariant(VariantData * const& dest, const CVTypes type, INT6
 
 void SafeVariantClearHelper(_Inout_ VARIANT* pVar)
 {
-    STATIC_CONTRACT_SO_INTOLERANT;
     WRAPPER_NO_CONTRACT;
 
-    BEGIN_SO_TOLERANT_CODE(GetThread());
     VariantClear(pVar);
-    END_SO_TOLERANT_CODE;
 }
 
 class OutOfMemoryException;

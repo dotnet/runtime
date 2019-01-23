@@ -722,7 +722,6 @@ public:
     virtual void UseKeys(__in_ecount(2) LPUTF8 *pKey1)
     {
         LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
         SUPPORTS_DAC;
 
         bReturn = ( 

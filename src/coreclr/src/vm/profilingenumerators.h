@@ -318,7 +318,6 @@ ProfilerEnum< EnumInterface, Element >::GetCount(ULONG* count)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -363,7 +362,6 @@ ProfilerEnum< EnumInterface, Element >::Skip(ULONG count)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -403,7 +401,6 @@ ProfilerEnum< EnumInterface, Element >::Reset()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -436,7 +433,6 @@ ProfilerEnum< EnumInterface, Element >::Clone(EnumInterface** pInterface)
         GC_NOTRIGGER;
         MODE_ANY;
 
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 

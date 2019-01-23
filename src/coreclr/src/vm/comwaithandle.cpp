@@ -81,9 +81,8 @@ private:
 void AcquireSafeHandleFromWaitHandle(WAITHANDLEREF wh)
 {
     CONTRACTL {
-        THROWS;    
-        GC_TRIGGERS;    
-        SO_INTOLERANT;    
+        THROWS;
+        GC_TRIGGERS; 
         MODE_COOPERATIVE;
         PRECONDITION(wh != NULL);
     } CONTRACTL_END;
@@ -97,9 +96,8 @@ void AcquireSafeHandleFromWaitHandle(WAITHANDLEREF wh)
 void ReleaseSafeHandleFromWaitHandle(WAITHANDLEREF wh)
 {
     CONTRACTL {
-        THROWS;    
-        GC_TRIGGERS;    
-        SO_TOLERANT;    
+        THROWS;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(wh != NULL);
     } CONTRACTL_END;

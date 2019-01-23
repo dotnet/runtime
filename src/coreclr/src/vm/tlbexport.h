@@ -158,7 +158,6 @@ private:
             {
                 NOTHROW;
                 GC_NOTRIGGER;
-                SO_TOLERANT;
                 MODE_ANY;
             }
             CONTRACTL_END;
@@ -239,7 +238,7 @@ protected:
         }
         ~CHrefOfTIHash()
         {
-            CONTRACTL { NOTHROW; SO_TOLERANT; } CONTRACTL_END;
+            CONTRACTL { NOTHROW; } CONTRACTL_END;
             Clear();
         }
 

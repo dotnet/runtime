@@ -1418,13 +1418,10 @@ void SafeRelease_OnException(IUnknown* pUnk, RCW* pRCW
     {
         NOTHROW;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
 #ifndef CROSSGEN_COMPILE
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return;)
-
 #ifdef MDA_SUPPORTED
     // Report the exception that was thrown.
     if (pProbe) 
@@ -1435,8 +1432,6 @@ void SafeRelease_OnException(IUnknown* pUnk, RCW* pRCW
     LogInterop(W("An exception occurred during release"));
     LogInteropLeak(pUnk);
 #endif // FEATURE_COMINTEROP
-
-    END_SO_INTOLERANT_CODE;
 #endif // CROSSGEN_COMPILE
 }
 
@@ -1450,7 +1445,6 @@ ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pUnk, NULL_OK));
     } CONTRACTL_END;
 
@@ -1524,7 +1518,6 @@ ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pUnk, NULL_OK));
     } CONTRACTL_END;
 
@@ -1647,7 +1640,6 @@ BOOL IsComObjectClass(TypeHandle type)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1676,7 +1668,6 @@ ReadBestFitCustomAttribute(MethodDesc* pMD, BOOL* BestFit, BOOL* ThrowOnUnmappab
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1698,7 +1689,6 @@ ReadBestFitCustomAttribute(IMDInternalImport* pInternalImport, mdTypeDef cl, BOO
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pInternalImport));
     }
     CONTRACTL_END;
@@ -1952,7 +1942,6 @@ HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
     _ASSERTE(pUnk);
     _ASSERTE(pResUnk);
 
@@ -1964,7 +1953,6 @@ HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk)
     GCX_PREEMP_NO_DTOR_HAVE_THREAD(pThread);
 
     BEGIN_CONTRACT_VIOLATION(ThrowsViolation); // message pump could happen, so arbitrary managed code could run
-    BEGIN_SO_TOLERANT_CODE(pThread);
 
     struct Param { HRESULT * const hr; IUnknown** const pUnk; REFIID riid; IUnknown*** const pResUnk; } param = { &hr, &pUnk, riid, &pResUnk };
 #define PAL_TRY_ARG(argName) (*(pParam->argName))
@@ -1986,7 +1974,6 @@ HRESULT SafeQueryInterface(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk)
 #undef PAL_TRY_ARG
 #undef PAL_TRY_REFARG
 
-    END_SO_TOLERANT_CODE;
     END_CONTRACT_VIOLATION;
 
     LOG((LF_INTEROP, LL_EVERYTHING, hr == S_OK ? "QI Succeeded\n" : "QI Failed\n")); 
@@ -2013,7 +2000,6 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
-    STATIC_CONTRACT_SO_TOLERANT;
     _ASSERTE(pUnk);
     _ASSERTE(pResUnk);
 
@@ -2023,7 +2009,6 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
     HRESULT hr = E_FAIL;
 
     BEGIN_CONTRACT_VIOLATION(ThrowsViolation); // message pump could happen, so arbitrary managed code could run
-    BEGIN_SO_TOLERANT_CODE(pThread);
 
     struct Param { HRESULT * const hr; IUnknown** const pUnk; REFIID riid; IUnknown*** const pResUnk; } param = { &hr, &pUnk, riid, &pResUnk };
 #define PAL_TRY_ARG(argName) (*(pParam->argName))
@@ -2045,9 +2030,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
 #undef PAL_TRY_ARG
 #undef PAL_TRY_REFARG
 
-    END_SO_TOLERANT_CODE;
     END_CONTRACT_VIOLATION;
-
 
     LOG((LF_INTEROP, LL_EVERYTHING, hr == S_OK ? "QI Succeeded\n" : "QI Failed\n")); 
 
@@ -2297,7 +2280,6 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(g_fEEStarted);
         PRECONDITION(GetThread() != NULL);      // Should always be inside BEGIN_EXTERNAL_ENTRYPOINT
     }
@@ -2310,11 +2292,7 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
         GCX_COOP();
         EX_TRY
         {
-            BEGIN_SO_INTOLERANT_CODE(GetThread());
-
             EnsureComStarted(fCoInitCurrentThread);
-
-            END_SO_INTOLERANT_CODE;
         }
         EX_CATCH_HRESULT(hr);
     }
@@ -2377,7 +2355,6 @@ ULONG SafeAddRef(IUnknown* pUnk)
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -2409,7 +2386,6 @@ ULONG SafeAddRefPreemp(IUnknown* pUnk)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -3963,7 +3939,6 @@ static HRESULT InvokeExHelper(
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_INTOLERANT;
 
     _ASSERTE(pDispEx != NULL);
 
@@ -3992,8 +3967,6 @@ static HRESULT InvokeExHelper(
     
     PAL_TRY(Param *, pParam, &param)
     {
-        BEGIN_SO_TOLERANT_CODE(GetThread());
-    
         pParam->hr = pParam->pDispEx->InvokeEx(pParam->MemberID,
                                                pParam->lcid,
                                                pParam->flags,
@@ -4001,8 +3974,6 @@ static HRESULT InvokeExHelper(
                                                pParam->pVarResult,
                                                pParam->pExcepInfo,
                                                pParam->pspCaller);
-
-        END_SO_TOLERANT_CODE;
     }
     PAL_EXCEPT_FILTER(CallOutFilter)
     {
@@ -4027,7 +3998,6 @@ static HRESULT InvokeHelper(
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_INTOLERANT;
 
     _ASSERTE(pDisp != NULL);
 
@@ -4060,8 +4030,6 @@ static HRESULT InvokeHelper(
 
     PAL_TRY(Param *, pParam, &param)
     {
-        BEGIN_SO_TOLERANT_CODE(GetThread());
-    
         pParam->hr = pParam->pDisp->Invoke(pParam->MemberID,
                                            pParam->riid,
                                            pParam->lcid,
@@ -4070,8 +4038,6 @@ static HRESULT InvokeHelper(
                                            pParam->pVarResult,
                                            pParam->pExcepInfo,
                                            pParam->piArgErr);
-
-        END_SO_TOLERANT_CODE;
     }
     PAL_EXCEPT_FILTER(CallOutFilter)
     {
@@ -6410,7 +6376,6 @@ VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pItf));
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -6444,7 +6409,6 @@ VOID LogInteropRelease(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pItf, NULL_OK));
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     

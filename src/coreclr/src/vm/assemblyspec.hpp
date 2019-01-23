@@ -19,7 +19,6 @@
 #include "memorypool.h"
 #include "assemblyspecbase.h"
 #include "domainfile.h"
-#include "genericstackprobe.h"
 #include "holder.h"
 
 class AppDomain;

@@ -282,9 +282,7 @@ HRESULT SymWriter::CreateDocument(const WCHAR *wcsUrl,                   // Docu
     pDocument->SetDocumentWriter(sdw);
 
     // stack check needed to call back into utilcode
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD_FORCE_SO();
     hr = m_pStringPool->AddStringW(wcsUrl, (UINT32 *)&UrlEntry);
-    END_SO_INTOLERANT_CODE;
     IfFailGo(hr);
 
     pDocument->SetUrlEntry(UrlEntry);
@@ -739,11 +737,8 @@ COM_METHOD SymWriter::DefineLocalVariable(
     ULONG32 sigLen;
     sigLen = cSig;
 
-    // stack check needed to call back into utilcode
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD_FORCE_SO();
     // Copy the name.
     hr = m_pStringPool->AddStringW(name, (UINT32 *)&NameEntry);
-    END_SO_INTOLERANT_CODE;
     IfFailGo(hr);
     var->SetName(NameEntry);
 
@@ -813,11 +808,8 @@ COM_METHOD SymWriter::DefineParameter(
     var->SetSequence(sequence);
 
 
-    // stack check needed to call back into utilcode
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD_FORCE_SO();
     // Copy the name.
     hr = m_pStringPool->AddStringW(name, (UINT32 *)&NameEntry);
-    END_SO_INTOLERANT_CODE;
     IfFailGo(hr);
     var->SetName(NameEntry);
 
@@ -905,11 +897,8 @@ COM_METHOD SymWriter::DefineConstant(
     // the stringpool
     if (V_VT(&value) == VT_BSTR)
     {
-        // stack check needed to call back into utilcode
-        BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD_FORCE_SO();
         // Copy the bstrValue.
         hr = m_pStringPool->AddStringW(V_BSTR(&value), (UINT32 *)&ValueBstr);
-        END_SO_INTOLERANT_CODE;
         IfFailGo(hr);
         V_BSTR(&value) = NULL;
     }
@@ -919,11 +908,8 @@ COM_METHOD SymWriter::DefineConstant(
     con->SetValue(value, ValueBstr);
 
 
-    // stack check needed to call back into utilcode
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD_FORCE_SO();
     // Copy the name.
     hr = m_pStringPool->AddStringW(name, (UINT32 *)&Name);
-    END_SO_INTOLERANT_CODE;
     IfFailGo(hr);
     con->SetName(Name);
 
@@ -1111,11 +1097,8 @@ COM_METHOD SymWriter::UsingNamespace(const WCHAR *fullName)
     SymUsingNamespace *use;
     IfNullGo( use = m_MethodInfo.m_usings.next());
 
-    // stack check needed to call back into utilcode
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD_FORCE_SO();
     // Copy the name.
     hr = m_pStringPool->AddStringW(fullName, (UINT32 *)&Name);
-    END_SO_INTOLERANT_CODE;
     IfFailGo(hr);
     use->SetName(Name);
 

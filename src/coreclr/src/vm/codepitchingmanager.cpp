@@ -307,7 +307,6 @@ StackWalkAction CrawlFrameVisitor(CrawlFrame* pCf, Thread* pMdThread)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

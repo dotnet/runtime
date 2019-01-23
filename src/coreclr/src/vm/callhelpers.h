@@ -542,13 +542,11 @@ enum EEToManagedCallFlags
             CURRENT_THREAD->HandleThreadAbort();                                \
         }                                                                       \
     }                                                                           \
-    BEGIN_SO_TOLERANT_CODE(CURRENT_THREAD);                                     \
     INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER();                                 \
     INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE();
 
 #define END_CALL_TO_MANAGED()                                                   \
     UNINSTALL_COMPLUS_EXCEPTION_HANDLER();                                      \
-    END_SO_TOLERANT_CODE;                                                       \
 }
 
 /***********************************************************************/

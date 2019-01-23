@@ -82,7 +82,7 @@
 //
 // BOOL QCALLTYPE FooNative::Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
 // {
-//      // All QCalls should have QCALL_CONTRACT. It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE; SO_TOLERANT.
+//      // All QCalls should have QCALL_CONTRACT. It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
 //      QCALL_CONTRACT;
 //
 //      // Optionally, use QCALL_CHECK instead and the expanded form of the contract if you want to specify preconditions:
@@ -132,20 +132,10 @@
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER \
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
 
-#define BEGIN_QCALL_SO_TOLERANT          \
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER \
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE
-
-#define END_QCALL_SO_TOLERANT                      \
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE \
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-
-
 #define QCALL_CHECK             \
     THROWS;                     \
     GC_TRIGGERS;                \
     MODE_PREEMPTIVE;            \
-    SO_TOLERANT;                \
 
 #define QCALL_CONTRACT CONTRACTL { QCALL_CHECK; } CONTRACTL_END;
 
@@ -185,7 +175,6 @@ public:
                 NOTHROW;
                 GC_NOTRIGGER;
                 MODE_COOPERATIVE;
-                SO_TOLERANT;
             }
             CONTRACTL_END;
 

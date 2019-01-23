@@ -65,7 +65,6 @@ UINT32 TypeIDMap::LookupTypeID(PTR_MethodTable pMT)
 {
     CONTRACTL {
         NOTHROW;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(GetThread()));
         if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
     } CONTRACTL_END;
@@ -82,7 +81,6 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
 {
     CONTRACTL {
         NOTHROW;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(GetThread()));
         if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
         PRECONDITION(id <= TypeIDProvider::MAX_TYPE_ID);
@@ -161,7 +159,6 @@ void TypeIDMap::RemoveTypes(LoaderAllocator *pLoaderAllocator)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     // Take the lock
