@@ -56,8 +56,6 @@ void fx_muxer_t::display_missing_framework_error(
 
     trace::error(_X("  - Check application dependencies and target a framework version installed at:"));
     trace::error(_X("      %s"), fx_ver_dirs.c_str());
-    trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem:"));
-    trace::error(_X("      %s"), DOTNET_CORE_GETTING_STARTED_URL);
     trace::error(_X("  - The .NET Core framework and SDK can be installed from:"));
     trace::error(_X("      %s"), DOTNET_CORE_DOWNLOAD_URL);
 
@@ -75,6 +73,9 @@ void fx_muxer_t::display_missing_framework_error(
 
         trace::error(_X("      %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
     }
+
+    trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem:"));
+    trace::error(_X("      %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
 }
 
 /**

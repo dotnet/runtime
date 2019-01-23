@@ -266,7 +266,7 @@ int run(const int argc, const pal::char_t* argv[])
     {
         trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
         trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem."));
-        trace::error(_X("     %s"), DOTNET_CORE_GETTING_STARTED_URL);
+        trace::error(_X("     %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
         return StatusCode::CoreHostLibLoadFailure;
     }
 

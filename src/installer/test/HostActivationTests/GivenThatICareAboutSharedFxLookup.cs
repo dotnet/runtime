@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
 {
@@ -356,6 +357,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
             // Add some dummy versions in the exe
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "10000.1.1");
 
+            string expectedPrereqInstallUrl;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                expectedPrereqInstallUrl = "https://go.microsoft.com/fwlink/?linkid=798306";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                expectedPrereqInstallUrl = "https://go.microsoft.com/fwlink/?linkid=2063366";
+            }
+            else
+            {
+                expectedPrereqInstallUrl = "https://go.microsoft.com/fwlink/?linkid=2063370";
+            }
+
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' default value of 1 (minor)
             // exe: 10000.1.1
@@ -369,7 +384,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
                 .Should()
                 .Fail()
                 .And
-                .HaveStdErrContaining("It was not possible to find any compatible framework version");
+                .HaveStdErrContaining("It was not possible to find any compatible framework version")
+                .And
+                .HaveStdErrContaining(expectedPrereqInstallUrl)
+                .And
+                .HaveStdErrContaining("aka.ms/dotnet-download");
 
             // Add a dummy version in the exe dir 
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.1");
