@@ -976,11 +976,8 @@ namespace System.Data.SqlClient
                 }
             }
 
-            if (_resetConnectionEvent != null)
-            {
-                _resetConnectionEvent.Dispose();
-                _resetConnectionEvent = null;
-            }
+            _resetConnectionEvent?.Dispose();
+            _resetConnectionEvent = null;
 
             _defaultEncoding = null;
             _defaultCollation = null;
