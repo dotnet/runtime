@@ -50,7 +50,7 @@
   You might see warnings like the following (or errors if warnings are treated as errors):
   - `warning CS3021: 'Utf8JsonWriter.WriteNumber(string, ulong, bool)' does not need a CLSCompliant attribute because the assembly does not have a CLSCompliant attribute`
 
-* You could either mark your project as CLSCompliant, or opt-out of this particular warning, or manually modify the sources to remove that attribute where it is used:
+* You could either mark your project as CLSCompliant, or opt-out of this particular warning:
   - `<NoWarn>3021</NoWarn>` OR `<CLSCompliant>true</CLSCompliant>`
 
 ### Targeting .NET Core 3.0+
