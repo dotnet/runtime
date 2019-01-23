@@ -8,15 +8,15 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System.Threading.Channels.netcoreapp.cs" />
+    <Reference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Reference Include="netstandard" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3' or '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading.Tasks" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>
