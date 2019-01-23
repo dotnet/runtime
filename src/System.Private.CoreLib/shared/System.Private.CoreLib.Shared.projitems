@@ -796,6 +796,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Sources\IValueTaskSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadAbortException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInterruptedException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPriority.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadStart.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadStartException.cs" />
