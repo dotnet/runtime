@@ -16,9 +16,9 @@ extern "C" DLL_EXPORT BOOL Marshal_Ansi(LPCSTR expected, LPSTR actual, LPCSTR ne
 
 extern "C" DLL_EXPORT BOOL Marshal_Unicode(LPCWSTR expected, LPWSTR actual, LPCWSTR newValue)
 {
-    bool result = wcscmp(expected, actual) == 0;
+    bool result = TP_wcmp_s(expected, actual) == 0;
 
-    wcscpy_s(actual, wcslen(actual), newValue);
+    TP_scpy_s(actual, TP_slen(actual), newValue);
 
     return result;
 }

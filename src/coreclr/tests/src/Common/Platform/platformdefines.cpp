@@ -34,7 +34,7 @@ LPSTR HackyConvertToSTR(LPWSTR pwszInput)
 
     if (NULL == pwszInput) return NULL;
 
-    cchInput = wcslen(pwszInput);
+    cchInput = TP_slen(pwszInput);
     pszOutput = new char[ cchInput + 1];
 
     for(size_t i=0; i<=cchInput; i++)
@@ -170,7 +170,7 @@ error_t TP_putenv_s(LPWSTR name, LPWSTR value)
         return 0;
 #else
     int retVal = 0;
-    char *assignment = (char*) malloc(sizeof(char) * (wcslen(name) + wcslen(value) + 1));
+    char *assignment = (char*) malloc(sizeof(char) * (TP_slen(name) + TP_slen(value) + 1));
     sprintf(assignment, "%s=%s", HackyConvertToSTR(name), HackyConvertToSTR(value));
 
     if (0 != putenv(assignment))
@@ -322,8 +322,8 @@ DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer)
     char nativeFullPath[MAX_PATH];
     (void)realpath(HackyConvertToSTR(fileName), nativeFullPath);
     LPWSTR fullPathForCLR = HackyConvertToWSTR(nativeFullPath);
-    wcscpy_s(lpBuffer, MAX_PATH, fullPathForCLR);
-    return wcslen(lpBuffer);
+    TP_scpy_s(lpBuffer, MAX_PATH, fullPathForCLR);
+    return TP_slen(lpBuffer);
 #endif
 }
 DWORD TP_CreateThread(THREAD_ID* tThread, LPTHREAD_START_ROUTINE worker,  LPVOID lpParameter)
@@ -445,7 +445,7 @@ BSTR TP_SysAllocString(LPCWSTR psz)
 #else
     if(psz == NULL)
         return NULL;
-    return CoreClrBStrAlloc(psz, (DWORD)wcslen(psz));
+    return CoreClrBStrAlloc(psz, (DWORD)TP_slen(psz));
 #endif
 }
 
@@ -582,11 +582,6 @@ int TP_wcsncpy_s(LPWSTR strDestination, size_t size1, LPCWSTR strSource, size_t 
     return 0;
 }
 
-int TP_wcsncpy_s(LPWSTR strDestination, size_t size1, LPCWSTR strSource)
-{
-    return wcsncpy_s(strDestination, size1, strSource, 0);
-}
-
 int TP_wcsncmp(LPCWSTR str1, LPCWSTR str2,size_t len)
 {
     // < 0 str1 less than str2
@@ -611,5 +606,5 @@ int TP_wcsncmp(LPCWSTR str1, LPCWSTR str2,size_t len)
 
 int TP_wmemcmp(LPCWSTR str1, LPCWSTR str2,size_t len)
 {
-    return wcsncmp(str1, str2, len);
+    return TP_wcsncmp(str1, str2, len);
 }

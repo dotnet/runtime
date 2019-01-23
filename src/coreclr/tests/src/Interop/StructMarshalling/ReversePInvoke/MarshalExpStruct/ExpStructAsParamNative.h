@@ -329,7 +329,7 @@ void ChangeCharSetUnicodeSequential(CharSetUnicodeSequential* p)
     if(temp != NULL)
     {
         memset((LPWSTR)temp,0,len+1);
-        wcsncpy_s((WCHAR*)temp, len, strSource, len);
+        TP_wcsncpy_s((WCHAR*)temp, len, strSource, len);
         p->f1 = temp;
         p->f2 = L'n';
     }
