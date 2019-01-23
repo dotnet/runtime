@@ -110,7 +110,7 @@ public:
         {
             *curr = DISPID_UNKNOWN;
             LPOLESTR name = rgszNames[i];
-            if(wcscmp(name, W("GetEnumerator")) == 0)
+            if(TP_wcmp_s(name, W("GetEnumerator")) == 0)
             {
                 *curr = DISPID_NEWENUM;
             }

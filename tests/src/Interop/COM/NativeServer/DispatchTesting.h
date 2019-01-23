@@ -55,7 +55,7 @@ public: // IDispatch
                 for (int j = 1; j < NamesCount; ++j)
                 {
                     const WCHAR *nameMaybe = Names[j];
-                    if (::wcscmp(name, nameMaybe) == 0)
+                    if (::TP_wcmp_s(name, nameMaybe) == 0)
                     {
                         *curr = DISPID{ j };
                         break;

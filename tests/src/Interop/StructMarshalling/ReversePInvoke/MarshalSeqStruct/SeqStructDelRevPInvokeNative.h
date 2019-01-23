@@ -313,11 +313,11 @@ void PrintCharSetUnicodeSequential(CharSetUnicodeSequential* p, const char* name
 void ChangeCharSetUnicodeSequential(CharSetUnicodeSequential* p)
 {
     LPCWSTR strSource = W("change string");
-    size_t len = wcslen(strSource);
+    size_t len = TP_slen(strSource);
     LPCWSTR temp = (LPCWSTR)CoreClrAlloc(sizeof(WCHAR)*(len+1));
     if(temp != NULL)
     {
-        wcscpy_s((WCHAR*)temp, (len+1), strSource);
+        TP_scpy_s((WCHAR*)temp, (len+1), strSource);
         p->f1 = temp;
         p->f2 = L'n';
     }
@@ -331,7 +331,7 @@ bool IsCorrectCharSetUnicodeSequential(CharSetUnicodeSequential* p)
 {
     LPCWSTR expected= W("some string");
     LPCWSTR actual = p->f1;
-    if(0 != wcscmp(actual, expected))
+    if(0 != TP_wcmp_s(actual, expected))
     {
         return false;
     }

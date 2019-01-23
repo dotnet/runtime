@@ -292,11 +292,11 @@ void ChangeCharSetUnicodeSequential(CharSetUnicodeSequential* p)
 #else
 	LPCWSTR strSource = u"change string";
 #endif
-	size_t len = wcslen(strSource);
+	size_t len = TP_slen(strSource);
 	LPCWSTR temp = (LPCWSTR)CoreClrAlloc(sizeof(WCHAR)*(len+1));
 	if(temp != NULL)
 	{
-		wcscpy_s((WCHAR*)temp, (len+1), strSource);
+		TP_scpy_s((WCHAR*)temp, (len+1), strSource);
 		p->f1 = temp;
 		p->f2 = L'n';
 	}

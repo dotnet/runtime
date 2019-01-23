@@ -134,7 +134,7 @@ namespace
             0,
             REG_SZ,
             reinterpret_cast<const BYTE*>(fullPath),
-            static_cast<DWORD>(::wcslen(fullPath) + 1) * sizeof(fullPath[0]));
+            static_cast<DWORD>(::TP_slen(fullPath) + 1) * sizeof(fullPath[0]));
         if (res != ERROR_SUCCESS)
             return __HRESULT_FROM_WIN32(res);
 
@@ -147,7 +147,7 @@ namespace
                 0,
                 REG_SZ,
                 reinterpret_cast<const BYTE*>(threadingModel),
-                static_cast<DWORD>(::wcslen(threadingModel) + 1) * sizeof(threadingModel[0]));
+                static_cast<DWORD>(::TP_slen(threadingModel) + 1) * sizeof(threadingModel[0]));
             if (res != ERROR_SUCCESS)
                 return __HRESULT_FROM_WIN32(res);
         }
