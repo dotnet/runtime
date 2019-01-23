@@ -19,6 +19,10 @@ using System.Runtime.ExceptionServices;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
+#if CORERT
+using Thread = Internal.Runtime.Augments.RuntimeThread;
+#endif
+
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
 
@@ -882,21 +886,17 @@ namespace System.Threading.Tasks
             return AtomicStateUpdate(TASK_STATE_STARTED, TASK_STATE_CANCELED | TASK_STATE_STARTED);
         }
 
-        internal bool FireTaskScheduledIfNeeded(TaskScheduler ts)
+        internal void FireTaskScheduledIfNeeded(TaskScheduler ts)
         {
-            var etwLog = TplEtwProvider.Log;
-            if (etwLog.IsEnabled() && (m_stateFlags & Task.TASK_STATE_TASKSCHEDULED_WAS_FIRED) == 0)
+            if ((m_stateFlags & Task.TASK_STATE_TASKSCHEDULED_WAS_FIRED) == 0)
             {
                 m_stateFlags |= Task.TASK_STATE_TASKSCHEDULED_WAS_FIRED;
 
                 Task currentTask = Task.InternalCurrent;
                 Task parentTask = m_contingentProperties?.m_parent;
-                etwLog.TaskScheduled(ts.Id, currentTask == null ? 0 : currentTask.Id,
+                TplEtwProvider.Log.TaskScheduled(ts.Id, currentTask == null ? 0 : currentTask.Id,
                                      this.Id, parentTask == null ? 0 : parentTask.Id, (int)this.Options);
-                return true;
             }
-            else
-                return false;
         }
 
         /// <summary>
@@ -1210,7 +1210,10 @@ namespace System.Threading.Tasks
                 newId = Interlocked.Increment(ref s_taskIdCounter);
             }
             while (newId == 0);
-            TplEtwProvider.Log.NewID(newId);
+
+            if (TplEtwProvider.Log.IsEnabled())
+                TplEtwProvider.Log.NewID(newId);
+
             return newId;
         }
 
@@ -1761,11 +1764,6 @@ namespace System.Threading.Tasks
                 // Queue to the indicated scheduler.
                 m_taskScheduler.InternalQueueTask(this);
             }
-            catch (ThreadAbortException tae)
-            {
-                AddException(tae);
-                FinishThreadAbortedTask(delegateRan: false);
-            }
             catch (Exception e)
             {
                 // The scheduler had a problem queueing this task.  Record the exception, leaving this task in
@@ -2111,7 +2109,7 @@ namespace System.Threading.Tasks
                 if (AsyncCausalityTracer.LoggingOn)
                     AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Error);
 
-                if (Task.s_asyncDebuggingEnabled)
+                if (s_asyncDebuggingEnabled)
                     RemoveFromActiveTasks(this);
             }
             else if (IsCancellationRequested && IsCancellationAcknowledged)
@@ -2127,7 +2125,7 @@ namespace System.Threading.Tasks
                 if (AsyncCausalityTracer.LoggingOn)
                     AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Canceled);
 
-                if (Task.s_asyncDebuggingEnabled)
+                if (s_asyncDebuggingEnabled)
                     RemoveFromActiveTasks(this);
             }
             else
@@ -2136,7 +2134,7 @@ namespace System.Threading.Tasks
                 if (AsyncCausalityTracer.LoggingOn)
                     AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
-                if (Task.s_asyncDebuggingEnabled)
+                if (s_asyncDebuggingEnabled)
                     RemoveFromActiveTasks(this);
             }
 
@@ -2287,45 +2285,6 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Special purpose Finish() entry point to be used when the task delegate throws a ThreadAbortedException
-        /// This makes a note in the state flags so that we avoid any costly synchronous operations in the finish codepath
-        /// such as inlined continuations
-        /// </summary>
-        /// <param name="delegateRan">Whether the delegate was executed.</param>
-        internal void FinishThreadAbortedTask(bool delegateRan)
-        {
-            Debug.Assert(m_contingentProperties?.m_exceptionsHolder != null,
-                "FinishThreadAbortedTask() called on a task whose exception holder wasn't initialized");
-
-            m_contingentProperties.m_exceptionsHolder.MarkAsHandled(false);
-
-            // If this method has already been called for this task, or if this task has already completed, then
-            // return before actually calling Finish().
-            if (!AtomicStateUpdate(TASK_STATE_THREAD_WAS_ABORTED,
-                            TASK_STATE_THREAD_WAS_ABORTED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
-            {
-                return;
-            }
-
-            Finish(delegateRan);
-        }
-
-        /// <summary>
-        /// The ThreadPool calls this if a ThreadAbortException is thrown while trying to execute this Task.
-        /// This may occur before Task would otherwise be able to observe it.  
-        /// </summary>
-        internal virtual void MarkAbortedFromThreadPool(ThreadAbortException tae)
-        {
-            // If the task has marked itself as Completed, then it either a) already observed this exception (so we shouldn't handle it here)
-            // or b) completed before the exception ocurred (in which case it shouldn't count against this Task).
-            if (!IsCompleted)
-            {
-                HandleException(tae);
-                FinishThreadAbortedTask(delegateRan: false);
-            }
-        }
-
-        /// <summary>
         /// Outermost entry function to execute this task. Handles all aspects of executing a task on the caller thread.
         /// </summary>
         internal bool ExecuteEntry()
@@ -2446,13 +2405,6 @@ namespace System.Threading.Tasks
                 {
                     // Record this exception in the task's exception list
                     HandleException(exn);
-                    if (exn is ThreadAbortException)
-                    {
-                        // This is a ThreadAbortException and it will be rethrown from this catch clause, causing us to 
-                        // skip the regular Finish codepath. In order not to leave the task unfinished, we now call 
-                        // FinishThreadAbortedTask here.
-                        FinishThreadAbortedTask(delegateRan: true);
-                    }
                 }
 
                 if (loggingOn)
@@ -2618,7 +2570,7 @@ namespace System.Threading.Tasks
             if (tc != null)
             {
                 if (!AddTaskContinuation(tc, addBeforeOthers: false))
-                    tc.Run(this, bCanInlineContinuationTask: false);
+                    tc.Run(this, canInlineContinuationTask: false);
             }
             else
             {
@@ -2858,17 +2810,7 @@ namespace System.Threading.Tasks
             }
             catch (Exception e)
             {
-                // we 1) either received an unexpected exception originating from a custom scheduler, which needs to be wrapped in a TSE and thrown
-                //    2) or a a ThreadAbortException, which we need to skip here, because it would already have been handled in Task.Execute
-                if (!(e is ThreadAbortException))
-                {
-                    TaskSchedulerException tse = new TaskSchedulerException(e);
-                    throw tse;
-                }
-                else
-                {
-                    throw;
-                }
+                throw new TaskSchedulerException(e);
             }
         }
 
@@ -3066,10 +3008,7 @@ namespace System.Threading.Tasks
                     // the cancellation logic run its course (record the request, attempt atomic state transition and do cleanup where appropriate)
                     // Here we will only record a TaskSchedulerException, which will later be thrown at function exit.
 
-                    if (!(e is ThreadAbortException))
-                    {
-                        tse = new TaskSchedulerException(e);
-                    }
+                    tse = new TaskSchedulerException(e);
                 }
 
                 bool bRequiresAtomicStartTransition = ts != null && ts.RequiresAtomicStartTransition;
@@ -3207,7 +3146,7 @@ namespace System.Threading.Tasks
             if (AsyncCausalityTracer.LoggingOn)
                 AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Canceled);
 
-            if (Task.s_asyncDebuggingEnabled)
+            if (s_asyncDebuggingEnabled)
                 RemoveFromActiveTasks(this);
 
             // Notify parents, fire continuations, other cleanup.
@@ -3265,7 +3204,6 @@ namespace System.Threading.Tasks
 
             // Skip synchronous execution of continuations if this task's thread was aborted
             bool canInlineContinuations = !(((m_stateFlags & TASK_STATE_THREAD_WAS_ABORTED) != 0) ||
-                                             (RuntimeThread.CurrentThread.ThreadState == ThreadState.AbortRequested) ||
                                              ((m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) != 0));
 
             switch (continuationObject)
@@ -3378,7 +3316,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        private void LogFinishCompletionNotification()
+        private static void LogFinishCompletionNotification()
         {
             if (AsyncCausalityTracer.LoggingOn)
                 AsyncCausalityTracer.TraceSynchronousWorkCompletion(CausalitySynchronousWork.CompletionNotification);
@@ -4304,7 +4242,7 @@ namespace System.Threading.Tasks
                 bool continuationQueued = AddTaskContinuation(continuation, addBeforeOthers: false);
 
                 // If the continuation was not queued (because the task completed), then run it now.
-                if (!continuationQueued) continuation.Run(this, bCanInlineContinuationTask: true);
+                if (!continuationQueued) continuation.Run(this, canInlineContinuationTask: true);
             }
         }
         #endregion
@@ -5440,7 +5378,7 @@ namespace System.Threading.Tasks
                 if (AsyncCausalityTracer.LoggingOn)
                     AsyncCausalityTracer.TraceOperationCreation(this, "Task.Delay");
 
-                if (Task.s_asyncDebuggingEnabled)
+                if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
             }
 
@@ -5462,7 +5400,7 @@ namespace System.Threading.Tasks
                     if (AsyncCausalityTracer.LoggingOn)
                         AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
-                    if (Task.s_asyncDebuggingEnabled)
+                    if (s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
 
                     setSucceeded = TrySetResult(default);
@@ -5695,7 +5633,7 @@ namespace System.Threading.Tasks
                         if (AsyncCausalityTracer.LoggingOn)
                             AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
 
-                        if (Task.s_asyncDebuggingEnabled)
+                        if (s_asyncDebuggingEnabled)
                             RemoveFromActiveTasks(this);
 
                         TrySetResult(default);
@@ -6110,6 +6048,9 @@ namespace System.Threading.Tasks
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
 
+#if PROJECTN
+        [DependencyReductionRoot]
+#endif
         internal virtual Delegate[] GetDelegateContinuationsForDebugger()
         {
             //Avoid an infinite loop by making sure the continuation object is not a reference to istelf.
@@ -6119,7 +6060,7 @@ namespace System.Threading.Tasks
                 return null;
         }
 
-        internal static Delegate[] GetDelegatesFromContinuationObject(object continuationObject)
+        private static Delegate[] GetDelegatesFromContinuationObject(object continuationObject)
         {
             if (continuationObject != null)
             {
@@ -6171,6 +6112,9 @@ namespace System.Threading.Tasks
             return null;
         }
 
+#if PROJECTN
+        [DependencyReductionRoot]
+#endif
         //Do not remove: VS debugger calls this API directly using func-eval to populate data in the tasks window
         private static Task GetActiveTaskFromId(int taskId)
         {
@@ -6414,7 +6358,7 @@ namespace System.Threading.Tasks
         internal bool TryBeginInliningScope()
         {
             // If we're still under the 'safe' limit we'll just skip the stack probe to save p/invoke calls
-            if (m_inliningDepth < MAX_UNCHECKED_INLINING_DEPTH || CheckForSufficientStack())
+            if (m_inliningDepth < MAX_UNCHECKED_INLINING_DEPTH || RuntimeHelpers.TryEnsureSufficientExecutionStack())
             {
                 m_inliningDepth++;
                 return true;
@@ -6434,11 +6378,6 @@ namespace System.Threading.Tasks
 
             // do the right thing just in case...
             if (m_inliningDepth < 0) m_inliningDepth = 0;
-        }
-
-        private bool CheckForSufficientStack()
-        {
-            return RuntimeHelpers.TryEnsureSufficientExecutionStack();
         }
     }
 
@@ -6502,7 +6441,7 @@ namespace System.Threading.Tasks
             if (AsyncCausalityTracer.LoggingOn)
                 AsyncCausalityTracer.TraceOperationCreation(this, "Task.Unwrap");
 
-            if (Task.s_asyncDebuggingEnabled)
+            if (s_asyncDebuggingEnabled)
                 AddToActiveTasks(this);
 
             // Link ourselves to the outer task.

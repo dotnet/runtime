@@ -219,8 +219,8 @@ namespace System.Threading.Tasks
     {
         /// <summary>Inlines or schedules the continuation.</summary>
         /// <param name="completedTask">The antecedent task that has completed.</param>
-        /// <param name="bCanInlineContinuationTask">true if inlining is permitted; otherwise, false.</param>
-        internal abstract void Run(Task completedTask, bool bCanInlineContinuationTask);
+        /// <param name="canInlineContinuationTask">true if inlining is permitted; otherwise, false.</param>
+        internal abstract void Run(Task completedTask, bool canInlineContinuationTask);
 
         /// <summary>Tries to run the task on the current thread, if possible; otherwise, schedules it.</summary>
         /// <param name="task">The task to run</param>
@@ -303,8 +303,8 @@ namespace System.Threading.Tasks
 
         /// <summary>Invokes the continuation for the target completion task.</summary>
         /// <param name="completedTask">The completed task.</param>
-        /// <param name="bCanInlineContinuationTask">Whether the continuation can be inlined.</param>
-        internal override void Run(Task completedTask, bool bCanInlineContinuationTask)
+        /// <param name="canInlineContinuationTask">Whether the continuation can be inlined.</param>
+        internal override void Run(Task completedTask, bool canInlineContinuationTask)
         {
             Debug.Assert(completedTask != null);
             Debug.Assert(completedTask.IsCompleted, "ContinuationTask.Run(): completedTask not completed");
@@ -335,7 +335,7 @@ namespace System.Threading.Tasks
 
                 // Either run directly or just queue it up for execution, depending
                 // on whether synchronous or asynchronous execution is wanted.
-                if (bCanInlineContinuationTask && // inlining is allowed by the caller
+                if (canInlineContinuationTask && // inlining is allowed by the caller
                     (options & TaskContinuationOptions.ExecuteSynchronously) != 0) // synchronous execution was requested by the continuation's creator
                 {
                     InlineIfPossibleOrElseQueue(continuationTask, needsProtection: true);
