@@ -573,13 +573,13 @@ namespace System.Data.SqlClient
 
         public bool IsNullable
         {
-            get => (flags & SqlMetaDataPrivFlags.IsNullable) == SqlMetaDataPrivFlags.IsNullable;
+            get => flags.HasFlag(SqlMetaDataPrivFlags.IsNullable);
             set => Set(SqlMetaDataPrivFlags.IsNullable, value);
         }
 
         public bool IsMultiValued
         {
-            get => (flags & SqlMetaDataPrivFlags.IsMultiValued) == SqlMetaDataPrivFlags.IsMultiValued;
+            get => flags.HasFlag(SqlMetaDataPrivFlags.IsMultiValued);
             set => Set(SqlMetaDataPrivFlags.IsMultiValued, value);
         }
 
