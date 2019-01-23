@@ -1467,8 +1467,6 @@ Thread::Thread()
     m_LastThrownObjectHandle = NULL;
     m_ltoIsUnhandled = FALSE;
 
-    m_AbortReason = NULL;
-
     m_debuggerFilterContext = NULL;
     m_debuggerCantStop = 0;
     m_fInteropDebuggingHijacked = FALSE;
@@ -2995,10 +2993,9 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 
     // The thread is no longer running.  It's important that we zero any general OBJECTHANDLE's
     // on this Thread object.  That's because we need the managed Thread object to be subject to
-    // GC and yet any HANDLE is opaque to the GC when it comes to collecting cycles.  If e.g. the
-    // Thread's AbortReason (which is an arbitrary object) contains transitively a reference back
-    // to the Thread, then we have an uncollectible cycle.  When the thread is executing, nothing
-    // can be collected anyway.  But now that we stop running the cycle concerns us.
+    // GC and yet any HANDLE is opaque to the GC when it comes to collecting cycles. When the
+    // thread is executing, nothing can be collected anyway.  But now that we stop running the
+    // cycle concerns us.
     //
     // It's important that we only use OBJECTHANDLE's that are retrievable while the thread is
     // still running.  That's what allows us to zero them here with impunity:
@@ -3010,11 +3007,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 
         // Destroy the LastThrown handle (and anything that violates the above assert).
         SafeSetThrowables(NULL);
-
-        // Cleaning up the AbortReason is tricky, since the handle is only valid if the ADID is valid
-        // ...and we can only perform this operation if other threads aren't racing to update these
-        // values on our thread asynchronously.
-        ClearAbortReason();
 
         // Free all structures related to thread statics for this thread
         DeleteThreadStaticData();

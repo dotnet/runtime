@@ -4014,15 +4014,6 @@ private:
     DomainFile* m_pLoadingFile;
 
 
-    // The ThreadAbort reason (Get/Set/ClearExceptionStateInfo on the managed thread) is
-    // held here as an OBJECTHANDLE and the ADID of the AppDomain in which it is valid.
-    // Atomic updates of this state use the Thread's Crst.
-
-    OBJECTHANDLE    m_AbortReason;
-    ADID            m_AbortReasonDomainID;
-
-    void            ClearAbortReason(BOOL pNoLock = FALSE);
-
 public:
 
     void SetInteropDebuggingHijacked(BOOL f)
