@@ -134,6 +134,12 @@ namespace NativeVarargTest
         [DllImport("varargnative", CallingConvention = CallingConvention.Cdecl)]
         extern static FourDoubleStruct echo_four_double_struct(FourDoubleStruct arg, __arglist);
 
+        [DllImport("varargnative", CallingConvention = CallingConvention.Cdecl)]
+        extern static byte short_in_byte_out(short arg, __arglist);
+
+        [DllImport("varargnative", CallingConvention = CallingConvention.Cdecl)]
+        extern static short byte_in_short_out(byte arg, __arglist);
+
         ////////////////////////////////////////////////////////////////////////////
         // Test PInvoke, native vararg calls.
         ////////////////////////////////////////////////////////////////////////////
@@ -4410,6 +4416,22 @@ namespace NativeVarargTest
             return equal;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool TestShortInByteOutNoVararg(short arg)
+        {
+            byte returnValue = short_in_byte_out(arg, __arglist());
+
+            return returnValue == (byte)arg;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool TestByteInShortOutNoVararg(byte arg)
+        {
+            short returnValue = byte_in_short_out(arg, __arglist());
+
+            return returnValue == (short)arg;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Report Failure
         ////////////////////////////////////////////////////////////////////////
@@ -5006,8 +5028,7 @@ namespace NativeVarargTest
             // Echo types.
             success = ReportFailure(TestEchoByteNoVararg(1), "TestEchoByteNoVararg(1)", success, 85);
             success = ReportFailure(TestEchoCharNoVararg('c'), "TestEchoCharNoVararg(1)", success, 86);
-            // Issue: https://github.com/dotnet/coreclr/issues/19705
-            // success = ReportFailure(TestEchoShortNoVararg(2), "TestEchoShortNoVararg(2)", success, 87);
+            success = ReportFailure(TestEchoShortNoVararg(2), "TestEchoShortNoVararg(2)", success, 87);
             success = ReportFailure(TestEchoIntNoVararg(3), "TestEchoIntNoVararg(3)", success, 88);
             success = ReportFailure(TestEchoLongNoVararg(4), "TestEchoLongNoVararg(4)", success, 89);
             success = ReportFailure(TestEchoFloatNoVararg(5.0f), "TestEchoFloatNoVararg(5.0f)", success, 90);
@@ -5028,6 +5049,9 @@ namespace NativeVarargTest
             success = ReportFailure(TestEchoThreeDoubleStructNoVararg(), "TestEchoThreeDoubleStructNoVararg()", success, 105);
             success = ReportFailure(TestEchoFourFloatStructNoVararg(), "TestEchoFourFloatStructNoVararg()", success, 106);
             success = ReportFailure(TestEchoFourDoubleStructNoVararg(), "TestEchoFourDoubleStructNoVararg()", success, 107);
+
+            success = ReportFailure(TestShortInByteOutNoVararg(7), "TestShortInByteOutNoVararg(7)", success, 108);
+            success = ReportFailure(TestByteInShortOutNoVararg(8), "TestByteInShortOutNoVararg(8)", success, 109);
 
             printf("\n", __arglist());
             printf("%d Tests run. %d Passed, %d Failed.\n", __arglist(m_testCount, m_passCount, m_failCount));

@@ -653,7 +653,7 @@ DLLEXPORT char _cdecl echo_char(char arg, ...)
     return arg;
 }
 
-DLLEXPORT __int8 _cdecl echo_short(__int8 arg, ...)
+DLLEXPORT __int16 _cdecl echo_short(__int16 arg, ...)
 {
     return arg;
 }
@@ -756,4 +756,14 @@ DLLEXPORT four_float_struct _cdecl echo_four_float_struct(four_float_struct arg,
 DLLEXPORT four_double_struct _cdecl echo_four_double_struct(four_double_struct arg, ...)
 {
     return arg;
+}
+
+DLLEXPORT __int8 _cdecl short_in_byte_out(__int16 arg, ...)
+{
+    return (__int8)arg;
+}
+
+DLLEXPORT __int16 _cdecl byte_in_short_out(__int8 arg, ...)
+{
+    return (__int16)arg;
 }
