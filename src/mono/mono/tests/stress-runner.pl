@@ -86,6 +86,12 @@ my %tests = (
 		'arg-knob' => 0, # loops
 		'ratio' => 20,
 	},
+	'spinlock-stress' => {
+		'program' => 'spinlock-stress.exe',
+		'args' => [20],
+		'arg-knob' => 0,
+		'ratio' => 4,
+	},
 	'abort-stress-1' => {
 		'program' => 'abort-stress-1.exe',
 		# loops,

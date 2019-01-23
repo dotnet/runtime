@@ -167,7 +167,10 @@ check-coreclr:
 	$(MAKE) -C $(mono_build_root)/acceptance-tests check-coreclr
 
 check-stress:
-	$(MAKE) test-stress-sgen
+	ok=; \
+	$(MAKE) test-stress-sgen || ok=false; \
+	$(MAKE) stresstest || ok=false; \
+	$$ok
 
 # for backwards compatibility on Wrench
 test-wrench: check-parallel
@@ -259,6 +262,7 @@ TESTS_STRESS_SRC=	\
 	gc-graystack-stress.cs		\
 	exit-stress.cs		\
 	process-stress.cs	\
+	spinlock-stress.cs 	\
 	assembly-load-stress.cs
 
 # Disabled until ?mcs is fixed
