@@ -52,7 +52,6 @@ void StubHelpers::ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextO
 	NOTHROW;
 	GC_NOTRIGGER;
 	MODE_ANY;
-	SO_TOLERANT;
 }
 	CONTRACTL_END;
 
@@ -739,12 +738,12 @@ void QCALLTYPE StubHelpers::InterfaceMarshaler__ClearNative(IUnknown * pUnk)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL_SO_TOLERANT;
+    BEGIN_QCALL;
 
     ULONG cbRef = SafeReleasePreemp(pUnk);
     LogInteropRelease(pUnk, cbRef, "InterfaceMarshalerBase::ClearNative: In/Out release");
 
-    END_QCALL_SO_TOLERANT;
+    END_QCALL;
 }
 #include <optdefault.h>
 

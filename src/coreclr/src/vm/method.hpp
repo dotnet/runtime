@@ -833,7 +833,6 @@ public:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_ANY;
         }
         CONTRACTL_END;
@@ -3693,7 +3692,6 @@ inline BOOL MethodDesc::SanityCheck()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
         SUPPORTS_DAC;
     }

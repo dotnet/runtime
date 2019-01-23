@@ -39,7 +39,6 @@
 #include "ecall.h"
 #include "generics.h"
 #include "typestring.h"
-#include "stackprobe.h"
 #include "typedesc.h"
 #include "genericdict.h"
 #include "array.h"
@@ -2180,7 +2179,6 @@ TypeHandle::CastResult ArrayIsInstanceOfNoGC(Object *pObject, TypeHandle toTypeH
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pObject));
         PRECONDITION(pObject->GetMethodTable()->IsArray());
         PRECONDITION(toTypeHnd.IsArray());
@@ -2233,7 +2231,6 @@ TypeHandle::CastResult ArrayObjSupportsBizarreInterfaceNoGC(Object *pObject, Met
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pObject));
         PRECONDITION(pObject->GetMethodTable()->IsArray());
         PRECONDITION(pInterfaceMT->IsInterface());
@@ -2265,7 +2262,6 @@ TypeHandle::CastResult STDCALL ObjIsInstanceOfNoGC(Object *pObject, TypeHandle t
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pObject));
     } CONTRACTL_END;
 
@@ -2915,7 +2911,6 @@ HCIMPL1_RAW(StringObject*, UnframedAllocateString, DWORD stringLength)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
     } CONTRACTL_END;
 
     STRINGREF result;
@@ -4806,9 +4801,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 {
     FCALL_CONTRACT;
 
-    // This "violation" isn't a really a violation. 
-    // We are calling a assembly helper that can't have an SO Tolerance contract
-    CONTRACT_VIOLATION(SOToleranceViolation);
     /* Make no assumptions about the current machine state */
     ResetCurrentContext();
 
@@ -5180,7 +5172,6 @@ void DoJITFailFast ()
         MODE_ANY;
         WRAPPER(GC_TRIGGERS);
         WRAPPER(THROWS);
-        SO_NOT_MAINLINE; // If process is coming down, SO probe is not going to do much good
     } CONTRACTL_END;
 
     LOG((LF_ALWAYS, LL_FATALERROR, "Unsafe buffer security check failure: Buffer overrun detected"));
@@ -5390,7 +5381,6 @@ extern "C" void * _ReturnAddress(void);
 HCIMPL0(void, JIT_DbgIsJustMyCode)
 {
     FCALL_CONTRACT;
-    SO_NOT_MAINLINE_FUNCTION;
 
     // We need to get both the ip of the managed function this probe is in
     // (which will be our return address) and the frame pointer for that
@@ -5716,7 +5706,6 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
 {
     CONTRACTL
     {
-        SO_TOLERANT;
         NOTHROW;
         GC_TRIGGERS;
     } CONTRACTL_END;
@@ -5901,7 +5890,6 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
     // Can't have a regular contract because we would never pop it
     // We only throw a stack overflow if needed, and we can't handle
     // a GC because the incoming parameters are totally unprotected.
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE
@@ -6144,7 +6132,6 @@ void WriteJitHelperCountToSTRESSLOG()
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

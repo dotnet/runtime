@@ -93,7 +93,6 @@ inline void SafeComRelease(TYPE *value)
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     SafeRelease((IUnknown*)value);
@@ -105,7 +104,6 @@ inline void SafeComReleasePreemp(TYPE *value)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     SafeReleasePreemp((IUnknown*)value);

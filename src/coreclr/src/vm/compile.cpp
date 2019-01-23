@@ -205,13 +205,8 @@ HRESULT MakeCrossDomainCallbackWorker(
     LPVOID                  pArgs)
 {
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_SO_INTOLERANT;
 
-    HRESULT hrRetVal = E_UNEXPECTED;
-    BEGIN_SO_TOLERANT_CODE(GetThread());
-    hrRetVal = pfnCallback(pArgs);
-    END_SO_TOLERANT_CODE;
-    return hrRetVal;
+    return pfnCallback(pArgs);
 }
 
 HRESULT CEECompileInfo::MakeCrossDomainCallback(

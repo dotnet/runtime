@@ -25,7 +25,6 @@ IMAGE_DATA_DIRECTORY * ReadyToRunInfo::FindSection(DWORD type)
     {
         GC_NOTRIGGER;
         NOTHROW;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -49,7 +48,6 @@ MethodDesc * ReadyToRunInfo::GetMethodDescForEntryPoint(PCODE entryPoint)
     {
         GC_NOTRIGGER;
         NOTHROW;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -73,7 +71,6 @@ BOOL ReadyToRunInfo::HasHashtableOfTypes()
     {
         GC_NOTRIGGER;
         NOTHROW;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -87,7 +84,6 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFo
     {
         GC_NOTRIGGER;
         NOTHROW;
-        SO_INTOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(!m_availableTypesHashtable.IsNull());
     }
@@ -223,7 +219,6 @@ BOOL ReadyToRunInfo::GetTypeNameFromToken(IMDInternalImport * pImport, mdToken m
     {
         GC_NOTRIGGER;
         NOTHROW;
-        SO_TOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(TypeFromToken(mdType) == mdtTypeDef || TypeFromToken(mdType) == mdtTypeRef || TypeFromToken(mdType) == mdtExportedType);
     }
@@ -248,7 +243,6 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, mdToken mdTy
     {
         GC_NOTRIGGER;
         NOTHROW;
-        SO_TOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(TypeFromToken(mdType) == mdtTypeDef || TypeFromToken(mdType) == mdtTypeRef || TypeFromToken(mdType) == mdtExportedType);
     }
@@ -277,7 +271,6 @@ BOOL ReadyToRunInfo::CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport
     {
         GC_NOTRIGGER;
         NOTHROW;
-        SO_TOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(TypeFromToken(mdToken1) == mdtTypeDef || TypeFromToken(mdToken1) == mdtTypeRef || TypeFromToken(mdToken1) == mdtExportedType);
         PRECONDITION(TypeFromToken(mdToken2) == mdtTypeDef || TypeFromToken(mdToken2) == mdtExportedType);

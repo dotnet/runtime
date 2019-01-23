@@ -3058,7 +3058,6 @@ ILMarshaler* CreateILMarshaler(MarshalInfo::MarshalType mtype, NDirectStubLinker
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

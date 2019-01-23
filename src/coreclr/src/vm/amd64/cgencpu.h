@@ -301,7 +301,6 @@ inline PCODE GetIP(const CONTEXT * context)
 {
     CONTRACTL
     {
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -317,7 +316,6 @@ inline void SetIP(CONTEXT* context, PCODE rip)
 {
     CONTRACTL
     {
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -333,7 +331,6 @@ inline TADDR GetSP(const CONTEXT * context)
 {
     CONTRACTL
     {
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -348,7 +345,6 @@ inline void SetSP(CONTEXT *context, TADDR rsp)
 {
     CONTRACTL
     {
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;

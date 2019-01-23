@@ -9,7 +9,6 @@
 // ==--==
 #include "strike.h"
 #include "util.h"
-#include "genericstackprobe.h"
 
 /**********************************************************************\
 * Routine Description:                                                 *

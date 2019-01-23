@@ -2698,7 +2698,6 @@ void SString::Clear()
         POSTCONDITION(IsEmpty());
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC_HOST_ONLY;
     }
     CONTRACT_END;

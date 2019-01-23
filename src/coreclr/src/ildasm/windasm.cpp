@@ -502,9 +502,6 @@ int __cdecl main(int nCmdShow, char* lpCmdLine[])
     g_pszExeFile = lpCmdLine[0];
 #endif
 
-    // ildasm does not need to be SO-robust.
-    SO_NOT_MAINLINE_FUNCTION;
-
     // SWI has requested that the exact form of the function call below be used. For details see http://swi/SWI%20Docs/Detecting%20Heap%20Corruption.doc
     (void)HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 

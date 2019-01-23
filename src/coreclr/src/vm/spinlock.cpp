@@ -139,7 +139,6 @@ void SpinLock::GetLock(Thread* pThread)
         DISABLED(THROWS);  // need to rewrite spin locks to no-throw.
         GC_NOTRIGGER;
         CAN_TAKE_LOCK;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -177,7 +176,6 @@ BOOL SpinLock::GetLockNoWait()
         NOTHROW;
         GC_NOTRIGGER;
         CAN_TAKE_LOCK;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -201,7 +199,6 @@ void SpinLock::FreeLock(Thread* pThread)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -237,7 +234,6 @@ SpinLock::SpinToAcquire()
         NOTHROW;
         GC_NOTRIGGER;
         CAN_TAKE_LOCK;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

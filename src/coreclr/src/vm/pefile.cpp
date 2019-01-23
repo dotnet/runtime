@@ -553,7 +553,6 @@ CHECK PEFile::CheckLoaded(BOOL bAllowNativeSkip/*=TRUE*/)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACT_CHECK_END;
@@ -791,7 +790,6 @@ void PEFile::ConvertMetadataToRWForEnC()
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1099,7 +1097,6 @@ LPCWSTR CorCompileGetRuntimeDllName(CorCompileRuntimeDlls id)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -1124,7 +1121,6 @@ extern HMODULE CorCompileGetRuntimeDll(CorCompileRuntimeDlls id)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_INTOLERANT;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;

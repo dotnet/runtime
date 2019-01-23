@@ -379,7 +379,6 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }CONTRACTL_END;
 
     struct
@@ -481,7 +480,6 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     // skip this, if required.
     if (IsWatsonEnabled())
     {
-        BEGIN_SO_INTOLERANT_CODE(pThread);
         if ((gc.refExceptionForWatsonBucketing == NULL) || !SetupWatsonBucketsForFailFast(gc.refExceptionForWatsonBucketing))
         {
             PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
@@ -493,7 +491,6 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
                 pUEWatsonBucketTracker->ClearWatsonBucketDetails();
             }
         }
-        END_SO_INTOLERANT_CODE;
     }
 #endif // !FEATURE_PAL
 

@@ -7,7 +7,6 @@
 inline Module* DomainFile::GetCurrentModule() 
 { 
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
     SUPPORTS_DAC;
 
     return m_pModule; 
@@ -47,7 +46,6 @@ inline Module* DomainFile::GetModule()
 inline Assembly* DomainAssembly::GetCurrentAssembly()
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     return m_pAssembly;
 }
@@ -70,14 +68,8 @@ inline Assembly* DomainAssembly::GetLoadedAssembly()
 inline Assembly* DomainAssembly::GetAssembly()
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
-    {
-        // CheckLoadLevel() is SO_INTOLERANT.  However, this is only done in
-        // debug for the consistency check, so we can accept the SO violation.
-        CONTRACT_VIOLATION(SOToleranceViolation);
-        CONSISTENCY_CHECK(CheckLoadLevel(FILE_LOAD_ALLOCATE));
-    }
+    CONSISTENCY_CHECK(CheckLoadLevel(FILE_LOAD_ALLOCATE));
     return m_pAssembly;
 }
 

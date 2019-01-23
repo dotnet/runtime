@@ -93,7 +93,6 @@ public:
     // The addr is in unmanaged code. Used for Step-in from managed to native.
     void InitForUnmanaged(PCODE addr)
     {
-        STATIC_CONTRACT_SO_TOLERANT;
         this->type = TRACE_UNMANAGED;
         this->address = addr;
         this->stubManager = NULL;        
@@ -102,7 +101,6 @@ public:
     // The addr is inside jitted code (eg, there's a JitManaged that will claim it)
     void InitForManaged(PCODE addr)
     {
-        STATIC_CONTRACT_SO_TOLERANT;
         this->type = TRACE_MANAGED;
         this->address = addr;
         this->stubManager = NULL;
@@ -111,7 +109,6 @@ public:
     // Initialize for an unmanaged entry stub.
     void InitForUnmanagedStub(PCODE addr)
     {
-        STATIC_CONTRACT_SO_TOLERANT;
         this->type = TRACE_ENTRY_STUB;
         this->address = addr;
         this->stubManager = NULL;
@@ -120,7 +117,6 @@ public:
     // Initialize for a stub.
     void InitForStub(PCODE addr)
     {
-        STATIC_CONTRACT_SO_TOLERANT;
         this->type = TRACE_STUB;
         this->address = addr;
         this->stubManager = NULL;
@@ -136,7 +132,6 @@ public:
     // call pStubManager->TraceManager() to get the next TraceDestination.
     void InitForManagerPush(PCODE addr, StubManager * pStubManager)
     {
-        STATIC_CONTRACT_SO_TOLERANT;
         this->type = TRACE_MGR_PUSH;
         this->address = addr;
         this->stubManager = pStubManager;

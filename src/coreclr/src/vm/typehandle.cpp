@@ -42,7 +42,6 @@
 void TypeHandle::NormalizeUnsharedArrayMT()
 {
     WRAPPER_NO_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT; // @TODO: This is probably incorrect
 
     if (IsNull() || IsTypeDesc())
         return;
@@ -61,8 +60,6 @@ void TypeHandle::NormalizeUnsharedArrayMT()
     CorElementType kind = AsMethodTable()->GetInternalCorElementType();
     unsigned rank = AsMethodTable()->GetRank();
 
-    // @todo  This should be turned into a probe with a hard SO when we have one
-    CONTRACT_VIOLATION(SOToleranceViolation);
     // == FailIfNotLoadedOrNotRestored
     TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(  elemType, 
                                                                 kind,
@@ -194,9 +191,7 @@ Module *TypeHandle::GetDefiningModuleForOpenType() const
     SUPPORTS_DAC;
 
     Module* returnValue = NULL;
-   
-    INTERIOR_STACK_PROBE_NOTHROW_CHECK_THREAD(goto Exit;);
-    
+
     if (IsGenericVariable())
     { 
         PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc());
@@ -213,15 +208,12 @@ Module *TypeHandle::GetDefiningModuleForOpenType() const
         returnValue = GetMethodTable()->GetDefiningModuleForOpenType();
     }
 Exit:
-    ;
-    END_INTERIOR_STACK_PROBE;
 
     return returnValue;
 }
 
 BOOL TypeHandle::ContainsGenericVariables(BOOL methodOnly /*=FALSE*/) const
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_NOTHROW;
     SUPPORTS_DAC;
 
@@ -405,7 +397,6 @@ PTR_LoaderAllocator TypeHandle::GetLoaderAllocator() const
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_INTOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     if (IsTypeDesc())
@@ -755,18 +746,14 @@ void TypeHandle::GetName(SString &result) const
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
-    INTERIOR_STACK_PROBE_NOTHROW_CHECK_THREAD(goto Exit;);
-    {
-
     if (IsTypeDesc())
     {
         AsTypeDesc()->GetName(result);
-        goto Exit;
+        return;
     }
 
     AsMethodTable()->_GetFullyQualifiedNameForClass(result);
@@ -775,10 +762,6 @@ void TypeHandle::GetName(SString &result) const
     Instantiation inst = GetInstantiation();
     if (!inst.IsEmpty())
         TypeString::AppendInst(result, inst);
-    }
-Exit:
-    ;
-    END_INTERIOR_STACK_PROBE;
 }
 
 TypeHandle TypeHandle::GetParent()  const
@@ -786,7 +769,6 @@ TypeHandle TypeHandle::GetParent()  const
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     if (IsTypeDesc())
         return(AsTypeDesc()->GetParent());
@@ -1276,7 +1258,6 @@ OBJECTREF TypeHandle::GetManagedClassObjectFast() const
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
 
         FORBID_FAULT;
     }
@@ -1605,7 +1586,6 @@ BOOL TypeHandle::SatisfiesClassConstraints() const
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
 
         INJECT_FAULT(COMPlusThrowOM());
     }
@@ -1617,8 +1597,6 @@ BOOL TypeHandle::SatisfiesClassConstraints() const
     Instantiation typicalInst;
     SigTypeContext typeContext;
     TypeHandle thParent;
-    
-    INTERIOR_STACK_PROBE_CHECK_THREAD;
 
     //TODO: cache (positive?) result in methodtable using, say, enum_flag2_UNUSEDxxx
     
@@ -1627,14 +1605,12 @@ BOOL TypeHandle::SatisfiesClassConstraints() const
    
     if (!thParent.IsNull() && !thParent.SatisfiesClassConstraints()) 
     {
-        returnValue = FALSE;
-        goto Exit;
+        return FALSE;
     }
     
     if (!HasInstantiation()) 
     {
-        returnValue = TRUE;
-        goto Exit;
+        return TRUE;
     }
 
     classInst = GetInstantiation(); 
@@ -1646,9 +1622,9 @@ BOOL TypeHandle::SatisfiesClassConstraints() const
     typicalInst = thCanonical.GetInstantiation();
 
     SigTypeContext::InitTypeContext(*this, &typeContext);
-    
+
     for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
-    {   
+    {
         TypeHandle thArg = classInst[i];
         _ASSERTE(!thArg.IsNull());
 
@@ -1660,23 +1636,16 @@ BOOL TypeHandle::SatisfiesClassConstraints() const
 
         if (!tyvar->SatisfiesConstraints(&typeContext, thArg)) 
         {
-            returnValue = FALSE;
-            goto Exit;
+            return FALSE;
         }
+    }
 
-    }    
-    returnValue = TRUE;
-Exit:    
-    ;
-    END_INTERIOR_STACK_PROBE;
-    
-    return returnValue;
+    return TRUE;
 }
 
 TypeKey TypeHandle::GetTypeKey() const
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
     PRECONDITION(!IsGenericVariable());
 
     if (IsTypeDesc())
@@ -1845,7 +1814,6 @@ CHECK TypeHandle::CheckFullyLoaded()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

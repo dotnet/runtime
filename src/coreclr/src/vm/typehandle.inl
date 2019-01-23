@@ -203,7 +203,6 @@ inline BOOL TypeHandle::IsEquivalentTo(TypeHandle type COMMA_INDEBUG(TypeHandleP
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

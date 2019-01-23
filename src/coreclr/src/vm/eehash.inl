@@ -442,7 +442,6 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GetValue(KeyType pKey
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -494,7 +493,6 @@ FORCEINLINE BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GetValueS
 #ifdef MODE_COOPERATIVE     // This header file sees contract.h, not eecontract.h - what a kludge!
         MODE_COOPERATIVE;
 #endif
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -519,7 +517,6 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -535,7 +532,6 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -604,7 +600,6 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
 #ifdef MODE_COOPERATIVE     // This header file sees contract.h, not eecontract.h - what a kludge!
         MODE_COOPERATIVE;
 #endif
-        SO_TOLERANT;
     }
     CONTRACTL_END
 

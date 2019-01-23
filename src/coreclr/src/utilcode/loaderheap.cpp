@@ -236,7 +236,6 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
         NOTHROW;
         FORBID_FAULT;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END
         

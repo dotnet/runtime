@@ -138,7 +138,6 @@ HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pCultureNames));
-        SO_INTOLERANT;
     } 
     CONTRACTL_END;
 

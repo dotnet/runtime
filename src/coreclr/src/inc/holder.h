@@ -8,7 +8,6 @@
 
 #include <wincrypt.h>
 #include "cor.h"
-#include "genericstackprobe.h"
 #include "staticcontract.h"
 #include "volatile.h"
 #include "palclr.h"
@@ -62,6 +61,13 @@
         _NAME & operator=(_NAME const &);
 #endif
 
+// The types of stack validation we support in holders.
+enum HolderStackValidation
+{
+    HSV_NoValidation,
+    HSV_ValidateMinimumStackReq,
+    HSV_ValidateNormalStackReq,        
+};
 
 #ifdef _DEBUG
 
@@ -131,11 +137,6 @@ class HolderBase
     HolderBase(TYPE value)
       : m_value(value)
     {
-        // TODO: Find a way to enable this check.
-        // We can have a holder in SO tolerant, then probe, then acquire a value.  This works
-        // because the dtor is guaranteed to run with enough stack.
-        // EnsureSOIntolerantOK(__FUNCTION__, __FILE__, __LINE__);
-
 #ifdef _DEBUG
         m_pAutoExpVisibleValue = (const AutoExpVisibleValue *)(&m_value);
 #endif //_DEBUG
@@ -306,7 +307,6 @@ class BaseHolder : protected BASE
         
             if (VALIDATION_TYPE != HSV_NoValidation)
             {
-                VALIDATE_HOLDER_STACK_CONSUMPTION_FOR_TYPE(VALIDATION_TYPE);
                 this->DoRelease();
             }
             else
@@ -385,7 +385,6 @@ class StateHolder
         {
             if (VALIDATION_TYPE != HSV_NoValidation)
             {
-                VALIDATE_HOLDER_STACK_CONSUMPTION_FOR_TYPE(VALIDATION_TYPE);
                 RELEASEF();
             }
             else
@@ -455,7 +454,6 @@ class ConditionalStateHolder
         {
             if (VALIDATION_TYPE != HSV_NoValidation)
             {
-                VALIDATE_HOLDER_STACK_CONSUMPTION_FOR_TYPE(VALIDATION_TYPE);
                 RELEASEF(m_value);
             }
             else
@@ -728,8 +726,6 @@ FORCEINLINE void SafeArrayDoNothing(SAFEARRAY* p)
 }
 
 
-
-
 //-----------------------------------------------------------------------------
 // Holder/Wrapper are the simplest way to define holders - they synthesizes a base class out of 
 // function pointers
@@ -756,7 +752,6 @@ class FunctionBase : protected HolderBase<TYPE>
         // one that is already being done in BaseHolder & BaseWrapper. </TODO>
         if (VALIDATION_TYPE != HSV_NoValidation)
         {
-            VALIDATE_HOLDER_STACK_CONSUMPTION_FOR_TYPE(VALIDATION_TYPE);
             RELEASEF(this->m_value);
         }
         else
@@ -974,7 +969,6 @@ FORCEINLINE void DoTheRelease(TYPE *value)
 {
     if (value)
     {
-        VALIDATE_HOLDER_STACK_CONSUMPTION_FOR_TYPE(HSV_ValidateNormalStackReq);
         value->Release();
     }
 }

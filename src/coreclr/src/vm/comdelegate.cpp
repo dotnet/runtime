@@ -3432,7 +3432,6 @@ BOOL COMDelegate::IsSecureDelegate(DELEGATEREF dRef)
         MODE_ANY;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     DELEGATEREF innerDel = NULL;

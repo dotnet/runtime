@@ -115,7 +115,6 @@ struct ThreadLocalModule
                 NOTHROW;
                 GC_NOTRIGGER;
                 MODE_ANY;
-                SO_TOLERANT;
                 SUPPORTS_DAC;
             }
             CONTRACTL_END;
@@ -169,7 +168,6 @@ struct ThreadLocalModule
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             SUPPORTS_DAC;
         }
         CONTRACTL_END;
@@ -378,7 +376,6 @@ struct ThreadLocalModule
         {
             THROWS;
             GC_NOTRIGGER;
-            SO_INTOLERANT;
             MODE_ANY;
         }
         CONTRACTL_END;

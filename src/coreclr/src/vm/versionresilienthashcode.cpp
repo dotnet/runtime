@@ -12,7 +12,6 @@ bool GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedTyp
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
         PRECONDITION(CheckPointer(pdwHashCode));
     }

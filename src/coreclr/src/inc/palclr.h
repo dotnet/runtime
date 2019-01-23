@@ -484,19 +484,16 @@
 #if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(JIT64_BUILD) && !defined(CROSS_COMPILE) && !defined(_TARGET_ARM_) // @ARMTODO: no contracts for speed
 #define PAL_TRY_HANDLER_DBG_BEGIN                                               \
     BOOL ___oldOkayToThrowValue = FALSE;                                        \
-    SO_INFRASTRUCTURE_CODE(BOOL ___oldSOTolerantState = FALSE;)                \
     ClrDebugState *___pState = ::GetClrDebugState();                            \
     __try                                                                       \
     {                                                                           \
         ___oldOkayToThrowValue = ___pState->IsOkToThrow();                      \
-        SO_INFRASTRUCTURE_CODE(___oldSOTolerantState = ___pState->IsSOTolerant();) \
         ___pState->SetOkToThrow();                                        \
         PAL_ENTER_THROWS_REGION;
 
 // Special version that avoids touching the debug state after doing work in a DllMain for process or thread detach.
 #define PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)                              \
     BOOL ___oldOkayToThrowValue = FALSE;                                        \
-    SO_INFRASTRUCTURE_CODE(BOOL ___oldSOTolerantState = FALSE;)                \
     ClrDebugState *___pState = NULL;                                            \
     if (_reason != DLL_PROCESS_ATTACH)                                          \
         ___pState = CheckClrDebugState();                                       \
@@ -505,7 +502,6 @@
         if (___pState)                                                          \
         {                                                                       \
             ___oldOkayToThrowValue = ___pState->IsOkToThrow();                  \
-            SO_INFRASTRUCTURE_CODE(___oldSOTolerantState = ___pState->IsSOTolerant();) \
             ___pState->SetOkToThrow();                                        \
         }                                                                       \
         if ((_reason == DLL_PROCESS_DETACH) || (_reason == DLL_THREAD_DETACH))  \
@@ -523,16 +519,11 @@
         {                                                                       \
             _ASSERTE(___pState == CheckClrDebugState());                        \
             ___pState->SetOkToThrow( ___oldOkayToThrowValue );                \
-            SO_INFRASTRUCTURE_CODE(___pState->SetSOTolerance( ___oldSOTolerantState );) \
         }                                                                       \
     }
 
-#define PAL_ENDTRY_NAKED_DBG                                                    \
-    if (__exHandled)                                                            \
-    {                                                                           \
-        RESTORE_SO_TOLERANCE_STATE;                                             \
-    }                                                                           \
-    
+#define PAL_ENDTRY_NAKED_DBG
+
 #else
 #define PAL_TRY_HANDLER_DBG_BEGIN                   ANNOTATION_TRY_BEGIN;
 #define PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)  ANNOTATION_TRY_BEGIN;

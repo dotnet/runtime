@@ -1797,7 +1797,6 @@ LPCUTF8 MethodTable::GetFullyQualifiedNameInfo(LPCUTF8 *ppszNamespace)
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -2386,7 +2385,6 @@ WORD SparseVTableMap::LookupVTSlot(WORD MTSlot)
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -3173,7 +3171,6 @@ DWORD EEClass::GetPackableField(EEClassFieldId eField)
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -3192,7 +3189,6 @@ void EEClass::SetPackableField(EEClassFieldId eField, DWORD dwValue)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

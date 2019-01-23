@@ -423,15 +423,12 @@ PCCOR_SIGNATURE PrettyPrintTypeOrDef(
     CONTRACTL
     {
         THROWS;
-        SO_TOLERANT;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
     PCCOR_SIGNATURE pBegin, pEnd=NULL;
 
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(ThrowStackOverflow());
-        
 #ifdef __ILDASM__
     ULONG L = (ULONG)(out->Size());
 #endif
@@ -454,7 +451,6 @@ PCCOR_SIGNATURE PrettyPrintTypeOrDef(
         }
     }
 #endif
-    END_SO_INTOLERANT_CODE;
     return pEnd;
 }
 

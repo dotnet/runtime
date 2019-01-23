@@ -176,7 +176,6 @@ void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator 
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;

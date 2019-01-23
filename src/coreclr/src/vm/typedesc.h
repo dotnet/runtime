@@ -350,7 +350,6 @@ public:
       , m_pCCWTemplate(NULL)
 #endif // FEATURE_COMINTEROP
     {
-        STATIC_CONTRACT_SO_TOLERANT;
         WRAPPER_NO_CONTRACT;
         INDEBUG(Verify());
     }

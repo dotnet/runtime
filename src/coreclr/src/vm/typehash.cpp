@@ -224,7 +224,6 @@ static DWORD HashTypeHandle(DWORD level, TypeHandle t)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(t));
         PRECONDITION(!t.IsEncodedFixup());
         SUPPORTS_DAC;
@@ -233,8 +232,6 @@ static DWORD HashTypeHandle(DWORD level, TypeHandle t)
 
     DWORD retVal = 0;
     
-    INTERIOR_STACK_PROBE_NOTHROW_CHECK_THREAD(goto Exit;);
-
     if (t.HasTypeParam())
     {
         retVal =  HashParamType(level, t.GetInternalCorElementType(), t.GetTypeParam());
@@ -254,12 +251,6 @@ static DWORD HashTypeHandle(DWORD level, TypeHandle t)
     }
     else
         retVal = HashPossiblyInstantiatedType(level, t.GetCl(), Instantiation());
-
-#if defined(FEATURE_STACK_PROBE) && !defined(DACCESS_COMPILE)
-Exit: 
-    ;
-#endif
-    END_INTERIOR_STACK_PROBE;
     
     return retVal;
 }
@@ -624,7 +615,6 @@ BOOL EETypeHashTable::ContainsValue(TypeHandle th)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

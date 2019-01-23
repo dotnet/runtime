@@ -535,7 +535,6 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
     {
         DISABLED(THROWS);       // This is not a bug, we cannot decide, since the function ptr called may be either.
         DISABLED(GC_NOTRIGGER); // This is not a bug, we cannot decide, since the function ptr called may be either.
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

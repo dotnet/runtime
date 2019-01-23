@@ -4634,7 +4634,6 @@ inline void ClrFlsSetThreadType (TlsThreadTypeFlag flag)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     ClrFlsSetValue (TlsIdx_ThreadType, (LPVOID)(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) |flag));
 }
@@ -4681,7 +4680,6 @@ inline BOOL IsGCThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_SUPPORTS_DAC;
-    STATIC_CONTRACT_SO_TOLERANT;
 
 #if !defined(DACCESS_COMPILE)
     return IsGCSpecialThread () || IsSuspendEEThread ();

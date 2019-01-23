@@ -42,7 +42,6 @@ LoadLibraryExWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;  
     }
     CONTRACTL_END;
 
@@ -50,7 +49,6 @@ LoadLibraryExWrapper(
     HMODULE ret = NULL;
     DWORD lastError;
     
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return NULL;)
     EX_TRY
     {
 
@@ -69,7 +67,6 @@ LoadLibraryExWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK)
     {
@@ -97,15 +94,12 @@ CreateFileWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     DWORD lastError;
     HANDLE ret = INVALID_HANDLE_VALUE;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return NULL;)
 
     EX_TRY
     {
@@ -126,7 +120,6 @@ CreateFileWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -149,15 +142,12 @@ SetFileAttributesWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     BOOL   ret = FALSE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -174,7 +164,6 @@ SetFileAttributesWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -196,15 +185,12 @@ GetFileAttributesWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     DWORD  ret = INVALID_FILE_ATTRIBUTES;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return INVALID_FILE_ATTRIBUTES;)
 
     EX_TRY
     {
@@ -220,7 +206,6 @@ GetFileAttributesWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -244,15 +229,12 @@ GetFileAttributesExWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     BOOL   ret = FALSE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -271,7 +253,6 @@ GetFileAttributesExWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -293,15 +274,12 @@ DeleteFileWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     BOOL   ret = FALSE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -317,7 +295,6 @@ DeleteFileWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -342,15 +319,12 @@ CopyFileWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr  = S_OK;
     BOOL    ret = FALSE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -369,7 +343,6 @@ CopyFileWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -393,15 +366,12 @@ MoveFileExWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr  = S_OK;
     BOOL    ret = FALSE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -420,7 +390,6 @@ MoveFileExWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -448,15 +417,12 @@ SearchPathWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
    
     HRESULT hr  = S_OK;
     DWORD    ret = 0;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return 0;)
 
     EX_TRY
     {
@@ -518,7 +484,6 @@ SearchPathWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK)
     {
@@ -542,15 +507,12 @@ GetShortPathNameWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     DWORD ret = 0;
     HRESULT hr = S_OK;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return 0;)
 
     EX_TRY
     {
@@ -582,7 +544,6 @@ GetShortPathNameWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -605,15 +566,12 @@ GetLongPathNameWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     DWORD ret = 0;
     HRESULT hr = S_OK;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return 0;)
 
     EX_TRY
     {
@@ -646,7 +604,6 @@ GetLongPathNameWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -669,15 +626,12 @@ CreateDirectoryWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     BOOL ret   = FALSE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -694,7 +648,6 @@ CreateDirectoryWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -716,15 +669,12 @@ RemoveDirectoryWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     BOOL ret   = FALSE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -740,7 +690,6 @@ RemoveDirectoryWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -762,15 +711,12 @@ GetModuleFileNameWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     DWORD ret = 0;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return 0;)
 
     EX_TRY
     {
@@ -800,7 +746,6 @@ GetModuleFileNameWrapper(
         buffer.CloseBuffer(ret);
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK)
     {
@@ -824,15 +769,12 @@ UINT WINAPI GetTempFileNameWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     UINT ret = 0;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return 0;)
 
     EX_TRY
     {
@@ -852,7 +794,6 @@ UINT WINAPI GetTempFileNameWrapper(
         
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK)
     {
@@ -872,15 +813,12 @@ DWORD WINAPI GetTempPathWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     DWORD ret = 0;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return 0;)
 
     EX_TRY
     {
@@ -896,7 +834,6 @@ DWORD WINAPI GetTempPathWrapper(
         lpBuffer.CloseBuffer(ret);
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK)
     {
@@ -917,15 +854,12 @@ DWORD WINAPI GetCurrentDirectoryWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     DWORD ret = 0;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return 0;)
 
     EX_TRY
     {
@@ -941,7 +875,6 @@ DWORD WINAPI GetCurrentDirectoryWrapper(
         lpBuffer.CloseBuffer(ret);
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK)
     {
@@ -963,15 +896,12 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     DWORD ret = 0;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return 0;)
 
     EX_TRY
     {
@@ -1004,7 +934,6 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
         lpBuffer.CloseBuffer(ret);
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK)
     {
@@ -1031,15 +960,12 @@ CreateHardLinkWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     BOOL ret   = FALSE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -1058,7 +984,6 @@ CreateHardLinkWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -1086,15 +1011,12 @@ CopyFileExWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr  = S_OK;
     BOOL    ret = FALSE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -1116,7 +1038,6 @@ CopyFileExWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {
@@ -1143,15 +1064,12 @@ FindFirstFileExWrapper(
     CONTRACTL
     {
         NOTHROW;
-    SO_TOLERANT;
     }
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
     HANDLE ret = INVALID_HANDLE_VALUE;
     DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
 
     EX_TRY
     {
@@ -1172,7 +1090,6 @@ FindFirstFileExWrapper(
         lastError = GetLastError();
     }
     EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
 
     if (hr != S_OK )
     {

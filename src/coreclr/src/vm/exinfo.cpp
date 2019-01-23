@@ -22,7 +22,6 @@ void ExInfo::DestroyExceptionHandle(void)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -47,7 +46,6 @@ void ExInfo::CopyAndClearSource(ExInfo *from)
         GC_NOTRIGGER;
         if (GetThread() != NULL) MODE_COOPERATIVE; else MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -92,7 +90,6 @@ void ExInfo::Init()
         GC_NOTRIGGER;
         MODE_ANY;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -175,7 +172,6 @@ void ExInfo::UnwindExInfo(VOID* limit)
         NOTHROW; // This function does not throw.
         GC_NOTRIGGER;
         if (GetThread() != NULL) MODE_COOPERATIVE; else MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -292,7 +288,6 @@ void ExInfo::SetExceptionCode(const EXCEPTION_RECORD *pCER)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     _ASSERTE(pCER != NULL);
     m_ExceptionCode = pCER->ExceptionCode;

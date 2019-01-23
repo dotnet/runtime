@@ -226,7 +226,6 @@ bool PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains()
         NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
-        SO_TOLERANT; //Its ok for tis function to fail.
     }
     CONTRACTL_END;
 
@@ -729,7 +728,6 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
         CONTRACTL_END;
 
         GCX_COOP();
-        BEGIN_SO_INTOLERANT_CODE(pThread);
 
         //
         // NOTE: there is a potential race between the time we retrieve the app 
@@ -773,8 +771,6 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
 
         // We should have released all locks.
         _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
-
-        END_SO_INTOLERANT_CODE;
 
         *foundWork = true;
     }

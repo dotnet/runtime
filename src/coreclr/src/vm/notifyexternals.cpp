@@ -26,7 +26,6 @@ BOOL ShouldCheckLoaderLock(BOOL fForMDA /*= TRUE*/)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     

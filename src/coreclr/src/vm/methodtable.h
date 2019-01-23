@@ -1394,7 +1394,6 @@ public:
     PCODE GetSlot(UINT32 slotNumber)
     {
         WRAPPER_NO_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
         CONSISTENCY_CHECK(slotNumber < GetNumVtableSlots());
 
         TADDR pSlot = GetSlotPtrRaw(slotNumber);
@@ -1428,7 +1427,6 @@ public:
     TADDR GetSlotPtrRaw(UINT32 slotNum)
     {
         WRAPPER_NO_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
         CONSISTENCY_CHECK(slotNum < GetNumVtableSlots());
 
         if (slotNum < GetNumVirtuals())
@@ -1458,7 +1456,6 @@ public:
     TADDR GetSlotPtr(UINT32 slotNum)
     {
         WRAPPER_NO_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
 
         // Slots in NGened images are relative pointers
         CONSISTENCY_CHECK(!IsZapped());
@@ -1968,7 +1965,6 @@ public:
     // See JIT_IsInstanceOfInterface
     inline BOOL InstanceRequiresNonTrivialInterfaceCast()
     {
-        STATIC_CONTRACT_SO_TOLERANT;
         LIMITED_METHOD_CONTRACT;
 
         return GetFlag(enum_flag_NonTrivialInterfaceCast);
@@ -4069,7 +4065,6 @@ public:
     inline DPTR(TYPE) GETTER() \
     { \
         LIMITED_METHOD_CONTRACT; \
-        STATIC_CONTRACT_SO_TOLERANT; \
         _ASSERTE(Has##NAME()); \
         return dac_cast<DPTR(TYPE)>(dac_cast<TADDR>(this) + GetOffsetOfOptionalMember(OptionalMember_##NAME)); \
     }

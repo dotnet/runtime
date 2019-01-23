@@ -661,7 +661,6 @@ ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference hostCall
         NOTHROW;
         if (hostCallPreference == AllowHostCalls) { HOST_CALLS; } else { HOST_NOCALLS; }
         GC_NOTRIGGER;
-        SO_TOLERANT;
         CAN_TAKE_LOCK;
     } CONTRACTL_END;
 
@@ -696,7 +695,6 @@ ExecutionManager::ReaderLockHolder::~ReaderLockHolder()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -921,7 +919,6 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
@@ -3682,7 +3679,6 @@ BOOL EEJitManager::JitCodeToMethodInfo(
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -3725,7 +3721,6 @@ StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSectio
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -3741,7 +3736,6 @@ TADDR EEJitManager::FindMethodCode(PCODE currentPC)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -3883,7 +3877,6 @@ PTR_RUNTIME_FUNCTION EEJitManager::LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -4172,7 +4165,6 @@ ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -4193,7 +4185,6 @@ ExecutionManager::FindCodeRangeWithLock(PCODE currentPC)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -4222,7 +4213,6 @@ MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -4238,7 +4228,6 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     if (currentPC == NULL)
@@ -4257,7 +4246,6 @@ BOOL ExecutionManager::IsManagedCodeWithLock(PCODE currentPC)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     ReaderLockHolder rlh;
@@ -4270,7 +4258,6 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC, HostCallPreference hostCal
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
 #ifdef DACCESS_COMPILE
@@ -4301,7 +4288,6 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     // This may get called for arbitrary code addresses. Note that the lock is
@@ -4426,7 +4412,6 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
         NOTHROW;
         HOST_NOCALLS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -4551,7 +4536,6 @@ PTR_Module ExecutionManager::FindZapModule(TADDR currentData)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
         STATIC_CONTRACT_HOST_CALLS;
         SUPPORTS_DAC;
@@ -4582,7 +4566,6 @@ PTR_Module ExecutionManager::FindReadyToRunModule(TADDR currentData)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
         STATIC_CONTRACT_HOST_CALLS;
         SUPPORTS_DAC;
@@ -4616,7 +4599,6 @@ PTR_Module ExecutionManager::FindModuleForGCRefMap(TADDR currentData)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -5476,7 +5458,6 @@ BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
                                             EECodeInfo * pCodeInfo)
 {
     CONTRACTL {
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -5832,7 +5813,6 @@ StubCodeBlockKind NativeImageJitManager::GetStubCodeBlockKind(RangeSection * pRa
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -6166,7 +6146,6 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
                                                            int High)
 {
     CONTRACTL {
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -6761,7 +6740,6 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -6925,7 +6903,6 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
