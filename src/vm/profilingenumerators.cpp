@@ -45,7 +45,6 @@ BOOL ProfilerFunctionEnum::Init(BOOL fWithReJITIDs)
         // reader lock to prevent things from changing while reading...
         CAN_TAKE_LOCK;
 
-        SO_NOT_MAINLINE;
     } CONTRACTL_END;
 
     EEJitManager::CodeHeapIterator heapIterator;
@@ -166,8 +165,6 @@ HRESULT IterateAppDomains(CallbackObject * callbackObj,
         MODE_ANY;
         CAN_TAKE_LOCK;
         // (See comments in code:ProfToEEInterfaceImpl::EnumModules for info about contracts.)
-
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -475,7 +472,6 @@ HRESULT ProfilerModuleEnum::Init()
         CAN_TAKE_LOCK;
         // (See comments in code:ProfToEEInterfaceImpl::EnumModules for info about contracts.)
 
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -533,7 +529,6 @@ HRESULT IterateAppDomainContainingModule::AddAppDomainContainingModule(AppDomain
         GC_TRIGGERS;
         MODE_ANY;
         CAN_TAKE_LOCK;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -571,7 +566,6 @@ HRESULT IterateAppDomainContainingModule::PopulateArray()
         GC_TRIGGERS;
         MODE_ANY;
         CAN_TAKE_LOCK;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 
@@ -600,7 +594,6 @@ HRESULT ProfilerThreadEnum::Init()
         GC_NOTRIGGER;
         MODE_ANY;
         CAN_TAKE_LOCK;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 

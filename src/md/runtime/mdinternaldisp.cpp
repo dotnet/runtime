@@ -170,8 +170,6 @@ STDAPI GetMDInternalInterface(
     IMDCommon    *pInternalROMDCommon = NULL;
     MDFileFormat format;
 
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-
     if (ppIUnk == NULL)
         IfFailGo(E_INVALIDARG);
 
@@ -215,8 +213,6 @@ ErrExit:
     if ( pInternalROMDCommon )
         pInternalROMDCommon->Release();
 
-    END_SO_INTOLERANT_CODE;
-    
     return hr;
 }   // GetMDInternalInterface
 

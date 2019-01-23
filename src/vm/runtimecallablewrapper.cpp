@@ -4548,7 +4548,6 @@ TypeHandle::CastResult RCW::SupportsWinRTInteropInterfaceNoGC(MethodTable *pItfM
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

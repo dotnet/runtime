@@ -656,7 +656,6 @@ public:
           NOTHROW;
           GC_NOTRIGGER;
           MODE_ANY;
-          SO_TOLERANT;
         }
         CONTRACTL_END
 
@@ -706,7 +705,6 @@ public:
           NOTHROW;
           GC_NOTRIGGER;
           MODE_ANY;
-          SO_TOLERANT;
         }
         CONTRACTL_END
         
@@ -724,7 +722,6 @@ public:
           NOTHROW;
           GC_NOTRIGGER;
           MODE_ANY;
-          SO_TOLERANT;
         }
         CONTRACTL_END
 

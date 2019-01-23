@@ -22,24 +22,6 @@
 
 #ifdef ENABLE_CONTRACTS_IMPL
 
-#ifdef FEATURE_STACK_PROBE
-/* FLAG to turn on/off dynamic SO Contract checking */
-extern BOOL g_EnableDefaultRWValidation;
-
-/* Used to report any code with SO_NOT_MAINLINE being run in a test environment
- * with COMPLUS_NO_SO_NOT_MAINLINE enabled
- */
-void SONotMainlineViolation(const char *szFunction, const char *szFile, int lineNum);
-
-/* Wrapper over SOTolerantViolation(). Used to report SO_Intolerant functions being called 
- * from SO_tolerant funcs without stack probing.
- */
-void SoTolerantViolationHelper(const char *szFunction,
-                               const char *szFile,
-                               int   lineNum);
-#endif
-
-
 inline void BaseContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
@@ -72,29 +54,6 @@ inline void BaseContract::DoChecks(UINT testmask, __in_z const char *szFunction,
     {
         m_pClrDebugState->SetDebugOnly();
     }
-
-#ifdef FEATURE_STACK_PROBE //Dynamic SO contract checks only required when SO infrastructure is present.
-
-    if (testmask & SO_MAINLINE_No)
-    {
-        static DWORD dwCheckNotMainline = -1;
-
-        // Some tests should never hit an SO_NOT_MAINLINE contract
-        if (dwCheckNotMainline == -1)
-            dwCheckNotMainline = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_NO_SO_NOT_MAINLINE);
-
-
-        if (dwCheckNotMainline)
-        {
-            SONotMainlineViolation(m_contractStackRecord.m_szFunction,
-                                   m_contractStackRecord.m_szFile,
-                                   m_contractStackRecord.m_lineNum);
-        }
-
-        m_pClrDebugState->SetSONotMainline();
-    }
-
-#endif // FEATURE_STACK_PROBE
 
     switch (testmask & FAULT_Mask)
     {
@@ -174,30 +133,6 @@ inline void BaseContract::DoChecks(UINT testmask, __in_z const char *szFunction,
             }
             break;
     }
-
-#ifdef FEATURE_STACK_PROBE
-
-    switch (testmask & SO_TOLERANCE_Mask)
-    {
-        case SO_TOLERANT_No:
-            if (g_EnableDefaultRWValidation)
-            {
-                m_pClrDebugState->CheckIfSOIntolerantOK(m_contractStackRecord.m_szFunction,
-                                                        m_contractStackRecord.m_szFile,
-                                                        m_contractStackRecord.m_lineNum);
-            }
-            break;
-        
-        case SO_TOLERANT_Yes:
-        case SO_TOLERANCE_Disabled:
-            // Nothing
-            break;
-
-        default:
-            UNREACHABLE();
-    }
-
-#endif // FEATURE_STACK_PROBE
 
     if (testmask & CAN_RETAKE_LOCK_No)
     {
@@ -538,49 +473,6 @@ inline DbgStateLockData * DbgStateLockState::GetDbgStateLockData()
 {
     return m_pLockData;
 }
-
-#ifdef FEATURE_STACK_PROBE
-// We don't want to allow functions that use holders to EX_TRY to be intolerant
-// code... if an exception were to occur, the holders and EX_CATCH/FINALLY would
-// have less than 1/4 clean up.
-inline void EnsureSOIntolerantOK(const char *szFunction,
-                                  const char *szFile,
-                                  int   lineNum)
-{
-    // We don't want to use a holder here, because a holder will
-    // call EnsureSOIntolerantOK
-    
-    DWORD error = GetLastError();
-    if (! g_EnableDefaultRWValidation)
-    {
-        SetLastError(error);
-        return;
-    }
-    ClrDebugState *pClrDebugState = CheckClrDebugState();
-    if (! pClrDebugState)
-    {
-        SetLastError(error);
-        return;
-    }
-    pClrDebugState->CheckIfSOIntolerantOK(szFunction, szFile, lineNum);
-    SetLastError(error);
-}
-
-inline void ClrDebugState::CheckIfSOIntolerantOK(const char *szFunction,
-                                                 const char *szFile,
-                                                 int   lineNum)
-
-{
-    // If we are an RW function on a managed thread, we must be in SO-intolerant mode.   Ie. we must be behind a probe.  
-    if (IsSOIntolerant() || IsDebugOnly() || IsSONotMainline() || (m_violationmask & SOToleranceViolation) ||
-        !g_fpShouldValidateSOToleranceOnThisThread || !g_fpShouldValidateSOToleranceOnThisThread())
-    {
-        return;
-    }
-    SoTolerantViolationHelper(szFunction, szFile, lineNum);
-}
-
-#endif
 
 inline
 void CONTRACT_ASSERT(const char *szElaboration,

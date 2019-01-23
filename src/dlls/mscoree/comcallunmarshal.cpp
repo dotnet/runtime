@@ -28,7 +28,6 @@ STDMETHODIMP ComCallUnmarshal::QueryInterface(REFIID iid, void **ppv)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(ppv, NULL_OK));
     } CONTRACTL_END;
 
@@ -51,14 +50,12 @@ STDMETHODIMP ComCallUnmarshal::QueryInterface(REFIID iid, void **ppv)
 STDMETHODIMP_(ULONG) ComCallUnmarshal::AddRef(void) 
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
     return 2; 
 }
 
 STDMETHODIMP_(ULONG) ComCallUnmarshal::Release(void) 
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
     return 1;
 }
 
@@ -67,7 +64,6 @@ STDMETHODIMP ComCallUnmarshal::GetUnmarshalClass (REFIID riid, void * pv, ULONG 
                                                   LPCLSID pclsid) 
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
     // Marshal side only.
     _ASSERTE(FALSE);
     return E_NOTIMPL;
@@ -78,7 +74,6 @@ STDMETHODIMP ComCallUnmarshal::GetMarshalSizeMax (REFIID riid, void * pv, ULONG 
                                                   ULONG * pSize) 
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
     // Marshal side only.
     _ASSERTE(FALSE);
     return E_NOTIMPL;
@@ -89,7 +84,6 @@ STDMETHODIMP ComCallUnmarshal::MarshalInterface (LPSTREAM pStm, REFIID riid, voi
                                                  ULONG mshlflags) 
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
     // Marshal side only.
     _ASSERTE(FALSE);
     return E_NOTIMPL;
@@ -100,7 +94,6 @@ STDMETHODIMP ComCallUnmarshal::UnmarshalInterface (LPSTREAM pStm, REFIID riid, v
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pStm));
         PRECONDITION(CheckPointer(ppvObj));
@@ -110,7 +103,6 @@ STDMETHODIMP ComCallUnmarshal::UnmarshalInterface (LPSTREAM pStm, REFIID riid, v
     ULONG mshlflags;
     HRESULT hr = E_FAIL;
 
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
     // The marshal code added a reference to the object, but we return a
     // reference to the object as well, so don't change the ref count on the
     // success path. Need to release on error paths though (if we manage to
@@ -161,8 +153,6 @@ STDMETHODIMP ComCallUnmarshal::UnmarshalInterface (LPSTREAM pStm, REFIID riid, v
         hr = pOldUnk->QueryInterface(riid, ppvObj);
     }
 ErrExit:
-    ;
-    END_SO_INTOLERANT_CODE;
     return hr;
 }
 
@@ -172,7 +162,6 @@ STDMETHODIMP ComCallUnmarshal::ReleaseMarshalData (LPSTREAM pStm)
         NOTHROW;
         GC_NOTRIGGER;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pStm));
     } CONTRACTL_END;
     
@@ -183,8 +172,6 @@ STDMETHODIMP ComCallUnmarshal::ReleaseMarshalData (LPSTREAM pStm)
 
     if (!pStm)
         return E_POINTER;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
 
     // Read the raw IP out of the marshalling stream. Do this first since we
     // need to update the stream pointer even in case of failures.
@@ -214,15 +201,12 @@ STDMETHODIMP ComCallUnmarshal::ReleaseMarshalData (LPSTREAM pStm)
     pUnk->Release ();
 
 ErrExit:
-    ;
-    END_SO_INTOLERANT_CODE;
     return hr;
 }
 
 STDMETHODIMP ComCallUnmarshal::DisconnectObject (ULONG dwReserved) 
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     // Nothing we can (or need to) do here. The client is using a raw IP to
     // access this server, so the server shouldn't go away until the client
@@ -242,7 +226,6 @@ STDMETHODIMP CComCallUnmarshalFactory::QueryInterface(REFIID iid, void **ppv)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
     
@@ -260,16 +243,12 @@ STDMETHODIMP CComCallUnmarshalFactory::QueryInterface(REFIID iid, void **ppv)
 STDMETHODIMP_(ULONG) CComCallUnmarshalFactory::AddRef(void) 
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
-    
     return 2; 
 }
 
 STDMETHODIMP_(ULONG) CComCallUnmarshalFactory::Release(void) 
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
-    
     return 1;
 }
 
@@ -279,7 +258,6 @@ STDMETHODIMP CComCallUnmarshalFactory::CreateInstance(LPUNKNOWN punkOuter, REFII
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
 
@@ -297,8 +275,6 @@ STDMETHODIMP CComCallUnmarshalFactory::CreateInstance(LPUNKNOWN punkOuter, REFII
 STDMETHODIMP CComCallUnmarshalFactory::LockServer(BOOL fLock) 
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
-    
     return S_OK;
 }
 

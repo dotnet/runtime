@@ -46,18 +46,6 @@
 //
 //      LOADS_TYPE(level)       the function promises not to load any types beyond "level"
 //
-//      SO_INTOLERANT           the function cannot tolerate an SO at any point and must run behind an
-//                              an SO probe via BEGIN_SO_INTOLERANT_XXX.  This is the default. We want most
-//                              of our code to run behind an SO probe.  The only time you need to explicitly
-//                              mark something as SO_INTOLERANT is if the static analysis tool incorrectly
-//                              flags it as an entry point.
-//      -or- SO_TOLERANT        the function can tolerate an SO.  It either does not update any global state
-//                              that needs to be cleaned up should a random SO occur, or it protects those
-//                              updates behind an SO probe.
-//      -or- SO_NOT_MAINLINE    the function is not hardened to SO and should never run on a managed thread
-//                              where we need to be hardened to SO.  You can use this for functions that run
-//                              only for ngen or Win9X etc.
-//
 //      CAN_TAKE_LOCK           the function has a code path that takes a lock
 //      _or_ (CAN_TAKE_LOCK and CANNOT_RETAKE_LOCK)
 //                              the function has a code path that takes a lock, but never tries to reenter 
@@ -144,9 +132,6 @@
 //        STATIC_CONTRACT_GCNOTRIGGER
 //        STATIC_CONTRACT_FAULT
 //        STATIC_CONTRACT_FORBID_FAULT
-//        STATIC_CONTRACT_SO_INTOLERANT
-//        STATIC_CONTRACT_SO_TOLERANT
-//        STATIC_CONTRACT_SO_NOT_MAINLINE
 //                           use to implement statically checkable contracts
 //                           when runtime contracts cannot be used.
 //
@@ -171,7 +156,6 @@
 //              GCViolation
 //              ModeViolation
 //              FaultViolation
-//              SOToleranceViolation
 //              FaultNotFatal           
 //              HostViolation           
 //              LoadsTypeViolation      
@@ -438,10 +422,6 @@ private:
     UINT                 m_GCForbidCount;
     UINT                  m_maxLoadTypeLevel;   // taken from enum ClassLoadLevel
     BOOL                  m_allowGetThread;     // TRUE if GetThread() is ok in this scope
-#ifdef FEATURE_STACK_PROBE //StackMarkerStack required only when SO infrastructure is enabled
-    /* Used to validate backout stack consumption required for StackOverflow infrastructure */
-    StackMarkerStack     m_StackMarkerStack;   // The stack of stack markers
-#endif
     DbgStateLockState     m_LockState;          
 
 public:
@@ -477,10 +457,6 @@ public:
                                             // the max integer value will do as a substitute.
 
         m_allowGetThread = TRUE;            // By default, GetThread() is perfectly fine to call
-
-#ifdef FEATURE_STACK_PROBE
-        m_StackMarkerStack.Init();
-#endif
 
         m_LockState.SetStartingValues();
     }
@@ -582,32 +558,6 @@ public:
         CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_HOSTCALLS);
     }
 
-#ifdef FEATURE_STACK_PROBE //SO contract functions only required when SO infrastructure is enabled
-    //--//
-    BOOL IsSOTolerant()
-    {
-        return CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_SOTOLERANT);
-    }
-
-    void SetSOTolerance()
-    {
-        CONTRACT_BITMASK_SET(CONTRACT_BITMASK_SOTOLERANT);
-    }
-
-    BOOL SetSOTolerance(BOOL tolerance)
-    {
-        BOOL prevState = CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_SOTOLERANT);
-        CONTRACT_BITMASK_UPDATE(CONTRACT_BITMASK_SOTOLERANT,tolerance);
-        return prevState;
-    }
-    
-    void ResetSOTolerance()
-    {
-        CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_SOTOLERANT);
-    }
-
-#endif
-
     //--//
     BOOL IsDebugOnly()
     {
@@ -635,31 +585,6 @@ public:
         CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_DEBUGONLY);
     }
 
- #ifdef FEATURE_STACK_PROBE
-    //--//
-    BOOL IsSONotMainline()
-    {
-        return CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_SONOTMAINLINE);
-    }
-
-    void SetSONotMainline()
-    {
-        CONTRACT_BITMASK_SET(CONTRACT_BITMASK_SONOTMAINLINE);
-    }
-
-    BOOL SetSONotMainline(BOOL value)
-    {
-        BOOL prevState = CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_SONOTMAINLINE);
-        CONTRACT_BITMASK_UPDATE(CONTRACT_BITMASK_SONOTMAINLINE,value);
-        return prevState;
-    }
-
-    void ResetSONotMainline()
-    {
-        CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_SONOTMAINLINE);
-    }
-#endif
-    
     //--//
     BOOL IsGetThreadAllowed()
     {
@@ -797,37 +722,6 @@ public:
         m_LockState.OnEnterCannotRetakeLockFunction();
     }
 
-#ifdef FEATURE_STACK_PROBE //SO contract functions only required when SO infrastructure is enabled
-    BOOL IsSOIntolerant()
-    {
-        return !IsSOTolerant();
-    }
-
-    BOOL BeginSOTolerant()
-    {
-        return SetSOTolerance(TRUE);
-    }
-
-    BOOL BeginSOIntolerant()
-    {
-        return SetSOTolerance(FALSE);
-    }
-
-
-    void CheckIfSOIntolerantOK(const char *szFunction, const char *szFile, int lineNum);
-
-
-
-
-
-    //--//
-
-    StackMarkerStack& GetStackMarkerStack()
-    {
-        return m_StackMarkerStack;
-    }
-#endif
-
     void CheckOkayToLock(__in_z const char *szFunction, __in_z const char *szFile, int lineNum); // Asserts if its not okay to lock
     BOOL CheckOkayToLockNoAssert(); // Returns if OK to lock
     void LockTaken(DbgStateLockType dbgStateLockType,
@@ -856,7 +750,6 @@ ClrDebugState *GetClrDebugState(BOOL fAlloc = TRUE);
 inline ClrDebugState *CheckClrDebugState()
 {
     STATIC_CONTRACT_LIMITED_METHOD;
-    STATIC_CONTRACT_SO_TOLERANT;
     ClrDebugState *ret = (ClrDebugState*)ClrFlsGetValue(TlsIdx_ClrDebugState);
     return ret;
 }
@@ -1045,30 +938,6 @@ class BaseContract
         MODE_Preempt        = 0x00000040,
         MODE_Coop           = 0x00000080,
 
-        // The following are used to assert the type of global state update being done by the function.
-        // This is used by the SO infrastructure to detect if we are probing properly.  A CLR process will
-        // run in one of two states: SO-tolerant or SO-intolerant.  In SO-tolerant mode, an SO is OK and we
-        // will not corrupt any global state. However, we cannot allow an SO to occur in SO-intolerant code
-        // because we might end up with our global state being corrupted.
-        //
-        // When we enter the EE from any entry point, we will begin in SO-tolerant mode and must probe for sufficient
-        // stack before entering SO-intolerant code.  We will tell the differnce between SO-tolerant and SO-intolerant code
-        // by contract annotations on that function: SO_TOLERANT and SO_INTOLERANT.
-
-        // We enter the EE in SO_TOLERANT mode.  All entry point functions into the EE must be marked as  SO_TOLERANT and
-        // and must probe before calling an SO-intolerant function.  We have a static analsysis tool that ensures that every
-        // entry point is tagged as SO_TOLERANT and that it probes before calling an SO_TOLERANT function.
-
-        // By default, all unannotated functions in the EE are SO_INTOLERANT which means that they must run behind a probe.
-        // Our contract checking will verify this at runtime.  We only need to annotate a function explicilty as SO_INTOLERANT
-        // to tell our static analysis tool that they are not entry points (if it can't find a caller for a function, it assumes that the
-        // function is an entry point and should be marked SO_INTOLERANT.)
-
-        SO_TOLERANCE_Mask       = 0x00000300,
-        SO_TOLERANT_No          = 0x00000000,           // the default.
-        SO_TOLERANT_Yes         = 0x00000100,
-        SO_TOLERANCE_Disabled   = 0x00000200,
-
         DEBUG_ONLY_Yes          = 0x00000400,  // code runs under debug only
 
         SO_MAINLINE_No          = 0x00000800,  // code is not part of our mainline SO scenario
@@ -1108,7 +977,7 @@ class BaseContract
         LOADS_TYPE_Disabled     = 0x00000000,   // the default
 
         ALL_Disabled            = THROWS_Disabled|GC_Disabled|FAULT_Disabled|MODE_Disabled|LOADS_TYPE_Disabled|
-                                  SO_TOLERANCE_Disabled|HOST_Disabled|EE_THREAD_Disabled|CAN_TAKE_LOCK_Disabled|CAN_RETAKE_LOCK_No_Disabled
+                                  HOST_Disabled|EE_THREAD_Disabled|CAN_TAKE_LOCK_Disabled|CAN_RETAKE_LOCK_No_Disabled
 
     };
 
@@ -1310,7 +1179,6 @@ enum ContractViolationBits
     ModeViolation   = 0x00000004,  // suppress MODE_PREEMP and MODE_COOP tags in this scope
     FaultViolation  = 0x00000008,  // suppress INJECT_FAULT assertions in this scope
     FaultNotFatal   = 0x00000010,  // suppress INJECT_FAULT but not fault injection by harness
-    SOToleranceViolation = 0x00000020,  // suppress SO_TOLERANCE tags in this scope
     LoadsTypeViolation      = 0x00000040,  // suppress LOADS_TYPE tags in this scope
     TakesLockViolation      = 0x00000080,  // suppress CAN_TAKE_LOCK tags in this scope
     HostViolation           = 0x00000100,  // suppress HOST_CALLS tags in this scope
@@ -1548,15 +1416,9 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 
 #define NOTHROW       do { STATIC_CONTRACT_NOTHROW; REQUEST_TEST(Contract::THROWS_No,  Contract::THROWS_Disabled); } while(0)                                                               \
 
-#define ENTRY_POINT   do { STATIC_CONTRACT_ENTRY_POINT; REQUEST_TEST(Contract::SO_TOLERANT_Yes, Contract::SO_TOLERANCE_Disabled); } while(0)
+#define ENTRY_POINT   STATIC_CONTRACT_ENTRY_POINT
 
 #define LOADS_TYPE(maxlevel)  do { REQUEST_TEST( ((maxlevel) + 1) << Contract::LOADS_TYPE_Shift, Contract::LOADS_TYPE_Disabled ); } while(0)
-
-#define SO_TOLERANT  do { STATIC_CONTRACT_SO_TOLERANT; REQUEST_TEST(Contract::SO_TOLERANT_Yes, Contract::SO_TOLERANCE_Disabled); } while(0)
-
-#define SO_INTOLERANT  do { STATIC_CONTRACT_SO_INTOLERANT; REQUEST_TEST(Contract::SO_TOLERANT_No, Contract::SO_TOLERANCE_Disabled); } while(0)
-
-#define SO_NOT_MAINLINE  do { STATIC_CONTRACT_SO_NOT_MAINLINE; REQUEST_TEST(Contract::SO_MAINLINE_No, 0); } while (0)
 
 #define CAN_TAKE_LOCK    do { STATIC_CONTRACT_CAN_TAKE_LOCK; REQUEST_TEST(Contract::CAN_TAKE_LOCK_Yes, Contract::CAN_TAKE_LOCK_Disabled); } while(0)
 
@@ -1780,9 +1642,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 #define CANNOT_TAKE_LOCK
 #define CANNOT_RETAKE_LOCK
 #define LOADS_TYPE(maxlevel)
-#define SO_TOLERANT
-#define SO_INTOLERANT
-#define SO_NOT_MAINLINE
 #define ENTRY_POINT
 
 #ifdef _DEBUG
@@ -1866,7 +1725,7 @@ protected:
     FORCEINLINE void EnterInternal(UINT_PTR violationMask)
     {
         _ASSERTE(0 == (violationMask & ~(ThrowsViolation | GCViolation | ModeViolation | FaultViolation |
-            FaultNotFatal | SOToleranceViolation | HostViolation |
+            FaultNotFatal | HostViolation |
             TakesLockViolation | LoadsTypeViolation)) ||
             violationMask == AllViolation);
 
@@ -2205,7 +2064,6 @@ private:
 inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 {
     STATIC_CONTRACT_LIMITED_METHOD;
-    STATIC_CONTRACT_SO_NOT_MAINLINE;
 
     ClrDebugState *pState = CheckClrDebugState();
 
@@ -2222,90 +2080,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
     return NULL;
 }
 #endif // ENABLE_CONTRACTS_IMPL
-
-#ifdef FEATURE_STACK_PROBE
-
-#ifdef ENABLE_CONTRACTS_IMPL
-class SONotMainlineHolder
-{
-    public:
-    DEBUG_NOINLINE void Enter()
-    {
-        SCAN_SCOPE_BEGIN;
-        STATIC_CONTRACT_SO_NOT_MAINLINE;
-
-        m_pClrDebugState = GetClrDebugState();
-        if (m_pClrDebugState)
-        {
-            m_oldSONotMainlineValue = m_pClrDebugState->IsSONotMainline();
-            m_pClrDebugState->SetSONotMainline();
-        }
-    }
-
-    DEBUG_NOINLINE void Leave()
-    {
-        SCAN_SCOPE_END;
-
-        m_pClrDebugState = CheckClrDebugState();
-        if (m_pClrDebugState)
-        {
-            m_pClrDebugState->SetSONotMainline( m_oldSONotMainlineValue );
-        }
-    }
-
-    private:
-    BOOL           m_oldSONotMainlineValue;
-    ClrDebugState *m_pClrDebugState;
-};
-
-#define ENTER_SO_NOT_MAINLINE_CODE                                          \
-    SONotMainlineHolder __soNotMainlineHolder;                              \
-    __soNotMainlineHolder.Enter();
-
-#define LEAVE_SO_NOT_MAINLINE_CODE                                          \
-    __soNotMainlineHolder.Leave();
-
-
-class AutoCleanupSONotMainlineHolder : public SONotMainlineHolder
-{
-    public:
-    DEBUG_NOINLINE AutoCleanupSONotMainlineHolder()
-        {
-        SCAN_SCOPE_BEGIN;
-        STATIC_CONTRACT_SO_NOT_MAINLINE;
-
-            Enter();
-        }
-
-    DEBUG_NOINLINE ~AutoCleanupSONotMainlineHolder()
-        {
-        SCAN_SCOPE_END;
-
-            Leave();
-        }
-};
-
-#define SO_NOT_MAINLINE_FUNCTION \
-    AutoCleanupSONotMainlineHolder __soNotMainlineHolder;
-
-#define SO_NOT_MAINLINE_REGION()                                            \
-    AutoCleanupSONotMainlineHolder __soNotMainlineHolder;
-
-#else // ENABLE_CONTRACTS_IMPL
-#define SO_NOT_MAINLINE_FUNCTION STATIC_CONTRACT_SO_NOT_MAINLINE
-#define SO_NOT_MAINLINE_REGION() STATIC_CONTRACT_SO_NOT_MAINLINE
-#define ENTER_SO_NOT_MAINLINE_CODE
-#define LEAVE_SO_NOT_MAINLINE_CODE
-#endif
-
-#else // FEATURE_STACK_PROBE
-
-#define SO_NOT_MAINLINE_FUNCTION 
-#define SO_NOT_MAINLINE_REGION() 
-#define ENTER_SO_NOT_MAINLINE_CODE
-#define LEAVE_SO_NOT_MAINLINE_CODE
-
-#endif // FEATURE_STACK_PROBE
 
 #ifdef ENABLE_CONTRACTS_IMPL
 
@@ -2577,8 +2351,7 @@ extern Volatile<LONG> g_DbgSuppressAllocationAsserts;
 //
 
 #define STANDARD_VM_CHECK           \
-    THROWS;                     \
-    SO_INTOLERANT;              \
+    THROWS;
 
 #define STANDARD_VM_CONTRACT        \
     CONTRACTL                   \
@@ -2590,8 +2363,7 @@ extern Volatile<LONG> g_DbgSuppressAllocationAsserts;
 #define STATIC_STANDARD_VM_CONTRACT         \
     STATIC_CONTRACT_THROWS;             \
     STATIC_CONTRACT_GC_TRIGGERS;        \
-    STATIC_CONTRACT_MODE_PREEMPTIVE;    \
-    STATIC_CONTRACT_SO_INTOLERANT
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
 
 #define AFTER_CONTRACTS
 #include "volatile.h"

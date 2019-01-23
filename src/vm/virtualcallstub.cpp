@@ -1022,7 +1022,6 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
     } CONTRACTL_END
 
 #ifndef DACCESS_COMPILE 
@@ -1040,7 +1039,6 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
     // LockedRangeList::IsInRangeWorker
     // VirtualCallStubManager::isDispatchingStub
     //
-    CONTRACT_VIOLATION(SOToleranceViolation);
     kind = pCur->getStubKind(stubAddress, usePredictStubKind);
     if (kind != SK_UNKNOWN)
     {
@@ -1578,12 +1576,9 @@ ResolveCacheElem* __fastcall VirtualCallStubManager::PromoteChainEntry(ResolveCa
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pElem));
     } CONTRACTL_END;
 
-    // @todo - Remove this when have a probe that generates a hard SO.
-    CONTRACT_VIOLATION(SOToleranceViolation);
     g_resolveCache->PromoteChainEntry(pElem);
     return pElem;
 }
@@ -1615,7 +1610,6 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pTransitionBlock));
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
@@ -1651,8 +1645,6 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 #ifndef _TARGET_X86_
     if (flags & SDF_ResolvePromoteChain)
     {
-        BEGIN_SO_INTOLERANT_CODE(CURRENT_THREAD);
-
         ResolveCacheElem * pElem =  (ResolveCacheElem *)token;
         g_resolveCache->PromoteChainEntry(pElem);
         target = (PCODE) pElem->target;
@@ -1664,8 +1656,6 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
             VirtualCallStubManager * pMgr = VirtualCallStubManager::FindStubManager(stubAddr);
             pMgr->BackPatchWorker(&callSite);
         }
-
-        END_SO_INTOLERANT_CODE;
 
         return target;
     }
@@ -2445,7 +2435,6 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pMT));
         POSTCONDITION(CheckPointer(RETVAL));
-        SO_TOLERANT;
     } CONTRACT_END;
 
     // This is called when trying to create a HelperMethodFrame, which means there are
@@ -2511,7 +2500,6 @@ PCODE VirtualCallStubManager::CacheLookup(size_t token, UINT16 tokenHash, Method
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pMT));
     } CONTRACTL_END
 

@@ -1805,8 +1805,6 @@ CMiniMdRW::ConvertToRW()
     if (IsMinimalDelta())
         return CLDB_E_INCOMPATIBLE;
     
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-    
     IfFailGo(m_StringHeap.MakeWritable());
     IfFailGo(m_GuidHeap.MakeWritable());
     IfFailGo(m_UserStringHeap.MakeWritable());
@@ -1828,8 +1826,6 @@ CMiniMdRW::ConvertToRW()
     m_fIsReadOnly = false;
     
 ErrExit:
-    ;
-    END_SO_INTOLERANT_CODE;
     return hr;
 } // CMiniMdRW::ConvertToRW
 

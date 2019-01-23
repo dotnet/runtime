@@ -25,8 +25,6 @@
 #include "compile.h"
 #endif
 #include "array.h"
-#include "stackprobe.h"
-
 
 #ifndef DACCESS_COMPILE
 #ifdef _DEBUG
@@ -107,12 +105,10 @@ PTR_Module TypeDesc::GetLoaderModule()
 
         _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
         PTR_FnPtrTypeDesc asFnPtr = dac_cast<PTR_FnPtrTypeDesc>(this);
-        BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), fFail = TRUE );
         if (!fFail)
         {
-            retVal =  ClassLoader::ComputeLoaderModuleForFunctionPointer(asFnPtr->GetRetAndArgTypesPointer(), asFnPtr->GetNumArgs()+1);
+            retVal = ClassLoader::ComputeLoaderModuleForFunctionPointer(asFnPtr->GetRetAndArgTypesPointer(), asFnPtr->GetNumArgs()+1);
         }                                              
-        END_SO_INTOLERANT_CODE;
         return retVal;
     }
 }
@@ -145,7 +141,6 @@ PTR_Module TypeDesc::GetModule() {
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
         // Function pointer types belong to no module
         //PRECONDITION(GetInternalCorElementType() != ELEMENT_TYPE_FNPTR);
@@ -541,7 +536,6 @@ TypeHandle::CastResult TypeDesc::CanCastToNoGC(TypeHandle toType)
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -633,7 +627,6 @@ TypeHandle::CastResult TypeDesc::CanCastParamNoGC(TypeHandle fromParam, TypeHand
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
     }
     CONTRACTL_END
 
@@ -708,7 +701,6 @@ BOOL TypeDesc::IsEquivalentTo(TypeHandle type COMMA_INDEBUG(TypeHandlePairList *
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 

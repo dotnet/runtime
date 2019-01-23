@@ -306,7 +306,6 @@ struct DomainLocalModule
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_COOPERATIVE;
             SUPPORTS_DAC;
         }
@@ -337,7 +336,6 @@ struct DomainLocalModule
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_COOPERATIVE;
             SUPPORTS_DAC;
         }
@@ -1073,7 +1071,6 @@ public:
     ADID GetId (void)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
         return m_dwId;
     }
     
@@ -1086,7 +1083,6 @@ public:
     virtual PTR_AppDomain AsAppDomain()
     {
         LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
         _ASSERTE(!"Not an AppDomain");
         return NULL;
     }
@@ -2902,7 +2898,6 @@ private:
         {
             NOTHROW;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_ANY;
         }
         CONTRACTL_END;

@@ -391,8 +391,6 @@ private:
         inline ~CrstHolder()
         {
             WRAPPER_NO_CONTRACT;
-
-            VALIDATE_HOLDER_STACK_CONSUMPTION_FOR_TYPE(HSV_ValidateMinimumStackReq);
             ReleaseLock(m_pCrst);
         }
     };

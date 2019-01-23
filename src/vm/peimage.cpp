@@ -41,7 +41,6 @@ void PEImage::Startup()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         POSTCONDITION(CheckStartup());
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -49,8 +48,6 @@ void PEImage::Startup()
 
     if (CheckStartup())
         RETURN;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(COMPlusThrowSO());
 
     s_hashLock.Init(CrstPEImage, (CrstFlags)(CRST_REENTRANCY|CRST_TAKEN_DURING_SHUTDOWN));
     LockOwner lock = { &s_hashLock, IsOwnerOfCrst };
@@ -68,7 +65,6 @@ void PEImage::Startup()
 #else // FEATURE_USE_LCID
     g_lcid = NULL; // invariant
 #endif //FEATURE_USE_LCID
-    END_SO_INTOLERANT_CODE;
 
     RETURN;
 }
@@ -994,7 +990,6 @@ PTR_PEImageLayout PEImage::GetLayout(DWORD imageLayoutMask,DWORD flags)
     PTR_PEImageLayout pRetVal;
 
 #ifndef DACCESS_COMPILE
-    BEGIN_SO_INTOLERANT_CODE(GetThread());
     // First attempt to find an existing layout matching imageLayoutMask.  If that fails,
     // and the caller has asked us to create layouts if needed, then try again passing
     // the create flag to GetLayoutInternal.  We need this to be synchronized, but the common
@@ -1010,8 +1005,7 @@ PTR_PEImageLayout PEImage::GetLayout(DWORD imageLayoutMask,DWORD flags)
         SimpleWriteLockHolder lock(m_pLayoutLock);
         pRetVal = GetLayoutInternal(imageLayoutMask,flags);
     }
-    END_SO_INTOLERANT_CODE;
-    
+
     return pRetVal;
 
 #else
@@ -1475,7 +1469,6 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

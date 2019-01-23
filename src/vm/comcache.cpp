@@ -1548,7 +1548,6 @@ HRESULT __stdcall CtxEntry::EnterContextCallback(ComCallData* pComCallData)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_NOT_MAINLINE;
         PRECONDITION(CheckPointer(pComCallData));
     }
     CONTRACTL_END;

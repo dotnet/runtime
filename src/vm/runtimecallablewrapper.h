@@ -752,7 +752,6 @@ struct RCW
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            SO_TOLERANT;
             POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
@@ -1357,7 +1356,6 @@ public :
         {
             THROWS;
             GC_NOTRIGGER;
-            SO_TOLERANT;
             MODE_ANY;
         }
         CONTRACT_END;

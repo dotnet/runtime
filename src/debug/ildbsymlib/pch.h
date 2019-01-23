@@ -19,7 +19,6 @@
 #include "corsym.h"
 #include "palclr.h"
 #include "cor.h"
-#include "genericstackprobe.h"
 
 // I'm not sure why this code uses these macros for memory management (they should at least be
 // in-line functions).  DELETE is a symbol defined in WinNt.h as an access-type.  We're probably

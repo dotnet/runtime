@@ -475,7 +475,6 @@ void MscorlibBinder::TriggerGCUnderStress()
     {
         THROWS;
         GC_TRIGGERS;
-        SO_TOLERANT;
         INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;

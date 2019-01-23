@@ -369,7 +369,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -1283,7 +1282,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 

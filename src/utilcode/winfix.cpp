@@ -199,7 +199,6 @@ void EnsureCharSetInfoInitialized()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     if (!g_fEnsureCharSetInfoInitialized)
     {

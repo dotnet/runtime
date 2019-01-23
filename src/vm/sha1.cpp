@@ -201,7 +201,6 @@ void SHA1Hash::SHA1Init(SHA1_CTX *ctx)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
     
     ctx->nbit_total[0] = ctx->nbit_total[1] = 0;
@@ -235,7 +234,6 @@ void SHA1Hash::SHA1Update(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
     
     const BYTE *fresh_data = msg;
@@ -323,7 +321,6 @@ void SHA1Hash::SHA1Final(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
     
     DWORDC nbit0 = ctx->nbit_total[0];
@@ -368,7 +365,6 @@ SHA1Hash::SHA1Hash()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     m_fFinalized = FALSE;
@@ -381,7 +377,6 @@ void SHA1Hash::AddData(BYTE *pbData, DWORD cbData)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
     
     if (m_fFinalized)
@@ -397,7 +392,6 @@ BYTE *SHA1Hash::GetHash()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
     if (m_fFinalized)

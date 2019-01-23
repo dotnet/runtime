@@ -766,7 +766,6 @@ HRESULT RetrieveManagedBucketParameters(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
@@ -856,7 +855,6 @@ HRESULT GetBucketParametersForCurrentException(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 

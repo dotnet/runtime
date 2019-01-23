@@ -388,8 +388,6 @@ VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ... )
 {
     STATIC_CONTRACT_WRAPPER;
     
-    ENTER_SO_NOT_MAINLINE_CODE;
-    
 #ifdef SELF_NO_HOST
     if (TRUE)
 #else //!SELF_NO_HOST
@@ -406,15 +404,11 @@ VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ... )
         // Cannot acquire the required lock, as this would call back
         // into the host.  Eat the log message.
     }
-    
-    LEAVE_SO_NOT_MAINLINE_CODE;
 }
 
 VOID LogSpew2(DWORD facility2, DWORD level, const char *fmt, ... )
 {
     STATIC_CONTRACT_WRAPPER;
-    
-    ENTER_SO_NOT_MAINLINE_CODE;
     
 #ifdef SELF_NO_HOST
     if (TRUE)
@@ -432,15 +426,11 @@ VOID LogSpew2(DWORD facility2, DWORD level, const char *fmt, ... )
         // Cannot acquire the required lock, as this would call back
         // into the host.  Eat the log message.
     }
-    
-    LEAVE_SO_NOT_MAINLINE_CODE;
 }
 
 VOID LogSpewAlways (const char *fmt, ... )
 {
     STATIC_CONTRACT_WRAPPER;
-    
-    ENTER_SO_NOT_MAINLINE_CODE;
     
 #ifdef SELF_NO_HOST
     if (TRUE)
@@ -458,8 +448,6 @@ VOID LogSpewAlways (const char *fmt, ... )
         // Cannot acquire the required lock, as this would call back
         // into the host.  Eat the log message.
     }
-    
-    LEAVE_SO_NOT_MAINLINE_CODE;
 }
 
 #endif // LOGGING

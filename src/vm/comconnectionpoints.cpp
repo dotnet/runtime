@@ -61,7 +61,6 @@ HRESULT __stdcall ConnectionPoint::QueryInterface(REFIID riid, void** ppv)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(ppv, NULL_OK));
     }
     CONTRACTL_END;
@@ -101,7 +100,6 @@ ULONG __stdcall ConnectionPoint::AddRef()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -118,7 +116,6 @@ ULONG __stdcall ConnectionPoint::Release()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -144,7 +141,6 @@ HRESULT __stdcall ConnectionPoint::GetConnectionInterface(IID *pIID)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
         PRECONDITION(CheckPointer(pIID, NULL_OK));
     }
     CONTRACTL_END;
@@ -169,7 +165,6 @@ HRESULT __stdcall ConnectionPoint::GetConnectionPointContainer(IConnectionPointC
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
         PRECONDITION(CheckPointer(ppCPC, NULL_OK));
     }
     CONTRACTL_END;
@@ -203,7 +198,6 @@ HRESULT __stdcall ConnectionPoint::Advise(IUnknown *pUnk, DWORD *pdwCookie)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
         PRECONDITION(CheckPointer(pUnk, NULL_OK));
         PRECONDITION(CheckPointer(pdwCookie, NULL_OK));
     }
@@ -238,7 +232,6 @@ HRESULT __stdcall ConnectionPoint::Unadvise(DWORD dwCookie)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
     }
     CONTRACTL_END;
 
@@ -268,7 +261,6 @@ HRESULT __stdcall ConnectionPoint::EnumConnections(IEnumConnections **ppEnum)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
         PRECONDITION(CheckPointer(ppEnum, NULL_OK));
     }
     CONTRACTL_END;
@@ -787,7 +779,6 @@ HRESULT __stdcall ConnectionPointEnum::QueryInterface(REFIID riid, void** ppv)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
         PRECONDITION(CheckPointer(ppv, NULL_OK));
     }
     CONTRACTL_END;
@@ -827,7 +818,6 @@ ULONG __stdcall ConnectionPointEnum::AddRef()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -844,7 +834,6 @@ ULONG __stdcall ConnectionPointEnum::Release()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -872,7 +861,6 @@ HRESULT __stdcall ConnectionPointEnum::Next(ULONG cConnections, IConnectionPoint
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(ppCP, NULL_OK));
         PRECONDITION(CheckPointer(pcFetched, NULL_OK));
     }
@@ -914,7 +902,6 @@ HRESULT __stdcall ConnectionPointEnum::Skip(ULONG cConnections)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -949,7 +936,6 @@ HRESULT __stdcall ConnectionPointEnum::Reset()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -971,7 +957,6 @@ HRESULT __stdcall ConnectionPointEnum::Clone(IEnumConnectionPoints **ppEnum)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(ppEnum, NULL_OK));
     }
     CONTRACTL_END;
@@ -1008,7 +993,6 @@ ConnectionEnum::ConnectionEnum(ConnectionPoint *pConnectionPoint)
     {
         NOTHROW;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1022,7 +1006,6 @@ ConnectionEnum::~ConnectionEnum()
     {
         NOTHROW;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1037,7 +1020,6 @@ HRESULT __stdcall ConnectionEnum::QueryInterface(REFIID riid, void** ppv)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(ppv, NULL_OK));
     }
     CONTRACTL_END;
@@ -1076,7 +1058,6 @@ ULONG __stdcall ConnectionEnum::AddRef()
     {
         NOTHROW;
         GC_TRIGGERS;
-        SO_TOLERANT;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -1094,7 +1075,6 @@ ULONG __stdcall ConnectionEnum::Release()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1115,7 +1095,6 @@ HRESULT __stdcall ConnectionEnum::Next(ULONG cConnections, CONNECTDATA* rgcd, UL
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(rgcd, NULL_OK));
         PRECONDITION(CheckPointer(pcFetched, NULL_OK));
     }
@@ -1171,7 +1150,6 @@ HRESULT __stdcall ConnectionEnum::Skip(ULONG cConnections)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1203,7 +1181,6 @@ HRESULT __stdcall ConnectionEnum::Reset()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1225,7 +1202,6 @@ HRESULT __stdcall ConnectionEnum::Clone(IEnumConnections **ppEnum)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
         PRECONDITION(CheckPointer(ppEnum, NULL_OK));
     }
     CONTRACTL_END;
@@ -1237,7 +1213,6 @@ HRESULT __stdcall ConnectionEnum::Clone(IEnumConnections **ppEnum)
     // Initialize the out parameters.
     *ppEnum = NULL;
 
-    // This should setup a SO_INTOLERANT region, why isn't it?
     SetupForComCallHR();
     
     ConnectionEnum *pConEnum = new(nothrow) ConnectionEnum(m_pConnectionPoint);

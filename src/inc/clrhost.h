@@ -90,7 +90,6 @@ inline void ClrFlsIncrementValue(DWORD slot, int increment)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     _ASSERTE(increment != 0);
     
@@ -107,8 +106,6 @@ inline void ClrFlsIncrementValue(DWORD slot, int increment)
     else
     {
         BEGIN_PRESERVE_LAST_ERROR;
-
-        ANNOTATION_VIOLATION(SOToleranceViolation);
 
         IExecutionEngine * pEngine = GetExecutionEngine();
         value = (size_t) pEngine->TLS_GetValue(slot);
@@ -127,7 +124,6 @@ inline void * ClrFlsGetValue (DWORD slot)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
 
 	void **block = (*__ClrFlsGetBlock)();
 	if (block != NULL)
@@ -136,8 +132,6 @@ inline void * ClrFlsGetValue (DWORD slot)
     }
     else
     {
-        ANNOTATION_VIOLATION(SOToleranceViolation);
-
         void * value = GetExecutionEngine()->TLS_GetValue(slot);
         return value;
     }
@@ -149,7 +143,6 @@ inline BOOL ClrFlsCheckValue(DWORD slot, void ** pValue)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
 
 #ifdef _DEBUG
     *pValue = ULongToPtr(0xcccccccc);
@@ -162,7 +155,6 @@ inline BOOL ClrFlsCheckValue(DWORD slot, void ** pValue)
     }
     else
     {
-        ANNOTATION_VIOLATION(SOToleranceViolation);    
         BOOL result = GetExecutionEngine()->TLS_CheckValue(slot, pValue);
         return result;
     }
@@ -174,10 +166,9 @@ inline void ClrFlsSetValue(DWORD slot, void *pData)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
 
-	void **block = (*__ClrFlsGetBlock)();
-	if (block != NULL)
+    void **block = (*__ClrFlsGetBlock)();
+    if (block != NULL)
     {
         block[slot] = pData;
     }
@@ -185,7 +176,6 @@ inline void ClrFlsSetValue(DWORD slot, void *pData)
     {
         BEGIN_PRESERVE_LAST_ERROR;
 
-        ANNOTATION_VIOLATION(SOToleranceViolation);
         GetExecutionEngine()->TLS_SetValue(slot, pData);
 
         END_PRESERVE_LAST_ERROR;
@@ -618,7 +608,5 @@ inline bool IsInCantAllocRegion ()
 }
 // for stress log the rule is more restrict, we have to check the global counter too
 extern BOOL IsInCantAllocStressLogRegion();
-
-#include "genericstackprobe.inl"
 
 #endif

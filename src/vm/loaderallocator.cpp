@@ -202,7 +202,6 @@ BOOL LoaderAllocator::CheckAddReference_Unlocked(LoaderAllocator *pOtherLA)
     CONTRACTL
     {
         THROWS;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -237,7 +236,6 @@ BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
     CONTRACTL
     {
         THROWS;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -263,7 +261,6 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
     CONTRACTL
     {
         THROWS;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -363,7 +360,6 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
     // List of LoaderAllocators being deleted
@@ -530,7 +526,6 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
     
@@ -877,7 +872,6 @@ OBJECTREF LoaderAllocator::GetHandleValue(LOADERHANDLE handle)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1327,7 +1321,6 @@ void LoaderAllocator::Terminate()
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
     } CONTRACTL_END;
 
     if (m_fTerminated)
@@ -1566,7 +1559,6 @@ DispatchToken LoaderAllocator::TryLookupDispatchToken(UINT32 typeId, UINT32 slot
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     } CONTRACTL_END;
 
 #ifdef FAT_DISPATCH_TOKENS
@@ -1580,14 +1572,12 @@ DispatchToken LoaderAllocator::TryLookupDispatchToken(UINT32 typeId, UINT32 slot
             // exceptions and just return an invalid token, since this is
             EX_TRY
             {
-                BEGIN_SO_INTOLERANT_CODE(GetThread());
                 SimpleReadLockHolder rlock(m_pFatTokenSetLock);
                 if (m_pFatTokenSet != NULL)
                 {
                     DispatchTokenFat key(typeId, slotNumber);
                     pFat = m_pFatTokenSet->Lookup(&key);
                 }
-                END_SO_INTOLERANT_CODE;
             }
             EX_CATCH
             {
@@ -1951,7 +1941,6 @@ void AssemblyLoaderAllocator::ReleaseManagedAssemblyLoadContext()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 

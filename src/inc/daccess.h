@@ -2159,7 +2159,7 @@ public: name(int dummy) : base(dummy) {}
 #endif // FEATURE_PAL
 
 // helper macro to make the vtables unique for DAC
-#define VPTR_UNIQUE(unique) virtual int MakeVTableUniqueForDAC() {    STATIC_CONTRACT_SO_TOLERANT; return unique; }
+#define VPTR_UNIQUE(unique) virtual int MakeVTableUniqueForDAC() { return unique; }
 #define VPTR_UNIQUE_BaseDomain                          (100000)
 #define VPTR_UNIQUE_SystemDomain                        (VPTR_UNIQUE_BaseDomain + 1)
 #define VPTR_UNIQUE_ComMethodFrame                      (VPTR_UNIQUE_SystemDomain + 1)

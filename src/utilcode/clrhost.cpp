@@ -223,7 +223,6 @@ HMODULE GetCLRModule ()
     //! So don't put in a runtime contract and don't invoke other functions in the CLR (not even _ASSERTE!) 
 
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC; // DAC can call in here since we initialize the SxS callbacks in ClrDataAccess::Initialize.
 
 #ifdef DACCESS_COMPILE

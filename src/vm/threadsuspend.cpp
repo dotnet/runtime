@@ -456,7 +456,6 @@ DWORD Thread::ResumeThread()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1012,7 +1011,6 @@ BOOL Thread::ReadyForAsyncException()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -1025,9 +1023,6 @@ BOOL Thread::ReadyForAsyncException()
     {
         return TRUE;
     }
-
-    // This needs the probe with GenerateHardSO
-    CONTRACT_VIOLATION(SOToleranceViolation);
 
     if (GetThread() == this && HasThreadStateNC (TSNC_PreparingAbort) && !IsRudeAbort() )
     {
@@ -1194,7 +1189,6 @@ BOOL Thread::IsRudeAbort()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -2751,12 +2745,9 @@ void Thread::RareDisablePreemptiveGC()
 
     CONTRACTL {
         NOTHROW;
-        SO_TOLERANT;
         DISABLED(GC_TRIGGERS);  // I think this is actually wrong: prevents a p->c->p mode switch inside a NOTRIGGER region.
     }
     CONTRACTL_END;
-
-    CONTRACT_VIOLATION(SOToleranceViolation);
 
     if (IsAtProcessExit())
     {
@@ -3000,9 +2991,7 @@ void Thread::HandleThreadAbort (BOOL fForce)
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_SO_TOLERANT;
 
-    BEGIN_SO_INTOLERANT_CODE(this);
     TESTHOOKCALL(AppDomainCanBeUnloaded(GetDomain()->GetId().m_dwId,FALSE));
 
     // It's possible we could go through here if we hit a hard SO and MC++ has called back
@@ -3058,7 +3047,6 @@ void Thread::HandleThreadAbort (BOOL fForce)
 
         RaiseTheExceptionInternalOnly(exceptObj, FALSE);
     }
-    END_SO_INTOLERANT_CODE;
 
     END_PRESERVE_LAST_ERROR;
 }
@@ -3090,9 +3078,6 @@ void Thread::PreWorkForThreadAbort()
             case eRudeExitProcess:
             case eDisableRuntime:
                     {
-                        // We're about to exit the process, if we take an SO here we'll just exit faster right???
-                        CONTRACT_VIOLATION(SOToleranceViolation);
-
                 GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ThreadRudeAbortInCriticalRegion,action);
                 GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
                     }
@@ -3178,12 +3163,11 @@ void Thread::RareEnablePreemptiveGC()
     CONTRACTL {
         NOTHROW;
         DISABLED(GC_TRIGGERS); // I think this is actually wrong: prevents a p->c->p mode switch inside a NOTRIGGER region.
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
     // @todo -  Needs a hard SO probe
-    CONTRACT_VIOLATION(GCViolation|FaultViolation|SOToleranceViolation);
+    CONTRACT_VIOLATION(GCViolation|FaultViolation);
 
     // If we have already received our PROCESS_DETACH during shutdown, there is only one thread in the
     // process and no coordination is necessary.
@@ -3342,7 +3326,6 @@ void RedirectedThreadFrame::ExceptionUnwind()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3485,7 +3468,6 @@ void NotifyHostOnGCSuspension()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -3516,15 +3498,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
     Thread *pThread = GetThread();
     _ASSERTE(pThread);
-
-#ifdef FEATURE_STACK_PROBE
-    if (GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeUnloadAppDomain)
-    {
-        RetailStackProbe(ADJUST_PROBE(DEFAULT_ENTRY_PROBE_AMOUNT), pThread);
-    }
-#endif
-
-    BEGIN_CONTRACT_VIOLATION(SOToleranceViolation);
 
     // Get the saved context
     CONTEXT *pCtx = pThread->GetSavedRedirectContext();
@@ -3683,9 +3656,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     }
 
 #endif // _TARGET_X86_
-
-    END_CONTRACT_VIOLATION;
-
 }
 
 //****************************************************************************************
@@ -4988,13 +4958,6 @@ ThrowControlForThread(
 
     _ASSERTE(pThread->PreemptiveGCDisabled());
 
-#ifdef FEATURE_STACK_PROBE
-    if (GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeUnloadAppDomain)
-    {
-        RetailStackProbe(ADJUST_PROBE(DEFAULT_ENTRY_PROBE_AMOUNT), pThread);
-    }
-#endif
-
     // Check if we can start abort
     // We use InducedThreadRedirect as a marker to tell stackwalker that a thread is redirected from JIT code.
     // This is to distinguish a thread is in Preemptive mode and in JIT code.
@@ -5830,7 +5793,6 @@ void Thread::UnhijackThread()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -6061,23 +6023,11 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
 #ifdef HIJACK_NONINTERRUPTIBLE_THREADS
     Thread         *thread = GetThread();
-
-#ifdef FEATURE_STACK_PROBE
-    if (GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeUnloadAppDomain)
-    {
-        // Make sure default domain does not see SO.
-        // probe for our entry point amount and throw if not enough stack
-        RetailStackProbe(ADJUST_PROBE(DEFAULT_ENTRY_PROBE_AMOUNT), thread);
-    }
-#endif // FEATURE_STACK_PROBE
-
-    CONTRACT_VIOLATION(SOToleranceViolation);
 
     thread->ResetThreadState(Thread::TS_Hijacked);
 

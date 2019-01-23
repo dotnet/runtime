@@ -381,9 +381,6 @@ Assembly * Assembly::Create(
 
     NewHolder<Assembly> pAssembly (new Assembly(pDomain, pFile, debuggerFlags, fIsCollectible));
 
-    // If there are problems that arise from this call stack, we'll chew up a lot of stack
-    // with the various EX_TRY/EX_HOOKs that we will encounter.
-    INTERIOR_STACK_PROBE_FOR(GetThread(), DEFAULT_ENTRY_PROBE_SIZE); 
 #ifdef PROFILING_SUPPORTED
     {
         BEGIN_PIN_PROFILER(CORProfilerTrackAssemblyLoads());
@@ -412,7 +409,6 @@ Assembly * Assembly::Create(
     EX_END_HOOK;
 #endif
     pAssembly.SuppressRelease();
-    END_INTERIOR_STACK_PROBE;
     
     return pAssembly;
 } // Assembly::Create
@@ -758,7 +754,6 @@ DomainAssembly *Assembly::FindDomainAssembly(AppDomain *pDomain)
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACT_END;

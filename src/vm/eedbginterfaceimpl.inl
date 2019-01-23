@@ -25,7 +25,6 @@ class EEToDebuggerExceptionInterfaceWrapper
         {
             THROWS;
             GC_TRIGGERS;
-            SO_INTOLERANT;
             MODE_ANY;
         }
         CONTRACTL_END;
@@ -52,7 +51,6 @@ class EEToDebuggerExceptionInterfaceWrapper
         {
             THROWS;
             GC_TRIGGERS;
-            SO_INTOLERANT;
             MODE_ANY;
         }
         CONTRACTL_END;

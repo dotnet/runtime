@@ -75,7 +75,6 @@ public:
             NOTHROW;
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
-            SO_TOLERANT;
             PRECONDITION(CheckPointer(ppv, NULL_OK));
         }
         CONTRACTL_END;
@@ -103,7 +102,6 @@ public:
             NOTHROW;
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
         
@@ -120,7 +118,6 @@ public:
             NOTHROW;
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
-            SO_TOLERANT;
             PRECONDITION(m_cbRefCount > 0);
         }
         CONTRACTL_END;
@@ -143,15 +140,6 @@ public:
     {
         HRESULT hr = S_OK;
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // SetupForComCallHR uses "SO_INTOLERANT_CODE_NOTHROW" to setup the SO-Intolerant transition
-        // for COM Interop. However, "SO_INTOLERANT_CODE_NOTHROW" expects that no exception can escape
-        // through this boundary but all it does is (in addition to checking that no exception has escaped it)
-        // do stack probing.
-        //
-        // However, Corrupting Exceptions [CE] can escape the COM Interop boundary. Thus, to address that scenario,
-        // we use the macro below that uses BEGIN_SO_INTOLERANT_CODE_NOTHROW to do the equivalent of 
-        // SO_INTOLERANT_CODE_NOTHROW and yet allow for CEs to escape through. Since there will be a corresponding
-        // END_SO_INTOLERANT_CODE, the call is splitted into two parts: the Begin and End (see below).
         BeginSetupForComCallHRWithEscapingCorruptingExceptions();
 #else // !FEATURE_CORRUPTING_EXCEPTIONS
         SetupForComCallHR();
@@ -166,7 +154,6 @@ public:
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -196,7 +183,6 @@ public:
             NOTHROW;
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -212,15 +198,6 @@ public:
         HRESULT hr = S_OK;
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // SetupForComCallHR uses "SO_INTOLERANT_CODE_NOTHROW" to setup the SO-Intolerant transition
-        // for COM Interop. However, "SO_INTOLERANT_CODE_NOTHROW" expects that no exception can escape
-        // through this boundary but all it does is (in addition to checking that no exception has escaped it)
-        // do stack probing.
-        //
-        // However, Corrupting Exceptions [CE] can escape the COM Interop boundary. Thus, to address that scenario,
-        // we use the macro below that uses BEGIN_SO_INTOLERANT_CODE_NOTHROW to do the equivalent of 
-        // SO_INTOLERANT_CODE_NOTHROW and yet allow for CEs to escape through. Since there will be a corresponding
-        // END_SO_INTOLERANT_CODE, the call is splitted into two parts: the Begin and End (see below).
         BeginSetupForComCallHRWithEscapingCorruptingExceptions();
 #else // !FEATURE_CORRUPTING_EXCEPTIONS
         SetupForComCallHR();
@@ -236,7 +213,6 @@ public:
 
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
         
@@ -283,15 +259,6 @@ done: ;
         HRESULT hr = S_OK;
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        // SetupForComCallHR uses "SO_INTOLERANT_CODE_NOTHROW" to setup the SO-Intolerant transition
-        // for COM Interop. However, "SO_INTOLERANT_CODE_NOTHROW" expects that no exception can escape
-        // through this boundary but all it does is (in addition to checking that no exception has escaped it)
-        // do stack probing.
-        //
-        // However, Corrupting Exceptions [CE] can escape the COM Interop boundary. Thus, to address that scenario,
-        // we use the macro below that uses BEGIN_SO_INTOLERANT_CODE_NOTHROW to do the equivalent of 
-        // SO_INTOLERANT_CODE_NOTHROW and yet allow for CEs to escape through. Since there will be a corresponding
-        // END_SO_INTOLERANT_CODE, the call is splitted into two parts: the Begin and End (see below).
         BeginSetupForComCallHRWithEscapingCorruptingExceptions();
 #else // !FEATURE_CORRUPTING_EXCEPTIONS
         SetupForComCallHR();
@@ -306,7 +273,6 @@ done: ;
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
-            SO_TOLERANT;
         }
         CONTRACTL_END;
 
@@ -343,7 +309,6 @@ private:
             GC_TRIGGERS;
             MODE_ANY;
             INJECT_FAULT(COMPlusThrowOM(););
-            SO_TOLERANT;        
         }
         CONTRACTL_END;
 
@@ -355,10 +320,8 @@ private:
             MethodTable* tempMT = NULL;
             EX_TRY
             { 
-                BEGIN_SO_INTOLERANT_CODE(pThread);
                 GCX_COOP();
                 tempMT = GetTypeForCLSID(m_ClsId);
-                END_SO_INTOLERANT_CODE;
             }
             EX_CATCH 
             {
@@ -387,7 +350,6 @@ STDMETHODIMP EEClassFactory::GetLicInfo(LPLICINFO pLicInfo)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
     }
     CONTRACTL_END;
 
@@ -451,7 +413,6 @@ STDMETHODIMP EEClassFactory::RequestLicKey(DWORD dwReserved, BSTR * pbstrKey)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
     }
     CONTRACTL_END;
 
@@ -596,7 +557,6 @@ HRESULT STDMETHODCALLTYPE EEAllocateInstance(LPUNKNOWN pOuter, MethodTable* pMT,
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(CheckPointer(ppv, NULL_OK));
     }
@@ -739,7 +699,6 @@ HRESULT STDMETHODCALLTYPE EEDllGetClassObject(REFCLSID rclsid, REFIID riid, LPVO
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;        
         PRECONDITION(CheckPointer(ppv, NULL_OK));
     }
     CONTRACTL_END;
@@ -758,10 +717,8 @@ HRESULT STDMETHODCALLTYPE EEDllGetClassObject(REFCLSID rclsid, REFIID riid, LPVO
 
         {
             Thread *pThread = GetThread();
-            BEGIN_SO_INTOLERANT_CODE(pThread);
             GCX_COOP();
             pMT = GetTypeForCLSID(rclsid);
-            END_SO_INTOLERANT_CODE;
         }
 
         // If we can't find the class based on the CLSID or if the registered managed
@@ -836,7 +793,6 @@ STDAPI ClrCreateManagedInstance(LPCWSTR typeName, REFIID riid, LPVOID FAR *ppv)
         DISABLED(NOTHROW);
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(typeName, NULL_OK));
         PRECONDITION(CheckPointer(ppv, NULL_OK));
     }

@@ -106,7 +106,6 @@ inline BOOL PEImageLayout::CompareBase(UPTR base, UPTR mapping)
     {
         PRECONDITION(CheckPointer((PEImageLayout *)mapping));
         PRECONDITION(CheckPointer((PEImageLayout *)(base<<1),NULL_OK));
-        SO_TOLERANT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;

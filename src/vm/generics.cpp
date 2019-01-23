@@ -19,7 +19,6 @@
 #include "eeconfig.h"
 #include "generics.h"
 #include "genericdict.h"
-#include "stackprobe.h"
 #include "typestring.h"
 #include "typekey.h"
 #include "dumpcommon.h"
@@ -144,13 +143,6 @@ TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
         ThrowHR(COR_E_OVERFLOW);
 
     TypeHandle ret = TypeHandle();
-    DECLARE_INTERIOR_STACK_PROBE;
-#ifndef DACCESS_COMPILE
-    if ((dwAllocSize/GetOsPageSize()+1) >= 2)
-    {
-        DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD((10+dwAllocSize/GetOsPageSize()+1), NO_FORBIDGC_LOADER_USE_ThrowSO(););
-    }
-#endif // DACCESS_COMPILE
     TypeHandle *repInst = (TypeHandle*) _alloca(dwAllocSize);
 
     for (DWORD i = 0; i < ntypars; i++)
@@ -162,7 +154,6 @@ TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
     TypeKey canonKey(pTypeKey->GetModule(), pTypeKey->GetTypeToken(), Instantiation(repInst, ntypars));
     ret = ClassLoader::LoadConstructedTypeThrowing(&canonKey, fLoadTypes, level);
 
-    END_INTERIOR_STACK_PROBE;
     RETURN(ret);
 }
 
@@ -968,7 +959,6 @@ BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
         PRECONDITION(CheckPointer(pRepMethod));
         SUPPORTS_DAC;
@@ -1007,7 +997,6 @@ BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         CANNOT_TAKE_LOCK;
         PRECONDITION(CheckPointer(pRepMethod));
         SUPPORTS_DAC;

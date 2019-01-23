@@ -38,7 +38,6 @@ FORCEINLINE SetCallbackStateFlagsHolder::~SetCallbackStateFlagsHolder()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -112,7 +111,6 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCWST
     {
         THROWS;
         GC_TRIGGERS;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -236,7 +234,6 @@ FORCEINLINE void ProfilingAPIUtility::IncEvacuationCounter(Thread * pThread)
         FORBID_FAULT;
         MODE_ANY;
         CANNOT_TAKE_LOCK;
-        SO_NOT_MAINLINE;
     } 
     CONTRACTL_END;
 
@@ -263,7 +260,6 @@ FORCEINLINE void ProfilingAPIUtility::DecEvacuationCounter(Thread * pThread)
         FORBID_FAULT;
         MODE_ANY;
         CANNOT_TAKE_LOCK;
-        SO_NOT_MAINLINE;
     } 
     CONTRACTL_END;
 

@@ -101,7 +101,6 @@ void ProfilerTransitionCallbackHelper(MethodDesc* pMD, Thread* pThread, COR_PRF_
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(CheckPointer(pThread));
         PRECONDITION(CORProfilerTrackTransitions());
@@ -131,10 +130,6 @@ extern "C" HRESULT STDCALL StubRareDisableHRWorker(Thread *pThread)
     
     // Do not add a CONTRACT here.  We haven't set up SEH.  We rely
     // on HandleThreadAbort dealing with this situation properly.
-
-    // @todo -  We need to probe here, but can't introduce destructors etc.
-    BEGIN_CONTRACT_VIOLATION(SOToleranceViolation);
-
 
     // WARNING!!!!
     // when we start executing here, we are actually in cooperative mode.  But we
@@ -169,8 +164,6 @@ extern "C" HRESULT STDCALL StubRareDisableHRWorker(Thread *pThread)
 
     // should always be in coop mode here
     _ASSERTE(pThread->PreemptiveGCDisabled());
-
-    END_CONTRACT_VIOLATION;
 
     // Note that this code does not handle rare signatures that do not return HRESULT properly
 
@@ -209,8 +202,8 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
     PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonILStubWillNotThrow);
 
     //
-    // NOTE! We do not use BEGIN_CALL_TO_MANAGEDEX around this call because we stayed in the SO_TOLERANT
-    // mode and COMToCLRDispatchHelper is responsible for pushing/popping the CPFH into the FS:0 chain.
+    // NOTE! We do not use BEGIN_CALL_TO_MANAGEDEX around this call because COMToCLRDispatchHelper is
+    // responsible for pushing/popping the CPFH into the FS:0 chain.
     //
 
     *pRetValOut = COMToCLRDispatchHelper(
@@ -279,7 +272,6 @@ OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * pp
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT; 
     }
     CONTRACTL_END;
 
@@ -302,7 +294,6 @@ bool COMToCLRGetObjectAndTarget_WinRTCtor(Thread * pThread, MethodDesc * pRealMD
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT; 
     }
     CONTRACTL_END;
 
@@ -322,8 +313,6 @@ bool COMToCLRGetObjectAndTarget_WinRTCtor(Thread * pThread, MethodDesc * pRealMD
 
     bool fSuccess = true;
 
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(pThread, { *pRetValOut = COR_E_STACKOVERFLOW; return false; } );
-
     EX_TRY
     {
         *pObjectOut = AllocateObject(pMT);
@@ -334,8 +323,6 @@ bool COMToCLRGetObjectAndTarget_WinRTCtor(Thread * pThread, MethodDesc * pRealMD
         *pRetValOut = SetupErrorInfo(GET_THROWABLE());
     }
     EX_END_CATCH(SwallowAllExceptions);
-
-    END_SO_INTOLERANT_CODE;
 
     return fSuccess;
 }
@@ -348,7 +335,6 @@ OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc 
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT; 
     }
     CONTRACTL_END;
 
@@ -390,7 +376,6 @@ OBJECTREF COMToCLRGetObjectAndTarget_NonVirtual(ComCallWrapper * pWrap, MethodDe
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT; 
     }
     CONTRACTL_END;
 
@@ -409,7 +394,6 @@ void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethod
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT; 
     }
     CONTRACTL_END;
 
@@ -433,7 +417,6 @@ void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallW
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT; 
     }
     CONTRACTL_END;
 
@@ -494,7 +477,6 @@ void COMToCLRWorkerBody(
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT; 
     }
     CONTRACTL_END;
 
@@ -565,20 +547,6 @@ void COMToCLRWorkerBody(
     return;
 }
 
-void COMToCLRWorkerBody_SOIntolerant(Thread * pThread, ComMethodFrame * pFrame, ComCallWrapper * pWrap, UINT64 * pRetValOut)
-{
-    STATIC_CONTRACT_THROWS;             // THROWS due to END_SO_TOLERANT_CODE
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_SO_INTOLERANT; 
-
-    BEGIN_SO_TOLERANT_CODE(pThread);
-
-    COMToCLRWorkerBody(pThread, pFrame, pWrap, pRetValOut);
-
-    END_SO_TOLERANT_CODE;
-}
-
 //------------------------------------------------------------------
 // UINT64 __stdcall COMToCLRWorker(Thread *pThread, 
 //                                  ComMethodFrame* pFrame)
@@ -598,7 +566,6 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
         // to leave the MODE_ contract enabled on x86.
         DISABLED(MODE_PREEMPTIVE);
 #endif
-        SO_TOLERANT; 
         PRECONDITION(CheckPointer(pFrame));
         PRECONDITION(CheckPointer(pThread, NULL_OK));
     }
@@ -769,9 +736,6 @@ static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
     
     HRESULT hrRetVal = S_OK;
 
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(pThread, return COR_E_STACKOVERFLOW);
-    // BEGIN_ENTRYPOINT_NOTHROW_WITH_THREAD(pThread);
-   
     IUnknown** pip = (IUnknown **)pFrame->GetPointerToArguments();
     IUnknown* pUnk = (IUnknown *)*pip; 
     _ASSERTE(pUnk != NULL);
@@ -809,9 +773,6 @@ static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
 
     LOG((LF_STUBS, LL_INFO1000000, "FieldCallWorker leave\n"));
 
-    END_SO_INTOLERANT_CODE;
-    //END_ENTRYPOINT_NOTHROW_WITH_THREAD;
-    
     return hrRetVal;
 }
 

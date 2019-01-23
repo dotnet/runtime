@@ -42,7 +42,6 @@ DEBUG_NOINLINE void AddHostCallsStaticMarker()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_HOST_CALLS;
 
     METHOD_CANNOT_BE_FOLDED_DEBUG;
@@ -203,7 +202,6 @@ LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -277,7 +275,6 @@ BOOL EEVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -302,7 +299,6 @@ SIZE_T EEVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZ
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -319,7 +315,6 @@ BOOL EEVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWOR
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -335,11 +330,8 @@ HANDLE EEGetProcessHeap()
     // Note: this can be called a little early for real contracts, so we use static contracts instead.
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
 
-    {
-        return GetProcessHeap();
-    }
+    return GetProcessHeap();
 }
 #define GetProcessHeap() Dont_Use_GetProcessHeap()
 
@@ -350,7 +342,6 @@ HANDLE EEHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -372,7 +363,6 @@ BOOL EEHeapDestroy(HANDLE hHeap)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -400,7 +390,6 @@ BOOL EEHeapDestroy(HANDLE hHeap)
 LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes) 
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_SO_INTOLERANT;
 
 #ifdef FAILPOINTS_ENABLED
     if (RFS_HashStack ())
@@ -442,7 +431,6 @@ LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
 LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
 {
     WRAPPER_NO_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
 
 #ifdef _DEBUG
     // Check whether (indispensable) implicit casting in ClrAllocInProcessHeapBootstrap is safe.
@@ -450,12 +438,6 @@ LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
 #endif
 
     static HANDLE ProcessHeap = NULL;
-
-    // We need to guarentee a very small stack consumption in allocating.  And we can't allow
-    // an SO to happen while calling into the host.  This will force a hard SO which is OK because
-    // we shouldn't ever get this close inside the EE in SO-intolerant code, so this should
-    // only fail if we call directly in from outside the EE, such as the JIT.
-    MINIMAL_STACK_PROBE_CHECK_THREAD(GetThread());
 
     if (ProcessHeap == NULL)
         ProcessHeap = EEGetProcessHeap();
@@ -468,11 +450,6 @@ BOOL EEHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
-
-    // @todo -  Need a backout validation here.
-    CONTRACT_VIOLATION(SOToleranceViolation);
-
 
     BOOL retVal = FALSE;
 
@@ -509,7 +486,6 @@ BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -518,10 +494,6 @@ BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
     // Check whether (indispensable) implicit casting in ClrFreeInProcessHeapBootstrap is safe.
     static FastFreeInProcessHeapFunc pFunc = EEHeapFreeInProcessHeap;
 #endif
-
-    // Take a look at comment in EEHeapFree and EEHeapAllocInProcessHeap, obviously someone
-    // needs to take a little time to think more about this code.
-    //CONTRACT_VIOLATION(SOToleranceViolation);
 
     static HANDLE ProcessHeap = NULL;
 
@@ -602,7 +574,6 @@ DWORD EESleepEx(DWORD dwMilliseconds, BOOL bAlertable)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -627,7 +598,6 @@ BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 	
@@ -643,7 +613,6 @@ BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goT
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         PRECONDITION(dwSleepMSec < 10000 || GetThread() == NULL || !GetThread()->PreemptiveGCDisabled());
     }
     CONTRACTL_END;
@@ -759,11 +728,8 @@ void EEDeleteCriticalSection(CRITSEC_COOKIE cookie)
     {
         NOTHROW;
         WRAPPER(GC_NOTRIGGER);
-        SO_TOLERANT;
     }
     CONTRACTL_END;
-
-    VALIDATE_BACKOUT_STACK_CONSUMPTION;
 
     Crst *pCrst = CookieToCrst(cookie);
     _ASSERTE(pCrst);
@@ -782,7 +748,6 @@ DEBUG_NOINLINE void EEEnterCriticalSection(CRITSEC_COOKIE cookie) {
     {
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
@@ -800,7 +765,6 @@ DEBUG_NOINLINE void EELeaveCriticalSection(CRITSEC_COOKIE cookie)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
@@ -818,7 +782,6 @@ LPVOID EETlsGetValue(DWORD slot)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     //
     // @todo: we don't want TlsGetValue to throw, but CheckThreadState throws right now. Either modify
@@ -840,7 +803,6 @@ BOOL EETlsCheckValue(DWORD slot, LPVOID * pValue)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     //
     // @todo: we don't want TlsGetValue to throw, but CheckThreadState throws right now. Either modify
@@ -865,7 +827,6 @@ VOID EETlsSetValue(DWORD slot, LPVOID pData)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
 
     void **pTlsData = CExecutionEngine::CheckThreadState(slot);
 

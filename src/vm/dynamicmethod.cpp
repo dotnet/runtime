@@ -1054,7 +1054,6 @@ void LCGMethodResolver::GetJitContextCoop(SecurityControlFlags * securityControl
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_INTOLERANT;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(securityControlFlags));
         PRECONDITION(CheckPointer(typeOwner));
@@ -1479,7 +1478,6 @@ void* ChunkAllocator::New(size_t size)
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;

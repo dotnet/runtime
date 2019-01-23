@@ -1333,7 +1333,6 @@ public:
     void ResetForJitRetry()
     {
         CONTRACTL {
-            SO_TOLERANT;
             NOTHROW;
             GC_NOTRIGGER;
         } CONTRACTL_END;

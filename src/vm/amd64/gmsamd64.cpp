@@ -19,7 +19,6 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

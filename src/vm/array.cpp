@@ -1295,7 +1295,6 @@ void ArrayStubCache::CompileStub(const BYTE *pRawStub,
 UINT ArrayStubCache::Length(const BYTE *pRawStub)
 {
     LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_SO_TOLERANT;
     return ((ArrayOpScript*)pRawStub)->Length();
 }
 

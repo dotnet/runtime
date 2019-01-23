@@ -62,7 +62,6 @@ HRESULT ProfilingAPIAttachDetach::OverlappedResultHolder::Initialize()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_INTOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1161,7 +1160,6 @@ HRESULT CLRProfilingImpl::AttachProfiler(DWORD dwProfileeProcessID,
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         CAN_TAKE_LOCK;
-        SO_NOT_MAINLINE;
     }
     CONTRACTL_END;
 

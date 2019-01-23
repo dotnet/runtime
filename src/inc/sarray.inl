@@ -62,7 +62,6 @@ SArray<ELEMENT, BITWISE_COPY>::~SArray()
     CONTRACTL
     {
         NOTHROW;
-        SO_TOLERANT;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;

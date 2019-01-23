@@ -65,7 +65,6 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
     {
         THROWS;
         GC_TRIGGERS;
-        SO_INTOLERANT;
         INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END

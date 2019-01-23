@@ -68,7 +68,6 @@ void Exception::Delete(Exception* pvMemory)
     {
         GC_NOTRIGGER;
         NOTHROW;
-        SO_TOLERANT;
         SUPPORTS_DAC_HOST_ONLY;   // Exceptions aren't currently marshalled by DAC - just used in the host
     }
     CONTRACTL_END;
@@ -969,7 +968,6 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr)
 
 void DECLSPEC_NORETURN ThrowHR(HRESULT hr, SString const &msg)
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     WRAPPER_NO_CONTRACT;
 
     STRESS_LOG1(LF_EH, LL_INFO100, "ThrowHR: HR = %x\n", hr);
@@ -1009,7 +1007,6 @@ void DECLSPEC_NORETURN ThrowHR(HRESULT hr, UINT uText)
 
 void DECLSPEC_NORETURN ThrowWin32(DWORD err)
 {
-    STATIC_CONTRACT_SO_TOLERANT;
     WRAPPER_NO_CONTRACT;
     if (err == ERROR_NOT_ENOUGH_MEMORY)
     {
@@ -1035,7 +1032,6 @@ void DECLSPEC_NORETURN ThrowOutOfMemory()
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -1067,40 +1063,12 @@ void DECLSPEC_NORETURN ThrowOutOfMemory()
 
 #include "corexcep.h"
 
-#ifdef FEATURE_STACK_PROBE
-void DECLSPEC_NORETURN ThrowStackOverflow()
-{
-    CONTRACTL
-    {
-        // This should be throws... But it isn't because a SO doesn't technically
-        // fall into the same THROW/NOTHROW conventions as the rest of the contract
-        // infrastructure.
-        NOTHROW;
-
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        SUPPORTS_DAC; 
-    }
-    CONTRACTL_END;
-	
-    //g_hrFatalError=COR_E_STACKOVERFLOW;
-    PTR_INT32 p_ghrFatalError = dac_cast<PTR_INT32>(GVAL_ADDR(g_hrFatalError));
-    _ASSERTE(p_ghrFatalError != NULL);
-    *p_ghrFatalError = COR_E_STACKOVERFLOW;
-
-
-    RaiseException(EXCEPTION_SOFTSO, 0, 0, NULL);
-    UNREACHABLE();
-}
-#endif
-
 void DECLSPEC_NORETURN ThrowMessage(LPCSTR string, ...)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
     
@@ -1308,22 +1276,7 @@ DWORD GetCurrentExceptionCode()
 bool IsCurrentExceptionSO()
 {
     WRAPPER_NO_CONTRACT;
-    DWORD exceptionCode = GetCurrentExceptionCode();
-	return IsSOExceptionCode(exceptionCode);
-}
-
-bool IsSOExceptionCode(DWORD exceptionCode)
-{
-	if (exceptionCode == STATUS_STACK_OVERFLOW 
-#ifdef FEATURE_STACK_PROBE
-		  || exceptionCode == EXCEPTION_SOFTSO
-#endif
-	   )
-	{
-		return TRUE;
-	}
-	else
-		return FALSE;
+    return GetCurrentExceptionCode() == STATUS_STACK_OVERFLOW;
 }
 
 
@@ -1417,7 +1370,6 @@ BOOL WasThrownByUs(const EXCEPTION_RECORD *pcER, DWORD dwExceptionCode)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     _ASSERTE(IsInstanceTaggedSEHCode(dwExceptionCode));

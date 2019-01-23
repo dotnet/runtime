@@ -80,9 +80,6 @@ void STDMETHODCALLTYPE RegMeta::CloseEnum(
     if (pmdEnum == NULL)
         return;
 
-    // This function may be called through RCW.  When hosted, we have probed before this call, so the 
-    // following contract violation is OK.
-    CONTRACT_VIOLATION(SOToleranceViolation);
     HENUMInternal::DestroyEnum(pmdEnum);
     END_CLEANUP_ENTRYPOINT;
 } // RegMeta::CloseEnum

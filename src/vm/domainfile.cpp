@@ -93,7 +93,6 @@ LoaderAllocator * DomainFile::GetLoaderAllocator()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -382,7 +381,6 @@ DomainAssembly *DomainFile::GetDomainAssembly()
         SUPPORTS_DAC;
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
     }
     CONTRACTL_END;
 
@@ -514,7 +512,6 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
     Thread *pThread;
     pThread = GetThread();
     _ASSERTE(pThread);
-    INTERIOR_STACK_PROBE_FOR(pThread, 8);
 
     switch (level)
     {
@@ -581,8 +578,6 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
     default:
         UNREACHABLE();
     }
-
-    END_INTERIOR_STACK_PROBE;
 
 #ifdef FEATURE_MULTICOREJIT
     {
@@ -1658,7 +1653,6 @@ void DomainAssembly::DeliverAsyncEvents()
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 

@@ -845,7 +845,6 @@ BOOL Zapper::IsAssembly(LPCWSTR path)
     BEGIN_ENTRYPOINT_NOTHROW;
     EX_TRY
     {
-        REMOVE_STACK_GUARD;
         ((DomainCallback *) pvArgs)->doCallback();
     }
     EX_CATCH_HRESULT(hr);
