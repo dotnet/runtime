@@ -28,11 +28,14 @@ namespace System.Text.Json
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
 
-            int idx = span.IndexOf(JsonConstants.BackSlash);
-            if (idx != -1)
+            if (_stringHasEscaping)
             {
+                int idx = span.IndexOf(JsonConstants.BackSlash);
+                Debug.Assert(idx != -1);
                 return JsonReaderHelper.GetUnescapedString(span, idx);
             }
+
+            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
             return JsonReaderHelper.TranscodeHelper(span);
         }
 

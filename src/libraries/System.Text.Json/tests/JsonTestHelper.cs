@@ -157,6 +157,40 @@ namespace System.Text.Json.Tests
             return BufferFactory.Create(buffers);
         }
 
+        internal static ReadOnlySequence<byte> SegmentInto(ReadOnlyMemory<byte> data, int segmentCount)
+        {
+            if (segmentCount < 2)
+                throw new ArgumentOutOfRangeException(nameof(segmentCount));
+
+            int perSegment = data.Length / segmentCount;
+            BufferSegment<byte> first;
+
+            if (perSegment == 0 && data.Length > 0)
+            {
+                first = new BufferSegment<byte>(data.Slice(0, 1));
+                data = data.Slice(1);
+            }
+            else
+            {
+                first = new BufferSegment<byte>(data.Slice(0, perSegment));
+                data = data.Slice(perSegment);
+            }
+
+            BufferSegment<byte> last = first;
+            segmentCount--;
+
+            while (segmentCount > 1)
+            {
+                perSegment = data.Length / segmentCount;
+                last = last.Append(data.Slice(0, perSegment));
+                data = data.Slice(perSegment);
+                segmentCount--;
+            }
+
+            last = last.Append(data);
+            return new ReadOnlySequence<byte>(first, 0, last, data.Length);
+        }
+
         public static object ReturnObjectHelper(byte[] data, JsonCommentHandling commentHandling = JsonCommentHandling.Disallow)
         {
             var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
