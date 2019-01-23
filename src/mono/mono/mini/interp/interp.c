@@ -505,6 +505,116 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 	return virtual_imethod;
 }
 
+typedef struct {
+	InterpMethod *imethod;
+	InterpMethod *target_imethod;
+} InterpVTableEntry;
+
+/* domain lock must be held */
+static GSList*
+append_imethod (MonoDomain *domain, GSList *list, InterpMethod *imethod, InterpMethod *target_imethod)
+{
+	GSList *ret;
+	InterpVTableEntry *entry;
+
+	entry = (InterpVTableEntry*) mono_mempool_alloc (domain->mp, sizeof (InterpVTableEntry));
+	entry->imethod = imethod;
+	entry->target_imethod = target_imethod;
+	ret = g_slist_append_mempool (domain->mp, list, entry);
+
+	return ret;
+}
+
+static InterpMethod*
+get_target_imethod (GSList *list, InterpMethod *imethod)
+{
+	while (list != NULL) {
+		InterpVTableEntry *entry = (InterpVTableEntry*) list->data;
+		if (entry->imethod == imethod)
+			return entry->target_imethod;
+		list = list->next;
+	}
+	return NULL;
+}
+
+static gpointer*
+get_method_table (MonoObject *obj, int offset)
+{
+	if (offset >= 0) {
+		return obj->vtable->interp_vtable;
+	} else {
+		return (gpointer*)obj->vtable;
+	}
+}
+
+static gpointer*
+alloc_method_table (MonoObject *obj, int offset)
+{
+	gpointer *table;
+
+	if (offset >= 0) {
+		table = mono_domain_alloc0 (obj->vtable->domain, m_class_get_vtable_size (obj->vtable->klass) * sizeof (gpointer));
+		obj->vtable->interp_vtable = table;
+	} else {
+		table = (gpointer*)obj->vtable;
+	}
+
+	return table;
+}
+
+static InterpMethod*
+get_virtual_method_fast (MonoObject *obj, InterpMethod *imethod, int offset)
+{
+	gpointer *table;
+
+#ifndef DISABLE_REMOTING
+	/* FIXME Remoting */
+	if (mono_object_is_transparent_proxy (obj))
+		return get_virtual_method (imethod, obj);
+#endif
+
+	table = get_method_table (obj, offset);
+
+	if (!table) {
+		/* Lazily allocate method table */
+		mono_domain_lock (obj->vtable->domain);
+		table = get_method_table (obj, offset);
+		if (!table)
+			table = alloc_method_table (obj, offset);
+		mono_domain_unlock (obj->vtable->domain);
+	}
+
+	if (!table [offset]) {
+		InterpMethod *target_imethod = get_virtual_method (imethod, obj);
+		/* Lazily initialize the method table slot */
+		mono_domain_lock (obj->vtable->domain);
+		if (!table [offset]) {
+			if (imethod->method->is_inflated || offset < 0)
+				table [offset] = append_imethod (obj->vtable->domain, NULL, imethod, target_imethod);
+			else
+				table [offset] = (gpointer) ((gsize)target_imethod | 0x1);
+		}
+		mono_domain_unlock (obj->vtable->domain);
+	}
+
+	if ((gsize)table [offset] & 0x1) {
+		/* Non generic virtual call. Only one method in slot */
+		return (InterpMethod*) ((gsize)table [offset] & ~0x1);
+	} else {
+		/* Virtual generic or interface call. Multiple methods in slot */
+		InterpMethod *target_imethod = get_target_imethod ((GSList*)table [offset], imethod);
+
+		if (!target_imethod) {
+			target_imethod = get_virtual_method (imethod, obj);
+			mono_domain_lock (obj->vtable->domain);
+			if (!get_target_imethod ((GSList*)table [offset], imethod))
+				table [offset] = append_imethod (obj->vtable->domain, (GSList*)table [offset], imethod, target_imethod);
+			mono_domain_unlock (obj->vtable->domain);
+		}
+		return target_imethod;
+	}
+}
+
 static void inline
 stackval_from_data (MonoType *type_, stackval *result, void *data, gboolean pinvoke)
 {
@@ -3154,6 +3264,50 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
+				*sp = *endsp;
+				sp++;
+			}
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CALLVIRT_FAST)
+		MINT_IN_CASE(MINT_VCALLVIRT_FAST) {
+			MonoObject *this_arg;
+			MonoClass *this_class;
+			gboolean is_void = *ip == MINT_VCALLVIRT_FAST;
+			InterpMethod *imethod;
+			stackval *endsp = sp;
+			int slot;
+
+			// FIXME Have it handle also remoting calls and use a single opcode for virtual calls
+
+			frame->ip = ip;
+
+			imethod = (InterpMethod*)rtm->data_items [* (guint16 *)(ip + 1)];
+			slot = *(gint16*)(ip + 2);
+			ip += 3;
+			sp->data.p = vt_sp;
+			child_frame.retval = sp;
+
+			/* decrement by the actual number of args */
+			sp -= imethod->param_count + imethod->hasthis;
+			child_frame.stack_args = sp;
+
+			this_arg = (MonoObject*)sp->data.p;
+			this_class = this_arg->vtable->klass;
+
+			child_frame.imethod = get_virtual_method_fast (this_arg, imethod, slot);
+			if (m_class_is_valuetype (this_class) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
+				/* unbox */
+				gpointer unboxed = mono_object_unbox_internal (this_arg);
+				sp [0].data.p = unboxed;
+			}
+
+			interp_exec_method (&child_frame, context);
+
+			CHECK_RESUME_STATE (context);
+
+			if (!is_void) {
+				/* need to handle typedbyref ... */
 				*sp = *endsp;
 				sp++;
 			}
