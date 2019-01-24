@@ -6,8 +6,7 @@ parameters:
   priority: 0
   crossgen: false
   scenarios: ''
-  helixQueuesPublic: ''
-  helixQueuesInternal: ''
+  helixQueues: ''
   timeoutInMinutes: ''
   crossrootfsDir: ''
 
@@ -123,6 +122,10 @@ jobs:
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
         helixType: $(_HelixType)
+        helixQueues: ${{ parameters.helixQueues.asString }}
+
+        ${{ if eq(parameters.helixQueues.asString, '') }}:
+          condition: false
 
         publishTestResults: true
         # TODO: see if this amount is enough for all individual jobs to finish
@@ -133,14 +136,8 @@ jobs:
           # Access token variable for internal project from the
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
-          helixQueues: ${{ parameters.helixQueuesInternal }}
-          ${{ if eq(parameters.helixQueuesInternal, '') }}:
-            condition: false
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: coreclr-pulls
-          helixQueues: ${{ parameters.helixQueuesPublic }}
-          ${{ if eq(parameters.helixQueuesPublic, '') }}:
-            condition: false
 
-        scenarios: ${{ parameters.scenarios }}
+        scenarios: ${{ parameters.scenarios.asString }}

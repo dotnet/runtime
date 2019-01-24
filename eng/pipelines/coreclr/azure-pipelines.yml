@@ -130,7 +130,11 @@ jobs:
       buildConfig: checked
       jobParameters:
         priority: 0
-        scenarios: 'normal,no_tiered_compilation'
+        scenarios:
+          asString: 'normal,no_tiered_compilation'
+          asArray:
+          - normal
+          - no_tiered_compilation
         timeoutInMinutes: 240
 
 # Pri1 (CI)
@@ -141,7 +145,11 @@ jobs:
       buildConfig: checked
       jobParameters:
         priority: 1
-        scenarios: 'normal,no_tiered_compilation'
+        scenarios:
+          asString: 'normal,no_tiered_compilation'
+          asArray:
+          - normal
+          - no_tiered_compilation
         timeoutInMinutes: 360
 
 # Pri1 crossgen (CI)
@@ -153,7 +161,11 @@ jobs:
       jobParameters:
         priority: 1
         crossgen: true
-        scenarios: 'normal,no_tiered_compilation'
+        scenarios:
+          asString: 'normal,no_tiered_compilation'
+          asArray:
+          - normal
+          - no_tiered_compilation
         timeoutInMinutes: 360
 
 # Pri1 (Manual)
@@ -164,7 +176,15 @@ jobs:
       buildConfig: checked
       jobParameters:
         priority: 1
-        scenarios: 'normal,no_tiered_compilation,jitstress1,jitstress2,jitstress1_tiered,jitstress2_tiered'
+        scenarios:
+          asString: 'normal,no_tiered_compilation,jitstress1,jitstress2,jitstress1_tiered,jitstress2_tiered'
+          asArray:
+          - normal
+          - no_tiered_compilation
+          - jitstress1
+          - jitstress2
+          - jitstress1_tiered
+          - jitstress2_tiered
         timeoutInMinutes: 480
 
 #
@@ -179,7 +199,11 @@ jobs:
       buildConfig: release
       jobParameters:
         priority: 1
-        scenarios: 'normal,no_tiered_compilation'
+        scenarios:
+          asString: 'normal,no_tiered_compilation'
+          asArray:
+          - normal
+          - no_tiered_compilation
         timeoutInMinutes: 360
 
 # Pri1 crossgen (Official Build)
@@ -191,7 +215,11 @@ jobs:
       jobParameters:
         priority: 1
         crossgen: true
-        scenarios: 'normal,no_tiered_compilation'
+        scenarios:
+          asString: 'normal,no_tiered_compilation'
+          asArray:
+          - normal
+          - no_tiered_compilation
         timeoutInMinutes: 360
 
 
