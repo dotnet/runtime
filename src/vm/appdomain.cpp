@@ -6834,7 +6834,7 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
 #if _DEBUG_ADUNLOAD
             printf("AppDomain::UnwindThreads %x stopping %x with first frame %8.8p\n", GetThread()->GetThreadId(), pThread->GetThreadId(), pFrame);
 #endif
-            pThread->SetAbortRequest(EEPolicy::TA_V1Compatible);
+            pThread->SetAbortRequest(EEPolicy::TA_Safe);
         }
         TESTHOOKCALL(UnwindingThreads(GetId().m_dwId)) ;
     }

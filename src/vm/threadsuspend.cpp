@@ -1176,10 +1176,6 @@ BOOL Thread::ReadyForAsyncException()
         STRESS_LOG0(LF_APPDOMAIN, LL_INFO10, "in Thread::ReadyForAbort  RunningEHClause\n");
     }
 
-    //if (m_AbortType == EEPolicy::TA_V1Compatible) {
-    //    return TRUE;
-    //}
-
     // If we are running finally, we can not abort for Safe Abort.
     return !TAContext.fWithinEHClause;
 }
@@ -2074,10 +2070,6 @@ void Thread::ThreadAbortWatchDogAbort(Thread *pThread)
         {
             abortType = EEPolicy::TA_Rude;
         }
-        else if (pThread->m_AbortInfo & TAI_ThreadV1Abort)
-        {
-            abortType = EEPolicy::TA_V1Compatible;
-        }
         else if (pThread->m_AbortInfo & TAI_ThreadAbort)
         {
             abortType = EEPolicy::TA_Safe;
@@ -2250,7 +2242,7 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
     }
     CONTRACTL_END;
 
-    _ASSERTE ((requester & TAR_StackOverflow) == 0 || (requester & TAR_Thread) == TAR_Thread);
+    _ASSERTE ((requester & TAR_Thread) == TAR_Thread);
 
     AbortRequestLockHolder lh(this);
 
@@ -2282,10 +2274,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
         {
             abortInfo |= TAI_ThreadRudeAbort;
         }
-        else if (abortType == EEPolicy::TA_V1Compatible)
-        {
-            abortInfo |= TAI_ThreadV1Abort;
-        }
     }
 
     if (requester & TAR_FuncEval)
@@ -2297,10 +2285,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
         else if (abortType == EEPolicy::TA_Rude)
         {
             abortInfo |= TAI_FuncEvalRudeAbort;
-        }
-        else if (abortType == EEPolicy::TA_V1Compatible)
-        {
-            abortInfo |= TAI_FuncEvalV1Abort;
         }
     }
 
@@ -2443,7 +2427,6 @@ void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
         if ((m_AbortInfo != TAI_ThreadRudeAbort) || fForce)
         {
             m_AbortInfo &= ~(TAI_ThreadAbort   |
-                             TAI_ThreadV1Abort |
                              TAI_ThreadRudeAbort );
         }
     }
@@ -2451,7 +2434,6 @@ void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
     if (requester & TAR_FuncEval)
     {
         m_AbortInfo &= ~(TAI_FuncEvalAbort   |
-                         TAI_FuncEvalV1Abort |
                          TAI_FuncEvalRudeAbort);
     }
 
@@ -2462,10 +2444,6 @@ void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
     {
         m_AbortType = EEPolicy::TA_Rude;
     }
-    else if (m_AbortInfo & TAI_AnyV1Abort)
-    {
-        m_AbortType = EEPolicy::TA_V1Compatible;
-        }
     else if (m_AbortInfo & TAI_AnySafeAbort)
     {
         m_AbortType = EEPolicy::TA_Safe;
@@ -3061,10 +3039,7 @@ void Thread::PreWorkForThreadAbort()
     FastInterlockAnd((ULONG *) &m_State, ~(TS_Interruptible | TS_Interrupted));
     ResetUserInterrupted();
 
-    if (IsRudeAbort() && !(m_AbortInfo & (TAI_ADUnloadAbort |
-                                          TAI_ADUnloadRudeAbort |
-                                          TAI_ADUnloadV1Abort)
-                          )) {
+    if (IsRudeAbort()) {
         if (HasLockInCurrentDomain()) {
             AppDomain *pDomain = GetAppDomain();
             // Cannot enable the following assertion.
