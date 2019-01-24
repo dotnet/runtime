@@ -1279,11 +1279,6 @@ namespace System.Threading.Tasks
             }
 
             /// <summary>Completes the promise.</summary>
-            /// <param name="requiresSynchronization">
-            /// true if synchronization is needed to completed the task;
-            /// false if the task may be completed without synchronization
-            /// because it hasn't been handed out.
-            /// </param>
             /// <param name="thisRef">The target instance on which the end method should be called.</param>
             /// <param name="endMethod">The end method to call to retrieve the result.</param>
             /// <param name="asyncResult">The IAsyncResult for the async operation.</param>
