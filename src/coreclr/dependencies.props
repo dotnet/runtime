@@ -26,7 +26,7 @@
     <CoreFxCurrentRef>e4a34eed93bd5a4975df9e320bbf6728dd5c04ef</CoreFxCurrentRef>
     <CoreClrCurrentRef>f31086500dc58cefe7b1275300f6fc07b38c1bcc</CoreClrCurrentRef>
     <BuildToolsCurrentRef>f31086500dc58cefe7b1275300f6fc07b38c1bcc</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>e4a34eed93bd5a4975df9e320bbf6728dd5c04ef</PgoDataCurrentRef>
+    <PgoDataCurrentRef>f8487cbc2c77c765f69a0124607f7c6625304a3d</PgoDataCurrentRef>
     <CoreSetupCurrentRef>56b60e4ef0879b0423542f32a0b87779b4236453</CoreSetupCurrentRef>
     <IbcDataCurrentRef>fd9474f0c60ac4f7e917c072df61e4b23115b7ae</IbcDataCurrentRef>
   </PropertyGroup>
@@ -35,7 +35,7 @@
   <PropertyGroup>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.19073.1</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19073.1</MicrosoftNETCorePlatformsPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20190123.4</PgoDataPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20190124.1</PgoDataPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27316-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27218-01</MicrosoftNETCoreAppPackageVersion>
     <XunitPackageVersion>2.4.1</XunitPackageVersion>
