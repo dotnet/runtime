@@ -8940,6 +8940,12 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
+    // If there is no PSPSym (CoreRT ABI), we are done.
+    if (compiler->lvaPSPSym == BAD_VAR_NUM)
+    {
+        return;
+    }
+
     if (isFilter)
     {
         // This is the first block of a filter
