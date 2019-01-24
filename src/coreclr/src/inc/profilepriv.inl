@@ -743,7 +743,7 @@ inline BOOL CORProfilerDisableTieredCompilation()
 // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization.
 // 
 typedef Wrapper<Thread *, ProfilingAPIUtility::IncEvacuationCounter, ProfilingAPIUtility::DecEvacuationCounter, 
-    (UINT_PTR)0, CompareDefault<Thread *>, HSV_NoValidation> EvacuationCounterHolder;
+    (UINT_PTR)0, CompareDefault<Thread *>> EvacuationCounterHolder;
 
 
 //---------------------------------------------------------------------------------------
