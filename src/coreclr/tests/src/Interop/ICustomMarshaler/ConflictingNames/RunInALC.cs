@@ -46,6 +46,7 @@ public class RunInALC
         object instance = Activator.CreateInstance(inContextType);
         MethodInfo parseIntMethod = inContextType.GetMethod("ParseInt", BindingFlags.Instance | BindingFlags.Public);
         Assert.AreEqual(1234, (int)parseIntMethod.Invoke(instance, new object[]{"1234"}));
+        GC.KeepAlive(context);
     }
 }
 
