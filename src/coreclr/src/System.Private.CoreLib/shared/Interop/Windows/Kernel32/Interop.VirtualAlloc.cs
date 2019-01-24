@@ -16,7 +16,7 @@ internal partial class Interop
         internal const int PAGE_READWRITE = 0x04;
 
 #if ENABLE_WINRT
-        [DllImport(Libraries.Kernel32, EntryPoint = "VirtualAllocFromApp")]
+        [DllImport("api-ms-win-core-memory-l1-1-3.dll", EntryPoint = "VirtualAllocFromApp")]
         internal static extern unsafe void* VirtualAlloc(void* BaseAddress, UIntPtr Size, int AllocationType, int Protection);
 #else
         [DllImport(Libraries.Kernel32)]
