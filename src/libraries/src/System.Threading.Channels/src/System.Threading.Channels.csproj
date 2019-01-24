@@ -16,6 +16,7 @@
     <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
     <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
     <Compile Include="System\Threading\Channels\ChannelReader.cs" />
+    <Compile Include="System\Threading\Channels\ChannelReader.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
     <Compile Include="System\Threading\Channels\ChannelWriter.cs" />
     <Compile Include="System\Threading\Channels\Channel_1.cs" />
