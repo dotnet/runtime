@@ -184,7 +184,6 @@ namespace System.Threading.Tasks
         internal const int TASK_STATE_RAN_TO_COMPLETION = 0x1000000;                           //bin: 0000 0001 0000 0000 0000 0000 0000 0000
         internal const int TASK_STATE_WAITINGFORACTIVATION = 0x2000000;                        //bin: 0000 0010 0000 0000 0000 0000 0000 0000
         internal const int TASK_STATE_COMPLETION_RESERVED = 0x4000000;                         //bin: 0000 0100 0000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_THREAD_WAS_ABORTED = 0x8000000;                          //bin: 0000 1000 0000 0000 0000 0000 0000 0000
         internal const int TASK_STATE_WAIT_COMPLETION_NOTIFICATION = 0x10000000;               //bin: 0001 0000 0000 0000 0000 0000 0000 0000
         //This could be moved to InternalTaskOptions enum
         internal const int TASK_STATE_EXECUTIONCONTEXT_IS_NULL = 0x20000000;                   //bin: 0010 0000 0000 0000 0000 0000 0000 0000
@@ -1136,9 +1135,8 @@ namespace System.Threading.Tasks
                 }
                 catch (Exception e)
                 {
-                    // we 1) either received an unexpected exception originating from a custom scheduler, which needs to be wrapped in a TSE and thrown
-                    //    2) or a a ThreadAbortException, which we need to skip here, because it would already have been handled in Task.Execute
-                    if (!taskQueued && !(e is ThreadAbortException))
+                    // we received an unexpected exception originating from a custom scheduler, which needs to be wrapped in a TSE and thrown
+                    if (!taskQueued)
                     {
                         // We had a problem with TryRunInline() or QueueTask().  
                         // Record the exception, marking ourselves as Completed/Faulted.
@@ -1160,7 +1158,7 @@ namespace System.Threading.Tasks
                         // And re-throw.
                         throw tse;
                     }
-                    // We had a problem with waiting or this is a thread abort.  Just re-throw.
+                    // We had a problem with waiting. Just re-throw.
                     else throw;
                 }
             }
@@ -1962,6 +1960,48 @@ namespace System.Threading.Tasks
                 UpdateExceptionObservedStatus();
                 throw exception;
             }
+        }
+
+        /// <summary>Throws the exception on the ThreadPool.</summary>
+        /// <param name="exception">The exception to propagate.</param>
+        /// <param name="targetContext">The target context on which to propagate the exception.  Null to use the ThreadPool.</param>
+        internal static void ThrowAsync(Exception exception, SynchronizationContext targetContext)
+        {
+            // Capture the exception into an ExceptionDispatchInfo so that its 
+            // stack trace and Watson bucket info will be preserved
+            var edi = ExceptionDispatchInfo.Capture(exception);
+
+            // If the user supplied a SynchronizationContext...
+            if (targetContext != null)
+            {
+                try
+                {
+                    // Post the throwing of the exception to that context, and return.
+                    targetContext.Post(state => ((ExceptionDispatchInfo)state).Throw(), edi);
+                    return;
+                }
+                catch (Exception postException)
+                {
+                    // If something goes horribly wrong in the Post, we'll 
+                    // propagate both exceptions on the ThreadPool
+                    edi = ExceptionDispatchInfo.Capture(new AggregateException(exception, postException));
+                }
+            }
+
+#if CORERT
+            RuntimeAugments.ReportUnhandledException(edi.SourceException);
+#else
+
+#if FEATURE_COMINTEROP
+            // If we have the new error reporting APIs, report this error.
+            if (System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMarshal.ReportUnhandledError(edi.SourceException))
+                return;
+#endif
+
+            // Propagate the exception(s) on the ThreadPool
+            ThreadPool.QueueUserWorkItem(state => ((ExceptionDispatchInfo)state).Throw(), edi);
+
+#endif // CORERT
         }
 
         /// <summary>
@@ -3202,9 +3242,7 @@ namespace System.Threading.Tasks
             if (AsyncCausalityTracer.LoggingOn)
                 AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.CompletionNotification);
 
-            // Skip synchronous execution of continuations if this task's thread was aborted
-            bool canInlineContinuations = !(((m_stateFlags & TASK_STATE_THREAD_WAS_ABORTED) != 0) ||
-                                             ((m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) != 0));
+            bool canInlineContinuations = (m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) == 0;
 
             switch (continuationObject)
             {

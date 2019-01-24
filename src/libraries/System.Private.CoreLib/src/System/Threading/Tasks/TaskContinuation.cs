@@ -2,23 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//
-//
-//
-// Implementation of task continuations, TaskContinuation, and its descendants.
-//
-// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
 using System.Security;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
-#if FEATURE_COMINTEROP
-using System.Runtime.InteropServices.WindowsRuntime;
-#endif // FEATURE_COMINTEROP
+#if CORERT
+using Thread = Internal.Runtime.Augments.RuntimeThread;
+#endif
 
 namespace System.Threading.Tasks
 {
@@ -258,18 +249,19 @@ namespace System.Threading.Tasks
                 // Either TryRunInline() or QueueTask() threw an exception. Record the exception, marking the task as Faulted.
                 // However if it was a ThreadAbortException coming from TryRunInline we need to skip here, 
                 // because it would already have been handled in Task.Execute()
-                if (!(e is ThreadAbortException &&
-                      (task.m_stateFlags & Task.TASK_STATE_THREAD_WAS_ABORTED) != 0))    // this ensures TAEs from QueueTask will be wrapped in TSE
-                {
-                    TaskSchedulerException tse = new TaskSchedulerException(e);
-                    task.AddException(tse);
-                    task.Finish(false);
-                }
-
+                TaskSchedulerException tse = new TaskSchedulerException(e);
+                task.AddException(tse);
+                task.Finish(false);
                 // Don't re-throw.
             }
         }
 
+        //
+        // This helper routine is targeted by the debugger.
+        //
+#if PROJECTN
+        [DependencyReductionRoot]
+#endif
         internal abstract Delegate[] GetDelegateContinuationsForDebugger();
     }
 
@@ -370,7 +362,7 @@ namespace System.Threading.Tasks
     internal sealed class SynchronizationContextAwaitTaskContinuation : AwaitTaskContinuation
     {
         /// <summary>SendOrPostCallback delegate to invoke the action.</summary>
-        private readonly static SendOrPostCallback s_postCallback = state => ((Action)state)(); // can't use InvokeAction as it's SecurityCritical
+        private static readonly SendOrPostCallback s_postCallback = state => ((Action)state)(); // can't use InvokeAction as it's SecurityCritical
         /// <summary>Cached delegate for PostAction</summary>
         private static ContextCallback s_postActionCallback;
         /// <summary>The context with which to run the action.</summary>
@@ -499,8 +491,14 @@ namespace System.Threading.Tasks
                 // The target scheduler may still deny us from executing on this thread, in which case this'll be queued.
                 var task = CreateTask(state =>
                 {
-                    try { ((Action)state)(); }
-                    catch (Exception exc) { ThrowAsyncIfNecessary(exc); }
+                    try
+                    {
+                        ((Action)state)();
+                    }
+                    catch (Exception exception)
+                    {
+                        Task.ThrowAsync(exception, targetContext: null);
+                    }
                 }, m_action, m_scheduler);
 
                 if (inlineIfPossible)
@@ -629,7 +627,7 @@ namespace System.Threading.Tasks
                 return;
             }
 
-            Guid savedActivityId = Guid.Empty;
+            Guid savedActivityId = default;
             if (etwLog.TasksSetActivityIds && m_continuationId != 0)
             {
                 Guid activityId = TplEtwProvider.CreateGuidForTaskID(m_continuationId);
@@ -699,9 +697,9 @@ namespace System.Threading.Tasks
                     ExecutionContext.RunInternal(context, callback, state);
                 }
             }
-            catch (Exception exc) // we explicitly do not request handling of dangerous exceptions like AVs
+            catch (Exception exception) // we explicitly do not request handling of dangerous exceptions like AVs
             {
-                ThrowAsyncIfNecessary(exc);
+                Task.ThrowAsync(exception, targetContext: null);
             }
             finally
             {
@@ -741,7 +739,7 @@ namespace System.Threading.Tasks
             }
             catch (Exception exception)
             {
-                ThrowAsyncIfNecessary(exception);
+                Task.ThrowAsync(exception, targetContext: null);
             }
             finally
             {
@@ -793,7 +791,7 @@ namespace System.Threading.Tasks
             }
             catch (Exception exception)
             {
-                ThrowAsyncIfNecessary(exception);
+                Task.ThrowAsync(exception, targetContext: null);
             }
             finally
             {
@@ -816,30 +814,6 @@ namespace System.Threading.Tasks
             }
 
             ThreadPool.UnsafeQueueUserWorkItemInternal(atc, preferLocal: true);
-        }
-
-        /// <summary>Throws the exception asynchronously on the ThreadPool.</summary>
-        /// <param name="exc">The exception to throw.</param>
-        protected static void ThrowAsyncIfNecessary(Exception exc)
-        {
-            // Awaits should never experience an exception (other than an TAE or ADUE), 
-            // unless a malicious user is explicitly passing a throwing action into the TaskAwaiter. 
-            // We don't want to allow the exception to propagate on this stack, as it'll emerge in random places, 
-            // and we can't fail fast, as that would allow for elevation of privilege.
-            //
-            // If unhandled error reporting APIs are available use those, otherwise since this 
-            // would have executed on the thread pool otherwise, let it propagate there.
-
-            if (!(exc is ThreadAbortException))
-            {
-#if FEATURE_COMINTEROP
-                if (!WindowsRuntimeMarshal.ReportUnhandledError(exc))
-#endif // FEATURE_COMINTEROP
-                {
-                    var edi = ExceptionDispatchInfo.Capture(exc);
-                    ThreadPool.QueueUserWorkItem(s => ((ExceptionDispatchInfo)s).Throw(), edi);
-                }
-            }
         }
 
         internal override Delegate[] GetDelegateContinuationsForDebugger()
