@@ -136,7 +136,6 @@ namespace System.Threading
 
         // Static helper to which the above method can delegate to in order to get the default
         // COM behavior.
-        [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int WaitHelperNative(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout);
 
