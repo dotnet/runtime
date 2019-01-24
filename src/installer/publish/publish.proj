@@ -231,6 +231,11 @@
       <_DownloadedStandardPackages Include="@(_DownloadedPackages)"
                                   Exclude="@(_DownloadedSymbolsPackages)"
                                   Condition="$([System.String]::new('%(_DownloadedPackages.Identity)').EndsWith('.nupkg'))" />
+
+      <!-- Exclude SVG files from BAR manifest: https://github.com/dotnet/arcade/issues/1842. -->
+      <_DownloadedAssets Condition="$([System.String]::new('%(_DownloadedAssets.Identity)').EndsWith('.svg'))">
+        <ExcludeFromManifest>true</ExcludeFromManifest>
+      </_DownloadedAssets>
     </ItemGroup>
   </Target>
 
