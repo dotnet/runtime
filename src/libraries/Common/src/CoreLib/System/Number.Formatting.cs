@@ -1576,6 +1576,13 @@ namespace System
                         if ((number.Kind == NumberBufferKind.Decimal) && (nMaxDigits == -1))
                         {
                             noRounding = true;  // Turn off rounding for ECMA compliance to output trailing 0's after decimal as significant
+
+                            if (number.Digits[0] == 0)
+                            {
+                                // -0 should be formatted as 0 for decimal. This is normally handled by RoundNumber (which we are skipping)
+                                goto SkipSign;
+                            }
+
                             goto SkipRounding;
                         }
                         else
@@ -1591,6 +1598,7 @@ namespace System
                     if (number.IsNegative)
                         sb.Append(info.NegativeSign);
 
+                SkipSign:
                     FormatGeneral(ref sb, ref number, nMaxDigits, info, (char)(format - ('G' - 'E')), noRounding);
 
                     break;
@@ -1742,6 +1750,11 @@ namespace System
                 }
                 else
                 {
+                    if (number.Kind != NumberBufferKind.FloatingPoint)
+                    {
+                        // The integer types don't have a concept of -0 and decimal always format -0 as 0
+                        number.IsNegative = false;
+                    }
                     number.Scale = 0;      // Decimals with scale ('0.00') should be rounded.
                 }
 
@@ -2269,12 +2282,12 @@ namespace System
             }
             if (i == 0)
             {
-                number.Scale = 0;
-
-                if (number.Kind == NumberBufferKind.Integer)
+                if (number.Kind != NumberBufferKind.FloatingPoint)
                 {
+                    // The integer types don't have a concept of -0 and decimal always format -0 as 0
                     number.IsNegative = false;
                 }
+                number.Scale = 0;      // Decimals with scale ('0.00') should be rounded.
             }
 
             dig[i] = (byte)('\0');
