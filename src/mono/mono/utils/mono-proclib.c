@@ -24,6 +24,7 @@
 #include <utils/mono-mmap.h>
 #include <utils/strenc.h>
 #include <utils/mono-io-portability.h>
+#include <utils/mono-logger-internals.h>
 
 #if defined(_POSIX_VERSION)
 #ifdef HAVE_SYS_ERRNO_H
@@ -1022,7 +1023,7 @@ mono_pe_file_map (gunichar2 *filename, gint32 *map_size, void **handle)
 
 	filename_ext = mono_unicode_to_external (filename);
 	if (filename_ext == NULL) {
-		g_async_safe_printf ("%s: unicode conversion returned NULL", __func__);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL", __func__);
 
 		goto exit;
 	}
@@ -1035,37 +1036,37 @@ mono_pe_file_map (gunichar2 *filename, gint32 *map_size, void **handle)
 		if (!located_filename) {
 			mono_set_errno (saved_errno);
 
-			g_async_safe_printf ("%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
 			goto error;
 		}
 
 		fd = open (located_filename, O_RDONLY, 0);
 		if (fd == -1) {
-			g_async_safe_printf ("%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
 			goto error;
 		}
 	}
 	else if (fd == -1) {
-		g_async_safe_printf ("%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
 		goto error;
 	}
 
 	if (fstat (fd, &statbuf) == -1) {
-		g_async_safe_printf ("%s: Error stat()ing file %s: %s", __func__, filename_ext, strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error stat()ing file %s: %s", __func__, filename_ext, strerror (errno));
 		goto error;
 	}
 	*map_size = statbuf.st_size;
 
 	/* Check basic file size */
 	if (statbuf.st_size < sizeof(IMAGE_DOS_HEADER)) {
-		g_async_safe_printf ("%s: File %s is too small: %lld", __func__, filename_ext, (long long) statbuf.st_size);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: File %s is too small: %lld", __func__, filename_ext, (long long) statbuf.st_size);
 
 		goto exit;
 	}
 
 	file_map = mono_file_map (statbuf.st_size, MONO_MMAP_READ | MONO_MMAP_PRIVATE, fd, 0, handle);
 	if (file_map == NULL) {
-		g_async_safe_printf ("%s: Error mmap()int file %s: %s", __func__, filename_ext, strerror (errno));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error mmap()int file %s: %s", __func__, filename_ext, strerror (errno));
 		goto error;
 	}
 exit:
