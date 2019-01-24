@@ -310,7 +310,7 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 		need_suffix = FALSE;
 		suffix = "";
 	} else if (idx == 1) {
-#if NETCORE
+#ifdef ENABLE_NETCORE
 		/* netcore system libs have a suffix but no prefix */
 		need_prefix = FALSE;
 		need_suffix = TRUE;
