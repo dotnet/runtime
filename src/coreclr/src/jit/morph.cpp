@@ -3787,7 +3787,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         argSlots += argEntry->getSlotCount();
 
         // lclVar address should have been retyped to TYP_I_IMPL.
-        assert(!argx->IsVarAddr() || (argx->gtType = TYP_I_IMPL));
+        assert(!argx->IsVarAddr() || (argx->gtType == TYP_I_IMPL));
 
         // Get information about this argument.
         var_types hfaType            = argEntry->hfaType;
