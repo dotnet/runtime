@@ -84,11 +84,14 @@ class F
         return l is I<string>;
     }
 
+    #pragma warning disable CS0184
+    // warning CS0184: The given expression is never of the provided ('I<object>') type
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool IsJIObject(J j)
     {
         return j is I<object>;
     }
+    #pragma warning restore CS0184
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool IsKIObject(K k)
