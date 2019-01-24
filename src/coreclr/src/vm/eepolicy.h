@@ -35,8 +35,6 @@ public:
         TA_None,  // No Abort
         // Abort at a safe spot: not having any lock, not inside finally, not inside catch
         TA_Safe,
-        // Do we need this one?
-        TA_V1Compatible,
         // Do not run user finally, no attention to lock count
         TA_Rude
     };
