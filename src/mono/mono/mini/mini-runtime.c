@@ -4828,6 +4828,8 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_generic_sharing_cleanup ();
 
+	mono_cleanup_native_crash_info ();
+
 	mono_cleanup ();
 
 	mono_trace_cleanup ();

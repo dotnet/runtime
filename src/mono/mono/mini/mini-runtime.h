@@ -516,6 +516,9 @@ void
 mono_init_native_crash_info (void);
 
 void
+mono_cleanup_native_crash_info (void);
+
+void
 mono_dump_native_crash_info (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info);
 
 void

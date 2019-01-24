@@ -1183,6 +1183,12 @@ mono_init_native_crash_info (void)
 	lldb_path = g_find_program_in_path ("lldb");
 }
 
+void
+mono_cleanup_native_crash_info (void)
+{
+	g_free (gdb_path);
+	g_free (lldb_path);
+}
 
 static gboolean
 native_stack_with_gdb (pid_t crashed_pid, const char **argv, int commands, char* commands_filename)

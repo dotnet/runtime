@@ -251,6 +251,12 @@ mono_init_native_crash_info (void)
 	return;
 }
 
+void
+mono_cleanup_native_crash_info (void)
+{
+	return;
+}
+
 #if G_HAVE_API_SUPPORT (HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 /* mono_chain_signal:
  *
