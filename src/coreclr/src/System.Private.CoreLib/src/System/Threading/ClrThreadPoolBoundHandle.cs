@@ -73,7 +73,7 @@ namespace System.Threading
         ///         -or-
         ///     </para>
         ///     <see cref="ThreadPoolBoundHandle"/> does not take ownership of <paramref name="handle"/>, 
-        ///     it remains the responsibility of the caller to call <see cref="SafeHandle.Dispose"/>.
+        ///     it remains the responsibility of the caller to call <see cref="SafeHandle.Dispose()"/>.
         /// </remarks>
         public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
         {
