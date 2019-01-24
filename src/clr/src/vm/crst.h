@@ -397,13 +397,13 @@ private:
 
     // Note that the holders for CRSTs are used in extremely low stack conditions. Because of this, they 
     // aren't allowed to use more than HOLDER_CODE_MINIMUM_STACK_LIMIT pages of stack.
-    typedef DacHolder<CrstBase *, CrstBase::AcquireLock, CrstBase::ReleaseLock, 0, CompareDefault, HSV_ValidateMinimumStackReq> CrstHolderWithState;
+    typedef DacHolder<CrstBase *, CrstBase::AcquireLock, CrstBase::ReleaseLock, 0, CompareDefault> CrstHolderWithState;
 
     // We have some situations where we're already holding a lock, and we need to release and reacquire the lock across a window.
     // This is a dangerous construct because the backout code can block.
     // Generally, it's better to use a regular CrstHolder, and then use the Release() / Acquire() methods on it.
     // This just exists to convert legacy OS Critical Section patterns over to holders.
-    typedef DacHolder<CrstBase *, CrstBase::ReleaseLock, CrstBase::AcquireLock, 0, CompareDefault, HSV_ValidateMinimumStackReq> UnsafeCrstInverseHolder;
+    typedef DacHolder<CrstBase *, CrstBase::ReleaseLock, CrstBase::AcquireLock, 0, CompareDefault> UnsafeCrstInverseHolder;
 };
 
 typedef CrstBase::CrstHolder CrstHolder;
