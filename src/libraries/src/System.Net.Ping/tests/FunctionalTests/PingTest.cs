@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.XUnitExtensions;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
@@ -759,5 +760,56 @@ namespace System.Net.NetworkInformation.Tests
             GC.WaitForPendingFinalizers();
             Assert.True(FinalizingPing.WasFinalized);
         }
-    }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SendPingAsyncWithHostAndTtlAndFragmentPingOptions(bool fragment)
+        {
+            IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
+
+            byte[] buffer = TestSettings.PayloadAsBytes;
+
+            PingOptions  options = new PingOptions();
+            options.Ttl = 32;
+            options.DontFragment = fragment;
+
+            await SendBatchPingAsync(
+                (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, options),
+                (pingReply) =>
+                {
+                    PingResultValidator(pingReply, localIpAddress);
+                });
+        }
+
+        [ConditionalFact]
+        [OuterLoop] // Depends on external host and assumption that network respects and does not change TTL
+        public async Task SendPingToExternalHostWithLowTtlTest()
+        {
+            string host = System.Net.Test.Common.Configuration.Ping.PingHost;
+            PingReply pingReply;
+            PingOptions options = new PingOptions();
+            bool reachable = false;
+
+            Ping ping = new Ping();
+            for (int i = 0; i < s_pingcount; i++)
+            {
+                pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, TestSettings.PayloadAsBytesShort);
+                if (pingReply.Status == IPStatus.Success)
+                {
+                    reachable = true;
+                    break;
+                }
+            }
+            if (!reachable)
+            {
+                throw new SkipTestException($"Host {host} is not reachable. Skipping test.");
+            }
+
+            options.Ttl = 1;
+            // This should always fail unless host is one IP hop away.
+            pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, TestSettings.PayloadAsBytesShort, options);
+            Assert.NotEqual(IPStatus.Success, pingReply.Status);
+        }
+     }
 }
