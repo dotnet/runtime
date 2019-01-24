@@ -2141,7 +2141,9 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 
 	if (debug_assembly_unload) {
-		image->name = g_strdup_printf ("%s - UNLOADED", image->name);
+		char *old_name = image->name;
+		image->name = g_strdup_printf ("%s - UNLOADED", old_name);
+		g_free (old_name);
 	} else {
 		g_free (image->name);
 		g_free (image->filename);
