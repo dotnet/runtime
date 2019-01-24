@@ -19,6 +19,7 @@
     <XUnitAdapter Condition="'$(TargetGroup)' == 'netcoreapp'">xunit.runner.visualstudio.dotnetcore.testadapter</XUnitAdapter>
     <XUnitAdapter Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">xunit.runner.visualstudio.uwp.testadapter</XUnitAdapter>
     <XUnitAdapter Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.visualstudio.testadapter</XUnitAdapter>
+    <MicrosoftDotNetUapTestToolsPackageName>microsoft.dotnet.uap.testtools</MicrosoftDotNetUapTestToolsPackageName>
     <MicrosoftNetTestSdkPackageName>microsoft.net.test.sdk</MicrosoftNetTestSdkPackageName>
     <TestPlatformHostPackageId>microsoft.testplatform.testhost</TestPlatformHostPackageId>
     <MicrosoftDiagnosticsTracingTraceEventPackageName>Microsoft.Diagnostics.Tracing.TraceEvent</MicrosoftDiagnosticsTracingTraceEventPackageName>
@@ -34,7 +35,7 @@
     <PackageReference Include="xunit" Version="$(XUnitPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetXUnitExtensionsPackage)" Version="$(MicrosoftDotNetXUnitExtensionsPackageVersion)" />
     <PackageReference Include="$(XUnitRunnerConsolePackageName)" Version="$(XUnitPackageVersion)" />
-    <PackageReference Condition="'$(TargetsUap)' == 'true'" Include="Microsoft.DotNet.UAP.TestTools" Version="$(UAPToolsPackageVersion)" />
+    <PackageReference Condition="'$(TargetsUap)' == 'true'" Include="$(MicrosoftDotNetUapTestToolsPackageName)" Version="$(MicrosoftDotNetUapTestToolsPackageVersion)" />
 
     <!-- for callstack line numbers -->
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.5.0" />
@@ -136,9 +137,8 @@
           AfterTargets="AfterResolveReferences">
 
     <PropertyGroup>
-      <UAPToolsPackageName>microsoft.dotnet.uap.testtools</UAPToolsPackageName>
 
-      <UAPToolsFolder Condition="'$(UAPToolsFolder)'==''">$(PackagesDir)$(UAPToolsPackageName)\$(UAPToolsPackageVersion)\Tools\$(ArchGroup)</UAPToolsFolder>
+      <UAPToolsFolder Condition="'$(UAPToolsFolder)'==''">$(PackagesDir)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\Tools\$(ArchGroup)</UAPToolsFolder>
       <UAPToolsFolder>$(UAPToolsFolder.Replace('/', '\'))</UAPToolsFolder>
     </PropertyGroup>
 
@@ -252,8 +252,8 @@
           Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'"
           BeforeTargets="ResolveReferences">
 
-    <Error Condition="'$(TargetGroup)' == 'uapaot' AND !Exists('$(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\netcoreapp2.0\$(XUnitRunner).dll')"
-            Text="Error: looks the package $(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion) not restored or missing $(XUnitRunner).dll."
+    <Error Condition="'$(TargetGroup)' == 'uapaot' AND !Exists('$(PackagesDir)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\lib\netcoreapp2.0\$(XUnitRunner).dll')"
+            Text="Error: looks the package $(PackagesDir)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion) not restored or missing $(XUnitRunner).dll."
     />
     <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\uap10.0\$(XUnitAdapter).dll')"
             Text="Error: looks the package $(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll."
@@ -263,9 +263,14 @@
     />
 
     <ItemGroup>
-      <ReferenceCopyLocalPaths Condition="'$(TargetGroup)' == 'uapaot'" Include="$(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\netcoreapp2.0\*.*">
+      <ReferenceCopyLocalPaths Condition="'$(TargetGroup)' == 'uapaot'" Include="$(PackagesDir)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\lib\netcoreapp2.0\*.dll">
         <Private>false</Private>
-        <NuGetPackageId>$(XUnitRunnerConsolePackageName)</NuGetPackageId>
+        <NuGetPackageId>$(MicrosoftDotNetUapTestToolsPackageName)</NuGetPackageId>
+        <NuGetPackageVersion>$(MicrosoftDotNetUapTestToolsPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+      <ReferenceCopyLocalPaths Condition="'$(TargetGroup)' == 'uapaot'" Include="$(PackagesDir)xunit.runner.utility\$(XUnitPackageVersion)\lib\netcoreapp1.0\*.dll">
+        <Private>false</Private>
+        <NuGetPackageId>xunit.runner.utility</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
       <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\uap10.0\*.dll">

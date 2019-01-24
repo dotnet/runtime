@@ -10,9 +10,9 @@ namespace System.Diagnostics
     /// <summary>Base class used for all tests that need to spawn a remote process.</summary>
     public abstract partial class RemoteExecutorTestBase : FileCleanupTestBase
     {
-        protected static readonly string HostRunnerName = PlatformDetection.IsWindows ? "dotnet.exe" : "dotnet";
+        protected static readonly string HostRunnerName = "xunit.console.exe";
         protected static readonly string HostRunner = Process.GetCurrentProcess().MainModule.FileName;
 
-        private static readonly string ExtraParameter = TestConsoleApp;
+        private static readonly string ExtraParameter = "remote";
     }
 }
