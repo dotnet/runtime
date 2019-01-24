@@ -586,7 +586,9 @@ void DispatchHolder::InitializeStatic()
 
     static_assert_no_msg(((sizeof(DispatchStub) + sizeof(DispatchStubShort)) % sizeof(void*)) == 0);
     static_assert_no_msg(((sizeof(DispatchStub) + sizeof(DispatchStubLong)) % sizeof(void*)) == 0);
-    static_assert_no_msg((DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase) < INT8_MAX);
+    // TODO: This should be a static_assert_no_msg(), but there were reports of build failure with VS 2019 due to the expression
+    // not being a compile-time constant, see https://github.com/dotnet/coreclr/issues/22103
+    _ASSERTE((DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase) < INT8_MAX);
 
     // Common dispatch stub initialization
     dispatchInit._entryPoint [0]      = 0x48;
