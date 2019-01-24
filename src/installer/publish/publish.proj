@@ -189,7 +189,7 @@
   </Target>
 
   <Target Name="PublishCoreHostPackages"
-          DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;SignPackages;DoPushCoreHostPackagesToFeed;DoPushCoreHostPackagesToAzure"
+          DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;SignPackages;DoPushCoreHostPackagesToAzure"
           Condition="'@(_MissingBlobNames)' == '' AND '$(NuGetFeedUrl)' != ''">
     <Error Condition="'$(NuGetFeedUrl)' ==''" Text="Missing required property NuGetFeedUrl" />
     <Error Condition="'$(NuGetApiKey)' == ''" Text="Missing required property NuGetApiKey" />
