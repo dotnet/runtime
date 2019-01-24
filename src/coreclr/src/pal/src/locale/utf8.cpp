@@ -26,6 +26,10 @@ using namespace CorUnix;
 
 #define FASTLOOP
 
+#ifndef COUNTOF
+#define COUNTOF(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
 struct CharUnicodeInfo
 {
     static const WCHAR HIGH_SURROGATE_START = 0xd800;
@@ -229,7 +233,7 @@ public:
         if (bFoundHigh)
             throw ArgumentException("String 'replacement' contains invalid Unicode code points.", "replacement");
 
-        wcscpy_s(strDefault, sizeof(strDefault), replacement);
+        wcscpy_s(strDefault, COUNTOF(strDefault), replacement);
         strDefaultLength = replacementLength;
     }
 
@@ -426,7 +430,7 @@ public:
     // Construction
     DecoderReplacementFallbackBuffer(DecoderReplacementFallback* fallback)
     {
-        wcscpy_s(strDefault, sizeof(strDefault), fallback->GetDefaultString());
+        wcscpy_s(strDefault, COUNTOF(strDefault), fallback->GetDefaultString());
         strDefaultLength = PAL_wcslen((const WCHAR *)fallback->GetDefaultString());
     }
 
@@ -706,7 +710,7 @@ public:
         if (bFoundHigh)
             throw ArgumentException("String 'replacement' contains invalid Unicode code points.", "replacement");
 
-        wcscpy_s(strDefault, sizeof(strDefault), replacement);
+        wcscpy_s(strDefault, COUNTOF(strDefault), replacement);
         strDefaultLength = replacementLength;
     }
 
@@ -878,8 +882,8 @@ public:
     EncoderReplacementFallbackBuffer(EncoderReplacementFallback* fallback)
     {
         // 2X in case we're a surrogate pair
-        wcscpy_s(strDefault, sizeof(strDefault), fallback->GetDefaultString());
-        wcscat_s(strDefault, sizeof(strDefault), fallback->GetDefaultString());
+        wcscpy_s(strDefault, COUNTOF(strDefault), fallback->GetDefaultString());
+        wcscat_s(strDefault, COUNTOF(strDefault), fallback->GetDefaultString());
         strDefaultLength = 2 * PAL_wcslen((const WCHAR *)fallback->GetDefaultString());
 
     }
