@@ -330,9 +330,7 @@ public:
     static void IncForbidSuspendThread() { }
     static void DecForbidSuspendThread() { }
 
-    // The ForbidSuspendThreadHolder is used during the initialization of the stack marker infrastructure so
-    // it can't do any backout stack validation (which is why we pass in VALIDATION_TYPE=HSV_NoValidation).
-    typedef StateHolder<Thread::IncForbidSuspendThread, Thread::DecForbidSuspendThread, HSV_NoValidation> ForbidSuspendThreadHolder;
+    typedef StateHolder<Thread::IncForbidSuspendThread, Thread::DecForbidSuspendThread> ForbidSuspendThreadHolder;
 
     static BYTE GetOffsetOfCurrentFrame()
     {
@@ -1822,9 +1820,7 @@ public:
         return m_dwForbidSuspendThread != (LONG)0;
     }
     
-    // The ForbidSuspendThreadHolder is used during the initialization of the stack marker infrastructure so
-    // it can't do any backout stack validation (which is why we pass in VALIDATION_TYPE=HSV_NoValidation).
-    typedef StateHolder<Thread::IncForbidSuspendThread, Thread::DecForbidSuspendThread, HSV_NoValidation> ForbidSuspendThreadHolder;
+    typedef StateHolder<Thread::IncForbidSuspendThread, Thread::DecForbidSuspendThread> ForbidSuspendThreadHolder;
 
 private:
     // Per thread counter to dispense hash code - kept in the thread so we don't need a lock
