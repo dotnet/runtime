@@ -1065,10 +1065,10 @@ mono_image_load_time_date_stamp (MonoImage *image)
 {
 	image->time_date_stamp = 0;
 #ifndef HOST_WIN32
-	if (!image->name)
+	if (!image->filename)
 		return;
 
-	gunichar2 *uni_name = g_utf8_to_utf16 (image->name, -1, NULL, NULL, NULL);
+	gunichar2 *uni_name = g_utf8_to_utf16 (image->filename, -1, NULL, NULL, NULL);
 	mono_pe_file_time_date_stamp (uni_name, &image->time_date_stamp);
 	g_free (uni_name);
 #endif
@@ -1457,6 +1457,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->name = mono_path_resolve_symlinks (fname);
+	image->filename = g_strdup (image->name);
 	image->ref_only = refonly;
 	image->metadata_only = metadata_only;
 	image->load_from_context = load_from_context;
@@ -2143,6 +2144,7 @@ mono_image_close_except_pools (MonoImage *image)
 		image->name = g_strdup_printf ("%s - UNLOADED", image->name);
 	} else {
 		g_free (image->name);
+		g_free (image->filename);
 		g_free (image->guid);
 		g_free (image->version);
 	}
