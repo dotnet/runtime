@@ -35,6 +35,7 @@ namespace System.Text.Json
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
             _numberFormat = state._numberFormat;
+            _stringHasEscaping = state._stringHasEscaping;
             _tokenType = state._tokenType;
             _previousTokenType = state._previousTokenType;
             _readerOptions = state._readerOptions;
@@ -725,6 +726,7 @@ namespace System.Text.Json
                     _bytePositionInLine += idx + 2; // Add 2 for the start and end quotes.
                     ValueSpan = localBuffer.Slice(0, idx);
                     HasValueSequence = false;
+                    _stringHasEscaping = false;
                     _tokenType = JsonTokenType.String;
                     _consumed += idx + 2;
                     return true;
@@ -782,6 +784,7 @@ namespace System.Text.Json
                         _bytePositionInLine += leftOver + idx + 1;  // Add 1 for the end quote of the string.
                         _totalConsumed += leftOver;
                         _consumed = idx + 1;    // Add 1 for the end quote of the string.
+                        _stringHasEscaping = false;
                         break;
                     }
                     else
@@ -789,6 +792,7 @@ namespace System.Text.Json
                         long prevLineNumber = _lineNumber;
 
                         _bytePositionInLine += idx + 1; // Add 1 for the first quote
+                        _stringHasEscaping = true;
 
                         bool nextCharEscaped = false;
                         bool sawNewLine = false;
@@ -1098,6 +1102,8 @@ namespace System.Text.Json
                 _consumed += idx + 2;
                 ValueSpan = data.Slice(0, idx);
             }
+
+            _stringHasEscaping = true;
             _tokenType = JsonTokenType.String;
             return true;
         }
@@ -1200,7 +1206,7 @@ namespace System.Text.Json
 
             Debug.Assert(nextByte == 'E' || nextByte == 'e');
             i++;
-            _numberFormat = 'e';
+            _numberFormat = JsonConstants.ScientificNotationFormat;
             _bytePositionInLine++;
 
             signResult = ConsumeSignMultiSegment(ref data, ref i);

@@ -10,7 +10,7 @@ namespace System.Threading.Channels
     /// Provides a base class for reading from a channel.
     /// </summary>
     /// <typeparam name="T">Specifies the type of data that may be read from the channel.</typeparam>
-    public abstract class ChannelReader<T>
+    public abstract partial class ChannelReader<T>
     {
         /// <summary>
         /// Gets a <see cref="Task"/> that completes when no more data will ever

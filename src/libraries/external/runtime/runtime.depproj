@@ -40,11 +40,10 @@
     <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeNativeSystemDataSqlClientSniPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyPackageVersion)" />
-    <!-- DotNetAppHost is a transitive dependency of DotNetHostPolicy.
-         We do not need apphost.exe and the 3.0 SDK will actually remove it.
+    <!-- We do not need apphost.exe and the 3.0 SDK will actually remove it.
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
-    <PackageReference Include="Microsoft.NETCore.DotNetAppHost" Version="$(MicrosoftNETCoreDotNetHostPolicyPackageVersion)" ExcludeAssets="All" />
+    <FileToExclude Include="apphost" />
   </ItemGroup>
 
   <ItemGroup>

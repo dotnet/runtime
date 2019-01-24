@@ -189,6 +189,24 @@ namespace System.Text.Json
             return new InvalidOperationException(SR.Format(SR.InvalidCast, tokenType, message));
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static InvalidOperationException GetJsonElementWrongTypeException(
+            JsonTokenType expectedType,
+            JsonTokenType actualType)
+        {
+            return new InvalidOperationException(
+                SR.Format(SR.JsonElementHasWrongType, expectedType.ToValueType(), actualType.ToValueType()));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static InvalidOperationException GetJsonElementWrongTypeException(
+            string expectedTypeName,
+            JsonTokenType actualType)
+        {
+            return new InvalidOperationException(
+                SR.Format(SR.JsonElementHasWrongType, expectedTypeName, actualType.ToValueType()));
+        }
+
         public static void ThrowJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte = default, ReadOnlySpan<byte> bytes = default)
         {
             throw GetJsonReaderException(ref json, resource, nextByte, bytes);
