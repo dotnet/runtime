@@ -14,14 +14,10 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-#if FEATURE_COMINTEROP
-using System.Runtime.InteropServices.WindowsRuntime;
-#endif // FEATURE_COMINTEROP
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
 using Internal.Runtime.CompilerServices;
-using Internal.Runtime.Augments;
 
 #if CORERT
 using Thread = Internal.Runtime.Augments.RuntimeThread;
@@ -131,7 +127,7 @@ namespace System.Runtime.CompilerServices
                 // and decrement its outstanding operation count.
                 try
                 {
-                    AsyncMethodBuilderCore.ThrowAsync(exception, targetContext: _synchronizationContext);
+                    System.Threading.Tasks.Task.ThrowAsync(exception, targetContext: _synchronizationContext);
                 }
                 finally
                 {
@@ -143,7 +139,7 @@ namespace System.Runtime.CompilerServices
                 // Otherwise, queue the exception to be thrown on the ThreadPool.  This will
                 // result in a crash unless legacy exception behavior is enabled by a config
                 // file or a CLR host.
-                AsyncMethodBuilderCore.ThrowAsync(exception, targetContext: null);
+                System.Threading.Tasks.Task.ThrowAsync(exception, targetContext: null);
             }
 
             // The exception was propagated already; we don't need or want to fault the builder, just mark it as completed.
@@ -162,7 +158,7 @@ namespace System.Runtime.CompilerServices
             {
                 // If the interaction with the SynchronizationContext goes awry,
                 // fall back to propagating on the ThreadPool.
-                AsyncMethodBuilderCore.ThrowAsync(exc, targetContext: null);
+                Task.ThrowAsync(exc, targetContext: null);
             }
         }
 
@@ -369,7 +365,7 @@ namespace System.Runtime.CompilerServices
             }
             catch (Exception e)
             {
-                AsyncMethodBuilderCore.ThrowAsync(e, targetContext: null);
+                System.Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
             }
         }
 
@@ -415,7 +411,7 @@ namespace System.Runtime.CompilerServices
                     // exceptions well at that location in the state machine, especially if the exception may occur
                     // after the ValueTaskAwaiter already successfully hooked up the callback, in which case it's possible
                     // two different flows of execution could end up happening in the same async method call.
-                    AsyncMethodBuilderCore.ThrowAsync(e, targetContext: null);
+                    System.Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
                 }
             }
             else
@@ -427,7 +423,7 @@ namespace System.Runtime.CompilerServices
                 }
                 catch (Exception e)
                 {
-                    AsyncMethodBuilderCore.ThrowAsync(e, targetContext: null);
+                    System.Threading.Tasks.Task.ThrowAsync(e, targetContext: null);
                 }
             }
         }
@@ -1068,48 +1064,6 @@ namespace System.Runtime.CompilerServices
 
         internal static Task TryGetContinuationTask(Action continuation) =>
             (continuation?.Target as ContinuationWrapper)?._innerTask;
-
-        /// <summary>Throws the exception on the ThreadPool.</summary>
-        /// <param name="exception">The exception to propagate.</param>
-        /// <param name="targetContext">The target context on which to propagate the exception.  Null to use the ThreadPool.</param>
-        internal static void ThrowAsync(Exception exception, SynchronizationContext targetContext)
-        {
-            // Capture the exception into an ExceptionDispatchInfo so that its 
-            // stack trace and Watson bucket info will be preserved
-            var edi = ExceptionDispatchInfo.Capture(exception);
-
-            // If the user supplied a SynchronizationContext...
-            if (targetContext != null)
-            {
-                try
-                {
-                    // Post the throwing of the exception to that context, and return.
-                    targetContext.Post(state => ((ExceptionDispatchInfo)state).Throw(), edi);
-                    return;
-                }
-                catch (Exception postException)
-                {
-                    // If something goes horribly wrong in the Post, we'll 
-                    // propagate both exceptions on the ThreadPool
-                    edi = ExceptionDispatchInfo.Capture(new AggregateException(exception, postException));
-                }
-            }
-
-#if CORERT
-            RuntimeAugments.ReportUnhandledException(edi.SourceException);
-#else
-
-#if FEATURE_COMINTEROP
-            // If we have the new error reporting APIs, report this error.
-            if (WindowsRuntimeMarshal.ReportUnhandledError(edi.SourceException))
-                return;
-#endif // FEATURE_COMINTEROP
-
-            // Propagate the exception(s) on the ThreadPool
-            ThreadPool.QueueUserWorkItem(state => ((ExceptionDispatchInfo)state).Throw(), edi);
-
-#endif // CORERT
-        }
 
         /// <summary>
         /// Logically we pass just an Action (delegate) to a task for its action to 'ContinueWith' when it completes.
