@@ -1033,12 +1033,6 @@ void emitter::emitBegFN(bool hasFramePtr
     emitCntStackDepth = sizeof(int);
 #endif
 
-    /* No data sections have been created */
-
-    emitDataSecCur = nullptr;
-
-    memset(&emitConsDsc, 0, sizeof(emitConsDsc));
-
 #ifdef PSEUDORANDOM_NOP_INSERTION
     // for random NOP insertion
 
@@ -4488,6 +4482,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
+    if (emitConsDsc.align16)
+    {
+        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);
+    }
+
 #ifdef _TARGET_ARM64_
     // For arm64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
@@ -5176,7 +5175,7 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
  *  block.
  */
 
-UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, bool dblAlign, bool codeLtab)
+UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, bool align)
 {
     unsigned     secOffs;
     dataSection* secDesc;
@@ -5191,20 +5190,30 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, bool dblAlign, bool 
 
     secOffs = emitConsDsc.dsdOffs;
 
-    /* Are we require to align this request on an eight byte boundry? */
-    if (dblAlign && (secOffs % sizeof(double) != 0))
+    if (align)
     {
-        /* Need to skip 4 bytes to honor dblAlign */
-        /* Must allocate a dummy 4 byte integer */
-        int zero = 0;
-        emitDataGenBeg(4, false, false);
-        emitDataGenData(0, &zero, 4);
-        emitDataGenEnd();
+        // Data can have any size but since alignment is deduced from the size there's no
+        // way to have a larger data size (e.g. 128) and request 4/8/16 byte alignment.
+        // 32 bytes (and more) alignment requires VM support (see ICorJitInfo::allocMem).
+        assert(size <= 16);
 
-        /* Get the new secOffs */
-        secOffs = emitConsDsc.dsdOffs;
-        /* Now it should be a multiple of 8 */
-        assert(secOffs % sizeof(double) == 0);
+        if (size == 16)
+        {
+            emitConsDsc.align16 = true;
+        }
+
+        while ((secOffs % size) != 0)
+        {
+            /* Need to skip 4 bytes to honor alignment */
+            /* Must allocate a dummy 4 byte integer */
+            int zero = 0;
+            emitDataGenBeg(4, false);
+            emitDataGenData(0, &zero, 4);
+            emitDataGenEnd();
+
+            /* Get the new secOffs */
+            secOffs = emitConsDsc.dsdOffs;
+        }
     }
 
     /* Advance the current offset */
@@ -5355,7 +5364,7 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, boo
         dblAlign = false;
     }
 
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, dblAlign, false);
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, dblAlign);
     emitDataGenData(0, cnsAddr, cnsSize);
     emitDataGenEnd();
 
@@ -5366,16 +5375,34 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, boo
 // emitAnyConst: Create a data section constant of arbitrary size.
 //
 // Arguments:
-//    cnsAddr  - pointer to the data to be placed in the data section
-//    cnsSize  - size of the data
-//    dblAlign - whether to align the data section to an 8 byte boundary
+//    cnsAddr   - pointer to the data to be placed in the data section
+//    cnsSize   - size of the data
+//    alignment - indicates how to align the constant
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
 //
-CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, unsigned cnsSize, bool dblAlign)
+CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, unsigned cnsSize, emitDataAlignment alignment)
 {
-    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, dblAlign);
+    bool align;
+
+    switch (alignment)
+    {
+        case emitDataAlignment::None:
+            align = false;
+            break;
+        case emitDataAlignment::Preferred:
+            align = (emitComp->compCodeOpt() != Compiler::SMALL_CODE);
+            break;
+        case emitDataAlignment::Required:
+        default:
+            align = true;
+            break;
+    }
+
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, align);
+    emitDataGenData(0, cnsAddr, cnsSize);
+    emitDataGenEnd();
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
@@ -5433,6 +5460,11 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
     if (EMITVERBOSE)
     {
         printf("\nEmitting data sections: %u total bytes\n", sec->dsdOffs);
+    }
+
+    if (emitComp->opts.disAsm)
+    {
+        emitDispDataSec(sec);
     }
 
     unsigned secNum = 0;
@@ -5531,6 +5563,123 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         dst += dscSize;
     }
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// emitDispDataSec: Dump a data section to stdout.
+//
+// Arguments:
+//    section - the data section description
+//
+// Notes:
+//    The output format attempts to mirror typical assembler syntax.
+//    Data section entries lack type information so float/double entries
+//    are displayed as if they are integers/longs.
+//
+void emitter::emitDispDataSec(dataSecDsc* section)
+{
+    printf("\n");
+
+    unsigned offset = 0;
+
+    for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext)
+    {
+        const char* labelFormat = "%-7s";
+        char        label[64];
+        sprintf_s(label, _countof(label), "RWD%02u", offset);
+        printf(labelFormat, label);
+        offset += data->dsSize;
+
+        if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
+        {
+            insGroup* igFirst    = static_cast<insGroup*>(emitCodeGetCookie(emitComp->fgFirstBB));
+            bool      isRelative = (data->dsType == dataSection::blockRelative32);
+            size_t    blockCount = data->dsSize / (isRelative ? 4 : TARGET_POINTER_SIZE);
+
+            for (unsigned i = 0; i < blockCount; i++)
+            {
+                if (i > 0)
+                {
+                    printf(labelFormat, "");
+                }
+
+                BasicBlock* block = reinterpret_cast<BasicBlock**>(data->dsCont)[i];
+                insGroup*   ig    = static_cast<insGroup*>(emitCodeGetCookie(block));
+
+                const char* blockLabelFormat = "G_M%03u_IG%02u";
+                char        blockLabel[64];
+                char        firstLabel[64];
+                sprintf_s(blockLabel, _countof(blockLabel), blockLabelFormat, Compiler::s_compMethodsCount, ig->igNum);
+                sprintf_s(firstLabel, _countof(firstLabel), blockLabelFormat, Compiler::s_compMethodsCount,
+                          igFirst->igNum);
+
+                if (isRelative)
+                {
+                    if (emitComp->opts.disDiffable)
+                    {
+                        printf("dd\t%s - %s\n", blockLabel, firstLabel);
+                    }
+                    else
+                    {
+                        printf("dd\t%08Xh", ig->igOffs - igFirst->igOffs);
+                    }
+                }
+                else if (TARGET_POINTER_SIZE == 4)
+                {
+                    if (emitComp->opts.disDiffable)
+                    {
+                        printf("dd\t%s\n", blockLabel);
+                    }
+                    else
+                    {
+                        printf("dd\t%08Xh", reinterpret_cast<uint32_t>(emitOffsetToPtr(ig->igOffs)));
+                    }
+                }
+                else
+                {
+                    if (emitComp->opts.disDiffable)
+                    {
+                        printf("dq\t%s\n", blockLabel);
+                    }
+                    else
+                    {
+                        printf("dq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+                    }
+                }
+
+                if (!emitComp->opts.disDiffable)
+                {
+                    printf(" ; case %s\n", blockLabel);
+                }
+            }
+        }
+        else
+        {
+            assert(data->dsType == dataSection::data);
+            switch (data->dsSize)
+            {
+                case 2:
+                    printf("dw\t%04Xh\n", *reinterpret_cast<uint16_t*>(&data->dsCont));
+                    break;
+                case 4:
+                    printf("dd\t%08Xh\n", *reinterpret_cast<uint32_t*>(&data->dsCont));
+                    break;
+                case 8:
+                    printf("dq\t%016llXh\n", *reinterpret_cast<uint64_t*>(&data->dsCont));
+                    break;
+                default:
+                    printf("db\t");
+                    for (UNATIVE_OFFSET i = 0; i < data->dsSize; i++)
+                    {
+                        printf("%s0%02Xh", i > 0 ? ", " : "", data->dsCont[i]);
+                    }
+                    printf("\n");
+            }
+        }
+    }
+}
+#endif
 
 /*****************************************************************************/
 /*****************************************************************************
