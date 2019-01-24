@@ -6765,6 +6765,7 @@ mono_icall_get_machine_name (MonoError *error)
 	n = 512;
 	buf = (char*)g_malloc (n + 1);
 
+#if defined(HAVE_GETHOSTNAME)
 	if (gethostname (buf, n) == 0){
 		buf [n] = 0;
 		// try truncating the string at the first dot
@@ -6776,7 +6777,9 @@ mono_icall_get_machine_name (MonoError *error)
 		}
 		result = mono_string_new_handle (mono_domain_get (), buf, error);
 	} else
+#endif
 		result = MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
+
 	g_free (buf);
 	
 	return result;

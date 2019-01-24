@@ -23,7 +23,9 @@
 #endif
 #include <sys/types.h>
 #include <stdio.h>
+#ifdef HAVE_UTIME_H
 #include <utime.h>
+#endif
 #ifdef __linux__
 #include <sys/ioctl.h>
 #include <linux/fs.h>
@@ -341,7 +343,11 @@ _wapi_chmod (const gchar *pathname, mode_t mode)
 	gint ret;
 
 	MONO_ENTER_GC_SAFE;
+#if defined(HAVE_CHMOD)
 	ret = chmod (pathname, mode);
+#else
+	ret = -1;
+#endif
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
@@ -352,9 +358,13 @@ _wapi_chmod (const gchar *pathname, mode_t mode)
 			return -1;
 		}
 
+#if defined(HAVE_CHMOD)
 		MONO_ENTER_GC_SAFE;
 		ret = chmod (located_filename, mode);
 		MONO_EXIT_GC_SAFE;
+#else
+		ret = -1;
+#endif
 		g_free (located_filename);
 	}
 
@@ -365,8 +375,9 @@ _wapi_chmod (const gchar *pathname, mode_t mode)
 static gint
 _wapi_utime (const gchar *filename, const struct utimbuf *buf)
 {
-	gint ret;
+	gint ret = -1;
 
+#ifdef HAVE_UTIME
 	MONO_ENTER_GC_SAFE;
 	ret = utime (filename, buf);
 	MONO_EXIT_GC_SAFE;
@@ -384,6 +395,7 @@ _wapi_utime (const gchar *filename, const struct utimbuf *buf)
 		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
+#endif
 
 	return ret;
 }
@@ -392,8 +404,9 @@ _wapi_utime (const gchar *filename, const struct utimbuf *buf)
 static gint
 _wapi_utimes (const gchar *filename, const struct timeval times[2])
 {
-	gint ret;
+	gint ret = -1;
 
+#ifdef HAVE_UTIMES
 	MONO_ENTER_GC_SAFE;
 	ret = utimes (filename, times);
 	MONO_EXIT_GC_SAFE;
@@ -411,6 +424,7 @@ _wapi_utimes (const gchar *filename, const struct timeval times[2])
 		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
+#endif
 
 	return ret;
 }
@@ -511,6 +525,7 @@ _wapi_lstat (const gchar *path, struct stat *buf)
 {
 	gint ret;
 
+#ifdef HAVE_LSTAT
 	MONO_ENTER_GC_SAFE;
 	ret = lstat (path, buf);
 	MONO_EXIT_GC_SAFE;
@@ -526,6 +541,9 @@ _wapi_lstat (const gchar *path, struct stat *buf)
 		ret = lstat (located_filename, buf);
 		g_free (located_filename);
 	}
+#else
+	ret = -1;
+#endif
 
 	return ret;
 }
@@ -3669,9 +3687,13 @@ mono_w32file_set_attributes (const gunichar2 *name, guint32 attrs)
 		if ((buf.st_mode & S_IROTH) != 0)
 			exec_mask |= S_IXOTH;
 
+#if defined(HAVE_CHMOD)
 		MONO_ENTER_GC_SAFE;
 		result = chmod (utf8_name, buf.st_mode | exec_mask);
 		MONO_EXIT_GC_SAFE;
+#else
+		result = -1;
+#endif
 	}
 	/* Don't bother to reset executable (might need to change this
 	 * policy)

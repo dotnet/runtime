@@ -159,7 +159,9 @@ bundle_save_library_initialize (void)
 	g_free (path);
 	if (bundled_dylibrary_directory == NULL)
 		return;
+#ifdef HAVE_ATEXIT
 	atexit (delete_bundled_libraries);
+#endif
 }
 
 static void

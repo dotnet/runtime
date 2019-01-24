@@ -30,7 +30,9 @@
 #ifdef HAVE_SYS_ERRNO_H
 #include <sys/errno.h>
 #endif
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -965,7 +967,7 @@ mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error)
 int
 mono_atexit (void (*func)(void))
 {
-#ifdef HOST_ANDROID
+#if defined(HOST_ANDROID) || !defined(HAVE_ATEXIT)
 	/* Some versions of android libc doesn't define atexit () */
 	return 0;
 #else

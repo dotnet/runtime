@@ -66,9 +66,13 @@
  */
 static size_t mono_sysconf (int name)
 {
+#ifdef HAVE_SYSCONF
 	size_t size = (size_t) sysconf (name);
 	/* default value */
 	return (size == -1) ? MONO_SYSCONF_DEFAULT_SIZE : size;
+#else
+	return MONO_SYSCONF_DEFAULT_SIZE;
+#endif
 }
 
 static gchar*
@@ -518,7 +522,11 @@ Protect (const gunichar2 *path, gint32 file_mode, gint32 add_dir_mode)
 			int mode = file_mode;
 			if (st.st_mode & S_IFDIR)
 				mode |= add_dir_mode;
+#ifdef HAVE_CHMOD
 			result = (chmod (utf8_name, mode) == 0);
+#else
+			result = -1;
+#endif
 		}
 		g_free (utf8_name);
 	}
