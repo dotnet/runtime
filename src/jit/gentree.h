@@ -4961,6 +4961,14 @@ struct GenTreeClsVar : public GenTree
     {
         gtFlags |= GTF_GLOB_REF;
     }
+
+    GenTreeClsVar(genTreeOps oper, var_types type, CORINFO_FIELD_HANDLE clsVarHnd, FieldSeqNode* fldSeq)
+        : GenTree(oper, type), gtClsVarHnd(clsVarHnd), gtFieldSeq(fldSeq)
+    {
+        assert((oper == GT_CLS_VAR) || (oper == GT_CLS_VAR_ADDR));
+        gtFlags |= GTF_GLOB_REF;
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeClsVar() : GenTree()
     {
