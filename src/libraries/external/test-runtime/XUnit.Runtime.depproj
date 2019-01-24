@@ -49,6 +49,7 @@
     <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="1.0.0" />
     <PackageReference Include="System.Drawing.Common.TestData" Version="1.0.7" />
     <PackageReference Include="System.Text.RegularExpressions.TestData" Version="1.0.2" />
+    <PackageReference Include="System.Windows.Extensions.TestData" Version="1.0.0" />
 
     <PackageToInclude Include="xunit.abstractions" />
     <PackageToInclude Include="xunit.assert" />
