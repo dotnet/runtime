@@ -85,7 +85,7 @@ namespace System.Media.Test
             yield return new object[] { "ima.wav" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]
         public void Load_SourceLocation_Success(string sourceLocation)
@@ -100,7 +100,7 @@ namespace System.Media.Test
             soundPlayer.Play();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]
         public async Task LoadAsync_SourceLocationFromNetwork_Success(string sourceLocation)
@@ -197,7 +197,7 @@ namespace System.Media.Test
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]
         public void Play_SourceLocation_Success(string sourceLocation)
@@ -212,14 +212,14 @@ namespace System.Media.Test
             soundPlayer.Load();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
         public void Play_NoSuchFile_ThrowsFileNotFoundException()
         {
             var soundPlayer = new SoundPlayer("noSuchFile");
             Assert.Throws<FileNotFoundException>(() => soundPlayer.Play());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]
         public void Play_Stream_Success(string sourceLocation)
@@ -248,7 +248,7 @@ namespace System.Media.Test
             player.Play();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [MemberData(nameof(Play_InvalidString_TestData))]
         [InlineData("http://google.com")]
         public void Play_InvalidFile_ThrowsInvalidOperationException(string sourceLocation)

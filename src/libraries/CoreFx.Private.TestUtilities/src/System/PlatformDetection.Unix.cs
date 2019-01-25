@@ -61,6 +61,7 @@ namespace System
         public static bool IsNetfx472OrNewer => false;
 
         public static bool IsDrawingSupported { get; } = GetGdiplusIsAvailable();
+        public static bool IsSoundPlaySupported { get; } = false;
 
         [DllImport("libdl")]
         private static extern IntPtr dlopen(string libName, int flags);

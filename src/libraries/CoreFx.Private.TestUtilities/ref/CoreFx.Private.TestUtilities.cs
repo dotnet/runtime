@@ -91,6 +91,7 @@ namespace System
         public static bool IsNotRedHatFamily { get { throw null; } }
         public static bool IsRedHatFamily6 { get { throw null; } }
         public static bool IsRedHatFamily7 { get { throw null; } }
+        public static bool IsSoundPlaySupported { get { throw null; } }
         public static bool IsNotRedHatFamily6 { get { throw null; } }
         public static bool IsUap { get { throw null; } }
         public static Version ICUVersion { get { return null; } }
