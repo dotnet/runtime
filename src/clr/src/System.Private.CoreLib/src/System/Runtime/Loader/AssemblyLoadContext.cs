@@ -72,8 +72,8 @@ namespace System.Runtime.Loader
                     throw new InvalidOperationException(SR.GetResourceString("AssemblyLoadContext_Constructor_CannotInstantiateWhileUnloading"));
                 }
 
-                // If this is a collectible ALC, we are creating a weak handle otherwise we use a strong handle
-                var thisHandle = GCHandle.Alloc(this, IsCollectible ? GCHandleType.Weak : GCHandleType.Normal);
+                // If this is a collectible ALC, we are creating a weak handle tracking resurrection otherwise we use a strong handle
+                var thisHandle = GCHandle.Alloc(this, IsCollectible ? GCHandleType.WeakTrackResurrection : GCHandleType.Normal);
                 var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
                 m_pNativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, fRepresentsTPALoadContext, isCollectible);
 
