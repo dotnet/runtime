@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Dummy implementations of non-portable interop methods that just throw PlatformNotSupportedException
-
 using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 
@@ -13,7 +11,7 @@ namespace System.Runtime.InteropServices
     {
         public static int GetHRForException(Exception e)
         {
-            return (e != null) ? e.HResult : 0;
+            return e?.HResult ?? 0;
         }
 
         public static int AddRef(IntPtr pUnk)
@@ -35,7 +33,6 @@ namespace System.Runtime.InteropServices
 
         public static void CleanupUnusedObjectsInCurrentContext()
         {
-            return;
         }
 
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o)
@@ -198,19 +195,6 @@ namespace System.Runtime.InteropServices
         }
 
         public static bool SetComObjectData(object obj, object key, object data)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-    }
-
-    public static class ComEventsHelper
-    {
-        public static void Combine(object rcw, Guid iid, int dispid, Delegate d)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
-        public static Delegate Remove(object rcw, Guid iid, int dispid, Delegate d)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
