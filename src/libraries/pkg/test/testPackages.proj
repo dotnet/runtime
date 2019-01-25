@@ -16,8 +16,8 @@
 
     <RestoreSource Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
 
-    <!-- needed for SQLClient's SNI packages -->
-    <RestoreSource Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+    <!-- needed for SQLClient's SNI and core-setup packages -->
+    <RestoreSource Include="https:%2F%2Fdotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
 
     <!-- ideally this would be first, but we need to list last to workaround https://github.com/NuGet/Home/issues/6678 -->
     <RestoreSource Include="$(PackageOutputPath)" />
