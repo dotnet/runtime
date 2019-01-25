@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.InternalAbstractions;
+using Microsoft.Win32;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
@@ -592,7 +593,86 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
         }
-   
+
+        [Fact]
+        public void SdkMultilevelLookup_RegistryAccess()
+        {
+            // The purpose of this test is to verify that the product uses correct code to access
+            // the registry to extract the path to search for SDKs.
+            // Most of our tests rely on a shortcut which is to set _DOTNET_TEST_SDK_SELF_REGISTERED_DIR env variable
+            // which will skip the registry reading code in the product and simply use the specified value.
+            // This test is different since it actually runs the registry reading code.
+            // Normally the reg key the product uses is in HKEY_LOCAL_MACHINE which is only writable as admin
+            // so we would require the tests to run as admin to modify that key (and it may introduce races with other code running on the machine).
+            // So instead the tests use _DOTENT_TEST_SDK_REGISTRY_PATH env variable to point to the produce to use
+            // different registry key, inside the HKEY_CURRENT_USER hive which is writable without admin.
+            // Note that the test creates a unique key (based on PID) for every run, to avoid collisions between parallel running tests.
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Multi-level lookup is only supported on Windows.
+                return;
+            }
+
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+
+            // To correctly test the product we need a registry key which is
+            // - writable without admin access (so that the tests don't require admin to run)
+            // - redirected in WOW64 - so that there are both 32bit and 64bit versions of the key
+            //   this is because the product stores the info in the 32bit version only and even 64bit
+            //   product must look into the 32bit version.
+            //   Without the redirection we would not be able to test that the product always looks
+            //   into 32bit only.
+            // Per this page https://docs.microsoft.com/en-us/windows/desktop/WinProg64/shared-registry-keys
+            // a user writable redirected key is for example HKCU\Software\Classes\Interface
+            // so we're going to use that one - it's not super clean as they key stored COM interfaces
+            // but we should not corrupt anything by adding a special subkey even if it's left behind.
+            //
+            // Note: If you want to inspect the values written by the test and/or modify them manually
+            //   you have to navigate to HKCU\Software\Classes\Wow6432Node\Interface on a 64bit OS.
+
+            RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
+            RegistryKey interfaceKey = hkcu.CreateSubKey(@"Software\Classes\Interface");
+            string testKeyName = "_DOTNET_Test" + System.Diagnostics.Process.GetCurrentProcess().Id.ToString();
+            RegistryKey testKey = interfaceKey.CreateSubKey(testKeyName);
+            try
+            {
+                string architecture = fixture.CurrentRid.Split('-')[1];
+                RegistryKey sdkKey = testKey.CreateSubKey($@"Setup\InstalledVersions\{architecture}\sdk");
+                sdkKey.SetValue("InstallLocation", _regDir);
+
+                // Add SDK versions
+                AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.4");
+
+                // Specified SDK version: none
+                // Cwd: empty
+                // User: empty
+                // Exe: empty
+                // Reg: 9999.0.4
+                // Expected: 9999.0.4 from reg dir
+                dotnet.Exec("help")
+                    .WorkingDirectory(_currentWorkingDir)
+                    .WithUserProfile(_userDir)
+                    .Environment(s_DefaultEnvironment)
+                    .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "1")
+                    .EnvironmentVariable("_DOTNET_TEST_SDK_REGISTRY_PATH", testKey.Name)
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .Execute()
+                    .Should()
+                    .Pass()
+                    .And
+                    .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
+            }
+            finally
+            {
+                interfaceKey.DeleteSubKeyTree(testKeyName);
+            }
+        }
+
         [Fact]
         public void SdkMultilevelLookup_Must_Pick_The_Highest_Semantic_Version()
         {

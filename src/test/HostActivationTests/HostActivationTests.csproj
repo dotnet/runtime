@@ -19,6 +19,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.1.0" />
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.3.0" />
   </ItemGroup>
 
 </Project>
