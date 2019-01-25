@@ -92,7 +92,7 @@
         <_sourcePackageTargetLines><![CDATA[<?xml version="1.0" encoding="utf-8"?>
 <Project>
   <ItemGroup Condition="'%24(ExcludeEmbeddedResourceFromPackage)' != 'true'">@(EmbeddedResource->'
-    <EmbeddedResource Include="%24(MSBuildThisFileDirectory)%(FileName)%(Extension)" ManifestResourceName="%(ManifestResourceName)" />', '')
+    <EmbeddedResource Include="%24(MSBuildThisFileDirectory)%(FileName)%(Extension)" Link="System/Text/Json/%(FileName)%(Extension)" ManifestResourceName="%(ManifestResourceName)" />', '')
   </ItemGroup>
 </Project>]]>
         </_sourcePackageTargetLines>
@@ -104,7 +104,7 @@
 
       <ItemGroup>
         <_sourceToExclude Include="@(Compile)" Condition="$([System.String]::Copy('%(Compile.Identity)').ToLower().EndsWith('assemblyinfo.cs'))" />
-        <_sourceToPackage Include="@(Compile->'%(FullPath)')" PackagePath="contentFiles/cs/netstandard2.0/%(FileName)%(Extension)" Exclude="@(_sourceToExclude)"/>
+        <_sourceToPackage Include="@(Compile->'%(FullPath)')" PackagePath="contentFiles/cs/netstandard2.0/System/Text/Json/%(FileName)%(Extension)" Exclude="@(_sourceToExclude)"/>
         <_sourceToPackage Condition="'%(Extension)' == '.resx'" Include="@(EmbeddedResource->'%(FullPath)')"  PackagePath="build/netstandard2.0/%(FileName)%(Extension)" />
         <_sourceToPackage Include="$(_generatedSourcePackageTargetPath)" PackagePath="build/netstandard2.0/$(_targetsFileName)" />
       </ItemGroup>
