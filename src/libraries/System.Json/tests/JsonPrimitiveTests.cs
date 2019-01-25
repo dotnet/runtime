@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.IO;
 using System.Text;
 using Xunit;
@@ -76,13 +77,13 @@ namespace System.Json.Tests
         [Fact]
         public void ToString_DateTimeOffset()
         {
-            ToString(new JsonPrimitive(DateTimeOffset.MinValue), DateTimeOffset.MinValue.ToString("G"));
+            ToString(new JsonPrimitive(DateTimeOffset.MinValue), DateTimeOffset.MinValue.ToString("G", CultureInfo.InvariantCulture));
         }
 
         [Fact]
         public void ToString_TimeSpan()
         {
-            ToString(new JsonPrimitive(TimeSpan.Zero), TimeSpan.Zero.ToString("G"));
+            ToString(new JsonPrimitive(TimeSpan.Zero), TimeSpan.Zero.ToString("G", CultureInfo.InvariantCulture));
         }
         
         private void ToString(JsonValue primitive, string expected)

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Globalization;
@@ -10,7 +11,7 @@ using System.Collections.Generic;
 
 namespace System.Json.Tests
 {
-    public class JsonValueTests
+    public class JsonValueTests : RemoteExecutorTestBase
     {
         [Fact]
         public void JsonValue_Load_LoadWithTrailingCommaInDictionary()
@@ -235,19 +236,14 @@ namespace System.Json.Tests
         [InlineData("0.000000000000000000000000000011", 1.1E-29)]
         public void JsonValue_Parse_Double(string json, double expected)
         {
-            foreach (string culture in new[] { "en", "fr", "de" })
+            RemoteInvoke((jsonInner, expectedInner) =>
             {
-                CultureInfo old = CultureInfo.CurrentCulture;
-                try
+                foreach (string culture in new[] { "en", "fr", "de" })
                 {
                     CultureInfo.CurrentCulture = new CultureInfo(culture);
-                    Assert.Equal(expected, (double)JsonValue.Parse(json));
+                    Assert.Equal(double.Parse(expectedInner, CultureInfo.InvariantCulture), (double)JsonValue.Parse(jsonInner));
                 }
-                finally
-                {
-                    CultureInfo.CurrentCulture = old;
-                }
-            }
+            }, json, expected.ToString("R", CultureInfo.InvariantCulture)).Dispose();
         }
 
         // Convert a number to json and parse the string, then compare the result to the original value
@@ -275,19 +271,15 @@ namespace System.Json.Tests
         [InlineData(1.123456789e-28)] // Values around the smallest positive decimal value
         public void JsonValue_Parse_Double_ViaJsonPrimitive(double number)
         {
-            foreach (string culture in new[] { "en", "fr", "de" })
+            RemoteInvoke(numberText =>
             {
-                CultureInfo old = CultureInfo.CurrentCulture;
-                try
+                double numberInner = double.Parse(numberText, CultureInfo.InvariantCulture);
+                foreach (string culture in new[] { "en", "fr", "de" })
                 {
                     CultureInfo.CurrentCulture = new CultureInfo(culture);
-                    Assert.Equal(number, (double)JsonValue.Parse(new JsonPrimitive(number).ToString()));
+                    Assert.Equal(numberInner, (double)JsonValue.Parse(new JsonPrimitive(numberInner).ToString()));
                 }
-                finally
-                {
-                    CultureInfo.CurrentCulture = old;
-                }
-            }
+            }, number.ToString("R", CultureInfo.InvariantCulture)).Dispose();
         }
 
         [Fact]
