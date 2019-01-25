@@ -16,7 +16,7 @@ namespace System.Threading.Tasks
         ,LocalizationResources = "FxResources.System.Private.CoreLib.SR"
 #endif
         )]
-    internal sealed class TplEtwProvider : EventSource
+    internal sealed class TplEventSource : EventSource
     {
         /// Used to determine if tasks should generate Activity IDs for themselves
         internal bool TasksSetActivityIds;        // This keyword is set
@@ -49,10 +49,10 @@ namespace System.Threading.Tasks
         /// Defines the singleton instance for the TPL ETW provider.
         /// The TPL Event provider GUID is {2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5}.
         /// </summary>
-        public static readonly TplEtwProvider Log = new TplEtwProvider();
+        public static readonly TplEventSource Log = new TplEventSource();
 
         /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private TplEtwProvider() : base(new Guid(0x2e5dba47, 0xa3d2, 0x4d16, 0x8e, 0xe0, 0x66, 0x71, 0xff, 0xdc, 0xd7, 0xb5), "System.Threading.Tasks.TplEventSource") { }
+        private TplEventSource() : base(new Guid(0x2e5dba47, 0xa3d2, 0x4d16, 0x8e, 0xe0, 0x66, 0x71, 0xff, 0xdc, 0xd7, 0xb5), "System.Threading.Tasks.TplEventSource") { }
 
         /// <summary>Configured behavior of a task wait operation.</summary>
         public enum TaskWaitBehavior : int
@@ -317,7 +317,7 @@ namespace System.Threading.Tasks
         /// If known, if 'TaskID' has a 'continueWith' task, mention give its ID here.  
         /// 0 means unknown.   This allows better visualization of the common sequential chaining case.
         /// </param>
-        [Event(TASKWAITBEGIN_ID, Version = 3, Task = TplEtwProvider.Tasks.TaskWait, Opcode = EventOpcode.Send,
+        [Event(TASKWAITBEGIN_ID, Version = 3, Task = TplEventSource.Tasks.TaskWait, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
         public void TaskWaitBegin(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
