@@ -38,181 +38,12 @@ namespace System.Runtime.InteropServices
 
         private const int LMEM_FIXED = 0;
         private const int LMEM_MOVEABLE = 2;
-#if !FEATURE_PAL
-        private const long HiWordMask = unchecked((long)0xffffffffffff0000L);
-#endif //!FEATURE_PAL
-
-        // Win32 has the concept of Atoms, where a pointer can either be a pointer
-        // or an int.  If it's less than 64K, this is guaranteed to NOT be a 
-        // pointer since the bottom 64K bytes are reserved in a process' page table.
-        // We should be careful about deallocating this stuff.  Extracted to
-        // a function to avoid C# problems with lack of support for IntPtr.
-        // We have 2 of these methods for slightly different semantics for NULL.
-        private static bool IsWin32Atom(IntPtr ptr)
-        {
-#if FEATURE_PAL
-            return false;
-#else
-            long lPtr = (long)ptr;
-            return 0 == (lPtr & HiWordMask);
-#endif
-        }
-
-        /// <summary>
-        /// The default character size for the system. This is always 2 because
-        /// the framework only runs on UTF-16 systems.
-        /// </summary>
-        public static readonly int SystemDefaultCharSize = 2;
-
-        /// <summary>
-        /// The max DBCS character size for the system.
-        /// </summary>
-        public static readonly int SystemMaxDBCSCharSize = GetSystemMaxDBCSCharSize();
 
         /// <summary>
         /// Helper method to retrieve the system's maximum DBCS character size.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetSystemMaxDBCSCharSize();
-
-        public static unsafe string PtrToStringAnsi(IntPtr ptr)
-        {
-            if (IntPtr.Zero == ptr)
-            {
-                return null;
-            }
-            else if (IsWin32Atom(ptr))
-            {
-                return null;
-            }
-
-            int nb = string.strlen((byte*)ptr);
-            if (nb == 0)
-            {
-                return string.Empty;
-            }
-
-            return new string((sbyte*)ptr);
-        }
-
-        public static unsafe string PtrToStringAnsi(IntPtr ptr, int len)
-        {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
-            if (len < 0)
-            {
-                throw new ArgumentException(null, nameof(len));
-            }
-
-            return new string((sbyte*)ptr, 0, len);
-        }
-
-        public static unsafe string PtrToStringUni(IntPtr ptr, int len)
-        {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
-            if (len < 0)
-            {
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(len));
-            }
-
-            return new string((char*)ptr, 0, len);
-        }
-
-        public static string PtrToStringAuto(IntPtr ptr, int len)
-        {
-            // Ansi platforms are no longer supported
-            return PtrToStringUni(ptr, len);
-        }
-
-        public static unsafe string PtrToStringUni(IntPtr ptr)
-        {
-            if (IntPtr.Zero == ptr)
-            {
-                return null;
-            }
-            else if (IsWin32Atom(ptr))
-            {
-                return null;
-            }
-
-            return new string((char*)ptr);
-        }
-
-        public static string PtrToStringAuto(IntPtr ptr)
-        {
-            // Ansi platforms are no longer supported
-            return PtrToStringUni(ptr);
-        }
-
-        public static unsafe string PtrToStringUTF8(IntPtr ptr)
-        {
-            if (IntPtr.Zero == ptr)
-            {
-                return null;
-            }
-
-            int nbBytes = string.strlen((byte*)ptr);
-            return PtrToStringUTF8(ptr, nbBytes);
-        }
-
-        public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
-        {
-            if (byteLen < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(byteLen), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            else if (IntPtr.Zero == ptr)
-            {
-                return null;
-            }
-            else if (IsWin32Atom(ptr))
-            {
-                return null;
-            }
-            else if (byteLen == 0)
-            {
-                return string.Empty;
-            }
-
-            return Encoding.UTF8.GetString((byte*)ptr, byteLen);
-        }
-
-        public static int SizeOf(object structure)
-        {
-            if (structure == null)
-            {
-                throw new ArgumentNullException(nameof(structure));
-            }
-
-            return SizeOfHelper(structure.GetType(), true);
-        }
-
-        public static int SizeOf<T>(T structure) => SizeOf((object)structure);
-
-        public static int SizeOf(Type t)
-        {
-            if (t == null)
-            {
-                throw new ArgumentNullException(nameof(t));
-            }
-            if (!(t is RuntimeType))
-            {
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
-            }
-            if (t.IsGenericType)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
-            }
-
-            return SizeOfHelper(t, throwIfNotMarshalable: true);
-        }
-
-        public static int SizeOf<T>() => SizeOf(typeof(T));
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
@@ -237,8 +68,6 @@ namespace System.Runtime.InteropServices
 
             return OffsetOfHelper(rtField);
         }
-
-        public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr OffsetOfHelper(IRuntimeFieldInfo f);
@@ -266,264 +95,25 @@ namespace System.Runtime.InteropServices
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
         }
 
-        public static void Copy(int[] source, int startIndex, IntPtr destination, int length)
-        {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        public static void Copy(char[] source, int startIndex, IntPtr destination, int length)
-        {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        public static void Copy(short[] source, int startIndex, IntPtr destination, int length)
-        {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        public static void Copy(long[] source, int startIndex, IntPtr destination, int length)
-        {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        public static void Copy(float[] source, int startIndex, IntPtr destination, int length)
-        {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        public static void Copy(double[] source, int startIndex, IntPtr destination, int length)
-        {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        public static void Copy(byte[] source, int startIndex, IntPtr destination, int length)
-        {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        public static void Copy(IntPtr[] source, int startIndex, IntPtr destination, int length)
-        {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        private static unsafe void CopyToNative<T>(T[] source, int startIndex, IntPtr destination, int length)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(destination));
-
-            // The rest of the argument validation is done by CopyTo
-
-            new Span<T>(source, startIndex, length).CopyTo(new Span<T>((void*)destination, length));
-        }
-
-        public static void Copy(IntPtr source, int[] destination, int startIndex, int length)
-        {
-            CopyToManaged(source, destination, startIndex, length);
-        }
-
-        public static void Copy(IntPtr source, char[] destination, int startIndex, int length)
-        {
-            CopyToManaged(source, destination, startIndex, length);
-        }
-
-        public static void Copy(IntPtr source, short[] destination, int startIndex, int length)
-        {
-            CopyToManaged(source, destination, startIndex, length);
-        }
-
-        public static void Copy(IntPtr source, long[] destination, int startIndex, int length)
-        {
-            CopyToManaged(source, destination, startIndex, length);
-        }
-
-        public static void Copy(IntPtr source, float[] destination, int startIndex, int length)
-        {
-            CopyToManaged(source, destination, startIndex, length);
-        }
-
-        public static void Copy(IntPtr source, double[] destination, int startIndex, int length)
-        {
-            CopyToManaged(source, destination, startIndex, length);
-        }
-
-        public static void Copy(IntPtr source, byte[] destination, int startIndex, int length)
-        {
-            CopyToManaged(source, destination, startIndex, length);
-        }
-
-        public static void Copy(IntPtr source, IntPtr[] destination, int startIndex, int length)
-        {
-            CopyToManaged(source, destination, startIndex, length);
-        }
-
-        private static unsafe void CopyToManaged<T>(IntPtr source, T[] destination, int startIndex, int length)
-        {
-            if (source == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(source));
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            // The rest of the argument validation is done by CopyTo
-
-            new Span<T>((void*)source, length).CopyTo(new Span<T>(destination, startIndex, length));
-        }
-
         public static byte ReadByte(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadByte(nativeHome, offset));
         }
-
-        public static unsafe byte ReadByte(IntPtr ptr, int ofs)
-        {
-            try
-            {
-                byte* addr = (byte*)ptr + ofs;
-                return *addr;
-            }
-            catch (NullReferenceException)
-            {
-                // this method is documented to throw AccessViolationException on any AV
-                throw new AccessViolationException();
-            }
-        }
-
-        public static byte ReadByte(IntPtr ptr) => ReadByte(ptr, 0);
 
         public static short ReadInt16(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt16(nativeHome, offset));
         }
 
-        public static unsafe short ReadInt16(IntPtr ptr, int ofs)
-        {
-            try
-            {
-                byte* addr = (byte*)ptr + ofs;
-                if ((unchecked((int)addr) & 0x1) == 0)
-                {
-                    // aligned read
-                    return *((short*)addr);
-                }
-                else
-                {
-                    // unaligned read
-                    short val;
-                    byte* valPtr = (byte*)&val;
-                    valPtr[0] = addr[0];
-                    valPtr[1] = addr[1];
-                    return val;
-                }
-            }
-            catch (NullReferenceException)
-            {
-                // this method is documented to throw AccessViolationException on any AV
-                throw new AccessViolationException();
-            }
-        }
-
-        public static short ReadInt16(IntPtr ptr) => ReadInt16(ptr, 0);
-
         public static int ReadInt32(object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt32(nativeHome, offset));
         }
 
-        public static unsafe int ReadInt32(IntPtr ptr, int ofs)
-        {
-            try
-            {
-                byte* addr = (byte*)ptr + ofs;
-                if ((unchecked((int)addr) & 0x3) == 0)
-                {
-                    // aligned read
-                    return *((int*)addr);
-                }
-                else
-                {
-                    // unaligned read
-                    int val;
-                    byte* valPtr = (byte*)&val;
-                    valPtr[0] = addr[0];
-                    valPtr[1] = addr[1];
-                    valPtr[2] = addr[2];
-                    valPtr[3] = addr[3];
-                    return val;
-                }
-            }
-            catch (NullReferenceException)
-            {
-                // this method is documented to throw AccessViolationException on any AV
-                throw new AccessViolationException();
-            }
-        }
-
-        public static int ReadInt32(IntPtr ptr) => ReadInt32(ptr, 0);
-
-        public static IntPtr ReadIntPtr(object ptr, int ofs)
-        {
-#if BIT64
-            return (IntPtr)ReadInt64(ptr, ofs);
-#else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
-#endif
-        }
-
-        public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
-        {
-#if BIT64
-            return (IntPtr)ReadInt64(ptr, ofs);
-#else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
-#endif
-        }
-
-        public static IntPtr ReadIntPtr(IntPtr ptr) => ReadIntPtr(ptr, 0);
-
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] object ptr, int ofs)
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt64(nativeHome, offset));
         }
-
-        public static unsafe long ReadInt64(IntPtr ptr, int ofs)
-        {
-            try
-            {
-                byte* addr = (byte*)ptr + ofs;
-                if ((unchecked((int)addr) & 0x7) == 0)
-                {
-                    // aligned read
-                    return *((long*)addr);
-                }
-                else
-                {
-                    // unaligned read
-                    long val;
-                    byte* valPtr = (byte*)&val;
-                    valPtr[0] = addr[0];
-                    valPtr[1] = addr[1];
-                    valPtr[2] = addr[2];
-                    valPtr[3] = addr[3];
-                    valPtr[4] = addr[4];
-                    valPtr[5] = addr[5];
-                    valPtr[6] = addr[6];
-                    valPtr[7] = addr[7];
-                    return val;
-                }
-            }
-            catch (NullReferenceException)
-            {
-                // this method is documented to throw AccessViolationException on any AV
-                throw new AccessViolationException();
-            }
-        }
-
-        public static long ReadInt64(IntPtr ptr) => ReadInt64(ptr, 0);
 
         //====================================================================
         // Read value from marshaled object (marshaled using AsAny)
@@ -560,50 +150,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static unsafe void WriteByte(IntPtr ptr, int ofs, byte val)
-        {
-            try
-            {
-                byte* addr = (byte*)ptr + ofs;
-                *addr = val;
-            }
-            catch (NullReferenceException)
-            {
-                // this method is documented to throw AccessViolationException on any AV
-                throw new AccessViolationException();
-            }
-        }
-
         public static void WriteByte(object ptr, int ofs, byte val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, byte value) => WriteByte(nativeHome, offset, value));
-        }
-
-        public static void WriteByte(IntPtr ptr, byte val) => WriteByte(ptr, 0, val);
-
-        public static unsafe void WriteInt16(IntPtr ptr, int ofs, short val)
-        {
-            try
-            {
-                byte* addr = (byte*)ptr + ofs;
-                if ((unchecked((int)addr) & 0x1) == 0)
-                {
-                    // aligned write
-                    *((short*)addr) = val;
-                }
-                else
-                {
-                    // unaligned write
-                    byte* valPtr = (byte*)&val;
-                    addr[0] = valPtr[0];
-                    addr[1] = valPtr[1];
-                }
-            }
-            catch (NullReferenceException)
-            {
-                // this method is documented to throw AccessViolationException on any AV
-                throw new AccessViolationException();
-            }
         }
 
         public static void WriteInt16(object ptr, int ofs, short val)
@@ -611,105 +160,15 @@ namespace System.Runtime.InteropServices
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, short value) => Marshal.WriteInt16(nativeHome, offset, value));
         }
 
-        public static void WriteInt16(IntPtr ptr, short val) => WriteInt16(ptr, 0, val);
-
-        public static void WriteInt16(IntPtr ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
-
-        public static void WriteInt16([In, Out]object ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
-
-        public static void WriteInt16(IntPtr ptr, char val) => WriteInt16(ptr, 0, (short)val);
-
-        public static unsafe void WriteInt32(IntPtr ptr, int ofs, int val)
-        {
-            try
-            {
-                byte* addr = (byte*)ptr + ofs;
-                if ((unchecked((int)addr) & 0x3) == 0)
-                {
-                    // aligned write
-                    *((int*)addr) = val;
-                }
-                else
-                {
-                    // unaligned write
-                    byte* valPtr = (byte*)&val;
-                    addr[0] = valPtr[0];
-                    addr[1] = valPtr[1];
-                    addr[2] = valPtr[2];
-                    addr[3] = valPtr[3];
-                }
-            }
-            catch (NullReferenceException)
-            {
-                // this method is documented to throw AccessViolationException on any AV
-                throw new AccessViolationException();
-            }
-        }
-
         public static void WriteInt32(object ptr, int ofs, int val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, int value) => Marshal.WriteInt32(nativeHome, offset, value));
-        }
-
-        public static void WriteInt32(IntPtr ptr, int val) => WriteInt32(ptr, 0, val);
-
-        public static void WriteIntPtr(IntPtr ptr, int ofs, IntPtr val)
-        {
-#if BIT64
-            WriteInt64(ptr, ofs, (long)val);
-#else // 32
-            WriteInt32(ptr, ofs, (int)val);
-#endif
-        }
-
-        public static void WriteIntPtr(object ptr, int ofs, IntPtr val)
-        {
-#if BIT64
-            WriteInt64(ptr, ofs, (long)val);
-#else // 32
-            WriteInt32(ptr, ofs, (int)val);
-#endif
-        }
-
-        public static void WriteIntPtr(IntPtr ptr, IntPtr val) => WriteIntPtr(ptr, 0, val);
-
-        public static unsafe void WriteInt64(IntPtr ptr, int ofs, long val)
-        {
-            try
-            {
-                byte* addr = (byte*)ptr + ofs;
-                if ((unchecked((int)addr) & 0x7) == 0)
-                {
-                    // aligned write
-                    *((long*)addr) = val;
-                }
-                else
-                {
-                    // unaligned write
-                    byte* valPtr = (byte*)&val;
-                    addr[0] = valPtr[0];
-                    addr[1] = valPtr[1];
-                    addr[2] = valPtr[2];
-                    addr[3] = valPtr[3];
-                    addr[4] = valPtr[4];
-                    addr[5] = valPtr[5];
-                    addr[6] = valPtr[6];
-                    addr[7] = valPtr[7];
-                }
-            }
-            catch (NullReferenceException)
-            {
-                // this method is documented to throw AccessViolationException on any AV
-                throw new AccessViolationException();
-            }
         }
 
         public static void WriteInt64(object ptr, int ofs, long val)
         {
             WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, long value) => Marshal.WriteInt64(nativeHome, offset, value));
         }
-
-        public static void WriteInt64(IntPtr ptr, long val) => WriteInt64(ptr, 0, val);
 
         /// <summary>
         /// Write value into marshaled object (marshaled using AsAny) and propagate the
@@ -764,12 +223,8 @@ namespace System.Runtime.InteropServices
             return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
         }
 
-        public static void Prelink(MethodInfo m)
+        private static void PrelinkCore(MethodInfo m)
         {
-            if (m == null)
-            {
-                throw new ArgumentNullException(nameof(m));
-            }
             if (!(m is RuntimeMethodInfo rmi))
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(m));
@@ -780,23 +235,6 @@ namespace System.Runtime.InteropServices
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InternalPrelink(IRuntimeMethodInfo m);
-
-        public static void PrelinkAll(Type c)
-        {
-            if (c == null)
-            {
-                throw new ArgumentNullException(nameof(c));
-            }
-
-            MethodInfo[] mi = c.GetMethods();
-            if (mi != null)
-            {
-                for (int i = 0; i < mi.Length; i++)
-                {
-                    Prelink(mi[i]);
-                }
-            }
-        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
@@ -812,54 +250,13 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
-        public static void StructureToPtr<T>(T structure, IntPtr ptr, bool fDeleteOld)
+        private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
         {
-            StructureToPtr((object)structure, ptr, fDeleteOld);
-        }
-
-        /// <summary>
-        /// Marshals data from a native memory block to a preallocated structure class.
-        /// </summary>
-        public static void PtrToStructure(IntPtr ptr, object structure)
-        {
-            PtrToStructureHelper(ptr, structure, allowValueClasses: false);
-        }
-
-        public static void PtrToStructure<T>(IntPtr ptr, T structure)
-        {
-            PtrToStructure(ptr, (object)structure);
-        }
-
-        /// <summary>
-        /// Creates a new instance of "structuretype" and marshals data from a
-        /// native memory block to it.
-        /// </summary>
-        public static object PtrToStructure(IntPtr ptr, Type structureType)
-        {
-            if (ptr == IntPtr.Zero)
-            {
-                return null;
-            }
-
-            if (structureType == null)
-            {
-                throw new ArgumentNullException(nameof(structureType));
-            }
-            if (structureType.IsGenericType)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structureType));
-            }
-            if (!(structureType.UnderlyingSystemType is RuntimeType rt))
-            {
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(structureType));
-            }
-
+            var rt = (RuntimeType)structureType;
             object structure = rt.CreateInstanceDefaultCtor(publicOnly: false, skipCheckThis: false, fillCache: false, wrapExceptions: true);
             PtrToStructureHelper(ptr, structure, allowValueClasses: true);
             return structure;
         }
-
-        public static T PtrToStructure<T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T));
 
         /// <summary>
         /// Helper function to copy a pointer into a preallocated structure.
@@ -873,8 +270,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
-
-        public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsPinnable(object obj);
@@ -926,27 +321,6 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ThrowExceptionForHRInternal(int errorCode, IntPtr errorInfo);
 
-        /// <summary>
-        /// Converts the HRESULT to a CLR exception.
-        /// </summary>
-        public static Exception GetExceptionForHR(int errorCode)
-        {
-            if (errorCode >= 0)
-            {
-                return null;
-            }
-
-            return GetExceptionForHRInternal(errorCode, IntPtr.Zero);
-        }
-        public static Exception GetExceptionForHR(int errorCode, IntPtr errorInfo)
-        {
-            if (errorCode >= 0)
-            {
-                return null;
-            }
-
-            return GetExceptionForHRInternal(errorCode, errorInfo);
-        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo);
@@ -1572,25 +946,6 @@ namespace System.Runtime.InteropServices
 #endif // FEATURE_COMINTEROP
 
         /// <summary>
-        /// Generates a GUID for the specified type. If the type has a GUID in the
-        /// metadata then it is returned otherwise a stable guid is generated based
-        /// on the fully qualified name of the type.
-        /// </summary>
-        public static Guid GenerateGuidForType(Type type)
-        {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-            if (!(type is RuntimeType))
-            {
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
-            }
-
-            return type.GUID;
-        }
-
-        /// <summary>
         /// This method generates a PROGID for the specified type. If the type has
         /// a PROGID in the metadata then it is returned otherwise a stable PROGID
         /// is generated based on the fully qualified name of the type.
@@ -1683,89 +1038,11 @@ namespace System.Runtime.InteropServices
 
 #endif // FEATURE_COMINTEROP
 
-        public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t)
-        {
-            if (ptr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(ptr));
-            }
-            if (t == null)
-            {
-                throw new ArgumentNullException(nameof(t));
-            }
-            if (!(t is RuntimeType))
-            {
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
-            }
-            if (t.IsGenericType)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
-            }
-
-            Type c = t.BaseType;
-            if (c == null || (c != typeof(Delegate) && c != typeof(MulticastDelegate)))
-            {
-                throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(t));
-            }
-
-            return GetDelegateForFunctionPointerInternal(ptr, t);
-        }
-
-        public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
-        {
-            return (TDelegate)(object)GetDelegateForFunctionPointer(ptr, typeof(TDelegate));
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t);
 
-        public static IntPtr GetFunctionPointerForDelegate(Delegate d)
-        {
-            if (d == null)
-            {
-                throw new ArgumentNullException(nameof(d));
-            }
-
-            return GetFunctionPointerForDelegateInternal(d);
-        }
-
-        public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d)
-        {
-            return GetFunctionPointerForDelegate((Delegate)(object)d);
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
-
-        public static IntPtr SecureStringToBSTR(SecureString s)
-        {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-
-            return s.MarshalToBSTR();
-        }
-
-        public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s)
-        {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-
-            return s.MarshalToString(globalAlloc: false, unicode: false);
-        }
-
-        public static IntPtr SecureStringToCoTaskMemUnicode(SecureString s)
-        {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-
-            return s.MarshalToString(globalAlloc: false, unicode: true);
-        }
         
         public static void ZeroFreeBSTR(IntPtr s)
         {
@@ -1805,26 +1082,6 @@ namespace System.Runtime.InteropServices
             }
             RuntimeImports.RhZeroMemory(s, (UIntPtr)string.strlen((byte*)s));
             FreeCoTaskMem(s);
-        }
-
-        public static IntPtr SecureStringToGlobalAllocAnsi(SecureString s)
-        {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-
-            return s.MarshalToString(globalAlloc: true, unicode: false);
-        }
-
-        public static IntPtr SecureStringToGlobalAllocUnicode(SecureString s)
-        {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-
-            return s.MarshalToString(globalAlloc: true, unicode: true); ;
         }
 
         public unsafe static void ZeroFreeGlobalAllocAnsi(IntPtr s)
