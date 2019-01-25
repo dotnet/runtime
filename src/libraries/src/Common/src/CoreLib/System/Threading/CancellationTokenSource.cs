@@ -202,16 +202,26 @@ namespace System.Threading
             InitializeWithTimer(millisecondsDelay);
         }
 
-        /// <summary>Common initialization logic when constructing a CTS with a delay parameter</summary>
+        /// <summary>
+        /// Common initialization logic when constructing a CTS with a delay parameter.
+        /// A zero delay will result in immediate cancellation.
+        /// </summary>
         private void InitializeWithTimer(int millisecondsDelay)
         {
-            _state = NotCanceledState;
-            _timer = new TimerQueueTimer(s_timerCallback, this, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+            if (millisecondsDelay == 0)
+            {
+                _state = NotifyingCompleteState;
+            }
+            else
+            {
+                _state = NotCanceledState;
+                _timer = new TimerQueueTimer(s_timerCallback, this, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
 
-            // The timer roots this CTS instance while it's scheduled.  That is by design, so
-            // that code like:
-            //     CancellationToken ct = new CancellationTokenSource(timeout).Token;
-            // will successfully cancel the token after the timeout.
+                // The timer roots this CTS instance while it's scheduled.  That is by design, so
+                // that code like:
+                //     CancellationToken ct = new CancellationTokenSource(timeout).Token;
+                // will successfully cancel the token after the timeout.
+            }
         }
 
         /// <summary>Communicates a request for cancellation.</summary>
