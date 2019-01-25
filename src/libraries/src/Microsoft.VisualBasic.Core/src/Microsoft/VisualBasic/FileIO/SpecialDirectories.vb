@@ -3,6 +3,8 @@
 ' See the LICENSE file in the project root for more information.
 Option Strict On
 Option Explicit On
+
+Imports System
 Imports System.Environment
 Imports System.Security
 Imports Microsoft.VisualBasic.CompilerServices.Utils

@@ -321,6 +321,8 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
+    <!-- Don't reference implicit framework packages, all projects in this repo must be explicit -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
   <!-- Language configuration -->
