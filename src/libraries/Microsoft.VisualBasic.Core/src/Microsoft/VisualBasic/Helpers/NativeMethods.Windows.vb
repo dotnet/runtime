@@ -4,6 +4,7 @@
 Option Strict On
 Option Explicit On
 
+Imports System
 Imports System.Security
 Imports System.Runtime.InteropServices
 Imports System.Runtime.Versioning

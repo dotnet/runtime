@@ -108,8 +108,4 @@
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUap)' == 'true'">
-    <!-- UAP is missing default imports -->
-    <Import Include="Microsoft.VisualBasic;System;System.Collections;System.Collections.Generic;System.Diagnostics;System.Linq;System.Xml.Linq;System.Threading.Tasks" />
-  </ItemGroup>
 </Project>

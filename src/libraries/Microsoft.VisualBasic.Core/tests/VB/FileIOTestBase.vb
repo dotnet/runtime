@@ -4,6 +4,7 @@
 Option Explicit On
 Option Strict On
 
+Imports System
 Imports System.Runtime.CompilerServices
 Imports Xunit
 Namespace Microsoft.VisualBasic.Tests.VB

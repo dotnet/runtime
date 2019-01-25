@@ -4,6 +4,8 @@
 Option Explicit On
 Option Strict On
 
+Imports System
+Imports System.Diagnostics
 Imports System.Security
 Imports System.Runtime.ConstrainedExecution
 Imports System.Runtime.InteropServices
