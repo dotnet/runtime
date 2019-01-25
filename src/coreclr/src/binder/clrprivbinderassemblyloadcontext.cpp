@@ -266,7 +266,7 @@ void CLRPrivBinderAssemblyLoadContext::PrepareForLoadContextRelease(INT_PTR ptrM
     // CLRPrivBinderAssemblyLoadContext::ReleaseLoadContext is called.
     OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(m_ptrManagedAssemblyLoadContext);
     OBJECTHANDLE strongHandle = reinterpret_cast<OBJECTHANDLE>(ptrManagedStrongAssemblyLoadContext);
-    DestroyShortWeakHandle(handle);
+    DestroyLongWeakHandle(handle);
     m_ptrManagedAssemblyLoadContext = reinterpret_cast<INT_PTR>(strongHandle);
 
     _ASSERTE(m_pAssemblyLoaderAllocator != NULL);
