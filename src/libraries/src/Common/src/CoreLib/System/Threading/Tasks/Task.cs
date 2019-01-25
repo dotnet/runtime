@@ -209,8 +209,7 @@ namespace System.Threading.Tasks
 
         // This dictonary relates the task id, from an operation id located in the Async Causality log to the actual
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
-        private static readonly Dictionary<int, Task> s_currentActiveTasks = new Dictionary<int, Task>();
-        private static readonly object s_activeTasksLock = new object();
+        private static Dictionary<int, Task> s_currentActiveTasks;
 
         // These methods are a way to access the dictionary both from this class and for other classes that also
         // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
@@ -218,8 +217,10 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
 
+            LazyInitializer.EnsureInitialized(ref s_currentActiveTasks, () => new Dictionary<int, Task>());
+
             int taskId = task.Id;
-            lock (s_activeTasksLock)
+            lock (s_currentActiveTasks)
             {
                 s_currentActiveTasks[taskId] = task;
             }
@@ -229,8 +230,11 @@ namespace System.Threading.Tasks
 
         internal static void RemoveFromActiveTasks(Task task)
         {
+            if (s_currentActiveTasks == null)
+                return;
+
             int taskId = task.Id;
-            lock (s_activeTasksLock)
+            lock (s_currentActiveTasks)
             {
                 s_currentActiveTasks.Remove(taskId);
             }
@@ -640,15 +644,24 @@ namespace System.Threading.Tasks
                         if (antecedent == null)
                         {
                             // if no antecedent was specified, use this task's reference as the cancellation state object
-                            ctr = cancellationToken.UnsafeRegister(s_taskCancelCallback, this);
+                            ctr = cancellationToken.UnsafeRegister(t => ((Task)t).InternalCancel(false), this);
                         }
                         else
                         {
                             // If an antecedent was specified, pack this task, its antecedent and the TaskContinuation together as a tuple 
                             // and use it as the cancellation state object. This will be unpacked in the cancellation callback so that 
                             // antecedent.RemoveCancellation(continuation) can be invoked.
-                            ctr = cancellationToken.UnsafeRegister(s_taskCancelCallback,
-                                                                              new Tuple<Task, Task, TaskContinuation>(this, antecedent, continuation));
+                            ctr = cancellationToken.UnsafeRegister(t =>
+                            {
+                                var tuple = (Tuple<Task, Task, TaskContinuation>)t;
+            
+                                Task targetTask = tuple.Item1;
+                                Task antecedentTask = tuple.Item2;
+
+                                antecedentTask.RemoveContinuation(tuple.Item3);
+                                targetTask.InternalCancel(false);
+                            },
+                            new Tuple<Task, Task, TaskContinuation>(this, antecedent, continuation));
                         }
 
                         props.m_cancellationRegistration = new Shared<CancellationTokenRegistration>(ctr);
@@ -668,29 +681,6 @@ namespace System.Threading.Tasks
                 }
                 throw;
             }
-        }
-
-
-        // Static delegate to be used as a cancellation callback on unstarted tasks that have a valid cancellation token.
-        // This is necessary to transition them into canceled state if their cancellation token is signalled while they are still not queued
-        private readonly static Action<object> s_taskCancelCallback = new Action<object>(TaskCancelCallback);
-        private static void TaskCancelCallback(object o)
-        {
-            var targetTask = o as Task;
-            if (targetTask == null)
-            {
-                if (o is Tuple<Task, Task, TaskContinuation> tuple)
-                {
-                    targetTask = tuple.Item1;
-
-                    Task antecedentTask = tuple.Item2;
-                    TaskContinuation continuation = tuple.Item3;
-                    antecedentTask.RemoveContinuation(continuation);
-                }
-            }
-            Debug.Assert(targetTask != null,
-                "targetTask should have been non-null, with the supplied argument being a task or a tuple containing one");
-            targetTask.InternalCancel(false);
         }
 
         // Debugger support
@@ -2117,14 +2107,11 @@ namespace System.Threading.Tasks
                 {
                     lock (exceptionalChildren)
                     {
-                        exceptionalChildren.RemoveAll(s_IsExceptionObservedByParentPredicate); // RemoveAll has better performance than doing it ourselves
+                        exceptionalChildren.RemoveAll(t => t.IsExceptionObservedByParent); // RemoveAll has better performance than doing it ourselves
                     }
                 }
             }
         }
-
-        // statically allocated delegate for the removeall expression in Finish()
-        private readonly static Predicate<Task> s_IsExceptionObservedByParentPredicate = new Predicate<Task>((t) => { return t.IsExceptionObservedByParent; });
 
         /// <summary>
         /// FinishStageTwo is to be executed as soon as we known there are no more children to complete. 
@@ -4350,7 +4337,7 @@ namespace System.Threading.Tasks
                         // result from RemoveContinuations()
                         if (list.Count == list.Capacity)
                         {
-                            list.RemoveAll(s_IsTaskContinuationNullPredicate);
+                            list.RemoveAll(l => l == null);
                         }
 
                         if (addBeforeOthers)
@@ -4436,11 +4423,6 @@ namespace System.Threading.Tasks
                 }
             }
         }
-
-        // statically allocated delegate for the RemoveAll expression in RemoveContinuations() and AddContinuationComplex()
-        private readonly static Predicate<object> s_IsTaskContinuationNullPredicate =
-            new Predicate<object>((tc) => { return (tc == null); });
-
 
         //
         // Wait methods
