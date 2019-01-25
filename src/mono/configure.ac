@@ -48,7 +48,7 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # There is no ordering of corlib versions, no old or new,
 # the runtime expects an exact match.
 #
-MONO_CORLIB_VERSION=F65F48BE-A122-484D-8666-78FFEBD693FE
+MONO_CORLIB_VERSION=07423dee-1eb8-11e9-a2ee-43262508f9cf
 
 #
 # Put a quoted #define in config.h.
@@ -6363,7 +6363,9 @@ fi
       echo "BCL_OPTIMIZE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
-    echo "CSC_LOCATION = $CSC_LOCATION" >> $srcdir/$mcsdir/build/config.make
+    echo "STANDALONE_CSC_LOCATION=$CSC_LOCATION" >> $srcdir/$mcsdir/build/config.make
+    echo "SERVER_CSC_LOCATION?=$CSC_LOCATION" >> $srcdir/$mcsdir/build/config.make
+    echo "VBCS_LOCATION?=" >> $srcdir/$mcsdir/build/config.make
 
     if test $csc_compiler = mcs; then
       echo "MCS_MODE = 1" >> $srcdir/$mcsdir/build/config.make
@@ -6397,6 +6399,12 @@ fi
 
     echo "MONO_NATIVE_PLATFORM_TYPE=$MONO_NATIVE_PLATFORM_TYPE" >> $srcdir/$mcsdir/build/config.make
     echo "MONO_NATIVE_PLATFORM=$MONO_NATIVE_PLATFORM" >> $srcdir/$mcsdir/build/config.make
+    if test x$enable_compiler_server = xyes; then
+      echo "ENABLE_COMPILER_SERVER?=1" >> $srcdir/$mcsdir/build/config.make
+    else
+      echo "ENABLE_COMPILER_SERVER?=0" >> $srcdir/$mcsdir/build/config.make
+    fi
+    echo "COMPILER_SERVER_PIPENAME?=monomake" >> $srcdir/$mcsdir/build/config.make
 
   fi
 
