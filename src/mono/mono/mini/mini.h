@@ -1687,6 +1687,8 @@ enum {
 #define OP_PCONV_TO_OVF_I1 OP_LCONV_TO_OVF_I1
 #define OP_PBEQ OP_LBEQ
 #define OP_PCEQ OP_LCEQ
+#define OP_PCLT OP_LCLT
+#define OP_PCGT OP_LCGT
 #define OP_PBNE_UN OP_LBNE_UN
 #define OP_PBGE_UN OP_LBGE_UN
 #define OP_PBLT_UN OP_LBLT_UN
@@ -1713,6 +1715,8 @@ enum {
 #define OP_PCONV_TO_OVF_I1 OP_ICONV_TO_OVF_I1
 #define OP_PBEQ OP_IBEQ
 #define OP_PCEQ OP_ICEQ
+#define OP_PCLT OP_ICLT
+#define OP_PCGT OP_ICGT
 #define OP_PBNE_UN OP_IBNE_UN
 #define OP_PBGE_UN OP_IBGE_UN
 #define OP_PBLT_UN OP_IBLT_UN

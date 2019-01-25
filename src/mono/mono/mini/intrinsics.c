@@ -253,6 +253,151 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 		return ins;
 	}
 
+	return NULL;
+}
+
+static MonoInst*
+emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	MonoInst *ins;
+	int dreg, align;
+	MonoGenericContext *ctx = mono_method_get_context (cmethod);
+	MonoType *t;
+
+	if (!strcmp (cmethod->name, "As")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+
+		if (ctx->method_inst->type_argc == 2) {
+			dreg = alloc_preg (cfg);
+			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
+			ins->type = STACK_OBJ;
+			ins->klass = mono_get_object_class ();
+			return ins;
+		}
+	} else if (!strcmp (cmethod->name, "AsPointer")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 1);
+
+		dreg = alloc_preg (cfg);
+		EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
+		ins->type = STACK_PTR;
+		return ins;
+	} else if (!strcmp (cmethod->name, "AsRef")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 1);
+
+		dreg = alloc_preg (cfg);
+		EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
+		ins->type = STACK_OBJ;
+		ins->klass = mono_get_object_class ();
+		return ins;
+	} else if (!strcmp (cmethod->name, "AreSame")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		dreg = alloc_ireg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
+		EMIT_NEW_UNALU (cfg, ins, OP_PCEQ, dreg, -1);
+		return ins;
+	} else if (!strcmp (cmethod->name, "IsAddressLessThan")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		dreg = alloc_ireg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
+		EMIT_NEW_UNALU (cfg, ins, OP_PCLT, dreg, -1);
+		return ins;
+	} else if (!strcmp (cmethod->name, "IsAddressGreaterThan")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		dreg = alloc_ireg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
+		EMIT_NEW_UNALU (cfg, ins, OP_PCGT, dreg, -1);
+		return ins;
+	} else if (!strcmp (cmethod->name, "Add")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		t = ctx->method_inst->type_argv [0];
+		if (mini_is_gsharedvt_variable_type (t))
+			return NULL;
+
+		t = mini_type_get_underlying_type (t);
+		int esize = mono_class_array_element_size (mono_class_from_mono_type_internal (t));
+
+		int mul_reg = alloc_preg (cfg);
+		EMIT_NEW_BIALU_IMM (cfg, ins, OP_IMUL_IMM, mul_reg, args [1]->dreg, esize);
+		if (SIZEOF_REGISTER == 8)
+			MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, mul_reg, mul_reg);
+		dreg = alloc_preg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, mul_reg);
+		ins->type = STACK_PTR;
+		return ins;
+	} else if (!strcmp (cmethod->name, "AddByteOffset")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		if (fsig->params [1]->type == MONO_TYPE_I) {
+			int dreg = alloc_preg (cfg);
+			EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, args [1]->dreg);
+			ins->type = STACK_PTR;
+			return ins;
+		} else if (fsig->params [1]->type == MONO_TYPE_U8) {
+			int sreg = args [1]->dreg;
+			if (SIZEOF_REGISTER == 4) {
+				sreg = alloc_ireg (cfg);
+				EMIT_NEW_UNALU (cfg, ins, OP_LCONV_TO_U4, sreg, args [1]->dreg);
+			}
+			int dreg = alloc_preg (cfg);
+			EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, sreg);
+			ins->type = STACK_PTR;
+			return ins;
+		}
+	} else if (!strcmp (cmethod->name, "SizeOf")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 0);
+
+		t = ctx->method_inst->type_argv [0];
+		if (mini_is_gsharedvt_variable_type (t))
+			return NULL;
+		int esize = mono_type_size (t, &align);
+		EMIT_NEW_ICONST (cfg, ins, esize);
+		ins->type = STACK_I4;
+		return ins;
+	} else if (!strcmp (cmethod->name, "ReadUnaligned")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 1);
+
+		t = ctx->method_inst->type_argv [0];
+		t = mini_get_underlying_type (t);
+		if (MONO_TYPE_IS_PRIMITIVE (t) && t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8) {
+			dreg = alloc_ireg (cfg);
+			EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, t, args [0]->dreg, 0);
+			ins->type = STACK_I4;
+			ins->flags |= MONO_INST_UNALIGNED;
+			return ins;
+		}
+	}
 
 	return NULL;
 }
@@ -1360,6 +1505,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			   !strcmp (cmethod_klass_name_space, "System") &&
 			   (!strcmp (cmethod_klass_name, "Span`1") || !strcmp (cmethod_klass_name, "ReadOnlySpan`1"))) {
 		return emit_span_intrinsics (cfg, cmethod, fsig, args);
+	} else if (in_corlib &&
+			   !strcmp (cmethod_klass_name_space, "Internal.Runtime.CompilerServices") &&
+			   (!strcmp (cmethod_klass_name, "Unsafe"))) {
+		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
+	} else if (in_corlib &&
+			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
+			   (!strcmp (cmethod_klass_name, "Unsafe"))) {
+		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
 	}
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
