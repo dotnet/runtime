@@ -531,7 +531,7 @@ namespace System.Runtime.CompilerServices
                 // Fire an event with details about the state machine to help with debugging.
                 if (!IsCompleted) // double-check it's not completed, just to help minimize false positives
                 {
-                    TplEtwProvider.Log.IncompleteAsyncMethod(this);
+                    TplEventSource.Log.IncompleteAsyncMethod(this);
                 }
             }
         }
@@ -1022,7 +1022,7 @@ namespace System.Runtime.CompilerServices
         internal static bool TrackAsyncMethodCompletion
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => TplEtwProvider.Log.IsEnabled(EventLevel.Warning, TplEtwProvider.Keywords.AsyncMethod);
+            get => TplEventSource.Log.IsEnabled(EventLevel.Warning, TplEventSource.Keywords.AsyncMethod);
         }
 #endif
 
