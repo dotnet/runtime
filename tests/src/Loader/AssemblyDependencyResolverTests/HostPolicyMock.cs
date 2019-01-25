@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace AssemblyDependencyResolverTests
 {
@@ -63,9 +64,9 @@ namespace AssemblyDependencyResolverTests
                 Path.Combine(testBasePath, hostPolicyFileName),
                 destinationPath);
 
-            _assemblyDependencyResolverType = typeof(object).Assembly.GetType("System.Runtime.Loader.AssemblyDependencyResolver");
+            _assemblyDependencyResolverType = typeof(AssemblyDependencyResolver);
 
-            // This is needed for marshalling of function pointers to work - requires private access to the CDR unfortunately
+            // This is needed for marshalling of function pointers to work - requires private access to the ADR unfortunately
             // Delegate marshalling doesn't support casting delegates to anything but the original type
             // so we need to use the original type.
             _corehost_error_writer_fnType = _assemblyDependencyResolverType.GetNestedType("corehost_error_writer_fn", System.Reflection.BindingFlags.NonPublic);
