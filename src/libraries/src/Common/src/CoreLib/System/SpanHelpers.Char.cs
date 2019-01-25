@@ -61,6 +61,7 @@ namespace System
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int SequenceCompareTo(ref char first, int firstLength, ref char second, int secondLength)
         {
             Debug.Assert(firstLength >= 0);
@@ -124,6 +125,7 @@ namespace System
         }
 
         // Adapted from IndexOf(...)
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe bool Contains(ref char searchSpace, char value, int length)
         {
             Debug.Assert(length >= 0);
@@ -211,6 +213,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int IndexOf(ref char searchSpace, char value, int length)
         {
             Debug.Assert(length >= 0);
@@ -304,6 +307,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int IndexOfAny(ref char searchSpace, char value0, char value1, int length)
         {
             Debug.Assert(length >= 0);
@@ -401,6 +405,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int IndexOfAny(ref char searchSpace, char value0, char value1, char value2, int length)
         {
             Debug.Assert(length >= 0);
@@ -501,6 +506,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int IndexOfAny(ref char searchSpace, char value0, char value1, char value2, char value3, int length)
         {
             Debug.Assert(length >= 0);
@@ -603,6 +609,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int IndexOfAny(ref char searchSpace, char value0, char value1, char value2, char value3, char value4, int length)
         {
             Debug.Assert(length >= 0);
@@ -708,6 +715,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int LastIndexOf(ref char searchSpace, char value, int length)
         {
             Debug.Assert(length >= 0);
