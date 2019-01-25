@@ -1975,7 +1975,10 @@ init_amodule_got (MonoAotModule *amodule)
 	npatches = amodule->info.nshared_got_entries;
 	for (i = 0; i < npatches; ++i)
 		got_offsets [i] = i;
-	patches = decode_patches (amodule, mp, npatches, FALSE, got_offsets);
+	if (amodule->got)
+		patches = decode_patches (amodule, mp, npatches, FALSE, got_offsets);
+	else
+		patches = decode_patches (amodule, mp, npatches, TRUE, got_offsets);
 	g_assert (patches);
 	for (i = 0; i < npatches; ++i) {
 		ji = &patches [i];

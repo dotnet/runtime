@@ -245,7 +245,7 @@ typedef enum {
 
 typedef struct MonoAotStats {
 	int ccount, mcount, lmfcount, abscount, gcount, ocount, genericcount;
-	gint64 code_size, info_size, ex_info_size, unwind_info_size, got_size, class_info_size, got_info_size, plt_size;
+	gint64 code_size, method_info_size, ex_info_size, unwind_info_size, got_size, class_info_size, got_info_size, plt_size, blob_size;
 	int methods_without_got_slots, direct_calls, all_calls, llvm_count;
 	int got_slots, offsets_size;
 	int method_categories [METHOD_CAT_NUM];
@@ -2964,6 +2964,8 @@ add_to_blob (MonoAotCompile *acfg, const guint8 *data, guint32 data_len)
 
 	if (acfg->blob.alloc_size == 0)
 		stream_init (&acfg->blob);
+
+	acfg->stats.blob_size += data_len;
 
 	return add_stream_data (&acfg->blob, (char*)data, data_len);
 }
@@ -6468,7 +6470,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	g_ptr_array_free (patches, TRUE);
 
-	acfg->stats.info_size += p - buf;
+	acfg->stats.method_info_size += p - buf;
 
 	g_assert (p - buf < buf_size);
 
@@ -8403,6 +8405,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		if (!cfg->method->wrapper_type || cfg->method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
 			add_gsharedvt_wrappers (acfg, mono_method_signature_internal (cfg->method), FALSE, TRUE, TRUE);
 	}
+
+	if (cfg->llvm_only)
+		acfg->stats.llvm_count ++;
 
 	/* 
 	 * FIXME: Instead of this mess, allocate the patches from the aot mempool.
@@ -12506,6 +12511,14 @@ static const char *preinited_jit_icalls[] = {
 };
 
 static void
+add_preinit_slot (MonoAotCompile *acfg, MonoJumpInfo *ji)
+{
+	if (!acfg->aot_opts.llvm_only)
+		get_got_offset (acfg, FALSE, ji);
+	get_got_offset (acfg, TRUE, ji);
+}
+
+static void
 add_preinit_got_slots (MonoAotCompile *acfg)
 {
 	MonoJumpInfo *ji;
@@ -12519,69 +12532,62 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_IMAGE;
 	ji->data.image = acfg->image;
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
+	add_preinit_slot (acfg, ji);
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_MSCORLIB_GOT_ADDR;
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
+	add_preinit_slot (acfg, ji);
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
+	add_preinit_slot (acfg, ji);
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_GC_NURSERY_START;
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
+	add_preinit_slot (acfg, ji);
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_AOT_MODULE;
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
+	add_preinit_slot (acfg, ji);
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_GC_NURSERY_BITS;
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
+	add_preinit_slot (acfg, ji);
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG;
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
+	add_preinit_slot (acfg, ji);
 
 	for (i = 0; i < TLS_KEY_NUM; i++) {
 		ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 		ji->type = MONO_PATCH_INFO_GET_TLS_TRAMP;
 		ji->data.index = i;
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
+		add_preinit_slot (acfg, ji);
 
 		ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 		ji->type = MONO_PATCH_INFO_SET_TLS_TRAMP;
 		ji->data.index = i;
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
+		add_preinit_slot (acfg, ji);
 	}
 
 	/* Called by native-to-managed wrappers on possibly unattached threads */
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL;
 	ji->data.name = "mono_threads_attach_coop";
-	get_got_offset (acfg, FALSE, ji);
-	get_got_offset (acfg, TRUE, ji);
+	add_preinit_slot (acfg, ji);
 
 	for (i = 0; i < sizeof (preinited_jit_icalls) / sizeof (char*); ++i) {
 		ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
 		ji->type = MONO_PATCH_INFO_JIT_ICALL;
 		ji->data.name = preinited_jit_icalls [i];
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
+		add_preinit_slot (acfg, ji);
 	}
 
-	acfg->nshared_got_entries = acfg->got_offset;
+	if (acfg->aot_opts.llvm_only)
+		acfg->nshared_got_entries = acfg->llvm_got_offset;
+	else
+		acfg->nshared_got_entries = acfg->got_offset;
+	g_assert (acfg->nshared_got_entries);
 }
 
 static void
@@ -13221,14 +13227,68 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	return emit_aot_image (acfg);
 }
 
+static void
+print_stats (MonoAotCompile *acfg)
+{
+	int i;
+	gint64 all_sizes;
+	char llvm_stats_msg [256];
+
+	if (acfg->llvm && !acfg->aot_opts.llvm_only)
+		sprintf (llvm_stats_msg, ", LLVM: %d (%d%%)", acfg->stats.llvm_count, acfg->stats.mcount ? (acfg->stats.llvm_count * 100) / acfg->stats.mcount : 100);
+	else
+		strcpy (llvm_stats_msg, "");
+
+	all_sizes = acfg->stats.code_size + acfg->stats.method_info_size + acfg->stats.ex_info_size + acfg->stats.unwind_info_size + acfg->stats.class_info_size + acfg->stats.got_info_size + acfg->stats.offsets_size + acfg->stats.plt_size;
+
+	aot_printf (acfg, "Code: %d(%d%%) Info: %d(%d%%) Ex Info: %d(%d%%) Unwind Info: %d(%d%%) Class Info: %d(%d%%) PLT: %d(%d%%) GOT Info: %d(%d%%) Offsets: %d(%d%%) GOT: %d, BLOB: %d\n",
+				(int)acfg->stats.code_size, (int)(acfg->stats.code_size * 100 / all_sizes),
+				(int)acfg->stats.method_info_size, (int)(acfg->stats.method_info_size * 100 / all_sizes),
+				(int)acfg->stats.ex_info_size, (int)(acfg->stats.ex_info_size * 100 / all_sizes),
+				(int)acfg->stats.unwind_info_size, (int)(acfg->stats.unwind_info_size * 100 / all_sizes),
+				(int)acfg->stats.class_info_size, (int)(acfg->stats.class_info_size * 100 / all_sizes),
+				acfg->stats.plt_size ? (int)acfg->stats.plt_size : (int)acfg->plt_offset, acfg->stats.plt_size ? (int)(acfg->stats.plt_size * 100 / all_sizes) : 0,
+				(int)acfg->stats.got_info_size, (int)(acfg->stats.got_info_size * 100 / all_sizes),
+				(int)acfg->stats.offsets_size, (int)(acfg->stats.offsets_size * 100 / all_sizes),
+					(int)(acfg->got_offset * sizeof (target_mgreg_t)),
+					(int)acfg->stats.blob_size);
+	aot_printf (acfg, "Compiled: %d/%d (%d%%)%s, No GOT slots: %d (%d%%), Direct calls: %d (%d%%)\n",
+			acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100,
+			llvm_stats_msg,
+			acfg->stats.methods_without_got_slots, acfg->stats.mcount ? (acfg->stats.methods_without_got_slots * 100) / acfg->stats.mcount : 100,
+			acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
+	if (acfg->stats.genericcount)
+		aot_printf (acfg, "%d methods failed gsharing (%d%%)\n", acfg->stats.genericcount, acfg->stats.mcount ? (acfg->stats.genericcount * 100) / acfg->stats.mcount : 100);
+	if (acfg->stats.abscount)
+		aot_printf (acfg, "%d methods contain absolute addresses (%d%%)\n", acfg->stats.abscount, acfg->stats.mcount ? (acfg->stats.abscount * 100) / acfg->stats.mcount : 100);
+	if (acfg->stats.lmfcount)
+		aot_printf (acfg, "%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
+	if (acfg->stats.ocount)
+		aot_printf (acfg, "%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
+
+	aot_printf (acfg, "GOT slot distribution:\n");
+	int nslots = 0;
+	int size = 0;
+	for (i = 0; i < MONO_PATCH_INFO_NUM; ++i) {
+		nslots += acfg->stats.got_slot_types [i];
+		size += acfg->stats.got_slot_info_sizes [i];
+		if (acfg->stats.got_slot_types [i])
+			aot_printf (acfg, "\t%s: %d (%d)\n", get_patch_name (i), acfg->stats.got_slot_types [i], acfg->stats.got_slot_info_sizes [i]);
+	}
+	printf ("GOT SLOTS: %d, INFO SIZE: %d\n", nslots, size);
+	aot_printf (acfg, "\nMethod stats:\n");
+	aot_printf (acfg, "\tNormal:    %d\n", acfg->stats.method_categories [METHOD_CAT_NORMAL]);
+	aot_printf (acfg, "\tInstance:  %d\n", acfg->stats.method_categories [METHOD_CAT_INST]);
+	aot_printf (acfg, "\tGSharedvt: %d\n", acfg->stats.method_categories [METHOD_CAT_GSHAREDVT]);
+	aot_printf (acfg, "\tWrapper:   %d\n", acfg->stats.method_categories [METHOD_CAT_WRAPPER]);
+}
+
 static int
 emit_aot_image (MonoAotCompile *acfg)
 {
 	int i, res;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
-	char llvm_stats_msg [256];
-	gint64 all_sizes;
 
 	TV_GETTIME (atv);
 
@@ -13415,36 +13475,8 @@ emit_aot_image (MonoAotCompile *acfg)
 
 	acfg->stats.gen_time = TV_ELAPSED (atv, btv);
 
-	if (acfg->llvm)
-		sprintf (llvm_stats_msg, ", LLVM: %d (%d%%)", acfg->stats.llvm_count, acfg->stats.mcount ? (acfg->stats.llvm_count * 100) / acfg->stats.mcount : 100);
-	else
-		strcpy (llvm_stats_msg, "");
-
-	all_sizes = acfg->stats.code_size + acfg->stats.info_size + acfg->stats.ex_info_size + acfg->stats.unwind_info_size + acfg->stats.class_info_size + acfg->stats.got_info_size + acfg->stats.offsets_size + acfg->stats.plt_size;
-
-	aot_printf (acfg, "Code: %d(%d%%) Info: %d(%d%%) Ex Info: %d(%d%%) Unwind Info: %d(%d%%) Class Info: %d(%d%%) PLT: %d(%d%%) GOT Info: %d(%d%%) Offsets: %d(%d%%) GOT: %d\n",
-				(int)acfg->stats.code_size, (int)(acfg->stats.code_size * 100 / all_sizes),
-				(int)acfg->stats.info_size, (int)(acfg->stats.info_size * 100 / all_sizes),
-				(int)acfg->stats.ex_info_size, (int)(acfg->stats.ex_info_size * 100 / all_sizes),
-				(int)acfg->stats.unwind_info_size, (int)(acfg->stats.unwind_info_size * 100 / all_sizes),
-				(int)acfg->stats.class_info_size, (int)(acfg->stats.class_info_size * 100 / all_sizes),
-				acfg->stats.plt_size ? (int)acfg->stats.plt_size : (int)acfg->plt_offset, acfg->stats.plt_size ? (int)(acfg->stats.plt_size * 100 / all_sizes) : 0,
-				(int)acfg->stats.got_info_size, (int)(acfg->stats.got_info_size * 100 / all_sizes),
-				(int)acfg->stats.offsets_size, (int)(acfg->stats.offsets_size * 100 / all_sizes),
-			(int)(acfg->got_offset * sizeof (target_mgreg_t)));
-	aot_printf (acfg, "Compiled: %d/%d (%d%%)%s, No GOT slots: %d (%d%%), Direct calls: %d (%d%%)\n", 
-			acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100,
-			llvm_stats_msg,
-			acfg->stats.methods_without_got_slots, acfg->stats.mcount ? (acfg->stats.methods_without_got_slots * 100) / acfg->stats.mcount : 100,
-			acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
-	if (acfg->stats.genericcount)
-		aot_printf (acfg, "%d methods are generic (%d%%)\n", acfg->stats.genericcount, acfg->stats.mcount ? (acfg->stats.genericcount * 100) / acfg->stats.mcount : 100);
-	if (acfg->stats.abscount)
-		aot_printf (acfg, "%d methods contain absolute addresses (%d%%)\n", acfg->stats.abscount, acfg->stats.mcount ? (acfg->stats.abscount * 100) / acfg->stats.mcount : 100);
-	if (acfg->stats.lmfcount)
-		aot_printf (acfg, "%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
-	if (acfg->stats.ocount)
-		aot_printf (acfg, "%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
+	if (!acfg->aot_opts.stats)
+		aot_printf (acfg, "Compiled: %d/%d\n", acfg->stats.ccount, acfg->stats.mcount);
 
 	TV_GETTIME (atv);
 	if (acfg->w) {
@@ -13462,19 +13494,8 @@ emit_aot_image (MonoAotCompile *acfg)
 	TV_GETTIME (btv);
 	acfg->stats.link_time = TV_ELAPSED (atv, btv);
 
-	if (acfg->aot_opts.stats) {
-		int i;
-
-		aot_printf (acfg, "GOT slot distribution:\n");
-		for (i = 0; i < MONO_PATCH_INFO_NUM; ++i)
-			if (acfg->stats.got_slot_types [i])
-				aot_printf (acfg, "\t%s: %d (%d)\n", get_patch_name (i), acfg->stats.got_slot_types [i], acfg->stats.got_slot_info_sizes [i]);
-		aot_printf (acfg, "\nMethod stats:\n");
-		aot_printf (acfg, "\tNormal:    %d\n", acfg->stats.method_categories [METHOD_CAT_NORMAL]);
-		aot_printf (acfg, "\tInstance:  %d\n", acfg->stats.method_categories [METHOD_CAT_INST]);
-		aot_printf (acfg, "\tGSharedvt: %d\n", acfg->stats.method_categories [METHOD_CAT_GSHAREDVT]);
-		aot_printf (acfg, "\tWrapper:   %d\n", acfg->stats.method_categories [METHOD_CAT_WRAPPER]);
-	}
+	if (acfg->aot_opts.stats)
+		print_stats (acfg);
 
 	aot_printf (acfg, "JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
 
