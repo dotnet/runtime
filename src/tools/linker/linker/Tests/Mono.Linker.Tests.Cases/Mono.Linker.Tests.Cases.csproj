@@ -158,6 +158,7 @@
     <Compile Include="Basic\UnusedEnumGetsRemoved.cs" />
     <Compile Include="Basic\UnusedEventGetsRemoved.cs" />
     <Compile Include="Basic\InitializerForArrayIsKept.cs" />
+    <Compile Include="Basic\UnusedFieldsOfStructsAreKept.cs" />
     <Compile Include="Basic\UsedEnumIsKept.cs" />
     <Compile Include="Basic\UsedEventOnInterfaceIsKept.cs" />
     <Compile Include="Basic\UnusedFieldGetsRemoved.cs" />
