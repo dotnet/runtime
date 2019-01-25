@@ -893,7 +893,7 @@ namespace System.Threading.Tasks
 
                 Task currentTask = Task.InternalCurrent;
                 Task parentTask = m_contingentProperties?.m_parent;
-                TplEtwProvider.Log.TaskScheduled(ts.Id, currentTask == null ? 0 : currentTask.Id,
+                TplEventSource.Log.TaskScheduled(ts.Id, currentTask == null ? 0 : currentTask.Id,
                                      this.Id, parentTask == null ? 0 : parentTask.Id, (int)this.Options);
             }
         }
@@ -1209,8 +1209,8 @@ namespace System.Threading.Tasks
             }
             while (newId == 0);
 
-            if (TplEtwProvider.Log.IsEnabled())
-                TplEtwProvider.Log.NewID(newId);
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.NewID(newId);
 
             return newId;
         }
@@ -2396,18 +2396,18 @@ namespace System.Threading.Tasks
             Task previousTask = currentTaskSlot;
 
             // ETW event for Task Started
-            var etwLog = TplEtwProvider.Log;
+            var log = TplEventSource.Log;
             Guid savedActivityID = new Guid();
-            bool etwIsEnabled = etwLog.IsEnabled();
+            bool etwIsEnabled = log.IsEnabled();
             if (etwIsEnabled)
             {
-                if (etwLog.TasksSetActivityIds)
-                    EventSource.SetCurrentThreadActivityId(TplEtwProvider.CreateGuidForTaskID(this.Id), out savedActivityID);
+                if (log.TasksSetActivityIds)
+                    EventSource.SetCurrentThreadActivityId(TplEventSource.CreateGuidForTaskID(this.Id), out savedActivityID);
                 // previousTask holds the actual "current task" we want to report in the event
                 if (previousTask != null)
-                    etwLog.TaskStarted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id);
+                    log.TaskStarted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id);
                 else
-                    etwLog.TaskStarted(TaskScheduler.Current.Id, 0, this.Id);
+                    log.TaskStarted(TaskScheduler.Current.Id, 0, this.Id);
             }
 
             bool loggingOn = AsyncCausalityTracer.LoggingOn;
@@ -2461,11 +2461,11 @@ namespace System.Threading.Tasks
                 {
                     // previousTask holds the actual "current task" we want to report in the event
                     if (previousTask != null)
-                        etwLog.TaskCompleted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id, IsFaulted);
+                        log.TaskCompleted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id, IsFaulted);
                     else
-                        etwLog.TaskCompleted(TaskScheduler.Current.Id, 0, this.Id, IsFaulted);
+                        log.TaskCompleted(TaskScheduler.Current.Id, 0, this.Id, IsFaulted);
 
-                    if (etwLog.TasksSetActivityIds)
+                    if (log.TasksSetActivityIds)
                         EventSource.SetCurrentThreadActivityId(savedActivityID);
                 }
             }
@@ -2874,14 +2874,14 @@ namespace System.Threading.Tasks
             }
 
             // ETW event for Task Wait Begin
-            var etwLog = TplEtwProvider.Log;
-            bool etwIsEnabled = etwLog.IsEnabled();
+            var log = TplEventSource.Log;
+            bool etwIsEnabled = log.IsEnabled();
             if (etwIsEnabled)
             {
                 Task currentTask = Task.InternalCurrent;
-                etwLog.TaskWaitBegin(
+                log.TaskWaitBegin(
                     (currentTask != null ? currentTask.m_taskScheduler.Id : TaskScheduler.Default.Id), (currentTask != null ? currentTask.Id : 0),
-                    this.Id, TplEtwProvider.TaskWaitBehavior.Synchronous, 0);
+                    this.Id, TplEventSource.TaskWaitBehavior.Synchronous, 0);
             }
 
             // Alert a listening debugger that we can't make forward progress unless it slips threads.
@@ -2912,14 +2912,14 @@ namespace System.Threading.Tasks
                 Task currentTask = Task.InternalCurrent;
                 if (currentTask != null)
                 {
-                    etwLog.TaskWaitEnd(currentTask.m_taskScheduler.Id, currentTask.Id, this.Id);
+                    log.TaskWaitEnd(currentTask.m_taskScheduler.Id, currentTask.Id, this.Id);
                 }
                 else
                 {
-                    etwLog.TaskWaitEnd(TaskScheduler.Default.Id, 0, this.Id);
+                    log.TaskWaitEnd(TaskScheduler.Default.Id, 0, this.Id);
                 }
                 // logically the continuation is empty so we immediately fire
-                etwLog.TaskWaitContinuationComplete(this.Id);
+                log.TaskWaitContinuationComplete(this.Id);
             }
 
             return returnValue;
@@ -3232,11 +3232,11 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(continuationObject != null);
 
-            TplEtwProvider etw = TplEtwProvider.Log;
-            bool tplEtwProviderLoggingEnabled = etw.IsEnabled();
-            if (tplEtwProviderLoggingEnabled)
+            TplEventSource log = TplEventSource.Log;
+            bool TplEventSourceLoggingEnabled = log.IsEnabled();
+            if (TplEventSourceLoggingEnabled)
             {
-                etw.RunningContinuation(Id, continuationObject);
+                log.RunningContinuation(Id, continuationObject);
             }
 
             if (AsyncCausalityTracer.LoggingOn)
@@ -3293,9 +3293,9 @@ namespace System.Threading.Tasks
                 if (continuations[i] is StandardTaskContinuation tc &&
                     (tc.m_options & TaskContinuationOptions.ExecuteSynchronously) == 0)
                 {
-                    if (tplEtwProviderLoggingEnabled)
+                    if (TplEventSourceLoggingEnabled)
                     {
-                        etw.RunningContinuationList(Id, i, tc);
+                        log.RunningContinuationList(Id, i, tc);
                     }
                     continuations[i] = null; // so that we can skip this later
                     tc.Run(this, canInlineContinuations);
@@ -3313,9 +3313,9 @@ namespace System.Threading.Tasks
                     continue;
                 }
                 continuations[i] = null; // to enable free'ing up memory earlier
-                if (tplEtwProviderLoggingEnabled)
+                if (TplEventSourceLoggingEnabled)
                 {
-                    etw.RunningContinuationList(Id, i, currentContinuation);
+                    log.RunningContinuationList(Id, i, currentContinuation);
                 }
 
                 switch (currentContinuation)
@@ -4269,10 +4269,10 @@ namespace System.Threading.Tasks
                 if ((this.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0 &&
                     !(this is ITaskCompletionAction))
                 {
-                    var etwLog = TplEtwProvider.Log;
-                    if (etwLog.IsEnabled())
+                    var log = TplEventSource.Log;
+                    if (log.IsEnabled())
                     {
-                        etwLog.AwaitTaskContinuationScheduled(TaskScheduler.Current.Id, Task.CurrentId ?? 0, continuationTask.Id);
+                        log.AwaitTaskContinuationScheduled(TaskScheduler.Current.Id, Task.CurrentId ?? 0, continuationTask.Id);
                     }
                 }
 

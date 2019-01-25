@@ -31,8 +31,8 @@ namespace System.Diagnostics.Tracing
         /// the current thread</param>
         public static void SetCurrentThreadActivityId(Guid activityId)
         {
-            if (TplEtwProvider.Log != null)
-                TplEtwProvider.Log.SetActivityId(activityId);
+            if (TplEventSource.Log != null)
+                TplEventSource.Log.SetActivityId(activityId);
 
             // We ignore errors to keep with the convention that EventSources do not throw errors.
             // Note we can't access m_throwOnWrites because this is a static method.  
@@ -97,8 +97,8 @@ namespace System.Diagnostics.Tracing
 
             // We don't call the activityDying callback here because the caller has declared that
             // it is not dying.  
-            if (TplEtwProvider.Log != null)
-                TplEtwProvider.Log.SetActivityId(activityId);
+            if (TplEventSource.Log != null)
+                TplEventSource.Log.SetActivityId(activityId);
         }
 
         /// <summary>

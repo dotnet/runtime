@@ -394,11 +394,11 @@ namespace System.Threading.Tasks
             // Otherwise, Post the action back to the SynchronizationContext.
             else
             {
-                TplEtwProvider etwLog = TplEtwProvider.Log;
-                if (etwLog.IsEnabled())
+                TplEventSource log = TplEventSource.Log;
+                if (log.IsEnabled())
                 {
                     m_continuationId = Task.NewId();
-                    etwLog.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, m_continuationId);
+                    log.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, m_continuationId);
                 }
                 RunCallback(GetPostActionCallback(), this, ref Task.t_currentTask);
             }
@@ -411,8 +411,8 @@ namespace System.Threading.Tasks
         {
             var c = (SynchronizationContextAwaitTaskContinuation)state;
 
-            TplEtwProvider etwLog = TplEtwProvider.Log;
-            if (etwLog.TasksSetActivityIds && c.m_continuationId != 0)
+            TplEventSource log = TplEventSource.Log;
+            if (log.TasksSetActivityIds && c.m_continuationId != 0)
             {
                 c.m_syncContext.Post(s_postCallback, GetActionLogDelegate(c.m_continuationId, c.m_action));
             }
@@ -427,7 +427,7 @@ namespace System.Threading.Tasks
             return () =>
                 {
                     Guid savedActivityId;
-                    Guid activityId = TplEtwProvider.CreateGuidForTaskID(continuationId);
+                    Guid activityId = TplEventSource.CreateGuidForTaskID(continuationId);
                     System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out savedActivityId);
                     try { action(); }
                     finally { System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(savedActivityId); }
@@ -572,11 +572,11 @@ namespace System.Threading.Tasks
             }
             else
             {
-                TplEtwProvider etwLog = TplEtwProvider.Log;
-                if (etwLog.IsEnabled())
+                TplEventSource log = TplEventSource.Log;
+                if (log.IsEnabled())
                 {
                     m_continuationId = Task.NewId();
-                    etwLog.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, m_continuationId);
+                    log.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, m_continuationId);
                 }
 
                 // We couldn't inline, so now we need to schedule it
@@ -618,19 +618,19 @@ namespace System.Threading.Tasks
 
         void IThreadPoolWorkItem.Execute()
         {
-            var etwLog = TplEtwProvider.Log;
+            var log = TplEventSource.Log;
             ExecutionContext context = m_capturedContext;
 
-            if (!etwLog.IsEnabled() && context == null)
+            if (!log.IsEnabled() && context == null)
             {
                 m_action();
                 return;
             }
 
             Guid savedActivityId = default;
-            if (etwLog.TasksSetActivityIds && m_continuationId != 0)
+            if (log.TasksSetActivityIds && m_continuationId != 0)
             {
-                Guid activityId = TplEtwProvider.CreateGuidForTaskID(m_continuationId);
+                Guid activityId = TplEventSource.CreateGuidForTaskID(m_continuationId);
                 System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out savedActivityId);
             }
             try
@@ -655,7 +655,7 @@ namespace System.Threading.Tasks
             }
             finally
             {
-                if (etwLog.TasksSetActivityIds && m_continuationId != 0)
+                if (log.TasksSetActivityIds && m_continuationId != 0)
                 {
                     System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(savedActivityId);
                 }
@@ -772,7 +772,7 @@ namespace System.Threading.Tasks
                 // path that already handles this, albeit at the expense of allocating the ATC
                 // object, and potentially forcing the box's delegate into existence, when logging
                 // is enabled.
-                if (TplEtwProvider.Log.IsEnabled())
+                if (TplEventSource.Log.IsEnabled())
                 {
                     UnsafeScheduleAction(box.MoveNextAction, prevCurrentTask);
                 }
@@ -806,11 +806,11 @@ namespace System.Threading.Tasks
         {
             AwaitTaskContinuation atc = new AwaitTaskContinuation(action, flowExecutionContext: false);
 
-            var etwLog = TplEtwProvider.Log;
-            if (etwLog.IsEnabled() && task != null)
+            var log = TplEventSource.Log;
+            if (log.IsEnabled() && task != null)
             {
                 atc.m_continuationId = Task.NewId();
-                etwLog.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, atc.m_continuationId);
+                log.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, atc.m_continuationId);
             }
 
             ThreadPool.UnsafeQueueUserWorkItemInternal(atc, preferLocal: true);
