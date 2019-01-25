@@ -9,6 +9,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Media
 {
@@ -24,10 +25,11 @@ namespace System.Media
         // used to lock all synchronous calls to the SoundPlayer object
         private readonly ManualResetEvent _semaphore = new ManualResetEvent(true);
 
-        // the worker copyThread
-        // we start the worker copyThread ONLY from entry points in the SoundPlayer API
+        // the worker copyTask
+        // we start the worker copyTask ONLY from entry points in the SoundPlayer API
         // we also set the tread to null only from the entry points in the SoundPlayer API
-        private Thread _copyThread = null;
+        private Task _copyTask = null;
+        private CancellationTokenSource _copyTaskCancellation = null;
 
         // local buffer information
         private int _currentPos = 0;
@@ -146,7 +148,7 @@ namespace System.Media
             }
 
             // if we are actively loading, keep it running
-            if (_copyThread != null && _copyThread.ThreadState == ThreadState.Running)
+            if (_copyTask != null && !_copyTask.IsCompleted)
             {
                 return;
             }
@@ -174,7 +176,7 @@ namespace System.Media
             IsLoadCompleted = false;
             _lastLoadException = null;
             _doesLoadAppearSynchronous = false;
-            _copyThread = null;
+            _copyTask = null;
             _semaphore.Set();
         }
 
@@ -230,6 +232,12 @@ namespace System.Media
             }
         }
 
+        private void CancelLoad()
+        {
+            _copyTaskCancellation?.Cancel();
+            _copyTaskCancellation = null;
+        }
+
         private void LoadSync()
         {
             Debug.Assert((_uri == null || !_uri.IsFile), "we only load streams");
@@ -237,7 +245,7 @@ namespace System.Media
             // first make sure that any possible download ended
             if (!_semaphore.WaitOne(LoadTimeout, false))
             {
-                _copyThread?.Abort();
+                CancelLoad();
                 CleanupStreamData();
                 throw new TimeoutException(SR.SoundAPILoadTimedOut);
             }
@@ -275,7 +283,7 @@ namespace System.Media
 
                 if (!_semaphore.WaitOne(LoadTimeout, false))
                 {
-                    _copyThread?.Abort();
+                    CancelLoad();
                     CleanupStreamData();
                     throw new TimeoutException(SR.SoundAPILoadTimedOut);
                 }
@@ -289,7 +297,7 @@ namespace System.Media
             }
 
             // we don't need the worker copyThread anymore
-            _copyThread = null;
+            _copyTask = null;
         }
 
         private void LoadStream(bool loadSync)
@@ -308,8 +316,9 @@ namespace System.Media
                 // lock any synchronous calls on the Sound object
                 _semaphore.Reset();
                 // start loading
-                _copyThread = new Thread(new ThreadStart(WorkerThread));
-                _copyThread.Start();
+                var cts = new CancellationTokenSource();
+                _copyTaskCancellation = cts;
+                _copyTask = CopyStreamAsync(cts.Token);
             }
         }
 
@@ -359,9 +368,9 @@ namespace System.Media
         private void SetupSoundLocation(string soundLocation)
         {
             // if we are loading a file, stop it right now
-            if (_copyThread != null)
+            if (_copyTask != null)
             {
-                _copyThread.Abort();
+                CancelLoad();
                 CleanupStreamData();
             }
 
@@ -390,9 +399,9 @@ namespace System.Media
 
         private void SetupStream(Stream stream)
         {
-            if (_copyThread != null)
+            if (_copyTask != null)
             {
-                _copyThread.Abort();
+                CancelLoad();
                 CleanupStreamData();
             }
 
@@ -463,7 +472,7 @@ namespace System.Media
             ((EventHandler)Events[s_eventStreamChanged])?.Invoke(this, e);
         }
 
-        private void WorkerThread()
+        private async Task CopyStreamAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -471,15 +480,16 @@ namespace System.Media
                 if (_uri != null && !_uri.IsFile && _stream == null)
                 {
                     WebRequest webRequest = WebRequest.Create(_uri);
-
-                    WebResponse webResponse = webRequest.GetResponse();
-
-                    _stream = webResponse.GetResponseStream();
+                    using (cancellationToken.Register(r => ((WebRequest)r).Abort(), webRequest))
+                    {
+                        WebResponse webResponse = await webRequest.GetResponseAsync().ConfigureAwait(false);
+                        _stream = webResponse.GetResponseStream();
+                    }
                 }
 
                 _streamData = new byte[BlockSize];
 
-                int readBytes = _stream.Read(_streamData, _currentPos, BlockSize);
+                int readBytes = await _stream.ReadAsync(_streamData, _currentPos, BlockSize, cancellationToken).ConfigureAwait(false);
                 int totalBytes = readBytes;
 
                 while (readBytes > 0)
@@ -491,7 +501,7 @@ namespace System.Media
                         Array.Copy(_streamData, newData, _streamData.Length);
                         _streamData = newData;
                     }
-                    readBytes = _stream.Read(_streamData, _currentPos, BlockSize);
+                    readBytes = await _stream.ReadAsync(_streamData, _currentPos, BlockSize, cancellationToken).ConfigureAwait(false);
                     totalBytes += readBytes;
                 }
 
@@ -502,15 +512,17 @@ namespace System.Media
                 _lastLoadException = exception;
             }
 
+            IsLoadCompleted = true;
+            _semaphore.Set();
+
             if (!_doesLoadAppearSynchronous)
             {
                 // Post notification back to the UI thread.
-                _asyncOperation.PostOperationCompleted(
-                    _loadAsyncOperationCompleted,
-                    new AsyncCompletedEventArgs(_lastLoadException, false, null));
+                AsyncCompletedEventArgs ea = _lastLoadException is OperationCanceledException ?
+                    new AsyncCompletedEventArgs(null, cancelled: true, null) :
+                    new AsyncCompletedEventArgs(_lastLoadException, cancelled: false, null);
+                _asyncOperation.PostOperationCompleted(_loadAsyncOperationCompleted, ea);
             }
-            IsLoadCompleted = true;
-            _semaphore.Set();
         }
 
         private unsafe void ValidateSoundFile(string fileName)

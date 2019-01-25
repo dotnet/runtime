@@ -90,6 +90,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading" />
   </ItemGroup>
