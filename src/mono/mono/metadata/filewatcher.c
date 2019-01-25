@@ -56,6 +56,10 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 
 static int (*FAMNextEvent) (gpointer, gpointer);
 
+#if defined(HAVE_SYS_INOTIFY_H)
+#include <sys/inotify.h>
+#endif
+
 gint
 ves_icall_System_IO_FSW_SupportsFSW (void)
 {
@@ -65,6 +69,10 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	else
 		return 6; /* CoreFX */
 #elif defined(HAVE_SYS_INOTIFY_H)
+	int inotify_instance = inotify_init ();
+	if (inotify_instance == -1)
+		return  0; /* DefaultWatcher */
+	close (inotify_instance);
 	return 6; /* CoreFX */
 #elif HAVE_KQUEUE
 	return 3; /* kqueue */
