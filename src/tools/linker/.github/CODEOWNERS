@@ -7,5 +7,6 @@
 
 /analyzer @radekdoulik
 /corebuild @sbomer
+/linker @marek-safar @mrvoorhe
 
 netci.groovy @sbomer
