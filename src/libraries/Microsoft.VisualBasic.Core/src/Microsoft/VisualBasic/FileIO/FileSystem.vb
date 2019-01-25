@@ -3,8 +3,12 @@
 ' See the LICENSE file in the project root for more information.
 Option Strict On
 Option Explicit On
+
+Imports System
+Imports System.Collections
 Imports System.Collections.Specialized
 Imports System.ComponentModel
+Imports System.Diagnostics
 Imports System.Globalization
 Imports System.Security
 Imports System.Runtime.Versioning

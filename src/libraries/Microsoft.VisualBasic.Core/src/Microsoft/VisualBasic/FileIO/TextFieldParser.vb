@@ -4,7 +4,9 @@
 Option Explicit On
 Option Strict On
 
+Imports System
 Imports System.ComponentModel
+Imports System.Diagnostics
 Imports System.Globalization
 Imports System.IO
 Imports System.Text

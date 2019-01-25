@@ -2,13 +2,13 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_EventLog</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_EventLog</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
     <UWPCompatible>false</UWPCompatible>
     <ProjectGuid>{432779B9-3CBD-4871-A7DC-D8A192319DBD}</ProjectGuid>
     <Configurations>net461-Debug;net461-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp'))">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Diagnostics\CompModSwitches.cs" />
     <Compile Include="System\Diagnostics\EntryWrittenEventArgs.cs" />
     <Compile Include="System\Diagnostics\EntryWrittenEventHandler.cs" />
@@ -122,6 +122,7 @@
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
+    <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />

@@ -5,6 +5,7 @@ Option Explicit On
 Option Strict On
 
 Imports Microsoft.VisualBasic.FileIO
+Imports System
 Imports Xunit
 
 Namespace Microsoft.VisualBasic.Tests.VB
