@@ -5072,6 +5072,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 	return (guint32)mono_marshal_type_size (type, NULL, &align, FALSE, m_class_is_unicode (klass));
 }
 
+guint32
+ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper (MonoReflectionTypeHandle rtype, MonoBoolean throwIfNotMarshalable, MonoError *error)
+{
+	return ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (rtype, error);
+}
+
 void
 ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObjectHandle obj, gpointer dst, MonoBoolean delete_old, MonoError *error)
 {

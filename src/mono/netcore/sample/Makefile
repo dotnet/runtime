@@ -13,7 +13,7 @@ SHAREDRUNTIME:=shared/Microsoft.NETCore.App/3.0.0-preview-27122-01/
 
 link-mono:
 	cp ../../mono/mini/.libs/libmonosgen-2.0.dylib $(SHAREDRUNTIME)/libcoreclr.dylib
-	cp ../../mcs/class/System.Private.CoreLib/bin/Debug/System.Private.CoreLib.dll $(SHAREDRUNTIME)
+	cp ../../mcs/class/System.Private.CoreLib/bin/x64/System.Private.CoreLib.dll $(SHAREDRUNTIME)
 
 prepare: download-macos build-sample link-mono 
 
