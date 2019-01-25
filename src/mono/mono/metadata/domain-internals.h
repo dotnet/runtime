@@ -23,7 +23,7 @@
 /* Mono appdomain support is deeply itegrated in the runtime, as a result, even
  * though .NET Standard does not include System.AppDomain in
  * System.Private.CoreLib, we still depend on having an appdomain class.
- * So we move it to System.Mono.MonoDomain
+ * So we move it to Mono.MonoDomain
  *
  */
 #ifndef ENABLE_NETCORE
@@ -32,9 +32,9 @@
 #define MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE "System"
 #define MONO_APPDOMAIN_SETUP_CLASS_NAME "AppDomainSetup"
 #else
-#define MONO_APPDOMAIN_CLASS_NAME_SPACE "System.Mono"
+#define MONO_APPDOMAIN_CLASS_NAME_SPACE "Mono"
 #define MONO_APPDOMAIN_CLASS_NAME "MonoDomain"
-#define MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE "System.Mono"
+#define MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE "Mono"
 #define MONO_APPDOMAIN_SETUP_CLASS_NAME "MonoDomainSetup"
 #endif
 
