@@ -13,10 +13,7 @@
     <DefineConstants Condition="$(OSGroup) == 'Windows_NT'">WINDOWS</DefineConstants>
     <DefineConstants Condition="$(OSGroup) == 'OSX'">OSX</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyDependencyResolver.cs" />
     <Compile Include="AssemblyDependencyResolverTests.cs" />
     <Compile Include="HostPolicyMock.cs" />
     <Compile Include="InvalidHostingTest.cs" />
