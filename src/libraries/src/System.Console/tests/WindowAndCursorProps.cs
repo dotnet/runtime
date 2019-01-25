@@ -228,14 +228,14 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
         Assert.NotNull(Console.Title);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "// NETFX does not have the fix https://github.com/dotnet/corefx/pull/28905")]
     public static void Title_Get_Windows_NoNulls()
     {
         string title = Console.Title;
         string trimmedTitle = title.TrimEnd('\0');
-        Assert.Equal(title, trimmedTitle);
+        Assert.Equal(trimmedTitle, title);
     }
 
     [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano currently ignores set title
