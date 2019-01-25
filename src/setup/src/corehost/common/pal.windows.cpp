@@ -12,10 +12,6 @@
 #include <ShlObj.h>
 #include <ctime>
 
-#if !defined(RRF_SUBKEY_WOW6432KEY)
-#define RRF_SUBKEY_WOW6432KEY  0x00020000
-#endif
-
 bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
 {
     pal::string_t path;
@@ -240,24 +236,50 @@ bool get_sdk_self_registered_dir(pal::string_t* recv)
     //  ***************************
 
     DWORD size = 0;
-    const HKEY hkey = HKEY_LOCAL_MACHINE;
+    HKEY hkeyHive = HKEY_LOCAL_MACHINE;
     // The registry search occurs in the 32-bit registry in all cases.
-    const DWORD flags = RRF_RT_REG_SZ | RRF_SUBKEY_WOW6432KEY;
-    pal::string_t sub_key = pal::string_t(_X("SOFTWARE\\dotnet\\Setup\\InstalledVersions\\")) + get_arch() + pal::string_t(_X("\\sdk"));
+    pal::string_t dotnet_key_path = pal::string_t(_X("SOFTWARE\\dotnet"));
+
+    pal::string_t environmentRegistryPathOverride;
+    if (pal::getenv(_X("_DOTNET_TEST_SDK_REGISTRY_PATH"), &environmentRegistryPathOverride))
+    {
+        pal::string_t hkcuPrefix = _X("HKEY_CURRENT_USER\\");
+        if (environmentRegistryPathOverride.substr(0, hkcuPrefix.length()) == hkcuPrefix)
+        {
+            hkeyHive = HKEY_CURRENT_USER;
+            environmentRegistryPathOverride = environmentRegistryPathOverride.substr(hkcuPrefix.length());
+        }
+
+        dotnet_key_path = environmentRegistryPathOverride;
+    }
+
+    pal::string_t sub_key = dotnet_key_path + pal::string_t(_X("\\Setup\\InstalledVersions\\")) + get_arch() + pal::string_t(_X("\\sdk"));
     pal::char_t* value = _X("InstallLocation");
 
+    // Must use RegOpenKeyEx to be able to specify KEY_WOW64_32KEY to access the 32-bit registry in all cases.
+    // The RegGetValue has this option available only on Win10.
+    HKEY hkey = NULL;
+    LSTATUS result = ::RegOpenKeyExW(hkeyHive, sub_key.c_str(), 0, KEY_READ | KEY_WOW64_32KEY, &hkey);
+    if (result != ERROR_SUCCESS)
+    {
+        trace::verbose(_X("Can't open the SDK installed location registry key, result: 0x%X"), result);
+        return false;
+    }
+
     // Determine the size of the buffer
-    LONG result = ::RegGetValueW(hkey, sub_key.c_str(), value, flags, nullptr, nullptr, &size);
+    result = ::RegGetValueW(hkey, nullptr, value, RRF_RT_REG_SZ, nullptr, nullptr, &size);
     if (result != ERROR_SUCCESS || size == 0)
     {
+        trace::verbose(_X("Can't get the size of the SDK location registry value or it's empty, result: 0x%X"), result);
         return false;
     }
 
     // Get the key's value
     std::vector<pal::char_t> buffer(size/sizeof(pal::char_t));
-    result = ::RegGetValueW(hkey, sub_key.c_str(), value, flags, nullptr, &buffer[0], &size);
+    result = ::RegGetValueW(hkey, nullptr, value, RRF_RT_REG_SZ, nullptr, &buffer[0], &size);
     if (result != ERROR_SUCCESS)
     {
+        trace::verbose(_X("Can't get the value of the SDK location registry value, result: 0x%X"), result);
         return false;
     }
 
