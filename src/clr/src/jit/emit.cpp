@@ -5625,8 +5625,10 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                         printf("dd\t%08Xh", ig->igOffs - igFirst->igOffs);
                     }
                 }
-                else if (TARGET_POINTER_SIZE == 4)
+                else
                 {
+#ifndef _TARGET_64BIT_
+                    // We have a 32-BIT target
                     if (emitComp->opts.disDiffable)
                     {
                         printf("dd\t%s\n", blockLabel);
@@ -5635,9 +5637,8 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                     {
                         printf("dd\t%08Xh", reinterpret_cast<uint32_t>(emitOffsetToPtr(ig->igOffs)));
                     }
-                }
-                else
-                {
+#else  // _TARGET_64BIT_
+                    // We have a 64-BIT target
                     if (emitComp->opts.disDiffable)
                     {
                         printf("dq\t%s\n", blockLabel);
@@ -5646,6 +5647,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                     {
                         printf("dq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
                     }
+#endif // _TARGET_64BIT_
                 }
 
                 if (!emitComp->opts.disDiffable)
