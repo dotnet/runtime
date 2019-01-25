@@ -14,14 +14,6 @@
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
 
-    <RestoreSource Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
-
-    <!-- needed for SQLClient's SNI and core-setup packages -->
-    <RestoreSource Include="https:%2F%2Fdotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
-
-    <!-- ideally this would be first, but we need to list last to workaround https://github.com/NuGet/Home/issues/6678 -->
-    <RestoreSource Include="$(PackageOutputPath)" />
-
     <!-- we don't build alpine or older OSX versions -->
     <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64" />
 
@@ -37,25 +29,15 @@
 
   <PropertyGroup>
     <TestDir>$(BinDir)testPkg/</TestDir>
+    <TestSupportDir>$(TestDir)support/</TestSupportDir>
     <TestProjectName>test.msbuild</TestProjectName>
-    <TestProject>$(TestDir)$(TestProjectName)</TestProject>
-    <TestToolsDir>$(TestDir)tools/</TestToolsDir>
+    <TestProject>$(TestSupportDir)$(TestProjectName)</TestProject>
+    <TestToolsDir>$(TestSupportDir)tools/</TestToolsDir>
     <TestProjectDir>$(TestDir)projects/</TestProjectDir>
     <TestPackageDir>$(BinDir)testPackages</TestPackageDir>
     <TestDotNetPath>$(TestToolsDir)/dotnet</TestDotNetPath>
 
     <ProjectTemplate>project.csproj.template</ProjectTemplate>
-
-    <TestRestoreCommand>$(TestDotNetPath)</TestRestoreCommand>
-    <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
-    <TestRestoreCommand>$(TestRestoreCommand) @(RestoreSource->'-s %(Identity)', ' ')</TestRestoreCommand>
-    <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
-    <TestRestoreCommand  Condition="'$(TestPackages)' != ''">$(TestRestoreCommand) /p:TestPackages=$(TestPackages)</TestRestoreCommand>
-
-    <TestBuildCommand>$(TestDotNetPath)</TestBuildCommand>
-    <TestBuildCommand>$(TestBuildCommand) msbuild</TestBuildCommand>
-    <TestBuildCommand>$(TestBuildCommand) /t:Test</TestBuildCommand>
-    <TestBuildCommand  Condition="'$(TestPackages)' != ''">$(TestBuildCommand) /p:TestPackages=$(TestPackages)</TestBuildCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -87,10 +69,10 @@
       <DestinationFolder>$(TestDir)</DestinationFolder>
     </TestSupportFiles>
     <TestSupportFiles Include="**\*.targets">
-      <DestinationFolder>$(TestDir)%(RecursiveDir)</DestinationFolder>
+      <DestinationFolder>$(TestSupportDir)%(RecursiveDir)</DestinationFolder>
     </TestSupportFiles>
     <TestSupportFiles Include="$(TestProjectName)">
-      <DestinationFolder>$(TestDir)</DestinationFolder>
+      <DestinationFolder>$(TestSupportDir)</DestinationFolder>
     </TestSupportFiles>
   </ItemGroup>
 
@@ -176,19 +158,68 @@
     <Message Text="Generated $(_projectFile)" />
   </Target>
 
+  <Target Name="CopyProducedPackages">
+    <!-- Copy over package local cache to our helix runtime path -->
+    <ItemGroup>
+     <_localPackages Include="$(PackageOutputPath)*.nupkg" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_localPackages)"
+          UseHardlinksIfPossible="true"
+          DestinationFolder="$(TestSupportDir)packages" />
+  </Target>
+
+  <Target Name="ArchiveHelixItems"
+          DependsOnTargets="GenerateProjects;CopyProducedPackages"
+          Condition="'$(ArchiveTests)' == 'true'">
+
+    <MakeDir Directories="$(TestArchiveTestsRoot)" />
+    <ZipDirectory
+        SourceDirectory="$(TestProjectDir)%(SupportedPackage.Identity)"
+        DestinationFile="$(TestArchiveTestsRoot)%(SupportedPackage.Identity).zip"
+        Overwrite="true" />
+
+    <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
+    <ZipDirectory
+        SourceDirectory="$(TestSupportDir)"
+        DestinationFile="$(TestArchiveRuntimeRoot)packages-testPayload-$(ConfigurationGroup).zip"
+        Overwrite="true" />
+
+  </Target>
+
   <Target Name="RestoreProjects"
-          DependsOnTargets="GenerateProjects">
+          DependsOnTargets="GenerateProjects"
+          Condition="'$(ArchiveTests)' != 'true'">
+
+    <PropertyGroup>
+      <TestRestoreCommand>$(TestDotNetPath)</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /p:LocalPackagesPath=$(PackageOutputPath)</TestRestoreCommand>
+      <TestRestoreCommand  Condition="'$(TestPackages)' != ''">$(TestRestoreCommand) /p:TestPackages=$(TestPackages)</TestRestoreCommand>
+    </PropertyGroup>
+
     <Message Importance="High" Text="*** Restoring ***" />
     <Exec Command="$(TestRestoreCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="High" />
   </Target>
 
   <Target Name="BuildProjects"
-          DependsOnTargets="RestoreProjects">
-    <Message Importance="High" Text="*** Testing ***" />
-    <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot; /p:TestPackages=%(SupportedPackage.Identity)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="High" />
+          DependsOnTargets="RestoreProjects"
+          Condition="'$(ArchiveTests)' != 'true'">
+
+    <PropertyGroup>
+      <TestBuildCommand>$(TestDotNetPath)</TestBuildCommand>
+      <TestBuildCommand>$(TestBuildCommand) msbuild</TestBuildCommand>
+      <TestBuildCommand>$(TestBuildCommand) /t:Test</TestBuildCommand>
+      <TestBuildCommand  Condition="'$(TestPackages)' != ''">$(TestBuildCommand) /p:TestPackages=$(TestPackages)</TestBuildCommand>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="*** Testing *** %(SupportedPackage.Identity)" />
+    <Message Importance="High" Text="$(TestBuildCommand) &quot;$(TestProject)&quot;" />
+    <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="High" />
   </Target>
 
-  <Target Name="Build" DependsOnTargets="BuildProjects" />
+  <Target Name="Build" DependsOnTargets="BuildProjects;ArchiveHelixItems" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>

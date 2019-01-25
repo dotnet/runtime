@@ -166,12 +166,16 @@ jobs:
                 helixQueues: $(_helixQueues)
                 msbuildScript: $(_msbuildCommand)
                 framework: $(_framework)
+
                 ${{ if eq(parameters.isOfficialBuild, 'true') }}:
                   isExternal: false
                   waitForCompletion: false
                   officialBuildId: $(Build.BuildNumber)
                   helixToken: $(HelixApiAccessToken)
-                  enableAzurePipelinesReporter: true
+                  ${{ if ne(job.enableAzurePipelinesReporter, '') }}:
+                    enableAzurePipelinesReporter: ${{ job.enableAzurePipelinesReporter }}
+                  ${{ if eq(job.enableAzurePipelinesReporter, '') }}:
+                    enableAzurePipelinesReporter: true
 
                 ${{ if eq(parameters.isOfficialBuild, 'false') }}:
                   # TODO: SET Creator to the PR owner whenever Azure DevOps supports a good way to retrieve it.

@@ -124,6 +124,7 @@ jobs:
               _BuildConfig: Debug
               _architecture: x64
               _framework: allConfigurations
+              _helixQueues: $(allConfigurationsQueues)
 
           # Official Build Matrix
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -131,15 +132,24 @@ jobs:
               _BuildConfig: Release
               _architecture: x64
               _framework: allConfigurations
+              _helixQueues: $(allConfigurationsQueues)
 
       pool:
         ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           name: dotnet-internal-temp
         ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-          name: dotnet-external-temp
+          name: Hosted VS2017
 
-      submitToHelix: false
+      submitToHelix: true
+      # azure pipelines reporter only supports xunit results based tests.
+      enableAzurePipelinesReporter: false
       enableMicrobuild: ${{ parameters.isOfficialBuild }}
+
+      variables:
+        - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+          - allConfigurationsQueues: Windows.10.Amd64.ClientRS2.Open
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - allConfigurationsQueues: Windows.10.Amd64.ClientRS2
 
       customBuildSteps:
         - script: build.cmd
@@ -151,6 +161,14 @@ jobs:
                   $(_windowsOfficialBuildArguments)
                   $(_msbuildCommonParameters)
           displayName: Build Packages
+        - script: build.cmd
+                  -ci
+                  -test
+                  -$(_framework)
+                  /p:ArchGroup=$(_architecture)
+                  /p:ConfigurationGroup=$(_BuildConfig)
+                  /p:ArchiveTests=true
+          displayName: Build test projects
         - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
           - script: build.cmd
                     -ci
@@ -160,13 +178,6 @@ jobs:
                     /p:ConfigurationGroup=$(_BuildConfig)
                     /p:SkipTests=true
             displayName: Build Netstandard Test Suite
-          - script: build.cmd
-                    -ci
-                    -test
-                    -$(_framework)
-                    /p:ArchGroup=$(_architecture)
-                    /p:ConfigurationGroup=$(_BuildConfig)
-            displayName: Run Package Tests
 
     # TODO: UAPAOT official builds should send to helix using continuation runner.
     # Legs without HELIX testing
