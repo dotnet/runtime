@@ -477,13 +477,6 @@ BAILOUT:
     if (endLabel != nullptr)
         genDefineTempLabel(endLabel);
 
-#if STACK_PROBES
-    if (compiler->opts.compNeedStackProbes)
-    {
-        genGenerateStackProbe();
-    }
-#endif
-
     genProduceReg(tree);
 }
 

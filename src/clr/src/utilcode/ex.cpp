@@ -1273,13 +1273,6 @@ DWORD GetCurrentExceptionCode()
     return (DWORD)(size_t)ClrFlsGetValue(TlsIdx_EXCEPTION_CODE);
 }
 
-bool IsCurrentExceptionSO()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetCurrentExceptionCode() == STATUS_STACK_OVERFLOW;
-}
-
-
 //=========================================================================================== 
 // These abstractions hide the difference between legacy desktop CLR's (that don't support
 // side-by-side-inproc and rely on a fixed SEH code to identify managed exceptions) and

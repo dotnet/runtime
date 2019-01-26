@@ -897,13 +897,12 @@ void CLRException::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * sz
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    bool fVMInitialized = g_fEEStarted?true:false;
-    Exception::HandlerState::SetupCatch(INDEBUG_COMMA(szFile) lineNum, fVMInitialized);
+    Exception::HandlerState::SetupCatch(INDEBUG_COMMA(szFile) lineNum);
 
     Thread *pThread = NULL;
     DWORD exceptionCode = 0;
 
-    if (fVMInitialized)
+    if (g_fEEStarted)
     {
         pThread = GetThread();
         exceptionCode = GetCurrentExceptionCode();

@@ -20,7 +20,6 @@ enum PredefinedTlsSlots
     TlsIdx_JitLogEnv,
     TlsIdx_IceCap,
     TlsIdx_StressLog,
-    TlsIdx_StackProbe,
     TlsIdx_Check,
     TlsIdx_ForbidGCLoaderUseCount,
     TlsIdx_ClrDebugState,         // Pointer to ClrDebugState* structure

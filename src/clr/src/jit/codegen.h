@@ -160,13 +160,6 @@ private:
         genStackLevel = newStackLevel;
     }
 
-#if STACK_PROBES
-    // Stack Probes
-    bool genNeedPrologStackProbe;
-
-    void genGenerateStackProbe();
-#endif
-
     //-------------------------------------------------------------------------
 
     void genReportEH();
