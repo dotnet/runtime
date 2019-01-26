@@ -731,39 +731,6 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
     return OBJECTREFToObject(RetExceptionObj);
 }
 FCIMPLEND
-    
-FCIMPL2(void, MarshalNative::ThrowExceptionForHR, INT32 errorCode, LPVOID errorInfo)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(FAILED(errorCode));
-        PRECONDITION(CheckPointer(errorInfo, NULL_OK));
-    }
-    CONTRACTL_END;
-
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    // Retrieve the IErrorInfo to use.
-    IErrorInfo *pErrorInfo = (IErrorInfo*)errorInfo;
-    if (pErrorInfo == (IErrorInfo*)(-1))
-    {
-        pErrorInfo = NULL;
-    }
-    else if (!pErrorInfo)
-    {
-        if (SafeGetErrorInfo(&pErrorInfo) != S_OK)
-            pErrorInfo = NULL;
-    }
-
-    // Throw the exception based on the HR and the IErrorInfo.
-    COMPlusThrowHR(errorCode, pErrorInfo);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 
 FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 {
