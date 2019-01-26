@@ -2799,7 +2799,7 @@ LError:
     }
     // If this is for the stack probe, and we failed to allocate memory for it, we won't
     // put in a guard page.
-    if (slot == TlsIdx_ClrDebugState || slot == TlsIdx_StackProbe)
+    if (slot == TlsIdx_ClrDebugState)
         return NULL;
 
     ThrowOutOfMemory();

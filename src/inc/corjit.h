@@ -34,32 +34,6 @@
 
 #include <corjitflags.h>
 
-#define CORINFO_STACKPROBE_DEPTH        256*sizeof(UINT_PTR)          // Guaranteed stack until an fcall/unmanaged
-                                                    // code can set up a frame. Please make sure
-                                                    // this is less than a page. This is due to
-                                                    // 2 reasons:
-                                                    //
-                                                    // If we need to probe more than a page
-                                                    // size, we need one instruction per page
-                                                    // (7 bytes per instruction)
-                                                    //
-                                                    // The JIT wants some safe space so it doesn't
-                                                    // have to put a probe on every call site. It achieves
-                                                    // this by probing n bytes more than CORINFO_STACKPROBE_DEPTH
-                                                    // If it hasn't used more than n for its own stuff, it
-                                                    // can do a call without doing any other probe
-                                                    //
-                                                    // In any case, we do really expect this define to be
-                                                    // small, as setting up a frame should be only pushing
-                                                    // a couple of bytes on the stack
-                                                    //
-                                                    // There is a compile time assert
-                                                    // in the x86 jit to protect you from this
-                                                    //
-
-
-
-
 /*****************************************************************************/
     // These are error codes returned by CompileMethod
 enum CorJitResult
