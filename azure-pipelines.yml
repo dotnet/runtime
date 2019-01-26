@@ -23,7 +23,8 @@ resources:
   - container: centos6_x64_build_image
     image: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
 
-trigger: none
+trigger:
+- master
 
 pr:
 - master
@@ -88,16 +89,16 @@ jobs:
 # https://github.com/Microsoft/azure-pipelines-yaml/pull/46 for more information
 
 #
-# Debug build (CI)
+# Debug build (Pull Request)
 #
-- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: build-job.yml
       buildConfig: debug
 
 #
-# Checked build (CI)
+# Checked build
 #
 - ${{ if eq(variables['System.TeamProject'], 'public') }}:
   - template: eng/platform-matrix.yml
@@ -106,23 +107,24 @@ jobs:
       buildConfig: checked
 
 #
-# Release build (Official Build)
+# Release build (Official Build, Pull Request)
 #
-- template: eng/platform-matrix.yml
-  parameters:
-    jobTemplate: build-job.yml
-    buildConfig: release
-    jobParameters:
-      # Publishing packages to blob feeds sometimes takes a long time
-      # due to waiting for an exclusive lock on the feed.
-      # See https://github.com/dotnet/arcade/blob/master/Documentation/CorePackages/AsyncPublishing.md
-      timeoutInMinutes: 120
+- ${{ if xor(eq(variables['System.TeamProject'], 'internal'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: build-job.yml
+      buildConfig: release
+      jobParameters:
+        # Publishing packages to blob feeds sometimes takes a long time
+        # due to waiting for an exclusive lock on the feed.
+        # See https://github.com/dotnet/arcade/blob/master/Documentation/CorePackages/AsyncPublishing.md
+        timeoutInMinutes: 120
 
 #
 # Checked test builds
 #
 
-# Pri0 (PullRequest)
+# Pri0 (Pull Request)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
@@ -168,8 +170,8 @@ jobs:
           - no_tiered_compilation
         timeoutInMinutes: 360
 
-# Pri1 (Manual)
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'Manual')) }}:
+# Pri1 (Schedule, Manual)
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule', 'Manual')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
@@ -188,11 +190,11 @@ jobs:
         timeoutInMinutes: 480
 
 #
-# Release test builds (Official Build)
+# Release test builds
 #
 
-# Pri1
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+# Pri1 (Official Build)
+- ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
@@ -207,7 +209,7 @@ jobs:
         timeoutInMinutes: 360
 
 # Pri1 crossgen (Official Build)
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
@@ -230,7 +232,7 @@ jobs:
 # registry. Its dependencies should be updated to include all of the
 # official builds if we add more platform/arch combinations.
 
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: /eng/common/templates/job/publish-build-assets.yml
     parameters:
       configuration: Release
