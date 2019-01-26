@@ -135,7 +135,6 @@ CONFIG_INTEGER(RunAltJitCode, W("RunAltJitCode"), 1) // If non-zero, and the com
                                                      // code and fall back to the default compiler.
 CONFIG_INTEGER(RunComponentUnitTests, W("JitComponentUnitTests"), 0) // Run JIT component unit tests
 CONFIG_INTEGER(ShouldInjectFault, W("InjectFault"), 0)
-CONFIG_INTEGER(StackProbesOverride, W("JitStackProbes"), 0)
 CONFIG_INTEGER(StressCOMCall, W("StressCOMCall"), 0)
 CONFIG_INTEGER(TailcallStress, W("TailcallStress"), 0)
 CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, display each tree before/after morphing

@@ -121,12 +121,6 @@ void GetCurrentExceptionPointers(PEXCEPTION_POINTERS pExceptionInfo);
 DWORD GetCurrentExceptionCode();
 
 // ---------------------------------------------------------------------------
-//   We save current ExceptionPointers using VectoredExceptionHandler.  The save data is only valid
-//   duing exception handling.  Return TRUE if the current exception is hard or soft SO.
-// ---------------------------------------------------------------------------
-bool IsCurrentExceptionSO();
-
-// ---------------------------------------------------------------------------
 //   Standard exception hierarchy & infrastructure for library code & EE
 // ---------------------------------------------------------------------------
 
@@ -150,8 +144,6 @@ Exception
     |-> SEHException                                    Y
     |
     |-> DelegatingException                             Y
-    |
-    |-> StackOverflowException                          Y
     |
     |-> OutOfMemoryException                            Y
     |
@@ -237,14 +229,11 @@ class Exception
         HandlerState();
 
         void CleanupTry();
-        void SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum, bool fVMInitialized = true);
+        void SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum);
         void SucceedCatch();
 
         BOOL DidCatch() { return (m_dwFlags & Caught); }
         void SetCaught() { m_dwFlags |= Caught; }
-
-        BOOL DidCatchSO() { return (m_dwFlags & CaughtSO); }
-        void SetCaughtSO() { m_dwFlags |= CaughtSO; }
 
         BOOL DidCatchCxx() { return (m_dwFlags & CaughtCxx); }
         void SetCaughtCxx() { m_dwFlags |= CaughtCxx; }
@@ -721,14 +710,6 @@ private:
         EX_RETHROW;                                                     \
     }                                                                   \
 
-#define RethrowSOExceptions                                             \
-    if (__state.DidCatchSO())                                           \
-    {                                                                   \
-        STATIC_CONTRACT_THROWS_TERMINAL;                                \
-        EX_RETHROW;                                                     \
-    }                                                                   \
-
-
 // Don't use this - use RethrowCorruptingExceptions (see below) instead.
 #define SwallowAllExceptions ;
 
@@ -759,10 +740,6 @@ private:
 //
 // SET_CE_RETHROW_FLAG_FOR_EX_CATCH macros helps evaluate if the CE is to be rethrown or not. This has been redefined in
 // Clrex.h to add the condition of evaluating the throwable as well (which is not available outside the VM folder).
-//
-// Typically, SET_CE_RETHROW_FLAG_FOR_EX_CATCH would rethrow a Corrupted State Exception. However, SO needs to be dealt
-// with specially and this work is done during EX_CATCH, by calling SetupCatch against the handler state, and by EX_ENDTRY
-// by calling HANDLE_STACKOVERFLOW_AFTER_CATCH.
 //
 // Passing FALSE as the second argument to IsProcessCorruptedStateException implies that SET_CE_RETHROW_FLAG_FOR_EX_CATCH
 // will ensure that we dont rethrow SO and allow EX_ENDTRY to SO specific processing. If none is done, then EX_ENDTRY will
@@ -1276,10 +1253,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 //   exception. This will allow the stack to unwind point, and so we won't be jeopardizing a
 //   second stack overflow.
 //===================================================================================
-#ifndef VM_NO_SO_INFRASTRUCTURE_CODE
-#define VM_NO_SO_INFRASTRUCTURE_CODE(x)
-#endif
-
 #define EX_HOOK                                          \
     EX_CATCH                                             \
     {                                                    \
@@ -1287,11 +1260,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_END_HOOK                                      \
     }                                                    \
     ANNOTATION_HANDLER_END;                              \
-    if (IsCurrentExceptionSO())                          \
-        __state.SetCaughtSO();                           \
-    VM_NO_SO_INFRASTRUCTURE_CODE(_ASSERTE(!__state.DidCatchSO());) \
-    if (!__state.DidCatchSO())                           \
-        EX_RETHROW;                                      \
+    EX_RETHROW;                                          \
     EX_END_CATCH_FOR_HOOK;                               \
     }
 
@@ -1321,21 +1290,9 @@ inline void Exception::HandlerState::CleanupTry()
     LIMITED_METHOD_DAC_CONTRACT;
 }
 
-inline void Exception::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum, bool fVMInitialized /* = true */)
+inline void Exception::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum)
 {
     WRAPPER_NO_CONTRACT;
-
-    if (fVMInitialized)
-    {
-        // Calling into IsCurrentExceptionSO will end up using various VM support entities (e.g. TLS slots, accessing CExecutionEngine
-        // implementation that accesses other VM specific data, etc) that may not be ready/initialized
-        // until the VM is initialized. 
-        //
-        // This is particularly important when we have exceptions thrown/triggerred during runtime's initialization
-        // and accessing such data can result in possible recursive AV's in the runtime.
-        if (IsCurrentExceptionSO())
-            SetCaughtSO();
-    }
 
     /* don't embed file names in retail to save space and avoid IP */
     /* a findstr /n will allow you to locate it in a pinch */
