@@ -82,6 +82,9 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Environment.WinRT.cs">
       <Link>Common\CoreLib\System\Environment.WinRT.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\WinRTFolderPaths.cs">
+      <Link>Common\CoreLib\System\WinRTFolderPaths.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uapaot' and '$(TargetGroup)' != 'uap'">
     <Compile Include="$(CommonPath)\CoreLib\System\Environment.Win32.cs">
