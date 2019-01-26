@@ -143,6 +143,22 @@ namespace System.Media.Test
             player.Play();
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
+        [OuterLoop]
+        public void Play_InvalidFile_ShortTimeout_ThrowsWebException()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+                var ep = (IPEndPoint)listener.LocalEndPoint;
+                var player = new SoundPlayer();
+                player.SoundLocation = $"http://{ep.Address}:{ep.Port}";
+                player.LoadTimeout = 1;
+                Assert.Throws<WebException>(() => player.Play());
+            } 
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]
@@ -250,7 +266,6 @@ namespace System.Media.Test
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [MemberData(nameof(Play_InvalidString_TestData))]
-        [InlineData("http://google.com")]
         public void Play_InvalidFile_ThrowsInvalidOperationException(string sourceLocation)
         {
             var soundPlayer = new SoundPlayer(sourceLocation);
