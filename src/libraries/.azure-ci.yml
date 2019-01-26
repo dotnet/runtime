@@ -48,7 +48,7 @@ jobs:
     - template: /eng/pipelines/redhat6.yml
 
     # FreeBSD leg is only for official builds
-    - template: /eng/pipelines/freebsd.yml
+    # - template: /eng/pipelines/freebsd.yml
 
     # Publish step
     - template: /eng/pipelines/publish.yml
@@ -61,4 +61,4 @@ jobs:
           - LinuxNoTest
           - MacOS
           - RedHat6
-          - FreeBSD
+          # - FreeBSD
