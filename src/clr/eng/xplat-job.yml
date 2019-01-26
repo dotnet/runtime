@@ -36,7 +36,7 @@ jobs:
 
     pool:
       ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
-        name: Hosted Ubuntu 1604
+        name: dnceng-linux-external-temp
       ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
         name: dnceng-linux-internal-temp
       # FreeBSD builds only in the internal project
