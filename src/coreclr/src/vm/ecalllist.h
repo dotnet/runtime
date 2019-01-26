@@ -817,7 +817,6 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
 
     QCFuncElement("InternalPrelink", MarshalNative::Prelink)
-    FCFuncElement("ThrowExceptionForHRInternal", MarshalNative::ThrowExceptionForHR)
     FCFuncElement("GetExceptionForHRInternal", MarshalNative::GetExceptionForHR)
     FCFuncElement("GetDelegateForFunctionPointerInternal", MarshalNative::GetDelegateForFunctionPointerInternal)
     FCFuncElement("GetFunctionPointerForDelegateInternal", MarshalNative::GetFunctionPointerForDelegateInternal)

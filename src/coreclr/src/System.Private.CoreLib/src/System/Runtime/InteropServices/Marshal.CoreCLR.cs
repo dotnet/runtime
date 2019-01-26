@@ -212,17 +212,6 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetLastWin32Error(int error);
 
-        public static int GetHRForLastWin32Error()
-        {
-            int dwLastError = GetLastWin32Error();
-            if ((dwLastError & 0x80000000) == 0x80000000)
-            {
-                return dwLastError;
-            }
-            
-            return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
-        }
-
         private static void PrelinkCore(MethodInfo m)
         {
             if (!(m is RuntimeMethodInfo rmi))
@@ -299,28 +288,6 @@ namespace System.Runtime.InteropServices
 
 #endif // FEATURE_COMINTEROP
 
-        /// <summary>
-        /// Throws a CLR exception based on the HRESULT.
-        /// </summary>
-        public static void ThrowExceptionForHR(int errorCode)
-        {
-            if (errorCode < 0)
-            {
-                ThrowExceptionForHRInternal(errorCode, IntPtr.Zero);
-            }
-        }
-
-        public static void ThrowExceptionForHR(int errorCode, IntPtr errorInfo)
-        {
-            if (errorCode < 0)
-            {
-                ThrowExceptionForHRInternal(errorCode, errorInfo);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ThrowExceptionForHRInternal(int errorCode, IntPtr errorInfo);
-
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo);
@@ -348,8 +315,6 @@ namespace System.Runtime.InteropServices
 
             return pNewMem;
         }
-
-        public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((IntPtr)cb);
 
         public static void FreeHGlobal(IntPtr hglobal)
         {
@@ -488,11 +453,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr /* IUnknown* */ GetRawIUnknownForComObjectNoAddRef(object o);
-#endif // FEATURE_COMINTEROP
 
-        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
-
-#if FEATURE_COMINTEROP
         /// <summary>
         /// Return the IUnknown* representing the interface for the Object.
         /// Object o should support Type T
@@ -943,54 +904,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetEndComSlot(Type t);
-#endif // FEATURE_COMINTEROP
 
-        /// <summary>
-        /// This method generates a PROGID for the specified type. If the type has
-        /// a PROGID in the metadata then it is returned otherwise a stable PROGID
-        /// is generated based on the fully qualified name of the type.
-        /// </summary>
-        public static string GenerateProgIdForType(Type type)
-        {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-            if (type.IsImport)
-            {
-                throw new ArgumentException(SR.Argument_TypeMustNotBeComImport, nameof(type));
-            }
-            if (type.IsGenericType)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
-            }
-
-            IList<CustomAttributeData> cas = CustomAttributeData.GetCustomAttributes(type);
-            for (int i = 0; i < cas.Count; i++)
-            {
-                if (cas[i].Constructor.DeclaringType == typeof(ProgIdAttribute))
-                {
-                    // Retrieve the PROGID string from the ProgIdAttribute.
-                    IList<CustomAttributeTypedArgument> caConstructorArgs = cas[i].ConstructorArguments;
-                    Debug.Assert(caConstructorArgs.Count == 1, "caConstructorArgs.Count == 1");
-
-                    CustomAttributeTypedArgument progIdConstructorArg = caConstructorArgs[0];
-                    Debug.Assert(progIdConstructorArg.ArgumentType == typeof(string), "progIdConstructorArg.ArgumentType == typeof(String)");
-
-                    string strProgId = (string)progIdConstructorArg.Value;
-
-                    if (strProgId == null)
-                        strProgId = string.Empty;
-
-                    return strProgId;
-                }
-            }
-
-            // If there is no prog ID attribute then use the full name of the type as the prog id.
-            return type.FullName;
-        }
-
-#if FEATURE_COMINTEROP
         public static object BindToMoniker(string monikerName)
         {
             CreateBindCtx(0, out IBindCtx bindctx);
