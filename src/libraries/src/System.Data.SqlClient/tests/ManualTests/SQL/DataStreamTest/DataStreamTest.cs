@@ -296,6 +296,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     rdr.GetFieldValue<SqlString>(15);
                     rdr.GetFieldValue<XmlReader>(14);
                     rdr.GetFieldValue<XmlReader>(15);
+                    rdr.GetFieldValueAsync<XmlReader>(14);
+                    rdr.GetFieldValueAsync<XmlReader>(15);
 
                     rdr.Read();
                     Assert.True(rdr.IsDBNullAsync(11).Result, "FAILED: IsDBNull was false for a null value");
