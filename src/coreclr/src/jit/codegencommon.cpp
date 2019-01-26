@@ -2039,10 +2039,6 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 #ifdef DEBUG
     genInterruptibleUsed = true;
 
-#if STACK_PROBES
-    genNeedPrologStackProbe = false;
-#endif
-
     compiler->fgDebugCheckBBlist();
 #endif // DEBUG
 
@@ -7869,21 +7865,6 @@ void CodeGen::genFnProlog()
         intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SECRET_STUB_PARAM;
     }
 
-#if STACK_PROBES
-    // We could probably fold this into the loop for the FrameSize >= 0x3000 probing
-    // when creating the stack frame. Don't think it's worth it, though.
-    if (genNeedPrologStackProbe)
-    {
-        //
-        // Can't have a call until we have enough padding for rejit
-        //
-        genPrologPadForReJit();
-        noway_assert(compiler->opts.compNeedStackProbes);
-        genGenerateStackProbe();
-        compiler->compStackProbePrologDone = true;
-    }
-#endif // STACK_PROBES
-
     //
     // Zero out the frame as needed
     //
@@ -9732,24 +9713,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-
-#if STACK_PROBES
-void CodeGen::genGenerateStackProbe()
-{
-    noway_assert(compiler->opts.compNeedStackProbes);
-
-    // If this assert fires, it means somebody has changed the value
-    // CORINFO_STACKPROBE_DEPTH.
-    // Why does the EE need such a deep probe? It should just need a couple
-    // of bytes, to set up a frame in the unmanaged code..
-
-    static_assert_no_msg(CORINFO_STACKPROBE_DEPTH + JIT_RESERVED_STACK < compiler->eeGetPageSize());
-
-    JITDUMP("Emitting stack probe:\n");
-    getEmitter()->emitIns_AR_R(INS_TEST, EA_PTRSIZE, REG_EAX, REG_SPBASE,
-                               -(CORINFO_STACKPROBE_DEPTH + JIT_RESERVED_STACK));
-}
-#endif // STACK_PROBES
 
 #if defined(_TARGET_XARCH_)
 // Save compCalleeFPRegsPushed with the smallest register number saved at [RSP+offset], working

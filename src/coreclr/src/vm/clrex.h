@@ -12,11 +12,6 @@
 #ifndef _CLREX_H_
 #define _CLREX_H_
 
-// BCL classnativelib includes <ex.h> first
-#ifndef VM_NO_SO_INFRASTRUCTURE_CODE
-#define VM_NO_SO_INFRASTRUCTURE_CODE(x) x
-#endif
-
 #include <ex.h>
 
 #include "runtimeexceptionkind.h"
@@ -793,7 +788,7 @@ class EEFileLoadException : public EEException
 #define SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr)      ((expr == TRUE) && \
                                                      (g_pConfig->LegacyCorruptedStateExceptionsPolicy() == false) && \
                                                      (CEHelper::IsProcessCorruptedStateException(GetCurrentExceptionCode(), FALSE) ||     \
-                                                     ((!__state.DidCatchSO()) && (!__state.DidCatchCxx()) && \
+                                                     (!__state.DidCatchCxx() && \
                                                       CEHelper::IsLastActiveExceptionCorrupting(TRUE))))
 
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
@@ -898,8 +893,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 //
 #undef EX_ENDTRY
 #define EX_ENDTRY                                           \
-    PAL_CPP_ENDTRY                                          \
-    _ASSERTE(!__state.DidCatchSO());
+    PAL_CPP_ENDTRY
 
 
 // CLRException::GetErrorInfo below invokes GetComIPFromObjectRef 
