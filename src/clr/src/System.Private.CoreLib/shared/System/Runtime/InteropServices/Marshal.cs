@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -28,6 +30,8 @@ namespace System.Runtime.InteropServices
         /// The max DBCS character size for the system.
         /// </summary>
         public static readonly int SystemMaxDBCSCharSize = GetSystemMaxDBCSCharSize();
+
+        public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((IntPtr)cb);
 
         public static unsafe string PtrToStringAnsi(IntPtr ptr)
         {
@@ -578,6 +582,25 @@ namespace System.Runtime.InteropServices
             return GetExceptionForHRInternal(errorCode, errorInfo);
         }
 
+        /// <summary>
+        /// Throws a CLR exception based on the HRESULT.
+        /// </summary>
+        public static void ThrowExceptionForHR(int errorCode)
+        {
+            if (errorCode < 0)
+            {
+                throw GetExceptionForHR(errorCode, IntPtr.Zero);
+            }
+        }
+
+        public static void ThrowExceptionForHR(int errorCode, IntPtr errorInfo)
+        {
+            if (errorCode < 0)
+            {
+                throw GetExceptionForHR(errorCode, errorInfo);
+            }
+        }
+
         public static IntPtr SecureStringToBSTR(SecureString s)
         {
             if (s == null)
@@ -647,6 +670,47 @@ namespace System.Runtime.InteropServices
             return type.GUID;
         }
 
+        /// <summary>
+        /// This method generates a PROGID for the specified type. If the type has
+        /// a PROGID in the metadata then it is returned otherwise a stable PROGID
+        /// is generated based on the fully qualified name of the type.
+        /// </summary>
+        public static string GenerateProgIdForType(Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+            if (type.IsImport)
+            {
+                throw new ArgumentException(SR.Argument_TypeMustNotBeComImport, nameof(type));
+            }
+            if (type.IsGenericType)
+            {
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
+            }
+
+            foreach (CustomAttributeData cad in type.GetCustomAttributesData())
+            {
+                if (cad.Constructor.DeclaringType == typeof(ProgIdAttribute))
+                {
+                    // Retrieve the PROGID string from the ProgIdAttribute.
+                    IList<CustomAttributeTypedArgument> caConstructorArgs = cad.ConstructorArguments;
+                    Debug.Assert(caConstructorArgs.Count == 1, "caConstructorArgs.Count == 1");
+
+                    CustomAttributeTypedArgument progIdConstructorArg = caConstructorArgs[0];
+                    Debug.Assert(progIdConstructorArg.ArgumentType == typeof(string), "progIdConstructorArg.ArgumentType == typeof(string)");
+
+                    string strProgId = (string)progIdConstructorArg.Value;
+
+                    return strProgId ?? string.Empty;
+                }
+            }
+
+            // If there is no prog ID attribute then use the full name of the type as the prog id.
+            return type.FullName;
+        }
+
         public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t)
         {
             if (ptr == IntPtr.Zero)
@@ -694,5 +758,18 @@ namespace System.Runtime.InteropServices
         {
             return GetFunctionPointerForDelegate((Delegate)(object)d);
         }
+
+        public static int GetHRForLastWin32Error()
+        {
+            int dwLastError = GetLastWin32Error();
+            if ((dwLastError & 0x80000000) == 0x80000000)
+            {
+                return dwLastError;
+            }
+
+            return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
+        }
+
+        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
     }
 }
