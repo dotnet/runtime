@@ -43,6 +43,9 @@ namespace System.IO.Tests
 
             if (!HasNonZeroNanoseconds(fileinfo.LastWriteTime))
             {
+                if (PlatformDetection.IsOSX)
+                    return null;
+
                 DateTime dt = fileinfo.LastWriteTime;
                 dt = dt.AddTicks(1);
                 fileinfo.LastWriteTime = dt;
@@ -119,6 +122,9 @@ namespace System.IO.Tests
         public void CopyToNanosecondsPresent()
         {
             FileInfo input = GetNonZeroNanoseconds();
+            if (input == null)
+                return;
+
             FileInfo output = new FileInfo(Path.Combine(GetTestFilePath(), input.Name));
 
             output.Directory.Create();
