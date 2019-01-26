@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{AAADA5D3-CF64-4E9D-943C-EFDC006D6366}</ProjectGuid>
     <RootNamespace>System.Threading.Channels</RootNamespace>
@@ -39,7 +39,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Threading.ThreadPool"  Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
