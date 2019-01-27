@@ -111,7 +111,7 @@ static uint32_t NetSecurityNative_DisplayStatus(uint32_t* minorStatus,
     assert(minorStatus != NULL);
     assert(outBuffer != NULL);
 
-    uint32_t messageContext;
+    uint32_t messageContext = 0; // Must initialize to 0 before calling gss_display_status.
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
     uint32_t majorStatus =
         gss_display_status(minorStatus, statusValue, statusType, GSS_C_NO_OID, &messageContext, &gssBuffer);
