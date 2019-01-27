@@ -147,7 +147,7 @@ namespace System.Threading.Tasks
         public Task Completion
         {
             // ValueLock not needed, but it's ok if it's held
-            get { return EnsureCompletionStateInitialized().Task; }
+            get { return EnsureCompletionStateInitialized(); }
         }
 
         /// <summary>Gets the lazily-initialized completion state.</summary>
@@ -214,12 +214,12 @@ namespace System.Threading.Tasks
                 ThreadPool.QueueUserWorkItem(state =>
                 {
                     var localThis = (ConcurrentExclusiveSchedulerPair)state;
-                    Debug.Assert(!localThis.m_completionState.Task.IsCompleted, "Completion should only happen once.");
+                    Debug.Assert(!localThis.m_completionState.IsCompleted, "Completion should only happen once.");
 
                     List<Exception> exceptions = localThis.m_completionState.m_exceptions;
                     bool success = (exceptions != null && exceptions.Count > 0) ?
                         localThis.m_completionState.TrySetException(exceptions) :
-                        localThis.m_completionState.TrySetResult(default);
+                        localThis.m_completionState.TrySetResult();
                     Debug.Assert(success, "Expected to complete completion task.");
 
                     localThis.m_threadProcessingMode.Dispose();
@@ -479,7 +479,7 @@ namespace System.Threading.Tasks
         /// the Completion.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses")]
-        private sealed class CompletionState : TaskCompletionSource<VoidTaskResult>
+        private sealed class CompletionState : Task
         {
             /// <summary>Whether the scheduler has had completion requested.</summary>
             /// <remarks>This variable is not volatile, so to gurantee safe reading reads, Volatile.Read is used in TryExecuteTaskInline.</remarks>
@@ -741,7 +741,7 @@ namespace System.Threading.Tasks
             get
             {
                 // If our completion task is done, so are we.
-                if (m_completionState != null && m_completionState.Task.IsCompleted) return ProcessingMode.Completed;
+                if (m_completionState != null && m_completionState.IsCompleted) return ProcessingMode.Completed;
 
                 // Otherwise, summarize our current state.
                 var mode = ProcessingMode.NotCurrentlyProcessing;

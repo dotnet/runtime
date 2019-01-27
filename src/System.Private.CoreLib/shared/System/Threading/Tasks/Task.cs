@@ -3192,6 +3192,113 @@ namespace System.Threading.Tasks
             m_stateFlags |= TASK_STATE_CANCELLATIONACKNOWLEDGED;
         }
 
+        /// <summary>Completes a promise task as RanToCompletion.</summary>
+        /// <remarks>If this is a Task{T}, default(T) is the implied result.</remarks>
+        /// <returns>true if the task was transitioned to ran to completion; false if it was already completed.</returns>
+        internal bool TrySetResult()
+        {
+            Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
+
+            if (AtomicStateUpdate(
+                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION,
+                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
+            {
+                ContingentProperties props = m_contingentProperties;
+                if (props != null)
+                {
+                    NotifyParentIfPotentiallyAttachedTask();
+                    props.SetCompleted();
+                }
+                FinishContinuations();
+                return true;
+            }
+
+            return false;
+        }
+
+        // Allow multiple exceptions to be assigned to a promise-style task.
+        // This is useful when a TaskCompletionSource<T> stands in as a proxy
+        // for a "real" task (as we do in Unwrap(), ContinueWhenAny() and ContinueWhenAll())
+        // and the "real" task ends up with multiple exceptions, which is possible when
+        // a task has children.
+        //
+        // Called from TaskCompletionSource<T>.SetException(IEnumerable<Exception>).
+        internal bool TrySetException(object exceptionObject)
+        {
+            Debug.Assert(m_action == null, "Task<T>.TrySetException(): non-null m_action");
+
+            // TCS.{Try}SetException() should have checked for this
+            Debug.Assert(exceptionObject != null, "Expected non-null exceptionObject argument");
+
+            // Only accept these types.
+            Debug.Assert(
+                (exceptionObject is Exception) || (exceptionObject is IEnumerable<Exception>) ||
+                (exceptionObject is ExceptionDispatchInfo) || (exceptionObject is IEnumerable<ExceptionDispatchInfo>),
+                "Expected exceptionObject to be either Exception, ExceptionDispatchInfo, or IEnumerable<> of one of those");
+
+            bool returnValue = false;
+
+            // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
+            // has been made, (2) The result has not already been set, (3) An exception has not previously 
+            // been recorded, and (4) Cancellation has not been requested.
+            //
+            // If the reservation is successful, then add the exception(s) and finish completion processing.
+            //
+            // The lazy initialization may not be strictly necessary, but I'd like to keep it here
+            // anyway.  Some downstream logic may depend upon an inflated m_contingentProperties.
+            EnsureContingentPropertiesInitialized();
+            if (AtomicStateUpdate(
+                TASK_STATE_COMPLETION_RESERVED,
+                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
+            {
+                AddException(exceptionObject); // handles singleton exception or exception collection
+                Finish(false);
+                returnValue = true;
+            }
+
+            return returnValue;
+        }
+
+        // internal helper function breaks out logic used by TaskCompletionSource and AsyncMethodBuilder
+        // If the tokenToRecord is not None, it will be stored onto the task.
+        // This method is only valid for promise tasks.
+        internal bool TrySetCanceled(CancellationToken tokenToRecord)
+        {
+            return TrySetCanceled(tokenToRecord, null);
+        }
+
+        // internal helper function breaks out logic used by TaskCompletionSource and AsyncMethodBuilder
+        // If the tokenToRecord is not None, it will be stored onto the task.
+        // If the OperationCanceledException is not null, it will be stored into the task's exception holder.
+        // This method is only valid for promise tasks.
+        internal bool TrySetCanceled(CancellationToken tokenToRecord, object cancellationException)
+        {
+            Debug.Assert(m_action == null, "Task<T>.TrySetCanceled(): non-null m_action");
+            Debug.Assert(
+                cancellationException == null ||
+                cancellationException is OperationCanceledException ||
+                (cancellationException as ExceptionDispatchInfo)?.SourceException is OperationCanceledException,
+                "Expected null or an OperationCanceledException");
+
+            bool returnValue = false;
+
+            // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
+            // has been made, (2) The result has not already been set, (3) An exception has not previously 
+            // been recorded, and (4) Cancellation has not been requested.
+            //
+            // If the reservation is successful, then record the cancellation and finish completion processing.
+            if (AtomicStateUpdate(
+                TASK_STATE_COMPLETION_RESERVED,
+                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_CANCELED | TASK_STATE_FAULTED | TASK_STATE_RAN_TO_COMPLETION))
+            {
+                RecordInternalCancellationRequest(tokenToRecord, cancellationException);
+                CancellationCleanupLogic(); // perform cancellation cleanup actions
+                returnValue = true;
+            }
+
+            return returnValue;
+        }
+
 
         //
         // Continuation passing functionality (aka ContinueWith)
@@ -5054,7 +5161,12 @@ namespace System.Threading.Tasks
         /// <returns>The faulted task.</returns>
         public static Task FromException(Exception exception)
         {
-            return FromException<VoidTaskResult>(exception);
+            if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
+
+            var task = new Task();
+            bool succeeded = task.TrySetException(exception);
+            Debug.Assert(succeeded, "This should always succeed on a new task.");
+            return task;
         }
 
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed exceptionally with the specified exception.</summary>
@@ -5092,13 +5204,26 @@ namespace System.Threading.Tasks
             return new Task<TResult>(true, default, TaskCreationOptions.None, cancellationToken);
         }
 
+        /// <summary>Creates a <see cref="Task"/> that's completed due to cancellation with the specified exception.</summary>
+        /// <param name="exception">The exception with which to complete the task.</param>
+        /// <returns>The canceled task.</returns>
+        internal static Task FromCanceled(OperationCanceledException exception)
+        {
+            Debug.Assert(exception != null);
+
+            var task = new Task();
+            bool succeeded = task.TrySetCanceled(exception.CancellationToken, exception);
+            Debug.Assert(succeeded, "This should always succeed on a new task.");
+            return task;
+        }
+
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed due to cancellation with the specified exception.</summary>
         /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
         /// <param name="exception">The exception with which to complete the task.</param>
         /// <returns>The canceled task.</returns>
-        internal static Task<TResult> FromCancellation<TResult>(OperationCanceledException exception)
+        internal static Task<TResult> FromCanceled<TResult>(OperationCanceledException exception)
         {
-            if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
+            Debug.Assert(exception != null);
 
             var task = new Task<TResult>();
             bool succeeded = task.TrySetCanceled(exception.CancellationToken, exception);
@@ -5389,10 +5514,9 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Task that also stores the completion closure and logic for Task.Delay implementation.</summary>
-        private sealed class DelayPromise : Task<VoidTaskResult>
+        private sealed class DelayPromise : Task
         {
             internal DelayPromise(CancellationToken token)
-                : base()
             {
                 this.Token = token;
                 if (AsyncCausalityTracer.LoggingOn)
@@ -5423,7 +5547,7 @@ namespace System.Threading.Tasks
                     if (s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
 
-                    setSucceeded = TrySetResult(default);
+                    setSucceeded = TrySetResult();
                 }
 
                 // If we set the value, also clean up.
@@ -5555,10 +5679,10 @@ namespace System.Threading.Tasks
                 new WhenAllPromise(tasks);
         }
 
-        // A Task<VoidTaskResult> that gets completed when all of its constituent tasks complete.
+        // A Task that gets completed when all of its constituent tasks complete.
         // Completion logic will analyze the antecedents in order to choose completion status.
         // This type allows us to replace this logic:
-        //      Task<VoidTaskResult> promise = new Task<VoidTaskResult>(...);
+        //      Task promise = new Task(...);
         //      Action<Task> completionAction = delegate { <completion logic>};
         //      TaskFactory.CommonCWAllLogic(tasksCopy).AddCompletionAction(completionAction);
         //      return promise;
@@ -5567,7 +5691,7 @@ namespace System.Threading.Tasks
         // which saves a couple of allocations and enables debugger notification specialization.
         //
         // Used in InternalWhenAll(Task[])
-        private sealed class WhenAllPromise : Task<VoidTaskResult>, ITaskCompletionAction
+        private sealed class WhenAllPromise : Task, ITaskCompletionAction
         {
             /// <summary>
             /// Stores all of the constituent tasks.  Tasks clear themselves out of this
@@ -5577,8 +5701,7 @@ namespace System.Threading.Tasks
             /// <summary>The number of tasks remaining to complete.</summary>
             private int m_count;
 
-            internal WhenAllPromise(Task[] tasks) :
-                base()
+            internal WhenAllPromise(Task[] tasks)
             {
                 Debug.Assert(tasks != null, "Expected a non-null task array");
                 Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
@@ -5656,7 +5779,7 @@ namespace System.Threading.Tasks
                         if (s_asyncDebuggingEnabled)
                             RemoveFromActiveTasks(this);
 
-                        TrySetResult(default);
+                        TrySetResult();
                     }
                 }
                 Debug.Assert(m_count >= 0, "Count should never go below 0");
