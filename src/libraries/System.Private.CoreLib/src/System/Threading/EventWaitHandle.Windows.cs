@@ -89,5 +89,10 @@ namespace System.Threading
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return res;
         }
+
+        internal static bool Set(SafeWaitHandle waitHandle)
+        {
+            return Interop.Kernel32.SetEvent(waitHandle);
+        }
     }
 }

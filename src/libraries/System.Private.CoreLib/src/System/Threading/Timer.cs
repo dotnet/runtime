@@ -3,20 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.Augments;
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+
+using Thread = Internal.Runtime.Augments.RuntimeThread;
 
 namespace System.Threading
 {
     public delegate void TimerCallback(object state);
 
-    // TimerQueue maintains a list of active timers in this AppDomain.  We use a single native timer, supplied by the VM,
-    // to schedule all managed timers in the AppDomain.
+    // TimerQueue maintains a list of active timers.  We use a single native timer to schedule all managed timers
+    // in the process.
     //
     // Perf assumptions:  We assume that timers are created and destroyed frequently, but rarely actually fire.
     // There are roughly two types of timer:
@@ -39,16 +37,11 @@ namespace System.Threading
     // Note that all instance methods of this class require that the caller hold a lock on the TimerQueue instance.
     // We partition the timers across multiple TimerQueues, each with its own lock and set of short/long lists,
     // in order to minimize contention when lots of threads are concurrently creating and destroying timers often.
-    internal class TimerQueue
+    internal partial class TimerQueue
     {
         #region Shared TimerQueue instances
 
         public static TimerQueue[] Instances { get; } = CreateTimerQueues();
-
-        private TimerQueue(int id)
-        {
-            m_id = id;
-        }
 
         private static TimerQueue[] CreateTimerQueues()
         {
@@ -62,61 +55,13 @@ namespace System.Threading
 
         #endregion
 
-        #region interface to native per-AppDomain timer
+        #region interface to native timer
 
-        private static int TickCount
-        {
-            get
-            {
-#if !FEATURE_PAL
-                // We need to keep our notion of time synchronized with the calls to SleepEx that drive
-                // the underlying native timer.  In Win8, SleepEx does not count the time the machine spends
-                // sleeping/hibernating.  Environment.TickCount (GetTickCount) *does* count that time,
-                // so we will get out of sync with SleepEx if we use that method.
-                //
-                // So, on Win8, we use QueryUnbiasedInterruptTime instead; this does not count time spent
-                // in sleep/hibernate mode.
-                if (Environment.IsWindows8OrAbove)
-                {
-                    ulong time100ns;
+        private bool _isTimerScheduled;
+        private int _currentTimerStartTicks;
+        private uint _currentTimerDuration;
 
-                    bool result = Win32Native.QueryUnbiasedInterruptTime(out time100ns);
-                    if (!result)
-                        throw Marshal.GetExceptionForHR(Marshal.GetLastWin32Error());
-
-                    // convert to 100ns to milliseconds, and truncate to 32 bits.
-                    return (int)(uint)(time100ns / 10000);
-                }
-                else
-#endif
-                {
-                    return Environment.TickCount;
-                }
-            }
-        }
-
-        // We use a SafeHandle to ensure that the native timer is destroyed when the AppDomain is unloaded.
-        private sealed class AppDomainTimerSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
-        {
-            public AppDomainTimerSafeHandle()
-                : base(true)
-            {
-            }
-
-            protected override bool ReleaseHandle()
-            {
-                return DeleteAppDomainTimer(handle);
-            }
-        }
-
-        private readonly int m_id; // TimerQueues[m_id] == this
-        private AppDomainTimerSafeHandle m_appDomainTimer;
-
-        private bool m_isAppDomainTimerScheduled;
-        private int m_currentAppDomainTimerStartTicks;
-        private uint m_currentAppDomainTimerDuration;
-
-        private bool EnsureAppDomainTimerFiresBy(uint requestedDuration)
+        private bool EnsureTimerFiresBy(uint requestedDuration)
         {
             // The VM's timer implementation does not work well for very long-duration timers.
             // See kb 950807.
@@ -127,103 +72,63 @@ namespace System.Threading
             const uint maxPossibleDuration = 0x0fffffff;
             uint actualDuration = Math.Min(requestedDuration, maxPossibleDuration);
 
-            if (m_isAppDomainTimerScheduled)
+            if (_isTimerScheduled)
             {
-                uint elapsed = (uint)(TickCount - m_currentAppDomainTimerStartTicks);
-                if (elapsed >= m_currentAppDomainTimerDuration)
+                uint elapsed = (uint)(TickCount - _currentTimerStartTicks);
+                if (elapsed >= _currentTimerDuration)
                     return true; //the timer's about to fire
 
-                uint remainingDuration = m_currentAppDomainTimerDuration - elapsed;
+                uint remainingDuration = _currentTimerDuration - elapsed;
                 if (actualDuration >= remainingDuration)
                     return true; //the timer will fire earlier than this request
             }
 
             // If Pause is underway then do not schedule the timers
             // A later update during resume will re-schedule
-            if (m_pauseTicks != 0)
+            if (_pauseTicks != 0)
             {
-                Debug.Assert(!m_isAppDomainTimerScheduled);
-                Debug.Assert(m_appDomainTimer == null);
+                Debug.Assert(!_isTimerScheduled);
                 return true;
             }
 
-            if (m_appDomainTimer == null || m_appDomainTimer.IsInvalid)
+            if (SetTimer(actualDuration))
             {
-                Debug.Assert(!m_isAppDomainTimerScheduled);
-                Debug.Assert(m_id >= 0 && m_id < Instances.Length && this == Instances[m_id]);
-
-                m_appDomainTimer = CreateAppDomainTimer(actualDuration, m_id);
-                if (!m_appDomainTimer.IsInvalid)
-                {
-                    m_isAppDomainTimerScheduled = true;
-                    m_currentAppDomainTimerStartTicks = TickCount;
-                    m_currentAppDomainTimerDuration = actualDuration;
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                _isTimerScheduled = true;
+                _currentTimerStartTicks = TickCount;
+                _currentTimerDuration = actualDuration;
+                return true;
             }
-            else
-            {
-                if (ChangeAppDomainTimer(m_appDomainTimer, actualDuration))
-                {
-                    m_isAppDomainTimerScheduled = true;
-                    m_currentAppDomainTimerStartTicks = TickCount;
-                    m_currentAppDomainTimerDuration = actualDuration;
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
+
+            return false;
         }
-
-        // The VM calls this when a native timer fires.
-        internal static void AppDomainTimerCallback(int id)
-        {
-            Debug.Assert(id >= 0 && id < Instances.Length && Instances[id].m_id == id);
-            Instances[id].FireNextTimers();
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern AppDomainTimerSafeHandle CreateAppDomainTimer(uint dueTime, int id);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool ChangeAppDomainTimer(AppDomainTimerSafeHandle handle, uint dueTime);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool DeleteAppDomainTimer(IntPtr handle);
 
         #endregion
 
         #region Firing timers
 
         // The two lists of timers that are part of this TimerQueue.  They conform to a single guarantee:
-        // no timer in m_longTimers has an absolute next firing time <= m_currentAbsoluteThreshold.
+        // no timer in _longTimers has an absolute next firing time <= _currentAbsoluteThreshold.
         // That way, when FireNextTimers is invoked, we always process the short list, and we then only
-        // process the long list if the current time is greater than m_currentAbsoluteThreshold (or
+        // process the long list if the current time is greater than _currentAbsoluteThreshold (or
         // if the short list is now empty and we need to process the long list to know when to next
         // invoke FireNextTimers).
-        private TimerQueueTimer m_shortTimers;
-        private TimerQueueTimer m_longTimers;
+        private TimerQueueTimer _shortTimers;
+        private TimerQueueTimer _longTimers;
 
         // The current threshold, an absolute time where any timers scheduled to go off at or
         // before this time must be queued to the short list.
-        private int m_currentAbsoluteThreshold = ShortTimersThresholdMilliseconds;
+        private int _currentAbsoluteThreshold = ShortTimersThresholdMilliseconds;
 
-        // Default threshold that separates which timers target m_shortTimers vs m_longTimers. The threshold
+        // Default threshold that separates which timers target _shortTimers vs _longTimers. The threshold
         // is chosen to balance the number of timers in the small list against the frequency with which
         // we need to scan the long list.  It's thus somewhat arbitrary and could be changed based on
         // observed workload demand. The larger the number, the more timers we'll likely need to enumerate
-        // every time the appdomain timer fires, but also the more likely it is that when it does we won't
-        // need to look at the long list because the current time will be <= m_currentAbsoluteThreshold.
+        // every time the timer fires, but also the more likely it is that when it does we won't
+        // need to look at the long list because the current time will be <= _currentAbsoluteThreshold.
         private const int ShortTimersThresholdMilliseconds = 333;
 
         // Time when Pause was called
-        private volatile int m_pauseTicks = 0;
+        private volatile int _pauseTicks = 0;
 
         // Fire any timers that have expired, and update the native timer to schedule the rest of them.
         // We're in a thread pool work item here, and if there are multiple timers to be fired, we want
@@ -237,10 +142,10 @@ namespace System.Threading
 
             lock (this)
             {
-                // Since we got here, that means our previous appdomain timer has fired.
-                m_isAppDomainTimerScheduled = false;
+                // Since we got here, that means our previous timer has fired.
+                _isTimerScheduled = false;
                 bool haveTimerToSchedule = false;
-                uint nextAppDomainTimerDuration = uint.MaxValue;
+                uint nextTimerDuration = uint.MaxValue;
 
                 int nowTicks = TickCount;
 
@@ -249,24 +154,24 @@ namespace System.Threading
                 // of sweeping the long timers, move anything that'll fire within the next threshold
                 // to the short list.  It's functionally ok if more timers end up in the short list
                 // than is truly necessary (but not the opposite).
-                TimerQueueTimer timer = m_shortTimers;
+                TimerQueueTimer timer = _shortTimers;
                 for (int listNum = 0; listNum < 2; listNum++) // short == 0, long == 1
                 {
                     while (timer != null)
                     {
-                        Debug.Assert(timer.m_dueTime != Timeout.UnsignedInfinite, "A timer in the list must have a valid due time.");
+                        Debug.Assert(timer._dueTime != Timeout.UnsignedInfinite, "A timer in the list must have a valid due time.");
 
                         // Save off the next timer to examine, in case our examination of this timer results
                         // in our deleting or moving it; we'll continue after with this saved next timer.
-                        TimerQueueTimer next = timer.m_next;
+                        TimerQueueTimer next = timer._next;
 
-                        uint elapsed = (uint)(nowTicks - timer.m_startTicks);
-                        int remaining = (int)timer.m_dueTime - (int)elapsed;
+                        uint elapsed = (uint)(nowTicks - timer._startTicks);
+                        int remaining = (int)timer._dueTime - (int)elapsed;
                         if (remaining <= 0)
                         {
                             // Timer is ready to fire.
 
-                            if (timer.m_period != Timeout.UnsignedInfinite)
+                            if (timer._period != Timeout.UnsignedInfinite)
                             {
                                 // This is a repeating timer; schedule it to run again.
 
@@ -274,17 +179,17 @@ namespace System.Threading
                                 // prevent timer ticks from drifting.  If enough time has already elapsed for the timer to fire
                                 // again, meaning the timer can't keep up with the short period, have it fire 1 ms from now to
                                 // avoid spinning without a delay.
-                                timer.m_startTicks = nowTicks;
-                                uint elapsedForNextDueTime = elapsed - timer.m_dueTime;
-                                timer.m_dueTime = (elapsedForNextDueTime < timer.m_period) ?
-                                    timer.m_period - elapsedForNextDueTime :
+                                timer._startTicks = nowTicks;
+                                uint elapsedForNextDueTime = elapsed - timer._dueTime;
+                                timer._dueTime = (elapsedForNextDueTime < timer._period) ?
+                                    timer._period - elapsedForNextDueTime :
                                     1;
 
-                                // Update the appdomain timer if this becomes the next timer to fire.
-                                if (timer.m_dueTime < nextAppDomainTimerDuration)
+                                // Update the timer if this becomes the next timer to fire.
+                                if (timer._dueTime < nextTimerDuration)
                                 {
                                     haveTimerToSchedule = true;
-                                    nextAppDomainTimerDuration = timer.m_dueTime;
+                                    nextTimerDuration = timer._dueTime;
                                 }
 
                                 // Validate that the repeating timer is still on the right list.  It's likely that
@@ -295,8 +200,8 @@ namespace System.Threading
                                 // updated the due time appropriately so that we won't fire it again (it's also possible
                                 // but rare that we could be moving a timer from the long list to the short list here,
                                 // if the initial due time was set to be long but the timer then had a short period).
-                                bool targetShortList = (nowTicks + timer.m_dueTime) - m_currentAbsoluteThreshold <= 0;
-                                if (timer.m_short != targetShortList)
+                                bool targetShortList = (nowTicks + timer._dueTime) - _currentAbsoluteThreshold <= 0;
+                                if (timer._short != targetShortList)
                                 {
                                     MoveTimerToCorrectList(timer, targetShortList);
                                 }
@@ -323,13 +228,13 @@ namespace System.Threading
                             // This timer isn't ready to fire.  Update the next time the native timer fires if necessary,
                             // and move this timer to the short list if its remaining time is now at or under the threshold.
 
-                            if (remaining < nextAppDomainTimerDuration)
+                            if (remaining < nextTimerDuration)
                             {
                                 haveTimerToSchedule = true;
-                                nextAppDomainTimerDuration = (uint)remaining;
+                                nextTimerDuration = (uint)remaining;
                             }
 
-                            if (!timer.m_short && remaining <= ShortTimersThresholdMilliseconds)
+                            if (!timer._short && remaining <= ShortTimersThresholdMilliseconds)
                             {
                                 MoveTimerToCorrectList(timer, shortList: true);
                             }
@@ -345,38 +250,38 @@ namespace System.Threading
                         // we can skip processing the long list.  We use > rather than >= because, although we
                         // know that if remaining == 0 no timers in the long list will need to be fired, we
                         // don't know without looking at them when we'll need to call FireNextTimers again.  We
-                        // could in that case just set the next appdomain firing to 1, but we may as well just iterate the
+                        // could in that case just set the next firing to 1, but we may as well just iterate the
                         // long list now; otherwise, most timers created in the interim would end up in the long
                         // list and we'd likely end up paying for another invocation of FireNextTimers that could
                         // have been delayed longer (to whatever is the current minimum in the long list).
-                        int remaining = m_currentAbsoluteThreshold - nowTicks;
+                        int remaining = _currentAbsoluteThreshold - nowTicks;
                         if (remaining > 0)
                         {
-                            if (m_shortTimers == null && m_longTimers != null)
+                            if (_shortTimers == null && _longTimers != null)
                             {
                                 // We don't have any short timers left and we haven't examined the long list,
-                                // which means we likely don't have an accurate nextAppDomainTimerDuration.
-                                // But we do know that nothing in the long list will be firing before or at m_currentAbsoluteThreshold,
-                                // so we can just set nextAppDomainTimerDuration to the difference between then and now.
-                                nextAppDomainTimerDuration = (uint)remaining + 1;
+                                // which means we likely don't have an accurate nextTimerDuration.
+                                // But we do know that nothing in the long list will be firing before or at _currentAbsoluteThreshold,
+                                // so we can just set nextTimerDuration to the difference between then and now.
+                                nextTimerDuration = (uint)remaining + 1;
                                 haveTimerToSchedule = true;
                             }
                             break;
                         }
 
                         // Switch to processing the long list.
-                        timer = m_longTimers;
+                        timer = _longTimers;
 
                         // Now that we're going to process the long list, update the current threshold.
-                        m_currentAbsoluteThreshold = nowTicks + ShortTimersThresholdMilliseconds;
+                        _currentAbsoluteThreshold = nowTicks + ShortTimersThresholdMilliseconds;
                     }
                 }
 
-                // If we still have scheduled timers, update the appdomain timer to ensure it fires
+                // If we still have scheduled timers, update the timer to ensure it fires
                 // in time for the next one in line.
                 if (haveTimerToSchedule)
                 {
-                    EnsureAppDomainTimerFiresBy(nextAppDomainTimerDuration);
+                    EnsureTimerFiresBy(nextTimerDuration);
                 }
             }
 
@@ -395,76 +300,76 @@ namespace System.Threading
             // The timer can be put onto the short list if it's next absolute firing time
             // is <= the current absolute threshold.
             int absoluteDueTime = (int)(nowTicks + dueTime);
-            bool shouldBeShort = m_currentAbsoluteThreshold - absoluteDueTime >= 0;
+            bool shouldBeShort = _currentAbsoluteThreshold - absoluteDueTime >= 0;
 
-            if (timer.m_dueTime == Timeout.UnsignedInfinite)
+            if (timer._dueTime == Timeout.UnsignedInfinite)
             {
                 // If the timer wasn't previously scheduled, now add it to the right list.
-                timer.m_short = shouldBeShort;
+                timer._short = shouldBeShort;
                 LinkTimer(timer);
             }
-            else if (timer.m_short != shouldBeShort)
+            else if (timer._short != shouldBeShort)
             {
                 // If the timer was previously scheduled, but this update should cause
                 // it to move over the list threshold in either direction, do so.
                 UnlinkTimer(timer);
-                timer.m_short = shouldBeShort;
+                timer._short = shouldBeShort;
                 LinkTimer(timer);
             }
 
-            timer.m_dueTime = dueTime;
-            timer.m_period = (period == 0) ? Timeout.UnsignedInfinite : period;
-            timer.m_startTicks = nowTicks;
-            return EnsureAppDomainTimerFiresBy(dueTime);
+            timer._dueTime = dueTime;
+            timer._period = (period == 0) ? Timeout.UnsignedInfinite : period;
+            timer._startTicks = nowTicks;
+            return EnsureTimerFiresBy(dueTime);
         }
 
         public void MoveTimerToCorrectList(TimerQueueTimer timer, bool shortList)
         {
-            Debug.Assert(timer.m_dueTime != Timeout.UnsignedInfinite, "Expected timer to be on a list.");
-            Debug.Assert(timer.m_short != shortList, "Unnecessary if timer is already on the right list.");
+            Debug.Assert(timer._dueTime != Timeout.UnsignedInfinite, "Expected timer to be on a list.");
+            Debug.Assert(timer._short != shortList, "Unnecessary if timer is already on the right list.");
 
             // Unlink it from whatever list it's on, change its list association, then re-link it.
             UnlinkTimer(timer);
-            timer.m_short = shortList;
+            timer._short = shortList;
             LinkTimer(timer);
         }
 
         private void LinkTimer(TimerQueueTimer timer)
         {
-            // Use timer.m_short to decide to which list to add.
-            ref TimerQueueTimer listHead = ref timer.m_short ? ref m_shortTimers : ref m_longTimers;
-            timer.m_next = listHead;
-            if (timer.m_next != null)
+            // Use timer._short to decide to which list to add.
+            ref TimerQueueTimer listHead = ref timer._short ? ref _shortTimers : ref _longTimers;
+            timer._next = listHead;
+            if (timer._next != null)
             {
-                timer.m_next.m_prev = timer;
+                timer._next._prev = timer;
             }
-            timer.m_prev = null;
+            timer._prev = null;
             listHead = timer;
         }
 
         private void UnlinkTimer(TimerQueueTimer timer)
         {
-            TimerQueueTimer t = timer.m_next;
+            TimerQueueTimer t = timer._next;
             if (t != null)
             {
-                t.m_prev = timer.m_prev;
+                t._prev = timer._prev;
             }
 
-            if (m_shortTimers == timer)
+            if (_shortTimers == timer)
             {
-                Debug.Assert(timer.m_short);
-                m_shortTimers = t;
+                Debug.Assert(timer._short);
+                _shortTimers = t;
             }
-            else if (m_longTimers == timer)
+            else if (_longTimers == timer)
             {
-                Debug.Assert(!timer.m_short);
-                m_longTimers = t;
+                Debug.Assert(!timer._short);
+                _longTimers = t;
             }
 
-            t = timer.m_prev;
+            t = timer._prev;
             if (t != null)
             {
-                t.m_next = timer.m_next;
+                t._next = timer._next;
             }
 
             // At this point the timer is no longer in a list, but its next and prev
@@ -475,15 +380,15 @@ namespace System.Threading
 
         public void DeleteTimer(TimerQueueTimer timer)
         {
-            if (timer.m_dueTime != Timeout.UnsignedInfinite)
+            if (timer._dueTime != Timeout.UnsignedInfinite)
             {
                 UnlinkTimer(timer);
-                timer.m_prev = null;
-                timer.m_next = null;
-                timer.m_dueTime = Timeout.UnsignedInfinite;
-                timer.m_period = Timeout.UnsignedInfinite;
-                timer.m_startTicks = 0;
-                timer.m_short = false;
+                timer._prev = null;
+                timer._next = null;
+                timer._dueTime = Timeout.UnsignedInfinite;
+                timer._period = Timeout.UnsignedInfinite;
+                timer._startTicks = 0;
+                timer._short = false;
             }
         }
 
@@ -491,57 +396,57 @@ namespace System.Threading
     }
 
     // A timer in our TimerQueue.
-    internal sealed class TimerQueueTimer : IThreadPoolWorkItem
+    internal sealed partial class TimerQueueTimer : IThreadPoolWorkItem
     {
         // The associated timer queue.
-        private readonly TimerQueue m_associatedTimerQueue;
+        private readonly TimerQueue _associatedTimerQueue;
 
-        // All mutable fields of this class are protected by a lock on m_associatedTimerQueue.
+        // All mutable fields of this class are protected by a lock on _associatedTimerQueue.
         // The first six fields are maintained by TimerQueue.
 
         // Links to the next and prev timers in the list.
-        internal TimerQueueTimer m_next;
-        internal TimerQueueTimer m_prev;
+        internal TimerQueueTimer _next;
+        internal TimerQueueTimer _prev;
 
         // true if on the short list; otherwise, false.
-        internal bool m_short;
+        internal bool _short;
 
         // The time, according to TimerQueue.TickCount, when this timer's current interval started.
-        internal int m_startTicks;
+        internal int _startTicks;
 
-        // Timeout.UnsignedInfinite if we are not going to fire.  Otherwise, the offset from m_startTime when we will fire.
-        internal uint m_dueTime;
+        // Timeout.UnsignedInfinite if we are not going to fire.  Otherwise, the offset from _startTime when we will fire.
+        internal uint _dueTime;
 
         // Timeout.UnsignedInfinite if we are a single-shot timer.  Otherwise, the repeat interval.
-        internal uint m_period;
+        internal uint _period;
 
         // Info about the user's callback
-        private readonly TimerCallback m_timerCallback;
-        private readonly object m_state;
-        private readonly ExecutionContext m_executionContext;
+        private readonly TimerCallback _timerCallback;
+        private readonly object _state;
+        private readonly ExecutionContext _executionContext;
 
         // When Timer.Dispose(WaitHandle) is used, we need to signal the wait handle only
-        // after all pending callbacks are complete.  We set m_canceled to prevent any callbacks that
+        // after all pending callbacks are complete.  We set _canceled to prevent any callbacks that
         // are already queued from running.  We track the number of callbacks currently executing in 
-        // m_callbacksRunning.  We set m_notifyWhenNoCallbacksRunning only when m_callbacksRunning
+        // _callbacksRunning.  We set _notifyWhenNoCallbacksRunning only when _callbacksRunning
         // reaches zero.  Same applies if Timer.DisposeAsync() is used, except with a Task<bool>
         // instead of with a provided WaitHandle.
-        private int m_callbacksRunning;
-        private volatile bool m_canceled;
-        private volatile object m_notifyWhenNoCallbacksRunning; // may be either WaitHandle or Task<bool>
+        private int _callbacksRunning;
+        private volatile bool _canceled;
+        private volatile object _notifyWhenNoCallbacksRunning; // may be either WaitHandle or Task<bool>
 
 
         internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period, bool flowExecutionContext)
         {
-            m_timerCallback = timerCallback;
-            m_state = state;
-            m_dueTime = Timeout.UnsignedInfinite;
-            m_period = Timeout.UnsignedInfinite;
+            _timerCallback = timerCallback;
+            _state = state;
+            _dueTime = Timeout.UnsignedInfinite;
+            _period = Timeout.UnsignedInfinite;
             if (flowExecutionContext)
             {
-                m_executionContext = ExecutionContext.Capture();
+                _executionContext = ExecutionContext.Capture();
             }
-            m_associatedTimerQueue = TimerQueue.Instances[RuntimeThread.GetCurrentProcessorId() % TimerQueue.Instances.Length];
+            _associatedTimerQueue = TimerQueue.Instances[RuntimeThread.GetCurrentProcessorId() % TimerQueue.Instances.Length];
 
             // After the following statement, the timer may fire.  No more manipulation of timer state outside of
             // the lock is permitted beyond this point!
@@ -553,16 +458,16 @@ namespace System.Threading
         {
             bool success;
 
-            lock (m_associatedTimerQueue)
+            lock (_associatedTimerQueue)
             {
-                if (m_canceled)
+                if (_canceled)
                     throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
 
-                m_period = period;
+                _period = period;
 
                 if (dueTime == Timeout.UnsignedInfinite)
                 {
-                    m_associatedTimerQueue.DeleteTimer(this);
+                    _associatedTimerQueue.DeleteTimer(this);
                     success = true;
                 }
                 else
@@ -571,7 +476,7 @@ namespace System.Threading
                     if (!EventPipeController.Initializing && FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
                         FrameworkEventSource.Log.ThreadTransferSendObj(this, 1, string.Empty, true, (int)dueTime, (int)period);
 
-                    success = m_associatedTimerQueue.UpdateTimer(this, dueTime, period);
+                    success = _associatedTimerQueue.UpdateTimer(this, dueTime, period);
                 }
             }
 
@@ -581,12 +486,12 @@ namespace System.Threading
 
         public void Close()
         {
-            lock (m_associatedTimerQueue)
+            lock (_associatedTimerQueue)
             {
-                if (!m_canceled)
+                if (!_canceled)
                 {
-                    m_canceled = true;
-                    m_associatedTimerQueue.DeleteTimer(this);
+                    _canceled = true;
+                    _associatedTimerQueue.DeleteTimer(this);
                 }
             }
         }
@@ -597,18 +502,18 @@ namespace System.Threading
             bool success;
             bool shouldSignal = false;
 
-            lock (m_associatedTimerQueue)
+            lock (_associatedTimerQueue)
             {
-                if (m_canceled)
+                if (_canceled)
                 {
                     success = false;
                 }
                 else
                 {
-                    m_canceled = true;
-                    m_notifyWhenNoCallbacksRunning = toSignal;
-                    m_associatedTimerQueue.DeleteTimer(this);
-                    shouldSignal = m_callbacksRunning == 0;
+                    _canceled = true;
+                    _notifyWhenNoCallbacksRunning = toSignal;
+                    _associatedTimerQueue.DeleteTimer(this);
+                    shouldSignal = _callbacksRunning == 0;
                     success = true;
                 }
             }
@@ -621,12 +526,12 @@ namespace System.Threading
 
         public ValueTask CloseAsync()
         {
-            lock (m_associatedTimerQueue)
+            lock (_associatedTimerQueue)
             {
-                object notifyWhenNoCallbacksRunning = m_notifyWhenNoCallbacksRunning;
+                object notifyWhenNoCallbacksRunning = _notifyWhenNoCallbacksRunning;
 
                 // Mark the timer as canceled if it's not already.
-                if (m_canceled)
+                if (_canceled)
                 {
                     if (notifyWhenNoCallbacksRunning is WaitHandle)
                     {
@@ -645,13 +550,13 @@ namespace System.Threading
                 }
                 else
                 {
-                    m_canceled = true;
-                    m_associatedTimerQueue.DeleteTimer(this);
+                    _canceled = true;
+                    _associatedTimerQueue.DeleteTimer(this);
                 }
 
                 // We've deleted the timer, so if there are no callbacks queued or running,
                 // we're done and return an already-completed value task.
-                if (m_callbacksRunning == 0)
+                if (_callbacksRunning == 0)
                 {
                     return default;
                 }
@@ -666,7 +571,7 @@ namespace System.Threading
                 if (notifyWhenNoCallbacksRunning == null)
                 {
                     var t = new Task<bool>((object)null, TaskCreationOptions.RunContinuationsAsynchronously);
-                    m_notifyWhenNoCallbacksRunning = t;
+                    _notifyWhenNoCallbacksRunning = t;
                     return new ValueTask(t);
                 }
 
@@ -681,11 +586,11 @@ namespace System.Threading
         {
             bool canceled = false;
 
-            lock (m_associatedTimerQueue)
+            lock (_associatedTimerQueue)
             {
-                canceled = m_canceled;
+                canceled = _canceled;
                 if (!canceled)
-                    m_callbacksRunning++;
+                    _callbacksRunning++;
             }
 
             if (canceled)
@@ -694,10 +599,10 @@ namespace System.Threading
             CallCallback(isThreadPool);
 
             bool shouldSignal = false;
-            lock (m_associatedTimerQueue)
+            lock (_associatedTimerQueue)
             {
-                m_callbacksRunning--;
-                if (m_canceled && m_callbacksRunning == 0 && m_notifyWhenNoCallbacksRunning != null)
+                _callbacksRunning--;
+                if (_canceled && _callbacksRunning == 0 && _notifyWhenNoCallbacksRunning != null)
                     shouldSignal = true;
             }
 
@@ -707,12 +612,12 @@ namespace System.Threading
 
         internal void SignalNoCallbacksRunning()
         {
-            object toSignal = m_notifyWhenNoCallbacksRunning;
+            object toSignal = _notifyWhenNoCallbacksRunning;
             Debug.Assert(toSignal is WaitHandle || toSignal is Task<bool>);
 
             if (toSignal is WaitHandle wh)
             {
-                Interop.Kernel32.SetEvent(wh.SafeWaitHandle);
+                EventWaitHandle.Set(wh.SafeWaitHandle);
             }
             else
             {
@@ -726,10 +631,10 @@ namespace System.Threading
                 FrameworkEventSource.Log.ThreadTransferReceiveObj(this, 1, string.Empty);
 
             // Call directly if EC flow is suppressed
-            ExecutionContext context = m_executionContext;
+            ExecutionContext context = _executionContext;
             if (context == null)
             {
-                m_timerCallback(m_state);
+                _timerCallback(_state);
             }
             else
             {
@@ -747,7 +652,7 @@ namespace System.Threading
         private static readonly ContextCallback s_callCallbackInContext = state =>
         {
             TimerQueueTimer t = (TimerQueueTimer)state;
-            t.m_timerCallback(t.m_state);
+            t._timerCallback(t._state);
         };
     }
 
@@ -761,11 +666,11 @@ namespace System.Threading
     // unwittingly be changing the lifetime of those timers.
     internal sealed class TimerHolder
     {
-        internal TimerQueueTimer m_timer;
+        internal TimerQueueTimer _timer;
 
         public TimerHolder(TimerQueueTimer timer)
         {
-            m_timer = timer;
+            _timer = timer;
         }
 
         ~TimerHolder()
@@ -777,29 +682,29 @@ namespace System.Threading
             // A rude abort may have prevented us from releasing the lock.
             //
             // Note that in either case, the Timer still won't fire, because ThreadPool threads won't be
-            // allowed to run in this AppDomain.
+            // allowed to run anymore.
             if (Environment.HasShutdownStarted)
                 return;
 
-            m_timer.Close();
+            _timer.Close();
         }
 
         public void Close()
         {
-            m_timer.Close();
+            _timer.Close();
             GC.SuppressFinalize(this);
         }
 
         public bool Close(WaitHandle notifyObject)
         {
-            bool result = m_timer.Close(notifyObject);
+            bool result = _timer.Close(notifyObject);
             GC.SuppressFinalize(this);
             return result;
         }
 
         public ValueTask CloseAsync()
         {
-            ValueTask result = m_timer.CloseAsync();
+            ValueTask result = _timer.CloseAsync();
             GC.SuppressFinalize(this);
             return result;
         }
@@ -810,7 +715,7 @@ namespace System.Threading
     {
         private const uint MAX_SUPPORTED_TIMEOUT = (uint)0xfffffffe;
 
-        private TimerHolder m_timer;
+        private TimerHolder _timer;
 
         public Timer(TimerCallback callback,
                      object state,
@@ -898,7 +803,7 @@ namespace System.Threading
             if (callback == null)
                 throw new ArgumentNullException(nameof(TimerCallback));
 
-            m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, flowExecutionContext));
+            _timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, flowExecutionContext));
         }
 
         public bool Change(int dueTime, int period)
@@ -908,7 +813,7 @@ namespace System.Threading
             if (period < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
-            return m_timer.m_timer.Change((uint)dueTime, (uint)period);
+            return _timer._timer.Change((uint)dueTime, (uint)period);
         }
 
         public bool Change(TimeSpan dueTime, TimeSpan period)
@@ -919,7 +824,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public bool Change(uint dueTime, uint period)
         {
-            return m_timer.m_timer.Change(dueTime, period);
+            return _timer._timer.Change(dueTime, period);
         }
 
         public bool Change(long dueTime, long period)
@@ -933,7 +838,7 @@ namespace System.Threading
             if (period > MAX_SUPPORTED_TIMEOUT)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
 
-            return m_timer.m_timer.Change((uint)dueTime, (uint)period);
+            return _timer._timer.Change((uint)dueTime, (uint)period);
         }
 
         public bool Dispose(WaitHandle notifyObject)
@@ -941,17 +846,17 @@ namespace System.Threading
             if (notifyObject == null)
                 throw new ArgumentNullException(nameof(notifyObject));
 
-            return m_timer.Close(notifyObject);
+            return _timer.Close(notifyObject);
         }
 
         public void Dispose()
         {
-            m_timer.Close();
+            _timer.Close();
         }
 
         public ValueTask DisposeAsync()
         {
-            return m_timer.CloseAsync();
+            return _timer.CloseAsync();
         }
     }
 }
