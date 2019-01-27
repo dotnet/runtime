@@ -285,7 +285,7 @@ namespace System.StubHelpers
             }
             else
             {
-                uint length = Win32Native.SysStringByteLen(bstr);
+                uint length = Marshal.SysStringByteLen(bstr);
 
                 // Intentionally checking the number of bytes not characters to match the behavior
                 // of ML marshalers. This prevents roundtripping of very large strings as the check
