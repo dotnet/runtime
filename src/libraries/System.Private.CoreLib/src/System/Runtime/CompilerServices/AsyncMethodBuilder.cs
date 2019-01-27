@@ -190,7 +190,7 @@ namespace System.Runtime.CompilerServices
 #if PROJECTN
         private static readonly Task<VoidTaskResult> s_cachedCompleted = AsyncTaskCache.CreateCacheableTask<VoidTaskResult>(default(VoidTaskResult));
 #else
-        private readonly static Task<VoidTaskResult> s_cachedCompleted = AsyncTaskMethodBuilder<VoidTaskResult>.s_defaultResultTask;
+        private static readonly Task<VoidTaskResult> s_cachedCompleted = AsyncTaskMethodBuilder<VoidTaskResult>.s_defaultResultTask;
 #endif
 
         /// <summary>The generic builder object to which this non-generic instance delegates.</summary>
