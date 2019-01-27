@@ -253,5 +253,9 @@ namespace System.Reflection
             GetEntryAssembly(JitHelpers.GetObjectHandleOnStack(ref entryAssembly));
             return entryAssembly;
         }
+
+        // Exists to faciliate code sharing between CoreCLR and CoreRT.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsRuntimeImplemented() => this is RuntimeAssembly;
     }
 }
