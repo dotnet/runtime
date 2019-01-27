@@ -141,9 +141,6 @@ namespace Microsoft.Win32
         [DllImport(Interop.Libraries.OleAut32)]
         internal static extern IntPtr SysAllocStringByteLen(byte[] str, uint len);  // BSTR
 
-        [DllImport(Interop.Libraries.OleAut32)]
-        internal static extern uint SysStringByteLen(IntPtr bstr); // BSTR
-
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static extern unsafe int WriteFile(SafeFileHandle handle, byte* bytes, int numBytesToWrite, out int numBytesWritten, IntPtr mustBeZero);
 
