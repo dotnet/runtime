@@ -414,7 +414,7 @@ namespace System.IO
             }
             catch (OperationCanceledException oce)
             {
-                return Task.FromCancellation<int>(oce);
+                return Task.FromCanceled<int>(oce);
             }
             catch (Exception exception)
             {
@@ -450,7 +450,7 @@ namespace System.IO
             }
             catch (OperationCanceledException oce)
             {
-                return new ValueTask<int>(Task.FromCancellation<int>(oce));
+                return new ValueTask<int>(Task.FromCanceled<int>(oce));
             }
             catch (Exception exception)
             {
@@ -739,7 +739,7 @@ namespace System.IO
             }
             catch (OperationCanceledException oce)
             {
-                return Task.FromCancellation<VoidTaskResult>(oce);
+                return Task.FromCanceled(oce);
             }
             catch (Exception exception)
             {
@@ -770,7 +770,7 @@ namespace System.IO
             }
             catch (OperationCanceledException oce)
             {
-                return new ValueTask(Task.FromCancellation<VoidTaskResult>(oce));
+                return new ValueTask(Task.FromCanceled(oce));
             }
             catch (Exception exception)
             {
