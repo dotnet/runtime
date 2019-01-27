@@ -58,7 +58,7 @@ namespace System.Resources
 
             ResourceSet rs = null;
             Stream stream = null;
-            RuntimeAssembly satellite = null;
+            Assembly satellite = null;
 
             // 1. Fixups for ultimate fallbacks
             CultureInfo lookForCulture = UltimateFallbackFixup(culture);
@@ -145,9 +145,7 @@ namespace System.Resources
             Debug.Assert(a != null, "assembly != null");
             string cultureName = null;
             short fallback = 0;
-            if (GetNeutralResourcesLanguageAttribute(((RuntimeAssembly)a).GetNativeHandle(),
-                                                        JitHelpers.GetStringHandleOnStack(ref cultureName),
-                                                        out fallback))
+            if (GetNeutralResourcesLanguageAttribute(a, ref cultureName, out fallback))
             {
                 if ((UltimateResourceFallbackLocation)fallback < UltimateResourceFallbackLocation.MainAssembly || (UltimateResourceFallbackLocation)fallback > UltimateResourceFallbackLocation.Satellite)
                 {
@@ -228,7 +226,7 @@ namespace System.Resources
                         // resMgrHeaderVersion is older than this ResMgr version.
                         // We should add in backwards compatibility support here.
 
-                        throw new NotSupportedException(SR.Format(SR.NotSupported_ObsoleteResourcesFile, _mediator.MainAssembly.GetSimpleName()));
+                        throw new NotSupportedException(SR.Format(SR.NotSupported_ObsoleteResourcesFile, _mediator.MainAssembly.GetName().Name));
                     }
 
                     store.Position = startPos;
@@ -306,7 +304,7 @@ namespace System.Resources
             }
         }
 
-        private Stream GetManifestResourceStream(RuntimeAssembly satellite, string fileName)
+        private Stream GetManifestResourceStream(Assembly satellite, string fileName)
         {
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
@@ -323,8 +321,8 @@ namespace System.Resources
         // Looks up a .resources file in the assembly manifest using 
         // case-insensitive lookup rules.  Yes, this is slow.  The metadata
         // dev lead refuses to make all assembly manifest resource lookups case-insensitive,
-        // even optionally case-insensitive.        
-        private Stream CaseInsensitiveManifestResourceStreamLookup(RuntimeAssembly satellite, string name)
+        // even optionally case-insensitive.
+        private Stream CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
         {
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(name != null, "name shouldn't be null; check caller");
@@ -360,7 +358,7 @@ namespace System.Resources
             return satellite.GetManifestResourceStream(canonicalName);
         }
 
-        private RuntimeAssembly GetSatelliteAssembly(CultureInfo lookForCulture)
+        private Assembly GetSatelliteAssembly(CultureInfo lookForCulture)
         {
             if (!_mediator.LookedForSatelliteContractVersion)
             {
@@ -368,8 +366,7 @@ namespace System.Resources
                 _mediator.LookedForSatelliteContractVersion = true;
             }
 
-            RuntimeAssembly satellite = null;
-            string satAssemblyName = GetSatelliteAssemblyName();
+            Assembly satellite = null;
 
             // Look up the satellite assembly, but don't let problems
             // like a partially signed satellite assembly stop us from
@@ -377,7 +374,7 @@ namespace System.Resources
             // Yet also somehow log this error for a developer.
             try
             {
-                satellite = _mediator.MainAssembly.InternalGetSatelliteAssembly(satAssemblyName, lookForCulture, _mediator.SatelliteContractVersion, false);
+                satellite = InternalGetSatelliteAssembly(_mediator.MainAssembly, lookForCulture, _mediator.SatelliteContractVersion);
             }
 
             // Jun 08: for cases other than ACCESS_DENIED, we'll assert instead of throw to give release builds more opportunity to fallback.
@@ -390,14 +387,14 @@ namespace System.Resources
                 int hr = fle._HResult;
                 if (hr != Win32Marshal.MakeHRFromErrorCode(Interop.Errors.ERROR_ACCESS_DENIED))
                 {
-                    Debug.Fail("[This assert catches satellite assembly build/deployment problems - report this message to your build lab & loc engineer]" + Environment.NewLine + "GetSatelliteAssembly failed for culture " + lookForCulture.Name + " and version " + (_mediator.SatelliteContractVersion == null ? _mediator.MainAssembly.GetVersion().ToString() : _mediator.SatelliteContractVersion.ToString()) + " of assembly " + _mediator.MainAssembly.GetSimpleName() + " with error code 0x" + hr.ToString("X", CultureInfo.InvariantCulture) + Environment.NewLine + "Exception: " + fle);
+                    Debug.Fail("[This assert catches satellite assembly build/deployment problems - report this message to your build lab & loc engineer]" + Environment.NewLine + "GetSatelliteAssembly failed for culture " + lookForCulture.Name + " and version " + (_mediator.SatelliteContractVersion == null ? _mediator.MainAssembly.GetName().Version.ToString() : _mediator.SatelliteContractVersion.ToString()) + " of assembly " + _mediator.MainAssembly.GetName().Name + " with error code 0x" + hr.ToString("X", CultureInfo.InvariantCulture) + Environment.NewLine + "Exception: " + fle);
                 }
             }
 
             // Don't throw for zero-length satellite assemblies, for compat with v1
             catch (BadImageFormatException bife)
             {
-                Debug.Fail("[This assert catches satellite assembly build/deployment problems - report this message to your build lab & loc engineer]" + Environment.NewLine + "GetSatelliteAssembly failed for culture " + lookForCulture.Name + " and version " + (_mediator.SatelliteContractVersion == null ? _mediator.MainAssembly.GetVersion().ToString() : _mediator.SatelliteContractVersion.ToString()) + " of assembly " + _mediator.MainAssembly.GetSimpleName() + Environment.NewLine + "Exception: " + bife);
+                Debug.Fail("[This assert catches satellite assembly build/deployment problems - report this message to your build lab & loc engineer]" + Environment.NewLine + "GetSatelliteAssembly failed for culture " + lookForCulture.Name + " and version " + (_mediator.SatelliteContractVersion == null ? _mediator.MainAssembly.GetName().Version.ToString() : _mediator.SatelliteContractVersion.ToString()) + " of assembly " + _mediator.MainAssembly.GetName().Name + Environment.NewLine + "Exception: " + bife);
             }
 
             return satellite;
@@ -436,24 +433,15 @@ namespace System.Resources
             return true;
         }
 
-        private string GetSatelliteAssemblyName()
-        {
-            string satAssemblyName = _mediator.MainAssembly.GetSimpleName();
-            satAssemblyName += ".resources";
-            return satAssemblyName;
-        }
-
         private void HandleSatelliteMissing()
         {
-            string satAssemName = _mediator.MainAssembly.GetSimpleName() + ".resources.dll";
+            string satAssemName = _mediator.MainAssembly.GetName().Name + ".resources.dll";
             if (_mediator.SatelliteContractVersion != null)
             {
                 satAssemName += ", Version=" + _mediator.SatelliteContractVersion.ToString();
             }
 
-            AssemblyName an = new AssemblyName();
-            an.SetPublicKey(_mediator.MainAssembly.GetPublicKey());
-            byte[] token = an.GetPublicKeyToken();
+            byte[] token = _mediator.MainAssembly.GetName().GetPublicKeyToken();
 
             int iLen = token.Length;
             StringBuilder publicKeyTok = new StringBuilder(iLen * 2);
@@ -489,11 +477,26 @@ namespace System.Resources
             if (_mediator.LocationInfo != null && _mediator.LocationInfo.Namespace != null)
                 resName = _mediator.LocationInfo.Namespace + Type.Delimiter;
             resName += fileName;
-            throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_NoNeutralAsm, resName, _mediator.MainAssembly.GetSimpleName()));
+            throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_NoNeutralAsm, resName, _mediator.MainAssembly.GetName().Name));
+        }
+
+        // Internal version of GetSatelliteAssembly that avoids throwing FileNotFoundException
+        private static Assembly InternalGetSatelliteAssembly(Assembly mainAssembly,
+                                                             CultureInfo culture,
+                                                             Version version)
+        {
+            return ((RuntimeAssembly)mainAssembly).InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: false);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetNeutralResourcesLanguageAttribute(RuntimeAssembly assemblyHandle, StringHandleOnStack cultureName, out short fallbackLocation);
+        private static extern bool GetNeutralResourcesLanguageAttribute(RuntimeAssembly assemblyHandle, StringHandleOnStack cultureName, out short fallbackLocation);
+
+        private static bool GetNeutralResourcesLanguageAttribute(Assembly assemblyHandle, ref string cultureName, out short fallbackLocation)
+        {
+            return GetNeutralResourcesLanguageAttribute(((RuntimeAssembly)assemblyHandle).GetNativeHandle(),
+                                                        JitHelpers.GetStringHandleOnStack(ref cultureName),
+                                                        out fallbackLocation);
+        }
     }
 }

@@ -335,7 +335,7 @@ namespace System.Reflection
             bool throwOnFileNotFound,
             IntPtr ptrLoadContextBinder = default)
         {
-            return InternalLoadAssemblyName(assemblyRef, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, ptrLoadContextBinder);
+            return InternalLoadAssemblyName(assemblyRef, reqAssembly, ref stackMark, IntPtr.Zero, throwOnFileNotFound, ptrLoadContextBinder);
         }
 
         internal static RuntimeAssembly InternalLoadAssemblyName(
@@ -646,15 +646,13 @@ namespace System.Reflection
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
 
-            string name = GetSimpleName() + ".resources";
-            return InternalGetSatelliteAssembly(name, culture, version, true);
+            return InternalGetSatelliteAssembly(culture, version, true);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal RuntimeAssembly InternalGetSatelliteAssembly(string name,
-                                                              CultureInfo culture,
-                                                              Version version,
-                                                              bool throwOnFileNotFound)
+        internal Assembly InternalGetSatelliteAssembly(CultureInfo culture,
+                                                       Version version,
+                                                       bool throwOnFileNotFound)
         {
             // This stack crawl mark is never used because the requesting assembly is explicitly specified,
             // so the value could be anything.
@@ -670,13 +668,18 @@ namespace System.Reflection
                 an.Version = version;
 
             an.CultureInfo = culture;
-            an.Name = name;
+            an.Name = GetSimpleName() + ".resources";
 
             RuntimeAssembly retAssembly = nLoad(an, null, this, ref stackMark,
                                 IntPtr.Zero,
                                 throwOnFileNotFound);
 
-            if (retAssembly == this || (retAssembly == null && throwOnFileNotFound))
+            if (retAssembly == this)
+            {
+                retAssembly = null;
+            }
+
+            if (retAssembly == null && throwOnFileNotFound)
             {
                 throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
             }
