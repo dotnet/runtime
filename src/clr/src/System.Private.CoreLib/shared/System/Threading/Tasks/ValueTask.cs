@@ -7,10 +7,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks.Sources;
-
-#if !netstandard
 using Internal.Runtime.CompilerServices;
-#endif
 
 namespace System.Threading.Tasks
 {
@@ -60,19 +57,10 @@ namespace System.Threading.Tasks
     public readonly struct ValueTask : IEquatable<ValueTask>
     {
         /// <summary>A task canceled using `new CancellationToken(true)`.</summary>
-        private static readonly Task s_canceledTask =
-#if netstandard
-            Task.Delay(Timeout.Infinite, new CancellationToken(canceled: true));
-#else
-            Task.FromCanceled(new CancellationToken(canceled: true));
-#endif
+        private static readonly Task s_canceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
+
         /// <summary>A successfully completed task.</summary>
-        internal static Task CompletedTask
-#if netstandard
-            { get; } = Task.Delay(0);
-#else
-            => Task.CompletedTask;
-#endif
+        internal static Task CompletedTask => Task.CompletedTask;
 
         /// <summary>null if representing a successful synchronous completion, otherwise a <see cref="Task"/> or a <see cref="IValueTaskSource"/>.</summary>
         internal readonly object _obj;
@@ -190,45 +178,27 @@ namespace System.Threading.Tasks
                 {
                     if (status == ValueTaskSourceStatus.Canceled)
                     {
-#if !netstandard
                         if (exc is OperationCanceledException oce)
                         {
-                            var task = new Task<VoidTaskResult>();
+                            var task = new Task();
                             task.TrySetCanceled(oce.CancellationToken, oce);
                             return task;
                         }
-#endif
+
                         return s_canceledTask;
                     }
                     else
                     {
-#if netstandard
-                        var tcs = new TaskCompletionSource<bool>();
-                        tcs.TrySetException(exc);
-                        return tcs.Task;
-#else
                         return Task.FromException(exc);
-#endif
                     }
                 }
             }
 
-            var m = new ValueTaskSourceAsTask(t, _token);
-            return
-#if netstandard
-                m.Task;
-#else
-                m;
-#endif
+            return new ValueTaskSourceAsTask(t, _token);
         }
 
         /// <summary>Type used to create a <see cref="Task"/> to represent a <see cref="IValueTaskSource"/>.</summary>
-        private sealed class ValueTaskSourceAsTask :
-#if netstandard
-            TaskCompletionSource<bool>
-#else
-            Task<VoidTaskResult>
-#endif
+        private sealed class ValueTaskSourceAsTask : Task
         {
             private static readonly Action<object> s_completionAction = state =>
             {
@@ -247,15 +217,12 @@ namespace System.Threading.Tasks
                 try
                 {
                     source.GetResult(vtst._token);
-                    vtst.TrySetResult(default);
+                    vtst.TrySetResult();
                 }
                 catch (Exception exc)
                 {
                     if (status == ValueTaskSourceStatus.Canceled)
                     {
-#if netstandard
-                        vtst.TrySetCanceled();
-#else
                         if (exc is OperationCanceledException oce)
                         {
                             vtst.TrySetCanceled(oce.CancellationToken, oce);
@@ -264,7 +231,6 @@ namespace System.Threading.Tasks
                         {
                             vtst.TrySetCanceled(new CancellationToken(true));
                         }
-#endif
                     }
                     else
                     {
@@ -325,12 +291,7 @@ namespace System.Threading.Tasks
 
                 if (obj is Task t)
                 {
-                    return
-#if netstandard
-                        t.Status == TaskStatus.RanToCompletion;
-#else
-                        t.IsCompletedSuccessfully;
-#endif
+                    return t.IsCompletedSuccessfully;
                 }
 
                 return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) == ValueTaskSourceStatus.Succeeded;
@@ -398,11 +359,7 @@ namespace System.Threading.Tasks
             {
                 if (obj is Task t)
                 {
-#if netstandard
-                    t.GetAwaiter().GetResult();
-#else
                     TaskAwaiter.ValidateEnd(t);
-#endif
                 }
                 else
                 {
@@ -569,12 +526,7 @@ namespace System.Threading.Tasks
 
             if (obj == null)
             {
-                return
-#if netstandard
-                    Task.FromResult(_result);
-#else
-                    AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
-#endif
+                return AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result);
             }
 
             if (obj is Task<TResult> t)
@@ -602,12 +554,7 @@ namespace System.Threading.Tasks
                 {
                     // Get the result of the operation and return a task for it.
                     // If any exception occurred, propagate it
-                    return
-#if netstandard
-                        Task.FromResult(t.GetResult(_token));
-#else
-                        AsyncTaskMethodBuilder<TResult>.GetTaskForResult(t.GetResult(_token));
-#endif
+                    return AsyncTaskMethodBuilder<TResult>.GetTaskForResult(t.GetResult(_token));
 
                     // If status is Faulted or Canceled, GetResult should throw.  But
                     // we can't guarantee every implementation will do the "right thing".
@@ -618,59 +565,33 @@ namespace System.Threading.Tasks
                 {
                     if (status == ValueTaskSourceStatus.Canceled)
                     {
-#if !netstandard
                         if (exc is OperationCanceledException oce)
                         {
                             var task = new Task<TResult>();
                             task.TrySetCanceled(oce.CancellationToken, oce);
                             return task;
                         }
-#endif
 
                         Task<TResult> canceledTask = s_canceledTask;
                         if (canceledTask == null)
                         {
-#if netstandard
-                            var tcs = new TaskCompletionSource<TResult>();
-                            tcs.TrySetCanceled();
-                            canceledTask = tcs.Task;
-#else
-                            canceledTask = Task.FromCanceled<TResult>(new CancellationToken(true));
-#endif
                             // Benign race condition to initialize cached task, as identity doesn't matter.
-                            s_canceledTask = canceledTask;
+                            s_canceledTask = Task.FromCanceled<TResult>(new CancellationToken(true));
                         }
                         return canceledTask;
                     }
                     else
                     {
-#if netstandard
-                        var tcs = new TaskCompletionSource<TResult>();
-                        tcs.TrySetException(exc);
-                        return tcs.Task;
-#else
                         return Task.FromException<TResult>(exc);
-#endif
                     }
                 }
             }
 
-            var m = new ValueTaskSourceAsTask(t, _token);
-            return
-#if netstandard
-                m.Task;
-#else
-                m;
-#endif
+            return new ValueTaskSourceAsTask(t, _token);
         }
 
         /// <summary>Type used to create a <see cref="Task{TResult}"/> to represent a <see cref="IValueTaskSource{TResult}"/>.</summary>
-        private sealed class ValueTaskSourceAsTask :
-#if netstandard
-            TaskCompletionSource<TResult>
-#else
-            Task<TResult>
-#endif
+        private sealed class ValueTaskSourceAsTask : Task<TResult>
         {
             private static readonly Action<object> s_completionAction = state =>
             {
@@ -694,9 +615,6 @@ namespace System.Threading.Tasks
                 {
                     if (status == ValueTaskSourceStatus.Canceled)
                     {
-#if netstandard
-                        vtst.TrySetCanceled();
-#else
                         if (exc is OperationCanceledException oce)
                         {
                             vtst.TrySetCanceled(oce.CancellationToken, oce);
@@ -705,7 +623,6 @@ namespace System.Threading.Tasks
                         {
                             vtst.TrySetCanceled(new CancellationToken(true));
                         }
-#endif
                     }
                     else
                     {
@@ -766,12 +683,7 @@ namespace System.Threading.Tasks
 
                 if (obj is Task<TResult> t)
                 {
-                    return
-#if netstandard
-                        t.Status == TaskStatus.RanToCompletion;
-#else
-                        t.IsCompletedSuccessfully;
-#endif
+                    return t.IsCompletedSuccessfully;
                 }
 
                 return Unsafe.As<IValueTaskSource<TResult>>(obj).GetStatus(_token) == ValueTaskSourceStatus.Succeeded;
@@ -843,12 +755,8 @@ namespace System.Threading.Tasks
 
                 if (obj is Task<TResult> t)
                 {
-#if netstandard
-                    return t.GetAwaiter().GetResult();
-#else
                     TaskAwaiter.ValidateEnd(t);
                     return t.ResultOnSuccess;
-#endif
                 }
 
                 return Unsafe.As<IValueTaskSource<TResult>>(obj).GetResult(_token);

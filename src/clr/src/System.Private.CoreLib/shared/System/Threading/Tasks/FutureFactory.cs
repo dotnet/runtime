@@ -800,7 +800,7 @@ namespace System.Threading.Tasks
                     Task.RemoveFromActiveTasks(promise);
 
                 // Make sure we don't leave promise "dangling".
-                promise.TrySetResult(default);
+                promise.TrySetResult();
                 throw;
             }
 
@@ -917,7 +917,7 @@ namespace System.Threading.Tasks
                     Task.RemoveFromActiveTasks(promise);
 
                 // Make sure we don't leave promise "dangling".
-                promise.TrySetResult(default);
+                promise.TrySetResult();
                 throw;
             }
 
@@ -1042,7 +1042,7 @@ namespace System.Threading.Tasks
                     Task.RemoveFromActiveTasks(promise);
 
                 // Make sure we don't leave promise "dangling".
-                promise.TrySetResult(default);
+                promise.TrySetResult();
                 throw;
             }
 
@@ -1175,7 +1175,7 @@ namespace System.Threading.Tasks
                     Task.RemoveFromActiveTasks(promise);
 
                 // Make sure we don't leave the promise "dangling".
-                promise.TrySetResult(default);
+                promise.TrySetResult();
                 throw;
             }
 
