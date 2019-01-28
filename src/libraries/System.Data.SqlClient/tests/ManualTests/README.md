@@ -4,7 +4,9 @@ These tests require dedicated test servers, so they're designed to be run manual
 
 ## Prerequisites
 
-- CoreFX building. you need to be able to do a successful `build -allconfigurations` and run the standard tests, [Unix](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md) or [Windows](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md)
+- CoreFX building. you need to be able to do a successful build and run the standard tests, [Unix](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md) or [Windows](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md) 
+
+  **N.B.** if you want to run the EFCore tests later you will need to do an all configurations build to generate the NuGet packages.
 
 - an [MS SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-editions-express) (any edition) 2012 or later that you can connect to with tcp and named pipes, 
 
