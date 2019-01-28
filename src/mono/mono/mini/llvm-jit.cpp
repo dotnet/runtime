@@ -42,9 +42,7 @@
 
 #include <cstdlib>
 
-extern "C" {
 #include <mono/utils/mono-dl.h>
-}
 
 using namespace llvm;
 using namespace llvm::orc;

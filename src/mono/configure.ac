@@ -6168,6 +6168,41 @@ AC_SUBST(MONO_NATIVE_PLATFORM_TYPE)
 AC_SUBST(MONO_NATIVE_PLATFORM_TYPE_COMPAT)
 AC_SUBST(MONO_NATIVE_PLATFORM_TYPE_UNIFIED)
 
+### C++ Linker selection
+#
+# We have to lie to autotools, sometimes.
+#
+# If we're building with llvm compiled into Mono, set MONO_CXXLD to CXX,
+# otherwise to CC.  We want C linking even if we're compiling with C++ enabled
+# because we do not want to link inthe C++ runtime library (-lstdc++ or -lc++),
+# except if we're linking with LLVM which relies on it.
+#
+# Explanation of the hack:
+#
+# According to
+# https://www.gnu.org/software/automake/manual/html_node/How-the-Linker-is-Chosen.html,
+# automake chooses the linker that it used to compile a target based on the
+# _SOURCES for that target.  If the target is comprised of only C code, it
+# chooses the C linker (on Linux and OSX this is just gcc or clang called with
+# linker arguments and a -o).  If the target _SOURCES include at least one C++ file, 
+# then automake chooses the C++ linker (usually g++ or clang++ called with linker arguments and -o).
+#
+# The problem for Mono is that we don't want the C++ runtime library (libstdc++
+# or libc++) linked in - even when Mono is written in C++, we take care not to
+# require the runtime library.  As a result, we don't want g++ or clang++ to do
+# the linking.  On the other hand if LLVM is enabled, then we _must_ use the
+# C++ linker - LLVM doesn't have the same restrictions.
+#
+# So the trick is we set MONO_CXXLD here to $CXX or $CC and in
+#  mono/mini/Makefile.am.in we have CCLD=$MONO_CXXLD and CXXLD=$MONO_CXXLD which bypasses
+#  automake's autodetection and lets us use the linker that we want.
+#
+if test "x$enable_llvm_runtime" = "xyes"; then
+	AC_SUBST(MONO_CXXLD, [$CXX])
+else
+	AC_SUBST(MONO_CXXLD, [$CC])
+fi
+
 # Update all submodules recursively to ensure everything is checked out
 (cd $srcdir && scripts/update_submodules.sh)
 
