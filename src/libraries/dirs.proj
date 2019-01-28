@@ -1,4 +1,4 @@
-<Project ToolsVersion="14.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <Import Project="Directory.Build.props" />
 
   <!-- required to build the projects in their specified order -->
@@ -14,8 +14,12 @@
     <Project Include="shims\manual\*.csproj" />
     <Project Include="shims\ApiCompat.proj" />
   </ItemGroup>
+  
+  <PropertyGroup>
+    <GenerateDepsJsonTaskDll>$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll</GenerateDepsJsonTaskDll>
+  </PropertyGroup>
 
-  <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(GenerateDepsJsonTaskDll)"/>
   <!-- After we build all the source libraries we need to generate a deps.json file for the shared test framework -->
   <Target Name="GenerateTestSharedFrameworkDepsFile" AfterTargets="BuildAllProjects" Condition="'$(BinplaceTestSharedFramework)' == 'true'">
 
@@ -44,23 +48,6 @@
   </ItemGroup>
 
   <Import Project="..\dir.traversal.targets" />
-
-  <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'" />
-  <Import Project="$(ToolsDir)UpdateBuildValues.targets" Condition="Exists('$(ToolsDir)UpdateBuildValues.targets')" />
-
-  <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'">
-    <TraversalBuildDependsOn>
-      $(TraversalBuildDependsOn);
-      BuildPackages;
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="Exists('$(ToolsDir)toolruntime.targets')">
-    <TraversalBuildDependsOn>
-      EnsureBuildToolsRuntime;
-      $(TraversalBuildDependsOn)
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
 
   <!-- Generate the shared library for running ILC tests for configuration Release-x64 -->
   <Target Name="GenerateSharedLibraryForILC" AfterTargets="BuildAllProjects" Condition="'$(EnableMultiFileILCTests)' == 'true'">
