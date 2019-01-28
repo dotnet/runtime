@@ -5638,9 +5638,9 @@ GenTree* Compiler::gtNewLconNode(__int64 value)
     return node;
 }
 
-GenTree* Compiler::gtNewDconNode(double value)
+GenTree* Compiler::gtNewDconNode(double value, var_types type)
 {
-    GenTree* node = new (this, GT_CNS_DBL) GenTreeDblCon(value);
+    GenTree* node = new (this, GT_CNS_DBL) GenTreeDblCon(value, type);
 
     return node;
 }
