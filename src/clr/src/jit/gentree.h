@@ -2645,8 +2645,9 @@ struct GenTreeDblCon : public GenTree
         return (bits == otherBits);
     }
 
-    GenTreeDblCon(double val) : GenTree(GT_CNS_DBL, TYP_DOUBLE), gtDconVal(val)
+    GenTreeDblCon(double val, var_types type = TYP_DOUBLE) : GenTree(GT_CNS_DBL, type), gtDconVal(val)
     {
+        assert(varTypeIsFloating(type));
     }
 #if DEBUGGABLE_GENTREE
     GenTreeDblCon() : GenTree()
