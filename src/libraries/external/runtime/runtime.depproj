@@ -85,7 +85,7 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(RunningOnUnix)' == 'true'"/>
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OS)' != 'Windows_NT'"/>
   </Target>
 
   <PropertyGroup>
@@ -109,14 +109,24 @@
       <SymbolPackagesToDownload Include="@(_CoreCLRSymbolPackagesToDownload)" Condition="!Exists('%(UnzipDestinationDir)')" />
     </ItemGroup>
   </Target>
+  
+  <Target Name="DownloadAndUnzipSymbolPackage"
+          Condition="'@(SymbolPackagesToDownload)' != ''">
+      <DownloadFile SourceUrl="%(SymbolPackagesToDownload.Url)"
+                    DestinationFolder="$(SymbolPackagesDir)"
+                    DestinationFileName="%(SymbolPackagesToDownload.DestinationFile)"
+                    ContinueOnError="WarnAndContinue" />
+      <Unzip SourceFiles="$(SymbolPackagesDir)\%(SymbolPackagesToDownload.DestinationFile)"
+             DestinationFolder="%(SymbolPackagesToDownload.UnzipDestinationDir)"
+             OverwriteReadOnlyFiles="true"
+             Condition="Exists('$(SymbolPackagesDir)\%(SymbolPackagesToDownload.DestinationFile)')" />
+  </Target>
+          
 
   <Target Name="BinPlaceCoreCLRSymbols"
           AfterTargets="AfterResolveReferences"
           DependsOnTargets="CalculateCoreCLRSymbolPackageProperties;DownloadAndUnzipSymbolPackage"
           Condition="'$(CoreCLROverridePath)' == '' AND '$(DownloadCoreCLRSymbols)' != 'false'">
-
-      <Warning Text="Failed to download CoreCLR symbols" Condition="'@(SymbolPackagesDownloaded)' == '' AND '@(SymbolPackagesToDownload)' != ''" />
-
       <ItemGroup>
         <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(RuntimeIdentifier)/native/*.pdb" />
         <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(RuntimeIdentifier)/native/*.dbg" />

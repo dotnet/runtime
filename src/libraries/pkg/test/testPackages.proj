@@ -53,17 +53,8 @@
     <TestSupportFiles Include="$(RepositoryEngineeringDir)versions.props">
       <DestinationFolder>$(TestToolsDir)eng/</DestinationFolder>
     </TestSupportFiles>
-    <TestSupportFiles Include="$(ToolsDir)Packaging.common.targets">
-      <DestinationFolder>$(TestToolsDir)</DestinationFolder>
-    </TestSupportFiles>
-    <TestSupportFiles Include="$(ToolsDir)Microsoft.DotNet.Build.Tasks.Packaging.dll">
-      <DestinationFolder>$(TestToolsDir)</DestinationFolder>
-    </TestSupportFiles>
-    <TestSupportFiles Include="$(ToolsDir)Newtonsoft.Json.dll">
-      <DestinationFolder>$(TestToolsDir)</DestinationFolder>
-    </TestSupportFiles>
-    <TestSupportFiles Include="$(ToolsDir)NuGet.*.dll">
-      <DestinationFolder>$(TestToolsDir)</DestinationFolder>
+    <TestSupportFiles Include="$(PackagingTaskDir)..\..\**\*.*">
+      <DestinationFolder>$(TestToolsDir)%(RecursiveDir)</DestinationFolder>
     </TestSupportFiles>
     <TestSupportFiles Include="props\Directory.Build.props">
       <DestinationFolder>$(TestDir)</DestinationFolder>
@@ -196,6 +187,7 @@
       <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /p:LocalPackagesPath=$(PackageOutputPath)</TestRestoreCommand>
+      <TestRestoreCommand>$(TestRestoreCommand) /nr:false</TestRestoreCommand>
       <TestRestoreCommand  Condition="'$(TestPackages)' != ''">$(TestRestoreCommand) /p:TestPackages=$(TestPackages)</TestRestoreCommand>
     </PropertyGroup>
 
@@ -211,6 +203,7 @@
       <TestBuildCommand>$(TestDotNetPath)</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) msbuild</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) /t:Test</TestBuildCommand>
+      <TestBuildCommand>$(TestBuildCommand) /nr:false</TestBuildCommand>
       <TestBuildCommand  Condition="'$(TestPackages)' != ''">$(TestBuildCommand) /p:TestPackages=$(TestPackages)</TestBuildCommand>
     </PropertyGroup>
 
@@ -220,6 +213,9 @@
   </Target>
 
   <Target Name="Build" DependsOnTargets="BuildProjects;ArchiveHelixItems" />
+
+  <!-- define test to do nothing, for this project Build does all the testing -->
+  <Target Name="Test" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>
