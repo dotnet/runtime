@@ -141,10 +141,21 @@
     <BinPlaceConfiguration Include="@(AdditionalBinPlaceConfiguration)" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)eng/depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
-  <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
+  <Import Project="$(RepositoryEngineeringDir)blockReflectionAttribute.targets" />
+  <Import Project="$(RepositoryEngineeringDir)depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="$(RepositoryEngineeringDir)Resources.targets" />
+  <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
+  
+  <!-- TODO: remove remaining functionality from buildtools -->
+  <PropertyGroup>
+     <!-- codeOptimization uses DnuRestoreCommand -->
+    <DnuRestoreCommand>$(DotnetTool) restore</DnuRestoreCommand>
+     <!-- optionalTooling uses DotnetToolCommand -->
+    <DotnetToolCommand>$(DotnetTool)</DotnetToolCommand>
+  </PropertyGroup>
+  <Import Project="$(ToolsDir)codeOptimization.targets" />
+  <Import Project="$(ToolsDir)OptionalTooling.targets" />
 
   <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets')" />
 

@@ -14,7 +14,7 @@
     </RestoreSources>
   </PropertyGroup>
 
-  <Import Project="tools\Packaging.common.targets" />
+  <Import Project="tools\build\Packaging.common.targets" />
   <Import Project="tools\dependencies.props" />
   <Import Project="tools\eng\versions.props" />
   <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets" />

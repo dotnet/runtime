@@ -102,6 +102,10 @@
     <!-- Properties to remove with buildtools removal -->
     <ProjectDir>$(RepoRoot)</ProjectDir>
     <BinDir>$(ProjectDir)artifacts\bin\</BinDir>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
+    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'core'">$(ToolsDir)net46/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' == 'core'">$(ToolsDir)</BuildToolsTaskDir>
+    
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
     <NativeBinDir>$(BinDir)native/$(BuildConfiguration)</NativeBinDir>
 
@@ -112,8 +116,6 @@
     <PackagesDir>$(DotNetRestorePackagesPath)</PackagesDir>
     <PackagesDir Condition="'$(PackagesDir)'=='' AND '$(NuGetPackageRoot)' != ''">$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))</PackagesDir>
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir).packages/</PackagesDir>
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
-    <IlasmToolPath>$(ToolsDir)ilasm/ilasm</IlasmToolPath>
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
     <!-- Respect environment variable for the .NET install directory if set; otherwise, use the current default location -->
     <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(DOTNET_INSTALL_DIR)</DotNetRoot>
@@ -125,34 +127,11 @@
     <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
   </PropertyGroup>
 
-  <!-- Choose .targets files that come from Arcade rather than from buildtools -->
-  <!-- TODO: Remove when buildtools dependency removed. -->
-  <PropertyGroup>
-    <ExcludeNotSupportedImport>true</ExcludeNotSupportedImport>
-    <ExcludePartialFacadesImport>true</ExcludePartialFacadesImport>
-    <ExcludeApiCompatImport>true</ExcludeApiCompatImport>
-    <ExcludeReferenceAssembliesImport>true</ExcludeReferenceAssembliesImport>
-    <ExcludePackagingImport>true</ExcludePackagingImport>
-    <ExcludePackageLibsImport>true</ExcludePackageLibsImport>
-    <ExcludeCodeAnalysisImport>true</ExcludeCodeAnalysisImport>
-    <ExcludeResourcesImport>true</ExcludeResourcesImport>
-    <ExcludeVersioningImport>true</ExcludeVersioningImport>
-    <ExcludeSigningImport>true</ExcludeSigningImport>
-    <ExcludeDepProjImport>true</ExcludeDepProjImport>
-    <ExcludeResolveContractImport>true</ExcludeResolveContractImport>
-    <ExcludePackageResolveImport>true</ExcludePackageResolveImport>
-    <ExcludeTestsImport>true</ExcludeTestsImport>
-    <ExcludeBinPlaceImport>true</ExcludeBinPlaceImport>
-  </PropertyGroup>
-
   <!-- workaround https://github.com/dotnet/sdk/issues/2288
        remove once we have a new CLI -->
   <PropertyGroup>
     <LanguageTargets Condition="'$(LanguageTargets)' == '' AND '$(MSBuildProjectExtension)' != '.csproj' AND '$(MSBuildProjectExtension)' != '.vbproj' AND '$(MSBuildProjectExtension)' != '.fsproj'">$(MSBuildToolsPath)\Microsoft.Common.targets</LanguageTargets>
   </PropertyGroup>
-
-  <!-- Import Build tools common props file where repo-independent properties are found -->
-  <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
@@ -163,7 +142,7 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true' and '$(OfficialBuildId)' == ''">
     <WithoutCategories>IgnoreForCI</WithoutCategories>
     <EnableDumpling>false</EnableDumpling>
-    <CrashDumpFolder Condition="'$(RunningOnUnix)' != 'true'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
+    <CrashDumpFolder Condition="'$(OS)' == 'Windows_NT'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OfficialBuildId)' == ''">
     <!-- Disable F5 and test explorer support for CI builds. -->
@@ -285,7 +264,7 @@
     <DebugType>portable</DebugType>
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
-    <DebugType Condition="'$(TargetsNetFx)' == 'true' AND '$(RunningOnUnix)' != 'true'"></DebugType>
+    <DebugType Condition="'$(TargetsNetFx)' == 'true' AND '$(OS)' == 'Windows_NT'"></DebugType>
 
     <!-- Rhel 6 and FreeBSD doesn't support the source control git package so disable SourceLink -->
     <EnableSourceLink Condition="$(RuntimeOS.StartsWith('rhel.6')) OR '$(_runtimeOSFamily)' == 'FreeBSD'">false</EnableSourceLink>
@@ -341,6 +320,10 @@
 
     <!-- Suppress preview message as we are usually using preview SDK versions. -->
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    
+    <CLSCompliant Condition="'$(CLSCompliant)'=='' and '$(IsTestProject)'=='true'">false</CLSCompliant>
+    <CLSCompliant Condition="'$(CLSCompliant)'==''">true</CLSCompliant>
+    <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
@@ -480,16 +463,12 @@
   </ItemDefinitionGroup>
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
-  <Import Project="$(MSBuildThisFileDirectory)eng\ReferenceAssemblies.props" />
+  <Import Project="$(RepositoryEngineeringDir)ReferenceAssemblies.props" />
 
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
     <!-- Set the documentation output file globally. -->
     <DocumentationFile Condition="'$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
   </PropertyGroup>
-
-  <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'!='true' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false' and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'=='true' and Exists('$(RoslynPropsFile)') and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
 
   <!-- Additional optimizations -->
   <PropertyGroup>

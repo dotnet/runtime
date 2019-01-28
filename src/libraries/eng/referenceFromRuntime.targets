@@ -11,7 +11,7 @@
   </Target>
 
   <Target Name="AddRuntimeProjectReference"
-          BeforeTargets="AddProjectReferencesDynamically"
+          BeforeTargets="AddReferencesDynamically"
           Condition="'$(IsTestProject)'!='true' AND '@(ReferenceFromRuntime)' != ''">
     <Error Condition="('$(IsReferenceAssembly)' != 'true' OR '$(AllowReferenceFromRuntime)' == 'true') AND '$(RuntimeProjectFile)' == ''" Text="RuntimeProjectFile must be specified when using ReferenceFromRuntime from source projects." />
     <Error Condition="'$(IsReferenceAssembly)' == 'true' AND '$(AllowReferenceFromRuntime)' != 'true'" Text="ReferenceFromRuntime may not be used from reference assemblies." />
