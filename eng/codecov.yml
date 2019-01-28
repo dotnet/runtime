@@ -1,0 +1,11 @@
+codecov:
+  branch: master
+  ci:
+    - dnceng.visualstudio.com
+
+coverage:
+  range: 60...90
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: yes
