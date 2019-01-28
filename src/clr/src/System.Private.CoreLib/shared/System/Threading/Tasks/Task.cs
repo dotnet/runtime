@@ -5482,80 +5482,86 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay, ExceptionResource.Task_Delay_InvalidMillisecondsDelay);
             }
 
-            // some short-cuts in case quick completion is in order
-            if (cancellationToken.IsCancellationRequested)
-            {
-                // return a Task created as already-Canceled
-                return Task.FromCanceled(cancellationToken);
-            }
-            else if (millisecondsDelay == 0)
-            {
-                // return a Task created as already-RanToCompletion
-                return Task.CompletedTask;
-            }
-
-            // Construct a promise-style Task to encapsulate our return value
-            var promise = new DelayPromise(cancellationToken);
-
-            // Register our cancellation token, if necessary.
-            if (cancellationToken.CanBeCanceled)
-            {
-                promise.Registration = cancellationToken.UnsafeRegister(state => ((DelayPromise)state).Complete(), promise);
-            }
-
-            // ... and create our timer and make sure that it stays rooted.
-            if (millisecondsDelay != Timeout.Infinite) // no need to create the timer if it's an infinite timeout
-            {
-                promise.Timer = new TimerQueueTimer(state => ((DelayPromise)state).Complete(), promise, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
-            }
-
-            // Return the timer proxy task
-            return promise;
+            return
+                cancellationToken.IsCancellationRequested ? FromCanceled(cancellationToken) :
+                millisecondsDelay == 0 ? CompletedTask :
+                cancellationToken.CanBeCanceled ? new DelayPromiseWithCancellation(millisecondsDelay, cancellationToken) :
+                new DelayPromise(millisecondsDelay);
         }
 
         /// <summary>Task that also stores the completion closure and logic for Task.Delay implementation.</summary>
-        private sealed class DelayPromise : Task
+        private class DelayPromise : Task
         {
-            internal DelayPromise(CancellationToken token)
+            private readonly TimerQueueTimer _timer;
+
+            internal DelayPromise(int millisecondsDelay)
             {
-                this.Token = token;
+                Debug.Assert(millisecondsDelay != 0);
+
                 if (AsyncCausalityTracer.LoggingOn)
                     AsyncCausalityTracer.TraceOperationCreation(this, "Task.Delay");
 
                 if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
+
+                if (millisecondsDelay != Timeout.Infinite) // no need to create the timer if it's an infinite timeout
+                {
+                    _timer = new TimerQueueTimer(state => ((DelayPromise)state).CompleteTimedOut(), this, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    if (IsCanceled)
+                    {
+                        // Handle rare race condition where cancellation occurs prior to our having created and stored the timer, in which case
+                        // the timer won't have been cleaned up appropriately.  This call to close might race with the Cleanup call to Close,
+                        // but Close is thread-safe and will be a nop if it's already been closed.
+                        _timer.Close();
+                    }
+                }
             }
 
-            internal readonly CancellationToken Token;
-            internal CancellationTokenRegistration Registration;
-            internal TimerQueueTimer Timer;
-
-            internal void Complete()
+            private void CompleteTimedOut()
             {
-                // Transition the task to completed.
-                bool setSucceeded;
-
-                if (Token.IsCancellationRequested)
+                if (TrySetResult())
                 {
-                    setSucceeded = TrySetCanceled(Token);
-                }
-                else
-                {
-                    if (AsyncCausalityTracer.LoggingOn)
-                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
+                    Cleanup();
 
                     if (s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
 
-                    setSucceeded = TrySetResult();
+                    if (AsyncCausalityTracer.LoggingOn)
+                        AsyncCausalityTracer.TraceOperationCompletion(this, AsyncCausalityStatus.Completed);
                 }
+            }
 
-                // If we set the value, also clean up.
-                if (setSucceeded)
+            protected virtual void Cleanup() => _timer?.Close();
+        }
+
+        /// <summary>DelayPromise that also supports cancellation.</summary>
+        private sealed class DelayPromiseWithCancellation : DelayPromise
+        {
+            private readonly CancellationToken _token;
+            private readonly CancellationTokenRegistration _registration;
+
+            internal DelayPromiseWithCancellation(int millisecondsDelay, CancellationToken token) : base(millisecondsDelay)
+            {
+                Debug.Assert(token.CanBeCanceled);
+
+                _token = token;
+                _registration = token.UnsafeRegister(state => ((DelayPromiseWithCancellation)state).CompleteCanceled(), this);
+            }
+
+            private void CompleteCanceled()
+            {
+                if (TrySetCanceled(_token))
                 {
-                    Timer?.Close();
-                    Registration.Dispose();
+                    Cleanup();
+                    // This path doesn't invoke RemoveFromActiveTasks or TraceOperationCompletion
+                    // because that's strangely already handled inside of TrySetCanceled.
                 }
+            }
+
+            protected override void Cleanup()
+            {
+                _registration.Dispose();
+                base.Cleanup();
             }
         }
         #endregion
