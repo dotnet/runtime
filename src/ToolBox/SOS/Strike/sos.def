@@ -23,11 +23,9 @@ EXPORTS
     dumpdelegate=DumpDelegate
     DumpDomain
     dumpdomain=DumpDomain
-#ifdef TRACE_GC
     DumpGCLog
     dumpgclog=DumpGCLog
     dlog=DumpGCLog
-#endif     
     DumpGCData
     dumpgcdata=DumpGCData
     dgc=DumpGCData

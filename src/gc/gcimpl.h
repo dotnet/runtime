@@ -199,8 +199,6 @@ public:
 
     size_t GetValidSegmentSize(bool large_seg = false);
 
-    static size_t GetValidGen0MaxSize(size_t seg_size);
-
     void SetReservedVMLimit (size_t vmlimit);
 
     PER_HEAP_ISOLATED Object* GetNextFinalizableObject();

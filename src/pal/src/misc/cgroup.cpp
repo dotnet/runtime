@@ -382,7 +382,6 @@ void CleanupCGroup()
     CGroup::Cleanup();
 }
 
-
 size_t
 PALAPI
 PAL_GetRestrictedPhysicalMemoryLimit()
@@ -390,7 +389,18 @@ PAL_GetRestrictedPhysicalMemoryLimit()
     size_t physical_memory_limit;
 
     if (!CGroup::GetPhysicalMemoryLimit(&physical_memory_limit))
-         physical_memory_limit = SIZE_T_MAX;
+         return 0;
+    else
+    {
+        // If there's no memory limit specified on the container this 
+        // actually returns 0x7FFFFFFFFFFFF000 (2^63-1 rounded down to 
+        // 4k which is a common page size). So we know we are not
+        // running in a memory restricted environment.
+        if (physical_memory_limit > 0x7FFFFFFF00000000)
+        {
+            return 0;
+        }
+    }
 
     struct rlimit curr_rlimit;
     size_t rlimit_soft_limit = (size_t)RLIM_INFINITY;
