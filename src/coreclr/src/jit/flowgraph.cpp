@@ -22858,10 +22858,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     BasicBlock*  iciBlock = pInlineInfo->iciBlock;
     BasicBlock*  block;
 
-    // We can write better assert here. For example, we can check that
-    // iciBlock contains iciStmt, which in turn contains iciCall.
     noway_assert(iciBlock->bbTreeList != nullptr);
     noway_assert(iciStmt->gtStmtExpr != nullptr);
+    assert(iciBlock->Contains(iciStmt) && (iciStmt->gtStmtExpr == iciCall));
     noway_assert(iciCall->gtOper == GT_CALL);
 
 #ifdef DEBUG
