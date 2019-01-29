@@ -1594,9 +1594,11 @@ void CodeGen::genCodeForLclAddr(GenTree* tree)
     regNumber targetReg  = tree->gtRegNum;
 
     // Address of a local var.
-    noway_assert(targetType == TYP_BYREF);
+    noway_assert((targetType == TYP_BYREF) || (targetType == TYP_I_IMPL));
 
-    inst_RV_TT(INS_lea, targetReg, tree, 0, EA_BYREF);
+    emitAttr size = emitTypeSize(targetType);
+
+    inst_RV_TT(INS_lea, targetReg, tree, 0, size);
     genProduceReg(tree);
 }
 
