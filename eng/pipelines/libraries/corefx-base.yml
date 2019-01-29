@@ -166,6 +166,7 @@ jobs:
                 helixQueues: $(_helixQueues)
                 msbuildScript: $(_msbuildCommand)
                 framework: $(_framework)
+                outerloop: $(_outerloop)
 
                 ${{ if eq(parameters.isOfficialBuild, 'true') }}:
                   isExternal: false
