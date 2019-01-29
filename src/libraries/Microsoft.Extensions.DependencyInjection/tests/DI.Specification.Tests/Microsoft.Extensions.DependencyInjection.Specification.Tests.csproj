@@ -11,7 +11,10 @@
       https://github.com/dotnet/corefx/issues/12338 & https://github.com/dotnet/corefx/issues/11797
     -->
     <EnableApiCheck>false</EnableApiCheck>
+    <IsUnitTestProject>false</IsUnitTestProject>
     <IsTestProject>false</IsTestProject>
+    <TestRunnerName></TestRunnerName>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,5 +25,4 @@
     <Reference Include="xunit.assert" />
     <Reference Include="xunit.extensibility.core" />
   </ItemGroup>
-
 </Project>
