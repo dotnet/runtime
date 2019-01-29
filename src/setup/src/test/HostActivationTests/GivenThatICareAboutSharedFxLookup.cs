@@ -1,10 +1,11 @@
-﻿using Microsoft.DotNet.InternalAbstractions;
-using Microsoft.DotNet.Cli.Build.Framework;
+﻿using Microsoft.DotNet.Cli.Build.Framework;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using Xunit;
+using System.Linq;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
 {
@@ -1041,6 +1042,60 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
                 .HaveStdErrContaining(Path.Combine("7777.0.0", "System.Collections.Immutable.dll"))
                 .And
                 .NotHaveStdErrContaining(Path.Combine("9999.1.0", "System.Collections.Immutable.dll"));
+        }
+
+        [Fact]
+        public void CoreClrLookup_WithNoDirectorySeparatorInDeps()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.0.0", null);
+
+            // Add versions in the exe folders
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0");
+            string sharedFxPath = Path.Combine(_exeSharedFxBaseDir, "9999.0.0");
+            string sharedFxDepsJsonPath = Path.Combine(sharedFxPath, "Microsoft.NETCore.App.deps.json");
+
+            // Modify the .deps.json for Microsoft.NETCore.App FX
+            JObject root = JObject.Parse(File.ReadAllText(sharedFxDepsJsonPath));
+            IEnumerable<JProperty> netCoreAppNativeAssets = root["targets"]
+                .Children<JProperty>().Where(p => p.Name.Contains("/"))
+                .Children().Children().OfType<JProperty>().Where(p => p.Name.Contains("runtime") && p.Name.Contains("Microsoft.NETCore.App"))
+                .Values()["native"].Children().OfType<JProperty>();
+
+            // Change the coreclr.dll asset to specify only "coreclr.dll" as the relative path (no directories).
+            string coreClrLibraryName = $"{fixture.SharedLibraryPrefix}coreclr{fixture.SharedLibraryExtension}";
+            JProperty coreClrProperty = netCoreAppNativeAssets.First(p => p.Name.Contains(coreClrLibraryName));
+            JProperty newCoreClrProperty = new JProperty(coreClrProperty.Name.Substring(coreClrProperty.Name.LastIndexOf('/') + 1), coreClrProperty.Value);
+            coreClrProperty.Parent.Add(newCoreClrProperty);
+            coreClrProperty.Remove();
+
+            // Change the clrjit.dll asset to specify only "clrjit.dll" as the relative path (no directories).
+            string clrJitLibraryName = $"{fixture.SharedLibraryPrefix}clrjit{fixture.SharedLibraryExtension}";
+            JProperty clrJitProperty = netCoreAppNativeAssets.First(p => p.Name.Contains(clrJitLibraryName));
+            JProperty newClrJitProperty = new JProperty(clrJitProperty.Name.Substring(clrJitProperty.Name.LastIndexOf('/') + 1), clrJitProperty.Value);
+            clrJitProperty.Parent.Add(newClrJitProperty);
+            clrJitProperty.Remove();
+
+            File.WriteAllText(sharedFxDepsJsonPath, root.ToString());
+
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining($"CoreCLR path = '{Path.Combine(sharedFxPath, coreClrLibraryName)}'")
+                .And
+                .HaveStdErrContaining($"The resolved JIT path is '{Path.Combine(sharedFxPath, clrJitLibraryName)}'");
         }
 
         static private JObject GetAdditionalFramework(string fxName, string fxVersion, bool? applyPatches, int? rollForwardOnNoCandidateFx)
