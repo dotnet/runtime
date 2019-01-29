@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+
 
 internal class GCSmall
 {
@@ -11,8 +13,11 @@ internal class GCSmall
 
     public static void Main(string[] p_args) 
     {
-        long iterations = 200;
+        long iterations = 200000000;
         GCSmall ns = new GCSmall();
+
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
 
         for (long i = 0; i < iterations; i++)
         {
@@ -32,5 +37,8 @@ internal class GCSmall
             Console.WriteLine("Shouldn't get here");            
         
         GC.KeepAlive(ns);
+        
+        sw.Stop();
+        Console.WriteLine("took {0} ms in total", sw.ElapsedMilliseconds);
     }
 }

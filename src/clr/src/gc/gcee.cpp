@@ -206,7 +206,7 @@ void GCHeap::UpdatePostGCCounters()
 
 #ifdef SIMPLE_DPRINTF
     dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)", 
-        pSettings->gc_index,
+        (size_t)pSettings->gc_index,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
         g_GenerationSizes[2], g_GenerationPromotedSizes[2],
