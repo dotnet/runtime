@@ -328,7 +328,7 @@ libmonoutilsinclude_HEADERS = 	\
 	mono-dl-fallback.h	\
 	mono-counters.h
 
-EXTRA_DIST = mono-embed.h mono-embed.c ../../support/libm/complex.c mono-experiments.def
+EXTRA_DIST = mono-errno.h mono-embed.h mono-embed.c ../../support/libm/complex.c mono-experiments.def
 
 DIST_SUBDIRS = jemalloc
 
