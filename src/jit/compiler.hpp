@@ -991,14 +991,6 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
-    //
-    // the GT_ADDR of a Local Variable implies GTF_ADDR_ONSTACK
-    //
-    if ((oper == GT_ADDR) && (op1->OperGet() == GT_LCL_VAR))
-    {
-        node->gtFlags |= GTF_ADDR_ONSTACK;
-    }
-
     return node;
 }
 
@@ -1477,23 +1469,6 @@ inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
     }
     SetOperRaw(oper); // Trust the caller and don't use SetOper()
     gtFlags &= mask;
-}
-
-/*****************************************************************************
- * Returns true if the node is &var (created by ldarga and ldloca)
- */
-
-inline bool GenTree::IsVarAddr() const
-{
-    if (gtOper == GT_ADDR)
-    {
-        if (gtFlags & GTF_ADDR_ONSTACK)
-        {
-            assert((gtType == TYP_BYREF) || (gtType == TYP_I_IMPL));
-            return true;
-        }
-    }
-    return false;
 }
 
 /*****************************************************************************

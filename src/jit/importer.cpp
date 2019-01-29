@@ -2928,12 +2928,12 @@ CORINFO_CLASS_HANDLE Compiler::impGetObjectClass()
 /* static */
 void Compiler::impBashVarAddrsToI(GenTree* tree1, GenTree* tree2)
 {
-    if (tree1->IsVarAddr())
+    if (tree1->IsLocalAddrExpr() != nullptr)
     {
         tree1->gtType = TYP_I_IMPL;
     }
 
-    if (tree2 && tree2->IsVarAddr())
+    if (tree2 && (tree2->IsLocalAddrExpr() != nullptr))
     {
         tree2->gtType = TYP_I_IMPL;
     }
@@ -11442,7 +11442,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // We had better assign it a value of the correct type
                 assertImp(
                     genActualType(lclTyp) == genActualType(op1->gtType) ||
-                    genActualType(lclTyp) == TYP_I_IMPL && op1->IsVarAddr() ||
+                    genActualType(lclTyp) == TYP_I_IMPL && (op1->IsLocalAddrExpr() != nullptr) ||
                     (genActualType(lclTyp) == TYP_I_IMPL && (op1->gtType == TYP_BYREF || op1->gtType == TYP_REF)) ||
                     (genActualType(op1->gtType) == TYP_I_IMPL && lclTyp == TYP_BYREF) ||
                     (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1->TypeGet())) ||
@@ -11451,7 +11451,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* If op1 is "&var" then its type is the transient "*" and it can
                    be used either as TYP_BYREF or TYP_I_IMPL */
 
-                if (op1->IsVarAddr())
+                if (op1->IsLocalAddrExpr() != nullptr)
                 {
                     assertImp(genActualType(lclTyp) == TYP_I_IMPL || lclTyp == TYP_BYREF);
 
@@ -12247,7 +12247,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op3 = impPopStack().val;
 
                 assertImp(op3->gtType == TYP_REF);
-                if (op2->IsVarAddr())
+                if (op2->IsLocalAddrExpr() != nullptr)
                 {
                     op2->gtType = TYP_I_IMPL;
                 }
@@ -19148,7 +19148,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 assert(sigType == TYP_I_IMPL);
 
                 /* If possible change the BYREF to an int */
-                if (thisArg->IsVarAddr())
+                if (thisArg->IsLocalAddrExpr() != nullptr)
                 {
                     thisArg->gtType              = TYP_I_IMPL;
                     lclVarInfo[0].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
@@ -19230,7 +19230,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                     assert(varTypeIsIntOrI(sigType));
 
                     /* If possible bash the BYREF to an int */
-                    if (inlArgNode->IsVarAddr())
+                    if (inlArgNode->IsLocalAddrExpr() != nullptr)
                     {
                         inlArgNode->gtType           = TYP_I_IMPL;
                         lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
