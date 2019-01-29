@@ -144,8 +144,8 @@
     <EnableDumpling>false</EnableDumpling>
     <CrashDumpFolder Condition="'$(OS)' == 'Windows_NT'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OfficialBuildId)' == ''">
-    <!-- Disable F5 and test explorer support for CI builds. -->
+  <!-- Disable VS support files on CI and official builds. -->
+  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuildId)' != ''">
     <EnableLaunchSettings>false</EnableLaunchSettings>
     <EnableVSTestReferences>false</EnableVSTestReferences>
   </PropertyGroup>
@@ -270,7 +270,8 @@
     <EnableSourceLink Condition="$(RuntimeOS.StartsWith('rhel.6')) OR '$(_runtimeOSFamily)' == 'FreeBSD'">false</EnableSourceLink>
     <!-- is is not supported on ARM platforms either. -->
     <EnableSourceLink Condition="'$(HostArch)' == 'Arm' OR '$(HostArch)' == 'Arm64'">false</EnableSourceLink>
-
+    <!-- Disable source link on local builds. -->
+    <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuildId)' != ''">false</EnableSourceLink>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
