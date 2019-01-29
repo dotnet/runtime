@@ -154,9 +154,6 @@ namespace Microsoft.Win32
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static extern IntPtr GetStdHandle(int nStdHandle);  // param is NOT a handle, but it returns one!
 
-        [DllImport(Interop.Libraries.Kernel32)]
-        internal static extern unsafe int WideCharToMultiByte(uint cp, uint flags, char* pwzSource, int cchSource, byte* pbDestBuffer, int cbDestBuffer, IntPtr null1, IntPtr null2);
-
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Auto, SetLastError = true, BestFitMapping = false)]
         internal static extern bool SetEnvironmentVariable(string lpName, string lpValue);
 
