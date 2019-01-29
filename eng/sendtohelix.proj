@@ -81,10 +81,23 @@
     <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
   </ItemGroup>
 
+  <!-- Add global tools to runtime -->
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <TestArchiveRuntimeDependencies Include="$(GlobalToolsDir)**\*.*" />
+  </ItemGroup>
+
   <Target Name="CompressRuntimeDirectory"
-          Inputs="@(_RuntimeInputs)"
+          Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependencies)"
           Outputs="$(TestArchiveRuntimeFile)"
           Condition="'$(TargetGroup)' != 'AllConfigurations'">
+
+    <!-- Copy additional test dependencies. -->
+    <Copy SourceFiles="@(TestArchiveRuntimeDependencies)"
+          DestinationFolder="$(TestHostRootPath)\%(RecursiveDir)"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          Retries="3"
+          RetryDelayMilliseconds="300" />
 
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
     <ZipDirectory
