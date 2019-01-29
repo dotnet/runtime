@@ -50,7 +50,7 @@ pal::string_t pal::get_timestamp()
     std::time_t t = std::time(0);
     const std::size_t elems = 100;
     char_t buf[elems];
-    std::wcsftime(buf, elems, _X("%c %Z"), std::gmtime(&t));
+    std::wcsftime(buf, elems, _X("%c GMT"), std::gmtime(&t));
 
     return pal::string_t(buf);
 }
