@@ -3,6 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -11,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // For testing only
         internal Action<object> _captureDisposableCallback;
 
-        private List<IDisposable> _disposables;
+        private List<object> _disposables;
 
         private bool _disposed;
 
@@ -36,51 +39,95 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public IServiceProvider ServiceProvider => this;
 
+        internal object CaptureDisposable(object service)
+        {
+            Debug.Assert(!_disposed);
+
+            _captureDisposableCallback?.Invoke(service);
+
+            if (ReferenceEquals(this, service) ||
+               !(service is IDisposable
+#if DISPOSE_ASYNC
+                || service is IAsyncDisposable
+#endif
+                ))
+            {
+                return service;
+            }
+
+            lock (ResolvedServices)
+            {
+                if (_disposables == null)
+                {
+                    _disposables = new List<object>();
+                }
+
+                _disposables.Add(service);
+            }
+            return service;
+        }
+
         public void Dispose()
         {
+            var toDispose = BeginDispose();
+
+            if (toDispose != null)
+            {
+                for (var i = toDispose.Count - 1; i >= 0; i--)
+                {
+                    if (toDispose[i] is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(Resources.FormatAsyncDisposableServiceDispose(TypeNameHelper.GetTypeDisplayName(toDispose[i])));
+                    }
+                }
+            }
+        }
+
+#if DISPOSE_ASYNC
+        public async ValueTask DisposeAsync()
+        {
+            var toDispose = BeginDispose();
+
+            if (toDispose != null)
+            {
+                for (var i = toDispose.Count - 1; i >= 0; i--)
+                {
+                    var disposable = toDispose[i];
+                    if (disposable is IAsyncDisposable asyncDisposable)
+                    {
+                        await asyncDisposable.DisposeAsync();
+                    }
+                    else
+                    {
+                        ((IDisposable)disposable).Dispose();
+                    }
+                }
+            }
+        }
+#endif
+
+        private List<object> BeginDispose()
+        {
+            List<object> toDispose;
             lock (ResolvedServices)
             {
                 if (_disposed)
                 {
-                    return;
+                    return null;
                 }
 
                 _disposed = true;
-                if (_disposables != null)
-                {
-                    for (var i = _disposables.Count - 1; i >= 0; i--)
-                    {
-                        var disposable = _disposables[i];
-                        disposable.Dispose();
-                    }
-
-                    _disposables.Clear();
-                }
+                toDispose = _disposables;
+                _disposables = null;
 
                 ResolvedServices.Clear();
             }
-        }
 
-        internal object CaptureDisposable(object service)
-        {
-            _captureDisposableCallback?.Invoke(service);
-
-            if (!ReferenceEquals(this, service))
-            {
-                if (service is IDisposable disposable)
-                {
-                    lock (ResolvedServices)
-                    {
-                        if (_disposables == null)
-                        {
-                            _disposables = new List<IDisposable>();
-                        }
-
-                        _disposables.Add(disposable);
-                    }
-                }
-            }
-            return service;
+            return toDispose;
         }
     }
 }

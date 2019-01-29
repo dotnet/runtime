@@ -3,15 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Microsoft.Extensions.DependencyInjection.Tests.Fakes;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
-    public abstract class ServiceProviderContainerTests : DependencyInjectionSpecificationTests
+    public abstract partial class ServiceProviderContainerTests : DependencyInjectionSpecificationTests
     {
         [Fact]
         public void RethrowOriginalExceptionFromConstructor()
