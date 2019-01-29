@@ -6156,7 +6156,7 @@ namespace System.Threading.Tasks
             Task<Task> intermediate = WhenAny((Task[])tasks);
 
             // Return a continuation task with the correct result type
-            return intermediate.ContinueWith(Task<TResult>.TaskWhenAnyCast, default,
+            return intermediate.ContinueWith(Task<TResult>.TaskWhenAnyCast.Value, default,
                 TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
@@ -6185,7 +6185,7 @@ namespace System.Threading.Tasks
             Task<Task> intermediate = WhenAny((IEnumerable<Task>)tasks);
 
             // Return a continuation task with the correct result type
-            return intermediate.ContinueWith(Task<TResult>.TaskWhenAnyCast, default,
+            return intermediate.ContinueWith(Task<TResult>.TaskWhenAnyCast.Value, default,
                 TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
         #endregion

@@ -544,12 +544,16 @@ namespace System.Runtime.CompilerServices
             where TStateMachine : IAsyncStateMachine
         {
             /// <summary>Delegate used to invoke on an ExecutionContext when passed an instance of this box type.</summary>
-            private static readonly ContextCallback s_callback = s =>
+            private static readonly ContextCallback s_callback = ExecutionContextCallback;
+
+            // Used to initialize s_callback above. We don't use a lambda for this on purpose: a lambda would
+            // introduce a new generic type behind the scenes that comes with a hefty size penalty in AOT builds.
+            private static void ExecutionContextCallback(object s)
             {
                 Debug.Assert(s is AsyncStateMachineBox<TStateMachine>);
                 // Only used privately to pass directly to EC.Run
                 Unsafe.As<AsyncStateMachineBox<TStateMachine>>(s).StateMachine.MoveNext();
-            };
+            }
 
             /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
             private Action _moveNextAction;
