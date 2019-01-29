@@ -67,11 +67,16 @@ namespace System.Threading.Tasks
 
         private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
 
-        // Delegate used by:
-        //     public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks);
-        //     public static Task<Task<TResult>> WhenAny<TResult>(params Task<TResult>[] tasks);
-        // Used to "cast" from Task<Task> to Task<Task<TResult>>.
-        internal static readonly Func<Task<Task>, Task<TResult>> TaskWhenAnyCast = completed => (Task<TResult>)completed.Result;
+        // Extract rarely used helper for a static method in a separate type so that the Func<Task<Task>, Task<TResult>>
+        // generic instantiations don't contribute to all Task instantiations, but only those where WhenAny is used.
+        internal static class TaskWhenAnyCast
+        {
+            // Delegate used by:
+            //     public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks);
+            //     public static Task<Task<TResult>> WhenAny<TResult>(params Task<TResult>[] tasks);
+            // Used to "cast" from Task<Task> to Task<Task<TResult>>.
+            internal static readonly Func<Task<Task>, Task<TResult>> Value = completed => (Task<TResult>)completed.Result;
+        }
 
         // Construct a promise-style task without any options. 
         internal Task() :
