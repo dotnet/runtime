@@ -826,8 +826,6 @@ public:
 #define GTF_CLS_VAR_ASG_LHS         0x04000000 // GT_CLS_VAR   -- this GT_CLS_VAR node is (the effective val) of the LHS
                                                //                 of an assignment; don't evaluate it independently.
 
-#define GTF_ADDR_ONSTACK            0x80000000 // GT_ADDR    -- this expression is guaranteed to be on the stack
-
 #define GTF_ADDRMODE_NO_CSE         0x80000000 // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                                //                         addressing mode
 
@@ -2031,7 +2029,6 @@ public:
     }
     inline bool IsHelperCall();
 
-    bool IsVarAddr() const;
     bool gtOverflow() const;
     bool gtOverflowEx() const;
     bool gtSetFlags() const;

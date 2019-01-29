@@ -9283,14 +9283,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_ADDR:
-
-                if (tree->gtFlags & GTF_ADDR_ONSTACK)
-                {
-                    chars += printf("[ADDR_ONSTACK]");
-                }
-                break;
-
             case GT_MUL:
 #if !defined(_TARGET_64BIT_)
             case GT_MUL_LONG:
