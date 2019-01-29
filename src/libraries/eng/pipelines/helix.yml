@@ -11,6 +11,7 @@ parameters:
   waitForCompletion: '' # true | false
   officialBuildId: ''
   enableAzurePipelinesReporter: '' # true | false
+  outerloop: '' # true | false
 
 steps:
   - script: ${{ parameters.msbuildScript }}
@@ -19,6 +20,7 @@ steps:
             /p:ArchGroup=${{ parameters.archGroup }}
             /p:ConfigurationGroup=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
+            /p:Outerloop=${{ parameters.outerloop }}
             /p:TargetGroup=${{ parameters.framework }}
             /p:HelixTargetQueues=${{ parameters.helixQueues }}
             /p:HelixBuild=$(Build.BuildNumber)
