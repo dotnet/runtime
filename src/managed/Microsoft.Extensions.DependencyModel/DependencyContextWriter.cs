@@ -4,136 +4,142 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    public class DependencyContextWriter
+    public partial class DependencyContextWriter
     {
-        public void Write(DependencyContext context, Stream stream)
+        private void WriteCore(DependencyContext context, UnifiedJsonWriter jsonWriter)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-            using (var writer = new StreamWriter(stream))
-            {
-                using (var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented })
-                {
-                    Write(context).WriteTo(jsonWriter);
-                }
-            }
-        }
-
-        private JObject Write(DependencyContext context)
-        {
-            var contextObject = new JObject(
-                new JProperty(DependencyContextStrings.RuntimeTargetPropertyName, WriteRuntimeTargetInfo(context)),
-                new JProperty(DependencyContextStrings.CompilationOptionsPropertName, WriteCompilationOptions(context.CompilationOptions)),
-                new JProperty(DependencyContextStrings.TargetsPropertyName, WriteTargets(context)),
-                new JProperty(DependencyContextStrings.LibrariesPropertyName, WriteLibraries(context))
-                );
+            jsonWriter.WriteStartObject();
+            WriteRuntimeTargetInfo(context, ref jsonWriter);
+            WriteCompilationOptions(context.CompilationOptions, ref jsonWriter);
+            WriteTargets(context, ref jsonWriter);
+            WriteLibraries(context, ref jsonWriter);
             if (context.RuntimeGraph.Any())
             {
-                contextObject.Add(new JProperty(DependencyContextStrings.RuntimesPropertyName, WriteRuntimeGraph(context)));
+                WriteRuntimeGraph(context, ref jsonWriter);
             }
-            return contextObject;
+            jsonWriter.WriteEndObject();
+            jsonWriter.Flush();
         }
 
-        private JObject WriteRuntimeTargetInfo(DependencyContext context)
+        private void WriteRuntimeTargetInfo(DependencyContext context, ref UnifiedJsonWriter jsonWriter)
         {
-            return new JObject(
-                new JProperty(DependencyContextStrings.RuntimeTargetNamePropertyName,
-                    context.Target.IsPortable ?
-                    context.Target.Framework :
-                    context.Target.Framework + DependencyContextStrings.VersionSeperator + context.Target.Runtime
-                ),
-                new JProperty(DependencyContextStrings.RuntimeTargetSignaturePropertyName,
-                    context.Target.RuntimeSignature
-                )
-            );
+            jsonWriter.WriteStartObject(DependencyContextStrings.RuntimeTargetPropertyName, escape: false);
+            if (context.Target.IsPortable)
+            {
+                jsonWriter.WriteString(DependencyContextStrings.RuntimeTargetNamePropertyName,
+                    context.Target.Framework, escape: false);
+            }
+            else
+            {
+                jsonWriter.WriteString(DependencyContextStrings.RuntimeTargetNamePropertyName,
+                    context.Target.Framework + DependencyContextStrings.VersionSeparator + context.Target.Runtime, escape: false);
+            }
+            jsonWriter.WriteString(DependencyContextStrings.RuntimeTargetSignaturePropertyName,
+                context.Target.RuntimeSignature, escape: false);
+            jsonWriter.WriteEndObject();
         }
 
-        private JObject WriteRuntimeGraph(DependencyContext context)
+        private void WriteRuntimeGraph(DependencyContext context, ref UnifiedJsonWriter jsonWriter)
         {
-            return new JObject(
-                context.RuntimeGraph.Select(g => new JProperty(g.Runtime, new JArray(g.Fallbacks)))
-                );
+            jsonWriter.WriteStartObject(DependencyContextStrings.RuntimesPropertyName, escape: false);
+            foreach (RuntimeFallbacks runtimeFallback in context.RuntimeGraph)
+            {
+                jsonWriter.WriteStartArray(runtimeFallback.Runtime);
+                foreach (string fallback in runtimeFallback.Fallbacks)
+                {
+                    jsonWriter.WriteStringValue(fallback);
+                }
+                jsonWriter.WriteEndArray();
+            }
+            jsonWriter.WriteEndObject();
         }
 
-        private JObject WriteCompilationOptions(CompilationOptions compilationOptions)
+        private void WriteCompilationOptions(CompilationOptions compilationOptions, ref UnifiedJsonWriter jsonWriter)
         {
-            var o = new JObject();
+            jsonWriter.WriteStartObject(DependencyContextStrings.CompilationOptionsPropertName, escape: false);
             if (compilationOptions.Defines?.Any() == true)
             {
-                o[DependencyContextStrings.DefinesPropertyName] = new JArray(compilationOptions.Defines);
+                jsonWriter.WriteStartArray(DependencyContextStrings.DefinesPropertyName, escape: false);
+                foreach (string define in compilationOptions.Defines)
+                {
+                    jsonWriter.WriteStringValue(define);
+                }
+                jsonWriter.WriteEndArray();
             }
-            AddPropertyIfNotNull(o, DependencyContextStrings.LanguageVersionPropertyName, compilationOptions.LanguageVersion);
-            AddPropertyIfNotNull(o, DependencyContextStrings.PlatformPropertyName, compilationOptions.Platform);
-            AddPropertyIfNotNull(o, DependencyContextStrings.AllowUnsafePropertyName, compilationOptions.AllowUnsafe);
-            AddPropertyIfNotNull(o, DependencyContextStrings.WarningsAsErrorsPropertyName, compilationOptions.WarningsAsErrors);
-            AddPropertyIfNotNull(o, DependencyContextStrings.OptimizePropertyName, compilationOptions.Optimize);
-            AddPropertyIfNotNull(o, DependencyContextStrings.KeyFilePropertyName, compilationOptions.KeyFile);
-            AddPropertyIfNotNull(o, DependencyContextStrings.DelaySignPropertyName, compilationOptions.DelaySign);
-            AddPropertyIfNotNull(o, DependencyContextStrings.PublicSignPropertyName, compilationOptions.PublicSign);
-            AddPropertyIfNotNull(o, DependencyContextStrings.EmitEntryPointPropertyName, compilationOptions.EmitEntryPoint);
-            AddPropertyIfNotNull(o, DependencyContextStrings.GenerateXmlDocumentationPropertyName, compilationOptions.GenerateXmlDocumentation);
-            AddPropertyIfNotNull(o, DependencyContextStrings.DebugTypePropertyName, compilationOptions.DebugType);
-            return o;
+            AddStringPropertyIfNotNull(DependencyContextStrings.LanguageVersionPropertyName, compilationOptions.LanguageVersion, ref jsonWriter);
+            AddStringPropertyIfNotNull(DependencyContextStrings.PlatformPropertyName, compilationOptions.Platform, ref jsonWriter);
+            AddBooleanPropertyIfNotNull(DependencyContextStrings.AllowUnsafePropertyName, compilationOptions.AllowUnsafe, ref jsonWriter);
+            AddBooleanPropertyIfNotNull(DependencyContextStrings.WarningsAsErrorsPropertyName, compilationOptions.WarningsAsErrors, ref jsonWriter);
+            AddBooleanPropertyIfNotNull(DependencyContextStrings.OptimizePropertyName, compilationOptions.Optimize, ref jsonWriter);
+            AddStringPropertyIfNotNull(DependencyContextStrings.KeyFilePropertyName, compilationOptions.KeyFile, ref jsonWriter);
+            AddBooleanPropertyIfNotNull(DependencyContextStrings.DelaySignPropertyName, compilationOptions.DelaySign, ref jsonWriter);
+            AddBooleanPropertyIfNotNull(DependencyContextStrings.PublicSignPropertyName, compilationOptions.PublicSign, ref jsonWriter);
+            AddBooleanPropertyIfNotNull(DependencyContextStrings.EmitEntryPointPropertyName, compilationOptions.EmitEntryPoint, ref jsonWriter);
+            AddBooleanPropertyIfNotNull(DependencyContextStrings.GenerateXmlDocumentationPropertyName, compilationOptions.GenerateXmlDocumentation, ref jsonWriter);
+            AddStringPropertyIfNotNull(DependencyContextStrings.DebugTypePropertyName, compilationOptions.DebugType, ref jsonWriter);
+            jsonWriter.WriteEndObject();
         }
 
-        private void AddPropertyIfNotNull<T>(JObject o, string name, T value)
+        private void AddStringPropertyIfNotNull(string name, string value, ref UnifiedJsonWriter jsonWriter)
         {
             if (value != null)
             {
-                o.Add(new JProperty(name, value));
+                jsonWriter.WriteString(name, value, escape: true);
             }
         }
 
-        private JObject WriteTargets(DependencyContext context)
+        private void AddBooleanPropertyIfNotNull(string name, bool? value, ref UnifiedJsonWriter jsonWriter)
         {
+            if (value.HasValue)
+            {
+                jsonWriter.WriteBoolean(name, value.Value, escape: true);
+            }
+        }
+
+        private void WriteTargets(DependencyContext context, ref UnifiedJsonWriter jsonWriter)
+        {
+            jsonWriter.WriteStartObject(DependencyContextStrings.TargetsPropertyName, escape: false);
             if (context.Target.IsPortable)
             {
-                return new JObject(
-                    new JProperty(context.Target.Framework, WritePortableTarget(context.RuntimeLibraries, context.CompileLibraries))
-                    );
+                WritePortableTarget(context.Target.Framework, context.RuntimeLibraries, context.CompileLibraries, ref jsonWriter);
             }
-
-            return new JObject(
-                new JProperty(context.Target.Framework, WriteTarget(context.CompileLibraries)),
-                new JProperty(context.Target.Framework + DependencyContextStrings.VersionSeperator + context.Target.Runtime,
-                    WriteTarget(context.RuntimeLibraries))
-                );
-        }
-
-        private JObject WriteTarget(IReadOnlyList<Library> libraries)
-        {
-            return new JObject(
-                libraries.Select(library =>
-                    new JProperty(library.Name + DependencyContextStrings.VersionSeperator + library.Version, WriteTargetLibrary(library))));
-        }
-
-        private JObject WritePortableTarget(IReadOnlyList<RuntimeLibrary> runtimeLibraries, IReadOnlyList<CompilationLibrary> compilationLibraries)
-        {
-            var runtimeLookup = runtimeLibraries.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
-            var compileLookup = compilationLibraries.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
-
-            var targetObject = new JObject();
-
-            foreach (var packageName in runtimeLookup.Keys.Concat(compileLookup.Keys).Distinct())
+            else
             {
-                RuntimeLibrary runtimeLibrary;
-                runtimeLookup.TryGetValue(packageName, out runtimeLibrary);
+                WriteTarget(context.Target.Framework, context.CompileLibraries, ref jsonWriter);
+                WriteTarget(context.Target.Framework + DependencyContextStrings.VersionSeparator + context.Target.Runtime,
+                    context.RuntimeLibraries, ref jsonWriter);
+            }
+            jsonWriter.WriteEndObject();
+        }
 
-                CompilationLibrary compilationLibrary;
-                compileLookup.TryGetValue(packageName, out compilationLibrary);
+        private void WriteTarget(string key, IReadOnlyList<Library> libraries, ref UnifiedJsonWriter jsonWriter)
+        {
+            jsonWriter.WriteStartObject(key);
+            int count = libraries.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Library library = libraries[i];
+                WriteTargetLibrary(library.Name + DependencyContextStrings.VersionSeparator + library.Version, library, ref jsonWriter);
+            }
+            jsonWriter.WriteEndObject();
+        }
+
+        private void WritePortableTarget(string key, IReadOnlyList<RuntimeLibrary> runtimeLibraries, IReadOnlyList<CompilationLibrary> compilationLibraries, ref UnifiedJsonWriter jsonWriter)
+        {
+            Dictionary<string, RuntimeLibrary> runtimeLookup = runtimeLibraries.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, CompilationLibrary> compileLookup = compilationLibraries.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
+
+            jsonWriter.WriteStartObject(key);
+
+            foreach (string packageName in runtimeLookup.Keys.Concat(compileLookup.Keys).Distinct())
+            {
+                runtimeLookup.TryGetValue(packageName, out RuntimeLibrary runtimeLibrary);
+
+                compileLookup.TryGetValue(packageName, out CompilationLibrary compilationLibrary);
 
                 if (compilationLibrary != null && runtimeLibrary != null)
                 {
@@ -146,138 +152,155 @@ namespace Microsoft.Extensions.DependencyModel
                     Debug.Assert(compilationLibrary.RuntimeStoreManifestName == null);
                 }
 
-                var library = (Library)compilationLibrary ?? (Library)runtimeLibrary;
-                targetObject.Add(
-                    new JProperty(library.Name + DependencyContextStrings.VersionSeperator + library.Version,
-                        WritePortableTargetLibrary(runtimeLibrary, compilationLibrary)
-                        )
-                    );
+                Library library = (Library)compilationLibrary ?? (Library)runtimeLibrary;
 
+                WritePortableTargetLibrary(library.Name + DependencyContextStrings.VersionSeparator + library.Version,
+                    runtimeLibrary, compilationLibrary, ref jsonWriter);
             }
-            return targetObject;
+            jsonWriter.WriteEndObject();
         }
 
-        private void AddCompilationAssemblies(JObject libraryObject, IEnumerable<string> compilationAssemblies)
+        private void AddCompilationAssemblies(IEnumerable<string> compilationAssemblies, ref UnifiedJsonWriter jsonWriter)
         {
             if (!compilationAssemblies.Any())
             {
                 return;
             }
-            libraryObject.Add(new JProperty(DependencyContextStrings.CompileTimeAssembliesKey,
-                 WriteAssetList(compilationAssemblies))
-             );
+
+            WriteAssetList(DependencyContextStrings.CompileTimeAssembliesKey, compilationAssemblies, ref jsonWriter);
         }
 
-        private void AddAssets(JObject libraryObject, string key, RuntimeAssetGroup group)
+        private void AddAssets(string key, RuntimeAssetGroup group, ref UnifiedJsonWriter jsonWriter)
         {
             if (group == null || !group.RuntimeFiles.Any())
             {
                 return;
             }
-            libraryObject.Add(new JProperty(key,
-                       WriteAssetList(group.RuntimeFiles))
-                   );
+
+            WriteAssetList(key, group.RuntimeFiles, ref jsonWriter);
         }
 
-        private void AddDependencies(JObject libraryObject, IEnumerable<Dependency> dependencies)
+        private void AddDependencies(IEnumerable<Dependency> dependencies, ref UnifiedJsonWriter jsonWriter)
         {
             if (!dependencies.Any())
             {
                 return;
             }
-            libraryObject.AddFirst(
-                new JProperty(DependencyContextStrings.DependenciesPropertyName,
-                new JObject(
-                    dependencies.Select(dependency => new JProperty(dependency.Name, dependency.Version))))
-                    );
+
+            jsonWriter.WriteStartObject(DependencyContextStrings.DependenciesPropertyName, escape: false);
+            foreach (Dependency dependency in dependencies)
+            {
+                jsonWriter.WriteString(dependency.Name, dependency.Version);
+            }
+            jsonWriter.WriteEndObject();
         }
 
-        private void AddResourceAssemblies(JObject libraryObject, IEnumerable<ResourceAssembly> resourceAssemblies)
+        private void AddResourceAssemblies(IEnumerable<ResourceAssembly> resourceAssemblies, ref UnifiedJsonWriter jsonWriter)
         {
             if (!resourceAssemblies.Any())
             {
                 return;
             }
-            libraryObject.Add(DependencyContextStrings.ResourceAssembliesPropertyName,
-                new JObject(resourceAssemblies.Select(a =>
-                    new JProperty(NormalizePath(a.Path), new JObject(new JProperty(DependencyContextStrings.LocalePropertyName, a.Locale))))
-                    )
-                );
+
+            jsonWriter.WriteStartObject(DependencyContextStrings.ResourceAssembliesPropertyName, escape: false);
+            foreach (ResourceAssembly resourceAssembly in resourceAssemblies)
+            {
+                jsonWriter.WriteStartObject(NormalizePath(resourceAssembly.Path));
+                jsonWriter.WriteString(DependencyContextStrings.LocalePropertyName, resourceAssembly.Locale, escape: false);
+                jsonWriter.WriteEndObject();
+            }
+            jsonWriter.WriteEndObject();
         }
 
-        private JObject WriteTargetLibrary(Library library)
+        private void WriteTargetLibrary(string key, Library library, ref UnifiedJsonWriter jsonWriter)
         {
-            var runtimeLibrary = library as RuntimeLibrary;
-            if (runtimeLibrary != null)
+            if (library is RuntimeLibrary runtimeLibrary)
             {
-                var libraryObject = new JObject();
-                AddDependencies(libraryObject, runtimeLibrary.Dependencies);
+                jsonWriter.WriteStartObject(key);
+
+                AddDependencies(runtimeLibrary.Dependencies, ref jsonWriter);
 
                 // Add runtime-agnostic assets
-                AddAssets(libraryObject, DependencyContextStrings.RuntimeAssembliesKey, runtimeLibrary.RuntimeAssemblyGroups.GetDefaultGroup());
-                AddAssets(libraryObject, DependencyContextStrings.NativeLibrariesKey, runtimeLibrary.NativeLibraryGroups.GetDefaultGroup());
-                AddResourceAssemblies(libraryObject, runtimeLibrary.ResourceAssemblies);
+                AddAssets(DependencyContextStrings.RuntimeAssembliesKey, runtimeLibrary.RuntimeAssemblyGroups.GetDefaultGroup(), ref jsonWriter);
+                AddAssets(DependencyContextStrings.NativeLibrariesKey, runtimeLibrary.NativeLibraryGroups.GetDefaultGroup(), ref jsonWriter);
+                AddResourceAssemblies(runtimeLibrary.ResourceAssemblies, ref jsonWriter);
 
-                return libraryObject;
+                jsonWriter.WriteEndObject();
             }
-
-            var compilationLibrary = library as CompilationLibrary;
-            if (compilationLibrary != null)
+            else if (library is CompilationLibrary compilationLibrary)
             {
-                var libraryObject = new JObject();
-                AddDependencies(libraryObject, compilationLibrary.Dependencies);
-                AddCompilationAssemblies(libraryObject, compilationLibrary.Assemblies);
-                return libraryObject;
+                jsonWriter.WriteStartObject(key);
+                AddDependencies(compilationLibrary.Dependencies, ref jsonWriter);
+                AddCompilationAssemblies(compilationLibrary.Assemblies, ref jsonWriter);
+                jsonWriter.WriteEndObject();
             }
-            throw new NotSupportedException();
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
 
-        private JObject WritePortableTargetLibrary(RuntimeLibrary runtimeLibrary, CompilationLibrary compilationLibrary)
+        private void WritePortableTargetLibrary(string key, RuntimeLibrary runtimeLibrary, CompilationLibrary compilationLibrary, ref UnifiedJsonWriter jsonWriter)
         {
-            var libraryObject = new JObject();
+            jsonWriter.WriteStartObject(key);
 
             var dependencies = new HashSet<Dependency>();
             if (runtimeLibrary != null)
             {
-                // Add runtime-agnostic assets
-                AddAssets(libraryObject, DependencyContextStrings.RuntimeAssembliesKey, runtimeLibrary.RuntimeAssemblyGroups.GetDefaultGroup());
-                AddAssets(libraryObject, DependencyContextStrings.NativeLibrariesKey, runtimeLibrary.NativeLibraryGroups.GetDefaultGroup());
-                AddResourceAssemblies(libraryObject, runtimeLibrary.ResourceAssemblies);
-
-                // Add runtime-specific assets
-                var runtimeTargets = new JObject();
-                AddRuntimeSpecificAssetGroups(runtimeTargets, DependencyContextStrings.RuntimeAssetType, runtimeLibrary.RuntimeAssemblyGroups);
-                AddRuntimeSpecificAssetGroups(runtimeTargets, DependencyContextStrings.NativeAssetType, runtimeLibrary.NativeLibraryGroups);
-                if (runtimeTargets.Count > 0)
-                {
-                    libraryObject.Add(DependencyContextStrings.RuntimeTargetsPropertyName, runtimeTargets);
-                }
-
                 dependencies.UnionWith(runtimeLibrary.Dependencies);
             }
 
             if (compilationLibrary != null)
             {
-                AddCompilationAssemblies(libraryObject, compilationLibrary.Assemblies);
-
                 dependencies.UnionWith(compilationLibrary.Dependencies);
             }
+            AddDependencies(dependencies, ref jsonWriter);
 
-            AddDependencies(libraryObject, dependencies);
+
+            if (runtimeLibrary != null)
+            {
+                // Add runtime-agnostic assets
+                AddAssets(DependencyContextStrings.RuntimeAssembliesKey, runtimeLibrary.RuntimeAssemblyGroups.GetDefaultGroup(), ref jsonWriter);
+                AddAssets(DependencyContextStrings.NativeLibrariesKey, runtimeLibrary.NativeLibraryGroups.GetDefaultGroup(), ref jsonWriter);
+                AddResourceAssemblies(runtimeLibrary.ResourceAssemblies, ref jsonWriter);
+
+                // Add runtime-specific assets
+                bool wroteObjectStart = false;
+                wroteObjectStart = AddRuntimeSpecificAssetGroups(DependencyContextStrings.RuntimeAssetType, runtimeLibrary.RuntimeAssemblyGroups, wroteObjectStart, ref jsonWriter);
+                wroteObjectStart = AddRuntimeSpecificAssetGroups(DependencyContextStrings.NativeAssetType, runtimeLibrary.NativeLibraryGroups, wroteObjectStart, ref jsonWriter);
+
+                if (wroteObjectStart)
+                {
+                    jsonWriter.WriteEndObject();
+                }
+            }
+
+            if (compilationLibrary != null)
+            {
+                AddCompilationAssemblies(compilationLibrary.Assemblies, ref jsonWriter);
+            }
+
             if (compilationLibrary != null && runtimeLibrary == null)
             {
-                libraryObject.Add(DependencyContextStrings.CompilationOnlyPropertyName, true);
+                jsonWriter.WriteBoolean(DependencyContextStrings.CompilationOnlyPropertyName, true, escape: false);
             }
-            return libraryObject;
+
+            jsonWriter.WriteEndObject();
         }
 
-        private void AddRuntimeSpecificAssetGroups(JObject runtimeTargets, string assetType, IEnumerable<RuntimeAssetGroup> assetGroups)
+        private bool AddRuntimeSpecificAssetGroups(string assetType, IEnumerable<RuntimeAssetGroup> assetGroups, bool wroteObjectStart, ref UnifiedJsonWriter jsonWriter)
         {
-            foreach (var group in assetGroups.Where(g => !string.IsNullOrEmpty(g.Runtime)))
+            IEnumerable<RuntimeAssetGroup> groups = assetGroups.Where(g => !string.IsNullOrEmpty(g.Runtime));
+            if (!wroteObjectStart && (groups.Count() > 0))
+            {
+                jsonWriter.WriteStartObject(DependencyContextStrings.RuntimeTargetsPropertyName, escape: false);
+                wroteObjectStart = true;
+            }
+            foreach (RuntimeAssetGroup group in groups)
             {
                 if (group.RuntimeFiles.Any())
                 {
-                    AddRuntimeSpecificAssets(runtimeTargets, group.RuntimeFiles, group.Runtime, assetType);
+                    AddRuntimeSpecificAssets(group.RuntimeFiles, group.Runtime, assetType, ref jsonWriter);
                 }
                 else
                 {
@@ -287,99 +310,114 @@ namespace Microsoft.Extensions.DependencyModel
                     var pseudoPathFolder = assetType == DependencyContextStrings.RuntimeAssetType ?
                         "lib" :
                         "native";
-                    runtimeTargets[$"runtime/{group.Runtime}/{pseudoPathFolder}/_._"] = new JObject(
-                        new JProperty(DependencyContextStrings.RidPropertyName, group.Runtime),
-                        new JProperty(DependencyContextStrings.AssetTypePropertyName, assetType));
+
+                    jsonWriter.WriteStartObject($"runtime/{group.Runtime}/{pseudoPathFolder}/_._");
+                    jsonWriter.WriteString(DependencyContextStrings.RidPropertyName, group.Runtime, escape: false);
+                    jsonWriter.WriteString(DependencyContextStrings.AssetTypePropertyName, assetType, escape: false);
+                    jsonWriter.WriteEndObject();
                 }
             }
+            return wroteObjectStart;
         }
 
-        private void AddRuntimeSpecificAssets(JObject target, IEnumerable<RuntimeFile> assets, string runtime, string assetType)
+        private void AddRuntimeSpecificAssets(IEnumerable<RuntimeFile> assets, string runtime, string assetType, ref UnifiedJsonWriter jsonWriter)
         {
-            foreach (var asset in assets)
+            foreach (RuntimeFile asset in assets)
             {
-                var asset_props = new JObject(
-                        new JProperty(DependencyContextStrings.RidPropertyName, runtime),
-                        new JProperty(DependencyContextStrings.AssetTypePropertyName, assetType)
-                        );
+                jsonWriter.WriteStartObject(NormalizePath(asset.Path));
+
+                jsonWriter.WriteString(DependencyContextStrings.RidPropertyName, runtime, escape: false);
+                jsonWriter.WriteString(DependencyContextStrings.AssetTypePropertyName, assetType, escape: false);
 
                 if (asset.AssemblyVersion != null)
                 {
-                    asset_props.Add(DependencyContextStrings.AssemblyVersionPropertyName, asset.AssemblyVersion);
+                    jsonWriter.WriteString(DependencyContextStrings.AssemblyVersionPropertyName, asset.AssemblyVersion, escape: false);
                 }
 
                 if (asset.FileVersion != null)
                 {
-                    asset_props.Add(DependencyContextStrings.FileVersionPropertyName, asset.FileVersion);
+                    jsonWriter.WriteString(DependencyContextStrings.FileVersionPropertyName, asset.FileVersion, escape: false);
                 }
 
-                target.Add(new JProperty(NormalizePath(asset.Path), asset_props));
+                jsonWriter.WriteEndObject();
             }
         }
 
-        private JObject WriteAssetList(IEnumerable<string> assetPaths)
+        private void WriteAssetList(string key, IEnumerable<string> assetPaths, ref UnifiedJsonWriter jsonWriter)
         {
-            return new JObject(assetPaths.Select(assembly => new JProperty(NormalizePath(assembly), new JObject())));
+            jsonWriter.WriteStartObject(key, escape: false);
+            foreach (string assembly in assetPaths)
+            {
+                jsonWriter.WriteStartObject(NormalizePath(assembly));
+                jsonWriter.WriteEndObject();
+            }
+            jsonWriter.WriteEndObject();
         }
 
-        private JObject WriteAssetList(IEnumerable<RuntimeFile> runtimeFiles)
+        private void WriteAssetList(string key, IEnumerable<RuntimeFile> runtimeFiles, ref UnifiedJsonWriter jsonWriter)
         {
-            var target = new JObject();
-            foreach (var runtimeFile in runtimeFiles)
+            jsonWriter.WriteStartObject(key, escape: false);
+
+            foreach (RuntimeFile runtimeFile in runtimeFiles)
             {
-                var fileJson = new JObject();
+                jsonWriter.WriteStartObject(NormalizePath(runtimeFile.Path));
 
                 if (runtimeFile.AssemblyVersion != null)
                 {
-                    fileJson.Add(DependencyContextStrings.AssemblyVersionPropertyName, runtimeFile.AssemblyVersion);
+                    jsonWriter.WriteString(DependencyContextStrings.AssemblyVersionPropertyName, runtimeFile.AssemblyVersion, escape: false);
                 }
 
                 if (runtimeFile.FileVersion != null)
                 {
-                    fileJson.Add(DependencyContextStrings.FileVersionPropertyName, runtimeFile.FileVersion);
+                    jsonWriter.WriteString(DependencyContextStrings.FileVersionPropertyName, runtimeFile.FileVersion, escape: false);
                 }
 
-                target.Add(new JProperty(NormalizePath(runtimeFile.Path), fileJson));
+                jsonWriter.WriteEndObject();
             }
 
-            return target;
+            jsonWriter.WriteEndObject();
         }
 
-        private JObject WriteLibraries(DependencyContext context)
+        private void WriteLibraries(DependencyContext context, ref UnifiedJsonWriter jsonWriter)
         {
-            var allLibraries =
+            IEnumerable<IGrouping<string, Library>> allLibraries =
                 context.RuntimeLibraries.Cast<Library>().Concat(context.CompileLibraries)
-                    .GroupBy(library => library.Name + DependencyContextStrings.VersionSeperator + library.Version);
+                    .GroupBy(library => library.Name + DependencyContextStrings.VersionSeparator + library.Version);
 
-            return new JObject(allLibraries.Select(libraries => new JProperty(libraries.Key, WriteLibrary(libraries.First()))));
+            jsonWriter.WriteStartObject(DependencyContextStrings.LibrariesPropertyName, escape: false);
+            foreach (IGrouping<string, Library> libraryGroup in allLibraries)
+            {
+                WriteLibrary(libraryGroup.Key, libraryGroup.First(), ref jsonWriter);
+            }
+            jsonWriter.WriteEndObject();
         }
 
-        private JObject WriteLibrary(Library library)
+        private void WriteLibrary(string key, Library library, ref UnifiedJsonWriter jsonWriter)
         {
-            var libraryJson = new JObject(
-                new JProperty(DependencyContextStrings.TypePropertyName, library.Type),
-                new JProperty(DependencyContextStrings.ServiceablePropertyName, library.Serviceable),
-                new JProperty(DependencyContextStrings.Sha512PropertyName, library.Hash));
+            jsonWriter.WriteStartObject(key);
+            jsonWriter.WriteString(DependencyContextStrings.TypePropertyName, library.Type, escape: false);
+            jsonWriter.WriteBoolean(DependencyContextStrings.ServiceablePropertyName, library.Serviceable, escape: false);
+            jsonWriter.WriteString(DependencyContextStrings.Sha512PropertyName, library.Hash, escape: false);
 
             if (library.Path != null)
             {
-                libraryJson.Add(new JProperty(DependencyContextStrings.PathPropertyName, library.Path));
+                jsonWriter.WriteString(DependencyContextStrings.PathPropertyName, library.Path, escape: false);
             }
 
             if (library.HashPath != null)
             {
-                libraryJson.Add(new JProperty(DependencyContextStrings.HashPathPropertyName, library.HashPath));
+                jsonWriter.WriteString(DependencyContextStrings.HashPathPropertyName, library.HashPath, escape: false);
             }
 
             if (library.RuntimeStoreManifestName != null)
             {
-                libraryJson.Add(new JProperty(DependencyContextStrings.RuntimeStoreManifestPropertyName, library.RuntimeStoreManifestName));
+                jsonWriter.WriteString(DependencyContextStrings.RuntimeStoreManifestPropertyName, library.RuntimeStoreManifestName, escape: false);
             }
 
-            return libraryJson;
+            jsonWriter.WriteEndObject();
         }
 
-        private string NormalizePath(string path)
+        private static string NormalizePath(string path)
         {
             return path.Replace('\\', '/');
         }
