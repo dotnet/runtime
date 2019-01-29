@@ -132,14 +132,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitDisposeCache(ServiceCallSite transientCallSite, ILEmitResolverBuilderContext argument)
         {
-            // RuntimeScope.CaptureDisposables([create value])
-            var shouldCapture = BeginCaptureDisposable(transientCallSite.ImplementationType, argument);
-
-            VisitCallSiteMain(transientCallSite, argument);
-
-            if (shouldCapture)
+            if (transientCallSite.CaptureDisposable)
             {
+                BeginCaptureDisposable(argument);
+                VisitCallSiteMain(transientCallSite, argument);
                 EndCaptureDisposable(argument);
+            }
+            else
+            {
+                VisitCallSiteMain(transientCallSite, argument);
             }
             return null;
         }
@@ -353,8 +354,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 VisitCallSiteMain(callSite, context);
                 Stloc(context.Generator, resultLocal.LocalIndex);
 
-                if (BeginCaptureDisposable(callSite.ImplementationType, context))
+                if (callSite.CaptureDisposable)
                 {
+                    BeginCaptureDisposable(context);
                     Ldloc(context.Generator, resultLocal.LocalIndex);
                     EndCaptureDisposable(context);
                     // Pop value returned by CaptureDisposable off the stack
@@ -408,17 +410,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             };
         }
 
-        private static bool BeginCaptureDisposable(Type implType, ILEmitResolverBuilderContext argument)
+        private static void BeginCaptureDisposable(ILEmitResolverBuilderContext argument)
         {
-            var shouldCapture = implType == null || typeof(IDisposable).GetTypeInfo().IsAssignableFrom(implType.GetTypeInfo());
-
-            if (shouldCapture)
-            {
-                // context
-                argument.Generator.Emit(OpCodes.Ldarg_1);
-            }
-
-            return shouldCapture;
+            argument.Generator.Emit(OpCodes.Ldarg_1);
         }
 
         private static void EndCaptureDisposable(ILEmitResolverBuilderContext argument)

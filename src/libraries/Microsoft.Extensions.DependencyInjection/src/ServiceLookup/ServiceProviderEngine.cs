@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -67,6 +68,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _disposed = true;
             Root.Dispose();
         }
+
+#if DISPOSE_ASYNC
+        public ValueTask DisposeAsync()
+        {
+            _disposed = true;
+            return Root.DisposeAsync();
+        }
+#endif
 
         internal object GetService(Type serviceType, ServiceProviderEngineScope serviceProviderEngineScope)
         {

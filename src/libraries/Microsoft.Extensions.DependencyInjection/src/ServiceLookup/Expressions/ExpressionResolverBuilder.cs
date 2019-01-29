@@ -147,24 +147,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Expression VisitDisposeCache(ServiceCallSite callSite, object context)
         {
-            var implType = callSite.ImplementationType;
             // Elide calls to GetCaptureDisposable if the implementation type isn't disposable
             return TryCaptureDisposable(
-                implType,
+                callSite,
                 ScopeParameter,
                 VisitCallSiteMain(callSite, context));
         }
 
-        private Expression TryCaptureDisposable(Type implType, ParameterExpression scope, Expression service)
+        private Expression TryCaptureDisposable(ServiceCallSite callSite, ParameterExpression scope, Expression service)
         {
-            if (implType != null &&
-                !typeof(IDisposable).GetTypeInfo().IsAssignableFrom(implType.GetTypeInfo()))
+            if (!callSite.CaptureDisposable)
             {
                 return service;
             }
 
-            return Expression.Invoke(GetCaptureDisposable(scope),
-                service);
+            return Expression.Invoke(GetCaptureDisposable(scope), service);
         }
 
         protected override Expression VisitConstructor(ConstructorCallSite callSite, object context)
@@ -221,7 +218,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 keyExpression,
                 resolvedVariable);
 
-            var captureDisposible = TryCaptureDisposable(callSite.ImplementationType, ScopeParameter, VisitCallSiteMain(callSite, null));
+            var captureDisposible = TryCaptureDisposable(callSite, ScopeParameter, VisitCallSiteMain(callSite, null));
 
             var assignExpression = Expression.Assign(
                 resolvedVariable,
