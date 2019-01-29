@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json;
 using FluentAssertions;
 using Xunit;
-using System.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
 {
@@ -30,13 +29,34 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         ""signature"":""target-signature""
     },
     ""targets"": {
-        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {},
+        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {}
     }
 }");
             context.Target.IsPortable.Should().BeFalse();
             context.Target.Framework.Should().Be(".NETCoreApp,Version=v1.0");
             context.Target.Runtime.Should().Be("osx.10.10-x64");
             context.Target.RuntimeSignature.Should().Be("target-signature");
+        }
+
+        [Fact]
+        public void ReadsRuntimeTargetInfoWithCommentsIsInvalid()
+        {
+            var exception = Assert.Throws<JsonReaderException>(() => Read(
+@"{
+    ""runtimeTarget"": {
+        ""name"":"".NETCoreApp,Version=v1.0/osx.10.10-x64"",
+        ""signature"":""target-signature""
+    },
+    ""targets"": {
+        // Ignore comments
+        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {}
+        /*
+         * Ignore multi-line comments
+        */
+    }
+}"));
+
+            Assert.Equal("'/' is invalid after a value. Expected either ',', '}', or ']'. LineNumber: 6 | BytePositionInLine: 8.", exception.Message);
         }
 
         [Fact]
@@ -51,7 +71,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         ""signature"":""target-signature""
     },
     ""targets"": {
-        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {},
+        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {}
     }
 }");
             context.Target.IsPortable.Should().BeFalse();
@@ -83,7 +103,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
              ""type"": ""package"",
              ""serviceable"": false,
              ""sha512"": ""HASH-System.Banana""
-         },
+         }
      }
  }";
 
@@ -113,7 +133,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
              ""type"": ""package"",
              ""serviceable"": false,
              ""sha512"": ""HASH-System.Banana""
-         },
+         }
      }
  }";
 
@@ -198,7 +218,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var context = Read(
 @"{
     ""targets"": {
-        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {},
+        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {}
     },
     ""runtimes"": {
         ""osx.10.10-x64"": [ ],
@@ -251,7 +271,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""sha512"": ""HASH-System.Banana"",
             ""path"": ""PackagePath"",
             ""hashPath"": ""PachageHashPath""
-        },
+        }
     }
 }");
             context.CompileLibraries.Should().HaveCount(2);
@@ -348,7 +368,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""sha512"": ""HASH-System.Banana"",
             ""path"": null,
             ""hashPath"": null
-        },
+        }
     }
 }");
             context.CompileLibraries.Should().HaveCount(1);
@@ -385,7 +405,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""type"": ""package"",
             ""serviceable"": false,
             ""sha512"": ""HASH-System.Banana""
-        },
+        }
     }
 }");
             context.CompileLibraries.Should().HaveCount(1);
@@ -434,7 +454,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""type"": ""package"",
             ""serviceable"": false,
             ""sha512"": ""HASH-System.Banana""
-        },
+        }
     }
 }");
             context.CompileLibraries.Should().HaveCount(2);
@@ -505,7 +525,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     },
     ""libraries"":{
         ""MyApp/1.0.1"": {
-            ""type"": ""project"",
+            ""type"": ""project""
         },
         ""System.Banana/1.0.0"": {
             ""type"": ""package"",
@@ -514,7 +534,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""path"": ""PackagePath"",
             ""hashPath"": ""PackageHashPath"",
             ""runtimeStoreManifestName"": ""placeHolderManifest.xml""
-        },
+        }
     }
 }";
             var context = Read(json);
@@ -567,8 +587,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""System.Banana/1.0.0"": {
                 ""runtimeTargets"": {
                     ""runtime/win7-x64/lib/_._"": { ""assetType"": ""runtime"", ""rid"": ""win7-x64""},
-                    ""runtime/linux-x64/native/_._"": { ""assetType"": ""native"", ""rid"": ""linux-x64""},
-                },
+                    ""runtime/linux-x64/native/_._"": { ""assetType"": ""native"", ""rid"": ""linux-x64""}
+                }
             }
         }
     },
@@ -577,7 +597,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""type"": ""package"",
             ""serviceable"": false,
             ""sha512"": ""HASH-System.Banana""
-        },
+        }
     }
 }");
             context.CompileLibraries.Should().HaveCount(1);
@@ -618,7 +638,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""type"": ""package"",
             ""serviceable"": false,
             ""sha512"": ""HASH-System.Banana""
-        },
+        }
     }
 }");
             var package = context.RuntimeLibraries.Should().Contain(l => l.Name == "System.Banana").Subject;
@@ -648,11 +668,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         ""optimize"": true
     },
     ""targets"": {
-        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {},
+        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {}
     }
 }");
             context.CompilationOptions.AllowUnsafe.Should().Be(true);
-            context.CompilationOptions.Defines.Should().BeEquivalentTo(new [] {"MY", "DEFINES"});
+            context.CompilationOptions.Defines.Should().BeEquivalentTo(new[] { "MY", "DEFINES" });
             context.CompilationOptions.DelaySign.Should().Be(true);
             context.CompilationOptions.EmitEntryPoint.Should().Be(true);
             context.CompilationOptions.GenerateXmlDocumentation.Should().Be(true);
@@ -685,7 +705,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         ""optimize"": true
     },
     ""targets"": {
-        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {},
+        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {}
     }
 }");
             context.CompilationOptions.AllowUnsafe.Should().Be(true);

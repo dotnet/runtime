@@ -5,7 +5,7 @@ namespace Microsoft.Extensions.DependencyModel
 {
     internal class DependencyContextStrings
     {
-        internal const char VersionSeperator = '/';
+        internal const char VersionSeparator = '/';
 
         internal const string CompileTimeAssembliesKey = "compile";
 
