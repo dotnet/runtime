@@ -271,7 +271,7 @@
     <!-- is is not supported on ARM platforms either. -->
     <EnableSourceLink Condition="'$(HostArch)' == 'Arm' OR '$(HostArch)' == 'Arm64'">false</EnableSourceLink>
     <!-- Disable source link on local builds. -->
-    <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuildId)' != ''">false</EnableSourceLink>
+    <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
