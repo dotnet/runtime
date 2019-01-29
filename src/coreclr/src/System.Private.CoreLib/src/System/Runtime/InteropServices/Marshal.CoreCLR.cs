@@ -361,7 +361,7 @@ namespace System.Runtime.InteropServices
                 throw new OutOfMemoryException();
             }
 
-            s.ConvertToAnsi((byte*)hglobal, nb, false, false);
+            StringToAnsiString(s, (byte*)hglobal, nb);
             return hglobal;
         }
 
@@ -610,7 +610,7 @@ namespace System.Runtime.InteropServices
                 throw new OutOfMemoryException();
             }
 
-            s.ConvertToAnsi((byte*)hglobal, nb, false, false);
+            StringToAnsiString(s, (byte*)hglobal, nb);
             return hglobal;
         }
 
