@@ -1896,22 +1896,6 @@ buffer_reply_packet (int id, int error, Buffer *data)
 	nreply_packets ++;
 }
 
-/*
- * OBJECT IDS
- */
-
-/*
- * Represents an object accessible by the debugger client.
- */
-typedef struct {
-	/* Unique id used in the wire protocol to refer to objects */
-	int id;
-	/*
-	 * A weakref gc handle pointing to the object. The gc handle is used to 
-	 * detect if the object was garbage collected.
-	 */
-	guint32 handle;
-} ObjRef;
 
 /* Maps objid -> ObjRef */
 /* Protected by the loader lock */
@@ -1921,15 +1905,7 @@ static GHashTable *obj_to_objref;
 /* Protected by the dbg lock */
 static MonoGHashTable *suspended_objs;
 
-static void
-free_objref (gpointer value)
-{
-	ObjRef *o = (ObjRef *)value;
 
-	mono_gchandle_free_internal (o->handle);
-
-	g_free (o);
-}
 
 static void
 objrefs_init (void)
