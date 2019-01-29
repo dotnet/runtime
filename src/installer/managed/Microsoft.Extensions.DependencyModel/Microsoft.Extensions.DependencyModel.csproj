@@ -5,30 +5,53 @@
     <Description>Abstractions for reading `.deps` files.</Description>
     <TargetFrameworks>net451;netstandard1.3;netstandard1.6;netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard1.3;netstandard1.6;netstandard2.0</TargetFrameworks>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <Choose>
     <!--
-    Newtonsoft.Json v11.0.1 is the first verison that targets netstandard2.0. Since we added a target for netstandard2.0
-    so users aren't forced to download the 1.x dependencies, it makes sense to use this version of Newtonsoft.Json.
-    However, we still use the previous (v9.0.1) for other TFMs, so existing users don't need to upgrade their Newtonsoft.Json.
+    Since we added a target for netstandard2.0 so users aren't forced to download the 1.x dependencies,
+    or depend on Newtonsoft.Json, use the Microsoft.Bcl.Json.Sources package (which targets netstandard2.0).
+    However, we still use the Newtonsoft.Json (v9.0.1) for other TFMs, so existing users don't need to upgrade their Newtonsoft.Json.
     For example, the SDK targets net4x and is loaded in VS, so it can't upgrade to a new Newtonsoft.Json.
     -->
     <When Condition="'$(TargetFramework)' == 'netstandard2.0'">
+      <!--These properties are necessary to build the source package-->
       <PropertyGroup>
-        <NewtonsoftJsonPackageVersion>11.0.1</NewtonsoftJsonPackageVersion>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <!-- Suppress warnings for unnecessary CLSCompliance attributes -->
+        <NoWarn>3021</NoWarn>
       </PropertyGroup>
+      <ItemGroup>
+        <PackageReference Include="Microsoft.Bcl.Json.Sources">
+          <Version>$(MicrosoftBclJsonSourcesPackageVersion)</Version>
+          <PrivateAssets>All</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="System.Memory" Version="4.5.2" />
+      </ItemGroup>
+      <ItemGroup>
+        <Compile Remove="DependencyContextJsonReader.JsonTextReader.cs" />
+        <Compile Remove="DependencyContextWriter.JsonTextWriter.cs" />
+        <Compile Remove="UnifiedJsonReader.JsonTextReader.cs" />
+        <Compile Remove="UnifiedJsonWriter.JsonTextWriter.cs" />
+      </ItemGroup>
     </When>
     <Otherwise>
-      <PropertyGroup>
-        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-      </PropertyGroup>
+      <ItemGroup>
+        <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+      </ItemGroup>
+      <ItemGroup>
+        <Compile Remove="ArrayBufferWriter.cs" />
+        <Compile Remove="DependencyContextJsonReader.Utf8JsonReader.cs" />
+        <Compile Remove="DependencyContextWriter.Utf8JsonWriter.cs" />
+        <Compile Remove="UnifiedJsonReader.Utf8JsonReader.cs" />
+        <Compile Remove="UnifiedJsonWriter.Utf8JsonWriter.cs" />
+      </ItemGroup>
     </Otherwise>
   </Choose>
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' Or '$(TargetFramework)' == 'netstandard1.6' ">

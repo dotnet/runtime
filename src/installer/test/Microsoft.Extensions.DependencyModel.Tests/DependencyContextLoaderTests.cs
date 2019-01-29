@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         ""signature"":""target-signature""
     },
     ""targets"": {
-        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {},
+        "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {}
     }
 }")
                 .AddFile(
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     ""targets"": {
         "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {
             
-        },
+        }
     }
 }")
                 .AddFile(
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
              ""type"": ""package"",
              ""serviceable"": false,
              ""sha512"": ""HASH-System.Banana""
-         },
+         }
      }
  }")
                 .Build();
