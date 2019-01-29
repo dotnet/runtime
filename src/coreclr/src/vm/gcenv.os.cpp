@@ -573,13 +573,28 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 // Get the physical memory that this process can use.
 // Return:
 //  non zero if it has succeeded, 0 if it has failed
-uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
+//
+// PERF TODO: Requires more work to not treat the restricted case to be special. 
+// To be removed before 3.0 ships.
+uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 {
     LIMITED_METHOD_CONTRACT;
 
+    if (is_restricted)
+        *is_restricted = false;
+
     size_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
+    {
+        if (is_restricted 
+#ifndef FEATURE_PAL
+            && !g_UseRestrictedVirtualMemory
+#endif
+            )
+            *is_restricted = true;
+
         return restricted_limit;
+    }
 
     MEMORYSTATUSEX memStatus;
     ::GetProcessMemoryLoad(&memStatus);
