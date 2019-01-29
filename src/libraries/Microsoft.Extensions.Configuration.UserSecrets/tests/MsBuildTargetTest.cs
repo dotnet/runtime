@@ -95,6 +95,21 @@ let main argv =
                     break;
             }
 
+            foreach (var file in new[] { Path.Join(_tempDir, "Directory.Build.props"), Path.Join(_tempDir, "Directory.Build.targets") })
+            {
+                if (!File.Exists(file))
+                {
+                    using (var fileStream = File.CreateText(file))
+                    {
+                        fileStream.WriteLine(@"
+<Project>
+  <!-- Intentionally empty to isolate tools projects from the result of the repo -->
+</Project>
+");
+                    }
+                }
+            }
+
             var assemblyInfoFile = Path.Combine(_tempDir, $"obj/Debug/{testTfm}/test.AssemblyInfo" + sourceExt);
 
             AssertDotNet("restore");
@@ -103,7 +118,7 @@ let main argv =
 
             AssertDotNet("build --configuration Debug");
 
-            Assert.True(File.Exists(assemblyInfoFile), $"{assemblyInfoFile} should not exist but does not");
+            Assert.True(File.Exists(assemblyInfoFile), $"{assemblyInfoFile} should exist but does not");
             var contents = File.ReadAllText(assemblyInfoFile);
             Assert.Contains("assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute(\"xyz123\")", contents);
             var lastWrite = new FileInfo(assemblyInfoFile).LastWriteTimeUtc;
@@ -134,10 +149,12 @@ let main argv =
                 StartInfo = processInfo
             };
             process.OutputDataReceived += LogData;
+            process.ErrorDataReceived += LogData;
             process.Start();
             process.BeginOutputReadLine();
             process.WaitForExit();
             process.OutputDataReceived -= LogData;
+            process.ErrorDataReceived -= LogData;
             Assert.Equal(0, process.ExitCode);
         }
 

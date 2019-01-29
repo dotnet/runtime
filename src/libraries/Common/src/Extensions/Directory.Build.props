@@ -1,9 +1,31 @@
 <Project>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)..\, Directory.Build.props))\Directory.Build.props" />
 
   <PropertyGroup>
+    <!-- This does not represent the TFM for the code. It's only here because /t:Pack requires it. -->
+    <TargetFramework>netstandard1.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <IsShipping>false</IsShipping>
+    <NoBuild>true</NoBuild>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
-    <PackageId>Microsoft.Extensions.$(ProjectDirName).Sources</PackageId>
+    <ContentTargetFolders>contentFiles</ContentTargetFolders>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <DefaultExcludeItems>$(DefaultExcludeItems);$(BaseOutputPath);$(BaseIntermediateOutputPath);</DefaultExcludeItems>
+    <NoWarn>$(NoWarn);NU5105;CS8021</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectDirectory)\**\*.cs" Exclude="$(DefaultExcludeItems)">
+      <Pack>true</Pack>
+      <PackagePath>$(ContentTargetFolders)\cs\netstandard1.0\shared\</PackagePath>
+    </Compile>
+    <EmbeddedResource Include="$(MSBuildProjectDirectory)\**\*.resx" Exclude="$(DefaultExcludeItems)">
+      <Pack>true</Pack>
+      <PackagePath>$(ContentTargetFolders)\any\any\shared\</PackagePath>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>
