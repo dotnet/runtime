@@ -252,6 +252,9 @@ typedef struct MonoAotStats {
 	int got_slot_types [MONO_PATCH_INFO_NUM];
 	int got_slot_info_sizes [MONO_PATCH_INFO_NUM];
 	int jit_time, gen_time, link_time;
+	int method_ref_count, method_ref_size;
+	int class_ref_count, class_ref_size;
+	int ginst_count, ginst_size;
 } MonoAotStats;
 
 typedef struct GotInfo {
@@ -297,6 +300,8 @@ typedef struct MonoAotCompile {
 	GHashTable *klass_blob_hash;
 	/* Maps MonoMethod* -> blob offset */
 	GHashTable *method_blob_hash;
+	/* Maps MonoGenericInst* -> blob offset */
+	GHashTable *ginst_blob_hash;
 	GHashTable *gsharedvt_in_signatures;
 	GHashTable *gsharedvt_out_signatures;
 	guint32 *plt_got_info_offsets;
@@ -3139,6 +3144,9 @@ encode_ginst (MonoAotCompile *acfg, MonoGenericInst *inst, guint8 *buf, guint8 *
 static void
 encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf);
 
+static guint32
+get_shared_ginst_ref (MonoAotCompile *acfg, MonoGenericInst *ginst);
+
 static void
 encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
 {
@@ -3166,7 +3174,8 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 
 			encode_value (MONO_AOT_TYPEREF_GINST, p, &p);
 			encode_klass_ref (acfg, gclass, p, &p);
-			encode_ginst (acfg, inst, p, &p);
+			guint32 offset = get_shared_ginst_ref (acfg, inst);
+			encode_value (offset, p, &p);
 
 			count += p - p1;
 		}
@@ -3217,7 +3226,35 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		encode_value (m_class_get_rank (klass), p, &p);
 		encode_klass_ref (acfg, m_class_get_element_class (klass), p, &p);
 	}
+
+	acfg->stats.class_ref_count++;
+	acfg->stats.class_ref_size += p - buf;
+
 	*endbuf = p;
+}
+
+static guint32
+get_shared_klass_ref (MonoAotCompile *acfg, MonoClass *klass)
+{
+	guint offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->klass_blob_hash, klass));
+	guint8 *buf2, *p;
+
+	if (!offset) {
+		buf2 = (guint8 *)g_malloc (1024);
+		p = buf2;
+
+		encode_klass_ref_inner (acfg, klass, p, &p);
+		g_assert (p - buf2 < 1024);
+
+		offset = add_to_blob (acfg, buf2, p - buf2);
+		g_free (buf2);
+
+		g_hash_table_insert (acfg->klass_blob_hash, klass, GUINT_TO_POINTER (offset + 1));
+	} else {
+		offset --;
+	}
+
+	return offset;
 }
 
 /*
@@ -3247,23 +3284,8 @@ encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **
 	}
 
 	if (shared) {
-		guint offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->klass_blob_hash, klass));
-		guint8 *buf2, *p;
-
-		if (!offset) {
-			buf2 = (guint8 *)g_malloc (1024);
-			p = buf2;
-
-			encode_klass_ref_inner (acfg, klass, p, &p);
-			g_assert (p - buf2 < 1024);
-
-			offset = add_to_blob (acfg, buf2, p - buf2);
-			g_free (buf2);
-
-			g_hash_table_insert (acfg->klass_blob_hash, klass, GUINT_TO_POINTER (offset + 1));
-		} else {
-			offset --;
-		}
+		guint8 *p;
+		guint32 offset = get_shared_klass_ref (acfg, klass);
 
 		p = buf;
 		encode_value (MONO_AOT_TYPEREF_BLOB_INDEX, p, &p);
@@ -3296,7 +3318,34 @@ encode_ginst (MonoAotCompile *acfg, MonoGenericInst *inst, guint8 *buf, guint8 *
 	encode_value (inst->type_argc, p, &p);
 	for (i = 0; i < inst->type_argc; ++i)
 		encode_klass_ref (acfg, mono_class_from_mono_type_internal (inst->type_argv [i]), p, &p);
+
+	acfg->stats.ginst_count++;
+	acfg->stats.ginst_size += p - buf;
+
 	*endbuf = p;
+}
+
+static guint32
+get_shared_ginst_ref (MonoAotCompile *acfg, MonoGenericInst *ginst)
+{
+	guint32 offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->ginst_blob_hash, ginst));
+	if (!offset) {
+		guint8 *buf2, *p2;
+
+		buf2 = (guint8 *)g_malloc (1024);
+		p2 = buf2;
+
+		encode_ginst (acfg, ginst, p2, &p2);
+		g_assert (p2 - buf2 < 1024);
+
+		offset = add_to_blob (acfg, buf2, p2 - buf2);
+		g_free (buf2);
+
+		g_hash_table_insert (acfg->ginst_blob_hash, ginst, GUINT_TO_POINTER (offset + 1));
+	} else {
+		offset --;
+	}
+	return offset;
 }
 
 static void
@@ -3304,20 +3353,20 @@ encode_generic_context (MonoAotCompile *acfg, MonoGenericContext *context, guint
 {
 	guint8 *p = buf;
 	MonoGenericInst *inst;
+	guint32 flags = (context->class_inst ? 1 : 0) | (context->method_inst ? 2 : 0);
 
+	g_assert (flags);
+
+	encode_value (flags, p, &p);
 	inst = context->class_inst;
 	if (inst) {
-		g_assert (inst->type_argc);
-		encode_ginst (acfg, inst, p, &p);
-	} else {
-		encode_value (0, p, &p);
+		guint32 offset = get_shared_ginst_ref (acfg, inst);
+		encode_value (offset, p, &p);
 	}
 	inst = context->method_inst;
 	if (inst) {
-		g_assert (inst->type_argc);
-		encode_ginst (acfg, inst, p, &p);
-	} else {
-		encode_value (0, p, &p);
+		guint32 offset = get_shared_ginst_ref (acfg, inst);
+		encode_value (offset, p, &p);
 	}
 	*endbuf = p;
 }
@@ -3644,6 +3693,13 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			encode_value ((MONO_AOT_METHODREF_METHODSPEC << 24), p, &p);
 			encode_value (image_index, p, &p);
 			encode_value (token, p, &p);
+		} else if (g_hash_table_lookup (acfg->method_blob_hash, method)) {
+			/* Already emitted as part of an rgctx fetch */
+			guint32 offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_blob_hash, method));
+			offset --;
+
+			encode_value ((MONO_AOT_METHODREF_BLOB_INDEX << 24), p, &p);
+			encode_value (offset, p, &p);
 		} else {
 			MonoMethod *declaring;
 			MonoGenericContext *context = mono_method_get_context (method);
@@ -3666,7 +3722,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			token = declaring->token;
 			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
 			encode_value (image_index, p, &p);
-			encode_value (token, p, &p);
+			encode_value (mono_metadata_token_index (token), p, &p);
 			encode_generic_context (acfg, context, p, &p);
 		}
 	} else if (token == 0) {
@@ -3712,7 +3768,34 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			encode_value ((image_index << 24) | mono_metadata_token_index (token), p, &p);
 		}
 	}
+
+	acfg->stats.method_ref_count++;
+	acfg->stats.method_ref_size += p - buf;
+
 	*endbuf = p;
+}
+
+static guint32
+get_shared_method_ref (MonoAotCompile *acfg, MonoMethod *method)
+{
+	guint32 offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_blob_hash, method));
+	if (!offset) {
+		guint8 *buf2, *p2;
+
+		buf2 = (guint8 *)g_malloc (1024);
+		p2 = buf2;
+
+		encode_method_ref (acfg, method, p2, &p2);
+		g_assert (p2 - buf2 < 1024);
+
+		offset = add_to_blob (acfg, buf2, p2 - buf2);
+		g_free (buf2);
+
+		g_hash_table_insert (acfg->method_blob_hash, method, GUINT_TO_POINTER (offset + 1));
+	} else {
+		offset --;
+	}
+	return offset;
 }
 
 static gint
@@ -6280,26 +6363,17 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
 		guint32 offset;
-		guint8 *buf2, *p2;
 
 		/* 
-		 * entry->method has a lenghtly encoding and multiple rgctx_fetch entries
-		 * reference the same method, so encode the method only once.
+		 * entry->d.klass/method has a lenghtly encoding and multiple rgctx_fetch entries
+		 * reference the same klass/method, so encode it only once.
+		 * For patches which refer to got entries, this sharing is done by get_got_offset, but
+		 * these are not got entries.
 		 */
-		offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_blob_hash, entry->method));
-		if (!offset) {
-			buf2 = (guint8 *)g_malloc (1024);
-			p2 = buf2;
-
-			encode_method_ref (acfg, entry->method, p2, &p2);
-			g_assert (p2 - buf2 < 1024);
-
-			offset = add_to_blob (acfg, buf2, p2 - buf2);
-			g_free (buf2);
-
-			g_hash_table_insert (acfg->method_blob_hash, entry->method, GUINT_TO_POINTER (offset + 1));
+		if (entry->in_mrgctx) {
+			offset = get_shared_method_ref (acfg, entry->d.method);
 		} else {
-			offset --;
+			offset = get_shared_klass_ref (acfg, entry->d.klass);
 		}
 
 		encode_value (offset, p, &p);
@@ -6398,6 +6472,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
 	guint8 *p, *buf;
+	guint32 offset;
 
 	method = cfg->orig_method;
 
@@ -6414,19 +6489,9 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	/* Encode method info */
 	/**********************/
 
-	buf_size = (patches->len < 1000) ? 40960 : 40960 + (patches->len * 64);
-	p = buf = (guint8 *)g_malloc (buf_size);
-
-	guint8 flags = 0;
-	if (mono_class_get_cctor (method->klass))
-		flags |= MONO_AOT_METHOD_FLAG_HAS_CCTOR;
-	if (mini_jit_info_is_gsharedvt (cfg->jit_info) && mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jinfo_get_method (cfg->jit_info))))
-		flags |= MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE;
-	encode_value (flags, p, &p);
-	if (flags & MONO_AOT_METHOD_FLAG_HAS_CCTOR)
-		encode_klass_ref (acfg, method->klass, p, &p);
-
 	g_assert (!(cfg->opt & MONO_OPT_SHARED));
+
+	guint32 *got_offsets = g_new0 (guint32, patches->len);
 
 	n_patches = 0;
 	for (pindex = 0; pindex < patches->len; ++pindex) {
@@ -6460,15 +6525,37 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			continue;
 		}
 
-		n_patches ++;
+		/* This shouldn't allocate a new offset */
+		offset = lookup_got_offset (acfg, cfg->compile_llvm, patch_info);
+		if (offset >= acfg->nshared_got_entries)
+			got_offsets [n_patches ++] = offset;
 	}
 
 	if (n_patches)
 		g_assert (cfg->has_got_slots);
 
-	encode_patch_list (acfg, patches, n_patches, cfg->compile_llvm, p, &p);
+	buf_size = (patches->len < 1000) ? 40960 : 40960 + (patches->len * 64);
+	p = buf = (guint8 *)g_malloc (buf_size);
+
+	guint8 flags = 0;
+	if (mono_class_get_cctor (method->klass))
+		flags |= MONO_AOT_METHOD_FLAG_HAS_CCTOR;
+	if (mini_jit_info_is_gsharedvt (cfg->jit_info) && mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jinfo_get_method (cfg->jit_info))))
+		flags |= MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE;
+	if (n_patches)
+		flags |= MONO_AOT_METHOD_FLAG_HAS_PATCHES;
+	encode_value (flags, p, &p);
+	if (flags & MONO_AOT_METHOD_FLAG_HAS_CCTOR)
+		encode_klass_ref (acfg, method->klass, p, &p);
+
+	if (n_patches) {
+		encode_value (n_patches, p, &p);
+		for (int i = 0; i < n_patches; ++i)
+			encode_value (got_offsets [i], p, &p);
+	}
 
 	g_ptr_array_free (patches, TRUE);
+	g_free (got_offsets);
 
 	acfg->stats.method_info_size += p - buf;
 
@@ -7964,8 +8051,13 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
 
-		if (!can_encode_method (acfg, entry->method))
-			return FALSE;
+		if (entry->in_mrgctx) {
+			if (!can_encode_method (acfg, entry->d.method))
+				return FALSE;
+		} else {
+			if (!can_encode_class (acfg, entry->d.klass))
+				return FALSE;
+		}
 		if (!can_encode_patch (acfg, entry->data))
 			return FALSE;
 		break;
@@ -12281,6 +12373,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->export_names = g_hash_table_new (NULL, NULL);
 	acfg->klass_blob_hash = g_hash_table_new (NULL, NULL);
 	acfg->method_blob_hash = g_hash_table_new (NULL, NULL);
+	acfg->ginst_blob_hash = g_hash_table_new (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal);
 	acfg->plt_entry_debug_sym_cache = g_hash_table_new (g_str_hash, g_str_equal);
 	acfg->gsharedvt_in_signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
 	acfg->gsharedvt_out_signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
@@ -12556,6 +12649,10 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG;
+	add_preinit_slot (acfg, ji);
+
+	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_GC_SAFE_POINT_FLAG;
 	add_preinit_slot (acfg, ji);
 
 	for (i = 0; i < TLS_KEY_NUM; i++) {
@@ -13275,7 +13372,13 @@ print_stats (MonoAotCompile *acfg)
 		if (acfg->stats.got_slot_types [i])
 			aot_printf (acfg, "\t%s: %d (%d)\n", get_patch_name (i), acfg->stats.got_slot_types [i], acfg->stats.got_slot_info_sizes [i]);
 	}
-	printf ("GOT SLOTS: %d, INFO SIZE: %d\n", nslots, size);
+	aot_printf (acfg, "GOT SLOTS: %d, INFO SIZE: %d\n", nslots, size);
+
+	aot_printf (acfg, "\nEncoding stats:\n");
+	aot_printf (acfg, "\tMethod ref: %d (%dk)\n", acfg->stats.method_ref_count, acfg->stats.method_ref_size / 1024);
+	aot_printf (acfg, "\tClass ref: %d (%dk)\n", acfg->stats.class_ref_count, acfg->stats.class_ref_size / 1024);
+	aot_printf (acfg, "\tGinst: %d (%dk)\n", acfg->stats.ginst_count, acfg->stats.ginst_size / 1024);
+
 	aot_printf (acfg, "\nMethod stats:\n");
 	aot_printf (acfg, "\tNormal:    %d\n", acfg->stats.method_categories [METHOD_CAT_NORMAL]);
 	aot_printf (acfg, "\tInstance:  %d\n", acfg->stats.method_categories [METHOD_CAT_INST]);

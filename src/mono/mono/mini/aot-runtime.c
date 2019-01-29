@@ -436,26 +436,26 @@ decode_generic_inst (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoEr
 }
 
 static gboolean
-decode_generic_context (MonoAotModule *module, MonoGenericContext *ctx, guint8 *buf, guint8 **endbuf, MonoError *error)
+decode_generic_context (MonoAotModule *amodule, MonoGenericContext *ctx, guint8 *buf, guint8 **endbuf, MonoError *error)
 {
 	guint8 *p = buf;
 	guint8 *p2;
-	int argc;
-	error_init (error);
+	guint32 offset, flags;
 
-	p2 = p;
-	argc = decode_value (p, &p);
-	if (argc) {
-		p = p2;
-		ctx->class_inst = decode_generic_inst (module, p, &p, error);
+	/* Either the class_inst or method_inst offset */
+	flags = decode_value (p, &p);
+
+	if (flags & 1) {
+		offset = decode_value (p, &p);
+		p2 = amodule->blob + offset;
+		ctx->class_inst = decode_generic_inst (amodule, p2, &p2, error);
 		if (!ctx->class_inst)
 			return FALSE;
 	}
-	p2 = p;
-	argc = decode_value (p, &p);
-	if (argc) {
-		p = p2;
-		ctx->method_inst = decode_generic_inst (module, p, &p, error);
+	if (flags & 2) {
+		offset = decode_value (p, &p);
+		p2 = amodule->blob + offset;
+		ctx->method_inst = decode_generic_inst (amodule, p2, &p2, error);
 		if (!ctx->method_inst)
 			return FALSE;
 	}
@@ -516,7 +516,9 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 		g_assert (mono_class_is_gtd (gclass));
 
 		memset (&ctx, 0, sizeof (ctx));
-		ctx.class_inst = decode_generic_inst (module, p, &p, error);
+		guint32 offset = decode_value (p, &p);
+		guint8 *p2 = module->blob + offset;
+		ctx.class_inst = decode_generic_inst (module, p2, &p2, error);
 		if (!ctx.class_inst)
 			return NULL;
 		type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (gclass), &ctx, error);
@@ -924,7 +926,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		image_index = value >> 24;
 	}
 
-	if (image_index < MONO_AOT_METHODREF_MIN || image_index == MONO_AOT_METHODREF_METHODSPEC || image_index == MONO_AOT_METHODREF_GINST) {
+	if (image_index < MONO_AOT_METHODREF_MIN || image_index == MONO_AOT_METHODREF_METHODSPEC ||
+		image_index == MONO_AOT_METHODREF_GINST || image_index == MONO_AOT_METHODREF_BLOB_INDEX) {
 		if (target && target->wrapper_type) {
 			return FALSE;
 		}
@@ -1300,9 +1303,21 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		image = load_image (module, image_index, error);
 		if (!image)
 			return FALSE;
+	} else if (image_index == MONO_AOT_METHODREF_BLOB_INDEX) {
+		guint32 offset = decode_value (p, &p);
+
+		guint8 *p2;
+
+		p2 = module->blob + offset;
+		if (!decode_method_ref_with_target (module, ref, target, p2, &p2, error))
+			return FALSE;
+		image = ref->image;
+		if (!image)
+			return FALSE;
 	} else if (image_index == MONO_AOT_METHODREF_GINST) {
 		MonoClass *klass;
 		MonoGenericContext ctx;
+		guint32 token_index;
 
 		/* 
 		 * These methods do not have a token which resolves them, so we 
@@ -1316,7 +1331,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			return FALSE;
 
 		image_index = decode_value (p, &p);
-		ref->token = decode_value (p, &p);
+		token_index = decode_value (p, &p);
+		ref->token = mono_metadata_make_token (MONO_TABLE_METHOD, token_index);
 
 		image = load_image (module, image_index, error);
 		if (!image)
@@ -1325,7 +1341,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		ref->method = mono_get_method_checked (image, ref->token, NULL, NULL, error);
 		if (!ref->method)
 			return FALSE;
-
 
 		memset (&ctx, 0, sizeof (ctx));
 
@@ -3876,8 +3891,11 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 
 		entry = (MonoJumpInfoRgctxEntry *)mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoRgctxEntry));
 		p2 = aot_module->blob + offset;
-		entry->method = decode_resolve_method_ref (aot_module, p2, &p2, error);
 		entry->in_mrgctx = ((val & 1) > 0) ? TRUE : FALSE;
+		if (entry->in_mrgctx)
+			entry->d.method = decode_resolve_method_ref (aot_module, p2, &p2, error);
+		else
+			entry->d.klass = decode_klass_ref (aot_module, p2, &p2, error);
 		entry->info_type = (MonoRgctxInfoType)((val >> 1) & 0xff);
 		entry->data = (MonoJumpInfo *)mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo));
 		entry->data->type = (MonoJumpInfoType)((val >> 9) & 0xff);
@@ -4499,7 +4517,10 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	if (method)
 		klass_to_run_ctor = method->klass;
 
-	n_patches = decode_value (p, &p);
+	if (flags & MONO_AOT_METHOD_FLAG_HAS_PATCHES)
+		n_patches = decode_value (p, &p);
+	else
+		n_patches = 0;
 
 	if (n_patches) {
 		MonoJumpInfo *patches;

@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 153
+#define MONO_AOT_FILE_VERSION 156
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 
@@ -29,6 +29,8 @@ enum {
 	MONO_AOT_METHODREF_GINST = 253,
 	/* Methods resolve using a METHODSPEC token */
 	MONO_AOT_METHODREF_METHODSPEC = 254,
+	/* Blob index of the method encoding */
+	MONO_AOT_METHODREF_BLOB_INDEX = 255
 };
 
 /* Constants used to encode different types of types in AOT */
@@ -78,6 +80,7 @@ typedef enum {
 	MONO_AOT_METHOD_FLAG_NONE = 0,
 	MONO_AOT_METHOD_FLAG_HAS_CCTOR = 1,
 	MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE = 2,
+	MONO_AOT_METHOD_FLAG_HAS_PATCHES = 4
 } MonoAotMethodFlags;
 
 typedef enum {

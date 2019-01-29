@@ -267,7 +267,12 @@ typedef struct MonoJumpInfoImtTramp {
  * object described by DATA.
  */
 struct MonoJumpInfoRgctxEntry {
-	MonoMethod *method;
+	union {
+		/* If in_mrgctx is TRUE */
+		MonoMethod *method;
+		/* If in_mrgctx is FALSE */
+		MonoClass *klass;
+	} d;
 	gboolean in_mrgctx;
 	MonoJumpInfo *data; /* describes the data to be loaded */
 	MonoRgctxInfoType info_type;

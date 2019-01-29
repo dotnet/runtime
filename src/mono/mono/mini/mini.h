@@ -2601,10 +2601,6 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 int
 mono_class_rgctx_get_array_size (int n, gboolean mrgctx);
 
-guint32
-mono_method_lookup_or_register_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
-	MonoRgctxInfoType info_type, MonoGenericContext *generic_context);
-
 MonoGenericContext
 mono_method_construct_object_context (MonoMethod *method);
 
