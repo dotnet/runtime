@@ -5,6 +5,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageTags>$(PackageTags);EventSource;ETW</PackageTags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

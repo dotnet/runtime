@@ -8,6 +8,7 @@
     <PackageTags>hosting</PackageTags>
     <EnableApiCheck>false</EnableApiCheck>
     <RootNamespace>Microsoft.Extensions.Hosting</RootNamespace>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,5 +17,5 @@
     <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
     <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
-  
+
 </Project>

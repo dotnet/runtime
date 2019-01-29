@@ -12,7 +12,12 @@ Microsoft.Extensions.Logging.LoggerMessage
 Microsoft.Extensions.Logging.Abstractions.NullLogger</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="../../shared/*.cs" />

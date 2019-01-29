@@ -119,8 +119,7 @@ namespace Microsoft.Extensions.Hosting
         public void CanConfigureAppConfigurationFromFile()
         {
             // Needs to look in the project directory like VS would
-            var projectDir = Path.Combine(TestPathUtilities.GetSolutionRootDirectory("Hosting"),
-                "Hosting/test");
+            var projectDir = Path.Combine(TestPathUtilities.GetRepoRootDirectory(), "src", "Hosting", "Hosting", "test");
             var hostBuilder = new HostBuilder()
                 .UseContentRoot(projectDir)
                 .ConfigureAppConfiguration((context, configBuilder) =>
