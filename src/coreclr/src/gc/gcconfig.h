@@ -99,6 +99,12 @@ public:
       "The percent for GC to consider as high memory")                                         \
   INT_CONFIG(GCProvModeStress, "GCProvModeStress", 0,                                          \
       "Stress the provisional modes")                                                          \
+  INT_CONFIG(GCGen0MaxBudget, "GCGen0MaxBudget", 0,                                            \
+      "Specifies the largest gen0 allocation budget")                                          \
+  INT_CONFIG(GCHeapHardLimit, "GCHeapHardLimit", 0,                                            \
+      "Specifies a hard limit for the GC heap")                                                \
+  INT_CONFIG(GCHeapHardLimitPercent, "GCHeapHardLimitPercent", 0,                              \
+      "Specifies the GC heap usage as a percentage of the total memory")                       \
   STRING_CONFIG(LogFile,    "GCLogFile",    "Specifies the name of the GC log file")           \
   STRING_CONFIG(ConfigLogFile, "GCConfigLogFile",                                              \
       "Specifies the name of the GC config log file")                                          \

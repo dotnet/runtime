@@ -1876,7 +1876,7 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
         }
     }
 
-#if defined(_TARGET_AMD64_) || defined (_TARGET_X86_)
+#if defined (_TARGET_X86_)
     DefaultCatchFilterParam param;
     param.pv = COMPLUS_EXCEPTION_EXECUTE_HANDLER;
 
