@@ -1169,6 +1169,20 @@ struct BasicBlock : private LIR::Range
     {
         return (bbFlags & BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY) != 0;
     }
+
+#ifdef DEBUG
+    bool Contains(const GenTree* node)
+    {
+        for (Iterator iter = begin(); iter != end(); ++iter)
+        {
+            if (*iter == node)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+#endif // DEBUG
 };
 
 template <>
