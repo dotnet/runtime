@@ -64,7 +64,7 @@ typedef struct  {
 } AssemblyVersionMap;
 
 /* the default search path is empty, the first slot is replaced with the computed value */
-static const char*
+static char*
 default_path [] = {
 	NULL,
 	NULL,
@@ -799,7 +799,8 @@ mono_assembly_setrootdir (const char *root_dir)
 	/*
 	 * Override the MONO_ASSEMBLIES directory configured at compile time.
 	 */
-	/* Leak if called more than once */
+	if (default_path [0])
+		g_free (default_path [0]);
 	default_path [0] = g_strdup (root_dir);
 }
 
@@ -4157,7 +4158,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 			goto return_corlib_and_facades;
 		}
 	}
-	corlib = load_in_path (corlib_file, default_path, &req, status);
+	corlib = load_in_path (corlib_file, (const char**) default_path, &req, status);
 	g_free (corlib_file);
 
 return_corlib_and_facades:
@@ -4365,7 +4366,7 @@ mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname,
 			}
 		}
 
-		result = load_in_path (filename, default_path, &req, status);
+		result = load_in_path (filename, (const char**) default_path, &req, status);
 		if (result)
 			result->in_gac = FALSE;
 		g_free (filename);
