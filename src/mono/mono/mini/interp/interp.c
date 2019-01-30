@@ -3008,6 +3008,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			++ip;
 			do_debugger_tramp (mini_get_dbg_callbacks ()->user_break, frame);
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BREAKPOINT)
+			++ip;
+			mono_break ();
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDNULL) 
 			sp->data.p = NULL;
 			++ip;

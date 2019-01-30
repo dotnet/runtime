@@ -2496,6 +2496,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		emit_seq_point (td, METHOD_ENTRY_IL_OFFSET, cbb, FALSE);
 	}
 
+	if (mono_debugger_method_has_breakpoint (method))
+		ADD_CODE(td, MINT_BREAKPOINT);
+
 	if (method == td->method) {
 		if (td->verbose_level) {
 			char *tmp = mono_disasm_code (NULL, method, td->ip, end);

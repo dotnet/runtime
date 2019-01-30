@@ -11,6 +11,7 @@
 OPDEF(MINT_NOP, "nop", 1, MintOpNoArgs)
 OPDEF(MINT_NIY, "niy", 1, MintOpNoArgs)
 OPDEF(MINT_BREAK, "break", 1, MintOpNoArgs)
+OPDEF(MINT_BREAKPOINT, "breakpoint", 1, MintOpNoArgs)
 OPDEF(MINT_LDNULL, "ldnull", 1, MintOpNoArgs)
 OPDEF(MINT_DUP, "dup", 1, MintOpNoArgs)
 OPDEF(MINT_DUP_VT, "dup.vt", 3, MintOpInt)
