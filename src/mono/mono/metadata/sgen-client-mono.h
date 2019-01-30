@@ -683,6 +683,11 @@ sgen_client_binary_protocol_collection_end_stats (long long major_scan, long lon
 {
 }
 
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_ephemeron_ref (gpointer list, gpointer key, gpointer val)
+{
+}
+
 #define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = mono_tls_get_sgen_thread_info ()
 #define IN_CRITICAL_REGION (__thread_info__->client_info.in_critical_region)
 
