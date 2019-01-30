@@ -344,7 +344,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task CompletedResponse_FrameReceived_ResetsStream()
+        public async Task CompletedResponse_FrameReceived_ConnectionError()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
@@ -370,22 +370,15 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
                 await server.WriteFrameAsync(invalidFrame);
 
-                // Receive a RST_STREAM frame.
-                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                Assert.Equal(FrameType.RstStream, receivedFrame.Type);
-                Assert.Equal(streamId, receivedFrame.StreamId);
+                // The server should close the connection as this is a fatal connection level error.
+                Exception ex = await Assert.ThrowsAsync<Exception>(async () => await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+                Assert.Equal("Connection stream closed while attempting to read frame header.", ex.Message);
 
-                // Connection should still be usable.
-                sendTask = client.GetAsync(server.Address);
-                streamId = await server.ReadRequestHeaderAsync();
-                await server.SendDefaultResponseAsync(streamId);
-                response = await sendTask;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task EmptyResponse_FrameReceived_ResetsStream()
+        public async Task EmptyResponse_FrameReceived_ConnectionError()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
@@ -408,22 +401,14 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
                 await server.WriteFrameAsync(invalidFrame);
 
-                // Receive a RST_STREAM frame.
-                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                Assert.Equal(FrameType.RstStream, receivedFrame.Type);
-                Assert.Equal(streamId, receivedFrame.StreamId);
-
-                // Connection should still be usable.
-                sendTask = client.GetAsync(server.Address);
-                streamId = await server.ReadRequestHeaderAsync();
-                await server.SendDefaultResponseAsync(streamId);
-                response = await sendTask;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                // The server should close the connection as this is a fatal connection level error.
+                Exception ex = await Assert.ThrowsAsync<Exception>(async () => await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+                Assert.Equal("Connection stream closed while attempting to read frame header.", ex.Message);
             }
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task ResetResponseStream_FrameReceived_ResetsStream()
+        public async Task ResetResponseStream_FrameReceived_ConnectionError()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
@@ -446,17 +431,9 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
                 await server.WriteFrameAsync(invalidFrame);
 
-                // Receive a RST_STREAM frame.
-                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                Assert.Equal(FrameType.RstStream, receivedFrame.Type);
-                Assert.Equal(streamId, receivedFrame.StreamId);
-
-                // Connection should still be usable.
-                sendTask = client.GetAsync(server.Address);
-                streamId = await server.ReadRequestHeaderAsync();
-                await server.SendDefaultResponseAsync(streamId);
-                HttpResponseMessage response = await sendTask;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                // The server should close the connection as this is a fatal connection level error.
+                Exception ex = await Assert.ThrowsAsync<Exception>(async () => await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+                Assert.Equal("Connection stream closed while attempting to read frame header.", ex.Message);
             }
         }
 
