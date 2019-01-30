@@ -3,14 +3,22 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using Internal.Runtime.Augments;
 
 namespace System
 {
     public static partial class Environment
     {
         public static string UserName => "Windows User";
+
         public static string UserDomainName => "Windows Domain";
-        private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option) =>
-            WinRTFolderPaths.GetFolderPath(folder, option);
+
+        private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
+        {
+            WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
+            return callbacks != null && callbacks.IsAppxModel() ?
+                callbacks.GetFolderPath(folder, option) :
+                null;
+        }
     }
 }
