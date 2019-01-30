@@ -87,11 +87,16 @@ gboolean
 mono_w32file_read(gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread, gint32 *win32error)
 {
 	gboolean res;
+	MonoThreadInfo *info = mono_thread_info_current ();
+
+	mono_win32_enter_blocking_io_call (info, (HANDLE)handle);
 	MONO_ENTER_GC_SAFE;
-	res = ReadFile (handle, buffer, numbytes, (PDWORD)bytesread, NULL);
+	res = ReadFile ((HANDLE)handle, buffer, numbytes, (PDWORD)bytesread, NULL);
 	if (!res)
 		*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
+	mono_win32_leave_blocking_io_call (info, (HANDLE)handle);
+
 	return res;
 }
 
@@ -99,11 +104,16 @@ gboolean
 mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error)
 {
 	gboolean res;
+	MonoThreadInfo *info = mono_thread_info_current ();
+
+	mono_win32_enter_blocking_io_call (info, (HANDLE)handle);
 	MONO_ENTER_GC_SAFE;
-	res = WriteFile (handle, buffer, numbytes, (PDWORD)byteswritten, NULL);
+	res = WriteFile ((HANDLE)handle, buffer, numbytes, (PDWORD)byteswritten, NULL);
 	if (!res)
 		*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
+	mono_win32_leave_blocking_io_call (info, (HANDLE)handle);
+
 	return res;
 }
 

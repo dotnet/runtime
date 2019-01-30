@@ -463,6 +463,11 @@ register_thread (MonoThreadInfo *info)
 
 	info->profiler_signal_ack = 1;
 
+#ifdef USE_WINDOWS_BACKEND
+	info->win32_apc_info = 0;
+	info->win32_apc_info_io_handle = INVALID_HANDLE_VALUE;
+#endif
+
 	mono_threads_suspend_register (info);
 
 	THREADS_DEBUG ("registering info %p tid %p small id %x\n", info, mono_thread_info_get_tid (info), info->small_id);

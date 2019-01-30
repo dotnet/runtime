@@ -268,7 +268,8 @@ typedef struct _MonoThreadInfo {
 	gint32 profiler_signal_ack;
 
 #ifdef USE_WINDOWS_BACKEND
-	gint32 thread_wait_info;
+	gint32 win32_apc_info;
+	gpointer win32_apc_info_io_handle;
 #endif
 
 	/*
@@ -792,6 +793,24 @@ void mono_threads_join_unlock (void);
 #ifdef HOST_WASM
 typedef void (*background_job_cb)(void);
 void mono_threads_schedule_background_job (background_job_cb cb);
+#endif
+
+#ifdef USE_WINDOWS_BACKEND
+
+void
+mono_win32_enter_alertable_wait (THREAD_INFO_TYPE *info);
+
+void
+mono_win32_leave_alertable_wait (THREAD_INFO_TYPE *info);
+
+void
+mono_win32_enter_blocking_io_call (THREAD_INFO_TYPE *info, HANDLE io_handle);
+
+void
+mono_win32_leave_blocking_io_call (THREAD_INFO_TYPE *info, HANDLE io_handle);
+
+void
+mono_win32_interrupt_wait (PVOID thread_info, HANDLE native_thread_handle, DWORD tid);
 #endif
 
 #endif /* __MONO_THREADS_H__ */

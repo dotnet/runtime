@@ -30,12 +30,6 @@ mono_win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles,
 DWORD
 mono_win32_wsa_wait_for_multiple_events (DWORD count, const WSAEVENT FAR *handles, BOOL waitAll, DWORD timeout, BOOL alertable);
 
-void
-mono_win32_interrupt_wait (PVOID thread_info, HANDLE native_thread_handle, DWORD tid);
-
-void
-mono_win32_abort_wait (PVOID thread_info, HANDLE native_thread_handle, DWORD tid);
-
 #endif
 
 #endif /* _MONO_UTILS_OS_WAIT_H_ */
