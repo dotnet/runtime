@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Xml;
 using System.Xml.Schema;
@@ -31,8 +35,9 @@ public class GenerateHeaders {
 	int minHR = MakeHresult(SeverityError,FaciltyUrt,0);		
 	int maxHR = MakeHresult(SeverityError,FaciltyUrt,0xffff);		
 
-
+        PrintLicenseHeader(HSW);
         PrintHeader(HSW);  
+        PrintLicenseHeader(RSW);
         PrintResourceHeader(RSW);
         
         XmlTextReader rdr = new XmlTextReader(args[0]);
@@ -150,6 +155,12 @@ public class GenerateHeaders {
     Environment.Exit(-1);
     }   
 
+    private static void PrintLicenseHeader(StreamWriter SW) {
+        SW.WriteLine("// Licensed to the .NET Foundation under one or more agreements.");
+        SW.WriteLine("// The .NET Foundation licenses this file to you under the MIT license.");
+        SW.WriteLine("// See the LICENSE file in the project root for more information.");
+        SW.WriteLine();
+    }
 
     private static void PrintHeader(StreamWriter SW) {
 
