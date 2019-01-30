@@ -17,7 +17,7 @@ The C# language was standardized as [ECMA 334](http://www.ecma-international.org
 **ECMA 334 Resources**
 
 - [ECMA 334 Standard Overview](http://www.ecma-international.org/publications/standards/Ecma-334.htm)
-- [ECMA 334 Standard (PDF)](http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-334.pdf)
+- [ECMA 334 Standard (PDF)](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-334.pdf)
 
 ECMA 335 - CLI
 ==============
