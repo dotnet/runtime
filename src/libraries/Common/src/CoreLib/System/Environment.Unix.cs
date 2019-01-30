@@ -16,16 +16,14 @@ namespace System
 {
     public static partial class Environment
     {
-        internal static readonly bool IsMac = Interop.Sys.GetUnixName() == "OSX";
+        private static readonly bool s_isMac = Interop.Sys.GetUnixName() == "OSX";
         private static Func<string, object> s_directoryCreateDirectory;
 
         private static string CurrentDirectoryCore
         {
-            get { return Interop.Sys.GetCwd(); }
-            set { Interop.CheckIo(Interop.Sys.ChDir(value), value, isDirectory: true); }
+            get => Interop.Sys.GetCwd();
+            set => Interop.CheckIo(Interop.Sys.ChDir(value), value, isDirectory: true);
         }
-
-        public static int ExitCode { get { return EnvironmentAugments.ExitCode; } set { EnvironmentAugments.ExitCode = value; } }
 
         private static string ExpandEnvironmentVariablesCore(string name)
         {
@@ -101,7 +99,7 @@ namespace System
                 case SpecialFolder.CommonApplicationData: return "/usr/share";
                 case SpecialFolder.CommonTemplates: return "/usr/share/templates";
             }
-            if (IsMac)
+            if (s_isMac)
             {
                 switch (folder)
                 {
@@ -161,17 +159,17 @@ namespace System
                     return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
 
                 case SpecialFolder.MyMusic:
-                    return IsMac ? Path.Combine(home, "Music") : ReadXdgDirectory(home, "XDG_MUSIC_DIR", "Music");
+                    return s_isMac ? Path.Combine(home, "Music") : ReadXdgDirectory(home, "XDG_MUSIC_DIR", "Music");
                 case SpecialFolder.MyPictures:
-                    return IsMac ? Path.Combine(home, "Pictures") : ReadXdgDirectory(home, "XDG_PICTURES_DIR", "Pictures");
+                    return s_isMac ? Path.Combine(home, "Pictures") : ReadXdgDirectory(home, "XDG_PICTURES_DIR", "Pictures");
                 case SpecialFolder.Fonts:
-                    return IsMac ? Path.Combine(home, "Library", "Fonts") : Path.Combine(home, ".fonts");
+                    return s_isMac ? Path.Combine(home, "Library", "Fonts") : Path.Combine(home, ".fonts");
 
                 case SpecialFolder.Favorites:
-                    if (IsMac) return Path.Combine(home, "Library", "Favorites");
+                    if (s_isMac) return Path.Combine(home, "Library", "Favorites");
                     break;
                 case SpecialFolder.InternetCache:
-                    if (IsMac) return Path.Combine(home, "Library", "Caches");
+                    if (s_isMac) return Path.Combine(home, "Library", "Caches");
                     break;
             }
 
