@@ -35,7 +35,7 @@ Changes on how dotnet runtime packages are structured or modification on the pac
 This verification test depends on docker images and the test result can be a false negative if the image doesn't carry some system packages required to have a proper runtime package installation.
 
 
-The scrip allows automated test only for the following distro & version:
+The script allows automated test only for the following distro & version:
 
 | Distro | Version | 
 |--------|---------|
