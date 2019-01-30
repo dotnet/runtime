@@ -4,6 +4,11 @@ using System.Reflection;
 
 namespace MonoTests.Helpers {
 
+	// False pinning cases are still possible. For example the thread can die
+	// and its stack reused by another thread. It also seems that a thread that
+	// does a GC can keep on the stack references to objects it encountered
+	// during the collection which are never released afterwards. This would
+	// be more likely to happen with the interpreter which reuses more stack.
 	public static class FinalizerHelpers {
 		private static IntPtr aptr;
 
