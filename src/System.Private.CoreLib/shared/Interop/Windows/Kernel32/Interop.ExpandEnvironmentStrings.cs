@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern uint ExpandEnvironmentStringsW(string lpSrc, ref char lpDst, uint nSize);
+        [DllImport(Libraries.Kernel32, EntryPoint = "ExpandEnvironmentStringsW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern uint ExpandEnvironmentStrings(string lpSrc, ref char lpDst, uint nSize);
     }
 }

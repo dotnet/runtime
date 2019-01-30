@@ -160,7 +160,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\SymAddressKind.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Enum.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Environment.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Environment.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
@@ -371,7 +371,6 @@
     <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Environment.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
     <!--

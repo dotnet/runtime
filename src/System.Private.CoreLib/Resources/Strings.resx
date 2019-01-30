@@ -496,6 +496,9 @@
   <data name="Arg_MustBeDouble" xml:space="preserve">
     <value>Object must be of type Double.</value>
   </data>
+  <data name="Arg_MustBeDriveLetterOrRootDir" xml:space="preserve">
+    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value>
+  </data>
   <data name="Arg_MustBeEnum" xml:space="preserve">
     <value>Type provided must be an Enum.</value>
   </data>
@@ -2464,6 +2467,9 @@
   <data name="InvalidOperation_CollectionCorrupted" xml:space="preserve">
     <value>A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.</value>
   </data>
+  <data name="InvalidOperation_ComputerName" xml:space="preserve">
+    <value>Computer name could not be obtained.</value>
+  </data>
   <data name="InvalidOperation_ConcurrentOperationsNotSupported" xml:space="preserve">
     <value>Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.</value>
   </data>
@@ -3189,6 +3195,9 @@
   </data>
   <data name="PreconditionFailed_Cnd" xml:space="preserve">
     <value>Precondition failed: {0}</value>
+  </data>
+  <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
+    <value>The home directory of the current user could not be determined.</value>
   </data>
   <data name="Rank_MultiDimNotSupported" xml:space="preserve">
     <value>Only single dimension arrays are supported here.</value>
