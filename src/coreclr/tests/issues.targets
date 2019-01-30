@@ -585,6 +585,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/b152292/b152292/*">
             <Issue>20358</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/interlocked/compareexchange/CompareExchangeTClass/*">
+            <Issue>22303</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/interlocked/compareexchange/CompareExchangeTClass_1/*">
+            <Issue>22303</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Unix arm32 specific -->
@@ -612,6 +618,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray3_cs_r/*">
             <Issue>22015</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/*">
+            <Issue>22260</Issue>
         </ExcludeList>
     </ItemGroup>
     
