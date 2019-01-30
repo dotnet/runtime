@@ -72,4 +72,17 @@ class Tests {
 	
 		return 0;
 	}
+
+	public static int test_0_ctor_delegate_argument_null () {
+
+		var ci = typeof (Action).GetConstructor (new Type [] { typeof (object), typeof(IntPtr) });
+		try {
+			ci.Invoke (new object [] { new Tests(), IntPtr.Zero });
+		} catch (TargetInvocationException ex) {
+			if (ex.InnerException is ArgumentNullException)
+				return 0;
+		}
+
+		return 1;
+	}
 }

@@ -1507,8 +1507,16 @@ ves_icall_mono_delegate_ctor (MonoObject *this_obj_raw, MonoObject *target_raw, 
 	ERROR_DECL (error);
 	MONO_HANDLE_DCL (MonoObject, this_obj);
 	MONO_HANDLE_DCL (MonoObject, target);
+
+	if (!addr) {
+		mono_error_set_argument_null (error, "method", "");
+		mono_error_set_pending_exception (error);
+		goto leave;
+	}
 	mono_delegate_ctor (this_obj, target, addr, error);
 	mono_error_set_pending_exception (error);
+
+leave:
 	HANDLE_FUNCTION_RETURN ();
 }
 
@@ -1520,8 +1528,15 @@ ves_icall_mono_delegate_ctor_interp (MonoObject *this_obj_raw, MonoObject *targe
 	MONO_HANDLE_DCL (MonoObject, this_obj);
 	MONO_HANDLE_DCL (MonoObject, target);
 
+	if (!addr) {
+		mono_error_set_argument_null (error, "method", "");
+		mono_error_set_pending_exception (error);
+		goto leave;
+	}
 	mini_get_interp_callbacks ()->delegate_ctor (this_obj, target, addr, error);
 	mono_error_set_pending_exception (error);
+
+leave:
 	HANDLE_FUNCTION_RETURN ();
 }
 
