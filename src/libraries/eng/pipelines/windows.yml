@@ -154,9 +154,9 @@ jobs:
 
         variables:
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            - allConfigurationsQueues: Windows.10.Amd64.ClientRS2.Open
+            - allConfigurationsQueues: Windows.10.Amd64.ClientRS4.Open
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - allConfigurationsQueues: Windows.10.Amd64.ClientRS2
+            - allConfigurationsQueues: Windows.10.Amd64.ClientRS4
 
         customBuildSteps:
           - script: build.cmd
