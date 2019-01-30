@@ -138,6 +138,7 @@ jobs:
           - normal
           - no_tiered_compilation
         timeoutInMinutes: 240
+        timeoutPerTestInMinutes: 10
 
 # Pri1 (CI)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
@@ -153,8 +154,9 @@ jobs:
           - normal
           - no_tiered_compilation
         timeoutInMinutes: 360
+        timeoutPerTestInMinutes: 10
 
-# Pri1 crossgen (CI)
+# Pri1 ReadyToRun (CI)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
   - template: eng/platform-matrix.yml
     parameters:
@@ -162,13 +164,14 @@ jobs:
       buildConfig: checked
       jobParameters:
         priority: 1
-        crossgen: true
+        readyToRun: true
         scenarios:
           asString: 'normal,no_tiered_compilation'
           asArray:
           - normal
           - no_tiered_compilation
         timeoutInMinutes: 360
+        timeoutPerTestInMinutes: 30
 
 # Pri1 (Schedule, Manual)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule', 'Manual')) }}:
@@ -179,7 +182,7 @@ jobs:
       jobParameters:
         priority: 1
         scenarios:
-          asString: 'normal,no_tiered_compilation,jitstress1,jitstress2,jitstress1_tiered,jitstress2_tiered'
+          asString: 'normal,no_tiered_compilation,jitstress1,jitstress2,jitstress1_tiered,jitstress2_tiered,jitstressregs1,jitstressregs2,jitstressregs3,jitstressregs4,jitstressregs8,jitstressregs0x10,jitstressregs0x80,jitstressregs0x1000,jitminopts'
           asArray:
           - normal
           - no_tiered_compilation
@@ -187,7 +190,18 @@ jobs:
           - jitstress2
           - jitstress1_tiered
           - jitstress2_tiered
+          - jitstressregs1
+          - jitstressregs2
+          - jitstressregs3
+          - jitstressregs4
+          - jitstressregs8
+          - jitstressregs0x10
+          - jitstressregs0x80
+          - jitstressregs0x1000
+          - jitminopts
         timeoutInMinutes: 480
+        timeoutPerTestInMinutes: 30
+
 
 #
 # Release test builds
@@ -207,8 +221,9 @@ jobs:
           - normal
           - no_tiered_compilation
         timeoutInMinutes: 360
+        timeoutPerTestInMinutes: 10
 
-# Pri1 crossgen (Official Build)
+# Pri1 ReadyToRun (Official Build)
 - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
@@ -216,13 +231,14 @@ jobs:
       buildConfig: release
       jobParameters:
         priority: 1
-        crossgen: true
+        readyToRun: true
         scenarios:
           asString: 'normal,no_tiered_compilation'
           asArray:
           - normal
           - no_tiered_compilation
         timeoutInMinutes: 360
+        timeoutPerTestInMinutes: 30
 
 
 # Publish build information to Build Assets Registry
