@@ -6,6 +6,7 @@
   - This package is unsupported and is only meant for advanced scenarios. Ideally, the project can target .NET Core 3.0 and get the inbox library.
   - It is intentionally not easy to consume such a package since we wanted to avoid any tooling or packaging magic to predict the user's intention.
     For simplicity, we recommended that you treat this like any other source file within your application or library.
+  - We recommend that you do **NOT** modify the sources within the source package. Since they are consumed as a NuGet package, your changes would not be local to your project and will likely be lost on a package restore.
 
 ## Known Issues and Workarounds
 
