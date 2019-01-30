@@ -17,7 +17,8 @@
     <IgnoredReference Include="System.Private.CoreLib" />
     <IgnoredReference Include="Windows" />
     <IgnoredReference Include="System.Private.Interop" />
-    <IgnoredReference Include="System.Reflection.Emit" /> <!-- Add an issue for this -->
+    <!-- The following three can be removed if we include RefEmit in UAP - tracked by https://github.com/dotnet/corefx/issues/34937 -->
+    <IgnoredReference Include="System.Reflection.Emit" />
     <IgnoredReference Include="System.Reflection.Emit.ILGeneration" />
     <IgnoredReference Include="System.Reflection.Emit.Lightweight" />
 
