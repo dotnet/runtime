@@ -23,7 +23,10 @@
     <HelixType>$(_HelixType)</HelixType>
 
     <TimeoutInMinutes>$(_TimeoutInMinutes)</TimeoutInMinutes>
-    <TimeoutInMinutes Condition=" '$(TimeoutInMinutes)' == '' ">5</TimeoutInMinutes>
+    <TimeoutPerTestInMilliseconds Condition=" '$(_TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(_TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
+
+    <ReadyToRun>$(_ReadyToRun)</ReadyToRun>
+    <ReadyToRun Condition=" '$(ReadyToRun)' == '' ">false</ReadyToRun>
 
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <CoreRootDirectory>$(TestWorkingDir)\Tests\Core_Root</CoreRootDirectory>
@@ -71,6 +74,7 @@
     <PropertyGroup>
       <EnableXUnitReporter>true</EnableXUnitReporter>
       <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
+      <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
       <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
       <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
       <_XUnitRunnerArgs>-parallel collections -nocolor -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing</_XUnitRunnerArgs>
@@ -79,13 +83,31 @@
     <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
       <_CoreRun>%CORE_ROOT%\CoreRun.exe</_CoreRun>
       <_XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</_XUnitRunnerDll>
-      <_HelixPreCommands>set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%;set __TestEnv=%HELIX_WORKITEM_PAYLOAD%\SetStressModes_$(Scenario)$(TestEnvFileExtension);type %__TestEnv%</_HelixPreCommands>
     </PropertyGroup>
+
+    <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+      <_HelixPreCommands Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
+      <_HelixPreCommands Include="set RunCrossGen=true" Condition=" '$(ReadyToRun)' == 'true' " />
+      <_HelixPreCommands Include="set __TestEnv=%HELIX_WORKITEM_PAYLOAD%\SetStressModes_$(Scenario)$(TestEnvFileExtension)" />
+      <_HelixPreCommands Include="set __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
+      <_HelixPreCommands Include="type %__TestEnv%" />
+    </ItemGroup>
 
     <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
       <_CoreRun>$CORE_ROOT/corerun</_CoreRun>
       <_XUnitRunnerDll>$CORE_ROOT/xunit.console.dll</_XUnitRunnerDll>
-      <_HelixPreCommands>export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD;export __TestEnv=$HELIX_WORKITEM_PAYLOAD/SetStressModes_$(Scenario)$(TestEnvFileExtension);cat $__TestEnv</_HelixPreCommands>
+    </PropertyGroup>
+
+    <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
+      <_HelixPreCommands Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
+      <_HelixPreCommands Include="export RunCrossGen=true" Condition=" '$(ReadyToRun)' == 'true' " />
+      <_HelixPreCommands Include="export __TestEnv=$HELIX_WORKITEM_PAYLOAD/SetStressModes_$(Scenario)$(TestEnvFileExtension)" />
+      <_HelixPreCommands Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
+      <_HelixPreCommands Include="cat $__TestEnv" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_HelixPreCommands>@(_HelixPreCommands)</_HelixPreCommands>
     </PropertyGroup>
 
     <ItemGroup>
@@ -93,7 +115,7 @@
         <PayloadDirectory>%(RootDir)%(Directory)</PayloadDirectory>
         <PreCommands>$(_HelixPreCommands)</PreCommands>
         <Command>$(_CoreRun) $(_XUnitRunnerDll) %(FileName)%(Extension) $(_XUnitRunnerArgs)</Command>
-        <Timeout>$([System.TimeSpan]::FromMinutes($(TimeoutInMinutes)))</Timeout>
+        <Timeout Condition=" '$(TimeoutInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutInMinutes)))</Timeout>
       </HelixWorkItem>
     </ItemGroup>
   </Target>
