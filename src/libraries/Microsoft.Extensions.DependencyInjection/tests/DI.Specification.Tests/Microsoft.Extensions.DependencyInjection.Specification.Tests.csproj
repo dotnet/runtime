@@ -7,14 +7,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>dependencyinjection;di</PackageTags>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <!-- Api check throws while trying to get default value for one of the test class arguments
-      https://github.com/dotnet/corefx/issues/12338 & https://github.com/dotnet/corefx/issues/11797
-    -->
-    <EnableApiCheck>false</EnableApiCheck>
     <IsUnitTestProject>false</IsUnitTestProject>
-    <IsTestProject>false</IsTestProject>
     <TestRunnerName></TestRunnerName>
-    <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
