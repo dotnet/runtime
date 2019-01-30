@@ -17,7 +17,9 @@
         <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' == ''">StrongName</StrongNameSig>
         <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' != ''">%(NetfxReference.StrongNameSig)</StrongNameSig>
       </NetFxContracts>
-      <NETStandardContracts Include="$(NetStandardRefPath)netstandard.dll" />
+      <!-- TODO - once we retarget everything to netstandard2.1, remove netcoreapp2.0 reference to netstandard2.0 netstandard.dll -->
+      <NETStandardContracts Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(NetStandardRefPath)netstandard.dll" />
+      <NETStandardContracts Condition="'$(TargetGroup)' != 'netcoreapp2.0'" Include="$(NetStandard21RefPath)netstandard.dll" />
       <GenFacadesContracts Include="@(NetFxContracts);@(NETStandardContracts)" />
       <GenFacadesSeeds Include="$(RefPath)*.dll" />
     </ItemGroup>
