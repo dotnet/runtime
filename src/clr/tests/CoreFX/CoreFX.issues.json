@@ -1066,6 +1066,10 @@
                     "name": "System.Json.Tests.JsonValueTests.Parse_DoubleTooLarge_ThrowsOverflowException",
                     "reason": "https://github.com/dotnet/coreclr/pull/20707"
                 },
+                {
+                    "name": "System.Json.Tests.JsonPrimitiveTests.ToString_DateTimeOffset",
+                    "reason": "waiting on corefx test update"
+                },
             ]
         }
     },
