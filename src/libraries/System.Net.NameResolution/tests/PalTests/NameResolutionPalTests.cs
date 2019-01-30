@@ -35,7 +35,6 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(hostEntry.Aliases);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
         public void TryGetAddrInfo_HostName()
         {
             string hostName = NameResolutionPal.GetHostName();
@@ -49,6 +48,16 @@ namespace System.Net.NameResolution.PalTests
                 // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the 
                 // machine configurations, which varies by distro and is often inconsistent.
                 return;
+            }
+
+            // Temporary instrumentation for #32797
+            if (error == SocketError.TryAgain && Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                error = NameResolutionPal.TryGetAddrInfo(hostName, out hostEntry, out nativeErrorCode);
+                if (error != SocketError.TryAgain)
+                {
+                    throw new InvalidOperationException("Name resolution failure preventable with retry");
+                }
             }
             
             Assert.Equal(SocketError.Success, error);
@@ -92,7 +101,6 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(name);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
         public void TryGetAddrInfo_HostName_TryGetNameInfo()
         {
             string hostName = NameResolutionPal.GetHostName();
@@ -107,6 +115,16 @@ namespace System.Net.NameResolution.PalTests
                 // is turned off. Hence dns lookup for it's own hostname fails.
                 Assert.Equal(PlatformID.Unix, Environment.OSVersion.Platform);
                 return;
+            }
+
+            // Temporary instrumentation for #32797
+            if (error == SocketError.TryAgain && Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                error = NameResolutionPal.TryGetAddrInfo(hostName, out hostEntry, out nativeErrorCode);
+                if (error != SocketError.TryAgain)
+                {
+                    throw new InvalidOperationException("Name resolution failure preventable with retry");
+                }
             }
 
             Assert.Equal(SocketError.Success, error);
