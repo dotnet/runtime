@@ -1,19 +1,4 @@
 Compat issues with assembly mscorlib:
-MembersMustExist : Member 'System.AppContext.GetData(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.AppContext.TargetFrameworkName.get()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.TupleExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.add_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.remove_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.CompilerServices.TupleElementNamesAttribute' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinAccountReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinApplicationPackageAuthoritySid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinAnyPackageSid' does not exist in the implementation but it does exist in the contract.
@@ -48,81 +33,38 @@ MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Sec
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinThisOrganizationCertificateSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinUntrustedLabelSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinWriteRestrictedCodeSid' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly netstandard:
-MembersMustExist : Member 'System.AppContext.GetData(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.AppContext.TargetFrameworkName.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.add_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.remove_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Linq.Enumerable.Append<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Linq.Enumerable.Prepend<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Linq.Expressions.Expression<TDelegate>.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Linq.Expressions.LambdaExpression.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ExportExplicitParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ExportParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.GenerateKey(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System:
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.AppContext:
-MembersMustExist : Member 'System.AppContext.GetData(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.AppContext.TargetFrameworkName.get()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.ComponentModel.Annotations:
+CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.ComponentModel.DataAnnotations.DisplayAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Method | AttributeTargets.Parameter | AttributeTargets.Property, AllowMultiple=false)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Method | AttributeTargets.Parameter | AttributeTargets.Property, AllowMultiple=false)]' in the implementation.
 MembersMustExist : Member 'System.ComponentModel.DataAnnotations.DisplayFormatAttribute.GetNullDisplayText()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.ComponentModel.DataAnnotations.DisplayFormatAttribute.NullDisplayTextResourceType.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.ComponentModel.DataAnnotations.DisplayFormatAttribute.NullDisplayTextResourceType.set(System.Type)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.RangeAttribute.ConvertValueInInvariantCulture.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.RangeAttribute.ConvertValueInInvariantCulture.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.RangeAttribute.ParseLimitsInInvariantCulture.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.RangeAttribute.ParseLimitsInInvariantCulture.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.ComponentModel.Composition:
+TypesMustExist : Type 'System.ComponentModel.Composition.AdaptationConstants' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Configuration.ConfigurationManager:
-InterfacesShouldHaveSameMembers : Implementation interface member 'System.Configuration.Internal.IInternalConfigHost.GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord, System.Security.PermissionSet, System.Boolean)' is not in the contract.
-Compat issues with assembly System.Core:
-MembersMustExist : Member 'System.Linq.Enumerable.Append<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Linq.Enumerable.Prepend<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Linq.Expressions.Expression<TDelegate>.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Linq.Expressions.LambdaExpression.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECCurve' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ExportExplicitParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ExportParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.GenerateKey(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECParameters' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECPoint' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Diagnostics.Tracing:
-MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.add_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.Tracing.EventSource.remove_EventCommandExecuted(System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs>)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Linq:
-MembersMustExist : Member 'System.Linq.Enumerable.Append<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Linq.Enumerable.Prepend<TSource>(System.Collections.Generic.IEnumerable<TSource>, TSource)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Linq.Expressions:
-MembersMustExist : Member 'System.Linq.Expressions.Expression<TDelegate>.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Linq.Expressions.LambdaExpression.Compile(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Security.Cryptography.Algorithms:
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ExportExplicitParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ExportParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.GenerateKey(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Security.Cryptography.Cng:
-MembersMustExist : Member 'Microsoft.Win32.SafeHandles.SafeNCryptHandle..ctor(System.IntPtr, System.Runtime.InteropServices.SafeHandle)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.SafeHandles.SafeNCryptKeyHandle..ctor(System.IntPtr, System.Runtime.InteropServices.SafeHandle)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.CngAlgorithm.ECDiffieHellman.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.CngAlgorithm.ECDsa.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.CngKeyBlobFormat.EccFullPrivateBlob.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.CngKeyBlobFormat.EccFullPublicBlob.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ExportExplicitParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ExportParameters(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.GenerateKey(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng.ImportParameters(System.Security.Cryptography.ECParameters)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.HasLocalConfig.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.HasRoamingConfig.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.IsAppConfigHttp.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.RefreshConfigPaths()' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Diagnostics.PerformanceCounter:
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Diagnostics.CounterSample' in the contract but not the implementation.
+TypeCannotChangeClassification : Type 'System.Diagnostics.CounterSample' is marked as readonly in the contract so it must also be marked readonly in the implementation.
+Compat issues with assembly System.Security.Cryptography.OpenSsl:
+TypesMustExist : Type 'System.Security.Cryptography.DSAOpenSsl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.ECDsaOpenSsl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.RSAOpenSsl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.SafeEvpPKeyHandle' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Cryptography.Pkcs:
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.Certificates.set(System.Security.Cryptography.X509Certificates.X509Certificate2Collection)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.SignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.UnsignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Permissions:
+MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryCollection..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.CopyTo(System.Array, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryEnumerator..ctor()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Principal.Windows:
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinAccountReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinApplicationPackageAuthoritySid' does not exist in the implementation but it does exist in the contract.
@@ -158,9 +100,7 @@ MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Sec
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinThisOrganizationCertificateSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinUntrustedLabelSid' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinWriteRestrictedCodeSid' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Text.RegularExpressions:
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.CapNames.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.RegularExpressions.Regex.Caps.set(System.Collections.IDictionary)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 151
+Compat issues with assembly System.ServiceProcess.ServiceController:
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.ServiceProcess.SessionChangeDescription' in the contract but not the implementation.
+TypeCannotChangeClassification : Type 'System.ServiceProcess.SessionChangeDescription' is marked as readonly in the contract so it must also be marked readonly in the implementation.
+Total Issues: 95
