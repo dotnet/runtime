@@ -3,13 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace Internal.Runtime.Augments
 {
-    /// <summary>For internal use only.  Exposes runtime functionality to the Environments implementation in corefx.</summary>
+    // TODO: Delete this file once corefx has consumed https://github.com/dotnet/coreclr/pull/22106
+    // and its corresponding mirrored build from corert, and then the resulting corefx builds
+    // have been consumed back here, such that the CI tests which currently expect to find
+    // EnvironmentAugments have been updated to no longer need it.
+
     public static class EnvironmentAugments
     {
         public static int CurrentManagedThreadId => Environment.CurrentManagedThreadId;
@@ -21,20 +24,25 @@ namespace Internal.Runtime.Augments
         public static int TickCount => Environment.TickCount;
         public static string GetEnvironmentVariable(string variable) => Environment.GetEnvironmentVariable(variable);
         public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) => Environment.GetEnvironmentVariable(variable, target);
-        public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables() => Environment.EnumerateEnvironmentVariables();
-        public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(EnvironmentVariableTarget target) => Environment.EnumerateEnvironmentVariables(target);
-        public static int ProcessorCount => Environment.ProcessorCount;
-
-        public static void SetEnvironmentVariable(string variable, string value) => Environment.SetEnvironmentVariable(variable, value);
-        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) => Environment.SetEnvironmentVariable(variable, value, target);
-
-        public static string StackTrace
+        public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables()
         {
-            [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
-            get
+            IDictionaryEnumerator de = Environment.GetEnvironmentVariables().GetEnumerator();
+            while (de.MoveNext())
             {
-                return new StackTrace(1 /* skip this one frame */, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+                yield return new KeyValuePair<string, string>((string)de.Key, (string)de.Value);
             }
         }
+        public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
+        {
+            IDictionaryEnumerator de = Environment.GetEnvironmentVariables(target).GetEnumerator();
+            while (de.MoveNext())
+            {
+                yield return new KeyValuePair<string, string>((string)de.Key, (string)de.Value);
+            }
+        }
+        public static int ProcessorCount => Environment.ProcessorCount;
+        public static void SetEnvironmentVariable(string variable, string value) => Environment.SetEnvironmentVariable(variable, value);
+        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) => Environment.SetEnvironmentVariable(variable, value, target);
+        public static string StackTrace => Environment.StackTrace; // this will temporarily result in an extra frame in Environment.StackTrace calls
     }
 }
