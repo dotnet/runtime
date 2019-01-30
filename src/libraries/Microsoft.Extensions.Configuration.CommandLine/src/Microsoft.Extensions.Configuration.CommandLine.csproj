@@ -4,7 +4,7 @@
     <Description>Command line configuration provider implementation for Microsoft.Extensions.Configuration.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageTags>$(PackageTags);commandline</PackageTags>
-    <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>

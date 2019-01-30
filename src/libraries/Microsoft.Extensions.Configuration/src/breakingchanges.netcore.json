@@ -1,7 +1,0 @@
-[
-  {
-    "TypeId": "public class Microsoft.Extensions.Configuration.ConfigurationSection : Microsoft.Extensions.Configuration.IConfigurationSection",
-    "MemberId": "public .ctor(Microsoft.Extensions.Configuration.ConfigurationRoot root, System.String path)",
-    "Kind": "Removal"
-  }
-]

@@ -6,9 +6,8 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>hosting</PackageTags>
-    <EnableApiCheck>false</EnableApiCheck>
     <RootNamespace>Microsoft.Extensions.Hosting</RootNamespace>
-    <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
