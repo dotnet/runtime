@@ -7,7 +7,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Claims;
 using System.Security.Principal;
+using System.Threading.Tasks;
 using System.Threading.Tests;
 using Xunit;
 
@@ -426,6 +428,97 @@ namespace System.Threading.Threads.Tests
                 Thread.CurrentPrincipal = originalPrincipal;
                 Assert.Equal(originalPrincipal, Thread.CurrentPrincipal);
             });
+        }
+
+        [Fact]
+        public static void CurrentPrincipalContextFlowTest()
+        {
+            ThreadTestHelpers.RunTestInBackgroundThread(async () =>
+            {
+                Thread.CurrentPrincipal = new ClaimsPrincipal();
+
+                await Task.Run(async() => {
+
+                    Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+
+                    await Task.Run(async() => 
+                    {
+                        Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+
+                        Thread.CurrentPrincipal = new GenericPrincipal(new GenericIdentity("name"), new string[0]);
+
+                        await Task.Run(() =>
+                        {
+                            Assert.IsType<GenericPrincipal>(Thread.CurrentPrincipal);
+                        });
+
+                        Assert.IsType<GenericPrincipal>(Thread.CurrentPrincipal);
+                    });
+
+                    Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+                });
+
+                Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+            });
+        }
+
+        [Fact]
+        public static void CurrentPrincipalContextFlowTest_NotFlow()
+        {
+            ThreadTestHelpers.RunTestInBackgroundThread(async () =>
+            {
+                Thread.CurrentPrincipal = new ClaimsPrincipal();
+
+                Task task;
+                using(ExecutionContext.SuppressFlow())
+                {
+                    Assert.True(ExecutionContext.IsFlowSuppressed());
+
+                    task = Task.Run(() => 
+                    {
+                        // Default PrincipalPolicy for netcoreapp is null
+                        if (PlatformDetection.IsNetCore)
+                        {
+                            Assert.Null(Thread.CurrentPrincipal);
+                        }
+                        else
+                        {
+                            Assert.IsType<GenericPrincipal>(Thread.CurrentPrincipal);
+                        }
+
+                        Assert.False(ExecutionContext.IsFlowSuppressed());
+                    });
+                }
+
+                Assert.False(ExecutionContext.IsFlowSuppressed());
+
+                await task;
+            });
+        }
+
+        [Fact]
+        public static void CurrentPrincipal_SetNull()
+        {
+            // We run test on remote process because we need to set same principal policy
+            // On netfx default principal policy is PrincipalPolicy.UnauthenticatedPrincipal
+            DummyClass.RemoteInvoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
+
+                Assert.Null(Thread.CurrentPrincipal);
+
+                Thread.CurrentPrincipal = null;
+                Assert.Null(Thread.CurrentPrincipal);
+
+                Thread.CurrentPrincipal = new ClaimsPrincipal();
+                Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+
+                Thread.CurrentPrincipal = null;
+                Assert.Null(Thread.CurrentPrincipal);
+
+                Thread.CurrentPrincipal = new ClaimsPrincipal();
+                Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+            }).Dispose();
         }
 
         [Fact]
