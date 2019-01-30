@@ -4,10 +4,11 @@ parameters:
   osGroup: ''
   osIdentifier: ''
   priority: 0
-  crossgen: false
+  readyToRun: false
   scenarios: ''
   helixQueues: ''
   timeoutInMinutes: ''
+  timeoutPerTestInMinutes: ''
   crossrootfsDir: ''
 
 ### Test job
@@ -24,18 +25,18 @@ jobs:
     osIdentifier: ${{ parameters.osIdentifier }}
 
     # Compute job name from template parameters
-    ${{ if eq(parameters.crossgen, 'false') }}:
+    ${{ if eq(parameters.readyToRun, false) }}:
       name: ${{ format('testbuild_pri{0}_{1}_{2}_{3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('Test Pri{0} {1} {2} {3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-    ${{ if eq(parameters.crossgen, 'true') }}:
+    ${{ if eq(parameters.readyToRun, true) }}:
       name: ${{ format('testbuild_pri{0}_r2r_{1}_{2}_{3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('Test Pri{0} R2R {1} {2} {3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
-    ${{ if eq(parameters.crossgen, 'false') }}:
+    ${{ if eq(parameters.readyToRun, false) }}:
       helixType: ${{ format('test/functional/cli/pri{0}', parameters.priority) }}
-    ${{ if eq(parameters.crossgen, 'true') }}:
+    ${{ if eq(parameters.readyToRun, true) }}:
       helixType: ${{ format('test/functional/r2r/cli/pri{0}', parameters.priority) }}
 
     variables:
@@ -52,17 +53,17 @@ jobs:
       - name: priorityArg
         value: ''
 
-    - ${{ if eq(parameters.crossgen, 'true') }}:
+    - ${{ if eq(parameters.readyToRun, true) }}:
       - name: crossgenArg
         value: 'crossgen'
-    - ${{ if eq(parameters.crossgen, 'false') }}:
+    - ${{ if eq(parameters.readyToRun, false) }}:
       - name: crossgenArg
         value: ''
 
     # TODO: Enable crossgen in build-test.sh. It currently doesn't
     # accept a crossgen arg, so disable the macos/linux crossgen test
     # build jobs.
-    ${{ if and(eq(parameters.crossgen, 'true'), in(parameters.osGroup, 'Linux', 'OSX')) }}:
+    ${{ if and(eq(parameters.readyToRun, true), in(parameters.osGroup, 'Linux', 'OSX')) }}:
       condition: false
 
     # FreeBSD test jobs are disabled since we don't have any FreeBSD helix queues.
@@ -128,9 +129,10 @@ jobs:
           condition: false
 
         publishTestResults: true
-        # TODO: see if this amount is enough for all individual jobs to finish
-        # TODO: consider passing this value as a parameter to a test job
-        timeoutInMinutes: 30
+        timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+        timeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
+
+        readyToRun: ${{ parameters.readyToRun }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the

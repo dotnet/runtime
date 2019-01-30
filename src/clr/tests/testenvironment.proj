@@ -55,7 +55,7 @@
     <!-- "normal" scenario doesn't define any COMPlus_* variables and uses the coreclr runtime default values
          while other scenarios use the default values of COMPlus_* variables defined in ItemDefinitionGroup above -->
     <TestEnvironment Include="normal" TieredCompilation="" />
-    <TestEnvironment Include="minopts" JITMinOpts="1" />
+    <TestEnvironment Include="jitminopts" JITMinOpts="1" />
     <TestEnvironment Include="no_tiered_compilation" TieredCompilation="0" />
     <TestEnvironment Include="forcerelocs" ForceRelocs="1" />
     <TestEnvironment Include="jitstress1" JitStress="1" />
@@ -98,7 +98,7 @@
     <TestEnvironment Include="gcstress0xc_zapdisable_heapverify1" GCStress="0xC" ZapDisable="1" ReadyToRun="0" HeapVerify="1" />
     <TestEnvironment Include="gcstress0xc_jitstress1" GCStress="0xC" JitStress="1" />
     <TestEnvironment Include="gcstress0xc_jitstress2" GCStress="0xC" JitStress="2" />
-    <TestEnvironment Include="gcstress0xc_minopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
+    <TestEnvironment Include="gcstress0xc_jitminopts_heapverify1" GCStress="0xC" JITMinOpts="1" HeapVerify="1" />
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
