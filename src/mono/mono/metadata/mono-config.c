@@ -719,6 +719,8 @@ mono_set_config_dir (const char *dir)
 	if (env_mono_cfg_dir == NULL && dir != NULL)
 		env_mono_cfg_dir = g_strdup (dir);
 
+	if (mono_cfg_dir)
+		g_free (mono_cfg_dir);
 	mono_cfg_dir = env_mono_cfg_dir;
 }
 
