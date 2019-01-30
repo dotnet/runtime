@@ -166,6 +166,9 @@
   <data name="AppDomain_AppBaseNotSet" xml:space="preserve">
     <value>The ApplicationBase must be set before retrieving this property.</value>
   </data>
+  <data name="AmbiguousImplementationException_NullMessage" xml:space="preserve">
+    <value>Ambiguous implementation found.</value>
+  </data>
   <data name="Arg_AccessException" xml:space="preserve">
     <value>Cannot access member.</value>
   </data>
