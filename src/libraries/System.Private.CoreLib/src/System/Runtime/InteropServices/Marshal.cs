@@ -651,6 +651,134 @@ namespace System.Runtime.InteropServices
             return s.MarshalToString(globalAlloc: true, unicode: true); ;
         }
 
+        public static unsafe IntPtr StringToHGlobalAnsi(string s)
+        {
+            if (s == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            long lnb = (s.Length + 1) * (long)SystemMaxDBCSCharSize;
+            int nb = (int)lnb;
+
+            // Overflow checking
+            if (nb != lnb)
+            {
+                throw new ArgumentOutOfRangeException(nameof(s));
+            }
+
+            IntPtr hglobal = AllocHGlobal((IntPtr)nb);
+
+            StringToAnsiString(s, (byte*)hglobal, nb);
+            return hglobal;
+        }
+
+        public static unsafe IntPtr StringToHGlobalUni(string s)
+        {
+            if (s == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            int nb = (s.Length + 1) * 2;
+
+            // Overflow checking
+            if (nb < s.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(s));
+            }
+
+            IntPtr hglobal = AllocHGlobal((IntPtr)nb);
+            
+            fixed (char* firstChar = s)
+            {
+                string.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
+            }
+            return hglobal;
+        }
+
+        public static IntPtr StringToHGlobalAuto(string s)
+        {
+            // Ansi platforms are no longer supported
+            return StringToHGlobalUni(s);
+        }
+
+        public static unsafe IntPtr StringToCoTaskMemUni(string s)
+        {
+            if (s == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            int nb = (s.Length + 1) * 2;
+
+            // Overflow checking
+            if (nb < s.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(s));
+            }
+
+            IntPtr hglobal = AllocCoTaskMem(nb);
+
+            fixed (char* firstChar = s)
+            {
+                string.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
+            }
+            return hglobal;
+        }
+
+        public static unsafe IntPtr StringToCoTaskMemUTF8(string s)
+        {
+            if (s == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
+
+            IntPtr pMem = AllocCoTaskMem(nb + 1);
+
+            int nbWritten;
+            byte* pbMem = (byte*)pMem;
+
+            fixed (char* firstChar = s)
+            {
+                nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
+            }
+
+            pbMem[nbWritten] = 0;
+
+            return pMem;
+        }
+
+        public static IntPtr StringToCoTaskMemAuto(string s)
+        {
+            // Ansi platforms are no longer supported
+            return StringToCoTaskMemUni(s);
+        }
+
+        public static unsafe IntPtr StringToCoTaskMemAnsi(string s)
+        {
+            if (s == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            long lnb = (s.Length + 1) * (long)SystemMaxDBCSCharSize;
+            int nb = (int)lnb;
+
+            // Overflow checking
+            if (nb != lnb)
+            {
+                throw new ArgumentOutOfRangeException(nameof(s));
+            }
+
+            IntPtr hglobal = AllocCoTaskMem(nb);
+
+            StringToAnsiString(s, (byte*)hglobal, nb);
+            return hglobal;
+        }
+
         /// <summary>
         /// Generates a GUID for the specified type. If the type has a GUID in the
         /// metadata then it is returned otherwise a stable guid is generated based
