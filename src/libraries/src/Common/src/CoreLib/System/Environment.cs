@@ -6,8 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -15,128 +13,100 @@ namespace System
     {
         public static string GetEnvironmentVariable(string variable)
         {
-            return EnvironmentAugments.GetEnvironmentVariable(variable);
+            if (variable == null)
+                throw new ArgumentNullException(nameof(variable));
+
+            return GetEnvironmentVariableCore(variable);
         }
 
         public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target)
         {
-            return EnvironmentAugments.GetEnvironmentVariable(variable, target);
-        }
+            if (target == EnvironmentVariableTarget.Process)
+                return GetEnvironmentVariable(variable);
 
-        public static IDictionary GetEnvironmentVariables()
-        {
-            // To maintain complete compatibility with prior versions we need to return a Hashtable.
-            // We did ship a prior version of Core with LowLevelDictionary, which does iterate the
-            // same (e.g. yields DictionaryEntry), but it is not a public type.
-            //
-            // While we could pass Hashtable back from CoreCLR the type is also defined here. We only
-            // want to surface the local Hashtable.
-            return EnvironmentAugments.EnumerateEnvironmentVariables().ToHashtable();
+            if (variable == null)
+                throw new ArgumentNullException(nameof(variable));
+
+            bool fromMachine = ValidateAndConvertRegistryTarget(target);
+            return GetEnvironmentVariableFromRegistry(variable, fromMachine);
         }
 
         public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
         {
-            // See comments in GetEnvironmentVariables()
-            return EnvironmentAugments.EnumerateEnvironmentVariables(target).ToHashtable();
-        }
+            if (target == EnvironmentVariableTarget.Process)
+                return GetEnvironmentVariables();
 
-        private static Hashtable ToHashtable(this IEnumerable<KeyValuePair<string, string>> pairs)
-        {
-            Hashtable hashTable = new Hashtable();
-            foreach (KeyValuePair<string, string> pair in pairs)
-            {
-                try 
-                {
-                    hashTable.Add(pair.Key, pair.Value);                 
-                }
-                catch (ArgumentException)
-                {
-                    // Throw and catch intentionally to provide non-fatal notification about corrupted environment block
-                }
-            }
-            return hashTable;
+            bool fromMachine = ValidateAndConvertRegistryTarget(target);
+            return GetEnvironmentVariablesFromRegistry(fromMachine);
         }
 
         public static void SetEnvironmentVariable(string variable, string value)
         {
-            EnvironmentAugments.SetEnvironmentVariable(variable, value);
+            ValidateVariableAndValue(variable, ref value);
+            SetEnvironmentVariableCore(variable, value);
         }
 
         public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target)
         {
-            EnvironmentAugments.SetEnvironmentVariable(variable, value, target);
+            if (target == EnvironmentVariableTarget.Process)
+            {
+                SetEnvironmentVariable(variable, value);
+                return;
+            }
+
+            ValidateVariableAndValue(variable, ref value);
+
+            bool fromMachine = ValidateAndConvertRegistryTarget(target);
+            SetEnvironmentVariableFromRegistry(variable, value, fromMachine: fromMachine);
         }
 
-        public static string CommandLine
-        {
-            get
-            {
-                return PasteArguments.Paste(GetCommandLineArgs(), pasteFirstArgumentUsingArgV0Rules: true);
-            }
-        }
+        public static string CommandLine => PasteArguments.Paste(GetCommandLineArgs(), pasteFirstArgumentUsingArgV0Rules: true);
 
         public static string CurrentDirectory
         {
-            get { return CurrentDirectoryCore; }
+            get => CurrentDirectoryCore;
             set
             {
                 if (value == null)
-                {
                     throw new ArgumentNullException(nameof(value));
-                }
 
                 if (value.Length == 0)
-                {
                     throw new ArgumentException(SR.Argument_PathEmpty, nameof(value));
-                }
 
                 CurrentDirectoryCore = value;
             }
         }
 
-        public static int CurrentManagedThreadId => EnvironmentAugments.CurrentManagedThreadId;
-
-        public static void Exit(int exitCode) => EnvironmentAugments.Exit(exitCode);
-        
-        public static void FailFast(string message) => FailFast(message, exception: null);
-
-        public static void FailFast(string message, Exception exception) => EnvironmentAugments.FailFast(message, exception);
-
         public static string ExpandEnvironmentVariables(string name)
         {
             if (name == null)
-            {
                 throw new ArgumentNullException(nameof(name));
-            }
 
             if (name.Length == 0)
-            {
                 return name;
-            }
 
             return ExpandEnvironmentVariablesCore(name);
         }
 
-        public static string[] GetCommandLineArgs() => EnvironmentAugments.GetCommandLineArgs();
+        private static string[] s_commandLineArgs;
+
+        internal static void SetCommandLineArgs(string[] cmdLineArgs) // invoked from VM
+        {
+            s_commandLineArgs = cmdLineArgs;
+        }
 
         public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
 
         public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
         {
             if (!Enum.IsDefined(typeof(SpecialFolder), folder))
-            {
                 throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
-            }
 
             if (option != SpecialFolderOption.None && !Enum.IsDefined(typeof(SpecialFolderOption), option))
-            {
                 throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
-            }
 
             return GetFolderPathCore(folder, option);
         }
-
-        public static bool HasShutdownStarted => EnvironmentAugments.HasShutdownStarted;
 
         public static bool Is64BitProcess => IntPtr.Size == 8;
 
@@ -144,28 +114,12 @@ namespace System
 
         public static OperatingSystem OSVersion => s_osVersion.Value;
 
-        public static int ProcessorCount => EnvironmentAugments.ProcessorCount;
-
-        public static string StackTrace
-        {
-            [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
-            get
-            {
-                return EnvironmentAugments.StackTrace;
-            }
-        }
-
-        public static int TickCount => EnvironmentAugments.TickCount;
-
         public static bool UserInteractive => true;
 
-        public static Version Version
-        {
-            // Previously this represented the File version of mscorlib.dll.  Many other libraries in the framework and outside took dependencies on the first three parts of this version 
-            // remaining constant throughout 4.x.  From 4.0 to 4.5.2 this was fine since the file version only incremented the last part. Starting with 4.6 we switched to a file versioning
-            // scheme that matched the product version.  In order to preserve compatibility with existing libraries, this needs to be hard-coded.
-            get { return new Version(4, 0, 30319, 42000); }
-        }
+        // Previously this represented the File version of mscorlib.dll.  Many other libraries in the framework and outside took dependencies on the first three parts of this version 
+        // remaining constant throughout 4.x.  From 4.0 to 4.5.2 this was fine since the file version only incremented the last part. Starting with 4.6 we switched to a file versioning
+        // scheme that matched the product version.  In order to preserve compatibility with existing libraries, this needs to be hard-coded.
+        public static Version Version => new Version(4, 0, 30319, 42000);
 
         public static long WorkingSet
         {
@@ -185,8 +139,43 @@ namespace System
                         if (result is long) return (long)result;
                     }
                 }
+
                 // Could not get the current working set.
                 return 0;
+            }
+        }
+
+        private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)
+        {
+            Debug.Assert(target != EnvironmentVariableTarget.Process);
+
+            if (target == EnvironmentVariableTarget.Machine)
+                return true;
+
+            if (target == EnvironmentVariableTarget.User)
+                return false;
+
+            throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
+        }
+
+        private static void ValidateVariableAndValue(string variable, ref string value)
+        {
+            if (variable == null)
+                throw new ArgumentNullException(nameof(variable));
+
+            if (variable.Length == 0)
+                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(variable));
+
+            if (variable[0] == '\0')
+                throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));
+
+            if (variable.Contains('='))
+                throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
+
+            if (string.IsNullOrEmpty(value) || value[0] == '\0')
+            {
+                // Explicitly null out value if it's empty
+                value = null;
             }
         }
     }
