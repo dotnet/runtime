@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Internal.Runtime.Augments;
+using Microsoft.Win32;
 
 namespace System
 {
@@ -59,15 +60,13 @@ namespace System
             }
         }
 
-        public static int ExitCode { get { return EnvironmentAugments.ExitCode; } set { EnvironmentAugments.ExitCode = value; } }
-
         private static string ExpandEnvironmentVariablesCore(string name)
         {
             Span<char> initialBuffer = stackalloc char[128];
             var builder = new ValueStringBuilder(initialBuffer);
 
             uint length;
-            while ((length = Interop.Kernel32.ExpandEnvironmentStringsW(name, ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
+            while ((length = Interop.Kernel32.ExpandEnvironmentStrings(name, ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
             {
                 builder.EnsureCapacity((int)length);
             }
@@ -80,21 +79,12 @@ namespace System
             return builder.ToString();
         }
 
-        private static bool Is64BitOperatingSystemWhen32BitProcess
-            => Interop.Kernel32.IsWow64Process(Interop.Kernel32.GetCurrentProcess(), out bool isWow64) && isWow64;
+        private static bool Is64BitOperatingSystemWhen32BitProcess =>
+            Interop.Kernel32.IsWow64Process(Interop.Kernel32.GetCurrentProcess(), out bool isWow64) && isWow64;
 
-        public static string MachineName
-        {
-            get
-            {
-                string name = Interop.Kernel32.GetComputerName();
-                if (name == null)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
-                }
-                return name;
-            }
-        }
+        public static string MachineName =>
+            Interop.Kernel32.GetComputerName() ??
+            throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
 
         private static readonly unsafe Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(() =>
         {
