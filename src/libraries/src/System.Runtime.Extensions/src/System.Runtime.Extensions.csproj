@@ -21,15 +21,9 @@
     <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
     <Compile Include="System\Context.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Environment.cs">
-      <Link>Common\CoreLib\System\Environment.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Environment.SpecialFolder.cs">
-      <Link>Common\CoreLib\System\Environment.SpecialFolder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Environment.SpecialFolderOption.cs">
-      <Link>Common\CoreLib\System\Environment.SpecialFolderOption.cs</Link>
-    </Compile>
+    <Compile Include="System\Environment.cs" />
+    <Compile Include="System\Environment.SpecialFolder.cs" />
+    <Compile Include="System\Environment.SpecialFolderOption.cs" />
     <Compile Include="System\LoaderOptimization.cs" />
     <Compile Include="System\LoaderOptimizationAttribute.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\OperatingSystem.cs">
@@ -79,17 +73,13 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'uap'">
-    <Compile Include="$(CommonPath)\CoreLib\System\Environment.WinRT.cs">
-      <Link>Common\CoreLib\System\Environment.WinRT.cs</Link>
-    </Compile>
+    <Compile Include="System\Environment.WinRT.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\WinRTFolderPaths.cs">
       <Link>Common\CoreLib\System\WinRTFolderPaths.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uapaot' and '$(TargetGroup)' != 'uap'">
-    <Compile Include="$(CommonPath)\CoreLib\System\Environment.Win32.cs">
-      <Link>Common\CoreLib\System\Environment.Win32.cs</Link>
-    </Compile>
+    <Compile Include="System\Environment.Win32.cs" />
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\secur32\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\secur32\Interop.GetUserNameExW.cs</Link>
     </Compile>
@@ -102,9 +92,7 @@
     <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Windows.cs">
       <Link>Common\CoreLib\System\PasteArguments.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Environment.Windows.cs">
-      <Link>Common\CoreLib\System\Environment.Windows.cs</Link>
-    </Compile>
+    <Compile Include="System\Environment.Windows.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelper.Windows.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\Win32Marshal.cs">
@@ -191,9 +179,7 @@
   </ItemGroup>
   <!-- UNIX -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="$(CommonPath)\CoreLib\System\Environment.Unix.cs">
-      <Link>Common\CoreLib\System\Environment.Unix.cs</Link>
-    </Compile>
+    <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelper.Unix.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
