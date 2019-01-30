@@ -91,6 +91,19 @@ jobs:
               _architecture: arm
               _framework: uap
               _helixQueues: $(windowsArmQueue)
+
+            UAPAOT_x86_Release:
+              _BuildConfig: Release
+              _architecture: x86
+              _framework: uapaot
+              _helixQueues: $(uapNetfxQueues)
+
+            UAPAOT_x64_Release:
+              _BuildConfig: Release
+              _architecture: x64
+              _framework: uapaot
+              _helixQueues: $(uapNetfxQueues)
+
       pool:
         ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           name: dotnet-internal-temp
@@ -208,16 +221,6 @@ jobs:
                 _BuildConfig: Release
                 _architecture: arm64
                 _framework: netcoreapp
-
-              UAPAOT_x86_Release:
-                _BuildConfig: Release
-                _architecture: x86
-                _framework: uapaot
-
-              UAPAOT_x64_Release:
-                _BuildConfig: Release
-                _architecture: x64
-                _framework: uapaot
 
               UAPAOT_arm_Release:
                 _BuildConfig: Release
