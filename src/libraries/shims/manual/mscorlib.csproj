@@ -11,6 +11,7 @@
     <SeedTypePreference Include="System.Reflection.Emit.AssemblyBuilderAccess" Assembly="System.Reflection.Emit" />
     <SeedTypePreference Include="System.Reflection.Emit.ConstructorBuilder" Assembly="System.Reflection.Emit" />
     <SeedTypePreference Include="System.Reflection.Emit.CustomAttributeBuilder" Assembly="System.Reflection.Emit.ILGeneration" />
+    <SeedTypePreference Include="System.Reflection.Emit.DynamicILInfo" Assembly="System.Reflection.Emit.Lightweight" />
     <SeedTypePreference Include="System.Reflection.Emit.DynamicMethod" Assembly="System.Reflection.Emit.Lightweight" />
     <SeedTypePreference Include="System.Reflection.Emit.EnumBuilder" Assembly="System.Reflection.Emit" />
     <SeedTypePreference Include="System.Reflection.Emit.EventBuilder" Assembly="System.Reflection.Emit" />
