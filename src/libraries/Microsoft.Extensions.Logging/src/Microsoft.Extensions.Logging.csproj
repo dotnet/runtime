@@ -3,8 +3,8 @@
   <PropertyGroup>
     <Description>Logging infrastructure default implementation for Microsoft.Extensions.Logging.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <IsPackable>true</IsPackable>
+    <NoWarn>$(NoWarn);CS1591;PKG0001</NoWarn>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>

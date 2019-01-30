@@ -71,7 +71,6 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
     </PropertyGroup>
     <ItemGroup>
         <Compile Include=""Program.fs"" Condition=""'$(Language)' == 'F#'"" />
-        <PackageReference Remove=""Internal.AspNetCore.Sdk"" />
         <Reference Include=""$(MSBuildThisFileDirectory){libName}"" />
     </ItemGroup>
 </Project>

@@ -8,7 +8,7 @@ Microsoft.Extensions.DependencyInjection.IServiceCollection</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>dependencyinjection;di</PackageTags>
     <DefineConstants>$(DefineConstants);ActivatorUtilities_In_DependencyInjection</DefineConstants>
-    <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
