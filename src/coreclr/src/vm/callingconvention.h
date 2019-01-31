@@ -142,6 +142,16 @@ struct TransitionBlock
         LIMITED_METHOD_CONTRACT;
         return offsetof(TransitionBlock, m_x8RetBuffReg);
     }
+    
+    static int GetOffsetOfFirstGCRefMapSlot()
+    {
+        return GetOffsetOfRetBuffArgReg();
+    }
+#else
+    static int GetOffsetOfFirstGCRefMapSlot()
+    {
+        return GetOffsetOfArgumentRegisters();
+    }
 #endif
 
     static BYTE GetOffsetOfArgs()
