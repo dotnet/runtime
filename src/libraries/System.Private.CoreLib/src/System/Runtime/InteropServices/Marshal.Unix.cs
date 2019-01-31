@@ -9,6 +9,8 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
+        private static int GetSystemMaxDBCSCharSize() => 3;
+
         private static bool IsWin32Atom(IntPtr ptr) => false;
 
         internal static unsafe int StringToAnsiString(string s, byte* buffer, int bufferLength, bool bestFit = false, bool throwOnUnmappableChar = false)
