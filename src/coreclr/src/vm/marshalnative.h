@@ -68,8 +68,6 @@ public:
     static FCDECL3(LPVOID, GetUnmanagedThunkForManagedMethodPtr, LPVOID pfnMethodToWrap, PCCOR_SIGNATURE pbSignature, ULONG cbSignature);
     static FCDECL3(LPVOID, GetManagedThunkForUnmanagedMethodPtr, LPVOID pfnMethodToWrap, PCCOR_SIGNATURE pbSignature, ULONG cbSignature);
 
-    static FCDECL0(UINT32, GetSystemMaxDBCSCharSize);
-
     static FCDECL2(LPVOID, GCHandleInternalAlloc, Object *obj, int type);
     static FCDECL1(VOID, GCHandleInternalFree, OBJECTHANDLE handle);
     static FCDECL1(LPVOID, GCHandleInternalGet, OBJECTHANDLE handle);
