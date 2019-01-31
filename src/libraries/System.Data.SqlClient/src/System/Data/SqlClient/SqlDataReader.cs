@@ -2147,7 +2147,7 @@ namespace System.Data.SqlClient
         override public Guid GetGuid(int i)
         {
             ReadColumn(i);
-            return _data[i].SqlGuid.Value;
+            return _data[i].Guid;
         }
 
         override public short GetInt16(int i)
@@ -2582,52 +2582,101 @@ namespace System.Data.SqlClient
 
         private T GetFieldValueFromSqlBufferInternal<T>(SqlBuffer data, _SqlMetaData metaData)
         {
-            Type typeofT = typeof(T);
-            if (_typeofINullable.IsAssignableFrom(typeofT))
+            // this block of type specific shortcuts uses RyuJIT jit behaviours to achieve fast implementations of the primative types
+            // RyuJIT will be able to determine at compilation time that the typeof(T)==typeof(<primative>) options are constant
+            // and be able to remove all implementations which cannot be reached. this will eliminate non-specialized code for value types
+
+            if (typeof(T) == typeof(int))
             {
-                // If its a SQL Type or Nullable UDT
-                object rawValue = GetSqlValueFromSqlBufferInternal(data, metaData);
-
-                // Special case: User wants SqlString, but we have a SqlXml
-                // SqlXml can not be typecast into a SqlString, but we need to support SqlString on XML Types - so do a manual conversion
-                if (typeofT == s_typeofSqlString)
-                {
-                    SqlXml xmlValue = rawValue as SqlXml;
-                    if (xmlValue != null)
-                    {
-                        if (xmlValue.IsNull)
-                        {
-                            rawValue = SqlString.Null;
-                        }
-                        else
-                        {
-                            rawValue = new SqlString(xmlValue.Value);
-                        }
-                    }
-                }
-
-                return (T)rawValue;
+                return data.Int32As<T>();
+            }
+            else if (typeof(T) == typeof(byte))
+            {
+                return data.ByteAs<T>();
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return data.Int16As<T>();
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return data.Int64As<T>();
+            }
+            else if (typeof(T) == typeof(Guid))
+            {
+                return data.GuidAs<T>();
+            }
+            else if (typeof(T) == typeof(bool))
+            {
+                return data.BooleanAs<T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return data.DoubleAs<T>();
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return data.SingleAs<T>();
             }
             else
             {
-                // Otherwise Its a CLR or non-Nullable UDT
-                try
+
+
+                Type typeofT = typeof(T);
+                if (_typeofINullable.IsAssignableFrom(typeofT))
                 {
-                    return (T)GetValueFromSqlBufferInternal(data, metaData);
+                    // If its a SQL Type or Nullable UDT
+                    object rawValue = GetSqlValueFromSqlBufferInternal(data, metaData);
+
+                    // Special case: User wants SqlString, but we have a SqlXml
+                    // SqlXml can not be typecast into a SqlString, but we need to support SqlString on XML Types - so do a manual conversion
+                    if (typeofT == s_typeofSqlString)
+                    {
+                        SqlXml xmlValue = rawValue as SqlXml;
+                        if (xmlValue != null)
+                        {
+                            if (xmlValue.IsNull)
+                            {
+                                rawValue = SqlString.Null;
+                            }
+                            else
+                            {
+                                rawValue = new SqlString(xmlValue.Value);
+                            }
+                        }
+                    }
+
+                    return (T)rawValue;
                 }
-                catch (InvalidCastException)
+                else
                 {
-                    if (data.IsNull)
+                    // Otherwise Its a CLR or non-Nullable UDT
+                    try
                     {
-                        // If the value was actually null, then we should throw a SqlNullValue instead
-                        throw SQL.SqlNullValue();
+                        return (T)GetValueFromSqlBufferInternal(data, metaData);
                     }
-                    else
+                    catch (InvalidCastException)
                     {
-                        // Legitimate InvalidCast, rethrow
-                        throw;
+                        if (data.IsNull)
+                        {
+                            // If the value was actually null, then we should throw a SqlNullValue instead
+                            throw SQL.SqlNullValue();
+                        }
+                        else
+                        {
+                            // Legitimate InvalidCast, rethrow
+                            throw;
+                        }
                     }
                 }
+            }
+        }
+
+        private static void GetFieldValueThrowOnNull(SqlBuffer data)
+        {
+            if (data.IsNull)
+            {
+                throw SQL.SqlNullValue();
             }
         }
 

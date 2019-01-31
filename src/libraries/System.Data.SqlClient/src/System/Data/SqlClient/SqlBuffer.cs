@@ -27,6 +27,7 @@ namespace System.Data.SqlClient
             Int16,
             Int32,
             Int64,
+            Guid,
             Money,
             Single,
             String,
@@ -96,6 +97,8 @@ namespace System.Data.SqlClient
             internal int _int32;
             [FieldOffset(0)]
             internal long _int64;     // also used to store Money, UtcDateTime, Date , and Time
+            [FieldOffset(0)]
+            internal Guid _guid;
             [FieldOffset(0)]
             internal float _single;
             [FieldOffset(0)]
@@ -275,7 +278,23 @@ namespace System.Data.SqlClient
             get
             {
                 ThrowIfNull();
-                return this.SqlGuid.Value;
+                if (StorageType.Guid == _type)
+                {
+                    return _value._guid;
+                }
+                else if (StorageType.SqlGuid == _type)
+                {
+                    return ((SqlGuid)_object).Value;
+                }
+                return (Guid)this.Value;
+            }
+            set
+            {
+                Debug.Assert(IsEmpty, "setting value a second time?");
+
+                _type = StorageType.Guid;
+                _value._guid = value;
+                _isNull = false;
             }
         }
 
@@ -657,9 +676,20 @@ namespace System.Data.SqlClient
         {
             get
             {
-                if (StorageType.SqlGuid == _type)
+                if (StorageType.Guid==_type)
                 {
-                    return (SqlGuid)_object;
+                    return new SqlGuid(_value._guid); 
+                }
+                else if (StorageType.SqlGuid == _type)
+                {
+                    if (IsNull)
+                    {
+                        return SqlGuid.Null;
+                    }
+                    else
+                    {
+                        return (SqlGuid)_object;
+                    }
                 }
                 return (SqlGuid)this.SqlValue; // anything else we haven't thought of goes through boxing.
             }
@@ -792,9 +822,11 @@ namespace System.Data.SqlClient
                     case StorageType.Int16: return SqlInt16;
                     case StorageType.Int32: return SqlInt32;
                     case StorageType.Int64: return SqlInt64;
+                    case StorageType.Guid: return SqlGuid;
                     case StorageType.Money: return SqlMoney;
                     case StorageType.Single: return SqlSingle;
                     case StorageType.String: return SqlString;
+
                     case StorageType.SqlCachedBuffer:
                         {
                             SqlCachedBuffer data = (SqlCachedBuffer)(_object);
@@ -810,14 +842,13 @@ namespace System.Data.SqlClient
                         return _object;
 
                     case StorageType.SqlXml:
+                        if (_isNull)
                         {
-                            if (_isNull)
-                            {
-                                return SqlXml.Null;
-                            }
-                            Debug.Assert(null != _object);
-                            return (SqlXml)_object;
+                            return SqlXml.Null;
                         }
+                        Debug.Assert(null != _object);
+                        return (SqlXml)_object;
+                        
                     case StorageType.Date:
                     case StorageType.DateTime2:
                         if (_isNull)
@@ -825,12 +856,14 @@ namespace System.Data.SqlClient
                             return DBNull.Value;
                         }
                         return DateTime;
+
                     case StorageType.DateTimeOffset:
                         if (_isNull)
                         {
                             return DBNull.Value;
                         }
                         return DateTimeOffset;
+
                     case StorageType.Time:
                         if (_isNull)
                         {
@@ -864,6 +897,7 @@ namespace System.Data.SqlClient
                     case StorageType.Int16: return Int16;
                     case StorageType.Int32: return Int32;
                     case StorageType.Int64: return Int64;
+                    case StorageType.Guid: return Guid;
                     case StorageType.Money: return Decimal;
                     case StorageType.Single: return Single;
                     case StorageType.String: return String;
@@ -898,44 +932,46 @@ namespace System.Data.SqlClient
             {
                 switch (_type)
                 {
-                    case SqlBuffer.StorageType.Empty: return null;
-                    case SqlBuffer.StorageType.Boolean: return typeof(SqlBoolean);
-                    case SqlBuffer.StorageType.Byte: return typeof(SqlByte);
-                    case SqlBuffer.StorageType.DateTime: return typeof(SqlDateTime);
-                    case SqlBuffer.StorageType.Decimal: return typeof(SqlDecimal);
-                    case SqlBuffer.StorageType.Double: return typeof(SqlDouble);
-                    case SqlBuffer.StorageType.Int16: return typeof(SqlInt16);
-                    case SqlBuffer.StorageType.Int32: return typeof(SqlInt32);
-                    case SqlBuffer.StorageType.Int64: return typeof(SqlInt64);
-                    case SqlBuffer.StorageType.Money: return typeof(SqlMoney);
-                    case SqlBuffer.StorageType.Single: return typeof(SqlSingle);
-                    case SqlBuffer.StorageType.String: return typeof(SqlString);
-                    case SqlBuffer.StorageType.SqlCachedBuffer: return typeof(SqlString);
-                    case SqlBuffer.StorageType.SqlBinary: return typeof(object);
-                    case SqlBuffer.StorageType.SqlGuid: return typeof(object);
-                    case SqlBuffer.StorageType.SqlXml: return typeof(SqlXml);
+                    case StorageType.Empty: return null;
+                    case StorageType.Boolean: return typeof(SqlBoolean);
+                    case StorageType.Byte: return typeof(SqlByte);
+                    case StorageType.DateTime: return typeof(SqlDateTime);
+                    case StorageType.Decimal: return typeof(SqlDecimal);
+                    case StorageType.Double: return typeof(SqlDouble);
+                    case StorageType.Int16: return typeof(SqlInt16);
+                    case StorageType.Int32: return typeof(SqlInt32);
+                    case StorageType.Int64: return typeof(SqlInt64);
+                    case StorageType.Guid: return typeof(SqlGuid);
+                    case StorageType.Money: return typeof(SqlMoney);
+                    case StorageType.Single: return typeof(SqlSingle);
+                    case StorageType.String: return typeof(SqlString);
+                    case StorageType.SqlCachedBuffer: return typeof(SqlString);
+                    case StorageType.SqlBinary: return typeof(object);
+                    case StorageType.SqlGuid: return typeof(SqlGuid);
+                    case StorageType.SqlXml: return typeof(SqlXml);
                 }
             }
             else
             { //Is CLR Type
                 switch (_type)
                 {
-                    case SqlBuffer.StorageType.Empty: return null;
-                    case SqlBuffer.StorageType.Boolean: return typeof(bool);
-                    case SqlBuffer.StorageType.Byte: return typeof(byte);
-                    case SqlBuffer.StorageType.DateTime: return typeof(DateTime);
-                    case SqlBuffer.StorageType.Decimal: return typeof(decimal);
-                    case SqlBuffer.StorageType.Double: return typeof(double);
-                    case SqlBuffer.StorageType.Int16: return typeof(short);
-                    case SqlBuffer.StorageType.Int32: return typeof(int);
-                    case SqlBuffer.StorageType.Int64: return typeof(long);
-                    case SqlBuffer.StorageType.Money: return typeof(decimal);
-                    case SqlBuffer.StorageType.Single: return typeof(float);
-                    case SqlBuffer.StorageType.String: return typeof(string);
-                    case SqlBuffer.StorageType.SqlBinary: return typeof(byte[]);
-                    case SqlBuffer.StorageType.SqlCachedBuffer: return typeof(string);
-                    case SqlBuffer.StorageType.SqlGuid: return typeof(Guid);
-                    case SqlBuffer.StorageType.SqlXml: return typeof(string);
+                    case StorageType.Empty: return null;
+                    case StorageType.Boolean: return typeof(bool);
+                    case StorageType.Byte: return typeof(byte);
+                    case StorageType.DateTime: return typeof(DateTime);
+                    case StorageType.Decimal: return typeof(decimal);
+                    case StorageType.Double: return typeof(double);
+                    case StorageType.Int16: return typeof(short);
+                    case StorageType.Int32: return typeof(int);
+                    case StorageType.Int64: return typeof(long);
+                    case StorageType.Guid: return typeof(Guid);
+                    case StorageType.Money: return typeof(decimal);
+                    case StorageType.Single: return typeof(float);
+                    case StorageType.String: return typeof(string);
+                    case StorageType.SqlBinary: return typeof(byte[]);
+                    case StorageType.SqlCachedBuffer: return typeof(string);
+                    case StorageType.SqlGuid: return typeof(Guid);
+                    case StorageType.SqlXml: return typeof(string);
                 }
             }
 
@@ -1096,6 +1132,66 @@ namespace System.Data.SqlClient
             {
                 throw new SqlNullValueException();
             }
+        }
+
+        // [Field]As<T> method explanation:
+        // these methods are used to bridge generic to non-generic context changes allowing allocation free access
+        // where typeof(T) == typeof(field) 
+        //   RyuJIT will recognise the pattern of (T)(object)T as being redundant and eliminate 
+        //   the T and object casts leaving T, so while this looks like it will put every value type instance in a box the 
+        //   generated assembly will be short and direct
+        // where typeof(T) != typeof(field)
+        //   the jit will emit all the cast operations as written. this will put the value into a box and then attempt to
+        //   cast it, because it is an object even compatible casts will generate the desired InvalidCastException so users
+        //   cannot widen a short to an int preserving external expectations that requests for any type other than the correct
+        //   one will fail without conversion being considered
+
+        internal T ByteAs<T>()
+        {
+            ThrowIfNull();
+            return (T)(object)_value._byte;
+        }
+
+        internal T BooleanAs<T>()
+        {
+            ThrowIfNull();
+            return (T)(object)_value._boolean;
+        }
+
+        internal T Int32As<T>()
+        {
+            ThrowIfNull();
+            return (T)(object)_value._int32;
+        }
+
+        internal T Int16As<T>()
+        {
+            ThrowIfNull();
+            return (T)(object)_value._int16;
+        }
+
+        internal T Int64As<T>()
+        {
+            ThrowIfNull();
+            return (T)(object)_value._int64;
+        }
+
+        internal T GuidAs<T>()
+        {
+            ThrowIfNull();
+            return (T)(object)_value._guid;
+        }
+
+        internal T DoubleAs<T>()
+        {
+            ThrowIfNull();
+            return (T)(object)_value._double;
+        }
+
+        internal T SingleAs<T>()
+        {
+            ThrowIfNull();
+            return (T)(object)_value._single;
         }
     }
 }// namespace
