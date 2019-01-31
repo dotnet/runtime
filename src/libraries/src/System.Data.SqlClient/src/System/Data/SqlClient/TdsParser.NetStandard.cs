@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Buffers;
+
 namespace System.Data.SqlClient
 {
     internal sealed partial class TdsParser
@@ -23,5 +26,15 @@ namespace System.Data.SqlClient
 			byte[] bytes = BitConverter.GetBytes(value);
 			bytes.AsSpan().CopyTo(buffer);
 		}
-	}
+
+        internal static Guid ConstructGuid(ReadOnlySpan<byte> bytes)
+        {
+            Debug.Assert(bytes.Length >= 16, "not enough bytes to set guid");
+            byte[] temp = ArrayPool<byte>.Shared.Rent(16);
+            bytes.CopyTo(temp.AsSpan());
+            Guid retval = new Guid(temp);
+            ArrayPool<byte>.Shared.Return(temp);
+            return retval;
+        }
+    }
 }
