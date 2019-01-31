@@ -12,7 +12,7 @@ parameters:
   helixQueues: ''
   helixType: ''
   scenarios: ''
-  timeoutInMinutes: ''
+  timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
   readyToRun: ''
 
@@ -34,7 +34,7 @@ steps:
       _HelixTargetQueues: ${{ parameters.helixQueues }}
       _HelixType: ${{ parameters.helixType }}
       _Scenarios: ${{ parameters.scenarios }}
-      _TimeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       _ReadyToRun: ${{ parameters.readyToRun }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
@@ -57,7 +57,7 @@ steps:
       _HelixTargetQueues: ${{ parameters.helixQueues }}
       _HelixType: ${{ parameters.helixType }}
       _Scenarios: ${{ parameters.scenarios }}
-      _TimeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       _ReadyToRun: ${{ parameters.readyToRun }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
