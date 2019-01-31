@@ -37,7 +37,7 @@ OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 OPTION(CLR_CMAKE_WARNINGS_ARE_ERRORS "Warnings are errors" ON)
 
 # Ensure that python is present
-find_program(PYTHON NAMES python2.7 python2 python)
+find_program(PYTHON NAMES python3 python2 python)
 if (PYTHON STREQUAL "PYTHON-NOTFOUND")
     message(FATAL_ERROR "PYTHON not found: Please install Python 2.7.9 or later from https://www.python.org/downloads/")
 endif()
