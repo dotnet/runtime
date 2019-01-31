@@ -8,6 +8,16 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
+        private static unsafe int GetSystemMaxDBCSCharSize()
+        {
+            Interop.Kernel32.CPINFO cpInfo = default;
+
+            if (Interop.Kernel32.GetCPInfo(Interop.Kernel32.CP_ACP, &cpInfo) == Interop.BOOL.FALSE)
+                return 2;
+
+            return cpInfo.MaxCharSize;
+        }
+
         // Win32 has the concept of Atoms, where a pointer can either be a pointer
         // or an int.  If it's less than 64K, this is guaranteed to NOT be a
         // pointer since the bottom 64K bytes are reserved in a process' page table.
