@@ -9010,7 +9010,7 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 	if (m_class_get_image (method->klass) != mono_get_corlib ())
 		g_string_append_printf (s, "%s_", m_class_get_image (method->klass)->assembly->aname.name);
 
-	if (method->wrapper_type != MONO_WRAPPER_OTHER)
+	if (method->wrapper_type != MONO_WRAPPER_OTHER && method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
 		append_mangled_wrapper_type (s, method->wrapper_type);
 
 	switch (method->wrapper_type) {
@@ -9072,7 +9072,12 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 	case MONO_WRAPPER_MANAGED_TO_NATIVE: {
 		append_mangled_wrapper_subtype (s, info->subtype);
 		if (info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-			g_string_append_printf (s, "%s", method->name);
+			const char *name = method->name;
+			const char *prefix = "__icall_wrapper_";
+			if (strstr (name, prefix) == name)
+				name += strlen (prefix);
+			g_string_append_printf (s, "%s", name);
+			append_sig = FALSE;
 		} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
 			success = success && append_mangled_method (s, info->d.managed_to_native.method);
 		} else {
@@ -12600,7 +12605,9 @@ static const char *preinited_jit_icalls[] = {
 	"mini_llvmonly_init_gshared_method_vtable",
 	"mono_llvm_throw_corlib_exception",
 	"mini_llvmonly_init_vtable_slot",
-	"mono_helper_ldstr_mscorlib"
+	"mono_helper_ldstr_mscorlib",
+	"mono_fill_method_rgctx",
+	"mono_fill_class_rgctx"
 };
 
 static void
@@ -12655,16 +12662,18 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 	ji->type = MONO_PATCH_INFO_GC_SAFE_POINT_FLAG;
 	add_preinit_slot (acfg, ji);
 
-	for (i = 0; i < TLS_KEY_NUM; i++) {
-		ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-		ji->type = MONO_PATCH_INFO_GET_TLS_TRAMP;
-		ji->data.index = i;
-		add_preinit_slot (acfg, ji);
+	if (!acfg->aot_opts.llvm_only) {
+		for (i = 0; i < TLS_KEY_NUM; i++) {
+			ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+			ji->type = MONO_PATCH_INFO_GET_TLS_TRAMP;
+			ji->data.index = i;
+			add_preinit_slot (acfg, ji);
 
-		ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-		ji->type = MONO_PATCH_INFO_SET_TLS_TRAMP;
-		ji->data.index = i;
-		add_preinit_slot (acfg, ji);
+			ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+			ji->type = MONO_PATCH_INFO_SET_TLS_TRAMP;
+			ji->data.index = i;
+			add_preinit_slot (acfg, ji);
+		}
 	}
 
 	/* Called by native-to-managed wrappers on possibly unattached threads */
@@ -12692,6 +12701,9 @@ mono_dedup_log_stats (MonoAotCompile *acfg)
 {
 	GHashTableIter iter;
 	g_assert (acfg->dedup_stats);
+
+	if (!acfg->dedup_emit_mode)
+		return;
 
 	// If dedup_emit_mode, acfg is the dummy dedup module that consolidates
 	// deduped modules
@@ -13384,6 +13396,9 @@ print_stats (MonoAotCompile *acfg)
 	aot_printf (acfg, "\tInstance:  %d\n", acfg->stats.method_categories [METHOD_CAT_INST]);
 	aot_printf (acfg, "\tGSharedvt: %d\n", acfg->stats.method_categories [METHOD_CAT_GSHAREDVT]);
 	aot_printf (acfg, "\tWrapper:   %d\n", acfg->stats.method_categories [METHOD_CAT_WRAPPER]);
+
+	if (acfg->aot_opts.dedup || acfg->dedup_emit_mode)
+		mono_dedup_log_stats (acfg);
 }
 
 static int
@@ -13495,8 +13510,6 @@ emit_aot_image (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.dedup)
 		mono_flush_method_cache (acfg);
-	if (acfg->aot_opts.dedup || acfg->dedup_emit_mode)
-		mono_dedup_log_stats (acfg);
 
 	emit_code (acfg);
 

@@ -1103,33 +1103,38 @@ mono_ji_type_to_string (MonoJumpInfoType type)
 void
 mono_print_ji (const MonoJumpInfo *ji)
 {
+	const char *type = patch_info_str [ji->type];
 	switch (ji->type) {
-	case MONO_PATCH_INFO_RGCTX_FETCH: {
+	case MONO_PATCH_INFO_RGCTX_FETCH:
+	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *entry = ji->data.rgctx_entry;
 
-		printf ("[RGCTX_FETCH ");
+		printf ("[%s ", type);
 		mono_print_ji (entry->data);
-		printf (" - %s]", mono_rgctx_info_type_to_str (entry->info_type));
+		printf (" -> %s]", mono_rgctx_info_type_to_str (entry->info_type));
 		break;
 	}
-	case MONO_PATCH_INFO_METHODCONST: {
-		char *s = mono_method_full_name (ji->data.method, TRUE);
-		printf ("[METHODCONST - %s]", s);
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_METHOD_FTNDESC: {
+		char *s = mono_method_get_full_name (ji->data.method);
+		printf ("[%s %s]", type, s);
 		g_free (s);
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_ICALL: {
-		printf ("[JIT_ICALL - %s]", ji->data.name);
+		printf ("[JIT_ICALL %s]", ji->data.name);
 		break;
 	}
-	case MONO_PATCH_INFO_CLASS: {
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_VTABLE: {
 		char *name = mono_class_full_name (ji->data.klass);
-		printf ("[CLASS - %s]", name);
+		printf ("[%s %s]", type, name);
 		g_free (name);
 		break;
 	}
 	default:
-		printf ("[%s]", patch_info_str [ji->type]);
+		printf ("[%s]", type);
 		break;
 	}
 }
