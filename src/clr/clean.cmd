@@ -26,8 +26,11 @@ if /I [%NO_DASHES_ARG:-=%] == [all] (
 )
 
 :no_args
-if [%1]==[] set __args=-b
-call %~dp0run.cmd clean %__args% %*
+if [%1]==[] set __args=/t:CleanAllProjects
+if [%1]==[-b] set __args=/t:CleanAllProjects
+if [%1]==[-p] set __args=/t:CleanPackages
+if [%1]==[-c] set __args=/t:CleanPackagesCache
+call %~dp0msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false /flp:v=normal;LogFile=clean.log %__args%
 exit /b %ERRORLEVEL%
 
 :Usage

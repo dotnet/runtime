@@ -78,7 +78,9 @@
 
   <!-- Output paths -->
   <PropertyGroup>
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(RootBinDir)obj\</BaseIntermediateOutputPath>
+    <!-- When not using the SKD, we want to set this property here so
+         that BuildVersionFile gets the correct value. -->
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == '' Or '$(UsingMicrosoftNETSdk)' != 'true'">$(RootBinDir)obj\</BaseIntermediateOutputPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</IntermediateOutputPath>
     <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</OutputPath>
   </PropertyGroup>

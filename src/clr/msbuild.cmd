@@ -19,16 +19,9 @@ if NOT [%ERRORLEVEL%]==[0] (
   exit /b 1
 )
 
-set _toolRuntime=%~dp0Tools
-set _dotnet=%_toolRuntime%\dotnetcli\dotnet.exe
-set _json=%~dp0config.json
-
-:: run.exe depends on running in the root directory, notably because the config.json specifies
-:: a relative path to the binclash logger
-
 pushd %~dp0
-echo Running: %_dotnet% %_toolRuntime%\run.exe %~dp0config.json %*
-call %_dotnet% %_toolRuntime%\run.exe "%_json%" %*
+echo Running: msbuild.exe %*
+call msbuild.exe %*
 popd
 if NOT [%ERRORLEVEL%]==[0] (
   exit /b 1
