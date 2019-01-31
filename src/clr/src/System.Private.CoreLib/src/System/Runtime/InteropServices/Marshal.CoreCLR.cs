@@ -39,12 +39,6 @@ namespace System.Runtime.InteropServices
         private const int LMEM_FIXED = 0;
         private const int LMEM_MOVEABLE = 2;
 
-        /// <summary>
-        /// Helper method to retrieve the system's maximum DBCS character size.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetSystemMaxDBCSCharSize();
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
 

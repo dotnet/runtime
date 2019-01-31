@@ -481,15 +481,6 @@ FCIMPL3(LPVOID, MarshalNative::GetManagedThunkForUnmanagedMethodPtr, LPVOID pfnM
 }
 FCIMPLEND
 
-
-FCIMPL0(UINT32, MarshalNative::GetSystemMaxDBCSCharSize)
-{
-    FCALL_CONTRACT;
-    
-    return GetMaxDBCSCharByteSize();
-}
-FCIMPLEND
-
 /************************************************************************
  * PInvoke.GetLastWin32Error
  */
