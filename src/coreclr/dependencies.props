@@ -23,23 +23,23 @@
 
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>1b2a302b69d0e390d19ba878bafd9515152bf09f</CoreFxCurrentRef>
+    <CoreFxCurrentRef>7fb04b947ac4fde6e33a57474c5c4a07ef90a185</CoreFxCurrentRef>
     <CoreClrCurrentRef>f31086500dc58cefe7b1275300f6fc07b38c1bcc</CoreClrCurrentRef>
     <BuildToolsCurrentRef>f31086500dc58cefe7b1275300f6fc07b38c1bcc</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>1b2a302b69d0e390d19ba878bafd9515152bf09f</PgoDataCurrentRef>
+    <PgoDataCurrentRef>7fb04b947ac4fde6e33a57474c5c4a07ef90a185</PgoDataCurrentRef>
     <CoreSetupCurrentRef>56b60e4ef0879b0423542f32a0b87779b4236453</CoreSetupCurrentRef>
-    <IbcDataCurrentRef>fd9474f0c60ac4f7e917c072df61e4b23115b7ae</IbcDataCurrentRef>
+    <IbcDataCurrentRef>7fb04b947ac4fde6e33a57474c5c4a07ef90a185</IbcDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.19080.1</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19080.1</MicrosoftNETCorePlatformsPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20190130.1</PgoDataPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.19080.2</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19080.2</MicrosoftNETCorePlatformsPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20190130.3</PgoDataPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27316-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27218-01</MicrosoftNETCoreAppPackageVersion>
     <XunitPackageVersion>2.4.1</XunitPackageVersion>
-    <IbcDataPackageVersion>99.99.99-master-20181120-0045</IbcDataPackageVersion>
+    <IbcDataPackageVersion>99.99.99-master-20190130.3</IbcDataPackageVersion>
     <IbcMergePackageVersion>4.6.0-alpha-00001</IbcMergePackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.34</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
