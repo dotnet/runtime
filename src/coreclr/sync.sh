@@ -16,7 +16,10 @@ unprocessedBuildArgs=
 # Assume the default '-p' argument if the only arguments specified are specified after double dash.
 # Only position parameters can be specified after the double dash.
 if [ $# == 0 ] || [ $1 == '--' ]; then
-    buildArgs="-p"
+    buildArgs="./build.proj /p:RestoreDuringBuild=true /t:Sync"
+    if [ $1 == '--' ]; then
+        shift
+    fi
 fi
 
 while [[ $# -gt 0 ]]
@@ -27,7 +30,7 @@ do
         usage
         ;;
         -p)
-        buildArgs="-p"
+            buildArgs="./build.proj /p:RestoreDuringBuild=true /t:Sync"
         ;;
         *)
         unprocessedBuildArgs="$unprocessedBuildArgs $1"
@@ -35,7 +38,7 @@ do
     shift
 done
 
-$working_tree_root/run.sh sync $buildArgs $unprocessedBuildArgs
+$working_tree_root/dotnet.sh msbuild /nologo /verbosity:minimal /clp:Summary /flp:v=detailed\;LogFile=sync.log $buildArgs $unprocessedBuildArgs
 if [ $? -ne 0 ]
 then
     echo "ERROR: An error occurred while syncing packages; See $working_tree_root/sync.log for more details. There may have been networking problems, so please try again in a few minutes."

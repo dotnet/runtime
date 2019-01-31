@@ -1579,9 +1579,17 @@ def setup_core_root(host_os,
     if host_os != "Windows_NT":
         os.environ["__DistroRid"] = "%s-%s" % ("osx" if sys.platform == "darwin" else "linux", arch)
 
-    command = [os.path.join(coreclr_repo_location, "run.%s" % ("cmd" if host_os == "Windows_NT" else "sh")),
-               "build",
-               "-Project=%s" % os.path.join(coreclr_repo_location, "tests", "build.proj")]
+    command = [dotnetcli_location, "msbuild", "/nologo", "/verbosity:minimal", "/clp:Summary",
+               "\"/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log\""]
+
+    if host_os == "Windows_NT":
+        command += ["/nodeReuse:false"]
+
+    command += ["/p:RestoreDefaultOptimizationDataPackage=false",
+                "/p:PortableBuild=true",
+                "/p:UsePartialNGENOptimization=false",
+                "/maxcpucount",
+                os.path.join(coreclr_repo_location, "tests", "build.proj")]
 
     logs_dir = os.path.join(coreclr_repo_location, "bin", "Logs")
     if not os.path.isdir(logs_dir):
@@ -1592,25 +1600,17 @@ def setup_core_root(host_os,
     wrn_log = log_path + ".wrn"
     err_log = log_path + ".err"
 
-    msbuild_log_params = "/fileloggerparameters:\"Verbosity=normal;LogFile=%s\"" % build_log
-    msbuild_wrn_params = "/fileloggerparameters1:\"WarningsOnly;LogFile=%s\"" % wrn_log
-    msbuild_err_params = "/fileloggerparameters2:\"ErrorsOnly;LogFile=%s\"" % err_log
-
-    command += ["-MsBuildLog=%s" % msbuild_log_params,
-                "-MsBuildWrn=%s" % msbuild_wrn_params,
-                "-MsBuildErr=%s" % msbuild_err_params]
-
-    if host_os != "Windows_NT":
-        command = ["bash"] + command
-        command += ["-MsBuildEventLogging=\"/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log\""]
+    command += ["/fileloggerparameters:\"Verbosity=normal;LogFile=%s\"" % build_log,
+                "/fileloggerparameters1:\"WarningsOnly;LogFile=%s\"" % wrn_log,
+                "/fileloggerparameters2:\"ErrorsOnly;LogFile=%s\"" % err_log]
 
     if g_verbose:
-        command += ["-verbose"]
+        command += ["/v:detailed"]
 
-    command += [ "-BatchRestorePackages",
-                 "-BuildType=%s" % build_type,
-                 "-BuildArch=%s" % arch,
-                 "-BuildOS=%s" % host_os]
+    command += ["/t:BatchRestorePackages",
+                "/p:__BuildType=%s" % build_type,
+                "/p:__BuildArch=%s" % arch,
+                "/p:__BuildOS=%s" % host_os]
 
     print("Restoring packages...")
     print(" ".join(command))
@@ -1627,7 +1627,7 @@ def setup_core_root(host_os,
         proc.kill()
         sys.exit(1)
 
-    if proc.returncode == 1:
+    if proc.returncode != 0:
         print("Error: package restore failed.")
         return False
 
@@ -1644,9 +1644,17 @@ def setup_core_root(host_os,
     os.environ["Core_Root"] = core_root
     os.environ["xUnitTestBinBase"] = os.path.dirname(os.path.dirname(core_root))
 
-    command = [os.path.join(coreclr_repo_location, "run.%s" % ("cmd" if host_os == "Windows_NT" else "sh")),
-               "build",
-               "-Project=%s" % os.path.join(coreclr_repo_location, "tests", "runtest.proj")]
+    command = [dotnetcli_location, "msbuild", "/nologo", "/verbosity:minimal", "/clp:Summary",
+               "\"/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log\""]
+
+    if host_os == "Windows_NT":
+        command += ["/nodeReuse:false"]
+
+    command += ["/p:RestoreDefaultOptimizationDataPackage=false",
+                "/p:PortableBuild=true",
+                "/p:UsePartialNGENOptimization=false",
+                "/maxcpucount",
+                os.path.join(coreclr_repo_location, "tests", "runtest.proj")]
 
     logs_dir = os.path.join(coreclr_repo_location, "bin", "Logs")
     if not os.path.isdir(logs_dir):
@@ -1657,25 +1665,17 @@ def setup_core_root(host_os,
     wrn_log = log_path + ".wrn"
     err_log = log_path + ".err"
 
-    msbuild_log_params = "/fileloggerparameters:\"Verbosity=normal;LogFile=%s\"" % build_log
-    msbuild_wrn_params = "/fileloggerparameters1:\"WarningsOnly;LogFile=%s\"" % wrn_log
-    msbuild_err_params = "/fileloggerparameters2:\"ErrorsOnly;LogFile=%s\"" % err_log
-
-    command += ["-MsBuildLog=%s" % msbuild_log_params,
-                "-MsBuildWrn=%s" % msbuild_wrn_params,
-                "-MsBuildErr=%s" % msbuild_err_params]
-
-    if host_os != "Windows_NT":
-        command = ["bash"] + command
-        command += ["-MsBuildEventLogging=\"/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log\""]
+    command += ["/fileloggerparameters:\"Verbosity=normal;LogFile=%s\"" % build_log,
+                "/fileloggerparameters1:\"WarningsOnly;LogFile=%s\"" % wrn_log,
+                "/fileloggerparameters2:\"ErrorsOnly;LogFile=%s\"" % err_log]
 
     if g_verbose:
-        command += ["-verbose"]
+        command += ["/v:detailed"]
 
-    command += [ "-testOverlay",
-                 "-BuildType=%s" % build_type,
-                 "-BuildArch=%s" % arch,
-                 "-BuildOS=%s" % host_os]
+    command += ["/t:CreateTestOverlay",
+                "/p:__BuildType=%s" % build_type,
+                "/p:__BuildArch=%s" % arch,
+                "/p:__BuildOS=%s" % host_os]
 
     print("")
     print("Creating Core_Root...")
@@ -1693,7 +1693,7 @@ def setup_core_root(host_os,
         proc.kill()
         sys.exit(1)
 
-    if proc.returncode == 1:
+    if proc.returncode != 0:
         print("Error: creating Core_Root failed.")
         return False
 
@@ -1751,7 +1751,7 @@ def setup_core_root(host_os,
         proc = subprocess.Popen(msbuild_command)
         proc.communicate()
 
-        if not proc.returncode == 0:
+        if proc.returncode != 0:
             print("Error: generating test host failed.")
             return False
 
@@ -1766,7 +1766,7 @@ def setup_core_root(host_os,
         proc = subprocess.Popen(msbuild_command)
         proc.communicate()
 
-        if proc.returncode == 1:
+        if proc.returncode != 0:
             print("Error: msbuild failed.")
             return False
 
@@ -1789,7 +1789,7 @@ def setup_core_root(host_os,
         proc = subprocess.Popen(msbuild_command)
         proc.communicate()
 
-        if proc.returncode == 1:
+        if proc.returncode != 0:
             print("Error: msbuild failed.")
             return False
 
@@ -1929,7 +1929,7 @@ def build_test_wrappers(host_os,
         proc.kill()
         sys.exit(1)
 
-    if proc.returncode == 1:
+    if proc.returncode != 0:
         print("Error: creating test wrappers failed.")
         return False
 
