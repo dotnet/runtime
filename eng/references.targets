@@ -34,5 +34,6 @@
       </Reference>
     </ItemGroup>
   </Target>
+
   <Target Name="AddReferencesDynamically" BeforeTargets="BeforeResolveReferences;ResolveAssemblyReferences" />
 </Project>
