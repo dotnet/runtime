@@ -22,7 +22,7 @@
     <HelixSource>$(_HelixSource)</HelixSource>
     <HelixType>$(_HelixType)</HelixType>
 
-    <TimeoutInMinutes>$(_TimeoutInMinutes)</TimeoutInMinutes>
+    <TimeoutPerTestCollectionInMinutes>$(_TimeoutPerTestCollectionInMinutes)</TimeoutPerTestCollectionInMinutes>
     <TimeoutPerTestInMilliseconds Condition=" '$(_TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(_TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
 
     <ReadyToRun>$(_ReadyToRun)</ReadyToRun>
@@ -85,6 +85,8 @@
       <_XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</_XUnitRunnerDll>
     </PropertyGroup>
 
+    <!-- WARNING: _HelixPreCommands collection is intentionally minimal and should be kept that way. -->
+
     <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
       <_HelixPreCommands Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
       <_HelixPreCommands Include="set RunCrossGen=true" Condition=" '$(ReadyToRun)' == 'true' " />
@@ -115,7 +117,7 @@
         <PayloadDirectory>%(RootDir)%(Directory)</PayloadDirectory>
         <PreCommands>$(_HelixPreCommands)</PreCommands>
         <Command>$(_CoreRun) $(_XUnitRunnerDll) %(FileName)%(Extension) $(_XUnitRunnerArgs)</Command>
-        <Timeout Condition=" '$(TimeoutInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutInMinutes)))</Timeout>
+        <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
       </HelixWorkItem>
     </ItemGroup>
   </Target>

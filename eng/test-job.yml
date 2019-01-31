@@ -7,7 +7,8 @@ parameters:
   readyToRun: false
   scenarios: ''
   helixQueues: ''
-  timeoutInMinutes: ''
+  timeoutTotalInMinutes: ''
+  timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
   crossrootfsDir: ''
 
@@ -77,7 +78,7 @@ jobs:
     # Note that the containers are resources defined in azure-pipelines.yml
     containerName: ${{ parameters.containerName }}
 
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    timeoutInMinutes: ${{ parameters.timeoutTotalInMinutes }}
 
     steps:
 
@@ -129,7 +130,7 @@ jobs:
           condition: false
 
         publishTestResults: true
-        timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+        timeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
         timeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
 
         readyToRun: ${{ parameters.readyToRun }}
