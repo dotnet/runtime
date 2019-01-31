@@ -229,7 +229,7 @@ namespace System.Buffers.Text.Tests
                 yield return decimal.MaxValue;
 
                 // negative 0m. The formatter is expected *not* to emit a minus sign in this case.
-                yield return (new MutableDecimal() { High = 0, Mid = 0, Low = 0, IsNegative = true }).ToDecimal();
+                //yield return (new MutableDecimal() { High = 0, Mid = 0, Low = 0, IsNegative = true }).ToDecimal();  // TODO: Re-enable [ActiveIssue("https://github.com/dotnet/coreclr/pull/22300")]
 
                 yield return 0.304m; // Round down
                 yield return -0.304m;
@@ -244,7 +244,7 @@ namespace System.Buffers.Text.Tests
                 yield return 1.00m;
                 yield return 0.00m;
                 yield return -1.00m;
-                yield return -0.00m;
+                //yield return -0.00m; // TODO: Re-enable [ActiveIssue("https://github.com/dotnet/coreclr/pull/22300")]
             }
         }
 
