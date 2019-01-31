@@ -12,8 +12,8 @@ internal static partial class Interop
     {
         internal static partial class Fcntl
         {
-            [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetCloseOnExec", SetLastError=true)]
-            internal static extern int SetCloseOnExec(SafeHandle fd);
+            [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetFD", SetLastError=true)]
+            internal static extern int SetFD(SafeHandle fd, int flags);
         }
     }
 }

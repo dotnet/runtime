@@ -180,8 +180,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.Pipe.cs">
       <Link>Common\Interop\Unix\Interop.Fcntl.Pipe.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.SetCloseOnExec.cs">
-      <Link>Common\Interop\Unix\Interop.Fcntl.SetCloseOnExec.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.SetFD.cs">
+      <Link>Common\Interop\Unix\Interop.Fcntl.SetFD.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
