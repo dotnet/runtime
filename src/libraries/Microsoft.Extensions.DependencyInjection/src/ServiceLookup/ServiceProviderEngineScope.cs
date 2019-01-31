@@ -10,6 +10,9 @@ using Microsoft.Extensions.Internal;
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal class ServiceProviderEngineScope : IServiceScope, IServiceProvider
+#if DISPOSE_ASYNC
+        , IAsyncDisposable
+#endif
     {
         // For testing only
         internal Action<object> _captureDisposableCallback;
