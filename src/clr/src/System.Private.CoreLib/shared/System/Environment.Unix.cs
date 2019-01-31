@@ -16,7 +16,6 @@ namespace System
 {
     public static partial class Environment
     {
-        private static readonly bool s_isMac = Interop.Sys.GetUnixName() == "OSX";
         private static Func<string, object> s_directoryCreateDirectory;
 
         private static string CurrentDirectoryCore
@@ -98,14 +97,10 @@ namespace System
             {
                 case SpecialFolder.CommonApplicationData: return "/usr/share";
                 case SpecialFolder.CommonTemplates: return "/usr/share/templates";
-            }
-            if (s_isMac)
-            {
-                switch (folder)
-                {
-                    case SpecialFolder.ProgramFiles: return "/Applications";
-                    case SpecialFolder.System: return "/System";
-                }
+#if PLATFORM_OSX
+                case SpecialFolder.ProgramFiles: return "/Applications";
+                case SpecialFolder.System: return "/System";
+#endif
             }
 
             // All other paths are based on the XDG Base Directory Specification:
@@ -158,19 +153,25 @@ namespace System
                 case SpecialFolder.MyVideos:
                     return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
 
+#if PLATFORM_OSX
                 case SpecialFolder.MyMusic:
-                    return s_isMac ? Path.Combine(home, "Music") : ReadXdgDirectory(home, "XDG_MUSIC_DIR", "Music");
+                    return Path.Combine(home, "Music");
                 case SpecialFolder.MyPictures:
-                    return s_isMac ? Path.Combine(home, "Pictures") : ReadXdgDirectory(home, "XDG_PICTURES_DIR", "Pictures");
+                    return Path.Combine(home, "Pictures");
                 case SpecialFolder.Fonts:
-                    return s_isMac ? Path.Combine(home, "Library", "Fonts") : Path.Combine(home, ".fonts");
-
+                    return Path.Combine(home, "Library", "Fonts");
                 case SpecialFolder.Favorites:
-                    if (s_isMac) return Path.Combine(home, "Library", "Favorites");
-                    break;
+                    return Path.Combine(home, "Library", "Favorites");
                 case SpecialFolder.InternetCache:
-                    if (s_isMac) return Path.Combine(home, "Library", "Caches");
-                    break;
+                    return Path.Combine(home, "Library", "Caches");
+#else
+                case SpecialFolder.MyMusic:
+                    return ReadXdgDirectory(home, "XDG_MUSIC_DIR", "Music");
+                case SpecialFolder.MyPictures:
+                    return ReadXdgDirectory(home, "XDG_PICTURES_DIR", "Pictures");
+                case SpecialFolder.Fonts:
+                    return Path.Combine(home, ".fonts");
+#endif
             }
 
             // No known path for the SpecialFolder
