@@ -4,9 +4,9 @@ These tests require dedicated test servers, so they're designed to be run manual
 
 ## Prerequisites
 
-- CoreFX building. you need to be able to do a successful build and run the standard tests, [Unix](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md) or [Windows](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md) 
+- CoreFX building. you need to be able to do a successful build and run the standard tests, [Unix](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md) or [Windows](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md) Use build.cmd for windows and build.sh for Linux to build CoreFX.
 
-  **N.B.** if you want to run the EFCore tests later you will need to do an all configurations build to generate the NuGet packages.
+  **N.B.** if you want to run the EFCore tests later you will need to build -allconfigurations to generate the NuGet packages, build -allconfigurations works only on windows.
 
 - an [MS SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-editions-express) (any edition) 2012 or later that you can connect to with tcp and named pipes, 
 
@@ -29,11 +29,11 @@ These tests require dedicated test servers, so they're designed to be run manual
 
 3. Optionally you may also want to setup other environment variables to test specific optional features such as [TEST_LOCALDB_INSTALLED](https://github.com/dotnet/corefx/blob/8f7b490ca874ee2a9f11f0163412f7c95811298b/src/System.Data.SqlClient/tests/ManualTests/DataCommon/DataTestUtility.cs#L96) or [TEST_INTEGRATEDSECURITY_SETUP](https://github.com/dotnet/corefx/blob/8f7b490ca874ee2a9f11f0163412f7c95811298b/src/System.Data.SqlClient/tests/ManualTests/DataCommon/DataTestUtility.cs#L98). Other scenarios lke azure tests may need configuration so if you see those being skipped and you want to run them invesigate the skipped test code to identify how to configure it.
 
-4. run `build src\System.Data.SqlClient\test\ManualTests -debug /p:Test=true` to build the debug version with all the assertions and run the tests.
+4. run `dotnet msbuild .\src\System.Data.SqlClient\tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj /t:Rebuild` to build the debug version with all the assertions and run the tests.
 
-5. If you need to re-run the test suite without having changed the build (e.g. if you've changed the exnvironment variables) you can use `build src\System.Data.SqlClient\test\ManualTests -debug /p:ForceRunTests=true`
+5. If you need to re-run the test suite without having changed the build (e.g. if you've changed the exnvironment variables) you can use `dotnet msbuild .\src\System.Data.SqlClient\tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj /t:Test`
 
-    
+      
 
 ## Running A Specific Test
 
