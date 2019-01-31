@@ -1244,7 +1244,13 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		orig_scope = mono_metadata_string_heap (image, scope_token);
 	}
 
+#ifndef ENABLE_NETCORE
+	// FIXME: The dllmap remaps System.Native to mono-native
 	mono_dllmap_lookup (image, orig_scope, import, &new_scope, &import);
+#else
+	new_scope = g_strdup (orig_scope);
+	import = g_strdup (import);
+#endif
 
 	if (!module) {
 		mono_image_lock (image);

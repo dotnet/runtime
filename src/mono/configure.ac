@@ -1195,6 +1195,7 @@ elif test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_remoting='yes'
    mono_feature_disable_reflection_emit_save='yes'
    mono_feature_disable_appdomains='yes'
+   disable_mono_native=yes
 elif test x$with_runtime_preset = xnet_4_x; then
    with_profile4_x_default=yes
    TEST_PROFILE=net_4_x
@@ -5946,7 +5947,9 @@ fi
 #
 
 sed_version_pattern='[[0-9]]\{1,2\}\(\.[[0-9]]\{1,2\}\)'
-if test x$target_osx = xyes; then
+if test x$disable_mono_native = xyes; then
+	mono_native=no
+elif test x$target_osx = xyes; then
 	sed_remove_mac_version_pattern="s/-mmacosx-version-min=$sed_version_pattern//g"
 	grep_find_mac_version_pattern="-mmacosx-version-min=$sed_version_pattern"
 	mono_native_compat_version=`echo $CC | grep -o -e $grep_find_mac_version_pattern`
