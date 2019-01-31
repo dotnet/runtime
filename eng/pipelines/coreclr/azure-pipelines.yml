@@ -137,7 +137,14 @@ jobs:
           asArray:
           - normal
           - no_tiered_compilation
-        timeoutInMinutes: 240
+        # "Total" includes building tests, waiting for a queue in Helix to become available, and running the tests.
+        # In case test-job.yml gets split into two separate jobs (e.g. build-test-job.yml and run-test.yml)
+        # this number should be adjusted accordingly.
+        timeoutTotalInMinutes: 240
+        # "PerCollection" is time needed for the "biggest" xUnit test collection to complete.
+        # In case xUnit test wrappers get refactored this number should also be adjusted.
+        timeoutPerTestCollectionInMinutes: 30
+        # "PerTest" corresponds to individual test running time (i.e. __TestTimeout).
         timeoutPerTestInMinutes: 10
 
 # Pri1 (CI)
@@ -153,7 +160,8 @@ jobs:
           asArray:
           - normal
           - no_tiered_compilation
-        timeoutInMinutes: 360
+        timeoutTotalInMinutes: 360
+        timeoutPerTestCollectionInMinutes: 60
         timeoutPerTestInMinutes: 10
 
 # Pri1 ReadyToRun (CI)
@@ -170,8 +178,9 @@ jobs:
           asArray:
           - normal
           - no_tiered_compilation
-        timeoutInMinutes: 360
-        timeoutPerTestInMinutes: 30
+        timeoutTotalInMinutes: 360
+        timeoutPerTestCollectionInMinutes: 60
+        timeoutPerTestInMinutes: 10
 
 # Pri1 (Schedule, Manual)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule', 'Manual')) }}:
@@ -199,7 +208,9 @@ jobs:
           - jitstressregs0x80
           - jitstressregs0x1000
           - jitminopts
-        timeoutInMinutes: 480
+        timeoutTotalInMinutes: 480
+        # TODO: Adjust this number as soon as we have more data on how long it takes to run these jobs in Helix.
+        timeoutPerTestCollectionInMinutes: 120
         timeoutPerTestInMinutes: 30
 
 
@@ -220,7 +231,8 @@ jobs:
           asArray:
           - normal
           - no_tiered_compilation
-        timeoutInMinutes: 360
+        timeoutTotalInMinutes: 360
+        timeoutPerTestCollectionInMinutes: 60
         timeoutPerTestInMinutes: 10
 
 # Pri1 ReadyToRun (Official Build)
@@ -237,8 +249,9 @@ jobs:
           asArray:
           - normal
           - no_tiered_compilation
-        timeoutInMinutes: 360
-        timeoutPerTestInMinutes: 30
+        timeoutTotalInMinutes: 360
+        timeoutPerTestCollectionInMinutes: 60
+        timeoutPerTestInMinutes: 10
 
 
 # Publish build information to Build Assets Registry
