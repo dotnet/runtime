@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -13,6 +13,9 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Hosting.Internal
 {
     internal class Host : IHost
+#if DISPOSE_ASYNC
+      , IAsyncDisposable
+#endif
     {
         private readonly ILogger<Host> _logger;
         private readonly IHostLifetime _hostLifetime;
@@ -98,9 +101,29 @@ namespace Microsoft.Extensions.Hosting.Internal
             _logger.Stopped();
         }
 
+#if DISPOSE_ASYNC
+        public void Dispose()
+        {
+            DisposeAsync().GetAwaiter().GetResult();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            switch (Services)
+            {
+                case IAsyncDisposable asyncDisposable:
+                    await asyncDisposable.DisposeAsync();
+                    break;
+                case IDisposable disposable:
+                    disposable.Dispose();
+                    break;
+            }
+        }
+#else
         public void Dispose()
         {
             (Services as IDisposable)?.Dispose();
         }
+#endif
     }
 }

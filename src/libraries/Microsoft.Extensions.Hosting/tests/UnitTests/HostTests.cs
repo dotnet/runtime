@@ -14,7 +14,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Hosting
 {
-    public class HostTests
+    public partial class HostTests
     {
         [Fact]
         public void CreateDefaultBuilder_IncludesContentRootByDefault()

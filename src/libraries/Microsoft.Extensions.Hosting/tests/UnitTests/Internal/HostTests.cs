@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    public class HostTests
+    public partial class HostTests
     {
         [Fact]
         public async Task HostInjectsHostingEnvironment()
