@@ -122,17 +122,4 @@
       </HelixWorkItem>
     </ItemGroup>
   </Target>
-
-  <Target Name="ShowMissionControlUrl"
-          AfterTargets="StartTestRuns"
-          Condition="'$(OfficialBuildId)' != ''">
-    <PropertyGroup>
-      <_McUser>dotnet-mc-bot-2</_McUser>
-      <_McHelixType>$([System.String]::Copy('$(HelixType)').ToLowerInvariant().Replace('/', '~2F'))</_McHelixType>
-      <_McHelixSource>$([System.String]::Copy('$(HelixSource)').ToLowerInvariant().Replace('/', '~2F'))</_McHelixSource>
-      <_McUrl>https://mc.dot.net/#/user/$(_McUser)/$(_McHelixSource)/$(_McHelixType)/$(OfficialBuildId)</_McUrl>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="Results will be available at $(_McUrl)" />
-  </Target>
 </Project>
