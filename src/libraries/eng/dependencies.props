@@ -9,13 +9,13 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>5e6d641604ffb613445f1e5b0d11da1b4ec385c4</CoreFxCurrentRef>
+    <CoreFxCurrentRef>a5661bdf1704a73177a35b40c452beb1f6b852ff</CoreFxCurrentRef>
     <ProjectNTfsCurrentRef>5e6d641604ffb613445f1e5b0d11da1b4ec385c4</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>5e6d641604ffb613445f1e5b0d11da1b4ec385c4</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
     <BuildToolsCurrentRef>f31086500dc58cefe7b1275300f6fc07b38c1bcc</BuildToolsCurrentRef>
-    <CoreFxOptimizationDataCurrentRef>f2a2e6a48d26036fbb7e9a3aced37e7dfce677fc</CoreFxOptimizationDataCurrentRef>
+    <CoreFxOptimizationDataCurrentRef>a5661bdf1704a73177a35b40c452beb1f6b852ff</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -28,8 +28,8 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview.19079.11</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19079.11</MicrosoftNETCorePlatformsPackageVersion>
+    <CoreFxExpectedPrerelease>preview.19080.4</CoreFxExpectedPrerelease>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19080.4</MicrosoftNETCorePlatformsPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-27330-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-27330-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27330-00</ProjectNTfsTestILCPackageVersion>
@@ -54,7 +54,7 @@
     <TestILCArmretPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCArmretPackageVersion>
     <TestILCX86retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCX86retPackageVersion>
     <OptimizationDataVersion>2.0.0-rc-61101-17</OptimizationDataVersion>
-    <CoreFxOptimizationDataVersion>99.99.99-master-20181120-0045</CoreFxOptimizationDataVersion>
+    <CoreFxOptimizationDataVersion>99.99.99-master-20190130.3</CoreFxOptimizationDataVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
