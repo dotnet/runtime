@@ -87,8 +87,11 @@ case $OSName in
         ;;
 esac
 
+buildArgs=
 unprocessedBuildArgs=
 
+# TODO: get rid of argument processing entirely once we remove the
+# uses of -Arg=Value style in buildpipeline.
 while :; do
     if [ $# -le 0 ]; then
         break
@@ -96,20 +99,33 @@ while :; do
 
     case "$1" in
         -\?|-h|--help)
-        usage
-        exit 1
-        ;;
+            usage
+            exit 1
+            ;;
         -BuildArch=*)
-        unprocessedBuildArgs="$unprocessedBuildArgs $1"
-        __Arch=$(echo $1| cut -d'=' -f 2)
-        ;;
-
+            __Arch=$(echo $1| cut -d'=' -f 2)
+            buildArgs="$buildArgs /p:__BuildArch=$__Arch"
+            ;;
+        -BuildType=*)
+            __Type=$(echo $1| cut -d'=' -f 2)
+            buildArgs="$buildArgs /p:__BuildType=$__Type"
+            ;;
+        -OfficialBuildId=*)
+            __Id=$(echo $1| cut -d'=' -f 2)
+            buildArgs="$buildArgs /p:OfficialBuildId=$__Id"
+            ;;
+        -__DoCrossArchBuild=*)
+            __CrossBuild=$(echo $1| cut -d'=' -f 2)
+            buildArgs="$buildArgs /p:__DoCrossArchBuild=$__CrossBuild"
+            ;;
         -portablebuild=false)
-            unprocessedBuildArgs="$unprocessedBuildArgs $1"
+            buildArgs="$buildArgs /p:PortableBuild=false"
             __IsPortableBuild=0
             ;;
+        --)
+            ;;
         *)
-        unprocessedBuildArgs="$unprocessedBuildArgs $1"
+            unprocessedBuildArgs="$unprocessedBuildArgs $1"
     esac
     shift
 done
@@ -129,7 +145,12 @@ else
     export __DistroRid="$__HostDistroRid"
 fi
 
-$__ProjectRoot/run.sh build-packages -Project=$__ProjectRoot/src/.nuget/packages.builds -DistroRid=$__DistroRid -UseSharedCompilation=false -BuildNugetPackage=false -MsBuildEventLogging="/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log" $unprocessedBuildArgs
+$__ProjectRoot/dotnet.sh msbuild /nologo /verbosity:minimal /clp:Summary \
+                         /p:__BuildOS=$__BuildOS /flp:v=detailed\;Append\;LogFile=build-packages.log \
+                         /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll\;LogFile=binclash.log \
+                         /p:PortableBuild=true src/.nuget/packages.builds \
+                         /p:__DistroRid=$__DistroRid /p:UseSharedCompilation=false /p:BuildNugetPackage=false \
+                         $buildArgs $unprocessedBuildArgs
 if [ $? -ne 0 ]
 then
     echo "ERROR: An error occurred while building packages; See build-packages.log for more details."

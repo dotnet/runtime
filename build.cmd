@@ -85,7 +85,7 @@ REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch
 set "__args= %*"
 set processedArgs=
 set __UnprocessedBuildArgs=
-set __RunArgs=
+set __CommonMSBuildArgs=
 
 set __BuildCoreLib=1
 set __BuildSOS=1
@@ -98,6 +98,8 @@ set __BuildManagedTools=1
 set __RestoreOptData=1
 set __GenerateLayout=0
 set __CrossgenAltJit=
+set __SkipRestoreArg=
+set __OfficialBuildIdArg=
 set __CrossArch=
 set __SkipNugetPackage=0
 set __PgoOptDataVersion=
@@ -186,6 +188,9 @@ if /i "%1" == "-ibcoptimize"         (set __IbcOptimize=1&set processedArgs=!pro
 if /i "%1" == "-ibconly"             (set __IbcOptimize=1&set __IbcOnly=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+REM TODO remove these once they are no longer used in buildpipeline
+if /i "%1" == "-skiprestore"         (set __SkipRestoreArg=/p:RestoreDuringBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-OfficialBuildId"     (set __OfficialBuildIdArg=/p:OfficialBuildId=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -210,6 +215,8 @@ if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!proce
 if /i "%1" == "ibcoptimize"         (set __IbcOptimize=1&set __PartialNgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+REM TODO remove this once it's no longer used in buildpipeline
+if /i "%1" == "--"                  (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
     set __UnprocessedBuildArgs=%__args%
@@ -229,7 +236,7 @@ if defined __Priority (
     ) else (
         set __PassThroughArgs=-priority=%__Priority%
     )
-    set __UnprocessedBuildArgs=!__UnprocessedBuildArgs! -priority=%__Priority%
+    set __UnprocessedBuildArgs=!__UnprocessedBuildArgs! /p:CLRTestPriorityToBuild=%__Priority%
 )
 
 if defined __BuildAll goto BuildAll
@@ -261,7 +268,7 @@ if %__BuildTypeDebug%==1    set __BuildType=Debug
 if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
 
-set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
+set __CommonMSBuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% !__SkipRestoreArg! !__OfficialBuildIdArg!
 
 if %__EnforcePgo%==1 (
     if %__BuildArchArm%==1 (
@@ -350,7 +357,12 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs%
+call %__ProjectDir%\msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
+  /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
+  /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+  /p:UsePartialNGENOptimization=false /maxcpucount^
+  %__ProjectDir%\build.proj /t:GenerateVersionHeader /p:GenerateVersionHeader=true /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h"^
+  %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
 
 REM =========================================================================================
 REM ===
@@ -360,7 +372,11 @@ REM ============================================================================
 
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
-    call %__ProjectDir%\run.cmd build -optdata %__RunArgs% %__UnprocessedBuildArgs%
+    call %__ProjectDir%\msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
+      /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+      /p:UsePartialNGENOptimization=false /maxcpucount^
+      ./build.proj /t:RestoreOptData^
+      %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: Failed to restore the optimization data package.
         exit /b 1
@@ -500,9 +516,13 @@ if %__BuildNative% EQU 1 (
     set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=-MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr!
+    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-    call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj !__Logging! -configuration=%__BuildType% -platform=%__BuildArch% %__RunArgs% -MSBuildNodeCount="/m:2" %__UnprocessedBuildArgs%
+    call %__ProjectDir%\msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
+      /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
+      /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+      /p:UsePartialNGENOptimization=false /maxcpucount %__IntermediatesDir%\install.vcxproj^
+      !__Logging! /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__CommonMSBuildArgs% /m:2 %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: native component build failed. Refer to the build log files for details:
@@ -563,9 +583,14 @@ if %__BuildCrossArchNative% EQU 1 (
     set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=-MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr!
+    set __Logging=!_MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-    call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj !__Logging! -configuration=%__BuildType% -platform=%__CrossArch% %__RunArgs% -MSBuildNodeCount="/m:2" %__UnprocessedBuildArgs%
+    call %__ProjectDir%\msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
+      /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
+      /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+      /p:UsePartialNGENOptimization=false /maxcpucount^
+      %__CrossCompIntermediatesDir%\install.vcxproj^
+      !__Logging! /p:Configuration=%__BuildType% /p:Platform=%__CrossArch% %__CommonMSBuildArgs% /m:2 %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details:
@@ -598,17 +623,17 @@ if %__BuildCoreLib% EQU 1 (
         set __ExtraBuildArgs=
 
         if "%__BuildSOS%" == "0" (
-            set __ExtraBuildArgs=!__ExtraBuildArgs! -SkipSOS=true
+            set __ExtraBuildArgs=!__ExtraBuildArgs! /p:SkipSOS=true
         )
 
         if "%__BuildManagedTools%" == "1" (
-            set __ExtraBuildArgs=!__ExtraBuildArgs! -BuildManagedTools=true
+            set __ExtraBuildArgs=!__ExtraBuildArgs! /p:BuildManagedTools=true
         )
 
         if "%__SkipNugetPackage%" == "1" (
-            set __ExtraBuildArgs=!__ExtraBuildArgs! -buildNugetPackage=false
+            set __ExtraBuildArgs=!__ExtraBuildArgs! /p:BuildNugetPackage=false
         ) else (
-            set __ExtraBuildArgs=!__ExtraBuildArgs! -buildNugetPackage=true
+            set __ExtraBuildArgs=!__ExtraBuildArgs! /p:BuildNugetPackage=true
         )
 
         set __BuildLogRootName=System.Private.CoreLib
@@ -618,9 +643,14 @@ if %__BuildCoreLib% EQU 1 (
         set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
         set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
         set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-        set __Logging=-MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr!
+        set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-        call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj !__Logging! %__RunArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
+        call %__ProjectDir%\msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
+          /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
+          /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+          /p:UsePartialNGENOptimization=false /maxcpucount^
+          %__ProjectDir%\build.proj^
+          !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
 
         if not !errorlevel! == 0 (
             echo %__MsgPrefix%Error: System.Private.CoreLib build failed. Refer to the build log files for details:
@@ -811,10 +841,15 @@ if %__BuildPackages% EQU 1 (
     set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=-MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr!
+    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
     REM The conditions as to what to build are captured in the builds file.
-    call %__ProjectDir%\run.cmd build -Project=%__SourceDir%\.nuget\packages.builds !__Logging! -platform=%__BuildArch% %__RunArgs% %__UnprocessedBuildArgs%
+    call %__ProjectDir%\msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
+      /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
+      /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+      /p:UsePartialNGENOptimization=false /maxcpucount^
+      %__SourceDir%\.nuget\packages.builds^
+      !__Logging! /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: Nuget package generation failed. Refer to the build log files for details:

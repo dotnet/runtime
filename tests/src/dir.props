@@ -1,7 +1,12 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- tests/dir.common.props must be imported first, as
+       tests/dir.props relies on properties computed in this import
+       chain. -->
+  <!-- TODO: remove this when we use the SDK. Then tests/dir.props
+       will automatically import tests/dir.common.props. -->
+  <Import Project="..\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
   <Import Project="..\dir.props" />
 
-  <Import Project="..\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
   <!-- Setup Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -31,7 +36,7 @@
     <PointerSize Condition="'$(Platform)'=='arm'">32</PointerSize>
   </PropertyGroup>
 
-<!-- Setup the default output and intermediate paths -->
+  <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
     <BaseOutputPath>$(ProjectDir)..\bin\tests</BaseOutputPath>
     <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>

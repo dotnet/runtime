@@ -26,11 +26,14 @@ then
    echo "Removing all untracked files in the working tree"
    git clean -xdf $__working_tree_root
    exit $?
+elif  [ $# == 0 ] || [ "$*" == "-b" ]; then
+    __args="/t:CleanAllProjects"
+elif  [ "$*" == "-p" ]; then
+    __args="/t:CleanPackages"
+elif  [ "$*" == "-c" ]; then
+    __args="/t:CleanPackagesCache"
 fi
 
-if [ $# == 0 ]; then
-    __args=-b
-fi
 
-$__working_tree_root/run.sh clean $__args $*
+$__working_tree_root/dotnet.sh msbuild /nologo /verbosity:minimal /clp:Summary /flp:v=normal\;LogFile=clean.log $__args
 exit $?

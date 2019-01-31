@@ -16,7 +16,13 @@ param(
     # A pattern matching all packages in the set that the versions repository should be set to.
     [Parameter(Mandatory=$true)][string]$nupkgPath)
 
-& "$PSScriptRoot\run.cmd" build -- tests\build.proj /t:UpdatePublishedVersions `
+& "$PSScriptRoot\msbuild.cmd" /nologo /verbosity:minimal /clp:Summary /nodeReuse:false `
+    /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log `
+    /p:RestoreDefaultOptimizationDataPackage=false `
+    /p:PortableBuild=true `
+    /p:UsePartialNGENOptimization=false `
+    /maxcpucount `
+    tests\build.proj /t:UpdatePublishedVersions `
     /p:GitHubUser="$gitHubUser" `
     /p:GitHubEmail="$gitHubEmail" `
     /p:GitHubAuthToken="$gitHubAuthToken" `

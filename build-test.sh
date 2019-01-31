@@ -189,10 +189,10 @@ generate_layout()
     # ===
     # =========================================================================================
 
-    build_MSBuild_projects "Restore_Packages" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "-BatchRestorePackages"
+    build_MSBuild_projects "Restore_Packages" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "/t:BatchRestorePackages"
 
     if [ -n "$__UpdateInvalidPackagesArg" ]; then
-        __up=-updateinvalidpackageversion
+        __up="/t:UpdateInvalidPackageVersions"
     fi
 
     echo "${__MsgPrefix}Creating test overlay..."
@@ -209,7 +209,7 @@ generate_layout()
 
     mkdir -p $CORE_ROOT
 
-    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/runtest.proj" "Creating test overlay" "-testOverlay"
+    build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     chmod +x $__BinDir/corerun
     chmod +x $__BinDir/crossgen
@@ -230,7 +230,7 @@ generate_testhost()
 
     mkdir -p $TEST_HOST
 
-    build_MSBuild_projects "Tests_Generate_TestHost" "${__ProjectDir}/tests/runtest.proj" "Creating test host" "-testHost"
+    build_MSBuild_projects "Tests_Generate_TestHost" "${__ProjectDir}/tests/runtest.proj" "Creating test host" "/t:CreateTestHost"
 }
 
 
@@ -293,7 +293,7 @@ build_Tests()
     # =========================================================================================
 
     if [ ${__SkipRestorePackages} != 1 ]; then
-        build_MSBuild_projects "Restore_Product" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "-BatchRestorePackages"
+        build_MSBuild_projects "Restore_Product" "${__ProjectDir}/tests/build.proj" "Restore product binaries (build tests)" "/t:BatchRestorePackages"
     fi
 
     if [ $__SkipNative != 1 ]; then
@@ -316,7 +316,7 @@ build_Tests()
         else
             echo "Checking the Managed Tests Build..."
 
-            build_MSBuild_projects "Check_Test_Build" "${__ProjectDir}/tests/runtest.proj" "Check Test Build" "-ExtraParameters:/t:CheckTestBuild"
+            build_MSBuild_projects "Check_Test_Build" "${__ProjectDir}/tests/runtest.proj" "Check Test Build" "/t:CheckTestBuild"
 
             if [ $? -ne 0 ]; then
                 echo "${__MsgPrefix}Error: Check Test Build failed."
@@ -330,7 +330,7 @@ build_Tests()
     build_test_wrappers
 
     if [ -n "$__UpdateInvalidPackagesArg" ]; then
-        __up=-updateinvalidpackageversion
+        __up="/t:UpdateInvalidPackageVersions"
     fi
 
     generate_layout
@@ -358,10 +358,10 @@ build_MSBuild_projects()
     __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
 
     # Use binclashlogger by default if no other logger is specified
-    if [[ "${extraBuildParameters[*]}" == *"-MsBuildEventLogging"* ]]; then
-        msbuildEventLogging=""
+    if [[ "${extraBuildParameters[*]}" == *"/l:"* ]]; then
+        __msbuildEventLogging=
     else
-        msbuildEventLogging="-MsBuildEventLogging=\"/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log\""
+        __msbuildEventLogging="/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll\;LogFile=binclash.log"
     fi
 
     if [[ "$subDirectoryName" == "Tests_Managed" ]]; then
@@ -389,13 +389,17 @@ build_MSBuild_projects()
             export TestBuildSlice=$slice
 
             # Generate build command
-            buildArgs=("-Project=$projectName" "-MsBuildLog=${__msbuildLog}" "-MsBuildWrn=${__msbuildWrn}" "-MsBuildErr=${__msbuildErr}")
-            buildArgs+=("$msbuildEventLogging")
+            buildArgs=("/nologo" "/verbosity:minimal" "/clp:Summary")
+            buildArgs+=("/p:RestoreDefaultOptimizationDataPackage=false" "/p:PortableBuild=true")
+            buildArgs+=("/p:UsePartialNGENOptimization=false" "/maxcpucount")
+
+            buildArgs+=("$projectName" "${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
+            buildArgs+=("$__msbuildEventLogging")
             buildArgs+=("${extraBuildParameters[@]}")
-            buildArgs+=("${__RunArgs[@]}")
+            buildArgs+=("${__CommonMSBuildArgs[@]}")
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
-            nextCommand="\"$__ProjectRoot/run.sh\" build ${buildArgs[@]}"
+            nextCommand="\"$__ProjectRoot/dotnet.sh\" msbuild ${buildArgs[@]}"
             echo "Building step '$stepName' slice=$slice via $nextCommand"
             eval $nextCommand
 
@@ -417,13 +421,17 @@ build_MSBuild_projects()
         __msbuildErr="\"/flp2:ErrorsOnly;LogFile=${__BuildErr}\""
 
         # Generate build command
-        buildArgs=("-Project=$projectName" "-MsBuildLog=${__msbuildLog}" "-MsBuildWrn=${__msbuildWrn}" "-MsBuildErr=${__msbuildErr}")
-        buildArgs+=("$msbuildEventLogging")
+        buildArgs=("/nologo" "/verbosity:minimal" "/clp:Summary")
+        buildArgs+=("/p:RestoreDefaultOptimizationDataPackage=false" "/p:PortableBuild=true")
+        buildArgs+=("/p:UsePartialNGENOptimization=false" "/maxcpucount")
+
+        buildArgs+=("$projectName" "${__msbuildLog}" "${__msbuildWrn}" "${__msbuildErr}")
+        buildArgs+=("$__msbuildEventLogging")
         buildArgs+=("${extraBuildParameters[@]}")
-        buildArgs+=("${__RunArgs[@]}")
+        buildArgs+=("${__CommonMSBuildArgs[@]}")
         buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
-        nextCommand="\"$__ProjectRoot/run.sh\" build ${buildArgs[@]}"
+        nextCommand="\"$__ProjectRoot/dotnet.sh\" msbuild ${buildArgs[@]}"
         echo "Building step '$stepName' via $nextCommand"
         eval $nextCommand
 
@@ -468,7 +476,13 @@ build_native_projects()
         __versionSourceFile="$intermediatesForBuild/version.cpp"
         if [ $__SkipGenerateVersion == 0 ]; then
             pwd
-            "$__ProjectRoot/run.sh" build -Project=$__ProjectDir/build.proj -generateHeaderUnix -NativeVersionSourceFile=$__versionSourceFile -MsBuildEventLogging="/l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log"  $__RunArgs $__UnprocessedBuildArgs
+            $__ProjectRoot/dotnet.sh msbuild /nologo /verbosity:minimal /clp:Summary \
+                                     /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true \
+                                     /p:UsePartialNGENOptimization=false /maxcpucount \
+                                     $__ProjectDir/build.proj /t:GenerateVersionHeader \
+                                     /p:GenerateVersionHeader=true /p:NativeVersionSourceFile=$__versionSourceFile \
+                                     /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll\;LogFile=binclash.log \
+                                     $__CommonMSBuildArgs $__UnprocessedBuildArgs
         else
             # Generate the dummy version.cpp, but only if it didn't exist to make sure we don't trigger unnecessary rebuild
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
@@ -636,7 +650,7 @@ __RootBinDir="$__ProjectDir/bin"
 __BuildToolsDir="$__ProjectDir/Tools"
 __DotNetCli="${__BuildToolsDir}/dotnetcli/dotnet"
 __UnprocessedBuildArgs=
-__RunArgs=
+__CommonMSBuildArgs=
 __MSBCleanBuildArgs=
 __UseNinja=0
 __VerboseBuild=0
@@ -839,7 +853,7 @@ while :; do
 
         priority1)
             __priority1=1
-            __UnprocessedBuildArgs+=("-priority=1")
+            __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
             ;;
 
         *)
@@ -863,12 +877,12 @@ else
   __NumProc=$(nproc --all)
 fi
 
-__RunArgs=("-BuildArch=$__BuildArch" "-BuildType=$__BuildType" "-BuildOS=$__BuildOS")
+__CommonMSBuildArgs=("/p:__BuildArch=$__BuildArch" "/p:__BuildType=$__BuildType" "/p:__BuildOS=$__BuildOS")
 
 # Configure environment if we are doing a verbose build
 if [ $__VerboseBuild == 1 ]; then
     export VERBOSE=1
-    __RunArgs+=("-verbose")
+    __CommonMSBuildArgs+=("/v:detailed")
 fi
 
 # Set default clang version
