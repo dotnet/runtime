@@ -1054,6 +1054,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows) and '$(EnableWinRT)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.WinRT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.WinRT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs" />
