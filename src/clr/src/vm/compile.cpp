@@ -1013,7 +1013,7 @@ void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilde
 
     nStackSlots = nStackBytes / sizeof(TADDR) + NUM_ARGUMENT_REGISTERS;
 #else
-    nStackSlots = (sizeof(TransitionBlock) + nStackBytes - TransitionBlock::GetOffsetOfArgumentRegisters()) / TARGET_POINTER_SIZE;
+    nStackSlots = (sizeof(TransitionBlock) + nStackBytes - TransitionBlock::GetOffsetOfFirstGCRefMapSlot()) / TARGET_POINTER_SIZE;
 #endif
 
     for (UINT pos = 0; pos < nStackSlots; pos++)
@@ -1025,7 +1025,7 @@ void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilde
             (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
             (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
 #else
-        ofs = TransitionBlock::GetOffsetOfArgumentRegisters() + pos * TARGET_POINTER_SIZE;
+        ofs = TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * TARGET_POINTER_SIZE;
 #endif
 
         CORCOMPILE_GCREFMAP_TOKENS token = *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + ofs);
@@ -1068,7 +1068,7 @@ void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilde
             (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
             (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
 #else
-        ofs = TransitionBlock::GetOffsetOfArgumentRegisters() + pos * TARGET_POINTER_SIZE;
+        ofs = TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * TARGET_POINTER_SIZE;
 #endif
 
         if (token != 0)
