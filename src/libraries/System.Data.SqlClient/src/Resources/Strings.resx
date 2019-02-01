@@ -1167,9 +1167,6 @@
   <data name="AZURESQL_ChinaEndpoint" xml:space="preserve">
     <value>.database.chinacloudapi.cn</value>
   </data>
-  <data name="net_nego_channel_binding_not_supported" xml:space="preserve">
-    <value>No support for channel binding on operating systems other than Windows.</value>
-  </data>
   <data name="net_gssapi_operation_failed_detailed" xml:space="preserve">
     <value>GSSAPI operation failed with error - {0} ({1}).</value>
   </data>

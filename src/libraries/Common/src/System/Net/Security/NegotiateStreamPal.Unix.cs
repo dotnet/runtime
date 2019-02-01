@@ -98,6 +98,7 @@ namespace System.Net.Security
             ref SafeGssContextHandle context,
             SafeGssCredHandle credential,
             bool isNtlm,
+            SecurityBuffer cbt,
             SafeGssNameHandle targetName,
             Interop.NetSecurityNative.GssFlags inFlags,
             byte[] buffer,
@@ -105,6 +106,18 @@ namespace System.Net.Security
             out uint outFlags,
             out int isNtlmUsed)
         {
+            // If a TLS channel binding token (cbt) is available then get the pointer
+            // to the application specific data.
+            IntPtr cbtAppData = IntPtr.Zero;
+            int cbtAppDataSize = 0;
+            if (cbt != null)
+            {
+                int appDataOffset = Marshal.SizeOf<SecChannelBindings>();
+                Debug.Assert(appDataOffset < cbt.size);
+                cbtAppData = cbt.unmanagedToken.DangerousGetHandle() + appDataOffset;
+                cbtAppDataSize = cbt.size - appDataOffset;
+            }
+
             outputBuffer = null;
             outFlags = 0;
 
@@ -126,6 +139,8 @@ namespace System.Net.Security
                                                           credential,
                                                           ref context,
                                                           isNtlm,
+                                                          cbtAppData,
+                                                          cbtAppDataSize,
                                                           targetName,
                                                           (uint)inFlags,
                                                           buffer,
@@ -152,6 +167,7 @@ namespace System.Net.Security
         private static SecurityStatusPal EstablishSecurityContext(
           SafeFreeNegoCredentials credential,
           ref SafeDeleteContext context,
+          SecurityBuffer cbt,
           string targetName,
           ContextFlagsPal inFlags,
           SecurityBuffer inputBuffer,
@@ -177,6 +193,7 @@ namespace System.Net.Security
                    ref contextHandle,
                    credential.GssCredential,
                    isNtlmOnly,
+                   cbt,
                    negoContext.TargetName,
                    inputFlags,
                    inputBuffer?.token,
@@ -224,12 +241,6 @@ namespace System.Net.Security
             SecurityBuffer outSecurityBuffer,
             ref ContextFlagsPal contextFlags)
         {
-            // TODO (Issue #3718): The second buffer can contain a channel binding which is not supported
-            if ((null != inSecurityBufferArray) && (inSecurityBufferArray.Length > 1))
-            {
-                throw new PlatformNotSupportedException(SR.net_nego_channel_binding_not_supported);
-            }
-
             SafeFreeNegoCredentials negoCredentialsHandle = (SafeFreeNegoCredentials)credentialsHandle;
 
             if (negoCredentialsHandle.IsDefault && string.IsNullOrEmpty(spn))
@@ -237,9 +248,17 @@ namespace System.Net.Security
                 throw new PlatformNotSupportedException(SR.net_nego_not_supported_empty_target_with_defaultcreds);
             }
 
+            SecurityBuffer cbtBuffer = null;
+            if ((inSecurityBufferArray != null) && (inSecurityBufferArray.Length > 1))
+            {
+                Debug.Assert(inSecurityBufferArray[1].type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
+                cbtBuffer = inSecurityBufferArray[1];
+            }
+
             SecurityStatusPal status = EstablishSecurityContext(
                 negoCredentialsHandle,
                 ref securityContext,
+                cbtBuffer,
                 spn,
                 requestedContextFlags,
                 ((inSecurityBufferArray != null && inSecurityBufferArray.Length != 0) ? inSecurityBufferArray[0] : null),
