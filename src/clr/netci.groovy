@@ -727,7 +727,7 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
     //
     // Arm64 (Build) -> arm64-cross-latest
     //       |-> os != "Windows_NT" && architecture == "arm64" && options['is_build_job'] == true
-    // Arm64 (Test) -> Helix Ubuntu.1604.Arm64.Iron.Open queue
+    // Arm64 (Test) -> Helix Ubuntu.1604.Arm64.Open queue
     //       |-> os != "Windows_NT" && architecture == "arm64"
     //
     // Note: we are no longer using Jenkins tags "arm64-huge-page-size", "arm64-small-page-size".
@@ -772,7 +772,7 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
                 if (architecture == 'arm64') {
                     assert os == 'Ubuntu16.04'
                     job.with {
-                        label('Ubuntu.1604.Arm64.Iron.Open')
+                        label('Ubuntu.1604.Arm64.Open')
                     }
                 }
                 else {
