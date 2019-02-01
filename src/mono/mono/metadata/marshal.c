@@ -2512,13 +2512,6 @@ wrapper_cache_signature_key_equal (MonoWrapperSignatureCacheKey *key1, MonoWrapp
 	return runtime_invoke_signature_equal (key1->signature, key2->signature);
 }
 
-static gboolean
-wrapper_cache_method_matches_data (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoWrapperMethodCacheKey *mkey = (MonoWrapperMethodCacheKey *) key;
-	return mkey->method == (MonoMethod *) user_data;
-}
-
 /**
  * mono_marshal_get_runtime_invoke:
  * Generates IL code for the runtime invoke function:
@@ -6107,6 +6100,23 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	return res;
 }
 
+static void
+clear_runtime_invoke_method_cache (GHashTable *table, MonoMethod *method)
+{
+	MonoWrapperMethodCacheKey hash_key = {method, FALSE, FALSE};
+	/*
+	 * Since we have a small set of possible keys, remove each one separately, thus
+	 * avoiding the traversal of the entire hash table, when using foreach_remove.
+	 */
+	g_hash_table_remove (table, &hash_key);
+	hash_key.need_direct_wrapper = TRUE;
+	g_hash_table_remove (table, &hash_key);
+	hash_key.virtual_ = TRUE;
+	g_hash_table_remove (table, &hash_key);
+	hash_key.need_direct_wrapper = FALSE;
+	g_hash_table_remove (table, &hash_key);
+}
+
 /*
  * mono_marshal_free_dynamic_wrappers:
  *
@@ -6127,7 +6137,7 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	 * they could be shared with other methods ?
 	 */
 	if (image->wrapper_caches.runtime_invoke_method_cache)
-		g_hash_table_foreach_remove (image->wrapper_caches.runtime_invoke_method_cache, wrapper_cache_method_matches_data, method);
+		clear_runtime_invoke_method_cache (image->wrapper_caches.runtime_invoke_method_cache, method);
 	if (image->wrapper_caches.delegate_abstract_invoke_cache)
 		g_hash_table_foreach_remove (image->wrapper_caches.delegate_abstract_invoke_cache, signature_pointer_pair_matches_pointer, method);
 	// FIXME: Need to clear the caches in other images as well
