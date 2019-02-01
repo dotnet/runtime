@@ -1944,6 +1944,8 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 
     GCX_PREEMP();
 
+    pMD->EnsureActive();
+
     if (pMD->IsPointingToPrestub())
         pMD->DoPrestub(NULL);
 
