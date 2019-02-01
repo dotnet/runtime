@@ -209,7 +209,7 @@ namespace System.IO
                 _canSeek = Interop.Sys.LSeek(fileHandle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
             }
 
-            return _canSeek.Value;
+            return _canSeek.GetValueOrDefault();
         }
 
         private long GetLengthInternal()
