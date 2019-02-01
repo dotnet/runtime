@@ -406,6 +406,9 @@
   <data name="Arg_InvalidNeutralResourcesLanguage_FallbackLoc" xml:space="preserve">
     <value>The NeutralResourcesLanguageAttribute specifies an invalid or unrecognized ultimate resource fallback location: "{0}".</value>
   </data>
+  <data name="Arg_InvalidSatelliteContract_Asm_Ver" xml:space="preserve">
+    <value>Satellite contract version attribute on the assembly '{0}' specifies an invalid version: {1}.</value>
+  </data>
   <data name="Arg_InvalidOleVariantTypeException" xml:space="preserve">
     <value>Specified OLE variant was invalid.</value>
   </data>
