@@ -69,8 +69,6 @@ namespace System.IO
         }
 
 
-#pragma warning disable 420  // "a reference to a volatile field will not be treated as volatile"
-
         public WaitHandle AsyncWaitHandle
         {
             get
@@ -96,9 +94,6 @@ namespace System.IO
                 return wh;
             }
         }
-
-#pragma warning restore 420  // "a reference to a volatile field will not be treated as volatile"
-
 
         public bool CompletedSynchronously
         {

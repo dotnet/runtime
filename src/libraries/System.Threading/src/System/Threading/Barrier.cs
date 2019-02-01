@@ -267,9 +267,7 @@ namespace System.Threading
                 newCurrentTotal |= SENSE_MASK;
             }
 
-#pragma warning disable 0420
             return Interlocked.CompareExchange(ref _currentTotalCount, newCurrentTotal, currentTotal) == currentTotal;
-#pragma warning restore 0420
         }
 
         /// <summary>
