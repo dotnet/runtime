@@ -39,7 +39,7 @@ namespace System.Resources
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
     //
-    internal class ManifestBasedResourceGroveler : IResourceGroveler
+    internal partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
         private ResourceManager.ResourceManagerMediator _mediator;
 
@@ -371,30 +371,16 @@ namespace System.Resources
             // Look up the satellite assembly, but don't let problems
             // like a partially signed satellite assembly stop us from
             // doing fallback and displaying something to the user.
-            // Yet also somehow log this error for a developer.
             try
             {
                 satellite = InternalGetSatelliteAssembly(_mediator.MainAssembly, lookForCulture, _mediator.SatelliteContractVersion);
             }
-
-            // Jun 08: for cases other than ACCESS_DENIED, we'll assert instead of throw to give release builds more opportunity to fallback.
-
-            catch (FileLoadException fle)
+            catch (FileLoadException)
             {
-                // Ignore cases where the loader gets an access
-                // denied back from the OS.  This showed up for
-                // href-run exe's at one point.  
-                int hr = fle._HResult;
-                if (hr != Win32Marshal.MakeHRFromErrorCode(Interop.Errors.ERROR_ACCESS_DENIED))
-                {
-                    Debug.Fail("[This assert catches satellite assembly build/deployment problems - report this message to your build lab & loc engineer]" + Environment.NewLine + "GetSatelliteAssembly failed for culture " + lookForCulture.Name + " and version " + (_mediator.SatelliteContractVersion == null ? _mediator.MainAssembly.GetName().Version.ToString() : _mediator.SatelliteContractVersion.ToString()) + " of assembly " + _mediator.MainAssembly.GetName().Name + " with error code 0x" + hr.ToString("X", CultureInfo.InvariantCulture) + Environment.NewLine + "Exception: " + fle);
-                }
             }
-
-            // Don't throw for zero-length satellite assemblies, for compat with v1
-            catch (BadImageFormatException bife)
+            catch (BadImageFormatException)
             {
-                Debug.Fail("[This assert catches satellite assembly build/deployment problems - report this message to your build lab & loc engineer]" + Environment.NewLine + "GetSatelliteAssembly failed for culture " + lookForCulture.Name + " and version " + (_mediator.SatelliteContractVersion == null ? _mediator.MainAssembly.GetName().Version.ToString() : _mediator.SatelliteContractVersion.ToString()) + " of assembly " + _mediator.MainAssembly.GetName().Name + Environment.NewLine + "Exception: " + bife);
+                // Don't throw for zero-length satellite assemblies, for compat with v1
             }
 
             return satellite;
@@ -478,25 +464,6 @@ namespace System.Resources
                 resName = _mediator.LocationInfo.Namespace + Type.Delimiter;
             resName += fileName;
             throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_NoNeutralAsm, resName, _mediator.MainAssembly.GetName().Name));
-        }
-
-        // Internal version of GetSatelliteAssembly that avoids throwing FileNotFoundException
-        private static Assembly InternalGetSatelliteAssembly(Assembly mainAssembly,
-                                                             CultureInfo culture,
-                                                             Version version)
-        {
-            return ((RuntimeAssembly)mainAssembly).InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: false);
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetNeutralResourcesLanguageAttribute(RuntimeAssembly assemblyHandle, StringHandleOnStack cultureName, out short fallbackLocation);
-
-        private static bool GetNeutralResourcesLanguageAttribute(Assembly assemblyHandle, ref string cultureName, out short fallbackLocation)
-        {
-            return GetNeutralResourcesLanguageAttribute(((RuntimeAssembly)assemblyHandle).GetNativeHandle(),
-                                                        JitHelpers.GetStringHandleOnStack(ref cultureName),
-                                                        out fallbackLocation);
         }
     }
 }
