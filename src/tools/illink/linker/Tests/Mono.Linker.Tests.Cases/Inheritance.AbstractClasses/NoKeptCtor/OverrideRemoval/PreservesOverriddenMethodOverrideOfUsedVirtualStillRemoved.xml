@@ -1,0 +1,7 @@
+<linker>
+    <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.OverrideRemoval.PreservesOverriddenMethodOverrideOfUsedVirtualStillRemoved/Bar">
+            <method name="Foo"/>
+        </type>
+    </assembly>
+</linker>
