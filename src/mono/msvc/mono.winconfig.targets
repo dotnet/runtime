@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <UsingTask TaskName="WinConfigSetup" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+      <ParameterGroup>
+        <ConfigFileRoot ParameterType="System.String" Required="true" />
+        <DisableDefines ParameterType="System.String" Required="false" />
+        <EnableDefines ParameterType="System.String" Required="false" />
+        <HaveDefines ParameterType="System.String" Required="false" />
+      </ParameterGroup>
+        <Task>
+            <Code Type="Class" Language="cs">
+            <![CDATA[
+                using System;
+                using System.IO;
+                using System.Text;
+                using System.Linq;
+                using Microsoft.Build.Framework;
+                using Microsoft.Build.Utilities;
+                using System.Collections.Generic;
+                using System.Text.RegularExpressions;
+
+                public class _WinConfigSetup : Task
+                {
+                  void GetVersionsFromConfigureAC (string configureACFile, out string monoVersion, out string monoCorlibVersion)
+                  {
+                      monoVersion = null;
+                      monoCorlibVersion = null;
+                      if (File.Exists (configureACFile))
+                      {
+                          var monoVersionRegEx = new Regex (@"(.*AC_INIT\(mono, \[)(\d+\.\d+\.\d+)");
+                          var monoCorlibVersionRegEx = new Regex (@"(MONO_CORLIB_VERSION=)([A-F0-9]{8}(?:-[A-F0-9]{4}){3}-[A-F0-9]{12})");
+                          using (StreamReader reader = new StreamReader (configureACFile))
+                          {
+                              string line;
+                              while ((line = reader.ReadLine ()) != null && (monoVersion == null || monoCorlibVersion == null))
+                              {
+                                  var monoVersionMatch = monoVersionRegEx.Match (line);
+                                  if (monoVersionMatch != null && monoVersionMatch.Success && monoVersionMatch.Groups.Count == 3)
+                                  {
+                                      monoVersion = monoVersionMatch.Groups[2].Value;
+                                      continue;
+                                  }
+
+                                  var monoCorlibVersionMatch = monoCorlibVersionRegEx.Match (line);
+                                  if (monoCorlibVersionMatch != null && monoCorlibVersionMatch.Success && monoCorlibVersionMatch.Groups.Count == 3)
+                                  {
+                                      monoCorlibVersion = monoCorlibVersionMatch.Groups[2].Value;
+                                      continue;
+                                  }
+                              }
+                          }
+                      }
+                  }
+
+                  string [] GetDisabledConfigFeatures (string path)
+                  {
+                      var disabledFeatures = new List<string> ();
+                      if (File.Exists (path))
+                      {
+                          var regex = new Regex (".*#define.*DISABLE_.*1");
+                          using (StreamReader reader = new StreamReader (path))
+                          {
+                              string line;
+                              while ((line = reader.ReadLine ()) != null)
+                              {
+                                  var match = regex.Match (line);
+                                  if (match != null && match.Success)
+                                  {
+                                      if (match.Groups != null && match.Groups.Count == 1)
+                                      {
+                                          var configLine = match.Groups[0].ToString ();
+                                          if (!String.IsNullOrEmpty (configLine))
+                                          {
+                                              var configItems = configLine.Trim ().Split (' ');
+                                              if (configItems != null && configItems.Length == 3)
+                                              {
+                                                  // Second item should be the define.
+                                                  disabledFeatures.Add (configItems[1]);
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                      return disabledFeatures.ToArray ();
+                  }
+
+                  void CreateConfigUsingTemplate (string templatePath, string targetPath, string [] disabledDefines, string [] enabledDefines, string [] haveDefines, string monoVersion, string monoCorlibVersion)
+                  {
+                      string tempFilePath = "";
+
+                      try
+                      {
+                          if (File.Exists (templatePath))
+                          {
+                              var disabledDefinesRegex = new Regex (".*@DISABLE_DEFINES@.*");
+                              var enabledDefinesRegex = new Regex (".*@ENABLE_DEFINES@.*");
+                              var haveDefinesRegex = new Regex (".*@HAVE_DEFINES.*");
+
+                              var definesList = new List<Tuple<Regex, string []>>
+                              {
+                                  new Tuple<Regex, string []>(disabledDefinesRegex, disabledDefines),
+                                  new Tuple<Regex, string []>(enabledDefinesRegex, enabledDefines),
+                                  new Tuple<Regex, string []>(haveDefinesRegex, haveDefines)
+                              };
+
+                              var monoCorlibVersions = new string [] {
+                                  ".*#MONO_CORLIB_VERSION#.*",
+                                  "#MONO_CORLIB_VERSION#",
+                                  monoCorlibVersion
+                              };
+                              var monoCorlibVersionRegex = new Regex (monoCorlibVersions[0]);
+
+                              var monoVersions = new string [] {
+                                  ".*#MONO_VERSION#.*",
+                                  "#MONO_VERSION#",
+                                  monoVersion
+                              };
+                              var monoVersionRegex = new Regex (monoVersions[0]);
+
+                              var versionList = new List<Tuple<Regex, string []>>
+                              {
+                                  new Tuple<Regex, string []>(monoCorlibVersionRegex, monoCorlibVersions),
+                                  new Tuple<Regex, string []>(monoVersionRegex, monoVersions)
+                              };
+
+                              tempFilePath = Path.GetTempFileName ();
+
+                              using (StreamReader reader = new StreamReader (templatePath))
+                              using (StreamWriter writer = new StreamWriter (tempFilePath))
+                              {
+                                  string line;
+                                  Match match;
+                                  while ((line = reader.ReadLine ()) != null)
+                                  {
+                                      var replaced = false;
+                                      foreach (var defines in definesList)
+                                      {
+                                          match = defines.Item1.Match (line);
+                                          if (match != null && match.Success && defines.Item2 != null)
+                                          {
+                                              // Replace with disabled defines.
+                                              foreach (var define in defines.Item2)
+                                              {
+                                                  writer.WriteLine ("#ifndef {0}", define);
+                                                  writer.WriteLine ("#define {0} 1", define);
+                                                  writer.WriteLine ("#endif");
+                                              }
+                                              replaced = true;
+                                              break;
+                                          }
+                                      }
+
+                                      if (!replaced)
+                                      {
+                                          foreach (var version in versionList)
+                                          {
+                                              match = version.Item1.Match (line);
+                                              if (match != null && match.Success)
+                                              {
+                                                  writer.WriteLine (line.Replace(version.Item2[1], version.Item2[2]));
+                                                  replaced = true;
+                                                  break;
+                                              }
+                                          }
+                                      }
+
+                                      if (!replaced)
+                                          writer.WriteLine (line);
+                                  }
+                              }
+
+                              bool overwrite = true;
+                              if (File.Exists (targetPath))
+                              {
+                                  if (File.ReadAllBytes (tempFilePath).SequenceEqual (File.ReadAllBytes (targetPath)))
+                                      overwrite = false;
+                              }
+
+                              if (overwrite)
+                                  File.Copy (tempFilePath, targetPath, true);
+                          }
+                      }
+                      finally
+                      {
+                          if (!String.IsNullOrEmpty (tempFilePath))
+                              File.Delete (tempFilePath);
+                      }
+                  }
+
+                  void CreateVersionFile (string targetFile)
+                  {
+                      string tempFile = "";
+
+                      try
+                      {
+                          tempFile = Path.GetTempFileName ();
+
+                          using (StreamWriter writer = new StreamWriter (tempFile))
+                          {
+                              writer.WriteLine ("#define FULL_VERSION \"Visual Studio built mono\"");
+                          }
+
+                          bool overwrite = true;
+                          if (File.Exists (targetFile))
+                          {
+                              if (File.ReadAllBytes (tempFile).SequenceEqual (File.ReadAllBytes (targetFile)))
+                                  overwrite = false;
+                          }
+
+                          if (overwrite)
+                              File.Copy (tempFile, targetFile, true);
+                      }
+                      finally
+                      {
+                          if (!String.IsNullOrEmpty (tempFile))
+                              File.Delete (tempFile);
+                      }
+                  }
+
+                  bool BackupConfigFile (string sourceConfigFile, string targetConfigFile)
+                  {
+                      bool result = false;
+                      if (File.Exists (sourceConfigFile))
+                      {
+                          var includesCygconfig = new Regex (".*#include \"cygconfig.h\".*");
+
+                          var allText = File.ReadAllText (sourceConfigFile);
+                          var match = includesCygconfig.Match (allText);
+                          if (match == null || !match.Success)
+                          {
+                              File.Copy (sourceConfigFile, targetConfigFile, true);
+                              result = true;
+                          }
+                      }
+
+                      return result;
+                  }
+
+                  public string ConfigFileRoot { get; set; }
+                  public string DisableDefines { get; set; }
+                  public string EnableDefines { get; set; }
+                  public string HaveDefines { get; set; }
+
+                  public override bool Execute ()
+                  {
+                    string configureACFile = Path.Combine (ConfigFileRoot, @"configure.ac");
+                    string configFile = Path.Combine (ConfigFileRoot, @"config.h");
+                    string cygConfigFile = Path.Combine (ConfigFileRoot, @"cygconfig.h");
+                    string winConfigFile = Path.Combine (ConfigFileRoot, @"winconfig.h");
+                    string versionFile = Path.Combine (ConfigFileRoot, @"mono\mini\version.h");
+
+                    Log.LogMessage (MessageImportance.High, "Setting up Mono configuration headers...");
+
+                    BackupConfigFile (configFile, cygConfigFile);
+
+                    string monoVersion = null;
+                    string monoCorlibVersion = null;
+                    GetVersionsFromConfigureAC (configureACFile, out monoVersion, out monoCorlibVersion);
+
+                    var disableDefines = GetDisabledConfigFeatures (cygConfigFile);
+                    var enableDefines = (EnableDefines != null) ? EnableDefines.Split (';') : null;
+                    var haveDefines = (HaveDefines != null) ? HaveDefines.Split (';') : null;
+                    CreateConfigUsingTemplate (winConfigFile, configFile, disableDefines, enableDefines, haveDefines, monoVersion, monoCorlibVersion);
+
+                    CreateVersionFile (versionFile);
+
+                    Log.LogMessage (MessageImportance.High, "Successfully setup Mono configuration headers.");
+
+                    return true;
+                  }
+                }
+            ]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
+    <Target Name="RunWinConfigSetup">
+      <WinConfigSetup ConfigFileRoot="$(MSBuildThisFileDirectory)..\"
+                       DisableDefines=""
+                       EnableDefines=""
+                       HaveDefines=""/>
+    </Target>
+
+</Project>
