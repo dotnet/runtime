@@ -116,8 +116,6 @@
   <!-- Sources -->
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Resources\PRIExceptionInfo.cs" Condition="'$(FeatureAppX)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Resources\WindowsRuntimeResourceManagerBase.cs" Condition="'$(FeatureAppX)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
@@ -236,10 +234,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeModule.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\FileBasedResourceGroveler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\IResourceGroveler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceManager.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RtType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
