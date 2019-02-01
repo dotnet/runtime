@@ -10,9 +10,6 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-// Disable the "reference to volatile field not treated as volatile" error.
-#pragma warning disable 0420
-
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;

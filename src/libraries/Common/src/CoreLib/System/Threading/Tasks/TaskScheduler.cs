@@ -9,8 +9,6 @@
 // This file contains the primary interface and management of tasks and queues.  
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-// Disable the "reference to volatile field not treated as volatile" error.
-#pragma warning disable 0420
 
 using System.Collections.Generic;
 using System.Diagnostics;

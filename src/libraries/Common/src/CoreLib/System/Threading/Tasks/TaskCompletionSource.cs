@@ -18,9 +18,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 
-// Disable the "reference to volatile field not treated as volatile" error.
-#pragma warning disable 0420
-
 namespace System.Threading.Tasks
 {
     /// <summary>
