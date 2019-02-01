@@ -397,11 +397,7 @@ mono_check_corlib_version (void)
 {
 	const char* res;
 	MONO_ENTER_GC_UNSAFE;
-#if ENABLE_NETCORE
-	res = NULL;
-#else
 	res = mono_check_corlib_version_internal ();
-#endif
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
