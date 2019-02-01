@@ -111,6 +111,10 @@
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)mono-sgen-msvc.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
@@ -135,6 +139,10 @@
       <ShowProgress>
       </ShowProgress>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)mono-sgen-msvc.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -155,6 +163,10 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)mono-sgen-msvc.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -176,6 +188,10 @@
       <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)mono-sgen-msvc.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(MONO_COMPILE_AS_CPP)'=='true'">
     <ClCompile>
