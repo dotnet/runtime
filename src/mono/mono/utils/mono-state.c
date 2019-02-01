@@ -549,10 +549,10 @@ mono_native_state_add_frames (MonoStateWriter *writer, int num_frames, MonoFrame
 	// the add_frame method
 
 	mono_native_state_add_frame (writer, &frames [0]);
-	//  for (int i = 1; i < num_frames; ++i) {
-	//  	mono_state_writer_printf(writer, ",\n");
-	//  	mono_native_state_add_frame (writer, &frames [i]);
-	//  }
+	  for (int i = 1; i < num_frames; ++i) {
+	  	mono_state_writer_printf(writer, ",\n");
+	  	mono_native_state_add_frame (writer, &frames [i]);
+	  }
 	mono_state_writer_printf(writer, "\n");
 
 	mono_state_writer_indent (writer);
