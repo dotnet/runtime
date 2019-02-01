@@ -1,64 +1,44 @@
-<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="SubmitTestsToHelix">
+<Project DefaultTargets="RunInParallelForEachScenario">
 
   <!-- This project uses the helix SDK, documented at
        https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
        to send test jobs to helix. -->
 
-  <Import Project="..\dir.props" />
+  <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" />
 
-  <PropertyGroup>
-    <HelixArchitecture>$(BuildArch)</HelixArchitecture>
-    <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(BuildType)</HelixConfiguration>
-    <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(BuildType)-$(Scenario)</HelixConfiguration>
+  <!-- This target runs once and creates several instances of this project (one for each scenario)
+       that will run in parallel. -->
 
-    <Creator>$(_Creator)</Creator>
-    <HelixAccessToken>$(_HelixAccessToken)</HelixAccessToken>
-    <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
-
-    <EnableAzurePipelinesReporter>$(_PublishTestResults)</EnableAzurePipelinesReporter>
-    <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>
-
-    <HelixBuild>$(_HelixBuild)</HelixBuild>
-    <HelixSource>$(_HelixSource)</HelixSource>
-    <HelixType>$(_HelixType)</HelixType>
-
-    <TimeoutPerTestCollectionInMinutes>$(_TimeoutPerTestCollectionInMinutes)</TimeoutPerTestCollectionInMinutes>
-    <TimeoutPerTestInMilliseconds Condition=" '$(_TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(_TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
-
-    <ReadyToRun>$(_ReadyToRun)</ReadyToRun>
-    <ReadyToRun Condition=" '$(ReadyToRun)' == '' ">false</ReadyToRun>
-
-    <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
-    <CoreRootDirectory>$(TestWorkingDir)\Tests\Core_Root</CoreRootDirectory>
-    <TestEnvFileExtension Condition=" '$(TargetsWindows)' == 'true' ">.cmd</TestEnvFileExtension>
-    <TestEnvFileExtension Condition=" '$(TargetsWindows)' != 'true' ">.sh</TestEnvFileExtension>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
-    <XUnitWrapperDlls Include="$(TestWorkingDir)\**\*.XUnitWrapper.dll" />
-    <Scenarios Include="$(_Scenarios.Split(','))" />
-  </ItemGroup>
-
-  <Target Name="CreateTestEnvFiles">
-    <!-- This target will create one __TestEnv file per XUnitWrapper/Scenario combination -->
+  <Target Name="RunInParallelForEachScenario">
     <ItemGroup>
-      <_XUnitWrapperDirectoryWithScenario Include="@(XUnitWrapperDlls->'%(RootDir)%(Directory)')">
-        <Scenario>%(Scenarios.Identity)</Scenario>
-      </_XUnitWrapperDirectoryWithScenario>
-
-      <_TestEnvProjectsToBuild Include=".\testenvironment.proj">
-        <Properties>Scenario=%(_XUnitWrapperDirectoryWithScenario.Scenario);TestEnvFileName=%(Identity)\SetStressModes_%(Scenario)$(TestEnvFileExtension);TargetsWindows=$(TargetsWindows)</Properties>
-      </_TestEnvProjectsToBuild>
+      <_Scenarios Include="$(_Scenarios.Split(','))" />
     </ItemGroup>
 
-    <MSBuild Projects="@(_TestEnvProjectsToBuild)" Targets="CreateTestEnvFile" BuildInParallel="false" StopOnFirstFailure="true" UnloadProjectsOnCompletion="true" />
-  </Target>
+    <PropertyGroup>
+      <!-- This specifies what properties are needed to be passed down as global properties to a child project. -->
 
-  <Target Name="SubmitTestsToHelix" DependsOnTargets="CreateTestEnvFiles">
+      <_PropertiesToPass>
+        __BuildArch=$(__BuildArch);
+        __BuildOS=$(__BuildOS);
+        __BuildType=$(__BuildType);
+        Creator=$(_Creator);
+        HelixAccessToken=$(_HelixAccessToken);
+        HelixBuild=$(_HelixBuild);
+        HelixSource=$(_HelixSource);
+        HelixTargetQueues=$(_HelixTargetQueues);
+        HelixType=$(_HelixType);
+        PublishTestResults=$(_PublishTestResults);
+        RunCrossGen=$(_RunCrossGen);
+        TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes);
+        TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes)
+      </_PropertiesToPass>
+    </PropertyGroup>
+
     <ItemGroup>
+      <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
+
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <Properties>Scenario=%(Scenarios.Identity)</Properties>
+        <Properties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -67,59 +47,96 @@
       <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' > '1' ">true</_BuildInParallel>
     </PropertyGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" UnloadProjectsOnCompletion="true" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" />
   </Target>
 
-  <Target Name="BuildHelixWorkItem" BeforeTargets="Test">
-    <PropertyGroup>
-      <EnableXUnitReporter>true</EnableXUnitReporter>
-      <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
-      <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
-      <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
-      <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
-      <_XUnitRunnerArgs>-parallel collections -nocolor -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing</_XUnitRunnerArgs>
-    </PropertyGroup>
+  <Import Project="..\dir.props" />
 
-    <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
-      <_CoreRun>%CORE_ROOT%\CoreRun.exe</_CoreRun>
-      <_XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</_XUnitRunnerDll>
-    </PropertyGroup>
+  <PropertyGroup>
+    <CoreRootDir>$(TestWorkingDir)Tests\Core_Root</CoreRootDir>
+    <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
+  </PropertyGroup>
 
-    <!-- WARNING: _HelixPreCommands collection is intentionally minimal and should be kept that way. -->
+  <ItemGroup>
+    <XUnitWrapperDll Include="$(TestWorkingDir)\**\*.XUnitWrapper.dll">
+      <FileDirectory>%(RootDir)%(Directory)</FileDirectory>
+      <File>%(FileName)%(Extension)</File>
+    </XUnitWrapperDll>
+  </ItemGroup>
 
-    <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-      <_HelixPreCommands Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
-      <_HelixPreCommands Include="set RunCrossGen=true" Condition=" '$(ReadyToRun)' == 'true' " />
-      <_HelixPreCommands Include="set __TestEnv=%HELIX_WORKITEM_PAYLOAD%\SetStressModes_$(Scenario)$(TestEnvFileExtension)" />
-      <_HelixPreCommands Include="set __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
-      <_HelixPreCommands Include="type %__TestEnv%" />
-    </ItemGroup>
+  <Target Name="CreateTestEnvFiles">
 
-    <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-      <_CoreRun>$CORE_ROOT/corerun</_CoreRun>
-      <_XUnitRunnerDll>$CORE_ROOT/xunit.console.dll</_XUnitRunnerDll>
-    </PropertyGroup>
-
-    <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
-      <_HelixPreCommands Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
-      <_HelixPreCommands Include="export RunCrossGen=true" Condition=" '$(ReadyToRun)' == 'true' " />
-      <_HelixPreCommands Include="export __TestEnv=$HELIX_WORKITEM_PAYLOAD/SetStressModes_$(Scenario)$(TestEnvFileExtension)" />
-      <_HelixPreCommands Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
-      <_HelixPreCommands Include="cat $__TestEnv" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <_HelixPreCommands>@(_HelixPreCommands)</_HelixPreCommands>
-    </PropertyGroup>
+    <!-- This target creates one __TestEnv file for each XUnitWrapper. -->
 
     <ItemGroup>
-      <HelixWorkItem Include="@(XUnitWrapperDlls->'%(FileName)'->Replace('.XUnitWrapper', ''))">
-        <PayloadDirectory>%(RootDir)%(Directory)</PayloadDirectory>
-        <PreCommands>$(_HelixPreCommands)</PreCommands>
-        <Command>$(_CoreRun) $(_XUnitRunnerDll) %(FileName)%(Extension) $(_XUnitRunnerArgs)</Command>
-        <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
-      </HelixWorkItem>
+      <_ProjectsToBuild Include=".\testenvironment.proj">
+        <Properties>Scenario=$(Scenario);TestEnvFileName=%(XUnitWrapperDll.FileDirectory)$(TestEnvFileName);TargetsWindows=$(TargetsWindows)</Properties>
+      </_ProjectsToBuild>
     </ItemGroup>
+
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFile" StopOnFirstFailure="true" />
   </Target>
+
+  <PropertyGroup>
+    <EnableAzurePipelinesReporter>$(PublishTestResults)</EnableAzurePipelinesReporter>
+    <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>
+    <EnableXUnitReporter>true</EnableXUnitReporter>
+    <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
+    <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
+    <HelixArchitecture>$(BuildArch)</HelixArchitecture>
+    <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(BuildType)</HelixConfiguration>
+    <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(BuildType)-$(Scenario)</HelixConfiguration>
+    <RunCrossGen Condition=" '$(RunCrossGen)' != 'true' ">false</RunCrossGen>
+    <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
+    <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
+    <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
+    <XUnitRunnerArgs>-parallel collections -nocolor -noshadow -xml testResults.xml -notrait category=outerloop -notrait category=failing</XUnitRunnerArgs>
+  </PropertyGroup>
+
+  <!-- WARNING: HelixPreCommand ItemGroup is intentionally minimal and should be kept that way. -->
+
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
+    <HelixPreCommand Include="set RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
+    <HelixPreCommand Include="set __TestEnv=%HELIX_WORKITEM_PAYLOAD%\$(TestEnvFileName)" />
+    <HelixPreCommand Include="set __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
+    <HelixPreCommand Include="type %__TestEnv%" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
+    <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
+    <HelixPreCommand Include="export RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
+    <HelixPreCommand Include="export __TestEnv=$HELIX_WORKITEM_PAYLOAD/$(TestEnvFileName)" />
+    <HelixPreCommand Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
+    <HelixPreCommand Include="cat $__TestEnv" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <CoreRun>%CORE_ROOT%\CoreRun.exe</CoreRun>
+    <XUnitRunnerDll>%CORE_ROOT%\xunit.console.dll</XUnitRunnerDll>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
+    <CoreRun>$CORE_ROOT/corerun</CoreRun>
+    <XUnitRunnerDll>$CORE_ROOT/xunit.console.dll</XUnitRunnerDll>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixCorrelationPayload Include="$(CoreRootDir)" />
+    <HelixWorkItem Include="@(XUnitWrapperDll->'%(FileName)'->Replace('.XUnitWrapper', ''))">
+      <PayloadDirectory>%(FileDirectory)</PayloadDirectory>
+      <Command>$(CoreRun) $(XUnitRunnerDll) %(File) $(XUnitRunnerArgs)</Command>
+      <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+    </HelixWorkItem>
+  </ItemGroup>
+
+  <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.targets" />
 
 </Project>

@@ -14,7 +14,7 @@ parameters:
   scenarios: ''
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
-  readyToRun: ''
+  runCrossGen: ''
 
 steps:
 - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -33,14 +33,14 @@ steps:
       _HelixSource: ${{ parameters.helixSource }}
       _HelixTargetQueues: ${{ parameters.helixQueues }}
       _HelixType: ${{ parameters.helixType }}
+      _RunCrossGen: ${{ parameters.runCrossGen }}
       _Scenarios: ${{ parameters.scenarios }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
-      _ReadyToRun: ${{ parameters.readyToRun }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
-- ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+- ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
   - script: ./eng/common/msbuild.sh --ci tests/helixpublishwitharcade.proj /maxcpucount
     displayName: ${{ parameters.displayName }}
     ${{ if ne(parameters.condition, '') }}:
@@ -56,9 +56,9 @@ steps:
       _HelixSource: ${{ parameters.helixSource }}
       _HelixTargetQueues: ${{ parameters.helixQueues }}
       _HelixType: ${{ parameters.helixType }}
+      _RunCrossGen: ${{ parameters.runCrossGen }}
       _Scenarios: ${{ parameters.scenarios }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
-      _ReadyToRun: ${{ parameters.readyToRun }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
