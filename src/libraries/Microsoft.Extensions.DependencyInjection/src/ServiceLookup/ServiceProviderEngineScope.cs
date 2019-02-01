@@ -127,7 +127,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 toDispose = _disposables;
                 _disposables = null;
 
-                ResolvedServices.Clear();
+                // Not clearing ResolvedServices here because there might be a compilation running in background
+                // trying to get a cached singleton service instance and if it won't find 
+                // it it will try to create a new one tripping the Debug.Assert in CaptureDisposable
+                // and leaking a Disposable object in Release mode
             }
 
             return toDispose;
