@@ -21,7 +21,7 @@ int InitializeDllTest1()
     return PAL_InitializeDLL();
 }
 
-__attribute__((noinline,optnone))
+__attribute__((noinline,NOOPT_ATTRIBUTE))
 static void FailingFunction(volatile int *p)
 {
     if (p == NULL)

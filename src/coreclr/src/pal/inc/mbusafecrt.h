@@ -31,6 +31,12 @@ typedef int errno_t;
 // define the return value for success 
 #define SAFECRT_SUCCESS 0
 
+#if defined(_MSC_VER) || defined(__llvm__)
+#define THROW_DECL
+#else
+#define THROW_DECL throw()
+#endif
+
 #ifdef __cplusplus
     extern "C" {
 #endif
@@ -98,7 +104,7 @@ extern int swscanf_s( const WCHAR *string, const WCHAR *format, ... );
 extern int _snscanf_s( const char *string, size_t count, const char *format, ... );
 extern int _snwscanf_s( const WCHAR *string, size_t count, const WCHAR *format, ... );
 
-extern errno_t memcpy_s( void * dst, size_t sizeInBytes, const void * src, size_t count );
+extern errno_t memcpy_s( void * dst, size_t sizeInBytes, const void * src, size_t count ) THROW_DECL;
 extern errno_t memmove_s( void * dst, size_t sizeInBytes, const void * src, size_t count );
 
 #ifdef __cplusplus

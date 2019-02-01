@@ -31,6 +31,12 @@
 #define _DEBUG_IMPL 1
 #endif
 
+#if __GNUC__
+#ifndef __cdecl
+#define __cdecl	__attribute__((__cdecl__))
+#endif
+#endif
+
 //
 // CPP_ASSERT() can be used within a class definition, to perform a
 // compile-time assertion involving private names within the class.
