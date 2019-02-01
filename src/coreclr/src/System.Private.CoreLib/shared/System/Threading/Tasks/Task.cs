@@ -23,9 +23,6 @@ using Internal.Runtime.CompilerServices;
 using Thread = Internal.Runtime.Augments.RuntimeThread;
 #endif
 
-// Disable the "reference to volatile field not treated as volatile" error.
-#pragma warning disable 0420
-
 namespace System.Threading.Tasks
 {
     /// <summary>
