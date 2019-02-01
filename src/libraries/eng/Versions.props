@@ -33,6 +33,8 @@
     <!-- Coreclr dependencies -->
     <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview-27331-72</MicrosoftNETCoreILAsmPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27331-72</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <!-- Corefx dependencies -->
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19101.1</MicrosoftNETCorePlatformsPackageVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19074.3</NETStandardLibraryPackageVersion>
   </PropertyGroup>
