@@ -394,12 +394,12 @@ bool CatchHardwareExceptionHolder::IsEnabled()
 
 --*/
 
-#ifdef __llvm__
-__thread 
-#else // __llvm__
-__declspec(thread)
-#endif // !__llvm__
-static NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
+#if defined(__GNUC__)
+static __thread
+#else // __GNUC__
+__declspec(thread) static
+#endif // !__GNUC__
+NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
 
 extern "C"
 NativeExceptionHolderBase **

@@ -444,7 +444,7 @@ Note:
 --*/
 PAL_NORETURN
 __attribute__((noinline))
-__attribute__((optnone))
+__attribute__((NOOPT_ATTRIBUTE))
 static void 
 RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord, CONTEXT *ContextRecord)
 {

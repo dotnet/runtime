@@ -135,7 +135,11 @@ typedef _W64 unsigned int   uintptr_t;
 #define _UINTPTR_T_DEFINED
 #endif
 
+#ifdef __GNUC__
+#define SAFECRT_DEPRECATED __attribute__((deprecated))
+#else
 #define SAFECRT_DEPRECATED __declspec(deprecated)
+#endif
 
 /* errno_t */
 #if !defined(_ERRCODE_DEFINED)
