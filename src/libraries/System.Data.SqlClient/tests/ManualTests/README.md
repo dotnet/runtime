@@ -22,18 +22,16 @@ These tests require dedicated test servers, so they're designed to be run manual
 
 ## Running All Tests
 
-1. run `build src\System.Data.SqlClient -allconfigurations` and make sure the builds all work
-
-2. set the environment variables needed for the tests you want. At the minimum you need to set
+1. set the environment variables needed for the tests you want. At the minimum you need to set
     `TEST_NP_CONN_STR` and `TEST_TCP_CONN_STR` to the connection strings. 
 
-3. Optionally you may also want to setup other environment variables to test specific optional features such as [TEST_LOCALDB_INSTALLED](https://github.com/dotnet/corefx/blob/8f7b490ca874ee2a9f11f0163412f7c95811298b/src/System.Data.SqlClient/tests/ManualTests/DataCommon/DataTestUtility.cs#L96) or [TEST_INTEGRATEDSECURITY_SETUP](https://github.com/dotnet/corefx/blob/8f7b490ca874ee2a9f11f0163412f7c95811298b/src/System.Data.SqlClient/tests/ManualTests/DataCommon/DataTestUtility.cs#L98). Other scenarios lke azure tests may need configuration so if you see those being skipped and you want to run them invesigate the skipped test code to identify how to configure it.
+2. Optionally you may also want to setup other environment variables to test specific optional features such as [TEST_LOCALDB_INSTALLED](https://github.com/dotnet/corefx/blob/8f7b490ca874ee2a9f11f0163412f7c95811298b/src/System.Data.SqlClient/tests/ManualTests/DataCommon/DataTestUtility.cs#L96) or [TEST_INTEGRATEDSECURITY_SETUP](https://github.com/dotnet/corefx/blob/8f7b490ca874ee2a9f11f0163412f7c95811298b/src/System.Data.SqlClient/tests/ManualTests/DataCommon/DataTestUtility.cs#L98). Other scenarios lke azure tests may need configuration so if you see those being skipped and you want to run them invesigate the skipped test code to identify how to configure it.
 
-4. run `dotnet msbuild .\src\System.Data.SqlClient\tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj /t:Rebuild` to build the debug version with all the assertions and run the tests.
+3. run `dotnet msbuild .\src\System.Data.SqlClient\tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj /t:Rebuild` to build the debug version with all the assertions and run the tests.
 
-5. If you need to re-run the test suite without having changed the build (e.g. if you've changed the exnvironment variables) you can use `dotnet msbuild .\src\System.Data.SqlClient\tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj /t:Test`
+4. If you need to re-run the test suite without having changed the build (e.g. if you've changed the exnvironment variables) you can use `dotnet msbuild .\src\System.Data.SqlClient\tests\ManualTests\System.Data.SqlClient.ManualTesting.Tests.csproj /t:Test`
 
-      
+  ​    
 
 ## Running A Specific Test
 
