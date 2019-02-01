@@ -6,10 +6,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Config\test\Microsoft.Extensions.Configuration.Tests.csproj" />
+    <ProjectReference Include="..\..\testassets\Test.Common\Microsoft.Extensions.Configuration.Test.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Configuration.Test.Common" />
     <Reference Include="Microsoft.Extensions.Configuration.Xml" />
   </ItemGroup>
 
