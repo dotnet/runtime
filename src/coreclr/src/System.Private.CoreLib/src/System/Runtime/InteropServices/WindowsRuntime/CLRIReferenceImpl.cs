@@ -296,7 +296,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (propType.HasValue)
             {
                 Type specificType = typeof(CLRIReferenceImpl<>).MakeGenericType(type);
-                return Activator.CreateInstance(specificType, new object[] { propType.Value, obj });
+                return Activator.CreateInstance(specificType, new object[] { propType.GetValueOrDefault(), obj });
             }
 
             Debug.Fail("We should not see non-WinRT type here");
@@ -389,7 +389,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 // All WinRT value type will be Property.Other
                 Type specificType = typeof(CLRIReferenceArrayImpl<>).MakeGenericType(type);
-                return Activator.CreateInstance(specificType, new object[] { propType.Value, obj });
+                return Activator.CreateInstance(specificType, new object[] { propType.GetValueOrDefault(), obj });
             }
             else
             {
