@@ -137,14 +137,14 @@ C_FUNC(\Name\()_End):
 // ArgumentRegisters::x2
 // ArgumentRegisters::x1
 // ArgumentRegisters::x0
-// FloatRegisters::d7
-// FloatRegisters::d6
-// FloatRegisters::d5
-// FloatRegisters::d4
-// FloatRegisters::d3
-// FloatRegisters::d2
-// FloatRegisters::d1
-// FloatRegisters::d0
+// FloatRegisters::q7
+// FloatRegisters::q6
+// FloatRegisters::q5
+// FloatRegisters::q4
+// FloatRegisters::q3
+// FloatRegisters::q2
+// FloatRegisters::q1
+// FloatRegisters::q0
 .macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1
 
         __PWTB_FloatArgumentRegisters = \extraLocals
@@ -200,13 +200,13 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-// Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
+// Reserve 128 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
-        stp                    d0, d1, [\reg, #(\ofs)]
-        stp                    d2, d3, [\reg, #(\ofs + 16)]
-        stp                    d4, d5, [\reg, #(\ofs + 32)]
-        stp                    d6, d7, [\reg, #(\ofs + 48)]
+        stp                    q0, q1, [\reg, #(\ofs)]
+        stp                    q2, q3, [\reg, #(\ofs + 32)]
+        stp                    q4, q5, [\reg, #(\ofs + 64)]
+        stp                    q6, q7, [\reg, #(\ofs + 96)]
 
 .endm
 
@@ -222,10 +222,10 @@ C_FUNC(\Name\()_End):
 
 .macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
-        ldp                    d0, d1, [\reg, #(\ofs)]
-        ldp                    d2, d3, [\reg, #(\ofs + 16)]
-        ldp                    d4, d5, [\reg, #(\ofs + 32)]
-        ldp                    d6, d7, [\reg, #(\ofs + 48)]
+        ldp                    q0, q1, [\reg, #(\ofs)]
+        ldp                    q2, q3, [\reg, #(\ofs + 32)]
+        ldp                    q4, q5, [\reg, #(\ofs + 64)]
+        ldp                    q6, q7, [\reg, #(\ofs + 96)]
 
 .endm
 

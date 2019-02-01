@@ -121,18 +121,18 @@ LEAF_END HelperMethodFrameRestoreState, _TEXT
 // The call in ndirect import precode points to this function.
 NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -160
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
     SAVE_ARGUMENT_REGISTERS sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 88
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
 
     mov x0, x12
     bl NDirectImportWorker
     mov x12, x0
 
     // pop the stack and restore original register state
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 88
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96
     RESTORE_ARGUMENT_REGISTERS sp, 16
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 160
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 224
 
     // If we got back from NDirectImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
@@ -493,9 +493,9 @@ WRITE_BARRIER_END JIT_WriteBarrier
 NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
 
     // Save arguments and return address
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -160
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
     SAVE_ARGUMENT_REGISTERS sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 88
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
 
     // Refer to ZapImportVirtualThunk::Save
     // for details on this.
@@ -512,8 +512,8 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
 
     // pop the stack and restore original register state
     RESTORE_ARGUMENT_REGISTERS sp, 16
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 88
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 160
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 224
 
     PATCH_LABEL VirtualMethodFixupPatchLabel
 
@@ -723,9 +723,9 @@ COMToCLRDispatchHelper_RegSetup
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
     // Save arguments and return address
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -160
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
     SAVE_ARGUMENT_REGISTERS sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 88
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
 
     mov x0, x12
     bl C_FUNC(TheUMEntryPrestubWorker)
@@ -735,8 +735,8 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
     // pop the stack and restore original register state
     RESTORE_ARGUMENT_REGISTERS sp, 16
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 88
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 160
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 224
 
     // and tailcall to the actual method
     EPILOG_BRANCH_REG x12
