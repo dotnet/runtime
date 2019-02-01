@@ -172,6 +172,7 @@
     <Compile Include="BCLFeatures\ETW\LocalsOfModifiedMethodAreRemoved.cs" />
     <Compile Include="BCLFeatures\ETW\StubbedMethodWithExceptionHandlers.cs" />
     <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
+    <Compile Include="CoreLink\DelegateAndMulticastDelegateKeepInstantiatedReqs.cs" />
     <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
     <Compile Include="Inheritance.AbstractClasses\UnusedAbstractMethodRemoved.cs" />
     <Compile Include="Inheritance.AbstractClasses\UnusedVirtualMethodRemoved.cs" />

@@ -227,6 +227,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 								VerifyRemovedMemberInAssembly (checkAttrInAssembly, linkedType);
 								break;
+							case nameof (KeptBaseOnTypeInAssemblyAttribute):
+								if (linkedType == null)
+									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								VerifyKeptBaseOnTypeInAssembly (checkAttrInAssembly, linkedType);
+								break;
 							case nameof (KeptMemberInAssemblyAttribute):
 								if (linkedType == null)
 									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
@@ -391,6 +396,21 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var linkedInterfaceImpl = GetMatchingInterfaceImplementationOnType (linkedType, originalInterface.FullName);
 			if (linkedInterfaceImpl == null)
 				Assert.Fail ($"Expected `{linkedType}` to have interface of type {originalInterface.FullName}");
+		}
+
+		void VerifyKeptBaseOnTypeInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+			
+			var baseAssemblyName = inAssemblyAttribute.ConstructorArguments [2].Value.ToString ();
+			var baseType = inAssemblyAttribute.ConstructorArguments [3].Value;
+
+			var originalBase = GetOriginalTypeFromInAssemblyAttribute (baseAssemblyName, baseType);
+			if (originalType.BaseType.Resolve () != originalBase)
+				Assert.Fail ("Invalid assertion.  Original type's base does not match the expected base");
+
+			Assert.That (originalBase.FullName, Is.EqualTo (linkedType.BaseType.FullName),
+				$"Incorrect base on `{linkedType.FullName}`.  Expected `{originalBase.FullName}` but was `{linkedType.BaseType.FullName}`");
 		}
 
 		protected static InterfaceImplementation GetMatchingInterfaceImplementationOnType (TypeDefinition type, string expectedInterfaceTypeName)
