@@ -239,7 +239,7 @@ Abstract:
   real life scenarios work.
 
 --*/
-__attribute__((noinline,optnone))
+__attribute__((noinline,NOOPT_ATTRIBUTE))
 void
 EnsureStackSize(SIZE_T stackSize)
 {

@@ -143,6 +143,11 @@ typedef void * NATIVE_LIBRARY_HANDLE;
 #define LANG_THAI                        0x1e
 
 /******************* Compiler-specific glue *******************************/
+#if defined(_MSC_VER) || defined(__llvm__)
+#define THROW_DECL
+#else
+#define THROW_DECL throw()
+#endif
 
 #ifndef _MSC_VER
 #if defined(CORECLR)
@@ -156,7 +161,7 @@ typedef void * NATIVE_LIBRARY_HANDLE;
 #if defined(_MSC_VER) || defined(__llvm__)
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 #else
-#define DECLSPEC_ALIGN(x) 
+#define DECLSPEC_ALIGN(x)   __attribute__ ((aligned(x)))
 #endif
 
 #define DECLSPEC_NORETURN   PAL_NORETURN
@@ -173,6 +178,14 @@ typedef void * NATIVE_LIBRARY_HANDLE;
 #define FORCEINLINE inline
 #else
 #define FORCEINLINE __forceinline
+#endif
+#endif
+
+#ifndef NOOPT_ATTRIBUTE
+#if defined(__llvm__)
+#define NOOPT_ATTRIBUTE optnone
+#else
+#define NOOPT_ATTRIBUTE optimize("O0")
 #endif
 #endif
 
@@ -3503,7 +3516,7 @@ InterlockedExchange(
     IN OUT LONG volatile *Target,
     IN LONG Value)
 {
-    LONG result = __sync_swap(Target, Value);
+    LONG result = __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL);
     PAL_ArmInterlockedOperationBarrier();
     return result;
 }
@@ -3517,7 +3530,7 @@ InterlockedExchange64(
     IN OUT LONGLONG volatile *Target,
     IN LONGLONG Value)
 {
-    LONGLONG result = __sync_swap(Target, Value);
+    LONGLONG result = __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL);
     PAL_ArmInterlockedOperationBarrier();
     return result;
 }
@@ -4316,7 +4329,7 @@ PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
 PALIMPORT void * __cdecl memset(void *, int, size_t);
 PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
 PALIMPORT void * __cdecl memchr(const void *, int, size_t);
-PALIMPORT long long int __cdecl atoll(const char *);
+PALIMPORT long long int __cdecl atoll(const char *) THROW_DECL;
 PALIMPORT size_t __cdecl strlen(const char *);
 PALIMPORT int __cdecl strcmp(const char*, const char *);
 PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
@@ -4355,7 +4368,7 @@ PALIMPORT int __cdecl toupper(int);
 #define _TRUNCATE ((size_t)-1)
 #endif
 
-PALIMPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
+PALIMPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t) THROW_DECL;
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
 PALIMPORT char * __cdecl _strlwr(char *);
 PALIMPORT int __cdecl _stricmp(const char *, const char *);
@@ -4426,7 +4439,15 @@ inline WCHAR *PAL_wcsstr(WCHAR *_S, const WCHAR *_P)
 }
 #endif
 
-#if !__has_builtin(_rotl)
+#if defined(__llvm__)
+#define HAS_ROTL __has_builtin(_rotl)
+#define HAS_ROTR __has_builtin(_rotr)
+#else
+#define HAS_ROTL 0
+#define HAS_ROTR 0
+#endif
+
+#if !HAS_ROTL
 /*++
 Function:
 _rotl
@@ -4444,14 +4465,14 @@ unsigned int __cdecl _rotl(unsigned int value, int shift)
     retval = (value << shift) | (value >> (sizeof(int) * CHAR_BIT - shift));
     return retval;
 }
-#endif // !__has_builtin(_rotl)
+#endif // !HAS_ROTL
 
 // On 64 bit unix, make the long an int.
 #ifdef BIT64
 #define _lrotl _rotl
 #endif // BIT64
 
-#if !__has_builtin(_rotr)
+#if !HAS_ROTR
 
 /*++
 Function:
@@ -4471,7 +4492,7 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
     return retval;
 }
 
-#endif // !__has_builtin(_rotr)
+#endif // !HAS_ROTR
 
 PALIMPORT int __cdecl abs(int);
 // clang complains if this is declared with __int64
@@ -4487,10 +4508,10 @@ PALIMPORT double __cdecl acos(double);
 PALIMPORT double __cdecl acosh(double);
 PALIMPORT double __cdecl asin(double);
 PALIMPORT double __cdecl asinh(double);
-PALIMPORT double __cdecl atan(double);
-PALIMPORT double __cdecl atanh(double);
+PALIMPORT double __cdecl atan(double) THROW_DECL;
+PALIMPORT double __cdecl atanh(double) THROW_DECL;
 PALIMPORT double __cdecl atan2(double, double);
-PALIMPORT double __cdecl cbrt(double);
+PALIMPORT double __cdecl cbrt(double) THROW_DECL;
 PALIMPORT double __cdecl ceil(double);
 PALIMPORT double __cdecl cos(double);
 PALIMPORT double __cdecl cosh(double);
@@ -4520,10 +4541,10 @@ PALIMPORT float __cdecl acosf(float);
 PALIMPORT float __cdecl acoshf(float);
 PALIMPORT float __cdecl asinf(float);
 PALIMPORT float __cdecl asinhf(float);
-PALIMPORT float __cdecl atanf(float);
-PALIMPORT float __cdecl atanhf(float);
+PALIMPORT float __cdecl atanf(float) THROW_DECL;
+PALIMPORT float __cdecl atanhf(float) THROW_DECL;
 PALIMPORT float __cdecl atan2f(float, float);
-PALIMPORT float __cdecl cbrtf(float);
+PALIMPORT float __cdecl cbrtf(float) THROW_DECL;
 PALIMPORT float __cdecl ceilf(float);
 PALIMPORT float __cdecl cosf(float);
 PALIMPORT float __cdecl coshf(float);

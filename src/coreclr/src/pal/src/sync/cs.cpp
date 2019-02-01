@@ -627,7 +627,7 @@ namespace CorUnix
         pPalCriticalSection->LockCount         = 0;
         pPalCriticalSection->RecursionCount    = 0;
         pPalCriticalSection->SpinCount         = dwSpinCount;
-        pPalCriticalSection->OwningThread      = NULL;
+        pPalCriticalSection->OwningThread      = 0;
         pPalCriticalSection->LockSemaphore     = NULL;
         pPalCriticalSection->fInternal         = fInternal;
 
@@ -877,7 +877,7 @@ namespace CorUnix
         }
 
         // Reset CS ownership
-        pPalCriticalSection->OwningThread = NULL;
+        pPalCriticalSection->OwningThread = 0;
 
         // Load the current LockCount value
         lVal = pPalCriticalSection->LockCount;

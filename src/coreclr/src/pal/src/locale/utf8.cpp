@@ -1467,7 +1467,7 @@ public:
                 }
 
                 // get pSrc 2-byte aligned
-                if (((int)pSrc & 0x1) != 0) {
+                if (((size_t)pSrc & 0x1) != 0) {
                     ch = *pSrc;
                     pSrc++;
                     if (ch > 0x7F) {
@@ -1476,7 +1476,7 @@ public:
                 }
 
                 // get pSrc 4-byte aligned
-                if (((int)pSrc & 0x2) != 0) {
+                if (((size_t)pSrc & 0x2) != 0) {
                     ch = *(USHORT*)pSrc;
                     if ((ch & 0x8080) != 0) {
                         goto LongCodeWithMask16;
@@ -1906,7 +1906,7 @@ public:
                 pTarget++;
 
                 // get pSrc to be 2-byte aligned
-                if ((((int)pSrc) & 0x1) != 0) {
+                if ((((size_t)pSrc) & 0x1) != 0) {
                     ch = *pSrc;
                     pSrc++;
                     if (ch > 0x7F) {
@@ -1917,7 +1917,7 @@ public:
                 }
 
                 // get pSrc to be 4-byte aligned
-                if ((((int)pSrc) & 0x2) != 0) {
+                if ((((size_t)pSrc) & 0x2) != 0) {
                     ch = *(USHORT*)pSrc;
                     if ((ch & 0x8080) != 0) {
                         goto LongCodeWithMask16;
@@ -2740,7 +2740,7 @@ public:
                 }
 
                 // get pSrc aligned
-                if (((int)pSrc & 0x2) != 0) {
+                if (((size_t)pSrc & 0x2) != 0) {
                     ch = *pSrc;
                     pSrc++;
                     if (ch > 0x7F)                                              // Not ASCII
