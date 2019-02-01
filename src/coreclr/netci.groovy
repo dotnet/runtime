@@ -940,6 +940,12 @@ def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, is
         }
         else if (isCoreFxScenario(scenario)) {
             timeout = 360
+            if (architecture == 'arm64') {
+                if (configuration == 'Checked' || configuration == 'Debug') {
+                    // ARM64 checked/debug is slow, see #17414.
+                    timeout *= 3;
+                }
+            }
         }
         else if (isJitStressScenario(scenario)) {
             timeout = 300
