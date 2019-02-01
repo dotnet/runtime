@@ -492,11 +492,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\FastResourceComparer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\FileBasedResourceGroveler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\IResourceGroveler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\IResourceReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ManifestBasedResourceGroveler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\MissingManifestResourceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\MissingSatelliteAssemblyException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\NeutralResourcesLanguageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceFallbackManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceTypeCode.cs" />
@@ -1077,6 +1081,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureAppX)' == 'true' or '$(EnableWinRT)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Resources\PRIExceptionInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Resources\WindowsRuntimeResourceManagerBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceManager.Uap.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix)">
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Errors.cs" />
