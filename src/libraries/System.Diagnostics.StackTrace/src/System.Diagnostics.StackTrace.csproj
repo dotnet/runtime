@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
-    <NoWarn>$(NoWarn);CS1572;1685</NoWarn>
+    <NoWarn>$(NoWarn);1685</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
@@ -37,9 +37,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsAOT)'!='true'">
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAOT)'=='true'">
-    <Compile Include="System\Diagnostics\SymbolStore\ISymbolDocumentWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

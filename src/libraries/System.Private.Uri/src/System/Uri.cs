@@ -1192,11 +1192,9 @@ namespace System
 
                 if (HostType == Flags.IPv6HostType)
                 {
-                    ret = ret.Substring(1, ret.Length - 2);
-                    if ((object)_info.ScopeId != null)
-                    {
-                        ret += _info.ScopeId;
-                    }
+                    ret = _info.ScopeId != null ?
+                        string.Concat(ret.AsSpan(1, ret.Length - 2), _info.ScopeId) :
+                        ret.Substring(1, ret.Length - 2);
                 }
                 // Validate that this basic host qualifies as Dns safe,
                 // It has looser parsing rules that might allow otherwise.
@@ -2240,7 +2238,7 @@ namespace System
                 _flags &= ~(Flags.IndexMask);
                 _flags |= (Flags)_string.Length;
 
-                _string += _originalUnicodeString.Substring(idx, _originalUnicodeString.Length - idx);
+                _string = string.Concat(_string, _originalUnicodeString.AsSpan(idx, _originalUnicodeString.Length - idx));
             }
 
             // Indicate to createuriinfo that offset is in m_originalUnicodeString
@@ -3097,8 +3095,9 @@ namespace System
                     if (!InFact(Flags.HasUserInfo))
                         return _string.Substring(_info.Offset.Scheme, _info.Offset.Path - _info.Offset.Scheme);
 
-                    return _string.Substring(_info.Offset.Scheme, _info.Offset.User - _info.Offset.Scheme)
-                         + _string.Substring(_info.Offset.Host, _info.Offset.Path - _info.Offset.Host);
+                    return string.Concat(
+                        _string.AsSpan(_info.Offset.Scheme, _info.Offset.User - _info.Offset.Scheme),
+                        _string.AsSpan(_info.Offset.Host, _info.Offset.Path - _info.Offset.Host));
 
                 // For HttpWebRequest.ConnectHostAndPort perf
                 case UriComponents.HostAndPort:  //Host|StrongPort
@@ -3109,8 +3108,8 @@ namespace System
                     if (InFact(Flags.NotDefaultPort) || _syntax.DefaultPort == UriParser.NoDefaultPort)
                         return _string.Substring(_info.Offset.Host, _info.Offset.Path - _info.Offset.Host);
 
-                    return _string.Substring(_info.Offset.Host, _info.Offset.Path - _info.Offset.Host)
-                        + ':' + _info.Offset.PortValue.ToString(CultureInfo.InvariantCulture);
+                    return string.Concat(_string.AsSpan(_info.Offset.Host, _info.Offset.Path - _info.Offset.Host),
+                        ":", _info.Offset.PortValue.ToString(CultureInfo.InvariantCulture));
 
                 // For an obvious common case perf
                 case UriComponents.AbsoluteUri:     //Scheme|UserInfo|Host|Port|Path|Query|Fragment,
@@ -3123,8 +3122,9 @@ namespace System
                 case UriComponents.HttpRequestUrl:   //Scheme|Host|Port|Path|Query,
                     if (InFact(Flags.HasUserInfo))
                     {
-                        return _string.Substring(_info.Offset.Scheme, _info.Offset.User - _info.Offset.Scheme)
-                            + _string.Substring(_info.Offset.Host, _info.Offset.Fragment - _info.Offset.Host);
+                        return string.Concat(
+                            _string.AsSpan(_info.Offset.Scheme, _info.Offset.User - _info.Offset.Scheme),
+                            _string.AsSpan(_info.Offset.Host, _info.Offset.Fragment - _info.Offset.Host));
                     }
                     if (_info.Offset.Scheme == 0 && _info.Offset.Fragment == _string.Length)
                         return _string;
@@ -3209,8 +3209,8 @@ namespace System
                     if (InFact(Flags.NotDefaultPort) || _syntax.DefaultPort == UriParser.NoDefaultPort)
                         goto case UriComponents.UserInfo | UriComponents.Host | UriComponents.Port;
 
-                    return _string.Substring(_info.Offset.User, _info.Offset.Path - _info.Offset.User)
-                        + ':' + _info.Offset.PortValue.ToString(CultureInfo.InvariantCulture);
+                    return string.Concat(_string.AsSpan(_info.Offset.User, _info.Offset.Path - _info.Offset.User),
+                        ":", _info.Offset.PortValue.ToString(CultureInfo.InvariantCulture));
 
                 case UriComponents.PathAndQuery:        //Path|Query,
                     return _string.Substring(_info.Offset.Path, _info.Offset.Fragment - _info.Offset.Path);
@@ -3218,8 +3218,9 @@ namespace System
                 case UriComponents.HttpRequestUrl | UriComponents.Fragment: //Scheme|Host|Port|Path|Query|Fragment,
                     if (InFact(Flags.HasUserInfo))
                     {
-                        return _string.Substring(_info.Offset.Scheme, _info.Offset.User - _info.Offset.Scheme)
-                            + _string.Substring(_info.Offset.Host, _info.Offset.End - _info.Offset.Host);
+                        return string.Concat(
+                            _string.AsSpan(_info.Offset.Scheme, _info.Offset.User - _info.Offset.Scheme),
+                            _string.AsSpan(_info.Offset.Host, _info.Offset.End - _info.Offset.Host));
                     }
                     if (_info.Offset.Scheme == 0 && _info.Offset.End == _string.Length)
                         return _string;
@@ -4170,7 +4171,7 @@ namespace System
                             flags |= Flags.IdnHost;
 
                             // need to build string for this special scenario
-                            newHost = _originalUnicodeString.Substring(0, startInput) + userInfoString + idnValue;
+                            newHost = string.Concat(_originalUnicodeString.AsSpan(0, startInput), userInfoString, idnValue);
                             flags |= Flags.CanonicalDnsHost;
                             _dnsSafeHost = new string(pString, start, end - start);
                             justNormalized = true;
@@ -4398,16 +4399,18 @@ namespace System
                 {
                     // original string location changed lazily
                     _originalUnicodeString = _string;
-                    newHost = _originalUnicodeString.Substring(0, startInput) +
-                        (StaticInFact(flags, Flags.HasUserInfo) ? userInfoString : null);
+                    newHost = StaticInFact(flags, Flags.HasUserInfo) ?
+                        string.Concat(_originalUnicodeString.AsSpan(0, startInput), userInfoString) :
+                        _originalUnicodeString.Substring(0, startInput);
                     justNormalized = true;
                 }
                 else if (!iriParsing && (StaticInFact(flags, Flags.UnicodeHost) || StaticInFact(flags, Flags.IdnHost)))
                 {
                     // original string location changed lazily
                     _originalUnicodeString = _string;
-                    newHost = _originalUnicodeString.Substring(0, startInput) +
-                        (StaticInFact(flags, Flags.HasUserInfo) ? userInfoString : null);
+                    newHost = StaticInFact(flags, Flags.HasUserInfo) ?
+                        string.Concat(_originalUnicodeString.AsSpan(0, startInput), userInfoString) :
+                        _originalUnicodeString.Substring(0, startInput);
                     justNormalized = true;
                 }
 
@@ -5138,11 +5141,12 @@ namespace System
                 int idx = basePart.OriginalString.IndexOf(':');
                 if (basePart.IsImplicitFile)
                 {
-                    return basePart.OriginalString.Substring(0, idx + 1) + relativePart;
+                    return string.Concat(basePart.OriginalString.AsSpan(0, idx + 1), relativePart);
                 }
+
                 // The basePart has explicit scheme (could be not file:), take the DOS drive ':' position
                 idx = basePart.OriginalString.IndexOf(':', idx + 1);
-                return basePart.OriginalString.Substring(0, idx + 1) + relativePart;
+                return string.Concat(basePart.OriginalString.AsSpan(0, idx + 1), relativePart);
             }
 
             // Check special case for Unc or absolute path in relativePart when base is FILE
@@ -5217,10 +5221,9 @@ namespace System
                     left = basePart.GetParts(UriComponents.SchemeAndServer | UriComponents.UserInfo, uriFormat);
                 }
 
-                if (convBackSlashes && c1 == '\\')
-                    relativePart = '/' + relativePart.Substring(1);
-
-                return left + relativePart;
+                return convBackSlashes && c1 == '\\' ?
+                    string.Concat(left, "/", relativePart.AsSpan(1)) :
+                    left + relativePart;
             }
 
             // Here we got a relative path
@@ -5254,7 +5257,7 @@ namespace System
             // The  implicit file check is to avoid a fragment in the implicit file combined uri.
             char c2 = (!basePart.IsImplicitFile && basePart.Syntax.InFact(UriSyntaxFlags.MayHaveFragment)) ? '#' :
                 c_DummyChar;
-            string extra = string.Empty;
+            ReadOnlySpan<char> extra = string.Empty;
 
             // assuming c_DummyChar may not happen in an unicode uri string
             if (!(c1 == c_DummyChar && c2 == c_DummyChar))
@@ -5273,7 +5276,7 @@ namespace System
                 }
                 else if (i < relativePart.Length)
                 {
-                    extra = relativePart.Substring(i);
+                    extra = relativePart.AsSpan(i);
                 }
                 length += i;
             }
@@ -5304,7 +5307,7 @@ namespace System
                     {
                         // The FILE DOS path comes as /c:/path, we have to exclude first 3 chars from compression
                         path = Compress(path, 3, ref length, basePart.Syntax);
-                        return new string(path, 1, length - 1) + extra;
+                        return string.Concat(path.AsSpan(1, length - 1), extra);
                     }
                     else if (!IsWindowsSystem && basePart.IsUnixPath)
                     {
@@ -5322,7 +5325,7 @@ namespace System
             }
             //compress the path
             path = Compress(path, basePart.SecuredPathIndex, ref length, basePart.Syntax);
-            return left + new string(path, 0, length) + extra;
+            return string.Concat(left, path.AsSpan(0, length), extra);
         }
 
         //

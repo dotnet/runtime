@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -30,14 +31,13 @@ namespace System.Runtime.InteropServices.Tests
                 Assert.Null(ex.InnerException);
                 Assert.Null(ex.HelpLink);
                 Assert.NotEmpty(ex.Message);
-                if (PlatformDetection.IsNetCore)
-                {
-                    Assert.Equal("System.Private.CoreLib", ex.Source);
-                }
-                else
-                {
-                    Assert.Equal("mscorlib", ex.Source);
-                }
+
+                string sourceMaybe = PlatformDetection.IsNetCore
+                        ? "System.Private.CoreLib"
+                        : "mscorlib";
+
+                // If the ThrowExceptionForHR is inlined by the JIT, the source could be the test assembly
+                Assert.Contains(ex.Source, new string[]{ sourceMaybe, Assembly.GetExecutingAssembly().GetName().Name });
                 Assert.Contains(nameof(ThrowExceptionForHR_NoErrorInfo_ReturnsValidException), ex.StackTrace);
                 Assert.Contains(nameof(Marshal.ThrowExceptionForHR), ex.TargetSite.Name);
             }
@@ -73,14 +73,13 @@ namespace System.Runtime.InteropServices.Tests
                 Assert.Null(ex.InnerException);
                 Assert.Null(ex.HelpLink);
                 Assert.NotEmpty(ex.Message);
-                if (PlatformDetection.IsNetCore)
-                {
-                    Assert.Equal("System.Private.CoreLib", ex.Source);
-                }
-                else
-                {
-                    Assert.Equal("mscorlib", ex.Source);
-                }
+
+                string sourceMaybe = PlatformDetection.IsNetCore
+                        ? "System.Private.CoreLib"
+                        : "mscorlib";
+
+                // If the ThrowExceptionForHR is inlined by the JIT, the source could be the test assembly
+                Assert.Contains(ex.Source, new string[]{ sourceMaybe, Assembly.GetExecutingAssembly().GetName().Name });
                 Assert.Contains(nameof(ThrowExceptionForHR_ErrorInfo_ReturnsValidException), ex.StackTrace);
                 Assert.Contains(nameof(Marshal.ThrowExceptionForHR), ex.TargetSite.Name);
             }

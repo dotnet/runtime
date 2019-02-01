@@ -71,13 +71,10 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Generate SSPI context
         /// </summary>
-        /// <param name="handle">SNI connection handle</param>
+        /// <param name="sspiClientContextStatus">SSPI client context status</param>
         /// <param name="receivedBuff">Receive buffer</param>
-        /// <param name="receivedLength">Received length</param>
         /// <param name="sendBuff">Send buffer</param>
-        /// <param name="sendLength">Send length</param>
         /// <param name="serverName">Service Principal Name buffer</param>
-        /// <param name="serverNameLength">Length of Service Principal Name</param>
         /// <returns>SNI error code</returns>
         public void GenSspiClientContext(SspiClientContextStatus sspiClientContextStatus, byte[] receivedBuff, ref byte[] sendBuff, byte[] serverName)
         {
@@ -373,7 +370,7 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Creates an SNITCPHandle object
         /// </summary>
-        /// <param name="fullServerName">Server string. May contain a comma delimited port number.</param>
+        /// <param name="details">Data source</param>
         /// <param name="timerExpire">Timer expiration</param>
         /// <param name="callbackObject">Asynchronous I/O callback object</param>
         /// <param name="parallel">Should MultiSubnetFailover be used</param>
@@ -424,7 +421,7 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Creates an SNINpHandle object
         /// </summary>
-        /// <param name="fullServerName">Server string representing a UNC pipe path.</param>
+        /// <param name="details">Data source</param>
         /// <param name="timerExpire">Timer expiration</param>
         /// <param name="callbackObject">Asynchronous I/O callback object</param>
         /// <param name="parallel">Should MultiSubnetFailover be used. Only returns an error for named pipes.</param>

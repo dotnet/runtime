@@ -27,8 +27,6 @@ namespace System.Collections
         private object[] _array; // Storage for stack elements. Do not rename (binary serialization)
         private int _size; // Number of items in the stack. Do not rename (binary serialization)
         private int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
-        [NonSerialized]
-        private object _syncRoot;
 
         private const int _defaultCapacity = 10;
 
@@ -79,17 +77,7 @@ namespace System.Collections
             get { return false; }
         }
 
-        public virtual object SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        public virtual object SyncRoot => this;
 
         // Removes all Objects from the Stack.
         public virtual void Clear()

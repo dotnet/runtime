@@ -546,7 +546,7 @@ namespace System.Data.SqlTypes
 
                         // We could continue to do pointer math here, chose to use Span for convenience to 
                         // make sure we get the other members in the right place.
-                        Span<byte> data = new Span<byte>(buffer).Slice(headerSize);
+                        Span<byte> data = buffer.AsSpan(headerSize);
                         s_eaNameString.AsSpan().CopyTo(data);
                         data = data.Slice(s_eaNameString.Length);
                         transactionContext.AsSpan().CopyTo(data);

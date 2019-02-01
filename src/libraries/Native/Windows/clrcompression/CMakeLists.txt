@@ -77,10 +77,6 @@ else()
     )
 endif()
 
-if ($ENV{__VSVersion} STREQUAL vs2015)
-    add_definitions(-DHAVE_VSNPRINTF)
-endif ()
-
 #Include Brotli include files
 include_directories("../../AnyOS/brotli/include")
 

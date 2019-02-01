@@ -46,7 +46,6 @@ namespace System.Threading.Tasks
 
         /// <summary>Registers the async operation for cancellation.</summary>
         /// <param name="asyncInfo">The asynchronous operation.</param>
-        /// <param name="cancellationToken">The token used to request cancellation of the asynchronous operation.</param>
         internal void RegisterForCancellation(IAsyncInfo asyncInfo)
         {
             Debug.Assert(asyncInfo != null);

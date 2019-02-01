@@ -20,6 +20,8 @@ namespace System.Net.Test.Common
         private Stream _connectionStream;
         private Http2Options _options;
         private Uri _uri;
+        private bool _ignoreSettingsAck;
+        private bool _ignoreWindowUpdates;
 
         public Uri Address
         {
@@ -113,6 +115,17 @@ namespace System.Net.Test.Common
                 }
             }
 
+            if (_ignoreSettingsAck && header.Type == FrameType.Settings && header.Flags == FrameFlags.Ack)
+            {
+                _ignoreSettingsAck = false;
+                return await ReadFrameAsync(timeout);
+            }
+
+            if (_ignoreWindowUpdates && header.Type == FrameType.WindowUpdate)
+            {
+                return await ReadFrameAsync(timeout);
+            }
+
             // Construct the correct frame type and return it.
             switch (header.Type)
             {
@@ -126,6 +139,8 @@ namespace System.Net.Test.Common
                     return RstStreamFrame.ReadFrom(header, data);
                 case FrameType.Ping:
                     return PingFrame.ReadFrom(header, data);
+                case FrameType.GoAway:
+                    return GoAwayFrame.ReadFrom(header, data);
                 default:
                     return header;
             }
@@ -175,8 +190,23 @@ namespace System.Net.Test.Common
             return System.Text.Encoding.UTF8.GetString(prefix, 0, prefix.Length);
         }
 
+        public void ExpectSettingsAck()
+        {
+            // The timing of when we receive the settings ack is not guaranteed.
+            // To simplify frame processing, just record that we are expecting one,
+            // and then filter it out in ReadFrameAsync above.
+
+            Assert.False(_ignoreSettingsAck);
+            _ignoreSettingsAck = true;
+        }
+
+        public void IgnoreWindowUpdates()
+        {
+            _ignoreWindowUpdates = true;
+        }
+
         // Accept connection and handle connection setup
-        public async Task EstablishConnectionAsync()
+        public async Task EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
         {
             await AcceptConnectionAsync();
 
@@ -184,19 +214,41 @@ namespace System.Net.Test.Common
             Frame receivedFrame = await ReadFrameAsync(TimeSpan.FromSeconds(30));
             Assert.Equal(FrameType.Settings, receivedFrame.Type);
             Assert.Equal(FrameFlags.None, receivedFrame.Flags);
+            Assert.Equal(0, receivedFrame.StreamId);
+
+            // Receive the initial client window update frame.
+            receivedFrame = await ReadFrameAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(FrameType.WindowUpdate, receivedFrame.Type);
+            Assert.Equal(FrameFlags.None, receivedFrame.Flags);
+            Assert.Equal(0, receivedFrame.StreamId);
 
             // Send the initial server settings frame.
-            Frame emptySettings = new Frame(0, FrameType.Settings, FrameFlags.None, 0);
-            await WriteFrameAsync(emptySettings).ConfigureAwait(false);
+            SettingsFrame settingsFrame = new SettingsFrame(settingsEntries);
+            await WriteFrameAsync(settingsFrame).ConfigureAwait(false);
 
             // Send the client settings frame ACK.
             Frame settingsAck = new Frame(0, FrameType.Settings, FrameFlags.Ack, 0);
             await WriteFrameAsync(settingsAck).ConfigureAwait(false);
 
-            // Receive the server settings frame ACK.
-            receivedFrame = await ReadFrameAsync(TimeSpan.FromSeconds(30));
-            Assert.Equal(FrameType.Settings, receivedFrame.Type);
-            Assert.True(receivedFrame.AckFlag);
+            // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
+            ExpectSettingsAck();
+        }
+
+        public async Task<int> ReadRequestHeaderAsync()
+        {
+            // Receive HEADERS frame for request.
+            Frame frame = await ReadFrameAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(FrameType.Headers, frame.Type);
+            Assert.Equal(FrameFlags.EndHeaders | FrameFlags.EndStream, frame.Flags);
+            return frame.StreamId;
+        }
+
+        public async Task SendDefaultResponseHeadersAsync(int streamId)
+        {
+            byte[] headers = new byte[] { 0x88 };   // Encoding for ":status: 200"
+
+            HeadersFrame headersFrame = new HeadersFrame(headers, FrameFlags.EndHeaders, 0, 0, 0, streamId);
+            await WriteFrameAsync(headersFrame).ConfigureAwait(false);
         }
 
         public async Task SendDefaultResponseAsync(int streamId)

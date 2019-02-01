@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class ResponseStreamTest : HttpClientTestBase
+    public abstract class ResponseStreamTest : HttpClientHandlerTestBase
     {
         private readonly ITestOutputHelper _output;
         

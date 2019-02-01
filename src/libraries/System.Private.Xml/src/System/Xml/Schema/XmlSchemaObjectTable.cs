@@ -8,7 +8,6 @@ namespace System.Xml.Schema
     using System.Collections.Generic;
     using System.Diagnostics;
 
-    /// <include file='doc\XmlSchemaObjectTable.uex' path='docs/doc[@for="XmlSchemaObjectTable"]/*' />
     public class XmlSchemaObjectTable
     {
         private Dictionary<XmlQualifiedName, XmlSchemaObject> _table = new Dictionary<XmlQualifiedName, XmlSchemaObject>();
@@ -88,7 +87,7 @@ namespace System.Xml.Schema
             }
             return -1;
         }
-        /// <include file='doc\XmlSchemaObjectTable.uex' path='docs/doc[@for="XmlSchemaObjectTable.Count"]/*' />
+
         public int Count
         {
             get
@@ -98,13 +97,11 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaObjectTable.uex' path='docs/doc[@for="XmlSchemaObjectTable.Contains"]/*' />
         public bool Contains(XmlQualifiedName name)
         {
             return _table.ContainsKey(name);
         }
 
-        /// <include file='doc\XmlSchemaObjectTable.uex' path='docs/doc[@for="XmlSchemaObjectTable.this"]/*' />
         public XmlSchemaObject this[XmlQualifiedName name]
         {
             get
@@ -118,7 +115,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaObjectTable.uex' path='docs/doc[@for="XmlSchemaObjectTable.Names"]/*' />
         public ICollection Names
         {
             get
@@ -127,7 +123,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaObjectTable.uex' path='docs/doc[@for="XmlSchemaObjectTable.Values"]/*' />
         public ICollection Values
         {
             get
@@ -136,7 +131,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaObjectTable.uex' path='docs/doc[@for="XmlSchemaObjectTable.GetEnumerator"]/*' />
         public IDictionaryEnumerator GetEnumerator()
         {
             return new XSODictionaryEnumerator(_entries, _table.Count, EnumeratorType.DictionaryEntry);

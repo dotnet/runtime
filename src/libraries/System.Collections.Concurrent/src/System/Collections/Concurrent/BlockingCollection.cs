@@ -468,7 +468,7 @@ nameof(boundedCapacity), boundedCapacity,
                         Debug.Assert((observedAdders + 1) <= (~COMPLETE_ADDING_ON_MASK), "The number of concurrent adders thread exceeded the maximum limit.");
                         break;
                     }
-                    spinner.SpinOnce();
+                    spinner.SpinOnce(sleep1Threshold: -1);
                 }
 
                 // This outer try/finally to workaround of repeating the decrement adders code 3 times, because we should decrement the adders if:
@@ -1506,7 +1506,7 @@ nameof(boundedCapacity), boundedCapacity,
                     CancelWaitingProducers();
                     return;
                 }
-                spinner.SpinOnce();
+                spinner.SpinOnce(sleep1Threshold: -1);
             }
         }
 

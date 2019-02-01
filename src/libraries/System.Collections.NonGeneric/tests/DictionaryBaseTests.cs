@@ -295,8 +295,8 @@ namespace System.Collections.Tests
             // SyncRoot should be the reference to the underlying dictionary, not to MyDictionary
             var dictBase = new MyDictionary();
             object syncRoot = dictBase.SyncRoot;
-            Assert.NotEqual(syncRoot, dictBase);
-            Assert.Equal(dictBase.SyncRoot, dictBase.SyncRoot);
+            Assert.NotSame(syncRoot, dictBase);
+            Assert.Same(dictBase.SyncRoot, dictBase.SyncRoot);
         }
 
         [Fact]

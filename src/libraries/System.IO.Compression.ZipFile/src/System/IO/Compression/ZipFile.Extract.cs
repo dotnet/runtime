@@ -72,7 +72,7 @@ namespace System.IO.Compression
         /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
         /// that is not supported.</exception>
         /// 
-        /// <param name="destinationArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
+        /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
         /// <param name="overwrite">True to indicate overwrite.</param> 
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwrite) => 
@@ -161,7 +161,7 @@ namespace System.IO.Compression
         /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
         /// that is not supported.</exception>
         /// 
-        /// <param name="destinationArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
+        /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
         /// <param name="overwrite">True to indicate overwrite.</param>
         /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.

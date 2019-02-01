@@ -6,20 +6,12 @@ namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaGroupRef.uex' path='docs/doc[@for="XmlSchemaGroupRef"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaGroupRef : XmlSchemaParticle
     {
         private XmlQualifiedName _refName = XmlQualifiedName.Empty;
         private XmlSchemaGroupBase _particle;
         private XmlSchemaGroup _refined;
 
-        /// <include file='doc\XmlSchemaGroupRef.uex' path='docs/doc[@for="XmlSchemaGroupRef.RefName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("ref")]
         public XmlQualifiedName RefName
         {
@@ -27,10 +19,6 @@ namespace System.Xml.Schema
             set { _refName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
-        /// <include file='doc\XmlSchemaGroupRef.uex' path='docs/doc[@for="XmlSchemaGroupRef.Particle"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaGroupBase Particle
         {

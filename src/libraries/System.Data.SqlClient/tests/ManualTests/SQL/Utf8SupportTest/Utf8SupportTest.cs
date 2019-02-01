@@ -4,7 +4,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class Utf8SupportTest
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void CheckSupportUtf8ConnectionProperty()
         {
             using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))

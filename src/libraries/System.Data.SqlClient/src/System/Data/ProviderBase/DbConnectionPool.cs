@@ -1021,7 +1021,7 @@ namespace System.Data.ProviderBase
                         Interlocked.Exchange(ref _pendingOpensWaiting, 0);
                     }
                 }
-            } while (_pendingOpens.TryPeek(out next));
+            } while (!_pendingOpens.IsEmpty);
         }
 
         internal bool TryGetConnection(DbConnection owningObject, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions, out DbConnectionInternal connection)

@@ -37,7 +37,6 @@ namespace System.Xml.Schema
         {
         }
 
-        /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException3"]/*' />
         public XmlSchemaInferenceException(string message, Exception innerException, int lineNumber, int linePosition) :
             base(message, innerException, lineNumber, linePosition)
         {

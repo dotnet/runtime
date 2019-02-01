@@ -460,6 +460,9 @@ namespace System.Net.Sockets
             // OK to dispose now.
             FreeInternals();
 
+            // FileStreams may be created when using SendPacketsAsync - this Disposes them.
+            FinishOperationSendPackets();
+
             // Don't bother finalizing later.
             GC.SuppressFinalize(this);
         }
@@ -597,6 +600,14 @@ namespace System.Net.Sockets
                     currentSocket.Dispose();
                     _currentSocket = null;
                 }
+            }
+
+            switch (_completedOperation)
+            {
+                case SocketAsyncOperation.SendPackets:
+                    // We potentially own FileStreams that need to be disposed.
+                    FinishOperationSendPackets();
+                    break;
             }
 
             Complete();

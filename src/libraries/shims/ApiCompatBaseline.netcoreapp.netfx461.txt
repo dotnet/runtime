@@ -6,7 +6,6 @@ Compat issues with assembly mscorlib:
 TypesMustExist : Type 'System.Configuration.Assemblies.AssemblyHash' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.IsolatedStorage.IsolatedStorageSecurityOptions' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.IsolatedStorage.IsolatedStorageSecurityState' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.DynamicILInfo' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.EventToken' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.ExceptionHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.FieldToken' does not exist in the implementation but it does exist in the contract.

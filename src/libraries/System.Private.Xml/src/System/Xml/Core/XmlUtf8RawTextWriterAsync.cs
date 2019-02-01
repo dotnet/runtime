@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// WARNING: This file is generated and should not be modified directly.
+// Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
+
 using System;
 using System.IO;
 using System.Xml;
@@ -27,13 +30,14 @@ namespace System.Xml
             }
         }
 
-        // Write the xml declaration.  This must be the first call.  
+        // Write the xml declaration.  This must be the first call.
         internal override async Task WriteXmlDeclarationAsync(XmlStandalone standalone)
         {
             CheckAsyncCall();
             // Output xml declaration only if user allows it and it was not already output
             if (!omitXmlDeclaration && !autoXmlDeclaration)
             {
+
                 await RawTextAsync("<?xml version=\"").ConfigureAwait(false);
 
                 // Version
@@ -106,7 +110,7 @@ namespace System.Xml
                 bufBytes[bufPos++] = (byte)']';
             }
 
-            bufBytes[this.bufPos++] = (byte)'>';
+            bufBytes[bufPos++] = (byte)'>';
         }
 
         // Serialize the beginning of an element start tag: "<prefix:localName"
@@ -116,8 +120,8 @@ namespace System.Xml
             Debug.Assert(localName != null && localName.Length > 0);
             Debug.Assert(prefix != null);
 
-            bufBytes[bufPos++] = (byte)'<';
             Task task;
+            bufBytes[bufPos++] = (byte)'<';
             if (prefix != null && prefix.Length != 0)
             {
                 task = RawTextAsync(prefix, ":", localName);
@@ -126,7 +130,6 @@ namespace System.Xml
             {
                 task = RawTextAsync(localName);
             }
-
             return task.CallVoidFuncWhenFinishAsync(thisRef => thisRef.WriteStartElementAsync_SetAttEndPos(), this);
         }
 
@@ -203,17 +206,19 @@ namespace System.Xml
             Task task;
             if (prefix != null && prefix.Length > 0)
             {
-                task = RawTextAsync(prefix, ":", localName, "=\"");
+                task = RawTextAsync(prefix, ":", localName);
             }
             else
             {
-                task = RawTextAsync(localName, "=\"");
+                task = RawTextAsync(localName);
             }
             return task.CallVoidFuncWhenFinishAsync(thisRef => thisRef.WriteStartAttribute_SetInAttribute(), this);
         }
 
         private void WriteStartAttribute_SetInAttribute()
         {
+            bufBytes[bufPos++] = (byte)'=';
+            bufBytes[bufPos++] = (byte)'"';
             inAttributeValue = true;
         }
 
@@ -234,9 +239,9 @@ namespace System.Xml
             CheckAsyncCall();
             Debug.Assert(prefix != null && namespaceName != null);
 
-            await this.WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(false);
-            await this.WriteStringAsync(namespaceName).ConfigureAwait(false);
-            await this.WriteEndNamespaceDeclarationAsync().ConfigureAwait(false);
+            await WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(false);
+            await WriteStringAsync(namespaceName).ConfigureAwait(false);
+            await WriteEndNamespaceDeclarationAsync().ConfigureAwait(false);
         }
 
         internal override async Task WriteStartNamespaceDeclarationAsync(string prefix)
@@ -492,7 +497,6 @@ namespace System.Xml
         {
             CheckAsyncCall();
             await FlushBufferAsync().ConfigureAwait(false);
-            await FlushEncoderAsync().ConfigureAwait(false);
 
             if (stream != null)
             {
@@ -545,13 +549,6 @@ namespace System.Xml
             }
         }
 
-        private Task FlushEncoderAsync()
-        {
-            // intentionally empty
-
-            return Task.CompletedTask;
-        }
-
         // Serialize text that is part of an attribute value.  The '&', '<', '>', and '"' characters
         // are entitized.
         protected unsafe int WriteAttributeTextBlockNoFlush(char* pSrc, char* pSrcEnd)
@@ -560,7 +557,7 @@ namespace System.Xml
 
             fixed (byte* pDstBegin = bufBytes)
             {
-                byte* pDst = pDstBegin + this.bufPos;
+                byte* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
                 for (;;)
@@ -648,7 +645,24 @@ namespace System.Xml
                             }
                             break;
                         default:
-                            if (XmlCharType.IsSurrogate(ch)) { pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst); pSrc += 2; } else if (ch <= 0x7F || ch >= 0xFFFE) { pDst = InvalidXmlChar(ch, pDst, true); pSrc++; } else { pDst = EncodeMultibyteUTF8(ch, pDst); pSrc++; };
+                            /* Surrogate character */
+                            if (XmlCharType.IsSurrogate(ch))
+                            {
+                                pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst);
+                                pSrc += 2;
+                            }
+                            /* Invalid XML character */
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
+                            {
+                                pDst = InvalidXmlChar(ch, pDst, true);
+                                pSrc++;
+                            }
+                            /* Multibyte UTF8 character */
+                            else
+                            {
+                                pDst = EncodeMultibyteUTF8(ch, pDst);
+                                pSrc++;
+                            }
                             continue;
                     }
                     pSrc++;
@@ -746,7 +760,7 @@ namespace System.Xml
 
             fixed (byte* pDstBegin = bufBytes)
             {
-                byte* pDst = pDstBegin + this.bufPos;
+                byte* pDst = pDstBegin + bufPos;
 
                 int ch = 0;
                 for (;;)
@@ -814,7 +828,7 @@ namespace System.Xml
                             {
                                 case NewLineHandling.Replace:
                                     // Replace "\r\n", or "\r" with NewLineChars
-                                    if (pSrc[1] == '\n')
+                                    if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
                                     {
                                         pSrc++;
                                     }
@@ -834,7 +848,24 @@ namespace System.Xml
                             }
                             break;
                         default:
-                            if (XmlCharType.IsSurrogate(ch)) { pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst); pSrc += 2; } else if (ch <= 0x7F || ch >= 0xFFFE) { pDst = InvalidXmlChar(ch, pDst, true); pSrc++; } else { pDst = EncodeMultibyteUTF8(ch, pDst); pSrc++; };
+                            /* Surrogate character */
+                            if (XmlCharType.IsSurrogate(ch))
+                            {
+                                pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst);
+                                pSrc += 2;
+                            }
+                            /* Invalid XML character */
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
+                            {
+                                pDst = InvalidXmlChar(ch, pDst, true);
+                                pSrc++;
+                            }
+                            /* Multibyte UTF8 character */
+                            else
+                            {
+                                pDst = EncodeMultibyteUTF8(ch, pDst);
+                                pSrc++;
+                            }
                             continue;
                     }
                     pSrc++;
@@ -967,16 +998,16 @@ namespace System.Xml
 
             fixed (byte* pDstBegin = bufBytes)
             {
-                byte* pDst = pDstBegin + this.bufPos;
+                byte* pDst = pDstBegin + bufPos;
                 char* pSrc = pSrcBegin;
 
                 int ch = 0;
                 for (;;)
                 {
                     byte* pDstEnd = pDst + (pSrcEnd - pSrc);
-                    if (pDstEnd > pDstBegin + this.bufLen)
+                    if (pDstEnd > pDstBegin + bufLen)
                     {
-                        pDstEnd = pDstBegin + this.bufLen;
+                        pDstEnd = pDstBegin + bufLen;
                     }
 
                     while (pDst < pDstEnd && ((ch = *pSrc) <= 0x7F))
@@ -1000,7 +1031,24 @@ namespace System.Xml
                         return (int)(pSrc - pRaw);
                     }
 
-                    if (XmlCharType.IsSurrogate(ch)) { pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst); pSrc += 2; } else if (ch <= 0x7F || ch >= 0xFFFE) { pDst = InvalidXmlChar(ch, pDst, false); pSrc++; } else { pDst = EncodeMultibyteUTF8(ch, pDst); pSrc++; };
+                    /* Surrogate character */
+                    if (XmlCharType.IsSurrogate(ch))
+                    {
+                        pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst);
+                        pSrc += 2;
+                    }
+                    /* Invalid XML character */
+                    else if (ch <= 0x7F || ch >= 0xFFFE)
+                    {
+                        pDst = InvalidXmlChar(ch, pDst, false);
+                        pSrc++;
+                    }
+                    /* Multibyte UTF8 character */
+                    else
+                    {
+                        pDst = EncodeMultibyteUTF8(ch, pDst);
+                        pSrc++;
+                    }
                 }
 
                 bufPos = (int)(pDst - pDstBegin);
@@ -1056,7 +1104,7 @@ namespace System.Xml
                 if (writeLen >= 0)
                 {
                     // If we were only able to write out some of the second string,
-                    // write out the remainder and then the other strings, 
+                    // write out the remainder and then the other strings,
                     return _RawTextAsync(text2, writeLen, text2.Length - writeLen, text3, text4);
                 }
             }
@@ -1089,10 +1137,10 @@ namespace System.Xml
         }
 
         private async Task _RawTextAsync(
-            string text, int curIndex, int leftCount,
+            string text1, int curIndex1, int leftCount1,
             string text2 = null, string text3 = null, string text4 = null)
         {
-            Debug.Assert(text != null);
+            Debug.Assert(text1 != null);
             Debug.Assert(text2 != null || (text3 == null && text4 == null));
             Debug.Assert(text3 != null || (text4 == null));
 
@@ -1101,9 +1149,9 @@ namespace System.Xml
             int writeLen = 0;
             do
             {
-                writeLen = RawTextNoFlush(text, curIndex, leftCount);
-                curIndex += writeLen;
-                leftCount -= writeLen;
+                writeLen = RawTextNoFlush(text1, curIndex1, leftCount1);
+                curIndex1 += writeLen;
+                leftCount1 -= writeLen;
                 if (writeLen >= 0)
                 {
                     await FlushBufferAsync().ConfigureAwait(false);
@@ -1172,7 +1220,7 @@ namespace System.Xml
                             if (newLineHandling == NewLineHandling.Replace)
                             {
                                 // Normalize "\r\n", or "\r" to NewLineChars
-                                if (pSrc[1] == '\n')
+                                if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
                                 {
                                     pSrc++;
                                 }
@@ -1201,7 +1249,24 @@ namespace System.Xml
                             }
                             break;
                         default:
-                            if (XmlCharType.IsSurrogate(ch)) { pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst); pSrc += 2; } else if (ch <= 0x7F || ch >= 0xFFFE) { pDst = InvalidXmlChar(ch, pDst, false); pSrc++; } else { pDst = EncodeMultibyteUTF8(ch, pDst); pSrc++; };
+                            /* Surrogate character */
+                            if (XmlCharType.IsSurrogate(ch))
+                            {
+                                pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst);
+                                pSrc += 2;
+                            }
+                            /* Invalid XML character */
+                            else if (ch <= 0x7F || ch >= 0xFFFE)
+                            {
+                                pDst = InvalidXmlChar(ch, pDst, false);
+                                pSrc++;
+                            }
+                            /* Multibyte UTF8 character */
+                            else
+                            {
+                                pDst = EncodeMultibyteUTF8(ch, pDst);
+                                pSrc++;
+                            }
                             continue;
                     }
                     pSrc++;
@@ -1363,7 +1428,7 @@ namespace System.Xml
                                 pDst++;
                                 if (ch == stopChar)
                                 {
-                                    // Processing instruction: insert space between adjacent '?' and '>' 
+                                    // Processing instruction: insert space between adjacent '?' and '>'
                                     if (pSrc + 1 < pSrcEnd && *(pSrc + 1) == '>')
                                     {
                                         *pDst = (byte)' ';
@@ -1379,7 +1444,7 @@ namespace System.Xml
                                 if (newLineHandling == NewLineHandling.Replace)
                                 {
                                     // Normalize "\r\n", or "\r" to NewLineChars
-                                    if (pSrc[1] == '\n')
+                                    if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
                                     {
                                         pSrc++;
                                     }
@@ -1414,7 +1479,24 @@ namespace System.Xml
                                 pDst++;
                                 break;
                             default:
-                                if (XmlCharType.IsSurrogate(ch)) { pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst); pSrc += 2; } else if (ch <= 0x7F || ch >= 0xFFFE) { pDst = InvalidXmlChar(ch, pDst, false); pSrc++; } else { pDst = EncodeMultibyteUTF8(ch, pDst); pSrc++; };
+                                /* Surrogate character */
+                                if (XmlCharType.IsSurrogate(ch))
+                                {
+                                    pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst);
+                                    pSrc += 2;
+                                }
+                                /* Invalid XML character */
+                                else if (ch <= 0x7F || ch >= 0xFFFE)
+                                {
+                                    pDst = InvalidXmlChar(ch, pDst, false);
+                                    pSrc++;
+                                }
+                                /* Multibyte UTF8 character */
+                                else
+                                {
+                                    pDst = EncodeMultibyteUTF8(ch, pDst);
+                                    pSrc++;
+                                }
                                 continue;
                         }
                         pSrc++;
@@ -1543,7 +1625,7 @@ namespace System.Xml
                                 if (newLineHandling == NewLineHandling.Replace)
                                 {
                                     // Normalize "\r\n", or "\r" to NewLineChars
-                                    if (pSrc[1] == '\n')
+                                    if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
                                     {
                                         pSrc++;
                                     }
@@ -1580,7 +1662,24 @@ namespace System.Xml
                                 pDst++;
                                 break;
                             default:
-                                if (XmlCharType.IsSurrogate(ch)) { pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst); pSrc += 2; } else if (ch <= 0x7F || ch >= 0xFFFE) { pDst = InvalidXmlChar(ch, pDst, false); pSrc++; } else { pDst = EncodeMultibyteUTF8(ch, pDst); pSrc++; };
+                                /* Surrogate character */
+                                if (XmlCharType.IsSurrogate(ch))
+                                {
+                                    pDst = EncodeSurrogate(pSrc, pSrcEnd, pDst);
+                                    pSrc += 2;
+                                }
+                                /* Invalid XML character */
+                                else if (ch <= 0x7F || ch >= 0xFFFE)
+                                {
+                                    pDst = InvalidXmlChar(ch, pDst, false);
+                                    pSrc++;
+                                }
+                                /* Multibyte UTF8 character */
+                                else
+                                {
+                                    pDst = EncodeMultibyteUTF8(ch, pDst);
+                                    pSrc++;
+                                }
                                 continue;
                         }
                         pSrc++;

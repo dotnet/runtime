@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// TODO: Delete this file. https://github.com/dotnet/coreclr/issues/21932
+
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -67,7 +69,7 @@ namespace System
             var builder = new ValueStringBuilder(initialBuffer);
 
             uint length;
-            while ((length = Interop.Kernel32.ExpandEnvironmentStringsW(name, ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
+            while ((length = Interop.Kernel32.ExpandEnvironmentStrings(name, ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
             {
                 builder.EnsureCapacity((int)length);
             }

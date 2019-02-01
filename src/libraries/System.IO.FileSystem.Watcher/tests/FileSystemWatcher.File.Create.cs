@@ -27,37 +27,41 @@ namespace System.IO.Tests
             }
         }
 
-        [OuterLoop]
         [Fact]
-        public void FileSystemWatcher_File_Create_MultipleWatchers_ExecutionContextFlowed()
+        [OuterLoop]
+        public void FileSystemWatcher_File_Create_EnablingDisablingNotAffectRaisingEvent()
         {
             ExecuteWithRetry(() =>
-            {
-                using (var watcher1 = new FileSystemWatcher(TestDirectory))
-                using (var watcher2 = new FileSystemWatcher(TestDirectory))
+            {            
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var watcher = new FileSystemWatcher(testDirectory.Path))
                 {
-                    string fileName = Path.Combine(TestDirectory, "file");
-                    watcher1.Filter = Path.GetFileName(fileName);
-                    watcher2.Filter = Path.GetFileName(fileName);
+                    string fileName = Path.Combine(testDirectory.Path, "file");
+                    watcher.Filter = Path.GetFileName(fileName);
 
-                    var local = new AsyncLocal<int>();
+                    int numberOfRaisedEvents = 0;
+                    AutoResetEvent autoResetEvent = new AutoResetEvent(false);
+                    FileSystemEventHandler handler = (o, e) =>
+                    {
+                        Interlocked.Increment(ref numberOfRaisedEvents);
+                        autoResetEvent.Set();
+                    };
 
-                    var tcs1 = new TaskCompletionSource<int>();
-                    var tcs2 = new TaskCompletionSource<int>();
-                    watcher1.Created += (s, e) => tcs1.SetResult(local.Value);
-                    watcher2.Created += (s, e) => tcs2.SetResult(local.Value);
+                    watcher.Created += handler;
 
-                    local.Value = 42;
-                    watcher1.EnableRaisingEvents = true;
-                    local.Value = 84;
-                    watcher2.EnableRaisingEvents = true;
-                    local.Value = 168;
+                    for (int i = 0; i < 100; i++)
+                    {
+                        watcher.EnableRaisingEvents = true;
+                        watcher.EnableRaisingEvents = false;
+                    }
 
+                    watcher.EnableRaisingEvents = true;
+
+                    // this should raise one and only one event
                     File.Create(fileName).Dispose();
-                    Task.WaitAll(new[] { tcs1.Task, tcs2.Task }, WaitForExpectedEventTimeout);
-
-                    Assert.Equal(42, tcs1.Task.Result);
-                    Assert.Equal(84, tcs2.Task.Result);
+                    Assert.True(autoResetEvent.WaitOne(WaitForExpectedEventTimeout_NoRetry));
+                    Assert.False(autoResetEvent.WaitOne(SubsequentExpectedWait));
+                    Assert.True(numberOfRaisedEvents == 1);
                 }
             });
         }

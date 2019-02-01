@@ -3,7 +3,6 @@
     <ProjectGuid>{E0C4E267-B1D6-463B-9C95-8C0D3C335924}</ProjectGuid>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_X509Certificate2UI</GeneratePlatformNotSupportedAssemblyMessage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1574</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -28,6 +27,30 @@
     <Compile Include="$(CommonPath)\Interop\Windows\CryptUI\Interop.CryptUIDlgCertificate.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CryptUIDlgCertificate.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.MessageBeep.cs">
+      <Link>Common\Interop\Windows\User32\Interop.MessageBeep.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.MMCKINFO.cs">
+      <Link>Common\Interop\Windows\winmm\Interop.MMCKINFO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioAscend.cs">
+      <Link>Common\Interop\Windows\winmm\Interop.mmioAscend.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioClose.cs">
+      <Link>Common\Interop\Windows\winmm\Interop.mmioClose.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioDescend.cs">
+      <Link>Common\Interop\Windows\winmm\Interop.mmioDescend.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioRead.cs">
+      <Link>Common\Interop\Windows\winmm\Interop.mmioRead.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioOpen.cs">
+      <Link>Common\Interop\Windows\winmm\Interop.mmioOpen.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.PlaySound.cs">
+      <Link>Common\Interop\Windows\winmm\Interop.PlaySound.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -45,21 +68,30 @@
     <Compile Include="System\Drawing\ImageConverter.cs" />
     <Compile Include="System\Drawing\ImageFormatConverter.cs" />
     <Compile Include="System\Drawing\Printing\MarginsConverter.cs" />
+    <Compile Include="System\Media\SoundPlayer.cs" />
+    <Compile Include="System\Media\SystemSound.cs" />
+    <Compile Include="System\Media\SystemSounds.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.ComponentModel.EventBasedAsync" />
+    <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Drawing.Common" />
+    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Requests" />
     <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

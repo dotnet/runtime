@@ -54,8 +54,7 @@ namespace System.Collections.Generic
         private IComparer<T> comparer;
         private int count;
         private int version;
-        [NonSerialized]
-        private object _syncRoot;
+
         private SerializationInfo siInfo; // A temporary variable which we need during deserialization.
 
         private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
@@ -293,18 +292,7 @@ namespace System.Collections.Generic
 
         bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    Interlocked.CompareExchange(ref _syncRoot, new object(), null);
-                }
-
-                return _syncRoot;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
         #endregion
 
@@ -1461,17 +1449,10 @@ namespace System.Collections.Generic
             int originalLastIndex = Count;
             int intArrayLength = BitHelper.ToIntArrayLength(originalLastIndex);
 
-            BitHelper bitHelper;
-            if (intArrayLength <= StackAllocThreshold)
-            {
-                int* bitArrayPtr = stackalloc int[intArrayLength];
-                bitHelper = new BitHelper(bitArrayPtr, intArrayLength);
-            }
-            else
-            {
-                int[] bitArray = new int[intArrayLength];
-                bitHelper = new BitHelper(bitArray, intArrayLength);
-            }
+            Span<int> span = stackalloc int[StackAllocThreshold];
+            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
+                new BitHelper(span.Slice(0, intArrayLength), clear: true) :
+                new BitHelper(new int[intArrayLength], clear: false);
 
             // count of items in other not found in this
             int UnfoundCount = 0;

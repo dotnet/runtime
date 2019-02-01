@@ -108,7 +108,7 @@ namespace System.Security.Cryptography
             if (keyBlob == null)
                 throw new ArgumentNullException(nameof(keyBlob));
 
-            return Import(keyBlob.AsSpan(), curveName, format, provider);
+            return Import(new ReadOnlySpan<byte>(keyBlob), curveName, format, provider);
         }
 
         internal static CngKey Import(

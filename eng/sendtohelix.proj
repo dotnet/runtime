@@ -1,0 +1,125 @@
+<Project InitialTargets="BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
+  <PropertyGroup>
+    <!-- Set helix source -->
+    <HelixSourcePrefix>pr/</HelixSourcePrefix>
+    <HelixSourcePrefix Condition="'$(OfficialBuildId)' != ''">official/</HelixSourcePrefix>
+    <HelixSource Condition="'$(HelixSource)' == ''">$(HelixSourcePrefix)dotnet/corefx</HelixSource>
+    <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)</HelixSource>
+    
+    <!-- Set helix build to build number if available -->
+    <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
+    <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
+
+    <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">600</TimeoutInSeconds>
+    <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
+    
+    <!-- We need to enable xunit reporter so that it parses test results
+         Package testing doesn't run on xunit. -->
+    <EnableXunitReporter Condition="'$(TargetGroup)' != 'AllConfigurations'">true</EnableXunitReporter>
+    
+    <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildConfiguration).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(TargetGroup)' == 'AllConfigurations'">$(TestArchiveRuntimeRoot)packages-testPayload-$(ConfigurationGroup).zip</TestArchiveRuntimeFile>
+
+    <!-- The helix runtime payload and the tests to run -->
+    <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
+    <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
+
+    <HelixConfiguration>$(ConfigurationGroup)</HelixConfiguration>
+    <HelixArchitecture>$(ArchGroup)</HelixArchitecture>
+
+    <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
+    test run name will be displayed as $(BuildConfiguration)-$(HelixTargetQueue) -->
+    <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
+    <TestRunNamePrefix Condition="'$(IsPackageTesting)' == 'true'">PackageTests-$(ConfigurationGroup)-$(ArchGroup)</TestRunNamePrefix>
+
+    <MaxRetryCount Condition="'$(MaxRetryCount)' == ''">4</MaxRetryCount>
+  </PropertyGroup>
+
+  <!-- If mission control reports a test failure then fail the build whenever helix wait runs. -->
+  <PropertyGroup Condition="'$(FailOnMissionControlTestFailure)' == ''">
+    <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
+    <FailOnMissionControlTestFailure Condition="'$(OfficialBuildId)' != ''">false</FailOnMissionControlTestFailure>
+  </PropertyGroup>
+
+  <!-- If mission control reports a test crash (fireball) then fail the build on helix wait -->
+  <PropertyGroup Condition="'$(FailOnWorkItemFailure)' == ''">
+    <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
+    <FailOnWorkItemFailure Condition="'$(OfficialBuildId)' != ''">false</FailOnWorkItemFailure>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HelixType)' == ''">
+    <!-- For PRs we want helixtype to be the same for all frameworks except package testing-->
+    <HelixType>test/functional/cli/</HelixType>
+    <HelixType Condition="'$(Outerloop)' == 'true' AND '$(OfficialBuildId)' == ''">$(HelixType)/outerloop/</HelixType>
+    <HelixType Condition="'$(TargetGroup)' == 'AllConfigurations'">test/functional/packaging/</HelixType>
+    <HelixType Condition="'$(TargetGroup)' == 'netfx' AND '$(OfficialBuildId)' != ''">test/functional/desktop/cli/</HelixType>
+    <HelixType Condition="'$(TargetGroup)' == 'uap' AND '$(OfficialBuildId)' != ''">test/functional/uwp/</HelixType>
+    <HelixType Condition="'$(TargetGroup)' == 'uapaot' AND '$(OfficialBuildId)' != ''">test/functional/ilc/</HelixType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HelixCommand)' == '' AND '$(TargetGroup)' == 'AllConfigurations'">
+    <HelixPreCommands>set DOTNET_CLI_TELEMETRY_OPTOUT=1;set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1;set DOTNET_MULTILEVEL_LOOKUP=0</HelixPreCommands>
+
+    <HelixCommand>%HELIX_CORRELATION_PAYLOAD%\tools\dotnet.exe msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\</HelixCommand>
+  </PropertyGroup>
+
+
+  <PropertyGroup Condition="'$(HelixCommand)' == ''">
+    <!-- For windows we need to use call, since the command is going to be called from a bat script created by Helix
+    and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
+    if we don't use call, then we cause the parent script to exit, and anything after will not be executed. -->
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh $HELIX_CORRELATION_PAYLOAD</HelixCommand>
+  </PropertyGroup>
+
+  <!-- We need to include all dlls in the runtime path as inputs to make it really incremental
+  if we use the root folder, if a dll is updated, the folder's timestamp is not updated, therefore skipped. -->
+  <ItemGroup>
+    <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
+  </ItemGroup>
+
+  <!-- Add global tools to runtime -->
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <TestArchiveRuntimeDependencies Include="$(GlobalToolsDir)**\*.*" />
+  </ItemGroup>
+
+  <Target Name="CompressRuntimeDirectory"
+          Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependencies)"
+          Outputs="$(TestArchiveRuntimeFile)"
+          Condition="'$(TargetGroup)' != 'AllConfigurations'">
+
+    <!-- Copy additional test dependencies. -->
+    <Copy SourceFiles="@(TestArchiveRuntimeDependencies)"
+          DestinationFolder="$(TestHostRootPath)\%(RecursiveDir)"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          Retries="3"
+          RetryDelayMilliseconds="300" />
+
+    <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
+    <ZipDirectory
+        SourceDirectory="$(TestHostRootPath)"
+        DestinationFile="$(TestArchiveRuntimeFile)"
+        Overwrite="true" />
+
+  </Target>
+
+  <Target Name="BuildHelixWorkItems"
+          DependsOnTargets="CompressRuntimeDirectory">
+    <ItemGroup>
+
+      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
+
+      <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+
+      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_timeoutSpan)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+</Project>

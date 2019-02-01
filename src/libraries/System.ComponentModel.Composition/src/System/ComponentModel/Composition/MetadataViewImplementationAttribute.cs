@@ -14,7 +14,7 @@ namespace System.ComponentModel.Composition
         ///     Initializes a new instance of the <see cref="MetadataViewImplementationAttribute"/> class, declaring the
         ///     type that holds the implementation for the view.
         /// </summary>
-        /// <param name="typeOfImplementation">
+        /// <param name="implementationType">
         ///     A <see cref="Type"/> for the implementation of the MetadataView.
         /// </param>
         /// <remarks>

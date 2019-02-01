@@ -37,42 +37,42 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             BaseConnString = builder.ConnectionString;
         } 
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void OneByteSplitTest()
         {
             SplitPacketSize = 1;
             OpenConnection();
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void AlmostFullHeaderTest()
         {
             SplitPacketSize = 7;
             OpenConnection();
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void FullHeaderTest()
         {
             SplitPacketSize = 8;
             OpenConnection();
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void HeaderPlusOneTest()
         {
             SplitPacketSize = 9;
             OpenConnection();
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void MARSSplitTest()
         {
             SplitPacketSize = 1;
             OpenMarsConnection("select * from Orders");
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void MARSReplicateTest()
         {
             SplitPacketSize = 1;

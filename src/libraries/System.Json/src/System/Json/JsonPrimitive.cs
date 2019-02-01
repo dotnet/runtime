@@ -159,8 +159,8 @@ namespace System.Json
 
                 case JsonType.Number:
                     string s = _value is float || _value is double ?
-                        ((IFormattable)_value).ToString("R", NumberFormatInfo.InvariantInfo) : // Use "round-trip" format
-                        ((IFormattable)_value).ToString("G", NumberFormatInfo.InvariantInfo);
+                        ((IFormattable)_value).ToString("R", CultureInfo.InvariantCulture) : // Use "round-trip" format
+                        ((IFormattable)_value).ToString("G", CultureInfo.InvariantCulture);
                     return s == "NaN" || s == "Infinity" || s == "-Infinity" ?
                         "\"" + s + "\"" :
                         s;

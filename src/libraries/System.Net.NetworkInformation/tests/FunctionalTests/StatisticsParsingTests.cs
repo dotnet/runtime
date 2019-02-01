@@ -198,23 +198,23 @@ namespace System.Net.NetworkInformation.Tests
             FileUtil.NormalizeLineEndings("NetworkFiles/dev", fileName);
             IPInterfaceStatisticsTable table = StringParsingHelpers.ParseInterfaceStatisticsTableFromFile(fileName, "wlan0");
 
-            Assert.Equal(26622u, table.BytesReceived);
-            Assert.Equal(394u, table.PacketsReceived);
-            Assert.Equal(2u, table.ErrorsReceived);
-            Assert.Equal(4u, table.IncomingPacketsDropped);
-            Assert.Equal(6u, table.FifoBufferErrorsReceived);
-            Assert.Equal(8u, table.PacketFramingErrorsReceived);
-            Assert.Equal(10u, table.CompressedPacketsReceived);
-            Assert.Equal(12u, table.MulticastFramesReceived);
+            Assert.Equal(26622L, table.BytesReceived);
+            Assert.Equal(394L, table.PacketsReceived);
+            Assert.Equal(2L, table.ErrorsReceived);
+            Assert.Equal(4L, table.IncomingPacketsDropped);
+            Assert.Equal(6L, table.FifoBufferErrorsReceived);
+            Assert.Equal(8L, table.PacketFramingErrorsReceived);
+            Assert.Equal(10L, table.CompressedPacketsReceived);
+            Assert.Equal(12L, table.MulticastFramesReceived);
 
-            Assert.Equal(27465u, table.BytesTransmitted);
-            Assert.Equal(208u, table.PacketsTransmitted);
-            Assert.Equal(1u, table.ErrorsTransmitted);
-            Assert.Equal(2u, table.OutgoingPacketsDropped);
-            Assert.Equal(3u, table.FifoBufferErrorsTransmitted);
-            Assert.Equal(4u, table.CollisionsDetected);
-            Assert.Equal(5u, table.CarrierLosses);
-            Assert.Equal(6u, table.CompressedPacketsTransmitted);
+            Assert.Equal(429496730000L, table.BytesTransmitted);
+            Assert.Equal(208L, table.PacketsTransmitted);
+            Assert.Equal(1L, table.ErrorsTransmitted);
+            Assert.Equal(2L, table.OutgoingPacketsDropped);
+            Assert.Equal(3L, table.FifoBufferErrorsTransmitted);
+            Assert.Equal(4L, table.CollisionsDetected);
+            Assert.Equal(5L, table.CarrierLosses);
+            Assert.Equal(6L, table.CompressedPacketsTransmitted);
         }
 
         [Fact]
@@ -224,23 +224,23 @@ namespace System.Net.NetworkInformation.Tests
             FileUtil.NormalizeLineEndings("NetworkFiles/dev", fileName);
             IPInterfaceStatisticsTable table = StringParsingHelpers.ParseInterfaceStatisticsTableFromFile(fileName, "lo");
 
-            Assert.Equal(uint.MaxValue, table.BytesReceived);
-            Assert.Equal(302u, table.PacketsReceived);
-            Assert.Equal(0u, table.ErrorsReceived);
-            Assert.Equal(0u, table.IncomingPacketsDropped);
-            Assert.Equal(0u, table.FifoBufferErrorsReceived);
-            Assert.Equal(0u, table.PacketFramingErrorsReceived);
-            Assert.Equal(0u, table.CompressedPacketsReceived);
-            Assert.Equal(0u, table.MulticastFramesReceived);
+            Assert.Equal(long.MaxValue, table.BytesReceived);
+            Assert.Equal(302L, table.PacketsReceived);
+            Assert.Equal(0L, table.ErrorsReceived);
+            Assert.Equal(0L, table.IncomingPacketsDropped);
+            Assert.Equal(0L, table.FifoBufferErrorsReceived);
+            Assert.Equal(0L, table.PacketFramingErrorsReceived);
+            Assert.Equal(0L, table.CompressedPacketsReceived);
+            Assert.Equal(0L, table.MulticastFramesReceived);
 
-            Assert.Equal(30008u, table.BytesTransmitted);
-            Assert.Equal(302u, table.PacketsTransmitted);
-            Assert.Equal(0u, table.ErrorsTransmitted);
-            Assert.Equal(0u, table.OutgoingPacketsDropped);
-            Assert.Equal(0u, table.FifoBufferErrorsTransmitted);
-            Assert.Equal(0u, table.CollisionsDetected);
-            Assert.Equal(0u, table.CarrierLosses);
-            Assert.Equal(0u, table.CompressedPacketsTransmitted);
+            Assert.Equal(30008L, table.BytesTransmitted);
+            Assert.Equal(302L, table.PacketsTransmitted);
+            Assert.Equal(0L, table.ErrorsTransmitted);
+            Assert.Equal(0L, table.OutgoingPacketsDropped);
+            Assert.Equal(0L, table.FifoBufferErrorsTransmitted);
+            Assert.Equal(0L, table.CollisionsDetected);
+            Assert.Equal(0L, table.CarrierLosses);
+            Assert.Equal(0L, table.CompressedPacketsTransmitted);
         }
     }
 }

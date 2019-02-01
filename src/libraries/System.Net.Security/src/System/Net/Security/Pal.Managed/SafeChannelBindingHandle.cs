@@ -11,18 +11,6 @@ namespace System.Net.Security
 {
     internal sealed class SafeChannelBindingHandle : ChannelBinding
     {
-        [StructLayout(LayoutKind.Sequential)]
-        private struct SecChannelBindings
-        {
-            internal int InitiatorLength;
-            internal int InitiatorOffset;
-            internal int AcceptorAddrType;
-            internal int AcceptorLength;
-            internal int AcceptorOffset;
-            internal int ApplicationDataLength;
-            internal int ApplicationDataOffset;
-        }
-
         private const int CertHashMaxSize = 128;
         private static readonly byte[] s_tlsServerEndPointByteArray = Encoding.UTF8.GetBytes("tls-server-end-point:");
         private static readonly byte[] s_tlsUniqueByteArray = Encoding.UTF8.GetBytes("tls-unique:");
