@@ -230,7 +230,19 @@
                 {
                     "name": "System.ComponentModel.Tests.EnumConverterTests.ConvertTo_ULongFlagsEnum_EnumArray",
                     "reason": "System.OverflowException : Value was either too large or too small for an Int64."
-                }
+                },
+                {
+                    "name": "System.ComponentModel.TypeConverterTests.SizeFConverterTests.ConvertTo",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.ComponentModel.TypeConverterTests.SizeFConverterTests.ConvertToString",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.ComponentModel.TypeConverterTests.SizeFConverterTests.ConvertToInvariantString",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
             ]
         }
     },
@@ -923,7 +935,23 @@
                 {
                     "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToULong_InvalidObject_ThrowsInvalidCastException",
                     "reason" : "outdated"
-                }
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToSingle_String_ReturnsExpected",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToDouble_String_ReturnsExpected",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToSingle_Object_ReturnsExpected",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToDouble_Object_ReturnsExpected",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
             ]
         }
     },
@@ -1025,7 +1053,28 @@
                 {
                     "name": "System.Tests.TimeSpanTests.Parse",
                     "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
-                }
+                },
+                
+                {
+                    "name": "System.Tests.SingleTests.Test_ToString",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.Tests.SingleTests.TryFormat",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.Tests.DoubleTests.Test_ToString",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.Tests.DoubleTests.TryFormat",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Total_Days_Hours_Minutes_Seconds_Milliseconds",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
             ]
         }
     },
@@ -1070,6 +1119,10 @@
                     "name": "System.Json.Tests.JsonPrimitiveTests.ToString_DateTimeOffset",
                     "reason": "waiting on corefx test update"
                 },
+                {
+                    "name": "System.Json.Tests.JsonValueTests.Parse_IntegralBoundaries_LessThanMaxDouble_Works",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
             ]
         }
     },
@@ -1111,8 +1164,112 @@
                 {
                     "name": "System.Linq.Expressions.Tests.BindTests.StaticReadonlyField",
                     "reason": "https://github.com/dotnet/coreclr/pull/20886 and https://github.com/dotnet/corefx/pull/33413"
-                }
+                },
+                {
+                    "name": "System.Linq.Expressions.Tests.StackSpillerTests.Spill_Optimizations_LiteralField",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
             ]
         }
-    }
+    },
+    {
+        "name": "System.Xml.XmlSerializer.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "XmlSerializerTests.Xml_FloatAsRoot",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+            ]
+        }
+    },
+    {
+        "name": "System.Xml.XmlSerializer.ReflectionOnly.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "XmlSerializerTests.Xml_FloatAsRoot",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+            ]
+        }
+    },
+    {
+        "name": "System.Runtime.Serialization.Xml.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "DataContractSerializerTests.DCS_FloatAsRoot",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "DataContractSerializerTests.DCS_BasicPerSerializerRoundTripAndCompare_EnumStruct",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "DataContractSerializerTests.DCS_BasicRoundTripResolvePrimitiveTypes",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+            ]
+        }
+    },
+    {
+        "name": "System.Runtime.Serialization.Xml.ReflectionOnly.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "DataContractSerializerTests.DCS_FloatAsRoot",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "DataContractSerializerTests.DCS_BasicPerSerializerRoundTripAndCompare_EnumStruct",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "DataContractSerializerTests.DCS_BasicRoundTripResolvePrimitiveTypes",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+            ]
+        }
+    },
+    {
+        "name": "System.Runtime.Serialization.Json.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "DataContractJsonSerializerTests.DCJS_FloatAsRoot",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+            ]
+        }
+    },
+    {
+        "name": "System.Runtime.Serialization.Json.ReflectionOnly.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "DataContractJsonSerializerTests.DCJS_FloatAsRoot",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22040"
+                },
+            ]
+        }
+    },
 ]
