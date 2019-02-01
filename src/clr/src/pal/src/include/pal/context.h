@@ -486,7 +486,7 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
 #elif defined(_ARM64_) || defined(_ARM_)
     return pContext->Pc;
 #else
-#error don't know how to get the program counter for this architecture
+#error "don't know how to get the program counter for this architecture"
 #endif
 }
 
@@ -499,7 +499,7 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
 #elif defined(_ARM64_) || defined(_ARM_)
     pContext->Pc = pc;
 #else
-#error don't know how to set the program counter for this architecture
+#error "don't know how to set the program counter for this architecture"
 #endif
 }
 
@@ -514,7 +514,7 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
 #elif defined(_ARM64_)
     return pContext->Fp;
 #else
-#error don't know how to get the frame pointer for this architecture
+#error "don't know how to get the frame pointer for this architecture"
 #endif
 }
 

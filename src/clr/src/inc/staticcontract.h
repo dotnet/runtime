@@ -15,6 +15,14 @@
 #define SCAN_WIDEN2(x) L ## x
 #define SCAN_WIDEN(x) SCAN_WIDEN2(x)
 
+#ifndef NOINLINE
+#if __GNUC__
+#define NOINLINE __attribute__((noinline))
+#else
+#define NOINLINE __declspec(noinline)
+#endif
+#endif
+
 //
 // PDB annotations for the static contract analysis tool. These are seperated
 // from Contract.h to allow their inclusion in any part of the system.
@@ -211,7 +219,7 @@ namespace StaticContract
 {
     struct ScanThrowMarkerStandard
     {
-        __declspec(noinline) ScanThrowMarkerStandard()
+        NOINLINE ScanThrowMarkerStandard()
         {
             METHOD_CANNOT_BE_FOLDED_DEBUG;
             STATIC_CONTRACT_THROWS;
@@ -225,7 +233,7 @@ namespace StaticContract
 
     struct ScanThrowMarkerTerminal
     {
-        __declspec(noinline) ScanThrowMarkerTerminal()
+        NOINLINE ScanThrowMarkerTerminal()
         {
             METHOD_CANNOT_BE_FOLDED_DEBUG;
         }
@@ -237,7 +245,7 @@ namespace StaticContract
 
     struct ScanThrowMarkerIgnore
     {
-        __declspec(noinline) ScanThrowMarkerIgnore()
+        NOINLINE ScanThrowMarkerIgnore()
         {
             METHOD_CANNOT_BE_FOLDED_DEBUG;
         }
@@ -283,21 +291,21 @@ template <UINT COUNT>
 class BlockMarker
 {
 public:
-    __declspec(noinline) void MarkBlock()
+    NOINLINE void MarkBlock()
     {
         ANNOTATION_MARK_BLOCK_ANNOTATION;
         METHOD_CANNOT_BE_FOLDED_DEBUG;
         return;
     }
 
-    __declspec(noinline) void UseMarkedBlockAnnotation()
+    NOINLINE void UseMarkedBlockAnnotation()
     {
         ANNOTATION_USE_BLOCK_ANNOTATION;
         METHOD_CANNOT_BE_FOLDED_DEBUG;
         return;
     }
 
-    __declspec(noinline) void EndUseMarkedBlockAnnotation()
+    NOINLINE void EndUseMarkedBlockAnnotation()
     {
         ANNOTATION_END_USE_BLOCK_ANNOTATION;
         METHOD_CANNOT_BE_FOLDED_DEBUG;

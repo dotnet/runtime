@@ -167,7 +167,7 @@ typedef int __ptrace_request;
 	ASSIGN_REG(X28)
 
 #else
-#error Don't know how to assign registers on this architecture
+#error "Don't know how to assign registers on this architecture"
 #endif
 
 #define ASSIGN_ALL_REGS     \
