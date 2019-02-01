@@ -74,6 +74,8 @@ internal static partial class Interop
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
             bool isNtlmOnly,
+            IntPtr cbt,
+            int cbtSize,
             SafeGssNameHandle targetName,
             uint reqFlags,
             byte[] inputBytes,
