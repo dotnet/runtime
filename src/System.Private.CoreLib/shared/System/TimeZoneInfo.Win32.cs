@@ -38,7 +38,6 @@ namespace System
 
         private const int MaxKeyLength = 255;
 
-#pragma warning disable 0420
         private sealed partial class CachedData
         {
             private static TimeZoneInfo GetCurrentOneYearLocal()
@@ -66,7 +65,6 @@ namespace System
                 return oneYearLocFromUtc;
             }
         }
-#pragma warning restore 0420
 
         private sealed class OffsetAndRule
         {
