@@ -13,7 +13,10 @@ jobs:
       # For public or PR jobs, use the hosted pool.  For internal jobs use the internal pool.
       # Will eventually change this to two BYOC pools.
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        name: Hosted VS2017
+        ${{ if contains(parameters.targetArchitecture, 'arm') }}:
+          name: dotnet-external-temp
+        ${{ if not(contains(parameters.targetArchitecture, 'arm')) }}:
+          name: Hosted VS2017
       ${{ if ne(variables['System.TeamProject'], 'public') }}:
         name: dotnet-internal-temp
     strategy:
