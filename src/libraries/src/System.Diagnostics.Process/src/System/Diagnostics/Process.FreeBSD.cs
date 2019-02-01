@@ -17,7 +17,7 @@ namespace System.Diagnostics
                 EnsureState(State.HaveNonExitedId);
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
 
-                return  new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(stat.startTime);
+                return  new DateTime(DateTime.UnixEpoch.Ticks + (stat.startTime * TimeSpan.TicksPerSecond)).ToLocalTime();
             }
         }
 

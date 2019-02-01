@@ -32,8 +32,9 @@ while (($# > 0)); do
       arguments="$arguments /p:ConfigurationGroup=Debug --configuration Debug"
       shift 1
       ;;
-     -framework)
-      arguments="$arguments /p:TargetGroup=$2"
+     -framework|-targetgroup)
+      val="$(echo "$2" | awk '{print tolower($0)}')"
+      arguments="$arguments /p:TargetGroup=$val"
       shift 2
       ;;
      -os)

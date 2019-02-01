@@ -33,6 +33,10 @@
       <Version>4.5.1</Version>
     </PackageReference>
 
+    <PackageReference Include="System.Threading.Tasks.Extensions" Condition="'$(TargetGroup)' == 'netcoreapp2.0' OR '$(TargetsNetfx)' == 'true' OR '$(TargetsNetStandard)' == 'true'">
+      <Version>4.5.1</Version>
+    </PackageReference>
+
     <!-- Only include the assets from the direct packages we reference in the output -->
     <PackageToInclude Include="@(PackageReference)" />
   </ItemGroup>

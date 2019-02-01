@@ -410,7 +410,7 @@ internal static partial class Interop
             {
                 for (int i = 0; i < protocolList.Count; i++)
                 {
-                    Span<byte> clientList = new Span<byte>(inp, (int)inlen);
+                    var clientList = new Span<byte>(inp, (int)inlen);
                     while (clientList.Length > 0)
                     {
                         byte length = clientList[0];

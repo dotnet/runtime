@@ -11,16 +11,15 @@ namespace System.Xml.Schema
     using System.Runtime.Versioning;
 
 
-    /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection"]/*' />
-    /// <devdoc>
-    ///    <para>The XmlSchemaCollection contains a set of namespace URI's.
-    ///       Each namespace also have an associated private data cache
-    ///       corresponding to the XML-Data Schema or W3C XML Schema.
-    ///       The XmlSchemaCollection will able to load XSD and XDR schemas,
-    ///       and compile them into an internal "cooked schema representation".
-    ///       The Validate method then uses this internal representation for
-    ///       efficient runtime validation of any given subtree.</para>
-    /// </devdoc>
+    /// <summary>
+    /// The XmlSchemaCollection contains a set of namespace URI's.
+    /// Each namespace also have an associated private data cache
+    /// corresponding to the XML-Data Schema or W3C XML Schema.
+    /// The XmlSchemaCollection will able to load XSD and XDR schemas,
+    /// and compile them into an internal "cooked schema representation".
+    /// The Validate method then uses this internal representation for
+    /// efficient runtime validation of any given subtree.
+    /// </summary>
     [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed class XmlSchemaCollection : ICollection
     {
@@ -33,19 +32,17 @@ namespace System.Xml.Schema
         private XmlResolver _xmlResolver = null;
 
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.XmlSchemaCollection"]/*' />
-        /// <devdoc>
-        ///    <para>Construct a new empty schema collection.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Construct a new empty schema collection.
+        /// </summary>
         public XmlSchemaCollection() : this(new NameTable())
         {
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.XmlSchemaCollection1"]/*' />
-        /// <devdoc>
-        ///    <para>Construct a new empty schema collection with associated XmlNameTable.
-        ///       The XmlNameTable is used when loading schemas</para>
-        /// </devdoc>
+        /// <summary>
+        /// Construct a new empty schema collection with associated XmlNameTable.
+        /// The XmlNameTable is used when loading schemas.
+        /// </summary>
         public XmlSchemaCollection(XmlNameTable nametable)
         {
             if (nametable == null)
@@ -62,26 +59,23 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Count"]/*' />
-        /// <devdoc>
-        ///    <para>Returns the number of namespaces defined in this collection
-        ///       (whether or not there is an actual schema associated with those namespaces or not).</para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the number of namespaces defined in this collection
+        /// (whether or not there is an actual schema associated with those namespaces or not).
+        /// </summary>
         public int Count
         {
             get { return _collection.Count; }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.NameTable"]/*' />
-        /// <devdoc>
-        ///    <para>The default XmlNameTable used by the XmlSchemaCollection when loading new schemas.</para>
-        /// </devdoc>
+        /// <summary>
+        /// The default XmlNameTable used by the XmlSchemaCollection when loading new schemas.
+        /// </summary>
         public XmlNameTable NameTable
         {
             get { return _nameTable; }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.ValidationEventHandler"]/*' />
         public event ValidationEventHandler ValidationEventHandler
         {
             add { _validationEventHandler += value; }
@@ -97,12 +91,11 @@ namespace System.Xml.Schema
         }
 
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Add"]/*' />
-        /// <devdoc>
-        ///    <para>Add the schema located by the given URL into the schema collection.
-        ///       If the given schema references other namespaces, the schemas for those other
-        ///       namespaces are NOT automatically loaded.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Add the schema located by the given URL into the schema collection.
+        /// If the given schema references other namespaces, the schemas for those other
+        /// namespaces are NOT automatically loaded.
+        /// </summary>
         public XmlSchema Add(string ns, string uri)
         {
             if (uri == null || uri.Length == 0)
@@ -123,18 +116,16 @@ namespace System.Xml.Schema
             return schema;
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Add4"]/*' />
         public XmlSchema Add(string ns, XmlReader reader)
         {
             return Add(ns, reader, _xmlResolver);
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Add1"]/*' />
-        /// <devdoc>
-        ///    <para>Add the given schema into the schema collection.
-        ///       If the given schema references other namespaces, the schemas for those
-        ///       other namespaces are NOT automatically loaded.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Add the given schema into the schema collection.
+        /// If the given schema references other namespaces, the schemas for those
+        /// other namespaces are NOT automatically loaded.
+        /// </summary>
         public XmlSchema Add(string ns, XmlReader reader, XmlResolver resolver)
         {
             if (reader == null)
@@ -167,16 +158,11 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Add2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchema Add(XmlSchema schema)
         {
             return Add(schema, _xmlResolver);
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Add5"]/*' />
 	    public XmlSchema Add(XmlSchema schema, XmlResolver resolver)
         {
             if (schema == null)
@@ -187,11 +173,10 @@ namespace System.Xml.Schema
             return Add(schema.TargetNamespace, schemaInfo, schema, true, resolver);
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Add3"]/*' />
-        /// <devdoc>
-        ///    <para>Adds all the namespaces defined in the given collection
-        ///       (including their associated schemas) to this collection.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Adds all the namespaces defined in the given collection
+        /// (including their associated schemas) to this collection.
+        /// </summary>
         public void Add(XmlSchemaCollection schema)
         {
             if (schema == null)
@@ -207,10 +192,9 @@ namespace System.Xml.Schema
         }
 
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.this"]/*' />
-        /// <devdoc>
-        ///    <para>Looks up the schema by it's associated namespace URI</para>
-        /// </devdoc>
+        /// <summary>
+        /// Looks up the schema by its associated namespace URI
+        /// </summary>
         public XmlSchema this[string ns]
         {
             get
@@ -220,10 +204,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Contains"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public bool Contains(XmlSchema schema)
         {
             if (schema == null)
@@ -233,30 +213,24 @@ namespace System.Xml.Schema
             return this[schema.TargetNamespace] != null;
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Contains1"]/*' />
         public bool Contains(string ns)
         {
             return _collection[(ns != null) ? ns : string.Empty] != null;
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.IEnumerable.GetEnumerator"]/*' />
-        /// <internalonly/>
-        /// <devdoc>
+        /// <summary>
         /// Get a IEnumerator of the XmlSchemaCollection.
-        /// </devdoc>
+        /// </summary>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return new XmlSchemaCollectionEnumerator(_collection);
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.GetEnumerator"]/*' />
         public XmlSchemaCollectionEnumerator GetEnumerator()
         {
             return new XmlSchemaCollectionEnumerator(_collection);
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.ICollection.CopyTo"]/*' />
-        /// <internalonly/>
         void ICollection.CopyTo(Array array, int index)
         {
             if (array == null)
@@ -273,10 +247,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.CopyTo"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void CopyTo(XmlSchema[] array, int index)
         {
             if (array == null)
@@ -297,22 +267,16 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.ICollection.IsSynchronized"]/*' />
-        /// <internalonly/>
         bool ICollection.IsSynchronized
         {
             get { return true; }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.ICollection.SyncRoot"]/*' />
-        /// <internalonly/>
         object ICollection.SyncRoot
         {
             get { return this; }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.ICollection.Count"]/*' />
-        /// <internalonly/>
         int ICollection.Count
         {
             get { return _collection.Count; }
@@ -452,10 +416,6 @@ namespace System.Xml.Schema
     }
 
 
-    /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollectionEnumerator"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public sealed class XmlSchemaCollectionEnumerator : IEnumerator
     {
         private IDictionaryEnumerator _enumerator;
@@ -465,40 +425,26 @@ namespace System.Xml.Schema
             _enumerator = collection.GetEnumerator();
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollectionEnumerator.IEnumerator.Reset"]/*' />
-        /// <internalonly/>
         void IEnumerator.Reset()
         {
             _enumerator.Reset();
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollectionEnumerator.IEnumerator.MoveNext"]/*' />
-        /// <internalonly/>
         bool IEnumerator.MoveNext()
         {
             return _enumerator.MoveNext();
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollectionEnumerator.MoveNext"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public bool MoveNext()
         {
             return _enumerator.MoveNext();
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollectionEnumerator.IEnumerator.Current"]/*' />
-        /// <internalonly/>
         object IEnumerator.Current
         {
             get { return this.Current; }
         }
 
-        /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollectionEnumerator.Current"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchema Current
         {
             get

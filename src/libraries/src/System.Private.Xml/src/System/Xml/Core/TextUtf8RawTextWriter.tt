@@ -1,0 +1,10 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ output extension=".cs" #>
+<#@ import namespace="System" #>
+<#@ include file="RawTextWriterUtf8.ttinclude" #>
+<#
+    ClassName = "TextUtf8RawTextWriter";
+    BaseClassName = "XmlUtf8RawTextWriter";
+#>
+<#@ include file="TextRawTextWriterGenerator.ttinclude" #>

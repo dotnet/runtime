@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class HttpClientHandler_ClientCertificates_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_ClientCertificates_Test : HttpClientHandlerTestBase
     {
         public bool CanTestCertificates =>
             Capability.IsTrustedRootCertificateInstalled() &&

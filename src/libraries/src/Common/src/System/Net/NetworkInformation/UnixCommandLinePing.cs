@@ -18,7 +18,8 @@ namespace System.Net.NetworkInformation
 
         private static readonly string s_discoveredPing4UtilityPath = GetPingUtilityPath(ipv4: true);
         private static readonly string s_discoveredPing6UtilityPath = GetPingUtilityPath(ipv4: false);
-        private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        private static readonly bool s_isBSD = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
+        private static readonly Lazy<bool> s_isBusybox = new Lazy<bool>(() => IsBusyboxPing(s_discoveredPing4UtilityPath));
 
         // We don't want to pick up an arbitrary or malicious ping
         // command, so that's why we do the path probing ourselves.
@@ -37,6 +38,22 @@ namespace System.Net.NetworkInformation
             return null;
         }
 
+        // Check if found ping is symlink to busybox like alpine /bin/ping -> /bin/busybox
+        private static unsafe bool IsBusyboxPing(string pingBinary)
+        {
+            string linkedName = Interop.Sys.ReadLink(pingBinary);
+
+            // If pingBinary is not link linkedName will be null
+            if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public enum PingFragmentOptions { Default, Do, Dont };
+
         /// <summary>
         /// The location of the IPv4 ping utility on the current machine.
         /// </summary>
@@ -53,7 +70,7 @@ namespace System.Net.NetworkInformation
         /// <param name="packetSize">The packet size to use in the ping. Exact packet payload cannot be specified.</param>
         /// <param name="address">A string representation of the IP address to ping.</param>
         /// <returns>The constructed command line arguments, which can be passed to ping or ping6.</returns>
-        public static string ConstructCommandLine(int packetSize, string address, bool ipv4, int ttl = 0)
+        public static string ConstructCommandLine(int packetSize, string address, bool ipv4, int ttl = 0, PingFragmentOptions fragmentOption = PingFragmentOptions.Default)
         {
 
             StringBuilder sb = new StringBuilder();
@@ -67,9 +84,9 @@ namespace System.Net.NetworkInformation
 
             if (ttl > 0)
             {
-                if (!ipv4 && s_isOSX)
+                if (!ipv4 && s_isBSD)
                 {
-                    // OSX uses -h to set hop limit for IPv6
+                    // OSX and FreeBSD use -h to set hop limit for IPv6
                     sb.Append(" -h ");
                 }
                 else
@@ -79,6 +96,27 @@ namespace System.Net.NetworkInformation
                 }
 
                 sb.Append(ttl);
+            }
+
+            if (fragmentOption != PingFragmentOptions.Default )
+            {
+                if (s_isBSD)
+                {
+                    // The bit is off by default on OSX & FreeBSD
+                    if (fragmentOption == PingFragmentOptions.Dont) {
+                        sb.Append(" -D ");
+                    }
+                }
+                else if (!s_isBusybox.Value)  // busybox implementation does not support fragmentation option.
+                {
+                    // Linux has three state option with default to use PMTU.
+                    // When explicit option is used we set it explicitly to one or the other.
+                    if (fragmentOption == PingFragmentOptions.Do) {
+                        sb.Append(" -M do ");
+                    } else {
+                        sb.Append(" -M dont ");
+                    }
+                }
             }
 
             // ping and ping6 do not report timing information unless at least 16 bytes are sent.

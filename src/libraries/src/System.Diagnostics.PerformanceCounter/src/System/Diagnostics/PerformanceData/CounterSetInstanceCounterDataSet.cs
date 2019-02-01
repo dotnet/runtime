@@ -20,7 +20,6 @@ namespace System.Diagnostics.PerformanceData
         /// <summary>
         /// CounterData constructor
         /// </summary>
-        /// <param name="counterId"> counterId would come from CounterSet::AddCounter() parameter </param>
         /// <param name="pCounterData"> The memory location to store raw counter data </param>        
         unsafe internal CounterData(long* pCounterData)
         {

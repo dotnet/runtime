@@ -17,7 +17,7 @@ namespace System.Collections.Specialized.Tests
             Assert.False(nameObjectCollection1.IsSynchronized);
 
             Assert.Same(nameObjectCollection1.SyncRoot, nameObjectCollection1.SyncRoot);
-            Assert.NotEqual(nameObjectCollection1.SyncRoot, nameObjectCollection2.SyncRoot);
+            Assert.NotSame(nameObjectCollection1.SyncRoot, nameObjectCollection2.SyncRoot);
         }
     }
 }

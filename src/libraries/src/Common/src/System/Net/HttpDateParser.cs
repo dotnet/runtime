@@ -37,7 +37,7 @@ namespace System.Net
 
         // Try the various date formats in the order listed above.
         // We should accept a wide variety of common formats, but only output RFC 1123 style dates.
-        internal static bool TryStringToDate(string input, out DateTimeOffset result) =>
+        internal static bool TryStringToDate(ReadOnlySpan<char> input, out DateTimeOffset result) =>
              DateTimeOffset.TryParseExact(
                  input,
                  s_dateFormats,

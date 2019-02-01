@@ -21,10 +21,6 @@ namespace System.Xml.Serialization
         private Hashtable _elements; // XmlSchemaElement -> ElementAccessor
         private CodeIdentifiers _typeIdentifiers;
 
-        /// <include file='doc\ImportContext.uex' path='docs/doc[@for="ImportContext.ImportContext"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public ImportContext(CodeIdentifiers identifiers, bool shareTypes)
         {
             _typeIdentifiers = identifiers;
@@ -62,10 +58,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\ImportContext.uex' path='docs/doc[@for="ImportContext.TypeIdentifiers"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public CodeIdentifiers TypeIdentifiers
         {
             get
@@ -76,19 +68,11 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\ImportContext.uex' path='docs/doc[@for="ImportContext.ShareTypes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public bool ShareTypes
         {
             get { return _shareTypes; }
         }
 
-        /// <include file='doc\ImportContext.uex' path='docs/doc[@for="ImportContext.Warnings"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public StringCollection Warnings
         {
             get { return Cache.Warnings; }

@@ -16,12 +16,12 @@ internal static partial class Interop
         }
 
         /// <summary>
-        /// The index into the array filled by <see cref="pipe"/> which represents the read end of the pipe.
+        /// The index into the array filled by <see cref="Pipe"/> which represents the read end of the pipe.
         /// </summary>
         internal const int ReadEndOfPipe = 0;
 
         /// <summary>
-        /// The index into the array filled by <see cref="pipe"/> which represents the read end of the pipe.
+        /// The index into the array filled by <see cref="Pipe"/> which represents the read end of the pipe.
         /// </summary>
         internal const int WriteEndOfPipe = 1;
 

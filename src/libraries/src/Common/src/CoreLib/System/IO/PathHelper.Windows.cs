@@ -69,6 +69,7 @@ namespace System.IO
         /// Calls GetFullPathName on the given path.
         /// </summary>
         /// <param name="path">The path name. MUST be null terminated after the span.</param>
+        /// <param name="builder">Builder that will store the result.</param>
         private static void GetFullPathName(ReadOnlySpan<char> path, ref ValueStringBuilder builder)
         {
             // If the string starts with an extended prefix we would need to remove it from the path before we call GetFullPathName as

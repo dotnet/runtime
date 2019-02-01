@@ -5,7 +5,7 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    /// Provides data for the <see cref='System.ComponentModel.TypeDescriptor.Refresh'/> event.
+    /// Provides data for the <see cref='System.ComponentModel.TypeDescriptor.Refresh(object)'/> event.
     /// </summary>
     public class RefreshEventArgs : EventArgs
     {

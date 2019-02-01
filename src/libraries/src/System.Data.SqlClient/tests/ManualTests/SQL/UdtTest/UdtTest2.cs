@@ -6,6 +6,7 @@ using System.Data.SqlTypes;
 using System.Reflection;
 using System.Text;
 using Microsoft.SqlServer.Server;
+using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
@@ -15,10 +16,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         public UdtTest2()
         {
-            _connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { InitialCatalog = "UdtTestDb" }).ConnectionString;
+            _connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { InitialCatalog = DataTestUtility.UdtTestDbName }).ConnectionString;
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void UDTParams_Early()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -48,7 +49,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void UDTParams_Binary()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -77,7 +78,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void UDTParams_Invalid2()
         {
             string spInsertCustomer = DataTestUtility.GetUniqueNameForSqlServer("spUdtTest2_InsertCustomer");
@@ -117,7 +118,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void UDTParams_Invalid()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -136,7 +137,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void UDTParams_TypedNull()
         {
             string spInsertCustomer = DataTestUtility.GetUniqueNameForSqlServer("spUdtTest2_InsertCustomer");
@@ -181,7 +182,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void UDTParams_NullInput()
         {
             string spInsertCustomer = DataTestUtility.GetUniqueNameForSqlServer("spUdtTest2_InsertCustomer");
@@ -225,7 +226,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void UDTParams_InputOutput()
         {
             string spInsertCity = DataTestUtility.GetUniqueNameForSqlServer("spUdtTest2_InsertCity");
@@ -287,7 +288,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void UDTFields_WrongType()
         {
             using (SqlConnection cn = new SqlConnection(_connStr))
@@ -317,7 +318,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void UDT_DataSetFill()
         {
             using (SqlConnection cn = new SqlConnection(_connStr))
@@ -341,7 +342,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Reader_PointEarly()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -375,7 +376,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Reader_LineEarly()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -435,7 +436,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Reader_PointLate()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -468,7 +469,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Reader_CircleLate()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -500,7 +501,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestSchemaTable()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
@@ -562,7 +563,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestSqlUserDefinedAggregateAttributeMaxByteSize()
         {
             Func<int, SqlUserDefinedAggregateAttribute> create

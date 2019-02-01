@@ -191,7 +191,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Checks if a printer has a valid PPD file. Caches the result unless force is true
         /// </summary>
-        /// <param name="force">Does the check disregarding the last cached value if true</param>
+        /// <param name="printer">Printer name</param>
         internal static bool IsPrinterValid(string printer)
         {
             if (!cups_installed || printer == null | printer == string.Empty)
@@ -587,8 +587,6 @@ namespace System.Drawing.Printing
 
         /// <summary>
         /// </summary>
-        /// <param name="load"></param>
-        /// <param name="def_printer"></param>
         private static void LoadPrinters()
         {
             installed_printers.Clear();

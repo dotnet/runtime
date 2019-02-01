@@ -134,9 +134,9 @@ namespace System.Runtime.Serialization
             object[] newData = new object[newSize];
             Type[] newTypes = new Type[newSize];
 
-            Array.Copy(_names, newMembers, _count);
-            Array.Copy(_values, newData, _count);
-            Array.Copy(_types, newTypes, _count);
+            Array.Copy(_names, 0, newMembers, 0, _count);
+            Array.Copy(_values, 0, newData, 0, _count);
+            Array.Copy(_types, 0, newTypes, 0, _count);
 
             // Assign the new arrays back to the member vars.
             _names = newMembers;

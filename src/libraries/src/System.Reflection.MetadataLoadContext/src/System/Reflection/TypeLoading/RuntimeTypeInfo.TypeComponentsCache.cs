@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection.Runtime.BindingFlagSupport;
 using System.Threading;
-using Unsafe = System.Runtime.CompilerServices.Unsafe;
 using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
 
 namespace System.Reflection.TypeLoading
@@ -51,8 +50,7 @@ namespace System.Reflection.TypeLoading
                     (immediateTypeOnly ? _perNameQueryCaches_CaseSensitive_ImmediateTypeOnly : _perNameQueryCaches_CaseSensitive);
 
                 object unifierAsObject = cacheArray[index];
-                Debug.Assert(unifierAsObject is PerNameQueryCache<M>);
-                PerNameQueryCache<M> unifier = Unsafe.As<PerNameQueryCache<M>>(unifierAsObject);
+                PerNameQueryCache<M> unifier = (PerNameQueryCache<M>)unifierAsObject;
                 QueriedMemberList<M> result = unifier.GetOrAdd(name);
                 return result;
             }
@@ -74,8 +72,7 @@ namespace System.Reflection.TypeLoading
                     Volatile.Write(ref _nameAgnosticQueryCaches[index], newResult);
                     return newResult;
                 }
-                Debug.Assert(result is QueriedMemberList<M>);
-                QueriedMemberList<M> list = Unsafe.As<QueriedMemberList<M>>(result);
+                QueriedMemberList<M> list = (QueriedMemberList<M>)result;
                 if (list.ImmediateTypeOnly && !immediateTypeOnly)
                 {
                     QueriedMemberList<M> newResult = QueriedMemberList<M>.Create(_type, filter: null, ignoreCase: false, immediateTypeOnly: false);

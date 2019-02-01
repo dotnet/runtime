@@ -126,19 +126,14 @@ namespace System.ComponentModel.Composition.Primitives
             return exports ?? _EmptyExportsList;
         }
 
-internal virtual IEnumerable<ComposablePartDefinition> GetCandidateParts(ImportDefinition definition)
+        internal virtual IEnumerable<ComposablePartDefinition> GetCandidateParts(ImportDefinition definition)
         {
             return this;
         }
 
-/// <summary>
-        ///     Releases the unmanaged resources used by the <see cref="ComposablePartCatalog"/> and 
-        ///     optionally releases the managed resources.
+        /// <summary>
+        ///     Releases the unmanaged and managed resources used by the <see cref="ComposablePartCatalog"/>. 
         /// </summary>
-        /// <param name="disposing">
-        ///     <see langword="true"/> to release both managed and unmanaged resources; 
-        ///     <see langword="false"/> to release only unmanaged resources.
-        /// </param>
         public void Dispose()
         {
             Dispose(true);

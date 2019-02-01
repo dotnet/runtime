@@ -352,41 +352,10 @@ static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntr
     // location of the start of the string that exists in their own byte buffer.
     outputEntry->Name = entry->d_name;
 #if !defined(DT_UNKNOWN)
-    /* AIX has no d_type, make a substitute */
-    struct stat s;
-    stat(entry->d_name, &s);
-    if (S_ISDIR(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_DIR;
-    }
-    else if (S_ISFIFO(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_FIFO;
-    }
-    else if (S_ISCHR(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_CHR;
-    }
-    else if (S_ISBLK(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_BLK;
-    }
-    else if (S_ISREG(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_REG;
-    }
-    else if (S_ISLNK(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_LNK;
-    }
-    else if (S_ISSOCK(s.st_mode))
-    {
-        outputEntry->InodeType = PAL_DT_SOCK;
-    }
-    else
-    {
-        outputEntry->InodeType = PAL_DT_UNKNOWN;
-    }
+    // AIX has no d_type, and since we can't get the directory that goes with
+    // the filename from ReadDir, we can't stat the file. Return unknown and
+    // hope that managed code can properly stat the file.
+    outputEntry->InodeType = PAL_DT_UNKNOWN;
 #else
     outputEntry->InodeType = (int32_t)entry->d_type;
 #endif
@@ -560,10 +529,10 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     return result;
 }
 
-int32_t SystemNative_FcntlSetCloseOnExec(intptr_t fd)
+int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
 {
     int result;
-    while ((result = fcntl(ToFileDescriptor(fd), F_SETFD, FD_CLOEXEC)) < 0 && errno == EINTR);
+    while ((result = fcntl(ToFileDescriptor(fd), F_SETFD, ConvertOpenFlags(flags))) < 0 && errno == EINTR);
     return result;
 }
 
@@ -1282,22 +1251,21 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
     while ((ret = fstat_(inFd, &sourceStat)) < 0 && errno == EINTR);
     if (ret == 0)
     {
-#if HAVE_FUTIMES
-        struct timeval origTimes[2];
-        origTimes[0].tv_sec = sourceStat.st_atime;
-        origTimes[0].tv_usec = ST_ATIME_NSEC(&sourceStat) / 1000;
-        origTimes[1].tv_sec = sourceStat.st_mtime;
-        origTimes[1].tv_usec = ST_MTIME_NSEC(&sourceStat) / 1000;
-        while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
-#elif HAVE_FUTIMENS
-        // futimes is not a POSIX function, and not available on Android,
-        // but futimens is
+#if HAVE_FUTIMENS
+        // futimens is prefered because it has a higher resolution.
         struct timespec origTimes[2];
         origTimes[0].tv_sec = (time_t)sourceStat.st_atime;
         origTimes[0].tv_nsec = ST_ATIME_NSEC(&sourceStat);
         origTimes[1].tv_sec = (time_t)sourceStat.st_mtime;
         origTimes[1].tv_nsec = ST_MTIME_NSEC(&sourceStat);
         while ((ret = futimens(outFd, origTimes)) < 0 && errno == EINTR);
+#elif HAVE_FUTIMES
+        struct timeval origTimes[2];
+        origTimes[0].tv_sec = sourceStat.st_atime;
+        origTimes[0].tv_usec = ST_ATIME_NSEC(&sourceStat) / 1000;
+        origTimes[1].tv_sec = sourceStat.st_mtime;
+        origTimes[1].tv_usec = ST_MTIME_NSEC(&sourceStat) / 1000;
+        while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
     if (ret != 0)

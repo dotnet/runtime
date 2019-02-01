@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{950923D8-EC99-4F90-9BA6-8EB64582C555}</ProjectGuid>
     <AssemblyName>System.Management</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1572;CS1587;CS1734;CS0419;0618</NoWarn>
+    <NoWarn>$(NoWarn);0618</NoWarn>
     <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
     <UWPCompatible>false</UWPCompatible>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
@@ -20,8 +20,26 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcAddress.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetProcAddress.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GlobalLock.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GlobalLock.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LoadLibrary.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.LoadLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetObjectContext.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoGetObjectContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoMarshalInterface.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoMarshalInterface.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoUnmarshalInterface.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoUnmarshalInterface.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CreateStreamOnHGlobal.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CreateStreamOnHGlobal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>

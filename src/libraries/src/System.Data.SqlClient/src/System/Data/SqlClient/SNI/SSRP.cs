@@ -18,7 +18,7 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Finds instance port number for given instance name.
         /// </summary>
-        /// <param name="browserHostname">SQL Sever Browser hostname</param>
+        /// <param name="browserHostName">SQL Sever Browser hostname</param>
         /// <param name="instanceName">instance name to find port number</param>
         /// <returns>port number for given instance name</returns>
         internal static int GetPortByInstanceName(string browserHostName, string instanceName)

@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Net.WebSockets
 {
-    /// <summary>Represents the result of performing a single <see cref="WebSocket.ReceiveAsync"/> operation on a <see cref="WebSocket"/>.</summary>
+    /// <summary>Represents the result of performing a single <see cref="WebSocket.ReceiveAsync(Memory{byte}, System.Threading.CancellationToken)"/> operation on a <see cref="WebSocket"/>.</summary>
     public readonly struct ValueWebSocketReceiveResult
     {
         private readonly uint _countAndEndOfMessage;

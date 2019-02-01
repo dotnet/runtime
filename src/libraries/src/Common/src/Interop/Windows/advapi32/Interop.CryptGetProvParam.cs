@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 internal static partial class Interop
 {
@@ -23,20 +24,25 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.Advapi32, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool CryptSetProvParam(
+            SafeHandle safeProvHandle,
+            CryptProvParam dwParam,
+            IntPtr pbData,
+            int dwFlags);
+
+        [DllImport(Libraries.Advapi32, SetLastError = true)]
+        public static extern bool CryptSetProvParam(
+            SafeProvHandle hProv,
+            CryptProvParam dwParam,
+            ref IntPtr pbData,
+            int dwFlags);
+
+        [DllImport(Libraries.Advapi32, SetLastError = true)]
         public static extern bool CryptGetProvParam(
             SafeHandle safeProvHandle,
             CryptProvParam dwParam,
             IntPtr pbData,
             ref int dwDataLen,
-            int dwFlags);
-
-        [DllImport(Libraries.Advapi32, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool CryptSetProvParam(
-            SafeHandle safeProvHandle,
-            CryptProvParam dwParam,
-            IntPtr pbData,
             int dwFlags);
 
         public static bool CryptGetProvParam(

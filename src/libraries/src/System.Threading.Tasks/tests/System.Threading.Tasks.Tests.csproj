@@ -58,7 +58,8 @@
     <Compile Include="Task\TaskCanceledExceptionTests.netcoreapp.cs" />
     <Compile Include="Task\TaskStatusTest.netcoreapp.cs" />
     <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.netcoreapp.cs" />
-    <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncEnumerableTests.netcoreapp.cs" />
+    <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncDisposable.netcoreapp.cs" />
+    <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>

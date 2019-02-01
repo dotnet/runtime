@@ -122,7 +122,7 @@ namespace System.ComponentModel.Design
         IDesigner GetDesigner(IComponent component);
 
         /// <summary>
-        /// Gets the type instance for the specified fully qualified type name <paramref name="TypeName"/>.
+        /// Gets the type instance for the specified fully qualified type name <paramref name="typeName"/>.
         /// </summary>
         Type GetType(string typeName);
     }

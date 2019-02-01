@@ -28,7 +28,6 @@ namespace System.Xml
      *
      * Note: Only strings composed of ASCII characters can exist in the tree.
      */
-    /// <include file='doc\ReadOnlyTernaryTree.uex' path='docs/doc[@for="TernaryTreeReadOnly"]/*' />
     internal class TernaryTreeReadOnly
     {
         private byte[] _nodeBuffer;
@@ -36,7 +35,6 @@ namespace System.Xml
         //define the array positions
 
 
-        /// <include file='doc\ReadOnlyTernaryTree.uex' path='docs/doc[@for="TernaryTreeReadOnly.TernaryTreeReadOnly"]/*' />
         public TernaryTreeReadOnly(byte[] nodeBuffer)
         {
             _nodeBuffer = nodeBuffer;
@@ -48,7 +46,6 @@ namespace System.Xml
             Find a Unicode string in the ternary tree and return the data byte it's
             mapped to.  Find is case-insensitive.
         */
-        /// <include file='doc\ReadOnlyTernaryTree.uex' path='docs/doc[@for="TernaryTreeReadOnly.FindCaseInsensitiveString"]/*' />
         public byte FindCaseInsensitiveString(string stringToFind)
         {
             //Debug.Assert(wszFind != null && wszFind.Length != 0);

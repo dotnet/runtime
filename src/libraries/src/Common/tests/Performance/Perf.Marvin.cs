@@ -30,8 +30,8 @@ namespace System
         [MemberData(nameof(EnumerateRandomByteArrayTestCases))]
         public void Add(int iterations, byte[] data)
         {
-            Span<byte> otherData = new byte[] { 1, 2, 3 };
-            var bytes = new Span<byte>(data);
+            ReadOnlySpan<byte> otherData = new byte[] { 1, 2, 3 };
+            var bytes = new ReadOnlySpan<byte>(data);
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())

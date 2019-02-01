@@ -12,7 +12,7 @@ namespace System.Data.SqlClient.SNI
     /// <summary>
     /// SNI Packet
     /// </summary>
-    internal class SNIPacket : IDisposable, IEquatable<SNIPacket>
+    internal partial class SNIPacket : IDisposable, IEquatable<SNIPacket>
     {
         private byte[] _data;
         private int _length;
@@ -20,9 +20,7 @@ namespace System.Data.SqlClient.SNI
         private int _offset;
         private string _description;
         private SNIAsyncCallback _completionCallback;
-
-        private ArrayPool<byte>  _arrayPool = ArrayPool<byte>.Shared;
-        private bool _isBufferFromArrayPool = false;
+        private bool _isBufferFromArrayPool;
 
         public SNIPacket() { }
 
@@ -98,14 +96,14 @@ namespace System.Data.SqlClient.SNI
             {
                 if (_isBufferFromArrayPool)
                 {
-                    _arrayPool.Return(_data);
+                    ArrayPool<byte>.Shared.Return(_data);
                 }
                 _data = null;
             }
 
             if (_data == null)
             {
-                _data = _arrayPool.Rent(capacity);
+                _data = ArrayPool<byte>.Shared.Rent(capacity);
                 _isBufferFromArrayPool = true;
             }
 
@@ -178,6 +176,12 @@ namespace System.Data.SqlClient.SNI
             _length += size;
         }
 
+        public void AppendData(ReadOnlySpan<byte> data)
+        {
+            data.CopyTo(_data.AsSpan(_length));
+            _length += data.Length;
+        }
+
         /// <summary>
         /// Append another packet
         /// </summary>
@@ -221,7 +225,7 @@ namespace System.Data.SqlClient.SNI
             {
                 if(_isBufferFromArrayPool)
                 {
-                    _arrayPool.Return(_data);
+                    ArrayPool<byte>.Shared.Return(_data);
                 }
                 _data = null;
                 _capacity = 0;
@@ -241,46 +245,6 @@ namespace System.Data.SqlClient.SNI
         }
 
         /// <summary>
-        /// Read data from a stream asynchronously
-        /// </summary>
-        /// <param name="stream">Stream to read from</param>
-        /// <param name="callback">Completion callback</param>
-        public void ReadFromStreamAsync(Stream stream, SNIAsyncCallback callback)
-        {
-            bool error = false;
-            
-            stream.ReadAsync(_data, 0, _capacity, CancellationToken.None).ContinueWith(t =>
-            {
-                Exception e = t.Exception?.InnerException;
-                if (e != null)
-                {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InternalExceptionError, e);
-                    error = true;
-                }
-                else
-                {
-                    _length = t.Result;
-
-                    if (_length == 0)
-                    {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.ConnTerminatedError, string.Empty);
-                        error = true;
-                    }
-                }
-
-                if (error)
-                {
-                    Release();
-                }
-
-                callback(this, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
-            },
-            CancellationToken.None,
-            TaskContinuationOptions.DenyChildAttach,
-            TaskScheduler.Default);
-        }
-
-        /// <summary>
         /// Read data from a stream synchronously
         /// </summary>
         /// <param name="stream">Stream to read from</param>
@@ -296,30 +260,6 @@ namespace System.Data.SqlClient.SNI
         public void WriteToStream(Stream stream)
         {
             stream.Write(_data, 0, _length);
-        }
-
-        /// <summary>
-        /// Write data to a stream asynchronously
-        /// </summary>
-        /// <param name="stream">Stream to write to</param>
-        public async void WriteToStreamAsync(Stream stream, SNIAsyncCallback callback, SNIProviders provider, bool disposeAfterWriteAsync = false)
-        {
-            uint status = TdsEnums.SNI_SUCCESS;
-            try
-            {
-                await stream.WriteAsync(_data, 0, _length, CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(provider, SNICommon.InternalExceptionError, e);
-                status = TdsEnums.SNI_ERROR;
-            }
-            callback(this, status);
-
-            if (disposeAfterWriteAsync)
-            {
-                Dispose();
-            }
         }
 
         /// <summary>
@@ -351,7 +291,7 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Check packet equality
         /// </summary>
-        /// <param name="obj"></param>
+        /// <param name="packet"></param>
         /// <returns>true if equal</returns>
         public bool Equals(SNIPacket packet)
         {

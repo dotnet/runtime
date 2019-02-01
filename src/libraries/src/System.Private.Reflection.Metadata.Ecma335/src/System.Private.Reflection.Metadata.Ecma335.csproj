@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefaultLanguage>en-US</DefaultLanguage>
     <CLSCompliant>false</CLSCompliant>
-    <NoWarn>$(NoWarn);3021;CS1571;CS1574</NoWarn>
+    <NoWarn>$(NoWarn);3021</NoWarn>
     <DefineConstants>$(DefineConstants);CORERT</DefineConstants>
     <SystemReflectionMetadataPath>..\..\System.Reflection.Metadata\src\</SystemReflectionMetadataPath>
     <Configurations>netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>

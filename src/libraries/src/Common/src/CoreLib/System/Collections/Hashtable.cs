@@ -150,7 +150,6 @@ namespace System.Collections
         private ICollection _values;
 
         private IEqualityComparer _keycomparer;
-        private object _syncRoot;
 
         [Obsolete("Please use EqualityComparer property.")]
         protected IHashCodeProvider hcp
@@ -1073,17 +1072,7 @@ namespace System.Collections
         }
 
         // Returns the object to synchronize on for this hash table.
-        public virtual object SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    System.Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        public virtual object SyncRoot => this;
 
         // Returns the number of associations in this hashtable.
         // 

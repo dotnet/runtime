@@ -7,25 +7,15 @@ namespace System.Xml.Schema
     using System.Xml.Serialization;
     using System.Diagnostics;
 
-    /// <include file='doc\XmlSchemaSimpleType.uex' path='docs/doc[@for="XmlSchemaSimpleType"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaSimpleType : XmlSchemaType
     {
         private XmlSchemaSimpleTypeContent _content;
-
-        /// <include file='doc\XmlSchemaSimpleType.uex' path='docs/doc[@for="XmlSchemaSimpleType.Content"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
 
         public XmlSchemaSimpleType()
         {
             Debug.Assert(SchemaContentType == XmlSchemaContentType.TextOnly);
         }
 
-        /// <include file='doc\XmlSchemaSimpleType.uex' path='docs/doc[@for="XmlSchemaSimpleType.Content1"]/*' />
         [XmlElement("restriction", typeof(XmlSchemaSimpleTypeRestriction)),
         XmlElement("list", typeof(XmlSchemaSimpleTypeList)),
         XmlElement("union", typeof(XmlSchemaSimpleTypeUnion))]
