@@ -179,6 +179,13 @@
     <Compile Include="CoreLink\NeverInstantiatedTypeWithOverridesFromObject.cs" />
     <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
     <Compile Include="CoreLink\InstantiatedTypeWithOverridesFromObject.cs" />
+    <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\OverrideOfAbstractIsKept.cs" />
+    <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\OverrideOfVirtualCanBeRemoved.cs" />
+    <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\OverrideOfVirtualCanBeRemoved2.cs" />
+    <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\OverrideOfVirtualCanBeRemoved3.cs" />
+    <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\OverrideThatAlsoFulfilsInterface.cs" />
+    <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\PreservesOverriddenMethodOverrideOfUsedVirtualStillRemoved.cs" />
+    <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\PreservesOverriddenMethodOverrideOfUsedVirtualStillRemoved2.cs" />
     <Compile Include="Inheritance.AbstractClasses\UnusedAbstractMethodRemoved.cs" />
     <Compile Include="Inheritance.AbstractClasses\UnusedVirtualMethodRemoved.cs" />
     <Compile Include="Inheritance.AbstractClasses\UsedOverrideOfAbstractMethodIsKept.cs" />
@@ -493,6 +500,8 @@
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
     <Content Include="CommandLine\Dependencies\ResponseFilesWork.rsp" />
+    <Content Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\PreservesOverriddenMethodOverrideOfUsedVirtualStillRemoved.xml" />
+    <Content Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\PreservesOverriddenMethodOverrideOfUsedVirtualStillRemoved2.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\UnusedTypeHasExplicitInterfaceMethodPreservedViaXml.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\UnusedTypeHasExplicitInterfacePropertyPreservedViaXml.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\UnusedTypeHasInterfaceMethodPreservedViaXml.xml" />

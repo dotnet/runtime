@@ -262,9 +262,14 @@ namespace Mono.Linker.Steps {
 			if (Annotations.IsMarked (method))
 				return;
 
+			var isInstantiated = Annotations.IsInstantiated (method.DeclaringType);
+
 			// We don't need to mark overrides until it is possible that the type could be instantiated
 			// Note : The base type is interface check should be removed once we have base type sweeping
-			if (!Annotations.IsInstantiated (method.DeclaringType) && @base.DeclaringType.IsInterface)
+			if (!isInstantiated && @base.DeclaringType.IsInterface)
+				return;
+
+			if (!isInstantiated && !@base.IsAbstract)
 				return;
 
 			MarkMethod (method);
