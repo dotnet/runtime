@@ -2061,7 +2061,7 @@ is_sr_mono_field (MonoClass *klass)
 gboolean
 mono_is_sr_mono_property (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection", "MonoProperty");
+	check_corlib_type_cached (klass, "System.Reflection", "RuntimePropertyInfo");
 }
 
 static gboolean

@@ -1002,6 +1002,7 @@ struct _MonoReflectionMethodBody {
 /* Safely access System.Reflection.MethodBody from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 
+/* System.RuntimeAssembly */
 struct _MonoReflectionAssembly {
 	MonoObject object;
 	MonoAssembly *assembly;
@@ -1317,6 +1318,7 @@ typedef struct {
 	guint32 call_conv;
 } MonoReflectionPropertyBuilder;
 
+/* System.RuntimeModule */
 struct _MonoReflectionModule {
 	MonoObject	obj;
 	MonoImage  *image;

@@ -687,12 +687,6 @@ ICALL(MCMETH_2, "InternalInvoke", ves_icall_InternalInvoke)
 HANDLES(MCMETH_3, "get_core_clr_security_level", ves_icall_MonoMethod_get_core_clr_security_level, int, 1, (MonoReflectionMethod))
 HANDLES_REUSE_WRAPPER(MCMETH_4, "get_metadata_token", ves_icall_reflection_get_token)
 
-ICALL_TYPE(MEV, "System.Reflection.MonoEvent", MEV_1)
-HANDLES_REUSE_WRAPPER(MEV_1, "get_metadata_token", ves_icall_reflection_get_token)
-
-ICALL_TYPE(MEVIN, "System.Reflection.MonoEventInfo", MEVIN_1)
-HANDLES(MEVIN_1, "get_event_info", ves_icall_MonoEventInfo_get_event_info, void, 2, (MonoReflectionMonoEvent, MonoEventInfo_ref))
-
 ICALL_TYPE(MFIELD, "System.Reflection.MonoField", MFIELD_1)
 HANDLES(MFIELD_1, "GetFieldOffset", ves_icall_MonoField_GetFieldOffset, gint32, 1, (MonoReflectionField))
 HANDLES(MFIELD_2, "GetParentType", ves_icall_MonoField_GetParentType, MonoReflectionType, 2, (MonoReflectionField, MonoBoolean))
@@ -723,26 +717,27 @@ HANDLES(MMETHI_1, "get_method_info", ves_icall_get_method_info, void, 2, (MonoMe
 HANDLES(MMETHI_2, "get_parameter_info", ves_icall_System_Reflection_MonoMethodInfo_get_parameter_info, MonoArray, 2, (MonoMethod_ptr, MonoReflectionMethod))
 HANDLES(MMETHI_3, "get_retval_marshal", ves_icall_System_MonoMethodInfo_get_retval_marshal, MonoReflectionMarshalAsAttribute, 1, (MonoMethod_ptr))
 
-ICALL_TYPE(PARAMI, "System.Reflection.MonoParameterInfo", MPARAMI_1)
-HANDLES_REUSE_WRAPPER(MPARAMI_1, "GetMetadataToken", ves_icall_reflection_get_token)
-HANDLES(MPARAMI_2, "GetTypeModifiers", ves_icall_ParameterInfo_GetTypeModifiers, MonoArray, 2, (MonoReflectionParameter, MonoBoolean))
-
-ICALL_TYPE(MPROP, "System.Reflection.MonoProperty", MPROP_1)
-HANDLES_REUSE_WRAPPER(MPROP_1, "get_metadata_token", ves_icall_reflection_get_token)
-HANDLES(MPROP_2, "internal_from_handle_type", ves_icall_System_Reflection_PropertyInfo_internal_from_handle_type, MonoReflectionProperty, 2, (MonoProperty_ptr, MonoType_ptr))
-
-ICALL_TYPE(MPROPI, "System.Reflection.MonoPropertyInfo", MPROPI_1)
-HANDLES(MPROPI_1, "GetTypeModifiers", ves_icall_MonoPropertyInfo_GetTypeModifiers, MonoArray, 2, (MonoReflectionProperty, MonoBoolean))
-
-ICALL(MPROPI_3, "get_default_value", ves_icall_property_info_get_default_value)
-HANDLES(MPROPI_2, "get_property_info", ves_icall_MonoPropertyInfo_get_property_info, void, 3, (MonoReflectionProperty, MonoPropertyInfo_ref, PInfo))
-
 ICALL_TYPE(RTFIELD, "System.Reflection.RtFieldInfo", RTFIELD_1)
 ICALL(RTFIELD_1, "UnsafeGetValue", ves_icall_MonoField_GetValueInternal)
+
+ICALL_TYPE(MEV, "System.Reflection.RuntimeEventInfo", MEV_1)
+HANDLES(MEV_1, "get_event_info", ves_icall_RuntimeEventInfo_get_event_info, void, 2, (MonoReflectionMonoEvent, MonoEventInfo_ref))
+HANDLES_REUSE_WRAPPER(MEV_2, "get_metadata_token", ves_icall_reflection_get_token)
 
 ICALL_TYPE(RMETHODINFO, "System.Reflection.RuntimeMethodInfo", RMETHODINFO_1)
 HANDLES(RMETHODINFO_1, "GetMethodBodyInternal", ves_icall_System_Reflection_RuntimeMethodInfo_GetMethodBodyInternal, MonoReflectionMethodBody, 1, (MonoMethod_ptr))
 HANDLES(RMETHODINFO_2, "GetMethodFromHandleInternalType_native", ves_icall_System_Reflection_RuntimeMethodInfo_GetMethodFromHandleInternalType_native, MonoReflectionMethod, 3, (MonoMethod_ptr, MonoType_ptr, MonoBoolean))
+
+ICALL_TYPE(PARAMI, "System.Reflection.RuntimeParameterInfo", MPARAMI_1)
+HANDLES_REUSE_WRAPPER(MPARAMI_1, "GetMetadataToken", ves_icall_reflection_get_token)
+HANDLES(MPARAMI_2, "GetTypeModifiers", ves_icall_RuntimeParameterInfo_GetTypeModifiers, MonoArray, 2, (MonoReflectionParameter, MonoBoolean))
+
+ICALL_TYPE(MPROP, "System.Reflection.RuntimePropertyInfo", MPROP_1)
+HANDLES(MPROP_1, "GetTypeModifiers", ves_icall_RuntimePropertyInfo_GetTypeModifiers, MonoArray, 2, (MonoReflectionProperty, MonoBoolean))
+ICALL(MPROP_2, "get_default_value", ves_icall_property_info_get_default_value)
+HANDLES_REUSE_WRAPPER(MPROP_3, "get_metadata_token", ves_icall_reflection_get_token)
+HANDLES(MPROP_4, "get_property_info", ves_icall_RuntimePropertyInfo_get_property_info, void, 3, (MonoReflectionProperty, MonoPropertyInfo_ref, PInfo))
+HANDLES(MPROP_5, "internal_from_handle_type", ves_icall_System_Reflection_RuntimePropertyInfo_internal_from_handle_type, MonoReflectionProperty, 2, (MonoProperty_ptr, MonoType_ptr))
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
 HANDLES(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue, MonoObject, 1, (MonoObject))

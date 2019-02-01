@@ -2069,20 +2069,20 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		/*We cannot mono_class_init_internal the class from which we'll load the custom attributes since this must work with broken types.*/
 		cinfo = mono_custom_attrs_from_class_checked (klass, error);
 		goto_if_nok (error, leave);
-	} else if (strcmp ("Assembly", klass_name) == 0 || strcmp ("MonoAssembly", klass_name) == 0) {
+	} else if (strcmp ("Assembly", klass_name) == 0 || strcmp ("RuntimeAssembly", klass_name) == 0) {
 		MonoReflectionAssemblyHandle rassembly = MONO_HANDLE_CAST (MonoReflectionAssembly, obj);
 		cinfo = mono_custom_attrs_from_assembly_checked (MONO_HANDLE_GETVAL (rassembly, assembly), FALSE, error);
 		goto_if_nok (error, leave);
-	} else if (strcmp ("MonoModule", klass_name) == 0) {
+	} else if (strcmp ("RuntimeModule", klass_name) == 0) {
 		MonoReflectionModuleHandle module = MONO_HANDLE_CAST (MonoReflectionModule, obj);
 		cinfo = mono_custom_attrs_from_module (MONO_HANDLE_GETVAL (module, image), error);
 		goto_if_nok (error, leave);
-	} else if (strcmp ("MonoProperty", klass_name) == 0) {
+	} else if (strcmp ("RuntimePropertyInfo", klass_name) == 0) {
 		MonoReflectionPropertyHandle rprop = MONO_HANDLE_CAST (MonoReflectionProperty, obj);
 		MonoProperty *property = MONO_HANDLE_GETVAL (rprop, property);
 		cinfo = mono_custom_attrs_from_property_checked (property->parent, property, error);
 		goto_if_nok (error, leave);
-	} else if (strcmp ("MonoEvent", klass_name) == 0) {
+	} else if (strcmp ("RuntimeEventInfo", klass_name) == 0) {
 		MonoReflectionMonoEventHandle revent = MONO_HANDLE_CAST (MonoReflectionMonoEvent, obj);
 		MonoEvent *event = MONO_HANDLE_GETVAL (revent, event);
 		cinfo = mono_custom_attrs_from_event_checked (event->parent, event, error);
@@ -2096,7 +2096,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		MonoReflectionMethodHandle rmethod = MONO_HANDLE_CAST (MonoReflectionMethod, obj);
 		cinfo = mono_custom_attrs_from_method_checked (MONO_HANDLE_GETVAL (rmethod, method), error);
 		goto_if_nok (error, leave);
-	} else if (strcmp ("ParameterInfo", klass_name) == 0 || strcmp ("MonoParameterInfo", klass_name) == 0) {
+	} else if (strcmp ("ParameterInfo", klass_name) == 0 || strcmp ("RuntimeParameterInfo", klass_name) == 0) {
 		MonoReflectionParameterHandle param = MONO_HANDLE_CAST (MonoReflectionParameter, obj);
 		MonoObjectHandle member_impl = MONO_HANDLE_NEW_GET (MonoObject, param, MemberImpl);
 		MonoClass *member_class = mono_handle_class (member_impl);

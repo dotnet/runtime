@@ -728,10 +728,10 @@ can_avoid_corlib_reflection_delegate_optimization (MonoMethod *method)
 	if (strcmp (m_class_get_name_space (method->klass), "System.Reflection") != 0)
 		return FALSE;
 
-	if (strcmp (m_class_get_name (method->klass), "MonoProperty") == 0) {
+	if (strcmp (m_class_get_name (method->klass), "RuntimePropertyInfo") == 0) {
 		if ((strcmp (method->name, "GetterAdapterFrame") == 0) || strcmp (method->name, "StaticGetterAdapterFrame") == 0)
 			return TRUE;
-	} else if (strcmp (m_class_get_name (method->klass), "EventInfo") == 0) {
+	} else if (strcmp (m_class_get_name (method->klass), "RuntimeEventInfo") == 0) {
 		if ((strcmp (method->name, "AddEventFrame") == 0) || strcmp (method->name, "StaticAddEventAdapterFrame") == 0)
 			return TRUE;
 	}
