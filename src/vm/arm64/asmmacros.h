@@ -183,7 +183,7 @@ __PWTB_SAVE_ARGUMENT_REGISTERS_OFFSET SETA 0
 
     MEND
 
-; Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
+; Reserve 128 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
     MACRO
        SAVE_FLOAT_ARGUMENT_REGISTERS $reg, $offset 
 
@@ -195,10 +195,10 @@ __PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA $offset
 __PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA 0
        ENDIF
 
-        stp                    d0, d1, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET)]
-        stp                    d2, d3, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 16)]
-        stp                    d4, d5, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 32)]
-        stp                    d6, d7, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 48)]
+        stp                    q0, q1, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET)]
+        stp                    q2, q3, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 32)]
+        stp                    q4, q5, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 64)]
+        stp                    q6, q7, [$reg, #(__PWTB_SAVE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 96)]
     MEND
 
     MACRO
@@ -231,10 +231,10 @@ __PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA $offset
 __PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET SETA 0
        ENDIF
 
-        ldp                    d0, d1, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET)]
-        ldp                    d2, d3, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 16)]
-        ldp                    d4, d5, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 32)]
-        ldp                    d6, d7, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 48)]
+        ldp                    q0, q1, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET)]
+        ldp                    q2, q3, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 32)]
+        ldp                    q4, q5, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 64)]
+        ldp                    q6, q7, [$reg, #(__PWTB_RESTORE_FLOAT_ARGUMENT_REGISTERS_OFFSET + 96)]
     MEND
 
 ; ------------------------------------------------------------------

@@ -56,10 +56,10 @@ Ldonestack
         ;; given in x9. 
         ldr     x9, [x19,#CallDescrData__pFloatArgumentRegisters]
         cbz     x9, LNoFloatingPoint
-        ldp     d0, d1, [x9]
-        ldp     d2, d3, [x9, #16]
-        ldp     d4, d5, [x9, #32]
-        ldp     d6, d7, [x9, #48]
+        ldp     q0, q1, [x9]
+        ldp     q2, q3, [x9, #32]
+        ldp     q4, q5, [x9, #64]
+        ldp     q6, q7, [x9, #96]
 LNoFloatingPoint
 
         ;; Copy [pArgumentRegisters, ..., pArgumentRegisters + 56]
