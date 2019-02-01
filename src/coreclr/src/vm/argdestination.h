@@ -65,20 +65,17 @@ public:
 
         int floatRegCount = m_argLocDescForStructInRegs->m_cFloatReg;
         bool typeFloat = m_argLocDescForStructInRegs->m_isSinglePrecision;
-        void* dest = this->GetDestinationAddress();
+        UINT64* dest = (UINT64*) this->GetDestinationAddress();
 
-        if (typeFloat)
+        for (int i = 0; i < floatRegCount; ++i) 
         {
-            for (int i = 0; i < floatRegCount; ++i) 
-            {
-                // Copy 4 bytes on 8 bytes alignment
-                *((UINT64*)dest + i) = *((UINT32*)src + i);
-            }
-        }
-        else
-        {
-            // We can just do a memcpy.
-            memcpyNoGCRefs(dest, src, fieldBytes);
+            // Copy 4 or 8 bytes from src.
+            UINT64 val = typeFloat ? *((UINT32*)src + i) : *((UINT64*)src + i);
+            // Always store 8 bytes
+            *(dest++) = val;
+            // For now, always zero the next 8 bytes.
+            // (When HVAs are supported we will get the next 8 bytes from src.)
+            *(dest++) = 0;
         }
     }
 
