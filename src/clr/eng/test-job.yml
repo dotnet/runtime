@@ -133,7 +133,7 @@ jobs:
         timeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
         timeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
 
-        readyToRun: ${{ parameters.readyToRun }}
+        runCrossGen: ${{ parameters.readyToRun }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
