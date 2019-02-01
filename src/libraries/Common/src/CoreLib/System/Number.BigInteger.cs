@@ -896,8 +896,11 @@ namespace System
                     if ((exponent & 1) != 0)
                     {
                         // Multiply into the next temporary
-                        ref BigInteger rhs = ref *(BigInteger*)(Unsafe.AsPointer(ref s_Pow10BigNumTable[s_Pow10BigNumTableIndices[index]]));
-                        Multiply(ref lhs, ref rhs, ref product);
+                        fixed (uint* pBigNumEntry = &s_Pow10BigNumTable[s_Pow10BigNumTableIndices[index]])
+                        {
+                            ref BigInteger rhs = ref *(BigInteger*)(pBigNumEntry);
+                            Multiply(ref lhs, ref rhs, ref product);
+                        }
 
                         // Swap to the next temporary
                         ref BigInteger temp = ref product;
