@@ -1095,7 +1095,7 @@ namespace System
                 TimeSpan? parsedBaseOffset = TZif_ParseOffsetString(standardOffset);
                 if (parsedBaseOffset.HasValue)
                 {
-                    TimeSpan baseOffset = parsedBaseOffset.Value.Negate(); // offsets are backwards in POSIX notation
+                    TimeSpan baseOffset = parsedBaseOffset.GetValueOrDefault().Negate(); // offsets are backwards in POSIX notation
                     baseOffset = TZif_CalculateTransitionOffsetFromBase(baseOffset, timeZoneBaseUtcOffset);
 
                     // having a daylightSavingsName means there is a DST rule
@@ -1110,7 +1110,7 @@ namespace System
                         }
                         else
                         {
-                            daylightSavingsTimeSpan = parsedDaylightSavings.Value.Negate(); // offsets are backwards in POSIX notation
+                            daylightSavingsTimeSpan = parsedDaylightSavings.GetValueOrDefault().Negate(); // offsets are backwards in POSIX notation
                             daylightSavingsTimeSpan = TZif_CalculateTransitionOffsetFromBase(daylightSavingsTimeSpan, timeZoneBaseUtcOffset);
                             daylightSavingsTimeSpan = TZif_CalculateTransitionOffsetFromBase(daylightSavingsTimeSpan, baseOffset);
                         }
@@ -1176,7 +1176,7 @@ namespace System
 
                 if (result.HasValue && negative)
                 {
-                    result = result.Value.Negate();
+                    result = result.GetValueOrDefault().Negate();
                 }
             }
 
@@ -1193,8 +1193,8 @@ namespace System
                 // Some time zones use time values like, "26", "144", or "-2".
                 // This allows the week to sometimes be week 4 and sometimes week 5 in the month.
                 // For now, strip off any 'days' in the offset, and just get the time of day correct
-                timeOffset = new TimeSpan(timeOffset.Value.Hours, timeOffset.Value.Minutes, timeOffset.Value.Seconds);
-                if (timeOffset.Value < TimeSpan.Zero)
+                timeOffset = new TimeSpan(timeOffset.GetValueOrDefault().Hours, timeOffset.GetValueOrDefault().Minutes, timeOffset.GetValueOrDefault().Seconds);
+                if (timeOffset.GetValueOrDefault() < TimeSpan.Zero)
                 {
                     timeOfDay = new DateTime(1, 1, 2, 0, 0, 0);
                 }
@@ -1203,7 +1203,7 @@ namespace System
                     timeOfDay = new DateTime(1, 1, 1, 0, 0, 0);
                 }
 
-                timeOfDay += timeOffset.Value;
+                timeOfDay += timeOffset.GetValueOrDefault();
             }
             else
             {
