@@ -700,8 +700,8 @@ namespace System.Management
         /// class name and condition, selecting only the specified properties.</para>
         /// </summary>
         /// <param name='className'>The name of the class from which to select.</param>
-        /// <param name=' condition'>The condition to be applied to instances of the selected class.</param>
-        /// <param name=' selectedProperties'>An array of property names to be returned in the query results.</param>
+        /// <param name='condition'>The condition to be applied to instances of the selected class.</param>
+        /// <param name='selectedProperties'>An array of property names to be returned in the query results.</param>
         /// <example>
         ///    <code lang='C#'>String[] properties = {"VariableName", "VariableValue"};
         /// 
@@ -732,12 +732,10 @@ namespace System.Management
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.SelectQuery'/> 
         /// class for a schema query, optionally specifying a condition. For schema queries,
-        /// only the <paramref name="condition"/> parameter is valid: <paramref name="className"/>
-        /// and <paramref name="selectedProperties"/>
-        /// are not supported and are ignored.</para>
+        /// only the <paramref name="condition"/> parameter is valid.</para>
         /// </summary>
         /// <param name='isSchemaQuery'><see langword='true'/>to indicate that this is a schema query; otherwise, <see langword='false'/>. A <see langword='false'/> value is invalid in this constructor.</param>
-        /// <param name=' condition'>The condition to be applied to form the result set of classes.</param>
+        /// <param name='condition'>The condition to be applied to form the result set of classes.</param>
         /// <example>
         ///    <code lang='C#'>SelectQuery s = new SelectQuery(true, "__CLASS = 'Win32_Service'");
         ///    </code>

@@ -4,6 +4,8 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Collections
 {
@@ -16,8 +18,6 @@ namespace System.Collections
         private int[] m_array; // Do not rename (binary serialization)
         private int m_length; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
-        [NonSerialized]
-        private object _syncRoot;
 
         private const int _ShrinkThreshold = 256;
 
@@ -264,18 +264,42 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public BitArray And(BitArray value)
+        public unsafe BitArray And(BitArray value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             if (Length != value.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
 
-            for (int i = 0; i < m_array.Length; i++)
+            int count = m_array.Length;
+
+            switch (count)
             {
-                m_array[i] &= value.m_array[i];
+                case 3: m_array[2] &= value.m_array[2]; goto case 2;
+                case 2: m_array[1] &= value.m_array[1]; goto case 1;
+                case 1: m_array[0] &= value.m_array[0]; goto Done;
+                case 0: goto Done;
             }
 
+            int i = 0;
+            if (Sse2.IsSupported)
+            {
+                fixed (int* leftPtr = m_array)
+                fixed (int* rightPtr = value.m_array)
+                {
+                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    {
+                        Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
+                        Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
+                        Sse2.Store(leftPtr + i, Sse2.And(leftVec, rightVec));
+                    }
+                }
+            }
+
+            for (; i < count; i++)
+                m_array[i] &= value.m_array[i];
+
+        Done:
             _version++;
             return this;
         }
@@ -286,18 +310,42 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public BitArray Or(BitArray value)
+        public unsafe BitArray Or(BitArray value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             if (Length != value.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
 
-            for (int i = 0; i < m_array.Length; i++)
+            int count = m_array.Length;
+
+            switch (count)
             {
-                m_array[i] |= value.m_array[i];
+                case 3: m_array[2] |= value.m_array[2]; goto case 2;
+                case 2: m_array[1] |= value.m_array[1]; goto case 1;
+                case 1: m_array[0] |= value.m_array[0]; goto Done;
+                case 0: goto Done;
             }
 
+            int i = 0;
+            if (Sse2.IsSupported)
+            {
+                fixed (int* leftPtr = m_array)
+                fixed (int* rightPtr = value.m_array)
+                {
+                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    {
+                        Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
+                        Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
+                        Sse2.Store(leftPtr + i, Sse2.Or(leftVec, rightVec));
+                    }
+                }
+            }
+
+            for (; i < count; i++)
+                m_array[i] |= value.m_array[i];
+
+        Done:
             _version++;
             return this;
         }
@@ -308,18 +356,42 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public BitArray Xor(BitArray value)
+        public unsafe BitArray Xor(BitArray value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             if (Length != value.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
 
-            for (int i = 0; i < m_array.Length; i++)
+            int count = m_array.Length;
+
+            switch (count)
             {
-                m_array[i] ^= value.m_array[i];
+                case 3: m_array[2] ^= value.m_array[2]; goto case 2;
+                case 2: m_array[1] ^= value.m_array[1]; goto case 1;
+                case 1: m_array[0] ^= value.m_array[0]; goto Done;
+                case 0: goto Done;
             }
 
+            int i = 0;
+            if (Sse2.IsSupported)
+            {
+                fixed (int* leftPtr = m_array)
+                fixed (int* rightPtr = value.m_array)
+                {
+                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    {
+                        Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
+                        Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
+                        Sse2.Store(leftPtr + i, Sse2.Xor(leftVec, rightVec));
+                    }
+                }
+            }
+
+            for (; i < count; i++)
+                m_array[i] ^= value.m_array[i];
+
+        Done:
             _version++;
             return this;
         }
@@ -602,17 +674,7 @@ namespace System.Collections
 
         public int Count => m_length;
 
-        public object SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        public object SyncRoot => this;
 
         public bool IsSynchronized => false;
 

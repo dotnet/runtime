@@ -18,11 +18,6 @@ namespace System.Xml.Serialization
     using System.Net;
     using System.Reflection;
 
-    /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas"]/*' />
-    /// <internalonly/>
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemas : CollectionBase, IEnumerable<XmlSchema>
     {
         private XmlSchemaSet _schemaSet;
@@ -35,20 +30,12 @@ namespace System.Xml.Serialization
         private static volatile XmlSchema s_xsd;
         private static volatile XmlSchema s_xml;
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.this"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchema this[int index]
         {
             get { return (XmlSchema)List[index]; }
             set { List[index] = value; }
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.this1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchema this[string ns]
         {
             get
@@ -63,10 +50,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.GetSchemas"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public IList GetSchemas(string ns)
         {
             return (IList)SchemaSet.Schemas(ns);
@@ -129,10 +112,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.Add"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public int Add(XmlSchema schema)
         {
             if (List.Contains(schema))
@@ -140,10 +119,6 @@ namespace System.Xml.Serialization
             return List.Add(schema);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.Add"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public int Add(XmlSchema schema, Uri baseUri)
         {
             if (List.Contains(schema))
@@ -153,10 +128,6 @@ namespace System.Xml.Serialization
             return List.Add(schema);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.Add1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Add(XmlSchemas schemas)
         {
             foreach (XmlSchema schema in schemas)
@@ -165,100 +136,56 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.AddReference"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void AddReference(XmlSchema schema)
         {
             References[schema] = schema;
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.Insert"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Insert(int index, XmlSchema schema)
         {
             List.Insert(index, schema);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.IndexOf"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public int IndexOf(XmlSchema schema)
         {
             return List.IndexOf(schema);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.Contains"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public bool Contains(XmlSchema schema)
         {
             return List.Contains(schema);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.Contains1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public bool Contains(string targetNamespace)
         {
             return SchemaSet.Contains(targetNamespace);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.Remove"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Remove(XmlSchema schema)
         {
             List.Remove(schema);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.CopyTo"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void CopyTo(XmlSchema[] array, int index)
         {
             List.CopyTo(array, index);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.OnInsert"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         protected override void OnInsert(int index, object value)
         {
             AddName((XmlSchema)value);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.OnRemove"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         protected override void OnRemove(int index, object value)
         {
             RemoveName((XmlSchema)value);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.OnClear"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         protected override void OnClear()
         {
             _schemaSet = null;
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.OnSet"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         protected override void OnSet(int index, object oldValue, object newValue)
         {
             RemoveName((XmlSchema)oldValue);
@@ -303,10 +230,6 @@ namespace System.Xml.Serialization
             SchemaSet.Remove(schema);
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.Find"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public object Find(XmlQualifiedName name, Type type)
         {
             return Find(name, type, true);
@@ -397,10 +320,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.IsDataSet"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static bool IsDataSet(XmlSchema schema)
         {
             foreach (XmlSchemaObject o in schema.Items)
@@ -718,13 +637,11 @@ namespace System.Xml.Serialization
             return null;
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.IsCompiled"]/*' />
         public bool IsCompiled
         {
             get { return _isCompiled; }
         }
 
-        /// <include file='doc\XmlSchemas.uex' path='docs/doc[@for="XmlSchemas.Compile"]/*' />
         public void Compile(ValidationEventHandler handler, bool fullCompile)
         {
             if (_isCompiled)

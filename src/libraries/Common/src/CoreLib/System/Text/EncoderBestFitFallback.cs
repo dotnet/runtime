@@ -40,8 +40,7 @@ namespace System.Text
 
         public override bool Equals(object value)
         {
-            InternalEncoderBestFitFallback that = value as InternalEncoderBestFitFallback;
-            if (that != null)
+            if (value is InternalEncoderBestFitFallback that)
             {
                 return (_encoding.CodePage == that._encoding.CodePage);
             }

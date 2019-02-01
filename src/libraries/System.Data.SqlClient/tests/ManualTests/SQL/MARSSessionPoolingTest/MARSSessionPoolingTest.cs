@@ -29,21 +29,21 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 MultipleActiveResultSets = true
             }).ConnectionString;
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MarsExecuteScalar_AllFlavors()
         {
             TestMARSSessionPooling("Case: Text, ExecuteScalar", _testConnString, CommandType.Text, ExecuteType.ExecuteScalar, ReaderTestType.ReaderClose, GCType.Wait);
             TestMARSSessionPooling("Case: RPC,  ExecuteScalar", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteScalar, ReaderTestType.ReaderClose, GCType.Wait);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MarsExecuteNonQuery_AllFlavors()
         {
             TestMARSSessionPooling("Case: Text, ExecuteNonQuery", _testConnString, CommandType.Text, ExecuteType.ExecuteNonQuery, ReaderTestType.ReaderClose, GCType.Wait);
             TestMARSSessionPooling("Case: RPC,  ExecuteNonQuery", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteNonQuery, ReaderTestType.ReaderClose, GCType.Wait);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MarsExecuteReader_Text_NoGC()
         {
             TestMARSSessionPooling("Case: Text, ExecuteReader, ReaderClose", _testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderClose, GCType.Wait);
@@ -51,7 +51,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             TestMARSSessionPooling("Case: Text, ExecuteReader, ConnectionClose", _testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ConnectionClose, GCType.Wait);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MarsExecuteReader_RPC_NoGC()
         {
             TestMARSSessionPooling("Case: RPC,  ExecuteReader, ReaderClose", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderClose, GCType.Wait);
@@ -59,14 +59,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             TestMARSSessionPooling("Case: RPC,  ExecuteReader, ConnectionClose", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ConnectionClose, GCType.Wait);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MarsExecuteReader_Text_WithGC()
         {
             TestMARSSessionPooling("Case: Text, ExecuteReader, GC-Wait", _testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.Wait);
             TestMARSSessionPooling("Case: Text, ExecuteReader, GC-NoWait", _testConnString, CommandType.Text, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.NoWait);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MarsExecuteReader_StoredProcedure_WithGC()
         {
             TestMARSSessionPooling("Case: RPC,  ExecuteReader, GC-Wait", _testConnString, CommandType.StoredProcedure, ExecuteType.ExecuteReader, ReaderTestType.ReaderGC, GCType.Wait);

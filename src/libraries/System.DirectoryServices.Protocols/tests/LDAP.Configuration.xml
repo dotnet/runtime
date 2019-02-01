@@ -4,7 +4,7 @@
     The easiest way to get LDAP server is to download and install OpenDJ https://backstage.forgerock.com/downloads/OpenDJ/Directory%20Services/5.0.0#browse.
 
     Download "DS zip" file then extract it. you can set it up by running a command like that following:
-    /setup directory-server --sampleData 2 --rootUserDN "cn=Directory Manager" --rootUserPassword password --hostname localhost.localdomain --ldapPort 1389 --ldapsPort 1636 --httpPort 8080 --httpsPort 8443 --adminConnectorPort 4444 --baseDN dc=example,dc=com --acceptLicense –enableStartTls
+    /setup directory-server --sampleData 2 --rootUserDN "cn=Directory Manager" --rootUserPassword password --hostname localhost.localdomain --ldapPort 1389 --ldapsPort 1636 --httpPort 8080 --httpsPort 8443 --adminConnectorPort 4444 --baseDN dc=example,dc=com --acceptLicense –-enableStartTls
 
     After that delete this comment and have the following contents in this Xml file:
 

@@ -454,10 +454,9 @@ namespace Microsoft.Win32
             s_domainQualifier++;
         }
 
-        /// <include file='doc\SystemEvents.uex' path='docs/doc[@for="SystemEvents.CreateBroadcastWindow"]/*' />
-        /// <devdoc>
-        ///      Goes through the work to register and create a window.
-        /// </devdoc>
+        /// <summary>
+        /// Goes through the work to register and create a window.
+        /// </summary>
         private IntPtr CreateBroadcastWindow()
         {
             // Register the window class.

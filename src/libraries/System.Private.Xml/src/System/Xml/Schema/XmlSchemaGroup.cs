@@ -6,10 +6,6 @@ namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaGroup.uex' path='docs/doc[@for="XmlSchemaGroup"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaGroup : XmlSchemaAnnotated
     {
         private string _name;
@@ -19,10 +15,6 @@ namespace System.Xml.Schema
         private XmlSchemaGroup _redefined;
         private int _selfReferenceCount;
 
-        /// <include file='doc\XmlSchemaGroup.uex' path='docs/doc[@for="XmlSchemaGroup.Name"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("name")]
         public string Name
         {
@@ -30,10 +22,6 @@ namespace System.Xml.Schema
             set { _name = value; }
         }
 
-        /// <include file='doc\XmlSchemaGroup.uex' path='docs/doc[@for="XmlSchemaGroup.Particle"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("choice", typeof(XmlSchemaChoice)),
          XmlElement("all", typeof(XmlSchemaAll)),
          XmlElement("sequence", typeof(XmlSchemaSequence))]

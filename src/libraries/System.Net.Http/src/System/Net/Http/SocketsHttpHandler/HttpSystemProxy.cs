@@ -240,7 +240,7 @@ namespace System.Net.Http
                 {
                     idx += 5; // Skip "http=" so we can replace it with "http://"
                     int proxyLength = GetProxySubstringLength(value, idx);
-                    Uri.TryCreate("http://" + value.Substring(idx, proxyLength) , UriKind.Absolute, out insecureProxy);
+                    Uri.TryCreate(string.Concat("http://", value.AsSpan(idx, proxyLength)), UriKind.Absolute, out insecureProxy);
                 }
             }
 
@@ -249,7 +249,7 @@ namespace System.Net.Http
             {
                 idx += 8; // Skip "https://" so we can replace it with "http://"
                 int proxyLength = GetProxySubstringLength(value, idx);
-                Uri.TryCreate("http://" + value.Substring(idx, proxyLength) , UriKind.Absolute, out secureProxy);
+                Uri.TryCreate(string.Concat("http://", value.AsSpan(idx, proxyLength)), UriKind.Absolute, out secureProxy);
             }
 
             if (secureProxy == null)
@@ -259,7 +259,7 @@ namespace System.Net.Http
                 {
                     idx += 6; // Skip "https=" so we can replace it with "http://"
                     int proxyLength = GetProxySubstringLength(value, idx);
-                    Uri.TryCreate("http://" + value.Substring(idx, proxyLength) , UriKind.Absolute, out secureProxy);
+                    Uri.TryCreate(string.Concat("http://", value.AsSpan(idx, proxyLength)), UriKind.Absolute, out secureProxy);
                 }
             }
         }

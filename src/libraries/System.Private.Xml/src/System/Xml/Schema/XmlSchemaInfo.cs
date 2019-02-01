@@ -7,7 +7,6 @@ using System.Collections;
 
 namespace System.Xml.Schema
 {
-    /// <include file='doc\IXmlSchemaInfo.uex' path='docs/doc[@for="IXmlSchemaInfo"]/*' />
     public class XmlSchemaInfo : IXmlSchemaInfo
     {
         private bool _isDefault;

@@ -8,10 +8,6 @@ using System.Xml.Serialization;
 
 namespace System.Xml.Schema
 {
-    /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaAttribute : XmlSchemaAnnotated
     {
         private string _defaultValue;
@@ -30,10 +26,6 @@ namespace System.Xml.Schema
 
         private SchemaAttDef _attDef;
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.DefaultValue"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("default")]
         [DefaultValue(null)]
         public string DefaultValue
@@ -42,10 +34,6 @@ namespace System.Xml.Schema
             set { _defaultValue = value; }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.FixedValue"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("fixed")]
         [DefaultValue(null)]
         public string FixedValue
@@ -54,10 +42,6 @@ namespace System.Xml.Schema
             set { _fixedValue = value; }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.Form"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("form"), DefaultValue(XmlSchemaForm.None)]
         public XmlSchemaForm Form
         {
@@ -65,10 +49,6 @@ namespace System.Xml.Schema
             set { _form = value; }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.Name"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("name")]
         public string Name
         {
@@ -76,10 +56,6 @@ namespace System.Xml.Schema
             set { _name = value; }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.RefName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("ref")]
         public XmlQualifiedName RefName
         {
@@ -87,10 +63,6 @@ namespace System.Xml.Schema
             set { _refName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.SchemaTypeName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("type")]
         public XmlQualifiedName SchemaTypeName
         {
@@ -98,10 +70,6 @@ namespace System.Xml.Schema
             set { _typeName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.SchemaType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("simpleType")]
         public XmlSchemaSimpleType SchemaType
         {
@@ -109,10 +77,6 @@ namespace System.Xml.Schema
             set { _type = value; }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.Use"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("use"), DefaultValue(XmlSchemaUse.None)]
         public XmlSchemaUse Use
         {
@@ -120,20 +84,12 @@ namespace System.Xml.Schema
             set { _use = value; }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.QualifiedName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlQualifiedName QualifiedName
         {
             get { return _qualifiedName; }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.AttributeType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         [Obsolete("This property has been deprecated. Please use AttributeSchemaType property that returns a strongly typed attribute type. https://go.microsoft.com/fwlink/?linkid=14202")]
         public object AttributeType
@@ -151,10 +107,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaAttribute.uex' path='docs/doc[@for="XmlSchemaAttribute.AttributeSchemaType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaSimpleType AttributeSchemaType
         {

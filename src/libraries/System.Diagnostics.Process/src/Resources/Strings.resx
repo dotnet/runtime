@@ -318,4 +318,7 @@
   <data name="ArgumentAndArgumentListInitialized" xml:space="preserve">
     <value>Only one of Arguments or ArgumentList may be used.</value>
   </data>
+  <data name="InvalidSysctl" xml:space="preserve">
+    <value>sysctl {0} failed with {1} error.</value>
+  </data>
 </root>

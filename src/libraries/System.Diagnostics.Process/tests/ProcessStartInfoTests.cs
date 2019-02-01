@@ -1115,7 +1115,8 @@ namespace System.Diagnostics.Tests
                 TheoryData<bool> data = new TheoryData<bool> { false };
 
                 if (   !PlatformDetection.IsUap // https://github.com/dotnet/corefx/issues/20204
-                    && !PlatformDetection.IsWindowsNanoServer) // By design
+                    && !PlatformDetection.IsWindowsNanoServer // By design
+                    && !PlatformDetection.IsWindowsIoTCore)
                     data.Add(true);
                 return data;
             }

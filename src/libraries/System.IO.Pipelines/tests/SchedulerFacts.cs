@@ -434,13 +434,9 @@ namespace System.IO.Pipelines.Tests
 
                     Func<Task> doWrite = async () =>
                     {
-                        int oid = Thread.CurrentThread.ManagedThreadId;
-
                         Assert.False(Thread.CurrentThread.IsThreadPoolThread, "We started on the thread pool");
 
                         await flushAsync;
-
-                        Assert.NotEqual(oid, Thread.CurrentThread.ManagedThreadId);
 
                         pipe.Writer.Complete();
 
@@ -471,13 +467,9 @@ namespace System.IO.Pipelines.Tests
 
                     Func<Task> doRead = async () =>
                     {
-                        int oid = Thread.CurrentThread.ManagedThreadId;
-
                         Assert.False(Thread.CurrentThread.IsThreadPoolThread, "We started on the thread pool");
 
                         ReadResult result = await pipe.Reader.ReadAsync();
-
-                        Assert.NotEqual(oid, Thread.CurrentThread.ManagedThreadId);
 
                         Assert.Equal(Thread.CurrentThread.ManagedThreadId, scheduler.Thread.ManagedThreadId);
 
@@ -504,8 +496,6 @@ namespace System.IO.Pipelines.Tests
 
             async Task DoRead()
             {
-                int oid = Thread.CurrentThread.ManagedThreadId;
-
                 // Make sure we aren't on a thread pool thread
                 Assert.False(Thread.CurrentThread.IsThreadPoolThread, "We started on the thread pool");
 
@@ -515,8 +505,8 @@ namespace System.IO.Pipelines.Tests
 
                 ReadResult result = await task;
 
-                Assert.NotEqual(oid, Thread.CurrentThread.ManagedThreadId);
                 Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+
                 pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
                 pipe.Reader.Complete();
             }

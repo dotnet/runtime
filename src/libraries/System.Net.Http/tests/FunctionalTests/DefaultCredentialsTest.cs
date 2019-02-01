@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP will send default credentials based on manifest settings")]
     [PlatformSpecific(TestPlatforms.Windows)]
-    public abstract class DefaultCredentialsTest : HttpClientTestBase
+    public abstract class DefaultCredentialsTest : HttpClientHandlerTestBase
     {
         private static bool DomainJoinedTestsEnabled => !string.IsNullOrEmpty(Configuration.Http.DomainJoinedHttpHost);
 

@@ -59,7 +59,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             InitDataValues();
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void SimpleFillTest()
         {
             using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -80,7 +80,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void PrepUnprepTest()
         {
             // share the connection
@@ -166,7 +166,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void SqlVariantTest()
         {
             try
@@ -259,7 +259,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void ParameterTest_AllTypes()
         {
             string spCreateAllTypes =
@@ -470,7 +470,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void ParameterTest_InOut()
         {
             // input, output
@@ -566,7 +566,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void UpdateTest()
         {
             using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -650,7 +650,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         // these next texts verify that 'bulk' operations work.  If each command type modifies more than three rows, then we do a Prep/Exec instead of
         // adhoc ExecuteSql.
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void BulkUpdateTest()
         {
             using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -747,7 +747,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         // Makes sure that we can refresh an identity column in the dataSet
         // for a newly inserted row
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void UpdateRefreshTest()
         {
             string createIdentTable =
@@ -841,7 +841,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void UpdateNullTest()
         {
             string createTable = "CREATE TABLE varbin(cvarbin VARBINARY(7000), cimage IMAGE)";
@@ -895,7 +895,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void UpdateOffsetTest()
         {
             string createTable = "CREATE TABLE varbin(cvarbin VARBINARY(7000), cimage IMAGE)";
@@ -965,7 +965,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void SelectAllTest()
         {
             // Test exceptions
@@ -978,7 +978,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
         // AutoGen test
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void AutoGenUpdateTest()
         {
             using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -1049,7 +1049,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void AutoGenErrorTest()
         {
             string createIdentTable =
@@ -1093,7 +1093,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         // These next tests verify that 'bulk' operations work. If each command type modifies more than three rows, then we do a Prep/Exec instead of
         // adhoc ExecuteSql.
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void AutoGenBulkUpdateTest()
         {
             using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -1182,7 +1182,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestDeriveParameters()
         {
             string spEmployeeSales =

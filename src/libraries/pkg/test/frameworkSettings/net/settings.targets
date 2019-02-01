@@ -7,6 +7,10 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <!-- For full framework we reference these package which has the same layout as the SDK, with this package,
+    tests can run in any machine without having to install full framework. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0-alpha-5" />
+
     <!-- these are part of the targeting pack but not actual assemblies -->
     <ExcludeReference Include="System.EnterpriseServices.Thunk;System.EnterpriseServices.Wrapper" />
     

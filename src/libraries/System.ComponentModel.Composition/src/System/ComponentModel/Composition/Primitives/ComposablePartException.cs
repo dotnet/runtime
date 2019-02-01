@@ -33,12 +33,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <see cref="ComposablePartException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
-        /// <param name="element">
-        ///     The <see cref="ICompositionElement"/> that is the cause of the
-        ///     <see cref="ComposablePartException"/>; or <see langword="null"/> to set
-        ///     the <see cref="ComposablePartException.Element"/> property to 
-        ///     <see langword="null"/>.
-        /// </param>
         public ComposablePartException(string message)
             : this(message, (ICompositionElement)null, (Exception)null)
         {
@@ -53,6 +47,12 @@ namespace System.ComponentModel.Composition.Primitives
         ///     A <see cref="String"/> containing a message that describes the 
         ///     <see cref="ComposablePartException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
+        /// </param>
+        /// <param name="element">
+        ///     The <see cref="ICompositionElement"/> that is the cause of the
+        ///     <see cref="ComposablePartException"/>; or <see langword="null"/> to set
+        ///     the <see cref="ComposablePartException.Element"/> property to 
+        ///     <see langword="null"/>.
         /// </param>
         public ComposablePartException(string message, ICompositionElement element)
             : this(message, element, (Exception)null)

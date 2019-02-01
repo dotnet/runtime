@@ -105,22 +105,19 @@ namespace System.Diagnostics
             }
         }
 
-        internal static void ContractFailure(bool condition, string message, string detailMessage, string failureKindMessage)
+        internal static void ContractFailure(string message, string detailMessage, string failureKindMessage)
         {
-            if (!condition)
+            string stackTrace;
+            try
             {
-                string stackTrace;
-                try
-                {
-                    stackTrace = new StackTrace(2, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
-                }
-                catch
-                {
-                    stackTrace = "";
-                }
-                s_provider.WriteAssert(stackTrace, message, detailMessage);
-                DebugProvider.FailCore(stackTrace, message, detailMessage, SR.GetResourceString(failureKindMessage));
+                stackTrace = new StackTrace(2, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
             }
+            catch
+            {
+                stackTrace = "";
+            }
+            s_provider.WriteAssert(stackTrace, message, detailMessage);
+            DebugProvider.FailCore(stackTrace, message, detailMessage, failureKindMessage);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]

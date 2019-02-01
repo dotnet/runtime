@@ -18,29 +18,12 @@ namespace System.Xml.Serialization
     using System.Diagnostics;
 #endif
 
-    /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter"]/*' />
-    ///<internalonly/>
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaImporter : SchemaImporter
     {
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.XmlSchemaImporter"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchemaImporter(XmlSchemas schemas) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext()) { }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.XmlSchemaImporter1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchemaImporter(XmlSchemas schemas, CodeIdentifiers typeIdentifiers) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext(typeIdentifiers, false)) { }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportDerivedTypeMapping"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlTypeMapping ImportDerivedTypeMapping(XmlQualifiedName name, Type baseType)
         {
             return ImportDerivedTypeMapping(name, baseType, false);
@@ -60,10 +43,6 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportDerivedTypeMapping1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlTypeMapping ImportDerivedTypeMapping(XmlQualifiedName name, Type baseType, bool baseTypeCanBeIndirect)
         {
             ElementAccessor element = ImportElement(name, typeof(TypeMapping), baseType);
@@ -89,29 +68,16 @@ namespace System.Xml.Serialization
             return new XmlTypeMapping(Scope, element);
         }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportSchemaType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName)
         {
             return ImportSchemaType(typeName, null, false);
         }
 
-
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportSchemaType1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName, Type baseType)
         {
             return ImportSchemaType(typeName, baseType, false);
         }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportSchemaType2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName, Type baseType, bool baseTypeCanBeIndirect)
         {
             TypeMapping typeMapping = ImportType(typeName, typeof(TypeMapping), baseType, TypeFlags.CanBeElementValue, true);
@@ -149,25 +115,16 @@ namespace System.Xml.Serialization
             return new XmlTypeMapping(Scope, accessor);
         }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportTypeMapping"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlTypeMapping ImportTypeMapping(XmlQualifiedName name)
         {
             return ImportDerivedTypeMapping(name, null);
         }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportMembersMapping"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlMembersMapping ImportMembersMapping(XmlQualifiedName name)
         {
             return new XmlMembersMapping(Scope, ImportElement(name, typeof(MembersMapping), null), XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportAnyType"]/*' />
         public XmlMembersMapping ImportAnyType(XmlQualifiedName typeName, string elementName)
         {
             TypeMapping typeMapping = ImportType(typeName, typeof(MembersMapping), null, TypeFlags.CanBeElementValue, true);
@@ -207,19 +164,11 @@ namespace System.Xml.Serialization
             return members;
         }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportMembersMapping1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlMembersMapping ImportMembersMapping(XmlQualifiedName[] names)
         {
             return ImportMembersMapping(names, null, false);
         }
 
-        /// <include file='doc\XmlSchemaImporter.uex' path='docs/doc[@for="XmlSchemaImporter.ImportMembersMapping2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlMembersMapping ImportMembersMapping(XmlQualifiedName[] names, Type baseType, bool baseTypeCanBeIndirect)
         {
             CodeIdentifiers memberScope = new CodeIdentifiers();

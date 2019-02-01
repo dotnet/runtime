@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "SslProtocols not supported on UAP")]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SslProtocols property requires .NET 4.7.2")]
-    public abstract partial class HttpClientHandler_SslProtocols_Test : HttpClientTestBase
+    public abstract partial class HttpClientHandler_SslProtocols_Test : HttpClientHandlerTestBase
     {
         [Fact]
         public void DefaultProtocols_MatchesExpected()

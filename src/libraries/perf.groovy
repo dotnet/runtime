@@ -97,11 +97,12 @@ def osShortName = ['Windows 10': 'win10',
                         "${python} \"%WORKSPACE%\\artifacts\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type " + runType)
                         batchFile("${python} \"%WORKSPACE%\\artifacts\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
 
-                        batchFile("build.cmd -ci -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile")
-                        batchFile("build.cmd -ci -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Diagnostic")
+                        batchFile("powershell -ExecutionPolicy ByPass -NoProfile eng/common/build.ps1 -restore -build -warnaserror:0 -ci -configuration Release /p:ConfigurationGroup=Release /p:BuildTests=true /p:BuildNative=false /p:Performance=true /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile /p:PythonCommand=${python}")
+                        batchFile("powershell -ExecutionPolicy ByPass -NoProfile eng/common/build.ps1 -restore -build -warnaserror:0 -ci -configuration Release /p:ConfigurationGroup=Release /p:BuildTests=true /p:BuildNative=false /p:Performance=true /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Diagnostic /p:PythonCommand=${python}")
                     }
                 }
                 else {
+                    def python = 'python3.5'
                     def benchViewName = isPR ? 'corefx private \$BenchviewCommitName' : 'corefx rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
                     steps {
                         //We need to specify the max cpu count to be one as we do not want to be executing performance tests in parallel
@@ -113,11 +114,11 @@ def osShortName = ['Windows 10': 'win10',
                         //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
                         //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
                         shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
-                        "python3.5 \"\${WORKSPACE}/artifacts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name " + "\"" + benchViewName + "\"" + " --user-email " + "\"dotnet-bot@microsoft.com\"\n" +
-                        "python3.5 \"\${WORKSPACE}/artifacts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type " + runType)
-                        shell("python3.5 \"\${WORKSPACE}/artifacts/Microsoft.BenchView.JSONFormat/tools/machinedata.py\"")
+                        "${python} \"\${WORKSPACE}/artifacts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name " + "\"" + benchViewName + "\"" + " --user-email " + "\"dotnet-bot@microsoft.com\"\n" +
+                        "${python} \"\${WORKSPACE}/artifacts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type " + runType)
+                        shell("${python} \"\${WORKSPACE}/artifacts/Microsoft.BenchView.JSONFormat/tools/machinedata.py\"")
 
-                        shell("bash ./build.sh --ci -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile")
+                        shell("bash ./eng/common/build.sh --restore --build --warnaserror false --ci --configuration Release /p:ConfigurationGroup=Release /p:BuildTests=true /p:BuildNative=false /p:Performance=true /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile /p:PythonCommand=${python}")
                     }
                 }
             }

@@ -29,7 +29,6 @@ namespace System.Globalization
 
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            string alternateSortName = string.Empty;
             string realNameBuffer = _sRealName;
 
             // Basic validation
@@ -39,16 +38,17 @@ namespace System.Globalization
             }
 
             // Replace _ (alternate sort) with @collation= for ICU
+            ReadOnlySpan<char> alternateSortName = default;
             int index = realNameBuffer.IndexOf('_');
             if (index > 0)
             {
                 if (index >= (realNameBuffer.Length - 1) // must have characters after _
-                    || realNameBuffer.Substring(index + 1).Contains('_')) // only one _ allowed
+                    || realNameBuffer.IndexOf('_', index + 1) >= 0) // only one _ allowed
                 {
                     return false; // fail
                 }
-                alternateSortName = realNameBuffer.Substring(index + 1);
-                realNameBuffer = realNameBuffer.Substring(0, index) + ICU_COLLATION_KEYWORD + alternateSortName;
+                alternateSortName = realNameBuffer.AsSpan(index + 1);
+                realNameBuffer = string.Concat(realNameBuffer.AsSpan(0, index), ICU_COLLATION_KEYWORD, alternateSortName);
             }
 
             // Get the locale name from ICU
@@ -61,7 +61,7 @@ namespace System.Globalization
             index = _sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
             if (index >= 0)
             {
-                _sName = _sWindowsName.Substring(0, index) + "_" + alternateSortName;
+                _sName = string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
             }
             else
             {

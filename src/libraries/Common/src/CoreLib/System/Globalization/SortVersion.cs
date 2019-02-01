@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Globalization
 {
     [Serializable]
@@ -75,20 +77,19 @@ namespace System.Globalization
             return m_NlsVersion * 7 | m_SortId.GetHashCode();
         }
 
+        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(SortVersion left, SortVersion right)
         {
-            if (((object)left) != null)
+            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // so it can become a simple test
+            if (right is null)
             {
-                return left.Equals(right);
+                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                return (left is null) ? true : false;
             }
 
-            if (((object)right) != null)
-            {
-                return right.Equals(left);
-            }
-
-            // Both null.
-            return true;
+            return right.Equals(left);
         }
 
         public static bool operator !=(SortVersion left, SortVersion right)

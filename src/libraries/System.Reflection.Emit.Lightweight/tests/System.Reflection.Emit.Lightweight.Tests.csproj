@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{C338DCF7-FB75-407B-A2ED-117FBF3AAA18}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DynamicILInfoTests.cs" />
     <Compile Include="DynamicMethodCreateDelegate.cs" />
     <Compile Include="DynamicMethodCtor.cs" />
     <Compile Include="DynamicMethodDefineParameter.cs" />

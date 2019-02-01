@@ -18,7 +18,7 @@ namespace System.ComponentModel
 
     /// <summary>
     ///    <para>Provides functionality required by sites. Sites bind
-    ///       a <see cref='System.ComponentModel.Component'/> to a <see cref='System.ComponentModel.Container'/>
+    ///       a <see cref='System.ComponentModel.Component'/> to a <see cref='System.ComponentModel.IContainer'/>
     ///       and enable communication between them, as well as provide a way
     ///       for the container to manage its components.</para>
     /// </summary>

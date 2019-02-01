@@ -384,7 +384,7 @@ namespace System.Collections.Concurrent
             // Keep trying to CAS the existing head with the new node until we succeed.
             do
             {
-                spin.SpinOnce();
+                spin.SpinOnce(sleep1Threshold: -1);
                 // Reread the head and link our new node.
                 tail._next = _head;
             }
@@ -645,7 +645,7 @@ namespace System.Collections.Concurrent
                 // We failed to CAS the new head.  Spin briefly and retry.
                 for (int i = 0; i < backoff; i++)
                 {
-                    spin.SpinOnce();
+                    spin.SpinOnce(sleep1Threshold: -1);
                 }
 
                 if (spin.NextSpinWillYield)

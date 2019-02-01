@@ -404,19 +404,20 @@ namespace System.IO.Pipes
         }
 
         /// <summary>Creates an anonymous pipe.</summary>
-        /// <param name="inheritability">The inheritability to try to use.  This may not always be honored, depending on platform.</param>
         /// <param name="reader">The resulting reader end of the pipe.</param>
         /// <param name="writer">The resulting writer end of the pipe.</param>
-        internal static unsafe void CreateAnonymousPipe(
-            HandleInheritability inheritability, out SafePipeHandle reader, out SafePipeHandle writer)
+        internal static unsafe void CreateAnonymousPipe(out SafePipeHandle reader, out SafePipeHandle writer)
         {
             // Allocate the safe handle objects prior to calling pipe/pipe2, in order to help slightly in low-mem situations
             reader = new SafePipeHandle();
             writer = new SafePipeHandle();
 
-            // Create the OS pipe
+            // Create the OS pipe.  We always create it as O_CLOEXEC (trying to do so atomically) so that the
+            // file descriptors aren't inherited.  Then if inheritability was requested, we opt-in the child file
+            // descriptor later; if the server file descriptor was also inherited, closing the server file
+            // descriptor would fail to signal EOF for the child side.
             int* fds = stackalloc int[2];
-            CreateAnonymousPipe(inheritability, fds);
+            Interop.CheckIo(Interop.Sys.Pipe(fds, Interop.Sys.PipeFlags.O_CLOEXEC));
 
             // Store the file descriptors into our safe handles
             reader.SetHandle(fds[Interop.Sys.ReadEndOfPipe]);
@@ -452,13 +453,6 @@ namespace System.IO.Pipes
                 _outBufferSize;
         }
 
-        internal static unsafe void CreateAnonymousPipe(HandleInheritability inheritability, int* fdsptr)
-        {
-            var flags = (inheritability & HandleInheritability.Inheritable) == 0 ?
-                Interop.Sys.PipeFlags.O_CLOEXEC : 0;
-            Interop.CheckIo(Interop.Sys.Pipe(fdsptr, flags));
-        }
-
         internal static void ConfigureSocket(
             Socket s, SafePipeHandle pipeHandle, 
             PipeDirection direction, int inBufferSize, int outBufferSize, HandleInheritability inheritability)
@@ -473,9 +467,11 @@ namespace System.IO.Pipes
                 s.SendBufferSize = outBufferSize;
             }
 
-            if (inheritability != HandleInheritability.Inheritable)
+            // Sockets are created with O_CLOEXEC.  If inheritability has been requested, we need to unset the flag.
+            if (inheritability == HandleInheritability.Inheritable &&
+                Interop.Sys.Fcntl.SetFD(s.SafeHandle, 0) == -1)
             {
-                Interop.Sys.Fcntl.SetCloseOnExec(pipeHandle); // ignore failures, best-effort attempt
+                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
             }
 
             switch (direction)

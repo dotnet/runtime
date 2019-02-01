@@ -258,7 +258,7 @@ namespace Internal.Cryptography.Pal
             RSA rsa = new RSAOpenSsl();
             try
             {
-                rsa.ImportRSAPublicKey(encodedData.AsSpan(), out _);
+                rsa.ImportRSAPublicKey(new ReadOnlySpan<byte>(encodedData), out _);
             }
             catch (Exception)
             {

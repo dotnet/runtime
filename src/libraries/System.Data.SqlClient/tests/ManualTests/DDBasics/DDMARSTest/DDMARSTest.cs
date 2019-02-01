@@ -8,7 +8,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DDMARSTest
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TestMain()
         {
             string connstr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;

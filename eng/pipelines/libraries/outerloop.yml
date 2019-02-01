@@ -1,0 +1,28 @@
+trigger: none
+
+resources:
+  containers:
+  - container: rhel7_container
+    image: microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2
+
+  - container: ubuntu_1604_arm64_cross_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
+
+jobs:
+  # Windows outerloop legs
+  - ${{ if endsWith(variables['Build.DefinitionName'], 'windows') }}:
+    - template: /eng/pipelines/windows.yml
+      parameters:
+        isOuterloopBuild: true
+
+  # Linux outerloop legs
+  - ${{ if endsWith(variables['Build.DefinitionName'], 'linux') }}:
+    - template: /eng/pipelines/linux.yml
+      parameters:
+        isOuterloopBuild: true
+
+  # MacOS outerloop legs
+  - ${{ if endsWith(variables['Build.DefinitionName'], 'osx') }}:
+    - template: /eng/pipelines/macos.yml
+      parameters:
+        isOuterloopBuild: true

@@ -1172,7 +1172,7 @@ namespace System.Runtime.Intrinsics
             Vector128<short> SoftwareFallback(short x)
             {
                 var result = Vector128<short>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<short>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<short>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1193,7 +1193,7 @@ namespace System.Runtime.Intrinsics
             Vector128<int> SoftwareFallback(int x)
             {
                 var result = Vector128<int>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<int>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<int>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1213,7 +1213,7 @@ namespace System.Runtime.Intrinsics
             Vector128<long> SoftwareFallback(long x)
             {
                 var result = Vector128<long>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<long>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<long>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1237,7 +1237,7 @@ namespace System.Runtime.Intrinsics
             Vector128<sbyte> SoftwareFallback(sbyte x)
             {
                 var result = Vector128<sbyte>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<sbyte>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<sbyte>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1258,7 +1258,7 @@ namespace System.Runtime.Intrinsics
             Vector128<float> SoftwareFallback(float x)
             {
                 var result = Vector128<float>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1282,7 +1282,7 @@ namespace System.Runtime.Intrinsics
             Vector128<ushort> SoftwareFallback(ushort x)
             {
                 var result = Vector128<ushort>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ushort>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ushort>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1304,7 +1304,7 @@ namespace System.Runtime.Intrinsics
             Vector128<uint> SoftwareFallback(uint x)
             {
                 var result = Vector128<uint>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<uint>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<uint>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1326,7 +1326,7 @@ namespace System.Runtime.Intrinsics
             Vector128<ulong> SoftwareFallback(ulong x)
             {
                 var result = Vector128<ulong>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ulong>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ulong>, byte>(ref result), x);
                 return result;
             }
         }

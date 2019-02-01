@@ -18,6 +18,9 @@
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
     <Compile Include="MissingSatelliteAssemblyException.cs" />
     <Compile Include="ResourceSetTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Drawing\Helpers.cs">
+        <Link>Common\System\Drawing\Helpers.cs</Link>
+    </Compile>
     <EmbeddedResource Include="Resources\TestResx.netstandard17.resources">
       <WithCulture>false</WithCulture>
       <Type>Non-Resx</Type>

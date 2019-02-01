@@ -699,7 +699,6 @@ namespace System.Net.Sockets
 
         /// <summary>Returns a <see cref="Int32TaskSocketAsyncEventArgs"/> instance for reuse.</summary>
         /// <param name="saea">The instance to return.</param>
-        /// <param name="isReceive">true if this instance is used for receives; false if used for sends.</param>
         private void ReturnSocketAsyncEventArgs(TaskSocketAsyncEventArgs<Socket> saea)
         {
             Debug.Assert(_cachedTaskEventArgs != null, "Should have been initialized when renting");
@@ -831,8 +830,6 @@ namespace System.Net.Sockets
             private short _token;
 
             /// <summary>Initializes the event args.</summary>
-            /// <param name="socket">The associated socket.</param>
-            /// <param name="buffer">The buffer to use for all operations.</param>
             public AwaitableSocketAsyncEventArgs() :
                 base(flowExecutionContext: false) // avoid flowing context at lower layers as we only expose ValueTask, which handles it
             {

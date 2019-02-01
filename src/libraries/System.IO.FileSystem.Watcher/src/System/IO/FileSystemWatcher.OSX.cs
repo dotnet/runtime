@@ -13,6 +13,7 @@ using CFStringRef = System.IntPtr;
 using FSEventStreamRef = System.IntPtr;
 using size_t = System.IntPtr;
 using FSEventStreamEventId = System.UInt64;
+using FSEventStreamEventFlags = Interop.EventStream.FSEventStreamEventFlags;
 using CFRunLoopRef = System.IntPtr;
 using Microsoft.Win32.SafeHandles;
 
@@ -79,38 +80,38 @@ namespace System.IO
 
         private CancellationTokenSource _cancellation;
 
-        private static Interop.EventStream.FSEventStreamEventFlags TranslateFlags(NotifyFilters flagsToTranslate)
+        private static FSEventStreamEventFlags TranslateFlags(NotifyFilters flagsToTranslate)
         {
-            Interop.EventStream.FSEventStreamEventFlags flags = 0;
+            FSEventStreamEventFlags flags = 0;
 
             // Always re-create the filter flags when start is called since they could have changed
             if ((flagsToTranslate & (NotifyFilters.Attributes | NotifyFilters.CreationTime | NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.Size)) != 0)
             {
-                flags = Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemInodeMetaMod  |
-                        Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemFinderInfoMod |
-                        Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemModified      |
-                        Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemChangeOwner;
+                flags = FSEventStreamEventFlags.kFSEventStreamEventFlagItemInodeMetaMod  |
+                        FSEventStreamEventFlags.kFSEventStreamEventFlagItemFinderInfoMod |
+                        FSEventStreamEventFlags.kFSEventStreamEventFlagItemModified      |
+                        FSEventStreamEventFlags.kFSEventStreamEventFlagItemChangeOwner;
             }
             if ((flagsToTranslate & NotifyFilters.Security) != 0)
             {
-                flags |= Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemChangeOwner |
-                         Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemXattrMod;
+                flags |= FSEventStreamEventFlags.kFSEventStreamEventFlagItemChangeOwner |
+                         FSEventStreamEventFlags.kFSEventStreamEventFlagItemXattrMod;
             }
             if ((flagsToTranslate & NotifyFilters.DirectoryName) != 0)
             {
-                flags |= Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsDir |
-                         Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsSymlink |
-                         Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated |
-                         Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved |
-                         Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed;
+                flags |= FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsDir |
+                         FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsSymlink |
+                         FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated |
+                         FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved |
+                         FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed;
             }
             if ((flagsToTranslate & NotifyFilters.FileName) != 0)
             {
-                flags |= Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile |
-                         Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsSymlink |
-                         Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated |
-                         Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved |
-                         Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed;
+                flags |= FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile |
+                         FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsSymlink |
+                         FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated |
+                         FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved |
+                         FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed;
             }
 
             return flags;
@@ -135,13 +136,11 @@ namespace System.IO
             private bool _includeChildren;
 
             // The bitmask of events that we want to send to the user
-            private Interop.EventStream.FSEventStreamEventFlags _filterFlags;
+            private FSEventStreamEventFlags _filterFlags;
 
             // The EventStream to listen for events on
             private SafeEventStreamHandle _eventStream;
 
-            // A reference to the RunLoop that we can use to start or stop a Watcher
-            private CFRunLoopRef _watcherRunLoop;
 
             // Callback delegate for the EventStream events 
             private Interop.EventStream.FSEventStreamCallback _callback;
@@ -152,20 +151,20 @@ namespace System.IO
 
             // Calling RunLoopStop multiple times SegFaults so protect the call to it
             private bool _stopping;
-            private object StopLock => this;
+
+            private ExecutionContext _context;
 
             internal RunningInstance(
                 FileSystemWatcher watcher,
                 string directory,
                 bool includeChildren,
-                Interop.EventStream.FSEventStreamEventFlags filter,
+                FSEventStreamEventFlags filter,
                 CancellationToken cancelToken)
             {
                 Debug.Assert(string.IsNullOrEmpty(directory) == false);
                 Debug.Assert(!cancelToken.IsCancellationRequested);
 
                 _weakWatcher = new WeakReference<FileSystemWatcher>(watcher);
-                _watcherRunLoop = IntPtr.Zero;
                 _fullDirectory = System.IO.Path.GetFullPath(directory);
                 _includeChildren = includeChildren;
                 _filterFlags = filter;
@@ -174,16 +173,103 @@ namespace System.IO
                 _stopping = false;
             }
 
+            private static class StaticWatcherRunLoopManager
+            {
+                // A reference to the RunLoop that we can use to start or stop a Watcher
+                private static CFRunLoopRef s_watcherRunLoop = IntPtr.Zero;
+
+                private static int s_scheduledStreamsCount = 0;
+
+                private static readonly object s_lockObject = new object();
+
+                public static void ScheduleEventStream(SafeEventStreamHandle eventStream)
+                {
+                    lock (s_lockObject)
+                    {
+                        if (s_watcherRunLoop != IntPtr.Zero)
+                        {
+                            // Schedule the EventStream to run on the thread's RunLoop
+                            s_scheduledStreamsCount++;
+                            Interop.EventStream.FSEventStreamScheduleWithRunLoop(eventStream, s_watcherRunLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
+                            return;
+                        }
+
+                        Debug.Assert(s_scheduledStreamsCount == 0);
+                        s_scheduledStreamsCount = 1;
+                        var runLoopStarted = new ManualResetEventSlim();
+                        new Thread(WatchForFileSystemEventsThreadStart) { IsBackground = true }.Start(new object[] { runLoopStarted, eventStream });
+                        runLoopStarted.Wait();
+                    }
+                }
+
+                public static void UnscheduleFromRunLoop(SafeEventStreamHandle eventStream)
+                {
+                    Debug.Assert(s_watcherRunLoop != IntPtr.Zero);
+                    lock (s_lockObject)
+                    {
+                        if (s_watcherRunLoop != IntPtr.Zero)
+                        { 
+                            // Always unschedule the RunLoop before cleaning up
+                            Interop.EventStream.FSEventStreamUnscheduleFromRunLoop(eventStream, s_watcherRunLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
+                            s_scheduledStreamsCount--;
+
+                            if (s_scheduledStreamsCount == 0)
+                            {
+                                // Stop the FS event message pump
+                                Interop.RunLoop.CFRunLoopStop(s_watcherRunLoop);
+                                s_watcherRunLoop = IntPtr.Zero;
+                            }
+                        }
+                    }
+                }
+
+                private static void WatchForFileSystemEventsThreadStart(object args)
+                {
+                    var inputArgs = (object[])args;
+                    var runLoopStarted = (ManualResetEventSlim)inputArgs[0];
+                    var _eventStream = (SafeEventStreamHandle)inputArgs[1];
+                    // Get this thread's RunLoop
+                    IntPtr runLoop = Interop.RunLoop.CFRunLoopGetCurrent();
+                    s_watcherRunLoop = runLoop;
+                    Debug.Assert(s_watcherRunLoop != IntPtr.Zero);
+
+                    // Retain the RunLoop so that it doesn't get moved or cleaned up before we're done with it.
+                    IntPtr retainResult = Interop.CoreFoundation.CFRetain(runLoop);
+                    Debug.Assert(retainResult == runLoop, "CFRetain is supposed to return the input value");
+
+                    // Schedule the EventStream to run on the thread's RunLoop
+                    Interop.EventStream.FSEventStreamScheduleWithRunLoop(_eventStream, runLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
+
+                    runLoopStarted.Set();
+                    try
+                    {
+                        // Start the OS X RunLoop (a blocking call) that will pump file system changes into the callback function
+                        Interop.RunLoop.CFRunLoopRun();
+                    }
+                    finally
+                    {
+                        lock (s_lockObject)
+                        {
+                            Interop.CoreFoundation.CFRelease(runLoop);
+                        }
+                    }
+                }
+            }
+
             private void CancellationCallback()
             {
-                lock (StopLock)
+                if (!_stopping && _eventStream != null)
                 {
-                    if (!_stopping && _watcherRunLoop != IntPtr.Zero)
-                    {
-                        _stopping = true;
+                    _stopping = true;
 
-                        // Stop the FS event message pump
-                        Interop.RunLoop.CFRunLoopStop(_watcherRunLoop);
+                    try
+                    {
+                        // When we get here, we've requested to stop so cleanup the EventStream and unschedule from the RunLoop
+                        Interop.EventStream.FSEventStreamStop(_eventStream);
+                    }
+                    finally 
+                    {
+                        StaticWatcherRunLoopManager.UnscheduleFromRunLoop(_eventStream);
                     }
                 }
             }
@@ -227,6 +313,8 @@ namespace System.IO
                     _callback = new Interop.EventStream.FSEventStreamCallback(FileSystemEventCallback);
                 }
 
+                _context = ExecutionContext.Capture();
+
                 // Make sure the OS file buffer(s) are fully flushed so we don't get events from cached I/O
                 Interop.Sys.Sync();
 
@@ -244,83 +332,29 @@ namespace System.IO
                     throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
                 }
 
-                // Create and start our watcher thread then wait for the thread to initialize and start 
-                // the RunLoop. We wait for that to prevent this function from returning before the RunLoop
-                // has a chance to start so that any callers won't race with the background thread's initialization
-                // and calling Stop, which would attempt to stop a RunLoop that hasn't started yet.
-                var runLoopStarted = new ManualResetEventSlim();
-                new Thread(WatchForFileSystemEventsThreadStart) { IsBackground = true }.Start(runLoopStarted);
-                runLoopStarted.Wait();
-            }
+                StaticWatcherRunLoopManager.ScheduleEventStream(_eventStream);
 
-            private void WatchForFileSystemEventsThreadStart(object arg)
-            {
-                var runLoopStarted = (ManualResetEventSlim)arg;
-
-                // Get this thread's RunLoop
-                _watcherRunLoop = Interop.RunLoop.CFRunLoopGetCurrent();
-                Debug.Assert(_watcherRunLoop != IntPtr.Zero);
-
-                // Retain the RunLoop so that it doesn't get moved or cleaned up before we're done with it.
-                IntPtr retainResult = Interop.CoreFoundation.CFRetain(_watcherRunLoop);
-                Debug.Assert(retainResult == _watcherRunLoop, "CFRetain is supposed to return the input value");
-
-                // Schedule the EventStream to run on the thread's RunLoop
-                Interop.EventStream.FSEventStreamScheduleWithRunLoop(_eventStream, _watcherRunLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
-
-                try
-                {
-                    bool started = Interop.EventStream.FSEventStreamStart(_eventStream);
-
-                    // Notify the StartRaisingEvents call that we are initialized and about to start
-                    // so that it can return and avoid a race-condition around multiple threads calling Stop and Start
-                    runLoopStarted.Set();
-
-                    if (started)
+                bool started = Interop.EventStream.FSEventStreamStart(_eventStream);
+                if (!started)
+                {  
+                    // Try to get the Watcher to raise the error event; if we can't do that, just silently exit since the watcher is gone anyway
+                    FileSystemWatcher watcher;
+                    if (_weakWatcher.TryGetTarget(out watcher))
                     {
-                        // Start the OS X RunLoop (a blocking call) that will pump file system changes into the callback function
-                        Interop.RunLoop.CFRunLoopRun();
-
-                        // When we get here, we've requested to stop so cleanup the EventStream and unschedule from the RunLoop
-                        Interop.EventStream.FSEventStreamStop(_eventStream);
-                    }
-                    else
-                    {
-                        // Try to get the Watcher to raise the error event; if we can't do that, just silently exist since the watcher is gone anyway
-                        FileSystemWatcher watcher;
-                        if (_weakWatcher.TryGetTarget(out watcher))
-                        {
-                            // An error occurred while trying to start the run loop so fail out
-                            watcher.OnError(new ErrorEventArgs(new IOException(SR.EventStream_FailedToStart, Marshal.GetLastWin32Error())));
-                        }
-                    }
-                }
-                finally
-                {
-                    // Always unschedule the RunLoop before cleaning up
-                    Interop.EventStream.FSEventStreamUnscheduleFromRunLoop(_eventStream, _watcherRunLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
-
-                    // Release the WatcherLoop Core Foundation object.
-                    lock (StopLock)
-                    {
-                        Interop.CoreFoundation.CFRelease(_watcherRunLoop);
-                        _watcherRunLoop = IntPtr.Zero;
+                        // An error occurred while trying to start the run loop so fail out
+                        watcher.OnError(new ErrorEventArgs(new IOException(SR.EventStream_FailedToStart, Marshal.GetLastWin32Error())));
                     }
                 }
             }
 
             private unsafe void FileSystemEventCallback(
-                FSEventStreamRef streamRef, 
-                IntPtr clientCallBackInfo, 
-                size_t numEvents, 
+                FSEventStreamRef streamRef,
+                IntPtr clientCallBackInfo,
+                size_t numEvents,
                 byte** eventPaths,
-                [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
-                Interop.EventStream.FSEventStreamEventFlags[] eventFlags,
-                [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
-                FSEventStreamEventId[] eventIds)
+                FSEventStreamEventFlags* eventFlags,
+                FSEventStreamEventId* eventIds)
             {
-                Debug.Assert((eventPaths != null) && (numEvents.ToInt32() == eventFlags.Length) && (numEvents.ToInt32() == eventIds.Length));
-
                 // Try to get the actual watcher from our weak reference.  We maintain a weak reference most of the time
                 // so as to avoid a rooted cycle that would prevent our processing loop from ever ending
                 // if the watcher is dropped by the user without being disposed. If we can't get the watcher,
@@ -332,13 +366,34 @@ namespace System.IO
                     return;
                 }
 
+                ExecutionContext context = _context;
+                if (context is null)
+                {
+                    // Flow suppressed, just run here
+                    ProcessEvents(numEvents.ToInt32(), eventPaths, eventFlags, eventIds, watcher);
+                }
+                else
+                {
+                    ExecutionContext.Run(
+                        context,
+                        (object o) => ((RunningInstance)o).ProcessEvents(numEvents.ToInt32(), eventPaths, eventFlags, eventIds, watcher),
+                        this);
+                }
+            }
+
+            private unsafe void ProcessEvents(int numEvents,
+                byte** eventPaths,
+                FSEventStreamEventFlags* eventFlags,
+                FSEventStreamEventId* eventIds,
+                FileSystemWatcher watcher)
+            {
                 // Since renames come in pairs, when we find the first we need to search for the next one. Once we find it, we'll add it to this
                 // list so when the for-loop comes across it, we'll skip it since it's already been processed as part of the original of the pair.
                 List<FSEventStreamEventId> handledRenameEvents = null;
-                Memory<char>[] events = new Memory<char>[numEvents.ToInt32()];
-                ProcessEvents();
+                Memory<char>[] events = new Memory<char>[numEvents];
+                ParseEvents();
 
-                for (long i = 0; i < numEvents.ToInt32(); i++)
+                for (int i = 0; i < numEvents; i++)
                 {
                     ReadOnlySpan<char> path = events[i].Span;
                     Debug.Assert(path[path.Length - 1] != '/', "Trailing slashes on events is not supported");
@@ -388,14 +443,14 @@ namespace System.IO
                         if (((eventType & WatcherChangeTypes.Renamed) > 0))
                         {
                             // Find the rename that is paired to this rename, which should be the next rename in the list
-                            long pairedId = FindRenameChangePairedChange(i, eventFlags);
-                            if (pairedId == long.MinValue)
+                            int pairedId = FindRenameChangePairedChange(i, eventFlags, numEvents);
+                            if (pairedId == int.MinValue)
                             {
                                 // Getting here means we have a rename without a pair, meaning it should be a create for the 
                                 // move from unwatched folder to watcher folder scenario or a move from the watcher folder out.
                                 // Check if the item exists on disk to check which it is
                                 // Don't send a new notification if we already sent one for this event.
-                                if (DoesItemExist(path, IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile)))
+                                if (DoesItemExist(path, IsFlagSet(eventFlags[i], FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile)))
                                 {
                                     if ((eventType & WatcherChangeTypes.Created) == 0)
                                     {
@@ -429,7 +484,9 @@ namespace System.IO
                         ArrayPool<char>.Shared.Return(underlyingArray.Array);
                 }
 
-                void ProcessEvents()
+                this._context = ExecutionContext.Capture();
+
+                void ParseEvents()
                 {
                     for (int i = 0; i < events.Length; i++)
                     {
@@ -438,7 +495,7 @@ namespace System.IO
                         byte* temp = eventPaths[i];
 
                         // Finds the position of null character.
-                        while(*temp != 0)
+                        while (*temp != 0)
                         {
                             temp++;
                             byteCount++;
@@ -459,13 +516,13 @@ namespace System.IO
             /// Compares the given event flags to the filter flags and returns which event (if any) corresponds
             /// to those flags.
             /// </summary>
-            private WatcherChangeTypes FilterEvents(Interop.EventStream.FSEventStreamEventFlags eventFlags)
+            private WatcherChangeTypes FilterEvents(FSEventStreamEventFlags eventFlags)
             {
-                const Interop.EventStream.FSEventStreamEventFlags changedFlags = Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemInodeMetaMod |
-                                                                                 Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemFinderInfoMod |
-                                                                                 Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemModified |
-                                                                                 Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemChangeOwner |
-                                                                                 Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemXattrMod;
+                const FSEventStreamEventFlags changedFlags = FSEventStreamEventFlags.kFSEventStreamEventFlagItemInodeMetaMod |
+                                                                                 FSEventStreamEventFlags.kFSEventStreamEventFlagItemFinderInfoMod |
+                                                                                 FSEventStreamEventFlags.kFSEventStreamEventFlagItemModified |
+                                                                                 FSEventStreamEventFlags.kFSEventStreamEventFlagItemChangeOwner |
+                                                                                 FSEventStreamEventFlags.kFSEventStreamEventFlagItemXattrMod;
                 WatcherChangeTypes eventType = 0;
                 // If any of the Changed flags are set in both Filter and Event then a Changed event has occurred.
                 if (((_filterFlags & changedFlags) & (eventFlags & changedFlags)) > 0)
@@ -474,25 +531,25 @@ namespace System.IO
                 }
 
                 // Notify created/deleted/renamed events if they pass through the filters
-                bool allowDirs = (_filterFlags & Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsDir) > 0;
-                bool allowFiles = (_filterFlags & Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile) > 0;
-                bool isDir = (eventFlags & Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsDir) > 0;
-                bool isFile = (eventFlags & Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile) > 0;
+                bool allowDirs = (_filterFlags & FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsDir) > 0;
+                bool allowFiles = (_filterFlags & FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile) > 0;
+                bool isDir = (eventFlags & FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsDir) > 0;
+                bool isFile = (eventFlags & FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsFile) > 0;
                 bool eventIsCorrectType = (isDir && allowDirs) || (isFile && allowFiles);
-                bool eventIsLink = (eventFlags & (Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsHardlink | Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsSymlink | Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsLastHardlink)) > 0;
+                bool eventIsLink = (eventFlags & (FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsHardlink | FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsSymlink | FSEventStreamEventFlags.kFSEventStreamEventFlagItemIsLastHardlink)) > 0;
 
                 if (eventIsCorrectType || ((allowDirs || allowFiles) && (eventIsLink)))
                 {
                     // Notify Created/Deleted/Renamed events.
-                    if (IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed))
+                    if (IsFlagSet(eventFlags, FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed))
                     {
                         eventType |= WatcherChangeTypes.Renamed;
                     }
-                    if (IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated))
+                    if (IsFlagSet(eventFlags, FSEventStreamEventFlags.kFSEventStreamEventFlagItemCreated))
                     {
                         eventType |= WatcherChangeTypes.Created;
                     }
-                    if (IsFlagSet(eventFlags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved))
+                    if (IsFlagSet(eventFlags, FSEventStreamEventFlags.kFSEventStreamEventFlagItemRemoved))
                     {
                         eventType |= WatcherChangeTypes.Deleted;
                     }
@@ -500,15 +557,15 @@ namespace System.IO
                 return eventType;
             }
 
-            private bool ShouldRescanOccur(Interop.EventStream.FSEventStreamEventFlags flags)
+            private bool ShouldRescanOccur(FSEventStreamEventFlags flags)
             {
                 // Check if any bit is set that signals that the caller should rescan
-                return (IsFlagSet(flags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagMustScanSubDirs) ||
-                        IsFlagSet(flags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagUserDropped)     ||
-                        IsFlagSet(flags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagKernelDropped)   ||
-                        IsFlagSet(flags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagRootChanged)     ||
-                        IsFlagSet(flags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagMount)           ||
-                        IsFlagSet(flags, Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagUnmount));
+                return (IsFlagSet(flags, FSEventStreamEventFlags.kFSEventStreamEventFlagMustScanSubDirs) ||
+                        IsFlagSet(flags, FSEventStreamEventFlags.kFSEventStreamEventFlagUserDropped)     ||
+                        IsFlagSet(flags, FSEventStreamEventFlags.kFSEventStreamEventFlagKernelDropped)   ||
+                        IsFlagSet(flags, FSEventStreamEventFlags.kFSEventStreamEventFlagRootChanged)     ||
+                        IsFlagSet(flags, FSEventStreamEventFlags.kFSEventStreamEventFlagMount)           ||
+                        IsFlagSet(flags, FSEventStreamEventFlags.kFSEventStreamEventFlagUnmount));
             }
 
             private bool CheckIfPathIsNested(ReadOnlySpan<char> eventPath)
@@ -519,24 +576,25 @@ namespace System.IO
                 return _includeChildren || _fullDirectory.AsSpan().StartsWith(System.IO.Path.GetDirectoryName(eventPath), StringComparison.OrdinalIgnoreCase);
             }
 
-            private long FindRenameChangePairedChange(
-                long currentIndex, 
-                Interop.EventStream.FSEventStreamEventFlags[] eventFlags)
+            private unsafe int FindRenameChangePairedChange(
+                int currentIndex, 
+                FSEventStreamEventFlags* eventFlags,
+                int numEvents)
             {
                 // Start at one past the current index and try to find the next Rename item, which should be the old path.
-                for (long i = currentIndex + 1; i < eventFlags.Length; i++)
+                for (int i = currentIndex + 1; i < numEvents; i++)
                 {
-                    if (IsFlagSet(eventFlags[i], Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed))
+                    if (IsFlagSet(eventFlags[i], FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed))
                     {
                         // We found match, stop looking
                         return i;
                     }
                 }
 
-                return long.MinValue;
+                return int.MinValue;
             }
 
-            private static bool IsFlagSet(Interop.EventStream.FSEventStreamEventFlags flags, Interop.EventStream.FSEventStreamEventFlags value)
+            private static bool IsFlagSet(FSEventStreamEventFlags flags, FSEventStreamEventFlags value)
             {
                 return (value & flags) == value;
             }

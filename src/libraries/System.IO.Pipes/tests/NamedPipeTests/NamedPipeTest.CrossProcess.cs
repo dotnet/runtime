@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Globalization;
+using System.Security.Principal;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
@@ -11,6 +14,38 @@ namespace System.IO.Pipes.Tests
     [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public sealed class NamedPipeTest_CrossProcess : RemoteExecutorTestBase
     {
+        [Fact]
+        public void InheritHandles_AvailableInChildProcess()
+        {
+            string pipeName = GetUniquePipeName();
+
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In))
+            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.Inheritable))
+            {
+                Task.WaitAll(server.WaitForConnectionAsync(), client.ConnectAsync());
+                using (RemoteInvoke(new Func<string, int>(ChildFunc), client.SafePipeHandle.DangerousGetHandle().ToString()))
+                {
+                    client.Dispose();
+                    for (int i = 0; i < 5; i++)
+                    {
+                        Assert.Equal(i, server.ReadByte());
+                    }
+                }
+            }
+
+            int ChildFunc(string handle)
+            {
+                using (var childClient = new NamedPipeClientStream(PipeDirection.Out, isAsync: false, isConnected: true, new SafePipeHandle((IntPtr)long.Parse(handle, CultureInfo.InvariantCulture), ownsHandle: true)))
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        childClient.WriteByte((byte)i);
+                    }
+                }
+                return SuccessExitCode;
+            }
+        }
+
         [Fact]
         public void PingPong_Sync()
         {

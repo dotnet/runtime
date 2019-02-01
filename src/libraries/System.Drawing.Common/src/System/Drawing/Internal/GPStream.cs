@@ -217,7 +217,7 @@ namespace System.Drawing.Internal
             _dataStream.Write(buffer, 0, checked((int)cb));
             ArrayPool<byte>.Shared.Return(buffer);
 #else
-            Span<byte> buffer = new Span<byte>(pv, checked((int)cb));
+            var buffer = new ReadOnlySpan<byte>(pv, checked((int)cb));
             _dataStream.Write(buffer);
 #endif
 

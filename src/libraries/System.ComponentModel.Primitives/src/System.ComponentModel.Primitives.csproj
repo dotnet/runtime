@@ -3,7 +3,6 @@
     <ProjectGuid>{F620F382-30D1-451E-B125-2A612F92068B}</ProjectGuid>
     <RootNamespace>System.ComponentModel.Primitives</RootNamespace>
     <AssemblyName>System.ComponentModel.Primitives</AssemblyName>
-    <NoWarn>$(NoWarn);CS1574</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

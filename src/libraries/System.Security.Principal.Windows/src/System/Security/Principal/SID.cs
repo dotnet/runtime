@@ -158,9 +158,9 @@ namespace System.Security.Principal
         DigestAuthenticationSid = 52,
         /// <summary>Indicates a SID present when the Secure Channel (SSL/TLS) authentication package authenticated the client.</summary>
         SChannelAuthenticationSid = 53,
-        /// <summary>Indicates a SID present when the user authenticated from within the forest or across a trust that does not have the selective authentication option enabled. If this SID is present, then <see cref="WinOtherOrganizationSid"/> cannot be present.</summary>
+        /// <summary>Indicates a SID present when the user authenticated from within the forest or across a trust that does not have the selective authentication option enabled. If this SID is present, then <see cref="OtherOrganizationSid"/> cannot be present.</summary>
         ThisOrganizationSid = 54,
-        /// <summary>Indicates a SID present when the user authenticated across a forest with the selective authentication option enabled. If this SID is present, then <see cref="WinThisOrganizationSid"/> cannot be present.</summary>
+        /// <summary>Indicates a SID present when the user authenticated across a forest with the selective authentication option enabled. If this SID is present, then <see cref="ThisOrganizationSid"/> cannot be present.</summary>
         OtherOrganizationSid = 55,
         /// <summary>Indicates a SID that allows a user to create incoming forest trusts. It is added to the token of users who are a member of the Incoming Forest Trust Builders built-in group in the root domain of the forest.</summary>
         BuiltinIncomingForestTrustBuildersSid = 56,

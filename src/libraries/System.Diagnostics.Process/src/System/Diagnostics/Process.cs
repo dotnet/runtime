@@ -544,8 +544,7 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>
-        ///       Gets or sets the properties to pass into the <see cref='System.Diagnostics.Process.Start'/> method for the <see cref='System.Diagnostics.Process'/>
-        ///       .
+        ///       Gets or sets the properties to pass into the <see cref='System.Diagnostics.Process.Start(System.Diagnostics.ProcessStartInfo)'/> method for the <see cref='System.Diagnostics.Process'/>.
         ///    </para>
         /// </devdoc>
         public ProcessStartInfo StartInfo

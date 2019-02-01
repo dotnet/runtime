@@ -31,8 +31,10 @@ namespace System.Linq.Parallel
     /// <typeparam name="TLeftInput"></typeparam>
     /// <typeparam name="TLeftKey"></typeparam>
     /// <typeparam name="TRightInput"></typeparam>
+    /// <typeparam name="TRightKey"></typeparam>
     /// <typeparam name="THashKey"></typeparam>
     /// <typeparam name="TOutput"></typeparam>
+    /// <typeparam name="TOutputKey"></typeparam>
     internal class HashJoinQueryOperatorEnumerator<TLeftInput, TLeftKey, TRightInput, TRightKey, THashKey, TOutput, TOutputKey>
         : QueryOperatorEnumerator<TOutput, TOutputKey>
     {

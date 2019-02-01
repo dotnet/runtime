@@ -19,8 +19,6 @@ namespace System.Collections.Specialized
         private int version; // Do not rename (binary serialization)
         private int count; // Do not rename (binary serialization)
         private readonly IComparer comparer; // Do not rename (binary serialization)
-        [NonSerialized]
-        private object _syncRoot;
 
         public ListDictionary()
         {
@@ -146,17 +144,7 @@ namespace System.Collections.Specialized
             }
         }
 
-        public object SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    System.Threading.Interlocked.CompareExchange(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        public object SyncRoot => this;
 
         public ICollection Values
         {

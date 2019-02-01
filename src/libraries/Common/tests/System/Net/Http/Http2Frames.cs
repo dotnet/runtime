@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
+using System.Collections.Generic;
 
 namespace System.Net.Test.Common
 {    
@@ -35,6 +36,16 @@ namespace System.Net.Test.Common
         Priority =      0b00100000,
 
         ValidBits =     0b00101101
+    }
+
+    public enum SettingId : ushort
+    {
+        HeaderTableSize = 0x1,
+        EnablePush = 0x2,
+        MaxConcurrentStreams = 0x3,
+        InitialWindowSize = 0x4,
+        MaxFrameSize = 0x5,
+        MaxHeaderListSize = 0x6
     }
 
     public class Frame
@@ -242,15 +253,15 @@ namespace System.Net.Test.Common
         public int ErrorCode = 0;
 
         public RstStreamFrame(FrameFlags flags, int errorCode, int streamId) :
-            base(Frame.FrameHeaderLength + 4, FrameType.RstStream, flags, streamId)
+            base(4, FrameType.RstStream, flags, streamId)
         {
             ErrorCode = errorCode;
         }
 
         public static RstStreamFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
         {
-            int idx = Frame.FrameHeaderLength;
-            int errorCode = (int)((uint)((buffer[idx++] << 24) | (buffer[idx++] << 16) | (buffer[idx++] << idx++) | buffer[idx++]) & 0x7FFFFFFF);
+            int idx = 0;
+            int errorCode = (int)((uint)((buffer[idx++] << 24) | (buffer[idx++] << 16) | (buffer[idx++] << 8) | buffer[idx++]) & 0x7FFFFFFF);
 
             return new RstStreamFrame(header.Flags, errorCode, header.StreamId);
         }
@@ -330,6 +341,97 @@ namespace System.Net.Test.Common
         public override string ToString()
         {
             return base.ToString() + $"\nUpdateSize: {UpdateSize}";
+        }
+    }
+
+    public struct SettingsEntry
+    {
+        public SettingId SettingId;
+        public uint Value;
+    }
+
+    public class SettingsFrame : Frame
+    {
+        public List<SettingsEntry> Entries;
+
+        public SettingsFrame(params SettingsEntry[] entries) :
+            base(entries.Length * 6, FrameType.Settings, FrameFlags.None, 0)
+        {
+            Entries = new List<SettingsEntry>(entries);
+        }
+
+        public static SettingsFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
+        {
+            var entries = new List<SettingsEntry>();
+
+            while (buffer.Length > 0)
+            {
+                SettingId id = (SettingId)BinaryPrimitives.ReadUInt16BigEndian(buffer);
+                buffer = buffer.Slice(2);
+                uint value = BinaryPrimitives.ReadUInt32BigEndian(buffer);
+                buffer = buffer.Slice(4);
+
+                entries.Add(new SettingsEntry { SettingId = id, Value = value });
+            }
+
+            return new SettingsFrame(entries.ToArray());
+        }
+
+        public override void WriteTo(Span<byte> buffer)
+        {
+            base.WriteTo(buffer);
+            buffer = buffer.Slice(Frame.FrameHeaderLength);
+
+            foreach (SettingsEntry entry in Entries)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(buffer, (ushort)entry.SettingId);
+                buffer = buffer.Slice(2);
+                BinaryPrimitives.WriteUInt32BigEndian(buffer, entry.Value);
+                buffer = buffer.Slice(4);
+            }
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + $"\nEntry Count: {Entries.Count}";
+        }
+    }
+
+    public class GoAwayFrame : Frame
+    {
+        public int LastStreamId;
+        public int ErrorCode;
+        public byte[] AdditionalDebugData;
+
+        public GoAwayFrame(int lastStreamId, int errorCode, byte[] additionalDebugData, int streamId) :
+            base(additionalDebugData.Length + 8, FrameType.GoAway, FrameFlags.None, streamId)
+        {
+            LastStreamId = lastStreamId;
+            ErrorCode = errorCode;
+            AdditionalDebugData = additionalDebugData;
+        }
+
+        public static GoAwayFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
+        {
+            int lastStreamId = BinaryPrimitives.ReadInt32BigEndian(buffer);
+            int errorCode = BinaryPrimitives.ReadInt32BigEndian(buffer.Slice(4));
+            byte[] additionalDebugData = buffer.Slice(8).ToArray();
+
+            return new GoAwayFrame(lastStreamId, errorCode, additionalDebugData, header.StreamId);
+        }
+
+        public override void WriteTo(Span<byte> buffer)
+        {
+            base.WriteTo(buffer);
+
+            BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(Frame.FrameHeaderLength), LastStreamId);
+            BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(Frame.FrameHeaderLength + 4), ErrorCode);
+            AdditionalDebugData.CopyTo(buffer.Slice(Frame.FrameHeaderLength + 8));
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + $"\nLastStreamId: {LastStreamId}\nErrorCode: {ErrorCode}";
         }
     }
 }

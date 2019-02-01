@@ -20,6 +20,7 @@
     <Compile Include="FileSystemWatcher.File.Move.cs" />
     <Compile Include="FileSystemWatcher.File.NotifyFilter.cs" />
     <Compile Include="FileSystemWatcher.InternalBufferSize.cs" />
+    <Compile Include="FileSystemWatcher.MultipleWatchers.cs" />
     <Compile Include="FileSystemWatcher.WaitForChanged.cs" />
     <Compile Include="FileSystemWatcher.unit.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'" Include="FileSystemWatcher.unit.netcoreapp.cs" />

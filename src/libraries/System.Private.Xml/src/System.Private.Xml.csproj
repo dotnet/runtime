@@ -4,11 +4,10 @@
     <AssemblyName>System.Private.Xml</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn),CS1572,CS1574,CS1587,CS1589,CS1591,CS1723,CS1734,649,169,414</NoWarn>
+    <NoWarn>$(NoWarn);CS1573;649;169;414</NoWarn>
     <FeatureCompiledXsl Condition="'$(TargetGroup)' != 'uap' AND '$(TargetGroup)' != 'uapaot' AND '$(TargetGroup)' != 'netcoreappaot'">true</FeatureCompiledXsl>
     <DefineConstants Condition="'$(FeatureCompiledXsl)' == 'true'">$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
     <DefineConstants Condition="'$(TargetsAOT)' == 'true'">$(DefineConstants);FEATURE_SERIALIZATION_UAPAOT;UAPAOT</DefineConstants>
-    <NoWarn>$(NoWarn);CS1572;CS1574;CS1587;CS1589;CS1591;CS1723;CS1734</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -32,6 +31,85 @@
     <Compile Include="System\Xml\Bits.cs" />
     <Compile Include="System\Xml\BitStack.cs" />
     <Compile Include="System\Xml\ByteStack.cs" />
+    <Compile Include="System\Xml\Core\HtmlEncodedRawTextWriter.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>HtmlEncodedRawTextWriter.tt</DependentUpon>
+    </Compile>
+    <Compile Include="System\Xml\Core\HtmlUtf8RawTextWriter.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>HtmlUtf8RawTextWriter.tt</DependentUpon>
+    </Compile>
+    <Compile Include="System\Xml\Core\TextEncodedRawTextWriter.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TextEncodedRawTextWriter.tt</DependentUpon>
+    </Compile>
+    <Compile Include="System\Xml\Core\TextUtf8RawTextWriter.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TextUtf8RawTextWriter.tt</DependentUpon>
+    </Compile>
+    <None Include="System\Xml\Core\HtmlEncodedRawTextWriter.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>HtmlEncodedRawTextWriter.cs</LastGenOutput>
+    </None>
+    <None Include="System\Xml\Core\HtmlRawTextWriterGenerator.ttinclude" />
+    <None Include="System\Xml\Core\HtmlUtf8RawTextWriter.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>HtmlUtf8RawTextWriter.cs</LastGenOutput>
+    </None>
+    <None Include="System\Xml\Core\RawTextWriter.ttinclude" />
+    <None Include="System\Xml\Core\TextEncodedRawTextWriter.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TextEncodedRawTextWriter.cs</LastGenOutput>
+    </None>
+    <None Include="System\Xml\Core\TextRawTextWriterGenerator.ttinclude" />
+    <None Include="System\Xml\Core\TextUtf8RawTextWriter.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TextUtf8RawTextWriter.cs</LastGenOutput>
+    </None>
+    <None Include="System\Xml\Core\XmlRawTextWriterGeneratorAsync.ttinclude" />
+    <None Include="System\Xml\Core\XmlRawTextWriterGenerator.ttinclude" />
+    <None Include="System\Xml\Core\RawTextWriterEncoded.ttinclude" />
+    <Content Include="System\Xml\Core\XmlEncodedRawTextWriter.tt">
+      <LastGenOutput>XmlEncodedRawTextWriter.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </Content>
+    <Compile Include="System\Xml\Core\XmlEncodedRawTextWriter.cs">
+      <DependentUpon>XmlEncodedRawTextWriter.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Content Include="System\Xml\Core\XmlEncodedRawTextWriterAsync.tt">
+      <LastGenOutput>XmlEncodedRawTextWriterAsync.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </Content>
+    <Compile Include="System\Xml\Core\XmlEncodedRawTextWriterAsync.cs">
+      <DependentUpon>XmlEncodedRawTextWriterAsync.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <None Include="System\Xml\Core\RawTextWriterUtf8.ttinclude" />
+    <Content Include="System\Xml\Core\XmlUtf8RawTextWriter.tt">
+      <LastGenOutput>XmlUtf8RawTextWriter.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </Content>
+    <Compile Include="System\Xml\Core\XmlUtf8RawTextWriter.cs">
+      <DependentUpon>XmlUtf8RawTextWriter.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Content Include="System\Xml\Core\XmlUtf8RawTextWriterAsync.tt">
+      <LastGenOutput>XmlUtf8RawTextWriterAsync.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </Content>
+    <Compile Include="System\Xml\Core\XmlUtf8RawTextWriterAsync.cs">
+      <DependentUpon>XmlUtf8RawTextWriterAsync.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
     <Compile Include="System\Xml\DiagnosticsSwitches.cs" />
     <Compile Include="System\Xml\Dom\XmlNamedNodeMap.SmallXmlNodeList.cs" />
     <Compile Include="System\Xml\EmptyEnumerator.cs" />
@@ -71,10 +149,7 @@
     <Compile Include="System\Xml\Core\ConformanceLevel.cs" />
     <Compile Include="System\Xml\Core\DtdProcessing.cs" />
     <Compile Include="System\Xml\Core\EntityHandling.cs" />
-    <Compile Include="System\Xml\Core\HtmlEncodedRawTextWriter.cs" />
-    <None Include="System\Xml\Core\HtmlRawTextWriterGenerator.cxx" />
     <Compile Include="System\Xml\Core\HtmlTernaryTree.cs" />
-    <Compile Include="System\Xml\Core\HtmlUtf8RawTextWriter.cs" />
     <Compile Include="System\Xml\Core\IDtdInfo.cs" />
     <Compile Include="System\Xml\Core\IDtdParser.cs" />
     <Compile Include="System\Xml\Core\IDtdParserAsync.cs" />
@@ -92,9 +167,6 @@
     <Compile Include="System\Xml\Core\ReadOnlyTernaryTree.cs" />
     <Compile Include="System\Xml\Core\ReadState.cs" />
     <Compile Include="System\Xml\Core\SecureStringHasher.cs" />
-    <Compile Include="System\Xml\Core\TextEncodedRawTextWriter.cs" />
-    <None Include="System\Xml\Core\TextRawTextWriterGenerator.cxx" />
-    <Compile Include="System\Xml\Core\TextUtf8RawTextWriter.cs" />
     <Compile Include="System\Xml\Core\ValidatingReaderNodeData.cs" />
     <Compile Include="System\Xml\Core\ValidationType.cs" />
     <Compile Include="System\Xml\Core\WhitespaceHandling.cs" />
@@ -105,11 +177,8 @@
     <Compile Include="System\Xml\Core\XmlCharCheckingReaderAsync.cs" />
     <Compile Include="System\Xml\Core\XmlCharCheckingWriter.cs" />
     <Compile Include="System\Xml\Core\XmlCharCheckingWriterAsync.cs" />
-    <Compile Include="System\Xml\Core\XmlEncodedRawTextWriter.cs" />
-    <Compile Include="System\Xml\Core\XmlEncodedRawTextWriterAsync.cs" />
     <Compile Include="System\Xml\Core\XmlEventCache.cs" />
     <Compile Include="System\Xml\Core\XmlParserContext.cs" />
-    <None Include="System\Xml\Core\XmlRawTextWriterGenerator.cxx" />
     <Compile Include="System\Xml\Core\XmlRawWriter.cs" />
     <Compile Include="System\Xml\Core\XmlRawWriterAsync.cs" />
     <Compile Include="System\Xml\Core\XmlReader.cs" />
@@ -125,8 +194,6 @@
     <Compile Include="System\Xml\Core\XmlTextReaderImplHelpers.cs" />
     <Compile Include="System\Xml\Core\XmlTextReaderImplHelpersAsync.cs" />
     <Compile Include="System\Xml\Core\XmlTextWriter.cs" />
-    <Compile Include="System\Xml\Core\XmlUtf8RawTextWriter.cs" />
-    <Compile Include="System\Xml\Core\XmlUtf8RawTextWriterAsync.cs" />
     <Compile Include="System\Xml\Core\XmlValidatingReader.cs" />
     <Compile Include="System\Xml\Core\XmlValidatingReaderImpl.cs" />
     <Compile Include="System\Xml\Core\XmlValidatingReaderImplAsync.cs" />

@@ -1186,7 +1186,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Create a Node XmlQueryType having an XSD content type.
         /// </summary>
-        /// <param name="code">unless kind is Root, Element, or Attribute, "contentType" is ignored</param>
+        /// <param name="kind">unless kind is Root, Element, or Attribute, "contentType" is ignored</param>
         /// <param name="contentType">content type of the node</param>
         /// <returns>the node type</returns>
         public static XmlQueryType Type(XPathNodeType kind, XmlQualifiedNameTest nameTest, XmlSchemaType contentType, bool isNillable)

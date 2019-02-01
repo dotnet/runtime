@@ -1930,7 +1930,7 @@ namespace System.Data
         }
 
         /// <summary>Get and sets the stepping value.</summary>
-        /// <exception cref="ArugmentException">if value is 0</exception>
+        /// <exception cref="ArgumentException">if value is 0</exception>
         internal override long Step
         {
             get { return _step; }
@@ -2011,7 +2011,7 @@ namespace System.Data
         }
 
         /// <summary>Get and sets the stepping value.</summary>
-        /// <exception cref="ArugmentException">if value is 0</exception>
+        /// <exception cref="ArgumentException">if value is 0</exception>
         internal override long Step
         {
             get { return (long)_step; }

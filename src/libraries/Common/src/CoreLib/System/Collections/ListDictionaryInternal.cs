@@ -26,8 +26,6 @@ namespace System.Collections
         private DictionaryNode head; // Do not rename (binary serialization)
         private int version; // Do not rename (binary serialization)
         private int count; // Do not rename (binary serialization)
-        [NonSerialized]
-        private object _syncRoot;
 
         public ListDictionaryInternal()
         {
@@ -134,17 +132,7 @@ namespace System.Collections
             }
         }
 
-        public object SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    System.Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        public object SyncRoot => this;
 
         public ICollection Values
         {
