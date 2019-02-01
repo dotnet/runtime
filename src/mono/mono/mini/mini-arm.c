@@ -5008,42 +5008,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			code = realloc_code (cfg, max_len);
 
-			// For reg and membase, get destination in IP.
-
-			if (tailcall_reg) {
-				g_assert (ins->sreg1 > -1);
-				if (ins->sreg1 != ARMREG_IP)
-					ARM_MOV_REG_REG (code, ARMREG_IP, ins->sreg1);
-			} else if (tailcall_membase) {
-				g_assert (ins->sreg1 > -1);
-				if (!arm_is_imm12 (ins->inst_offset)) {
-					g_assert (ins->sreg1 != ARMREG_IP); // temp in emit_big_add
-					code = emit_big_add (code, ARMREG_IP, ins->sreg1, ins->inst_offset);
-					ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, 0);
-				} else {
-					ARM_LDR_IMM (code, ARMREG_IP, ins->sreg1, ins->inst_offset);
-				}
-			}
-
 			/*
 			 * The stack looks like the following:
 			 * <caller argument area>
 			 * <saved regs etc>
 			 * <rest of frame>
 			 * <callee argument area>
-			 * <optionally saved IP> (about to be)
 			 * Need to copy the arguments from the callee argument area to
 			 * the caller argument area, and pop the frame.
 			 */
 			if (call->stack_usage) {
 				int i, prev_sp_offset = 0;
-				int saved_ip_offset = 0;
-
-				if (tailcall_membase || tailcall_reg) {
-					ARM_PUSH (code, 1 << ARMREG_IP);
-					saved_ip_offset = 4;
-				}
-
+				
 				/* Compute size of saved registers restored below */
 				if (iphone_abi)
 					prev_sp_offset = 2 * 4;
@@ -5060,12 +5036,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				// FIXME a fixed size memcpy is desirable here,
 				// at least for larger values of stack_usage.
 				for (i = 0; i < call->stack_usage; i += sizeof (target_mgreg_t)) {
-					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, i + saved_ip_offset);
-					ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, i + saved_ip_offset);
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, i);
+					ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, i);
 				}
 
-				if (saved_ip_offset)
-					ARM_POP (code, 1 << ARMREG_IP);
+			}
+
+			// For reg and membase, get destination in IP.
+
+			if (tailcall_reg) {
+				g_assert (ins->sreg1 > -1);
+				if (ins->sreg1 != ARMREG_IP)
+					ARM_MOV_REG_REG (code, ARMREG_IP, ins->sreg1);
+			} else if (tailcall_membase) {
+				g_assert (ins->sreg1 > -1);
+				if (!arm_is_imm12 (ins->inst_offset)) {
+					g_assert (ins->sreg1 != ARMREG_IP); // temp in emit_big_add
+					code = emit_big_add (code, ARMREG_IP, ins->sreg1, ins->inst_offset);
+					ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, 0);
+				} else {
+					ARM_LDR_IMM (code, ARMREG_IP, ins->sreg1, ins->inst_offset);
+				}
 			}
 
 			/*
