@@ -331,7 +331,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 catch (InvalidCastException elementCastException)
                 {
                     Exception e = new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueArrayCoersion, this.Type, typeof (T).MakeArrayType().Name, i, elementCastException.Message), elementCastException);
-                    e.HResult = elementCastException._HResult;
+                    e.HResult = elementCastException.HResult;
                     throw e;
                 }
             }
