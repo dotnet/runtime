@@ -100,19 +100,19 @@ namespace System.Resources
         }
 
         protected string BaseNameField;
+        protected Assembly MainAssembly;    // Need the assembly manifest sometimes.
 
         private Dictionary<string, ResourceSet> _resourceSets;
-        private string moduleDir;      // For assembly-ignorant directory location
-        protected Assembly MainAssembly;   // Need the assembly manifest sometimes.
-        private Type _locationInfo;    // For Assembly or type-based directory layout
-        private Type _userResourceSet;  // Which ResourceSet instance to create
+        private string _moduleDir;          // For assembly-ignorant directory location
+        private Type _locationInfo;         // For Assembly or type-based directory layout
+        private Type _userResourceSet;      // Which ResourceSet instance to create
         private CultureInfo _neutralResourcesCulture;  // For perf optimizations.
 
         private CultureNameResourceSetPair _lastUsedResourceCache;
 
         private bool _ignoreCase;   // Whether case matters in GetString & GetObject
 
-        private bool UseManifest;  // Use Assembly manifest, or grovel disk.
+        private bool _useManifest;  // Use Assembly manifest, or grovel disk.
 
         // Whether to fall back to the main assembly or a particular 
         // satellite for the neutral resources.
@@ -121,7 +121,7 @@ namespace System.Resources
         private Version _satelliteContractVersion;
         private bool _lookedForSatelliteContractVersion;
 
-        private IResourceGroveler resourceGroveler;
+        private IResourceGroveler _resourceGroveler;
 
         public static readonly int MagicNumber = unchecked((int)0xBEEFCACE);  // If only hex had a K...
 
@@ -155,7 +155,7 @@ namespace System.Resources
         {
             _lastUsedResourceCache = new CultureNameResourceSetPair();
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-            resourceGroveler = new ManifestBasedResourceGroveler(mediator);
+            _resourceGroveler = new ManifestBasedResourceGroveler(mediator);
         }
 
         // Constructs a Resource Manager for files beginning with 
@@ -177,14 +177,14 @@ namespace System.Resources
 
             BaseNameField = baseName;
 
-            moduleDir = resourceDir;
+            _moduleDir = resourceDir;
             _userResourceSet = usingResourceSet;
             _resourceSets = new Dictionary<string, ResourceSet>();
             _lastUsedResourceCache = new CultureNameResourceSetPair();
-            UseManifest = false;
+            _useManifest = false;
 
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-            resourceGroveler = new FileBasedResourceGroveler(mediator);
+            _resourceGroveler = new FileBasedResourceGroveler(mediator);
         }
 
         public ResourceManager(string baseName, Assembly assembly)
@@ -240,11 +240,11 @@ namespace System.Resources
         private void CommonAssemblyInit()
         {
 #if FEATURE_APPX || ENABLE_WINRT
-            SetAppXConfiguration();
+            SetUapConfiguration();
 #endif
 
             // Now we can use the managed resources even when using PRI's to support the APIs GetObject, GetStream...etc.
-            UseManifest = true;
+            _useManifest = true;
 
             _resourceSets = new Dictionary<string, ResourceSet>();
             _lastUsedResourceCache = new CultureNameResourceSetPair();
@@ -252,7 +252,7 @@ namespace System.Resources
             _fallbackLoc = UltimateResourceFallbackLocation.MainAssembly;
 
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-            resourceGroveler = new ManifestBasedResourceGroveler(mediator);
+            _resourceGroveler = new ManifestBasedResourceGroveler(mediator);
 
             _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, ref _fallbackLoc);
         }
@@ -411,13 +411,13 @@ namespace System.Resources
                 }
             }
 
-            if (UseManifest && culture.HasInvariantCultureName)
+            if (_useManifest && culture.HasInvariantCultureName)
             {
                 string fileName = GetResourceFileName(culture);
                 Stream stream = MainAssembly.GetManifestResourceStream(_locationInfo, fileName);
                 if (createIfNotExists && stream != null)
                 {
-                    rs = ((ManifestBasedResourceGroveler)resourceGroveler).CreateResourceSet(stream, MainAssembly);
+                    rs = ((ManifestBasedResourceGroveler)_resourceGroveler).CreateResourceSet(stream, MainAssembly);
                     AddResourceSet(localResourceSets, culture.Name, ref rs);
                     return rs;
                 }
@@ -465,7 +465,7 @@ namespace System.Resources
                 // Assembly load event, which could fail then call back into the 
                 // ResourceManager).  It's happened.
 
-                rs = resourceGroveler.GrovelForResourceSet(currentCultureInfo, localResourceSets,
+                rs = _resourceGroveler.GrovelForResourceSet(currentCultureInfo, localResourceSets,
                                                            tryParents, createIfNotExists);
 
                 // found a ResourceSet; we're done
@@ -608,7 +608,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(name));
 
 #if FEATURE_APPX || ENABLE_WINRT
-            if (UseUapResourceManagement)
+            if (_useUapResourceManagement)
             {
                 // Throws WinRT hresults.
                 return GetStringFromPRI(name, culture, _neutralResourcesCulture.Name);
@@ -773,7 +773,7 @@ namespace System.Resources
             // NEEDED ONLY BY FILE-BASED
             internal string ModuleDir
             {
-                get { return _rm.moduleDir; }
+                get { return _rm._moduleDir; }
             }
 
             // NEEDED BOTH BY FILE-BASED  AND ASSEMBLY-BASED
