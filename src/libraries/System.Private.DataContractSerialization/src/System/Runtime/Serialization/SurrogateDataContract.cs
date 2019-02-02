@@ -6,7 +6,6 @@ namespace System.Runtime.Serialization
 {
     using System;
     using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.CompilerServices;
 
     internal sealed class SurrogateDataContract : DataContract

@@ -11,7 +11,6 @@ Imports System.ComponentModel
 Imports System.Diagnostics
 Imports System.Globalization
 Imports System.Security
-Imports System.Runtime.Versioning
 Imports System.Text
 
 Imports Microsoft.VisualBasic.CompilerServices
@@ -22,7 +21,6 @@ Namespace Microsoft.VisualBasic.FileIO
     '''  This class represents the file system on a computer. It allows browsing the existing drives, special directories;
     '''  and also contains some commonly use methods for IO tasks.
     ''' </summary>
-    '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt)>
     Partial Public Class FileSystem
         ''' <summary>
         ''' Return the names of all available drives on the computer.
@@ -374,8 +372,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </summary>
         ''' <param name="sourceDirectoryName">The path to the source directory, can be relative or absolute.</param>
         ''' <param name="destinationDirectoryName">The path to the target directory, can be relative or absolute. Parent directory will always be created.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub CopyDirectory(ByVal sourceDirectoryName As String, ByVal destinationDirectoryName As String)
             CopyOrMoveDirectory(CopyOrMove.Copy, sourceDirectoryName, destinationDirectoryName,
                                 overwrite:=False, UIOptionInternal.NoUI, UICancelOption.ThrowException)
@@ -388,8 +384,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="sourceDirectoryName">The path to the source directory, can be relative or absolute.</param>
         ''' <param name="destinationDirectoryName">The path to the target directory, can be relative or absolute. Parent directory will always be created.</param>
         ''' <param name="overwrite">True to overwrite existing files with the same name. Otherwise False.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub CopyDirectory(ByVal sourceDirectoryName As String, ByVal destinationDirectoryName As String, ByVal overwrite As Boolean)
             CopyOrMoveDirectory(CopyOrMove.Copy, sourceDirectoryName, destinationDirectoryName,
                                 overwrite, UIOptionInternal.NoUI, UICancelOption.ThrowException)
@@ -403,8 +397,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="sourceDirectoryName">The path to the source directory, can be relative or absolute.</param>
         ''' <param name="destinationDirectoryName">The path to the target directory, can be relative or absolute. Parent directory will always be created.</param>
         ''' <param name="showUI">ShowDialogs to display progress and confirmation dialogs. Otherwise HideDialogs.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub CopyDirectory(ByVal sourceDirectoryName As String, ByVal destinationDirectoryName As String, ByVal showUI As UIOption)
             CopyOrMoveDirectory(CopyOrMove.Copy, sourceDirectoryName, destinationDirectoryName,
                                 overwrite:=False, ToUIOptionInternal(showUI), UICancelOption.ThrowException)
@@ -429,8 +421,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </summary>
         ''' <param name="sourceFileName">The path to the source file, can be relative or absolute.</param>
         ''' <param name="destinationFileName">The path to the destination file, can be relative or absolute. Parent directory will always be created.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub CopyFile(ByVal sourceFileName As String, ByVal destinationFileName As String)
             CopyOrMoveFile(CopyOrMove.Copy, sourceFileName, destinationFileName,
                            overwrite:=False, UIOptionInternal.NoUI, UICancelOption.ThrowException)
@@ -442,8 +432,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="sourceFileName">The path to the source file, can be relative or absolute.</param>
         ''' <param name="destinationFileName">The path to the destination file, can be relative or absolute. Parent directory will always be created.</param>
         ''' <param name="overwrite">True to overwrite existing file with the same name. Otherwise False.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub CopyFile(ByVal sourceFileName As String, ByVal destinationFileName As String, ByVal overwrite As Boolean)
             CopyOrMoveFile(CopyOrMove.Copy, sourceFileName, destinationFileName,
                            overwrite, UIOptionInternal.NoUI, UICancelOption.ThrowException)
@@ -457,8 +445,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="sourceFileName">The path to the source file, can be relative or absolute.</param>
         ''' <param name="destinationFileName">The path to the destination file, can be relative or absolute. Parent directory will always be created.</param>
         ''' <param name="showUI">ShowDialogs to display progress and confirmation dialogs. Otherwise HideDialogs.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub CopyFile(ByVal sourceFileName As String, ByVal destinationFileName As String, ByVal showUI As UIOption)
             CopyOrMoveFile(CopyOrMove.Copy, sourceFileName, destinationFileName,
                            overwrite:=False, ToUIOptionInternal(showUI), UICancelOption.ThrowException)
@@ -474,8 +460,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="showUI">ShowDialogs to display progress and confirmation dialogs. Otherwise HideDialogs.</param>
         ''' <param name="onUserCancel">ThrowException to throw exception if user cancels the operation. Otherwise DoNothing.</param>
         ''' <remarks>onUserCancel will be ignored if showUI = HideDialogs.</remarks>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub CopyFile(ByVal sourceFileName As String, ByVal destinationFileName As String, ByVal showUI As UIOption, ByVal onUserCancel As UICancelOption)
             CopyOrMoveFile(CopyOrMove.Copy, sourceFileName, destinationFileName,
                            overwrite:=False, ToUIOptionInternal(showUI), onUserCancel)
@@ -502,8 +486,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </summary>
         ''' <param name="directory">The path to the directory.</param>
         ''' <param name="onDirectoryNotEmpty">DeleteAllContents to delete everything. ThrowIfDirectoryNonEmpty to throw exception if the directory is not empty.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub DeleteDirectory(ByVal directory As String, ByVal onDirectoryNotEmpty As DeleteDirectoryOption)
             DeleteDirectoryInternal(directory, onDirectoryNotEmpty,
                 UIOptionInternal.NoUI, RecycleOption.DeletePermanently, UICancelOption.ThrowException)
@@ -515,8 +497,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="directory">The path to the directory.</param>
         ''' <param name="showUI">True to shows progress window. Otherwise, False.</param>
         ''' <param name="recycle">SendToRecycleBin to delete to Recycle Bin. Otherwise DeletePermanently.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub DeleteDirectory(ByVal directory As String, ByVal showUI As UIOption, ByVal recycle As RecycleOption)
             DeleteDirectoryInternal(directory, DeleteDirectoryOption.DeleteAllContents,
                                     ToUIOptionInternal(showUI), recycle, UICancelOption.ThrowException)
@@ -529,8 +509,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="showUI">ShowDialogs to display progress and confirmation dialogs. Otherwise HideDialogs.</param>
         ''' <param name="recycle">SendToRecycleBin to delete to Recycle Bin. Otherwise DeletePermanently.</param>
         ''' <param name="onUserCancel">Throw exception when user cancel the UI operation or not.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub DeleteDirectory(ByVal directory As String,
             ByVal showUI As UIOption, ByVal recycle As RecycleOption, ByVal onUserCancel As UICancelOption)
             DeleteDirectoryInternal(directory, DeleteDirectoryOption.DeleteAllContents,
@@ -541,8 +519,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' Delete the given file.
         ''' </summary>
         ''' <param name="file">The path to the file.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub DeleteFile(ByVal file As String)
             DeleteFileInternal(file, UIOptionInternal.NoUI, RecycleOption.DeletePermanently, UICancelOption.ThrowException)
         End Sub
@@ -553,8 +529,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="file">The path to the file.</param>
         ''' <param name="showUI">ShowDialogs to display progress and confirmation dialogs. Otherwise HideDialogs.</param>
         ''' <param name="recycle">SendToRecycleBin to delete to Recycle Bin. Otherwise DeletePermanently.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub DeleteFile(ByVal file As String, ByVal showUI As UIOption, ByVal recycle As RecycleOption)
             DeleteFileInternal(file, ToUIOptionInternal(showUI), recycle, UICancelOption.ThrowException)
         End Sub
@@ -568,8 +542,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="onUserCancel">Throw exception when user cancel the UI operation or not.</param>
         ''' <exception cref="IO.Path.GetFullPath">IO.Path.GetFullPath() exceptions: if FilePath is invalid.</exception>
         ''' <exception cref="IO.FileNotFoundException">if a file does not exist at FilePath</exception>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub DeleteFile(ByVal file As String, ByVal showUI As UIOption, ByVal recycle As RecycleOption,
                                      ByVal onUserCancel As UICancelOption)
 
@@ -582,8 +554,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </summary>
         ''' <param name="sourceDirectoryName">The path to the source directory, can be relative or absolute.</param>
         ''' <param name="destinationDirectoryName">The path to the target directory, can be relative or absolute. Parent directory will always be created.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub MoveDirectory(ByVal sourceDirectoryName As String, ByVal destinationDirectoryName As String)
             CopyOrMoveDirectory(CopyOrMove.Move, sourceDirectoryName, destinationDirectoryName,
                 overwrite:=False, UIOptionInternal.NoUI, UICancelOption.ThrowException)
@@ -595,8 +565,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </summary>
         ''' <param name="sourceDirectoryName">The path to the source directory, can be relative or absolute.</param>
         ''' <param name="destinationDirectoryName">The path to the target directory, can be relative or absolute. Parent directory will always be created.</param>        ''' <param name="overwrite">True to overwrite existing files with the same name. Otherwise False.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub MoveDirectory(ByVal sourceDirectoryName As String, ByVal destinationDirectoryName As String, ByVal overwrite As Boolean)
             CopyOrMoveDirectory(CopyOrMove.Move, sourceDirectoryName, destinationDirectoryName,
                 overwrite, UIOptionInternal.NoUI, UICancelOption.ThrowException)
@@ -610,8 +578,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="sourceDirectoryName">The path to the source directory, can be relative or absolute.</param>
         ''' <param name="destinationDirectoryName">The path to the target directory, can be relative or absolute. Parent directory will always be created.</param>
         ''' <param name="showUI">ShowDialogs to display progress and confirmation dialogs. Otherwise HideDialogs.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub MoveDirectory(ByVal sourceDirectoryName As String, ByVal destinationDirectoryName As String, ByVal showUI As UIOption)
             CopyOrMoveDirectory(CopyOrMove.Move, sourceDirectoryName, destinationDirectoryName,
                                 overwrite:=False, ToUIOptionInternal(showUI), UICancelOption.ThrowException)
@@ -626,8 +592,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="destinationDirectoryName">The path to the target directory, can be relative or absolute. Parent directory will always be created.</param>
         ''' <param name="showUI">ShowDialogs to display progress and confirmation dialogs. Otherwise HideDialogs.</param>
         ''' <param name="onUserCancel">ThrowException to throw exception if user cancels the operation. Otherwise DoNothing.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub MoveDirectory(ByVal sourceDirectoryName As String, ByVal destinationDirectoryName As String, ByVal showUI As UIOption, ByVal onUserCancel As UICancelOption)
             CopyOrMoveDirectory(CopyOrMove.Move, sourceDirectoryName, destinationDirectoryName,
                                 overwrite:=False, ToUIOptionInternal(showUI), onUserCancel)
@@ -638,8 +602,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </summary>
         ''' <param name="sourceFileName">The path to the source file, can be relative or absolute.</param>
         ''' <param name="destinationFileName">The path to the destination file, can be relative or absolute. Parent directory will always be created.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub MoveFile(ByVal sourceFileName As String, ByVal destinationFileName As String)
             CopyOrMoveFile(CopyOrMove.Move, sourceFileName, destinationFileName,
                            overwrite:=False, UIOptionInternal.NoUI, UICancelOption.ThrowException)
@@ -651,8 +613,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="sourceFileName">The path to the source file, can be relative or absolute.</param>
         ''' <param name="destinationFileName">The path to the destination file, can be relative or absolute. Parent directory will always be created.</param>
         ''' <param name="overwrite">True to overwrite existing file with the same name. Otherwise False.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub MoveFile(ByVal sourceFileName As String, ByVal destinationFileName As String, ByVal overwrite As Boolean)
             CopyOrMoveFile(CopyOrMove.Move, sourceFileName, destinationFileName,
                            overwrite, UIOptionInternal.NoUI, UICancelOption.ThrowException)
@@ -666,8 +626,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="sourceFileName">The path to the source file, can be relative or absolute.</param>
         ''' <param name="destinationFileName">The path to the destination file, can be relative or absolute. Parent directory will always be created.</param>
         ''' <param name="showUI">ShowDialogs to display progress and confirmation dialogs. Otherwise HideDialogs.</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub MoveFile(ByVal sourceFileName As String, ByVal destinationFileName As String, ByVal showUI As UIOption)
             CopyOrMoveFile(CopyOrMove.Move, sourceFileName, destinationFileName,
                            overwrite:=False, ToUIOptionInternal(showUI), UICancelOption.ThrowException)
@@ -683,8 +641,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="showUI">ShowDialogs to display progress and confirmation dialogs. Otherwise HideDialogs.</param>
         ''' <param name="onUserCancel">ThrowException to throw exception if user cancels the operation. Otherwise DoNothing.</param>
         ''' <remarks>onUserCancel will be ignored if showUI = HideDialogs.</remarks>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Public Shared Sub MoveFile(ByVal sourceFileName As String, ByVal destinationFileName As String, ByVal showUI As UIOption, ByVal onUserCancel As UICancelOption)
             CopyOrMoveFile(CopyOrMove.Move, sourceFileName, destinationFileName,
                            overwrite:=False, ToUIOptionInternal(showUI), onUserCancel)
@@ -931,9 +887,6 @@ Namespace Microsoft.VisualBasic.FileIO
         '''     IOException: Target directory is under source directory - cyclic operation.
         '''     IOException: TargetDirectoryPath points to an existing file.
         '''     IOException: Some files and directories can not be copied.</exception>
-        <SecuritySafeCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Private Shared Sub CopyOrMoveDirectory(ByVal operation As CopyOrMove,
                                                ByVal sourceDirectoryName As String, ByVal destinationDirectoryName As String,
                                                ByVal overwrite As Boolean, ByVal showUI As UIOptionInternal, ByVal onUserCancel As UICancelOption)
@@ -1003,8 +956,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="targetDirectoryPath">Target path - must be full path.</param>
         ''' <param name="Overwrite">True to overwrite the files. Otherwise, False.</param>
         ''' <exception cref="IO.IOException">Some files or directories cannot be copied or moved.</exception>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Private Shared Sub FxCopyOrMoveDirectory(ByVal operation As CopyOrMove,
                                                  ByVal sourceDirectoryPath As String, ByVal targetDirectoryPath As String, ByVal overwrite As Boolean)
 
@@ -1054,8 +1005,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="SourceDirectoryNode">The source node. Only copy / move directories contained in the source node.</param>
         ''' <param name="Overwrite">True to overwrite sub-files. Otherwise False.</param>
         ''' <param name="Exceptions">The list of accumulated exceptions while doing the copy / move</param>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Private Shared Sub CopyOrMoveDirectoryNode(ByVal Operation As CopyOrMove,
                                                    ByVal SourceDirectoryNode As DirectoryNode, ByVal Overwrite As Boolean, ByVal Exceptions As ListDictionary)
 
@@ -1137,9 +1086,6 @@ Namespace Microsoft.VisualBasic.FileIO
         '''   ArgumenNullException: If NewName = "".
         '''   ArgumentException: If NewName contains path information.
         ''' </exception>
-        <SecuritySafeCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Private Shared Sub CopyOrMoveFile(ByVal operation As CopyOrMove,
                                           ByVal sourceFileName As String, ByVal destinationFileName As String,
                                           ByVal overwrite As Boolean, ByVal showUI As UIOptionInternal, ByVal onUserCancel As UICancelOption
@@ -1216,9 +1162,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="recycle">SendToRecycleBin to delete to Recycle Bin. Otherwise DeletePermanently.</param>
         ''' <param name="onUserCancel">Throw exception when user cancel the UI operation or not.</param>
         ''' <remarks>If user wants shell features, onDirectoryNotEmpty is ignored.</remarks>
-        <SecuritySafeCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Private Shared Sub DeleteDirectoryInternal(ByVal directory As String, ByVal onDirectoryNotEmpty As DeleteDirectoryOption,
                                                    ByVal showUI As UIOptionInternal, ByVal recycle As RecycleOption, ByVal onUserCancel As UICancelOption)
 
@@ -1259,9 +1202,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="recycle">DeletePermanently or SendToRecycleBin</param>
         ''' <param name="onUserCancel">DoNothing or ThrowException</param>
         ''' <remarks></remarks>
-        <SecuritySafeCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Private Shared Sub DeleteFileInternal(ByVal file As String, ByVal showUI As UIOptionInternal, ByVal recycle As RecycleOption,
                                               ByVal onUserCancel As UICancelOption)
             ' Verify enums

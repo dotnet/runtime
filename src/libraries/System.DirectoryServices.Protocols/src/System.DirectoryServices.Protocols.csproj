@@ -40,7 +40,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />
-    <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
