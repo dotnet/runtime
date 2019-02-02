@@ -949,6 +949,7 @@ namespace System.Data.SqlClient
                     case StorageType.SqlBinary: return typeof(object);
                     case StorageType.SqlGuid: return typeof(SqlGuid);
                     case StorageType.SqlXml: return typeof(SqlXml);
+                    // Date DateTime2 and DateTimeOffset have no direct Sql type to contain them
                 }
             }
             else
@@ -972,6 +973,9 @@ namespace System.Data.SqlClient
                     case StorageType.SqlCachedBuffer: return typeof(string);
                     case StorageType.SqlGuid: return typeof(Guid);
                     case StorageType.SqlXml: return typeof(string);
+                    case StorageType.Date: return typeof(DateTime);
+                    case StorageType.DateTime2: return typeof(DateTime);
+                    case StorageType.DateTimeOffset: return typeof(DateTimeOffset);
                 }
             }
 
@@ -1135,7 +1139,7 @@ namespace System.Data.SqlClient
         }
 
         // [Field]As<T> method explanation:
-        // these methods are used to bridge generic to non-generic context changes allowing allocation free access
+        // these methods are used to bridge generic to non-generic access to value type fields on the storage struct
         // where typeof(T) == typeof(field) 
         //   1) RyuJIT will recognise the pattern of (T)(object)T as being redundant and eliminate 
         //   the T and object casts leaving T, so while this looks like it will put every value type instance in a box the 
@@ -1175,12 +1179,6 @@ namespace System.Data.SqlClient
         {
             ThrowIfNull();
             return (T)(object)_value._int64;
-        }
-
-        internal T GuidAs<T>()
-        {
-            ThrowIfNull();
-            return (T)(object)_value._guid;
         }
 
         internal T DoubleAs<T>()
