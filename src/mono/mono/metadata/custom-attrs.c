@@ -2087,12 +2087,12 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		MonoEvent *event = MONO_HANDLE_GETVAL (revent, event);
 		cinfo = mono_custom_attrs_from_event_checked (event->parent, event, error);
 		goto_if_nok (error, leave);
-	} else if (strcmp ("MonoField", klass_name) == 0) {
+	} else if (strcmp ("RuntimeFieldInfo", klass_name) == 0) {
 		MonoReflectionFieldHandle rfield = MONO_HANDLE_CAST (MonoReflectionField, obj);
 		MonoClassField *field = MONO_HANDLE_GETVAL (rfield, field);
 		cinfo = mono_custom_attrs_from_field_checked (field->parent, field, error);
 		goto_if_nok (error, leave);
-	} else if ((strcmp ("MonoMethod", klass_name) == 0) || (strcmp ("MonoCMethod", klass_name) == 0)) {
+	} else if ((strcmp ("RuntimeMethodInfo", klass_name) == 0) || (strcmp ("RuntimeConstructorInfo", klass_name) == 0)) {
 		MonoReflectionMethodHandle rmethod = MONO_HANDLE_CAST (MonoReflectionMethod, obj);
 		cinfo = mono_custom_attrs_from_method_checked (MONO_HANDLE_GETVAL (rmethod, method), error);
 		goto_if_nok (error, leave);

@@ -1734,7 +1734,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 		case MONO_TABLE_FIELD:
 			if (!strcmp (iltoken_member_class_name, "FieldBuilder")) {
 				g_assert_not_reached ();
-			} else if (!strcmp (iltoken_member_class_name, "MonoField")) {
+			} else if (!strcmp (iltoken_member_class_name, "RuntimeFieldInfo")) {
 				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->field_to_table_idx, f));
 			} else {
@@ -1746,8 +1746,8 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				g_assert_not_reached ();
 			} else if (!strcmp (iltoken_member_class_name, "ConstructorBuilder")) {
 				g_assert_not_reached ();
-			} else if (!strcmp (iltoken_member_class_name, "MonoMethod") || 
-					   !strcmp (iltoken_member_class_name, "MonoCMethod")) {
+			} else if (!strcmp (iltoken_member_class_name, "RuntimeMethodInfo") ||
+					   !strcmp (iltoken_member_class_name, "RuntimeConstructorInfo")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 			} else {
@@ -1782,15 +1782,15 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			if (!strcmp (iltoken_member_class_name, "MonoArrayMethod")) {
 				am = (MonoReflectionArrayMethod*)iltoken->member;
 				idx = am->table_idx;
-			} else if (!strcmp (iltoken_member_class_name, "MonoMethod") ||
-					   !strcmp (iltoken_member_class_name, "MonoCMethod")) {
+			} else if (!strcmp (iltoken_member_class_name, "RuntimeMethodInfo") ||
+					   !strcmp (iltoken_member_class_name, "RuntimeConstructorInfo")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				g_assert (mono_class_is_ginst (m->klass) || mono_class_is_gtd (m->klass));
 				continue;
 			} else if (!strcmp (iltoken_member_class_name, "FieldBuilder")) {
 				g_assert_not_reached ();
 				continue;
-			} else if (!strcmp (iltoken_member_class_name, "MonoField")) {
+			} else if (!strcmp (iltoken_member_class_name, "RuntimeFieldInfo")) {
 				continue;
 			} else if (!strcmp (iltoken_member_class_name, "MethodBuilder") ||
 					!strcmp (iltoken_member_class_name, "ConstructorBuilder")) {
@@ -1810,7 +1810,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			}
 			break;
 		case MONO_TABLE_METHODSPEC:
-			if (!strcmp (iltoken_member_class_name, "MonoMethod")) {
+			if (!strcmp (iltoken_member_class_name, "RuntimeMethodInfo")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				g_assert (mono_method_signature_internal (m)->generic_param_count);
 				continue;
@@ -1866,7 +1866,7 @@ fixup_cattrs (MonoDynamicImage *assembly)
 			ctor = (MonoObject *)mono_g_hash_table_lookup (assembly->remapped_tokens, GUINT_TO_POINTER (token));
 			g_assert (ctor);
 
-			if (!strcmp (m_class_get_name (mono_object_class (ctor)), "MonoCMethod")) {
+			if (!strcmp (m_class_get_name (mono_object_class (ctor)), "RuntimeConstructorInfo")) {
 				MonoMethod *m = ((MonoReflectionMethod*)ctor)->method;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;

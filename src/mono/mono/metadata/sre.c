@@ -1106,7 +1106,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObjectHandle obj
 	error_init (error);
 
 	MonoClass *klass = mono_handle_class (obj);
-	if (strcmp (klass->name, "MonoMethod") == 0 || strcmp (klass->name, "MonoCMethod") == 0) {
+	if (strcmp (klass->name, "RuntimeMethodInfo") == 0 || strcmp (klass->name, "RuntimeConstructorInfo") == 0) {
 		MonoReflectionMethodHandle ref_method = MONO_HANDLE_CAST (MonoReflectionMethod, obj);
 		MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
 		g_assert (!MONO_HANDLE_IS_NULL (opt_param_types) && (mono_method_signature_internal (method)->sentinelpos >= 0));
@@ -1170,8 +1170,8 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 		/* If it's a RuntimeType now, we could have registered a
 		 * TypeBuilder for it before, so replacing is okay. */
 		how_collide = MONO_DYN_IMAGE_TOK_REPLACE;
-	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
-			   strcmp (klass->name, "MonoMethod") == 0) {
+	} else if (strcmp (klass->name, "RuntimeMethodInfo") == 0 ||
+			   strcmp (klass->name, "RuntimeConstructorInfo") == 0) {
 		MonoReflectionMethodHandle m = MONO_HANDLE_CAST (MonoReflectionMethod, obj);
 		MonoMethod *method = MONO_HANDLE_GETVAL (m, method);
 		if (method->is_inflated) {
@@ -1222,7 +1222,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 			token = methodref_token;
 		}
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
-	} else if (strcmp (klass->name, "MonoField") == 0) {
+	} else if (strcmp (klass->name, "RuntimeFieldInfo") == 0) {
 		MonoReflectionFieldHandle f = MONO_HANDLE_CAST (MonoReflectionField, obj);
 		MonoClassField *field = MONO_HANDLE_GETVAL (f, field);
 		if ((field->parent->image == &assembly->image) &&
@@ -2055,7 +2055,7 @@ mono_is_sre_ctor_on_tb_inst (MonoClass *klass)
 static gboolean
 is_sr_mono_field (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection", "MonoField");
+	check_corlib_type_cached (klass, "System.Reflection", "RuntimeFieldInfo");
 }
 
 gboolean
@@ -2067,13 +2067,13 @@ mono_is_sr_mono_property (MonoClass *klass)
 static gboolean
 is_sr_mono_method (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection", "MonoMethod");
+	check_corlib_type_cached (klass, "System.Reflection", "RuntimeMethodInfo");
 }
 
 gboolean
 mono_is_sr_mono_cmethod (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection", "MonoCMethod");
+	check_corlib_type_cached (klass, "System.Reflection", "RuntimeConstructorInfo");
 }
 
 gboolean
@@ -2453,7 +2453,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 
 	error_init (error);
 
-	if (strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
+	if (strcmp (ctor->vtable->klass->name, "RuntimeConstructorInfo")) {
 		/* sig is freed later so allocate it in the heap */
 		sig = ctor_builder_to_signature_raw (NULL, (MonoReflectionCtorBuilder*)ctor, error); /* FIXME use handles */
 		if (!is_ok (error)) {
@@ -2522,7 +2522,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 	memcpy (p, buffer, buflen);
 leave:
 	g_free (buffer);
-	if (strcmp (ctor->vtable->klass->name, "MonoCMethod"))
+	if (strcmp (ctor->vtable->klass->name, "RuntimeConstructorInfo"))
 		g_free (sig);
 	return result;
 }
@@ -4253,8 +4253,8 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 		}
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
-	} else if (strcmp (oklass->name, "MonoMethod") == 0 ||
-			   strcmp (oklass->name, "MonoCMethod") == 0) {
+	} else if (strcmp (oklass->name, "RuntimeMethodInfo") == 0 ||
+			   strcmp (oklass->name, "RuntimeConstructorInfo") == 0) {
 		result = ((MonoReflectionMethod*)obj)->method;
 		if (context) {
 			result = mono_class_inflate_generic_method_checked ((MonoMethod *)result, context, error);
@@ -4262,7 +4262,7 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 		}
 		*handle_class = mono_defaults.methodhandle_class;
 		g_assert (result);
-	} else if (strcmp (oklass->name, "MonoField") == 0) {
+	} else if (strcmp (oklass->name, "RuntimeFieldInfo") == 0) {
 		MonoClassField *field = ((MonoReflectionField*)obj)->field;
 
 		ensure_complete_type (field->parent, error);

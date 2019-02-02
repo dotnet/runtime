@@ -49,8 +49,6 @@
 #endif
 #include "icall-decl.h"
 
-typedef guint32 gchandle_t; // FIXME use this more
-
 static void
 mono_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj);
 
