@@ -8,7 +8,6 @@ using System.DirectoryServices.Interop;
 using System.ComponentModel;
 using System.Threading;
 using System.Reflection;
-using System.Security.Permissions;
 using System.DirectoryServices.Design;
 using System.Globalization;
 using System.Net;

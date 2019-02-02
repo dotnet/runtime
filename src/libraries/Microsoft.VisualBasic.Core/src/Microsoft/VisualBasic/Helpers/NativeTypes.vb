@@ -6,8 +6,6 @@ Option Strict On
 
 Imports System
 Imports System.Diagnostics
-Imports System.Security
-Imports System.Runtime.ConstrainedExecution
 Imports System.Runtime.InteropServices
 Imports Microsoft.Win32.SafeHandles
 
@@ -28,8 +26,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Public lpSecurityDescriptor As IntPtr
             Public bInheritHandle As Boolean
 
-            <SecuritySafeCritical()>
-            <ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)>
             Public Overloads Sub Dispose() Implements IDisposable.Dispose
                 If lpSecurityDescriptor <> IntPtr.Zero Then
                     UnsafeNativeMethods.LocalFree(lpSecurityDescriptor)
@@ -49,23 +45,18 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' This is required because call to constructor of SafeHandle is not allowed in constrained region.
         ''' </summary>
         ''' <remarks>VSWhidbey 544308</remarks>
-        <SecurityCritical()>
-        <SuppressUnmanagedCodeSecurity()>
         Friend NotInheritable Class LateInitSafeHandleZeroOrMinusOneIsInvalid
             Inherits SafeHandleZeroOrMinusOneIsInvalid
 
-            <SecurityCritical()>
             Friend Sub New()
                 MyBase.New(True)
             End Sub
 
-            <SecurityCritical()>
             Friend Sub InitialSetHandle(ByVal h As IntPtr)
                 Debug.Assert(MyBase.IsInvalid, "Safe handle should only be set once.")
                 MyBase.SetHandle(h)
             End Sub
 
-            <SecurityCritical()>
             Protected Overrides Function ReleaseHandle() As Boolean
                 Return NativeMethods.CloseHandle(Me.handle) <> 0
             End Function
@@ -81,8 +72,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' (using LateInitSafeHandleZeroOrMinusOneIsInvalid.InitialSetHandle) to correctly use and dispose the handle.
         ''' </remarks>
         <StructLayout(LayoutKind.Sequential)>
-        <System.Security.SecurityCritical()>
-        <System.Security.SuppressUnmanagedCodeSecurity()>
         Friend NotInheritable Class PROCESS_INFORMATION
             Public hProcess As IntPtr = IntPtr.Zero
             Public hThread As IntPtr = IntPtr.Zero
@@ -103,8 +92,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' </summary>
         ''' <remarks></remarks>
         <StructLayout(LayoutKind.Sequential, CharSet:=CharSet.Auto)>
-        <System.Security.SecurityCritical()>
-        <System.Security.SuppressUnmanagedCodeSecurity()>
         Friend NotInheritable Class STARTUPINFO
             Implements IDisposable
 
@@ -132,13 +119,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             Private m_HasBeenDisposed As Boolean ' To detect redundant calls. Default initialize = False.
 
-            <SecuritySafeCritical()>
             Protected Overrides Sub Finalize()
                 Dispose(False)
             End Sub
 
             ' IDisposable
-            <SecurityCritical()>
             Private Sub Dispose(ByVal disposing As Boolean)
                 If Not m_HasBeenDisposed Then
                     If disposing Then
@@ -167,8 +152,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Sub
 
             ' This code correctly implements the disposable pattern.
-            <SecuritySafeCritical()>
-            <ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)>
             Friend Sub Dispose() Implements IDisposable.Dispose
                 ' Do not change this code.  Put cleanup code in Dispose(ByVal disposing As Boolean) above.
                 Dispose(True)

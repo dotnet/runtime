@@ -7,8 +7,6 @@ Option Strict On
 Imports System
 Imports System.ComponentModel
 Imports System.Globalization
-Imports System.Security
-Imports System.Security.Permissions
 
 Imports Microsoft.VisualBasic.CompilerServices.Utils
 
@@ -110,8 +108,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="info"></param>
         ''' <param name="context"></param>
         ''' <remarks></remarks>
-        <SecurityCritical()>
-        <SecurityPermission(SecurityAction.Demand, SerializationFormatter:=True)>
         <EditorBrowsable(EditorBrowsableState.Advanced)>
         Public Overrides Sub GetObjectData(ByVal info As System.Runtime.Serialization.SerializationInfo, ByVal context As System.Runtime.Serialization.StreamingContext)
             If info IsNot Nothing Then ' Fix FxCop violation ValidateArgumentsOfPublicMethods.

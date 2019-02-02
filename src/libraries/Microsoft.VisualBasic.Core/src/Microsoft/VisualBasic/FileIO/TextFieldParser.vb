@@ -29,7 +29,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </summary>
         ''' <param name="path">The path of the file to be parsed</param>
         ''' <remarks></remarks>
-        '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt)>
         Public Sub New(ByVal path As String)
 
             ' Default to UTF-8 and detect encoding
@@ -42,7 +41,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="path">The path of the file to be parsed</param>
         ''' <param name="defaultEncoding">The decoding to default to if encoding isn't determined from file</param>
         ''' <remarks></remarks>
-        '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt)>
         Public Sub New(ByVal path As String, ByVal defaultEncoding As System.Text.Encoding)
 
             ' Default to detect encoding
@@ -56,7 +54,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="defaultEncoding">The decoding to default to if encoding isn't determined from file</param>
         ''' <param name="detectEncoding">Indicates whether or not to try to detect the encoding from the BOM</param>
         ''' <remarks></remarks>
-        '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt)>
         Public Sub New(ByVal path As String, ByVal defaultEncoding As System.Text.Encoding, ByVal detectEncoding As Boolean)
 
             InitializeFromPath(path, defaultEncoding, detectEncoding)
@@ -67,7 +64,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </summary>
         ''' <param name="stream"></param>
         ''' <remarks></remarks>
-        '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt)>
         Public Sub New(ByVal stream As Stream)
 
             ' Default to UTF-8 and detect encoding
@@ -80,7 +76,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="stream"></param>
         ''' <param name="defaultEncoding">The decoding to default to if encoding isn't determined from file</param>
         ''' <remarks></remarks>
-        '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt)>
         Public Sub New(ByVal stream As Stream, ByVal defaultEncoding As System.Text.Encoding)
 
             ' Default to detect encoding
@@ -94,7 +89,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="defaultEncoding">The decoding to default to if encoding isn't determined from file</param>
         ''' <param name="detectEncoding">Indicates whether or not to try to detect the encoding from the BOM</param>
         ''' <remarks></remarks>
-        '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt)>
         Public Sub New(ByVal stream As Stream, ByVal defaultEncoding As System.Text.Encoding, ByVal detectEncoding As Boolean)
 
             InitializeFromStream(stream, defaultEncoding, detectEncoding)
@@ -108,7 +102,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="detectEncoding">Indicates whether or not to try to detect the encoding from the BOM</param>
         ''' <param name="leaveOpen">Indicates whether or not to leave the passed in stream open</param>
         ''' <remarks></remarks>
-        '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt)>
         Public Sub New(ByVal stream As Stream, ByVal defaultEncoding As System.Text.Encoding, ByVal detectEncoding As Boolean, ByVal leaveOpen As Boolean)
 
             m_LeaveOpen = leaveOpen
@@ -120,7 +113,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </summary>
         ''' <param name="reader">The TextReader that does the reading</param>
         ''' <remarks></remarks>
-        '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt)>
         Public Sub New(ByVal reader As TextReader)
 
             If reader Is Nothing Then
