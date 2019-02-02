@@ -1386,7 +1386,7 @@ namespace System.StubHelpers
             if (ex == null)
                 return 0;  // S_OK;
 
-            return ex._HResult;
+            return ex.HResult;
         }
 
         internal static Exception ConvertToManaged(int hr)
