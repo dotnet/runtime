@@ -24,6 +24,7 @@
     </Compile>
     <Compile Include="ComponentModel\INotifyPropertyChangingTests.cs" />
     <Compile Include="ComponentModel\PropertyChangingEventArgsTests.cs" />
+    <Compile Include="System\ComponentModel\TypeConverterAttributeTests.cs" />
     <Compile Include="KeyedCollection\TestMethods.cs" />
     <Compile Include="KeyedCollection\ConcreteTestClasses.cs" />
     <Compile Include="KeyedCollection\Utils.cs" />
