@@ -1493,7 +1493,8 @@ private:
     // As we build uses, we may want to preference the next definition (i.e. the register produced
     // by the current node) to the same register as one of its uses. This is done by setting
     // 'tgtPrefUse' to that RefPosition.
-    RefPosition* tgtPrefUse = nullptr;
+    RefPosition* tgtPrefUse  = nullptr;
+    RefPosition* tgtPrefUse2 = nullptr;
 
     // The following keep track of information about internal (temporary register) intervals
     // during the building of a single node.
@@ -1512,6 +1513,7 @@ private:
     void clearBuildState()
     {
         tgtPrefUse               = nullptr;
+        tgtPrefUse2              = nullptr;
         internalCount            = 0;
         setInternalRegsDelayFree = false;
         pendingDelayFree         = false;
@@ -1528,7 +1530,7 @@ private:
     // These methods return the number of sources.
     int BuildNode(GenTree* stmt);
 
-    GenTree* getTgtPrefOperand(GenTreeOp* tree);
+    void getTgtPrefOperands(GenTreeOp* tree, bool& prefOp1, bool& prefOp2);
     bool supportsSpecialPutArg();
 
     int BuildSimple(GenTree* tree);
@@ -1753,11 +1755,12 @@ public:
     }
 
     // Assign the related interval, but only if it isn't already assigned.
-    void assignRelatedIntervalIfUnassigned(Interval* newRelatedInterval)
+    bool assignRelatedIntervalIfUnassigned(Interval* newRelatedInterval)
     {
         if (relatedInterval == nullptr)
         {
             assignRelatedInterval(newRelatedInterval);
+            return true;
         }
         else
         {
@@ -1769,16 +1772,22 @@ public:
                 printf(" already has a related interval\n");
             }
 #endif // DEBUG
+            return false;
         }
     }
 
-    // Update the registerPreferences on the interval.
-    // If there are conflicting requirements on this interval, set the preferences to
-    // the union of them.  That way maybe we'll get at least one of them.
-    // An exception is made in the case where one of the existing or new
-    // preferences are all callee-save, in which case we "prefer" the callee-save
+    // Get the current preferences for this Interval.
+    // Note that when we have an assigned register we don't necessarily update the
+    // registerPreferences to that register, as there may be multiple, possibly disjoint,
+    // definitions. This method will return the current assigned register if any, or
+    // the 'registerPreferences' otherwise.
+    //
+    regMaskTP getCurrentPreferences()
+    {
+        return (assignedReg == nullptr) ? registerPreferences : genRegMask(assignedReg->regNum);
+    }
 
-    void updateRegisterPreferences(regMaskTP preferences)
+    void mergeRegisterPreferences(regMaskTP preferences)
     {
         // We require registerPreferences to have been initialized.
         assert(registerPreferences != RBM_NONE);
@@ -1831,6 +1840,25 @@ public:
             }
         }
         registerPreferences = newPreferences;
+    }
+
+    // Update the registerPreferences on the interval.
+    // If there are conflicting requirements on this interval, set the preferences to
+    // the union of them.  That way maybe we'll get at least one of them.
+    // An exception is made in the case where one of the existing or new
+    // preferences are all callee-save, in which case we "prefer" the callee-save
+
+    void updateRegisterPreferences(regMaskTP preferences)
+    {
+        // If this interval is preferenced, that interval may have already been assigned a
+        // register, and we want to include that in the preferences.
+        if ((relatedInterval != nullptr) && !relatedInterval->isActive)
+        {
+            mergeRegisterPreferences(relatedInterval->getCurrentPreferences());
+        }
+
+        // Now merge the new preferences.
+        mergeRegisterPreferences(preferences);
     }
 };
 
@@ -2041,6 +2069,24 @@ public:
     LsraLocation getRefEndLocation()
     {
         return delayRegFree ? nodeLocation + 1 : nodeLocation;
+    }
+
+    RefPosition* getRangeEndRef()
+    {
+        if (lastUse || nextRefPosition == nullptr)
+        {
+            return this;
+        }
+        // It would seem to make sense to only return 'nextRefPosition' if it is a lastUse,
+        // and otherwise return `lastRefPosition', but that tends to  excessively lengthen
+        // the range for heuristic purposes.
+        // TODO-CQ: Look into how this might be improved .
+        return nextRefPosition;
+    }
+
+    LsraLocation getRangeEndLocation()
+    {
+        return getRangeEndRef()->getRefEndLocation();
     }
 
     bool isIntervalRef()
