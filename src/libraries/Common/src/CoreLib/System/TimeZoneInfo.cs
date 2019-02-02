@@ -286,9 +286,9 @@ namespace System
         {
             Debug.Assert(rule.NoDaylightTransitions, "GetPreviousAdjustmentRule should only be used with NoDaylightTransitions rules.");
 
-            if (ruleIndex.HasValue && 0 < ruleIndex.Value && ruleIndex.Value < _adjustmentRules.Length)
+            if (ruleIndex.HasValue && 0 < ruleIndex.GetValueOrDefault() && ruleIndex.GetValueOrDefault() < _adjustmentRules.Length)
             {
-                return _adjustmentRules[ruleIndex.Value - 1];
+                return _adjustmentRules[ruleIndex.GetValueOrDefault() - 1];
             }
 
             AdjustmentRule result = rule;

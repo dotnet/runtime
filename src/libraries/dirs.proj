@@ -13,63 +13,12 @@
     <Project Include="src.builds" />
     <Project Include="shims\manual\*.csproj" />
     <Project Include="shims\ApiCompat.proj" />
+    <Project Include="pretest.builds" />
   </ItemGroup>
   
-  <PropertyGroup>
-    <GenerateDepsJsonTaskDll>$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll</GenerateDepsJsonTaskDll>
-  </PropertyGroup>
-
-  <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(GenerateDepsJsonTaskDll)"/>
-  <!-- After we build all the source libraries we need to generate a deps.json file for the shared test framework -->
-  <Target Name="GenerateTestSharedFrameworkDepsFile" AfterTargets="BuildAllProjects" Condition="'$(BinplaceTestSharedFramework)' == 'true'">
-
-    <ItemGroup>
-      <!-- This is for HostPolicy, CoreCLR and Jit dependencies to continue to remain inside of the dep.json -->
-      <ExceptionForDepsJson Include="microsoft.netcore.app" />
-
-      <!-- TODO: We should see about generating this from scratch instead of relying on a previous deps file as a template -->
-      <_sharedFrameworkDepsJson Include="$(DotNetRoot)shared\Microsoft.NETCore.App\*\Microsoft.NETCore.App.deps.json" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <_OriginalDepsJsonPath>%(_sharedFrameworkDepsJson.FullPath)</_OriginalDepsJsonPath>
-      <_OutputTestSharedFrameworkDepsPath>$(NETCoreAppTestSharedFrameworkPath)\Microsoft.NETCore.App.deps.json</_OutputTestSharedFrameworkDepsPath>
-    </PropertyGroup>
-
-    <GenerateDepsJson DepsJsonPath="$(_OriginalDepsJsonPath)"
-                      GenerateNewDepsJson="true"
-                      RuntimeDirectory="$(NETCoreAppTestSharedFrameworkPath)"
-                      DepsExceptions="@(ExceptionForDepsJson)"
-                      OutputPath="$(_OutputTestSharedFrameworkDepsPath)"/>
-  </Target>
-
   <ItemGroup Condition="'$(DirectoryToBuild)' != ''">
     <Project Include="$(DirectoryToBuild)/**/*.csproj" />
   </ItemGroup>
 
   <Import Project="..\dir.traversal.targets" />
-
-  <!-- Generate the shared library for running ILC tests for configuration Release-x64 -->
-  <Target Name="GenerateSharedLibraryForILC" AfterTargets="BuildAllProjects" Condition="'$(EnableMultiFileILCTests)' == 'true'">
-    <Message Importance="High" Text="Generating shared library for running ILC tests." Condition="Exists('$(InternalTestILCFolder)\ilc.exe')" />
-    <Exec Command="$(InternalTestILCFolder)\ilc.exe -buildSharedAssemblies -buildType ret -frameworkPath &quot;$(ILCFXInputFolder)&quot;" StandardOutputImportance="Low" Condition="Exists('$(TestHostRootPath)\TestILC\ilc.exe')" />
-  </Target>
-
-    <!-- Generate launch settings support files to enable VS debugging. -->
-  <Target Name="GenerateLaunchSettingsFiles" BeforeTargets="BuildAllProjects" Condition="'$(EnableLaunchSettings)' == 'true'">
-    <PropertyGroup>
-      <_TestProjectRootDir>$(SourceDir)</_TestProjectRootDir>
-      <_TestProjectRootDir Condition="'$(DirectoryToBuild)'!=''">$(DirectoryToBuild)</_TestProjectRootDir>
-    </PropertyGroup>
-    <ItemGroup>
-      <!-- Keep in sync with pattern for test projects in tests.builds -->
-      <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*Tests.csproj" />
-      <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*Tests.vbproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(TestProjects)"
-             Targets="GenerateLaunchSettingsFile"
-             ContinueOnError="ErrorAndContinue" />
-  </Target>
-
 </Project>

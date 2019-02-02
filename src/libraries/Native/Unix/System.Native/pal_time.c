@@ -19,8 +19,9 @@
 
 enum
 {
-    SecondsToMicroSeconds = 1000000,  // 10^6
-    SecondsToNanoSeconds = 1000000000 // 10^9
+    SecondsToMicroSeconds = 1000000,   // 10^6
+    SecondsToNanoSeconds = 1000000000, // 10^9
+    MicroSecondsToNanoSeconds = 1000   // 10^3
 };
 
 int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
@@ -184,8 +185,12 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     }
     else
     {
-        kernelTime = ((uint64_t)(resUsage.ru_stime.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(resUsage.ru_stime.tv_usec);
-        userTime = ((uint64_t)(resUsage.ru_utime.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(resUsage.ru_utime.tv_usec);
+        kernelTime =
+            ((uint64_t)(resUsage.ru_stime.tv_sec) * SecondsToNanoSeconds) + 
+            ((uint64_t)(resUsage.ru_stime.tv_usec) * MicroSecondsToNanoSeconds);
+        userTime =
+            ((uint64_t)(resUsage.ru_utime.tv_sec) * SecondsToNanoSeconds) +
+            ((uint64_t)(resUsage.ru_utime.tv_usec) * MicroSecondsToNanoSeconds);
     }
 
     uint64_t timestamp;
