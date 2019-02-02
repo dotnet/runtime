@@ -2585,43 +2585,53 @@ namespace System.Data.SqlClient
             // this block of type specific shortcuts uses RyuJIT jit behaviours to achieve fast implementations of the primative types
             // RyuJIT will be able to determine at compilation time that the typeof(T)==typeof(<primative>) options are constant
             // and be able to remove all implementations which cannot be reached. this will eliminate non-specialized code for value types
-
-            if (typeof(T) == typeof(int))
+            Type dataType = data.GetTypeFromStorageType(false);
+            if (typeof(T) == typeof(int) && dataType == typeof(int))
             {
                 return data.Int32As<T>();
             }
-            else if (typeof(T) == typeof(byte))
+            else if (typeof(T) == typeof(byte) && dataType == typeof(byte))
             {
                 return data.ByteAs<T>();
             }
-            else if (typeof(T) == typeof(short))
+            else if (typeof(T) == typeof(short) && dataType == typeof(short))
             {
                 return data.Int16As<T>();
             }
-            else if (typeof(T) == typeof(long))
+            else if (typeof(T) == typeof(long) && dataType == typeof(long))
             {
                 return data.Int64As<T>();
             }
-            else if (typeof(T) == typeof(Guid))
-            {
-                return data.GuidAs<T>();
-            }
-            else if (typeof(T) == typeof(bool))
+            else if (typeof(T) == typeof(bool) && dataType == typeof(bool))
             {
                 return data.BooleanAs<T>();
             }
-            else if (typeof(T) == typeof(double))
+            else if (typeof(T) == typeof(double) && dataType == typeof(double))
             {
                 return data.DoubleAs<T>();
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(T) == typeof(float) && dataType == typeof(float))
             {
                 return data.SingleAs<T>();
             }
+            else if (typeof(T) == typeof(Guid) && dataType == typeof(Guid))
+            {
+                return (T)(object)data.Guid;
+            }
+            else if (typeof(T) == typeof(decimal) && dataType == typeof(decimal))
+            {
+                return (T)(object)data.Decimal;
+            }
+            else if (typeof(T) == typeof(DateTimeOffset) && dataType == typeof(DateTimeOffset) && _typeSystem > SqlConnectionString.TypeSystem.SQLServer2005 && !metaData.IsNewKatmaiDateTimeType)
+            {
+                return (T)(object)data.DateTimeOffset;
+            }
+            else if (typeof(T) == typeof(DateTime) && dataType == typeof(DateTime) && _typeSystem > SqlConnectionString.TypeSystem.SQLServer2005 && !metaData.IsNewKatmaiDateTimeType)
+            {
+                return (T)(object)data.DateTime;
+            }
             else
             {
-
-
                 Type typeofT = typeof(T);
                 if (_typeofINullable.IsAssignableFrom(typeofT))
                 {
