@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (Exception ex)  // Still may hit this case due to a race condition
             {
-                if (HResults.E_BOUNDS == ex._HResult)
+                if (HResults.E_BOUNDS == ex.HResult)
                 {
                     value = default;
                     return false;
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (Exception ex)
             {
-                if (HResults.E_BOUNDS == ex._HResult)
+                if (HResults.E_BOUNDS == ex.HResult)
                     throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
                 throw;
             }

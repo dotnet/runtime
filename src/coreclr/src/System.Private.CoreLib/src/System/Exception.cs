@@ -622,7 +622,7 @@ namespace System
 #pragma warning restore 414
 
         // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
-        internal int _HResult;     // HResult
+        private int _HResult;       // HResult
 
         public int HResult
         {
@@ -668,7 +668,7 @@ namespace System
         {
             get
             {
-                return nIsTransient(_HResult);
+                return nIsTransient(HResult);
             }
         }
 
