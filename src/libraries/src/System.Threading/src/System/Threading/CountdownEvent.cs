@@ -182,9 +182,8 @@ namespace System.Threading
             {
                 throw new InvalidOperationException(SR.CountdownEvent_Decrement_BelowZero);
             }
-#pragma warning disable 0420
+
             int newCount = Interlocked.Decrement(ref _currentCount);
-#pragma warning restore 0420
             if (newCount == 0)
             {
                 _event.Set();
@@ -237,11 +236,7 @@ namespace System.Threading
                     throw new InvalidOperationException(SR.CountdownEvent_Decrement_BelowZero);
                 }
 
-                // This disables the "CS0420: a reference to a volatile field will not be treated as volatile" warning
-                // for this statement.  This warning is clearly senseless for Interlocked operations.
-#pragma warning disable 0420
                 if (Interlocked.CompareExchange(ref _currentCount, observedCount - signalCount, observedCount) == observedCount)
-#pragma warning restore 0420
                 {
                     break;
                 }
@@ -351,11 +346,7 @@ namespace System.Threading
                     throw new InvalidOperationException(SR.CountdownEvent_Increment_AlreadyMax);
                 }
 
-                // This disables the "CS0420: a reference to a volatile field will not be treated as volatile" warning
-                // for this statement.  This warning is clearly senseless for Interlocked operations.
-#pragma warning disable 0420
                 if (Interlocked.CompareExchange(ref _currentCount, observedCount + signalCount, observedCount) == observedCount)
-#pragma warning restore 0420
                 {
                     break;
                 }

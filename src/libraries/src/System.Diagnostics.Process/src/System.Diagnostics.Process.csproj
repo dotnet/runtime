@@ -48,6 +48,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcessModules.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.EnumProcessModules.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
     </Compile>
@@ -399,6 +402,9 @@
     <Compile Include="System\Diagnostics\Process.Uap.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Uap.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Uap.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
+    <Compile Include="System\Diagnostics\Process.NonUap.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\Diagnostics\Process.BSD.cs" />

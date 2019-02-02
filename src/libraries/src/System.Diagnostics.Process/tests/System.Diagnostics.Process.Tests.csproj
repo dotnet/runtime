@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{E1114510-844C-4BB2-BBAD-8595BD16E24B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -18,6 +18,7 @@
     <Compile Include="$(CommonTestPath)\Microsoft\Win32\TempRegistryKey.cs">
       <Link>Common\Microsoft\Win32\TempRegistryKey.cs</Link>
     </Compile>
+    <Compile Include="Helpers.cs" />
     <Compile Include="Interop.cs" />
     <Compile Include="Interop.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="ProcessCollectionTests.cs" />
