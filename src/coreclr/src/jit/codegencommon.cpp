@@ -7760,8 +7760,16 @@ void CodeGen::genFnProlog()
 #endif // _TARGET_XARCH_
 
 #ifdef _TARGET_ARM64_
-    // Probe large frames now, if necessary, since genPushCalleeSavedRegisters() will allocate the frame.
-    genAllocLclFrame(compiler->compLclFrameSize, initReg, &initRegZeroed, intRegState.rsCalleeRegArgMaskLiveIn);
+    // Probe large frames now, if necessary, since genPushCalleeSavedRegisters() will allocate the frame. Note that
+    // for arm64, genAllocLclFrame only probes the frame; it does not actually allocate it (it does not change SP).
+    // For arm64, we are probing the frame before the callee-saved registers are saved. The 'initReg' might have
+    // been calculated to be one of the callee-saved registers (say, if all the integer argument registers are
+    // in use, and perhaps with other conditions being satisfied). This is ok in other cases, after the callee-saved
+    // registers have been saved. So instead of letting genAllocLclFrame use initReg as a temporary register,
+    // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegZeroed output argument.
+    bool ignoreInitRegZeroed = false;
+    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegZeroed,
+                     intRegState.rsCalleeRegArgMaskLiveIn);
     genPushCalleeSavedRegisters(initReg, &initRegZeroed);
 #else  // !_TARGET_ARM64_
     genPushCalleeSavedRegisters();
