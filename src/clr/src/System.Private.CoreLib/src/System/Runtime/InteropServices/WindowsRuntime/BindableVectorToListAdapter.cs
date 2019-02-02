@@ -165,7 +165,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (Exception ex)
             {
-                if (HResults.E_BOUNDS == ex._HResult)
+                if (HResults.E_BOUNDS == ex.HResult)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
                 throw;
@@ -183,7 +183,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (Exception ex)
             {
-                if (HResults.E_BOUNDS == ex._HResult)
+                if (HResults.E_BOUNDS == ex.HResult)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
                 throw;
@@ -201,7 +201,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (Exception ex)
             {
-                if (HResults.E_BOUNDS == ex._HResult)
+                if (HResults.E_BOUNDS == ex.HResult)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
                 throw;
@@ -219,7 +219,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (Exception ex)
             {
-                if (HResults.E_BOUNDS == ex._HResult)
+                if (HResults.E_BOUNDS == ex.HResult)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
                 throw;
