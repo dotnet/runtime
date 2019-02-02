@@ -48,7 +48,7 @@ namespace System.Diagnostics
         [CLSCompliant(false)]
         public static Process Start(string fileName, string userName, SecureString password, string domain)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo(fileName);            
+            ProcessStartInfo startInfo = new ProcessStartInfo(fileName);
             startInfo.UserName = userName;
             startInfo.Password = password;
             startInfo.Domain = domain;
@@ -59,11 +59,11 @@ namespace System.Diagnostics
         [CLSCompliant(false)]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments);                        
+            ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments);
             startInfo.UserName = userName;
             startInfo.Password = password;
             startInfo.Domain = domain;
-            startInfo.UseShellExecute = false;            
+            startInfo.UseShellExecute = false;
             return Start(startInfo);
         }
 
@@ -85,7 +85,7 @@ namespace System.Diagnostics
             SetPrivilege(Interop.Advapi32.SeDebugPrivilege, 0);
         }
 
-        /// <summary>Stops the associated process immediately.</summary>
+        /// <summary>Terminates the associated process immediately.</summary>
         public void Kill()
         {
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE))
@@ -445,7 +445,7 @@ namespace System.Diagnostics
 
             StringBuilder commandLine = BuildCommandLine(startInfo.FileName, StartInfo.Arguments);
             Process.AppendArguments(commandLine, StartInfo.ArgumentList);
-            
+
             Interop.Kernel32.STARTUPINFO startupInfo = new Interop.Kernel32.STARTUPINFO();
             Interop.Kernel32.PROCESS_INFORMATION processInfo = new Interop.Kernel32.PROCESS_INFORMATION();
             Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES();
