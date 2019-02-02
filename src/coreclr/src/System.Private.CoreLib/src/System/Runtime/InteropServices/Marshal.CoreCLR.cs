@@ -15,12 +15,6 @@ using System.StubHelpers;
 
 using Internal.Runtime.CompilerServices;
 
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif // BIT64
-
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -65,29 +59,6 @@ namespace System.Runtime.InteropServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr OffsetOfHelper(IRuntimeFieldInfo f);
-
-        /// <summary>
-        /// IMPORTANT NOTICE: This method does not do any verification on the array.
-        /// It must be used with EXTREME CAUTION since passing in invalid index or
-        /// an array that is not pinned can cause unexpected results.
-        /// </summary>
-        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
-        {
-            if (arr == null)
-                throw new ArgumentNullException(nameof(arr));
-
-            void* pRawData = Unsafe.AsPointer(ref arr.GetRawArrayData());
-            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
-        }
-
-        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
-        {
-            if (arr == null)
-                throw new ArgumentNullException(nameof(arr));
-
-            void* pRawData = Unsafe.AsPointer(ref arr.GetRawSzArrayData());
-            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
-        }
 
         public static byte ReadByte(object ptr, int ofs)
         {
