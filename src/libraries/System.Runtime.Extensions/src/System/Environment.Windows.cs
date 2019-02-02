@@ -69,7 +69,7 @@ namespace System
             var builder = new ValueStringBuilder(initialBuffer);
 
             uint length;
-            while ((length = Interop.Kernel32.ExpandEnvironmentStringsW(name, ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
+            while ((length = Interop.Kernel32.ExpandEnvironmentStrings(name, ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
             {
                 builder.EnsureCapacity((int)length);
             }

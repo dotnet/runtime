@@ -173,6 +173,8 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                           GssCredId* claimantCredHandle,
                                           GssCtxId** contextHandle,
                                           uint32_t isNtlm,
+                                          void* cbt,
+                                          int32_t cbtSize,
                                           GssName* targetName,
                                           uint32_t reqFlags,
                                           uint8_t* inputBytes,
@@ -189,7 +191,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
     assert(outBuffer != NULL);
     assert(retFlags != NULL);
     assert(isNtlmUsed != NULL);
-    assert(inputBytes != NULL || inputLength == 0);
+    assert(cbt != NULL || cbtSize == 0);
 
 // Note: claimantCredHandle can be null
 // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
@@ -226,6 +228,14 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
     gss_OID_desc* outmech;
 
+    struct gss_channel_bindings_struct gssCbt;
+    if (cbt != NULL)
+    {
+        memset(&gssCbt, 0, sizeof(struct gss_channel_bindings_struct));
+        gssCbt.application_data.length = (size_t)cbtSize;
+        gssCbt.application_data.value = cbt;
+    }
+
     uint32_t majorStatus = gss_init_sec_context(minorStatus,
                                                 claimantCredHandle,
                                                 contextHandle,
@@ -233,7 +243,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                 desiredMech,
                                                 reqFlags,
                                                 0,
-                                                GSS_C_NO_CHANNEL_BINDINGS,
+                                                (cbt != NULL) ? &gssCbt : GSS_C_NO_CHANNEL_BINDINGS,
                                                 &inputToken,
                                                 &outmech,
                                                 &gssBuffer,

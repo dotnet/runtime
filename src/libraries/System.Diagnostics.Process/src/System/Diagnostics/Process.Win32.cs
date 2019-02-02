@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -344,6 +346,109 @@ namespace System.Diagnostics
                 }
             }
             return idle;
+        }
+
+        /// <summary>Checks whether the argument is a direct child of this process.</summary>
+        /// <remarks>
+        /// A child process is a process which has this process's id as its parent process id and which started after this process did.
+        /// </remarks>
+        private bool IsParentOf(Process possibleChild) =>
+            StartTime < possibleChild.StartTime
+            && Id == possibleChild.ParentProcessId;
+
+        /// <summary>
+        /// Get the process's parent process id.
+        /// </summary>
+        private unsafe int ParentProcessId
+        {
+            get
+            {
+                Interop.NtDll.PROCESS_BASIC_INFORMATION info = default;
+
+                using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION))
+                {
+                    if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.PROCESSINFOCLASS.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
+                        throw new Win32Exception(SR.ProcessInformationUnavailable);
+
+                    return (int)info.InheritedFromUniqueProcessId;
+                }
+            }
+        }
+
+        private bool Equals(Process process) =>
+            Id == process.Id
+            && StartTime == process.StartTime;
+
+        private IEnumerable<Exception> KillTree()
+        {
+            // The process's structures will be preserved as long as a handle is held pointing to them, even if the process exits or 
+            // is terminated. A handle is held here to ensure a stable reference to the process during execution.
+            using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION))
+            {
+                return KillTree(handle);
+            }
+        }
+
+        private IEnumerable<Exception> KillTree(SafeProcessHandle handle)
+        {
+            List<Exception> exceptions = new List<Exception>();
+
+            try
+            {
+                // Kill the process, so that no further children can be created.
+                //
+                // This method can return before stopping has completed. Down the road, could possibly wait for termination to complete before continuing.
+                Kill();
+            }
+            catch (InvalidOperationException)
+            {
+                // The process isn't in a valid state for termination (e.g. already dead), so ignore the exception
+                // but don't give up in case children can still be enumerated.
+            }
+            catch (Win32Exception e)
+            {
+                exceptions.Add(e);
+            }
+
+            IReadOnlyList<(Process Process, SafeProcessHandle Handle)> children = GetProcessHandlePairs(p => SafePredicateTest(() => IsParentOf(p)));
+            try
+            {
+                foreach ((Process Process, SafeProcessHandle Handle) child in children)
+                {
+                    IEnumerable<Exception> exceptionsFromChild = child.Process.KillTree(child.Handle);
+                    exceptions.AddRange(exceptionsFromChild);
+                }
+            }
+            finally
+            {
+                foreach ((Process Process, SafeProcessHandle Handle) child in children)
+                {
+                    child.Process.Dispose();
+                    child.Handle.Dispose();
+                }
+            }
+
+            return exceptions;
+        }
+
+        private IReadOnlyList<(Process Process, SafeProcessHandle Handle)> GetProcessHandlePairs(Func<Process, bool> predicate)
+        {
+            return GetProcesses()
+                .Select(p => (Process: p, Handle: SafeGetHandle(p)))
+                .Where(p => !p.Handle.IsInvalid && predicate(p.Process))
+                .ToList();
+
+            SafeProcessHandle SafeGetHandle(Process process)
+            {
+                try
+                {
+                    return process.GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false);
+                }
+                catch (Win32Exception)
+                {
+                    return SafeProcessHandle.InvalidHandle;
+                }
+            }
         }
     }
 }
