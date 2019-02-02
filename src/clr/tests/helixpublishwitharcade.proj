@@ -4,7 +4,7 @@
        https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
        to send test jobs to helix. -->
 
-  <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" />
+  <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
 
   <!-- This target runs once and creates several instances of this project (one for each scenario)
        that will run in parallel. -->
@@ -38,7 +38,7 @@
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
 
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <Properties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity)</Properties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -48,7 +48,7 @@
     </PropertyGroup>
 
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
   </Target>
 
   <Import Project="..\dir.props" />
@@ -137,6 +137,6 @@
     </HelixWorkItem>
   </ItemGroup>
 
-  <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.targets" />
+  <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' == 'true' " />
 
 </Project>
