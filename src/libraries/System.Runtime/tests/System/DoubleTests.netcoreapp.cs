@@ -148,7 +148,7 @@ namespace System.Tests
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-                foreach (var testdata in ToString_TestData())
+                foreach (var testdata in ToString_TestData_NotNetFramework())
                 {
                     double localI = (double)testdata[0];
                     string localFormat = (string)testdata[1];
