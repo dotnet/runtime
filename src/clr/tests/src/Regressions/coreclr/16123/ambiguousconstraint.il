@@ -4,6 +4,9 @@
 
 .assembly extern System.Runtime { }
 
+// TODO: use the contract once this is exposed from contracts
+.assembly extern System.Private.CoreLib { }
+
 .assembly ambiguousconstraint { }
 
 .class interface private abstract auto ansi IFoo
@@ -51,7 +54,7 @@
       callvirt instance void IFoo::Frob()
       leave.s Fail
     }
-    catch [System.Runtime]System.NotSupportedException
+    catch [System.Private.CoreLib]System.Runtime.AmbiguousImplementationException
     {
       pop
       leave.s Success

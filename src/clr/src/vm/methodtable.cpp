@@ -7052,7 +7052,7 @@ void ThrowExceptionForConflictingOverride(
     TypeString::AppendType(strTargetClassName, pTargetClass);
 
     COMPlusThrow(
-        kNotSupportedException,
+        kAmbiguousImplementationException,
         IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
         strMethodName,
         strInterfaceName,

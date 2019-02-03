@@ -38,6 +38,7 @@ BEGIN
 	MSG_FOR_URT_HR(COR_E_LOADING_REFERENCE_ASSEMBLY) "Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context."
 	MSG_FOR_URT_HR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH) "The native image could not be loaded, because it was generated for use by a different version of the runtime."
 	MSG_FOR_URT_HR(COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY) "Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies."
+	MSG_FOR_URT_HR(COR_E_AMBIGUOUSIMPLEMENTATION) "Ambiguous implementation found."
 	MSG_FOR_URT_HR(CLDB_E_FILE_BADREAD) "Error occurred during a read."
 	MSG_FOR_URT_HR(CLDB_E_FILE_BADWRITE) "Error occurred during a write."
 	MSG_FOR_URT_HR(CLDB_E_FILE_OLDVER) "Old version error."
