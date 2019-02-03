@@ -10,28 +10,28 @@
 // The numeric values of the enum members match their Win32 counterparts.
 typedef enum
 {
-    LanguageId = 0x01,
-    MeasurementSystem = 0x0D,
-    FractionalDigitsCount = 0x00000011,
-    NegativeNumberFormat = 0x00001010,
-    MonetaryFractionalDigitsCount = 0x00000019,
-    PositiveMonetaryNumberFormat = 0x0000001B,
-    NegativeMonetaryNumberFormat = 0x0000001C,
-    FirstDayofWeek = 0x0000100C,
-    FirstWeekOfYear = 0x0000100D,
-    ReadingLayout = 0x00000070,
-    NegativePercentFormat = 0x00000074,
-    PositivePercentFormat = 0x00000075,
-    Digit = 0x00000010,
-    Monetary = 0x00000018
+    LocaleNumber_LanguageId = 0x01,
+    LocaleNumber_MeasurementSystem = 0x0D,
+    LocaleNumber_FractionalDigitsCount = 0x00000011,
+    LocaleNumber_NegativeNumberFormat = 0x00001010,
+    LocaleNumber_MonetaryFractionalDigitsCount = 0x00000019,
+    LocaleNumber_PositiveMonetaryNumberFormat = 0x0000001B,
+    LocaleNumber_NegativeMonetaryNumberFormat = 0x0000001C,
+    LocaleNumber_FirstDayofWeek = 0x0000100C,
+    LocaleNumber_FirstWeekOfYear = 0x0000100D,
+    LocaleNumber_ReadingLayout = 0x00000070,
+    LocaleNumber_NegativePercentFormat = 0x00000074,
+    LocaleNumber_PositivePercentFormat = 0x00000075,
+    LocaleNumber_Digit = 0x00000010,
+    LocaleNumber_Monetary = 0x00000018
 } LocaleNumberData;
 
 // Enum that corresponds to managed enum System.Globalization.CalendarWeekRule
 typedef enum
 {
-    FirstDay = 0,
-    FirstFullWeek = 1,
-    FirstFourDayWeek = 2
+    WeekRule_FirstDay = 0,
+    WeekRule_FirstFullWeek = 1,
+    WeekRule_FirstFourDayWeek = 2
 } CalendarWeekRule;
 
 DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoInt(const UChar* localeName,

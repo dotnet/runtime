@@ -193,9 +193,9 @@ ResultCode GlobalizationNative_GetCalendarInfo(
 
     switch (dataType)
     {
-        case NativeName:
+        case CalendarData_NativeName:
             return GetNativeCalendarName(locale, calendarId, result, resultCapacity);
-        case MonthDay:
+        case CalendarData_MonthDay:
             return GetMonthDayPattern(locale, result, resultCapacity);
         default:
             assert(FALSE);
@@ -488,27 +488,27 @@ int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
 
     switch (dataType)
     {
-        case ShortDates:
+        case CalendarData_ShortDates:
             // ShortDates to map kShort and kMedium in ICU, but also adding the "yMd"
             // skeleton as well, as this closely matches what is used on Windows
             return InvokeCallbackForDatePattern(locale, UDAT_SHORT, callback, context) &&
                    InvokeCallbackForDatePattern(locale, UDAT_MEDIUM, callback, context) &&
                    InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_NUM_MONTH_DAY_UCHAR, callback, context);
-        case LongDates:
+        case CalendarData_LongDates:
             // LongDates map to kFull and kLong in ICU.
             return InvokeCallbackForDatePattern(locale, UDAT_FULL, callback, context) &&
                    InvokeCallbackForDatePattern(locale, UDAT_LONG, callback, context);
-        case YearMonths:
+        case CalendarData_YearMonths:
             return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_MONTH_UCHAR, callback, context);
-        case DayNames:
+        case CalendarData_DayNames:
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_WEEKDAYS, 1, callback, context);
-        case AbbrevDayNames:
+        case CalendarData_AbbrevDayNames:
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORT_WEEKDAYS, 1, callback, context);
-        case MonthNames:
+        case CalendarData_MonthNames:
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_MONTHS, 0, callback, context);
-        case AbbrevMonthNames:
+        case CalendarData_AbbrevMonthNames:
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORT_MONTHS, 0, callback, context);
-        case SuperShortDayNames:
+        case CalendarData_SuperShortDayNames:
             // UDAT_STANDALONE_SHORTER_WEEKDAYS was added in ICU 51, and CentOS 7 currently uses ICU 50.
             // fallback to UDAT_STANDALONE_NARROW_WEEKDAYS in that case.
 #if HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS
@@ -516,13 +516,13 @@ int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
 #else
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_NARROW_WEEKDAYS, 1, callback, context);
 #endif
-        case MonthGenitiveNames:
+        case CalendarData_MonthGenitiveNames:
             return EnumSymbols(locale, calendarId, UDAT_MONTHS, 0, callback, context);
-        case AbbrevMonthGenitiveNames:
+        case CalendarData_AbbrevMonthGenitiveNames:
             return EnumSymbols(locale, calendarId, UDAT_SHORT_MONTHS, 0, callback, context);
-        case EraNames:
+        case CalendarData_EraNames:
             return EnumSymbols(locale, calendarId, UDAT_ERAS, 0, callback, context);
-        case AbbrevEraNames:
+        case CalendarData_AbbrevEraNames:
             return EnumAbbrevEraNames(locale, calendarId, callback, context);
         default:
             assert(FALSE);

@@ -12,9 +12,9 @@ These values should be kept in sync with the managed Interop.GlobalizationIntero
 */
 typedef enum
 {
-    Generic = 0,
-    Standard = 1,
-    DaylightSavings = 2,
+    TimeZoneDisplayName_Generic = 0,
+    TimeZoneDisplayName_Standard = 1,
+    TimeZoneDisplayName_DaylightSavings = 2,
 } TimeZoneDisplayNameType;
 
 DLLEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,

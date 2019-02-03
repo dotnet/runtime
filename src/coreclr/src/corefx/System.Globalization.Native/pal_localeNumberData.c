@@ -417,13 +417,13 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
 
     switch (localeNumberData)
     {
-        case LanguageId:
+        case LocaleNumber_LanguageId:
             *value = uloc_getLCID(locale);
             break;
-        case MeasurementSystem:
+        case LocaleNumber_MeasurementSystem:
             status = GetMeasurementSystem(locale, value);
             break;
-        case FractionalDigitsCount:
+        case LocaleNumber_FractionalDigitsCount:
         {
             UNumberFormat* numformat = unum_open(UNUM_DECIMAL, NULL, 0, locale, NULL, &status);
             if (U_SUCCESS(status))
@@ -433,10 +433,10 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
             }
             break;
         }
-        case NegativeNumberFormat:
+        case LocaleNumber_NegativeNumberFormat:
             *value = GetNumberNegativePattern(locale);
             break;
-        case MonetaryFractionalDigitsCount:
+        case LocaleNumber_MonetaryFractionalDigitsCount:
         {
             UNumberFormat* numformat = unum_open(UNUM_CURRENCY, NULL, 0, locale, NULL, &status);
             if (U_SUCCESS(status))
@@ -446,13 +446,13 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
             }
             break;
         }
-        case PositiveMonetaryNumberFormat:
+        case LocaleNumber_PositiveMonetaryNumberFormat:
             *value = GetCurrencyPositivePattern(locale);
             break;
-        case NegativeMonetaryNumberFormat:
+        case LocaleNumber_NegativeMonetaryNumberFormat:
             *value = GetCurrencyNegativePattern(locale);
             break;
-        case FirstWeekOfYear:
+        case LocaleNumber_FirstWeekOfYear:
         {
             // corresponds to DateTimeFormat.CalendarWeekRule
             UCalendar* pCal = ucal_open(NULL, 0, locale, UCAL_TRADITIONAL, &status);
@@ -463,15 +463,15 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
                 int minDaysInWeek = ucal_getAttribute(pCal, UCAL_MINIMAL_DAYS_IN_FIRST_WEEK);
                 if (minDaysInWeek == 1)
                 {
-                    *value = FirstDay;
+                    *value = WeekRule_FirstDay;
                 }
                 else if (minDaysInWeek == 7)
                 {
-                    *value = FirstFullWeek;
+                    *value = WeekRule_FirstFullWeek;
                 }
                 else if (minDaysInWeek >= 4)
                 {
-                    *value = FirstFourDayWeek;
+                    *value = WeekRule_FirstFourDayWeek;
                 }
                 else
                 {
@@ -481,7 +481,7 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
             ucal_close(pCal);
             break;
         }
-        case ReadingLayout:
+        case LocaleNumber_ReadingLayout:
         {
             // coresponds to values 0 and 1 in LOCALE_IREADINGLAYOUT (values 2 and 3 not
             // used in coreclr)
@@ -496,7 +496,7 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
             }
             break;
         }
-        case FirstDayofWeek:
+        case LocaleNumber_FirstDayofWeek:
         {
             UCalendar* pCal = ucal_open(NULL, 0, locale, UCAL_TRADITIONAL, &status);
 
@@ -507,10 +507,10 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
             ucal_close(pCal);
             break;
         }
-        case NegativePercentFormat:
+        case LocaleNumber_NegativePercentFormat:
             *value = GetPercentNegativePattern(locale);
             break;
-        case PositivePercentFormat:
+        case LocaleNumber_PositivePercentFormat:
             *value = GetPercentPositivePattern(locale);
             break;
         default:
@@ -544,10 +544,10 @@ int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(
     UNumberFormatStyle style;
     switch (localeGroupingData)
     {
-        case Digit:
+        case LocaleNumber_Digit:
             style = UNUM_DECIMAL;
             break;
-        case Monetary:
+        case LocaleNumber_Monetary:
             style = UNUM_CURRENCY;
             break;
         default:
