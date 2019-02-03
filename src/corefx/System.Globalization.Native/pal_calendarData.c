@@ -116,22 +116,8 @@ int32_t GlobalizationNative_GetCalendars(
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
-
-    if (U_FAILURE(err))
-        return 0;
-
     UEnumeration* pEnum = ucal_getKeywordValuesForLocale("calendar", locale, TRUE, &err);
-
-    if (U_FAILURE(err))
-        return 0;
-
     int stringEnumeratorCount = uenum_count(pEnum, &err);
-    if (U_FAILURE(err))
-    {
-        uenum_close(pEnum);
-        return 0;
-    }
-
     int calendarsReturned = 0;
     for (int i = 0; i < stringEnumeratorCount && calendarsReturned < calendarsCapacity; i++)
     {
@@ -147,7 +133,6 @@ int32_t GlobalizationNative_GetCalendars(
             }
         }
     }
-
     uenum_close(pEnum);
     return calendarsReturned;
 }
@@ -162,12 +147,7 @@ ResultCode GetMonthDayPattern(const char* locale, UChar* sMonthDay, int32_t stri
 {
     UErrorCode err = U_ZERO_ERROR;
     UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
-
-    if (U_FAILURE(err))
-        return GetResultCode(err);
-
     udatpg_getBestPattern(pGenerator, UDAT_MONTH_DAY_UCHAR, -1, sMonthDay, stringCapacity, &err);
-
     udatpg_close(pGenerator);
     return GetResultCode(err);
 }
@@ -603,69 +583,32 @@ int32_t GlobalizationNative_GetJapaneseEraStartDate(
     ucal_set(pCal, UCAL_DATE, 1);
 
     int32_t currentEra;
-    for (int i = 0; i <= 12; i++)
+    for (int i = 0; U_SUCCESS(err) && i <= 12; i++)
     {
         currentEra = ucal_get(pCal, UCAL_ERA, &err);
-        if (U_FAILURE(err))
-        {
-            ucal_close(pCal);
-            return false;
-        }
-
         if (currentEra == era)
         {
-            for (int i = 0; i < 31; i++)
+            for (int i = 0; U_SUCCESS(err) && i < 31; i++)
             {
                 // subtract 1 day at a time until we get out of the specified Era
                 ucal_add(pCal, UCAL_DATE, -1, &err);
-                if (U_FAILURE(err))
-                {
-                    ucal_close(pCal);
-                    return false;
-                }
-
                 currentEra = ucal_get(pCal, UCAL_ERA, &err);
-                if (U_FAILURE(err))
-                {
-                    ucal_close(pCal);
-                    return false;
-                }
-
-                if (currentEra != era)
+                if (U_SUCCESS(err) && currentEra != era)
                 {
                     // add back 1 day to get back into the specified Era
                     ucal_add(pCal, UCAL_DATE, 1, &err);
-                    if (U_FAILURE(err))
-                    {
-                        ucal_close(pCal);
-                        return false;
-                    }
-
                     *startMonth =
                         ucal_get(pCal, UCAL_MONTH, &err) + 1; // ICU Calendar months are 0-based, but .NET is 1-based
-                    if (U_FAILURE(err))
-                    {
-                        ucal_close(pCal);
-                        return false;
-                    }
-
                     *startDay = ucal_get(pCal, UCAL_DATE, &err);
                     ucal_close(pCal);
-                    if (U_FAILURE(err))
-                        return false;
 
-                    return true;
+                    return U_SUCCESS(err);
                 }
             }
         }
 
         // add 1 month at a time until we get into the specified Era
         ucal_add(pCal, UCAL_MONTH, 1, &err);
-        if (U_FAILURE(err))
-        {
-            ucal_close(pCal);
-            return false;
-        }
     }
 
     ucal_close(pCal);
