@@ -28,6 +28,7 @@ namespace System
         internal const int S_OK = unchecked((int)0x00000000);
         internal const int S_FALSE = unchecked((int)0x1);
         internal const int COR_E_ABANDONEDMUTEX = unchecked((int)0x8013152D);
+        internal const int COR_E_AMBIGUOUSIMPLEMENTATION = unchecked((int)0x8013106A);
         internal const int COR_E_AMBIGUOUSMATCH = unchecked((int)0x8000211D);
         internal const int COR_E_APPLICATION = unchecked((int)0x80131600);
         internal const int COR_E_ARGUMENT = unchecked((int)0x80070057);
