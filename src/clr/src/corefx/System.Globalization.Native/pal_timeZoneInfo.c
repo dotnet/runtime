@@ -11,12 +11,15 @@
 /*
 Gets the localized display name for the specified time zone.
 */
-ResultCode GlobalizationNative_GetTimeZoneDisplayName(
-    const UChar* localeName, const UChar* timeZoneId, TimeZoneDisplayNameType type, UChar* result, int32_t resultLength)
+ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
+                                                      const UChar* timeZoneId,
+                                                      TimeZoneDisplayNameType type,
+                                                      UChar* result,
+                                                      int32_t resultLength)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     int32_t timeZoneIdLength = -1; // timeZoneId is NULL-terminated
     UCalendar* calendar = ucal_open(timeZoneId, timeZoneIdLength, locale, UCAL_DEFAULT, &err);

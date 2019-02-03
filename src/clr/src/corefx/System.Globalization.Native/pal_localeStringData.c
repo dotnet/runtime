@@ -15,8 +15,10 @@ GetLocaleInfoDecimalFormatSymbol
 
 Obtains the value of a DecimalFormatSymbols
 */
-UErrorCode
-GetLocaleInfoDecimalFormatSymbol(const char* locale, UNumberFormatSymbol symbol, UChar* value, int32_t valueLength)
+static UErrorCode GetLocaleInfoDecimalFormatSymbol(const char* locale,
+                                                   UNumberFormatSymbol symbol,
+                                                   UChar* value,
+                                                   int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
     UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, NULL, 0, locale, NULL, &status);
@@ -31,12 +33,12 @@ GetDigitSymbol
 
 Obtains the value of a Digit DecimalFormatSymbols
 */
-UErrorCode GetDigitSymbol(const char* locale,
-                          UErrorCode previousStatus,
-                          UNumberFormatSymbol symbol,
-                          int digit,
-                          UChar* value,
-                          int32_t valueLength)
+static UErrorCode GetDigitSymbol(const char* locale,
+                                 UErrorCode previousStatus,
+                                 UNumberFormatSymbol symbol,
+                                 int digit,
+                                 UChar* value,
+                                 int32_t valueLength)
 {
     if (U_FAILURE(previousStatus))
     {
@@ -52,7 +54,10 @@ GetLocaleInfoAmPm
 
 Obtains the value of the AM or PM string for a locale.
 */
-UErrorCode GetLocaleInfoAmPm(const char* locale, bool am, UChar* value, int32_t valueLength)
+static UErrorCode GetLocaleInfoAmPm(const char* locale,
+                                    int am,
+                                    UChar* value,
+                                    int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
     UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale, NULL, 0, NULL, 0, &status);
@@ -67,27 +72,21 @@ GetLocaleIso639LanguageTwoLetterName
 
 Gets the language name for a locale (via uloc_getLanguage) and converts the result to UChars
 */
-UErrorCode GetLocaleIso639LanguageTwoLetterName(const char* locale, UChar* value, int32_t valueLength)
+static UErrorCode GetLocaleIso639LanguageTwoLetterName(const char* locale, UChar* value, int32_t valueLength)
 {
-    UErrorCode status = U_ZERO_ERROR;
-    int32_t length = uloc_getLanguage(locale, NULL, 0, &status) + 1;
+    UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
+    int32_t length = uloc_getLanguage(locale, NULL, 0, &ignore) + 1;
 
-    assert(status == U_BUFFER_OVERFLOW_ERROR);
     char* buf = calloc(length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
     }
 
-    status = U_ZERO_ERROR;
     uloc_getLanguage(locale, buf, length, &status);
-
-    if (U_SUCCESS(status))
-    {
-        status = u_charsToUChars_safe(buf, value, valueLength);
-    }
-
+    u_charsToUChars_safe(buf, value, valueLength, &status);
     free(buf);
+
     return status;
 }
 
@@ -97,15 +96,17 @@ GetLocaleIso639LanguageThreeLetterName
 
 Gets the language name for a locale (via uloc_getISO3Language) and converts the result to UChars
 */
-UErrorCode GetLocaleIso639LanguageThreeLetterName(const char* locale, UChar* value, int32_t valueLength)
+static UErrorCode GetLocaleIso639LanguageThreeLetterName(const char* locale, UChar* value, int32_t valueLength)
 {
+    UErrorCode status = U_ZERO_ERROR;
     const char *isoLanguage = uloc_getISO3Language(locale);
     if (isoLanguage[0] == 0)
     {
         return U_ILLEGAL_ARGUMENT_ERROR;
     }
 
-    return u_charsToUChars_safe(isoLanguage, value, valueLength);
+    u_charsToUChars_safe(isoLanguage, value, valueLength, &status);
+    return status;
 }
 
 /*
@@ -114,10 +115,10 @@ GetLocaleIso3166CountryName
 
 Gets the country name for a locale (via uloc_getCountry) and converts the result to UChars
 */
-UErrorCode GetLocaleIso3166CountryName(const char* locale, UChar* value, int32_t valueLength)
+static UErrorCode GetLocaleIso3166CountryName(const char* locale, UChar* value, int32_t valueLength)
 {
-    UErrorCode status = U_ZERO_ERROR;
-    int32_t length = uloc_getCountry(locale, NULL, 0, &status) + 1;
+    UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
+    int32_t length = uloc_getCountry(locale, NULL, 0, &ignore) + 1;
 
     char* buf = calloc(length, sizeof(char));
     if (buf == NULL)
@@ -125,15 +126,8 @@ UErrorCode GetLocaleIso3166CountryName(const char* locale, UChar* value, int32_t
         return U_MEMORY_ALLOCATION_ERROR;
     }
 
-    status = U_ZERO_ERROR;
-
     uloc_getCountry(locale, buf, length, &status);
-
-    if (U_SUCCESS(status))
-    {
-        status = u_charsToUChars_safe(buf, value, valueLength);
-    }
-
+    u_charsToUChars_safe(buf, value, valueLength, &status);
     free(buf);
 
     return status;
@@ -145,8 +139,9 @@ GetLocaleIso3166CountryCode
 
 Gets the 3 letter country code for a locale (via uloc_getISO3Country) and converts the result to UChars
 */
-UErrorCode GetLocaleIso3166CountryCode(const char* locale, UChar* value, int32_t valueLength)
+static UErrorCode GetLocaleIso3166CountryCode(const char* locale, UChar* value, int32_t valueLength)
 {
+    UErrorCode status = U_ZERO_ERROR;
     const char *pIsoCountryName = uloc_getISO3Country(locale);
     int len = strlen(pIsoCountryName);
 
@@ -155,7 +150,8 @@ UErrorCode GetLocaleIso3166CountryCode(const char* locale, UChar* value, int32_t
         return U_ILLEGAL_ARGUMENT_ERROR;
     }
 
-    return u_charsToUChars_safe(pIsoCountryName, value, valueLength);
+    u_charsToUChars_safe(pIsoCountryName, value, valueLength, &status);
+    return status;
 }
 
 /*
@@ -164,7 +160,7 @@ GetLocaleCurrencyName
 
 Gets the locale currency English or native name and convert the result to UChars
 */
-UErrorCode GetLocaleCurrencyName(const char* locale, bool nativeName, UChar* value, int32_t valueLength)
+static UErrorCode GetLocaleCurrencyName(const char* locale, UBool nativeName, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
     
@@ -193,9 +189,10 @@ UErrorCode GetLocaleCurrencyName(const char* locale, bool nativeName, UChar* val
     {
         return U_BUFFER_OVERFLOW_ERROR;
     }
+
     u_strncpy(value, pCurrencyLongName, len);
     value[len] = 0;
-    
+
     return status;
 }
 
@@ -206,12 +203,14 @@ GetLocaleInfoString
 Obtains string locale information.
 Returns 1 for success, 0 otherwise
 */
-int32_t GlobalizationNative_GetLocaleInfoString(
-    const UChar* localeName, LocaleStringData localeStringData, UChar* value, int32_t valueLength)
+int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
+                                                LocaleStringData localeStringData,
+                                                UChar* value,
+                                                int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
 
     if (U_FAILURE(status))
     {
@@ -269,10 +268,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INTL_CURRENCY_SYMBOL, value, valueLength);
             break;
         case CurrencyEnglishName:
-            status = GetLocaleCurrencyName(locale, false, value, valueLength);
+            status = GetLocaleCurrencyName(locale, FALSE, value, valueLength);
             break;
         case CurrencyNativeName:
-            status = GetLocaleCurrencyName(locale, true, value, valueLength);
+            status = GetLocaleCurrencyName(locale, TRUE, value, valueLength);
             break;
         case MonetaryDecimalSeparator:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength);
@@ -282,10 +281,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(
                 GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case AMDesignator:
-            status = GetLocaleInfoAmPm(locale, true, value, valueLength);
+            status = GetLocaleInfoAmPm(locale, TRUE, value, valueLength);
             break;
         case PMDesignator:
-            status = GetLocaleInfoAmPm(locale, false, value, valueLength);
+            status = GetLocaleInfoAmPm(locale, FALSE, value, valueLength);
             break;
         case PositiveSign:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength);
@@ -318,13 +317,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(
             char localeNameTemp[ULOC_FULLNAME_CAPACITY];
 
             uloc_getParent(locale, localeNameTemp, ULOC_FULLNAME_CAPACITY, &status);
+            u_charsToUChars_safe(localeNameTemp, value, valueLength, &status);
             if (U_SUCCESS(status))
             {
-                status = u_charsToUChars_safe(localeNameTemp, value, valueLength);
-                if (U_SUCCESS(status))
-                {
-                    FixupLocaleName(value, valueLength);
-                }
+                FixupLocaleName(value, valueLength);
             }
             break;
         }
@@ -349,15 +345,17 @@ GetLocaleTimeFormat
 Obtains time format information (in ICU format, it needs to be coverted to .NET Format).
 Returns 1 for success, 0 otherwise
 */
-int32_t GlobalizationNative_GetLocaleTimeFormat(
-    const UChar* localeName, int shortFormat, UChar* value, int32_t valueLength)
+int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
+                                                int shortFormat,
+                                                UChar* value,
+                                                int32_t valueLength)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
     UDateFormatStyle style = (shortFormat != 0) ? UDAT_SHORT : UDAT_MEDIUM;
     UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale, NULL, 0, NULL, 0, &err);
-    udat_toPattern(pFormat, false, value, valueLength, &err);
+    udat_toPattern(pFormat, FALSE, value, valueLength, &err);
     udat_close(pFormat);
     return UErrorCodeToBool(err);
 }

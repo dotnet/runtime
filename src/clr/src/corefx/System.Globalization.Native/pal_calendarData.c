@@ -31,7 +31,7 @@ GetCalendarName
 
 Gets the associated ICU calendar name for the CalendarId.
 */
-const char* GetCalendarName(CalendarId calendarId)
+static const char* GetCalendarName(CalendarId calendarId)
 {
     switch (calendarId)
     {
@@ -79,7 +79,7 @@ GetCalendarId
 
 Gets the associated CalendarId for the ICU calendar name.
 */
-CalendarId GetCalendarId(const char* calendarName)
+static CalendarId GetCalendarId(const char* calendarName)
 {
     if (strcasecmp(calendarName, GREGORIAN_NAME) == 0)
         // TODO: what about the other gregorian types?
@@ -115,7 +115,7 @@ int32_t GlobalizationNative_GetCalendars(
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
     UEnumeration* pEnum = ucal_getKeywordValuesForLocale("calendar", locale, TRUE, &err);
     int stringEnumeratorCount = uenum_count(pEnum, &err);
     int calendarsReturned = 0;
@@ -143,7 +143,9 @@ GetMonthDayPattern
 
 Gets the Month-Day DateTime pattern for the specified locale.
 */
-ResultCode GetMonthDayPattern(const char* locale, UChar* sMonthDay, int32_t stringCapacity)
+static ResultCode GetMonthDayPattern(const char* locale,
+                                     UChar* sMonthDay,
+                                     int32_t stringCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
     UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
@@ -158,7 +160,10 @@ GetNativeCalendarName
 
 Gets the native calendar name.
 */
-ResultCode GetNativeCalendarName(const char* locale, CalendarId calendarId, UChar* nativeName, int32_t stringCapacity)
+static ResultCode GetNativeCalendarName(const char* locale,
+                                        CalendarId calendarId,
+                                        UChar* nativeName,
+                                        int32_t stringCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
     ULocaleDisplayNames* pDisplayNames = uldn_open(locale, ULDN_STANDARD_NAMES, &err);
@@ -181,7 +186,7 @@ ResultCode GlobalizationNative_GetCalendarInfo(
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     if (U_FAILURE(err))
         return UnknownError;
@@ -193,7 +198,7 @@ ResultCode GlobalizationNative_GetCalendarInfo(
         case MonthDay:
             return GetMonthDayPattern(locale, result, resultCapacity);
         default:
-            assert(false);
+            assert(FALSE);
             return UnknownError;
     }
 }
@@ -205,28 +210,28 @@ InvokeCallbackForDatePattern
 Gets the ICU date pattern for the specified locale and EStyle and invokes the
 callback with the result.
 */
-bool InvokeCallbackForDatePattern(const char* locale,
-                                  UDateFormatStyle style,
-                                  EnumCalendarInfoCallback callback,
-                                  const void* context)
+static int InvokeCallbackForDatePattern(const char* locale,
+                                        UDateFormatStyle style,
+                                        EnumCalendarInfoCallback callback,
+                                        const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
     UDateFormat* pFormat = udat_open(UDAT_NONE, style, locale, NULL, 0, NULL, 0, &err);
 
     if (U_FAILURE(err))
-        return false;
+        return FALSE;
 
     UErrorCode ignore = U_ZERO_ERROR;
-    int32_t patternLen = udat_toPattern(pFormat, false, NULL, 0, &ignore) + 1;
+    int32_t patternLen = udat_toPattern(pFormat, FALSE, NULL, 0, &ignore) + 1;
 
     UChar* pattern = calloc(patternLen, sizeof(UChar));
     if (pattern == NULL)
     {
         udat_close(pFormat);
-        return false;
+        return FALSE;
     }
 
-    udat_toPattern(pFormat, false, pattern, patternLen, &err);
+    udat_toPattern(pFormat, FALSE, pattern, patternLen, &err);
     udat_close(pFormat);
 
     if (U_SUCCESS(err))
@@ -235,7 +240,7 @@ bool InvokeCallbackForDatePattern(const char* locale,
     }
 
     free(pattern);
-    return U_SUCCESS(err);
+    return UErrorCodeToBool(err);
 }
 
 /*
@@ -245,16 +250,16 @@ InvokeCallbackForDateTimePattern
 Gets the DateTime pattern for the specified skeleton and invokes the callback
 with the retrieved value.
 */
-bool InvokeCallbackForDateTimePattern(const char* locale,
-                                      const UChar* patternSkeleton,
-                                      EnumCalendarInfoCallback callback,
-                                      const void* context)
+static int InvokeCallbackForDateTimePattern(const char* locale,
+                                            const UChar* patternSkeleton,
+                                            EnumCalendarInfoCallback callback,
+                                            const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
     UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
 
     if (U_FAILURE(err))
-        return false;
+        return FALSE;
 
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, NULL, 0, &ignore) + 1;
@@ -263,7 +268,7 @@ bool InvokeCallbackForDateTimePattern(const char* locale,
     if (bestPattern == NULL)
     {
         udatpg_close(pGenerator);
-        return false;
+        return FALSE;
     }
 
     udatpg_getBestPattern(pGenerator, patternSkeleton, -1, bestPattern, patternLen, &err);
@@ -275,7 +280,7 @@ bool InvokeCallbackForDateTimePattern(const char* locale,
     }
 
     free(bestPattern);
-    return U_SUCCESS(err);
+    return UErrorCodeToBool(err);
 }
 
 /*
@@ -285,35 +290,29 @@ EnumSymbols
 Enumerates all of the symbols of a type for a locale and calendar and invokes a callback
 for each value.
 */
-bool EnumSymbols(const char* locale,
-                 CalendarId calendarId,
-                 UDateFormatSymbolType type,
-                 int32_t startIndex,
-                 EnumCalendarInfoCallback callback,
-                 const void* context)
+static int32_t EnumSymbols(const char* locale,
+                           CalendarId calendarId,
+                           UDateFormatSymbolType type,
+                           int32_t startIndex,
+                           EnumCalendarInfoCallback callback,
+                           const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
     UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale, NULL, 0, NULL, 0, &err);
 
     if (U_FAILURE(err))
-        return false;
+        return FALSE;
 
     char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
     strncpy(localeWithCalendarName, locale, ULOC_FULLNAME_CAPACITY);
     uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
-
-    if (U_FAILURE(err))
-    {
-        udat_close(pFormat);
-        return false;
-    }
 
     UCalendar* pCalendar = ucal_open(NULL, 0, localeWithCalendarName, UCAL_DEFAULT, &err);
 
     if (U_FAILURE(err))
     {
         udat_close(pFormat);
-        return false;
+        return FALSE;
     }
 
     udat_setCalendar(pFormat, pCalendar);
@@ -356,10 +355,12 @@ bool EnumSymbols(const char* locale,
 
     udat_close(pFormat);
     ucal_close(pCalendar);
-    return U_SUCCESS(err);
+    return UErrorCodeToBool(err);
 }
 
-bool EnumUResourceBundle(const UResourceBundle* bundle, EnumCalendarInfoCallback callback, const void* context)
+static void EnumUResourceBundle(const UResourceBundle* bundle,
+                                EnumCalendarInfoCallback callback,
+                                const void* context)
 {
     int32_t eraNameCount = ures_getSize(bundle);
 
@@ -374,15 +375,13 @@ bool EnumUResourceBundle(const UResourceBundle* bundle, EnumCalendarInfoCallback
             callback(eraName, context);
         }
     }
-
-    return true;
 }
 
-void CloseResBundle(const UResourceBundle* rootResBundle,
-                    const UResourceBundle* calResBundle,
-                    const UResourceBundle* targetCalResBundle,
-                    const UResourceBundle* erasColResBundle,
-                    const UResourceBundle* erasResBundle)
+static void CloseResBundle(const UResourceBundle* rootResBundle,
+                           const UResourceBundle* calResBundle,
+                           const UResourceBundle* targetCalResBundle,
+                           const UResourceBundle* erasColResBundle,
+                           const UResourceBundle* erasResBundle)
 {
     ures_close(rootResBundle);
     ures_close(calResBundle);
@@ -398,10 +397,10 @@ EnumAbbrevEraNames
 Enumerates all the abbreviated era names of the specified locale and calendar, invoking the
 callback function for each era name.
 */
-bool EnumAbbrevEraNames(const char* locale,
-                        CalendarId calendarId,
-                        EnumCalendarInfoCallback callback,
-                        const void* context)
+static int32_t EnumAbbrevEraNames(const char* locale,
+                                  CalendarId calendarId,
+                                  EnumCalendarInfoCallback callback,
+                                  const void* context)
 {
     // The C-API for ICU provides no way to get at the abbreviated era names for a calendar (so we can't use EnumSymbols
     // here). Instead we will try to walk the ICU resource tables directly and fall back to regular era names if can't
@@ -414,7 +413,7 @@ bool EnumAbbrevEraNames(const char* locale,
 
     strncpy(localeNamePtr, locale, ULOC_FULLNAME_CAPACITY);
 
-    while (true)
+    while (TRUE)
     {
         UErrorCode status = U_ZERO_ERROR;
         char* name = GetCalendarName(calendarId);
@@ -429,7 +428,7 @@ bool EnumAbbrevEraNames(const char* locale,
         {
             EnumUResourceBundle(erasResBundle, callback, context);
             CloseResBundle(rootResBundle, calResBundle, targetCalResBundle, erasColResBundle, erasResBundle);
-            return true;
+            return TRUE;
         }
 
         // Couldn't find the data we need for this locale, we should fallback.
@@ -474,19 +473,18 @@ Allows for a collection of calendar string data to be retrieved by invoking
 the callback for each value in the collection.
 The context parameter is passed through to the callback along with each string.
 */
-int32_t GlobalizationNative_EnumCalendarInfo(
-                        EnumCalendarInfoCallback callback,
-                        const UChar* localeName,
-                        CalendarId calendarId,
-                        CalendarDataType dataType,
-                        const void* context)
+int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
+                                             const UChar* localeName,
+                                             CalendarId calendarId,
+                                             CalendarDataType dataType,
+                                             const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     if (U_FAILURE(err))
-        return false;
+        return FALSE;
 
     switch (dataType)
     {
@@ -527,8 +525,8 @@ int32_t GlobalizationNative_EnumCalendarInfo(
         case AbbrevEraNames:
             return EnumAbbrevEraNames(locale, calendarId, callback, context);
         default:
-            assert(false);
-            return false;
+            assert(FALSE);
+            return FALSE;
     }
 }
 
@@ -559,8 +557,10 @@ GetJapaneseEraInfo
 
 Gets the starting Gregorian date of the specified Japanese Era.
 */
-int32_t GlobalizationNative_GetJapaneseEraStartDate(
-    int32_t era, int32_t* startYear, int32_t* startMonth, int32_t* startDay)
+int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
+                                                    int32_t* startYear,
+                                                    int32_t* startMonth,
+                                                    int32_t* startDay)
 {
     *startYear = -1;
     *startMonth = -1;
@@ -570,7 +570,7 @@ int32_t GlobalizationNative_GetJapaneseEraStartDate(
     UCalendar* pCal = ucal_open(NULL, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
 
     if (U_FAILURE(err))
-        return false;
+        return FALSE;
 
     ucal_set(pCal, UCAL_ERA, era);
     ucal_set(pCal, UCAL_YEAR, 1);
@@ -580,7 +580,7 @@ int32_t GlobalizationNative_GetJapaneseEraStartDate(
     if (U_FAILURE(err))
     {
         ucal_close(pCal);
-        return false;
+        return FALSE;
     }
 
     // set the date to Jan 1
@@ -607,7 +607,7 @@ int32_t GlobalizationNative_GetJapaneseEraStartDate(
                     *startDay = ucal_get(pCal, UCAL_DATE, &err);
                     ucal_close(pCal);
 
-                    return U_SUCCESS(err);
+                    return UErrorCodeToBool(err);
                 }
             }
         }
@@ -617,5 +617,5 @@ int32_t GlobalizationNative_GetJapaneseEraStartDate(
     }
 
     ucal_close(pCal);
-    return false;
+    return FALSE;
 }
