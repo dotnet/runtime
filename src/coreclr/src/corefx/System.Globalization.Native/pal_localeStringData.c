@@ -72,12 +72,14 @@ UErrorCode GetLocaleIso639LanguageTwoLetterName(const char* locale, UChar* value
     UErrorCode status = U_ZERO_ERROR;
     int32_t length = uloc_getLanguage(locale, NULL, 0, &status) + 1;
 
+    assert(status == U_BUFFER_OVERFLOW_ERROR);
     char* buf = calloc(length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
     }
 
+    status = U_ZERO_ERROR;
     uloc_getLanguage(locale, buf, length, &status);
 
     if (U_SUCCESS(status))
