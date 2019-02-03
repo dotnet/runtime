@@ -11,10 +11,10 @@
  */
 typedef enum
 {
-    C = 0x1,
-    D = 0x2,
-    KC = 0x5,
-    KD = 0x6
+    FormC = 0x1,
+    FormD = 0x2,
+    FormKC = 0x5,
+    FormKD = 0x6
 } NormalizationForm;
 
 DLLEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
