@@ -781,7 +781,6 @@ public:
         BOOL fHasLowerBounds = pMT->GetInternalCorElementType() == ELEMENT_TYPE_ARRAY;
 
         DWORD dwTotalLocalNum = NewLocal(ELEMENT_TYPE_I4);
-        DWORD dwFactorLocalNum = NewLocal(ELEMENT_TYPE_I4);
         DWORD dwLengthLocalNum = NewLocal(ELEMENT_TYPE_I4);
 
         mdToken tokRawData = GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
@@ -793,16 +792,13 @@ public:
         ILCodeLabel * pTypeMismatchExceptionLabel = NULL;
 
         UINT rank = pMT->GetRank();
-        UINT idx = rank;
         UINT firstIdx = 0;
         UINT hiddenArgIdx = rank;
         _ASSERTE(rank>0);
 
-		
 #ifndef _TARGET_X86_
         if(m_pMD->GetArrayFuncIndex() == ArrayMethodDesc::ARRAY_FUNC_ADDRESS)
         {
-            idx++;
             firstIdx = 1;
             hiddenArgIdx = 0;
         }
@@ -903,30 +899,30 @@ public:
             m_pCode->EmitLDFLDA(tokRawData);
             m_pCode->EmitLDC(ArrayBase::GetBoundsOffset(pMT) - Object::GetOffsetOfFirstField());
             m_pCode->EmitADD();
-            m_pCode->EmitLDARG(firstIdx);          
+            m_pCode->EmitLDARG(firstIdx);
             m_pCode->EmitBR(pCheckDone);
             m_pCode->EmitLabel(pNotSZArray);
         }
 
-        while(idx-- > firstIdx)
+        for (UINT i = 0; i < rank; i++)
         {
             // Cache length
             m_pCode->EmitLoadThis();
             m_pCode->EmitLDFLDA(tokRawData);
-            m_pCode->EmitLDC((ArrayBase::GetBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + (idx-firstIdx)*sizeof(DWORD));
+            m_pCode->EmitLDC((ArrayBase::GetBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + i*sizeof(DWORD));
             m_pCode->EmitADD();
             m_pCode->EmitLDIND_I4();
             m_pCode->EmitSTLOC(dwLengthLocalNum);
 
             // Fetch index
-            m_pCode->EmitLDARG(idx);
+            m_pCode->EmitLDARG(firstIdx + i);
 
             if (fHasLowerBounds)
             {
                 // Load lower bound
                 m_pCode->EmitLoadThis();
                 m_pCode->EmitLDFLDA(tokRawData);
-                m_pCode->EmitLDC((ArrayBase::GetLowerBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + (idx-firstIdx)*sizeof(DWORD));
+                m_pCode->EmitLDC((ArrayBase::GetLowerBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + i*sizeof(DWORD));
                 m_pCode->EmitADD();
                 m_pCode->EmitLDIND_I4();
 
@@ -940,26 +936,14 @@ public:
             m_pCode->EmitBGE_UN(pRangeExceptionLabel1);
 
             // Add to the running total if we have one already
-            if ((idx-firstIdx) != (rank - 1))
+            if (i > 0)
             {
-                m_pCode->EmitLDLOC(dwFactorLocalNum);
-                m_pCode->EmitMUL();
                 m_pCode->EmitLDLOC(dwTotalLocalNum);
+                m_pCode->EmitLDLOC(dwLengthLocalNum);
+                m_pCode->EmitMUL();
                 m_pCode->EmitADD();
             }
             m_pCode->EmitSTLOC(dwTotalLocalNum);
-
-            // Update factor if this is not the last iteration
-            if ((idx-firstIdx) != 0)
-            {
-                m_pCode->EmitLDLOC(dwLengthLocalNum);
-                if ((idx-firstIdx) != (rank - 1))
-                {
-                    m_pCode->EmitLDLOC(dwFactorLocalNum);
-                    m_pCode->EmitMUL();
-                }
-                m_pCode->EmitSTLOC(dwFactorLocalNum);                
-            }
         }
 
         // Compute element address
@@ -968,9 +952,11 @@ public:
         m_pCode->EmitLDC(ArrayBase::GetDataPtrOffset(pMT) - Object::GetOffsetOfFirstField());
         m_pCode->EmitADD();
         m_pCode->EmitLDLOC(dwTotalLocalNum);
-        
+
         m_pCode->EmitLabel(pCheckDone);
-        
+
+        m_pCode->EmitCONV_U();
+
         SIZE_T elemSize = pMT->GetComponentSize();
         if (elemSize != 1)
         {
