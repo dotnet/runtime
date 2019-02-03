@@ -28,7 +28,12 @@ ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
     // has no public option for this. For now, just use the ICU standard name for both Standard and Generic
     // (which is the same behavior on Windows with the mincore TIME_ZONE_INFORMATION APIs).
     ucal_getTimeZoneDisplayName(
-        calendar, type == DaylightSavings ? UCAL_DST : UCAL_STANDARD, locale, result, resultLength, &err);
+        calendar,
+        type == TimeZoneDisplayName_DaylightSavings ? UCAL_DST : UCAL_STANDARD,
+        locale,
+        result,
+        resultLength,
+        &err);
 
     ucal_close(calendar);
     return GetResultCode(err);

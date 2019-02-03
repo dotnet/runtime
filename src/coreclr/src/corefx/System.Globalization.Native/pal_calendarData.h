@@ -48,21 +48,21 @@ typedef uint16_t CalendarId;
 */
 typedef enum
 {
-    Uninitialized = 0,
-    NativeName = 1,
-    MonthDay = 2,
-    ShortDates = 3,
-    LongDates = 4,
-    YearMonths = 5,
-    DayNames = 6,
-    AbbrevDayNames = 7,
-    MonthNames = 8,
-    AbbrevMonthNames = 9,
-    SuperShortDayNames = 10,
-    MonthGenitiveNames = 11,
-    AbbrevMonthGenitiveNames = 12,
-    EraNames = 13,
-    AbbrevEraNames = 14,
+    CalendarData_Uninitialized = 0,
+    CalendarData_NativeName = 1,
+    CalendarData_MonthDay = 2,
+    CalendarData_ShortDates = 3,
+    CalendarData_LongDates = 4,
+    CalendarData_YearMonths = 5,
+    CalendarData_DayNames = 6,
+    CalendarData_AbbrevDayNames = 7,
+    CalendarData_MonthNames = 8,
+    CalendarData_AbbrevMonthNames = 9,
+    CalendarData_SuperShortDayNames = 10,
+    CalendarData_MonthGenitiveNames = 11,
+    CalendarData_AbbrevMonthGenitiveNames = 12,
+    CalendarData_EraNames = 13,
+    CalendarData_AbbrevEraNames = 14,
 } CalendarDataType;
 
 // the function pointer definition for the callback used in EnumCalendarInfo
