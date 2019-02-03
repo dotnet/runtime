@@ -6,7 +6,6 @@
 #include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <search.h>
 #include <string.h>
@@ -100,7 +99,7 @@ Thus, to use these characters in a rule, they need to be escaped.
 
 This rule was taken from http://www.unicode.org/reports/tr35/tr35-collation.html#Rules.
 */
-bool NeedsEscape(UChar character)
+static int NeedsEscape(UChar character)
 {
     return ((0x21 <= character && character <= 0x2f)
         || (0x3a <= character && character <= 0x40)
@@ -118,13 +117,13 @@ This is done so we can use range checks instead of comparing individual characte
 These ranges were obtained by running the above characters through .NET CompareInfo.Compare
 with CompareOptions.IgnoreSymbols on Windows.
 */
-bool IsHalfFullHigherSymbol(UChar character)
+static int IsHalfFullHigherSymbol(UChar character)
 {
     return (0xffe0 <= character && character <= 0xffe6)
         || (0xff61 <= character && character <= 0xff65);
 }
 
-static bool AddItem(UCharList* list, const UChar item)
+static int AddItem(UCharList* list, const UChar item)
 {
     size_t size = list->size++;
     if (size >= list->capacity)
@@ -133,13 +132,13 @@ static bool AddItem(UCharList* list, const UChar item)
         UChar* ptr = (UChar*)realloc(list->items, list->capacity * sizeof(UChar*));
         if (ptr == NULL)
         {
-            return false;
+            return FALSE;
         }
         list->items = ptr;
     }
 
     list->items[size] = item;
-    return true;
+    return TRUE;
 }
 
 /*
@@ -148,18 +147,18 @@ Gets a string of custom collation rules, if necessary.
 Since the CompareOptions flags don't map 1:1 with ICU default functionality, we need to fall back to using
 custom rules in order to support IgnoreKanaType and IgnoreWidth CompareOptions correctly.
 */
-UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, bool isIgnoreSymbols)
+static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, int isIgnoreSymbols)
 {
-    bool isIgnoreKanaType = (options & CompareOptionsIgnoreKanaType) == CompareOptionsIgnoreKanaType;
-    bool isIgnoreWidth = (options & CompareOptionsIgnoreWidth) == CompareOptionsIgnoreWidth;
+    int isIgnoreKanaType = (options & CompareOptionsIgnoreKanaType) == CompareOptionsIgnoreKanaType;
+    int isIgnoreWidth = (options & CompareOptionsIgnoreWidth) == CompareOptionsIgnoreWidth;
 
     // kana differs at the tertiary level
-    bool needsIgnoreKanaTypeCustomRule = isIgnoreKanaType && strength >= UCOL_TERTIARY;
-    bool needsNotIgnoreKanaTypeCustomRule = !isIgnoreKanaType && strength < UCOL_TERTIARY;
+    int needsIgnoreKanaTypeCustomRule = isIgnoreKanaType && strength >= UCOL_TERTIARY;
+    int needsNotIgnoreKanaTypeCustomRule = !isIgnoreKanaType && strength < UCOL_TERTIARY;
 
     // character width differs at the tertiary level
-    bool needsIgnoreWidthCustomRule = isIgnoreWidth && strength >= UCOL_TERTIARY;
-    bool needsNotIgnoreWidthCustomRule = !isIgnoreWidth && strength < UCOL_TERTIARY;
+    int needsIgnoreWidthCustomRule = isIgnoreWidth && strength >= UCOL_TERTIARY;
+    int needsNotIgnoreWidthCustomRule = !isIgnoreWidth && strength < UCOL_TERTIARY;
 
     if (!(needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule || needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule))
         return NULL;
@@ -212,7 +211,7 @@ UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, bool isI
 
         UChar lowerChar;
         UChar higherChar;
-        bool needsEscape;
+        int needsEscape;
         for (int i = 0; i < g_HalfFullCharsLength; i++)
         {
             lowerChar = g_HalfFullLowerChars[i];
@@ -251,9 +250,9 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
 {
     UColAttributeValue strength = ucol_getStrength(pCollator);
 
-    bool isIgnoreCase = (options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase;
-    bool isIgnoreNonSpace = (options & CompareOptionsIgnoreNonSpace) == CompareOptionsIgnoreNonSpace;
-    bool isIgnoreSymbols = (options & CompareOptionsIgnoreSymbols) == CompareOptionsIgnoreSymbols;
+    int isIgnoreCase = (options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase;
+    int isIgnoreNonSpace = (options & CompareOptionsIgnoreNonSpace) == CompareOptionsIgnoreNonSpace;
+    int isIgnoreSymbols = (options & CompareOptionsIgnoreSymbols) == CompareOptionsIgnoreSymbols;
 
     if (isIgnoreCase)
     {
@@ -325,36 +324,28 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
 }
 
 // Returns TRUE if all the collation elements in str are completely ignorable
-bool CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, int32_t length)
+static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, int32_t length)
 {
-    bool result = false;
+    int result = TRUE;
     UErrorCode err = U_ZERO_ERROR;
     UCollationElements* pCollElem = ucol_openElements(pColl, lpStr, length, &err);
 
     if (U_SUCCESS(err))
     {
         int32_t curCollElem = UCOL_NULLORDER;
-
-        result = true;
-
         while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
         {
             if (curCollElem != 0)
             {
-                result = false;
+                result = FALSE;
                 break;
             }
-        }
-
-        if (U_FAILURE(err))
-        {
-            result = false;
         }
 
         ucol_closeElements(pCollElem);
     }
 
-    return result;
+    return U_SUCCESS(err) ? result : FALSE;
 
 }
 
@@ -371,7 +362,7 @@ void CreateSortHandle(SortHandle** ppSortHandle)
 
     if (result != 0)
     {
-        assert(false && "Unexpected pthread_mutex_init return value.");
+        assert(FALSE && "Unexpected pthread_mutex_init return value.");
     }
 }
 
@@ -429,7 +420,7 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
         int lockResult = pthread_mutex_lock(&pSortHandle->collatorsLockObject);
         if (lockResult != 0)
         {
-            assert(false && "Unexpected pthread_mutex_lock return value.");
+            assert(FALSE && "Unexpected pthread_mutex_lock return value.");
         }
 
         TCollatorMap* map = (TCollatorMap*)malloc(sizeof(TCollatorMap));
@@ -465,7 +456,7 @@ int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
     }
     else
     {
-        assert(false && "Unexpected ucol_getVersion to fail.");
+        assert(FALSE && "Unexpected ucol_getVersion to fail.");
 
         // we didn't use UCOL_TAILORINGS_VERSION because it is deprecated in ICU v5
         result = UCOL_RUNTIME_VERSION << 16 | UCOL_BUILDER_VERSION;
@@ -564,13 +555,13 @@ int32_t GlobalizationNative_LastIndexOf(
 Static Function:
 AreEqualOrdinalIgnoreCase
 */
-static bool AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
+static int AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
 {
     // Return whether the two characters are identical or would be identical if they were upper-cased.
 
     if (one == two)
     {
-        return true;
+        return TRUE;
     }
 
     if (one == 0x0131 || two == 0x0131)
@@ -578,7 +569,7 @@ static bool AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
         // On Windows with InvariantCulture, the LATIN SMALL LETTER DOTLESS I (U+0131)
         // capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
         // We special case it to match the Windows invariant behavior.
-        return false;
+        return FALSE;
     }
 
     return u_toupper(one) == u_toupper(two);
@@ -603,14 +594,14 @@ int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
         const UChar *src = lpSource, *trg = lpTarget;
         UChar32 srcCodepoint, trgCodepoint;
 
-        bool match = true;
+        int32_t match = TRUE;
         while (trgIdx < cwTargetLength)
         {
             U16_NEXT(src, srcIdx, cwSourceLength, srcCodepoint);
             U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
             if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
             {
-                match = false; 
+                match = FALSE; 
                 break;
             }
         }
