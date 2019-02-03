@@ -235,6 +235,8 @@ DEFINE_EXCEPTION(g_SystemNS,           MissingMemberException,         false,  C
 DEFINE_EXCEPTION(g_SystemNS,           MissingMethodException,         false,  COR_E_MISSINGMETHOD)
 DEFINE_EXCEPTION(g_SystemNS,           MulticastNotSupportedException, false,  COR_E_MULTICASTNOTSUPPORTED)
 
+DEFINE_EXCEPTION(g_RuntimeNS,          AmbiguousImplementationException, false,COR_E_AMBIGUOUSIMPLEMENTATION)
+
 DEFINE_EXCEPTION(g_SystemNS,           NotFiniteNumberException,       false,  COR_E_NOTFINITENUMBER)
 
 DEFINE_EXCEPTION(g_SystemNS,           NotSupportedException,          false,  COR_E_NOTSUPPORTED, STD_CTL_SCODE(438), STD_CTL_SCODE(445), STD_CTL_SCODE(458), STD_CTL_SCODE(459))

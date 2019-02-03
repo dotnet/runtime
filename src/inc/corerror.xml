@@ -310,6 +310,12 @@
   <Comment> Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies </Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x8013106A">
+  <SymbolicName>COR_E_AMBIGUOUSIMPLEMENTATION</SymbolicName>
+  <Message>"Ambiguous implementation found."</Message>
+  <Comment> Ambiguous implementation found </Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131100">
 	<SymbolicName>CLDB_E_FILE_BADREAD</SymbolicName>
 	<Message>"Error occurred during a read."</Message>

@@ -13,6 +13,9 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
+// TODO: use the contract once this is exposed from contracts
+.assembly extern System.Private.CoreLib { }
+
 .assembly diamondshape
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
@@ -649,7 +652,7 @@
       IL_002b:  leave.s    IL_004a
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [System.Private.CoreLib]System.Runtime.AmbiguousImplementationException
     {
       IL_002d:  stloc.s    V_6
       IL_002f:  nop
@@ -687,7 +690,7 @@
       IL_0074:  leave.s    IL_0093
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [System.Private.CoreLib]System.Runtime.AmbiguousImplementationException
     {
       IL_0076:  stloc.s    V_7
       IL_0078:  nop
@@ -726,7 +729,7 @@
       IL_00c1:  leave.s    IL_00e0
 
     }  // end .try
-    catch [mscorlib]System.Exception 
+    catch [System.Private.CoreLib]System.Runtime.AmbiguousImplementationException
     {
       IL_00c3:  stloc.s    V_9
       IL_00c5:  nop
