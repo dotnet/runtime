@@ -15,7 +15,7 @@ int32_t UErrorCodeToBool(UErrorCode status)
 {
     if (U_SUCCESS(status))
     {
-        return 1;
+        return TRUE;
     }
 
     // assert errors that should never occur
@@ -24,14 +24,22 @@ int32_t UErrorCodeToBool(UErrorCode status)
 
     // add possible SetLastError support here
 
-    return 0;
+    return FALSE;
 }
 
-int32_t GetLocale(
-    const UChar* localeName, char* localeNameResult, int32_t localeNameResultLength, bool canonicalize, UErrorCode* err)
+int32_t GetLocale(const UChar* localeName,
+                  char* localeNameResult,
+                  int32_t localeNameResultLength,
+                  UBool canonicalize,
+                  UErrorCode* err)
 {
     char localeNameTemp[ULOC_FULLNAME_CAPACITY] = {0};
     int32_t localeLength;
+
+    if (U_FAILURE(*err))
+    {
+        return 0;
+    }
 
     // Convert ourselves instead of doing u_UCharsToChars as that function considers '@' a variant and stops.
     for (int i = 0; i < ULOC_FULLNAME_CAPACITY - 1; i++)
@@ -81,17 +89,21 @@ int32_t GetLocale(
     return localeLength;
 }
 
-UErrorCode u_charsToUChars_safe(const char* str, UChar* value, int32_t valueLength)
+void u_charsToUChars_safe(const char* str, UChar* value, int32_t valueLength, UErrorCode* err)
 {
-    int len = strlen(str);
+    if (U_FAILURE(*err))
+    {
+        return;
+    }
 
+    int len = strlen(str);
     if (len >= valueLength)
     {
-        return U_BUFFER_OVERFLOW_ERROR;
+        *err = U_BUFFER_OVERFLOW_ERROR;
+        return;
     }
 
     u_charsToUChars(str, value, len + 1);
-    return U_ZERO_ERROR;
 }
 
 int32_t FixupLocaleName(UChar* value, int32_t valueLength)
@@ -112,7 +124,7 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
     return i;
 }
 
-bool IsEnvVarSet(const char* name)
+static int IsEnvVarSet(const char* name)
 {
     const char* value = getenv(name);
 
@@ -202,16 +214,12 @@ int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value,
     UErrorCode status = U_ZERO_ERROR;
 
     char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, true, &status);
+    GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, TRUE, &status);
+    u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
 
     if (U_SUCCESS(status))
     {
-        status = u_charsToUChars_safe(localeNameBuffer, value, valueLength);
-
-        if (U_SUCCESS(status))
-        {
-            FixupLocaleName(value, valueLength);
-        }
+        FixupLocaleName(value, valueLength);
     }
 
     return UErrorCodeToBool(status);
@@ -225,30 +233,22 @@ int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLeng
     const char* defaultLocale = DetectDefaultLocaleName();
 
     uloc_getBaseName(defaultLocale, localeNameBuffer, ULOC_FULLNAME_CAPACITY, &status);
+    u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
 
     if (U_SUCCESS(status))
     {
-        status = u_charsToUChars_safe(localeNameBuffer, value, valueLength);
+        int localeNameLen = FixupLocaleName(value, valueLength);
 
-        if (U_SUCCESS(status))
+        char collationValueTemp[ULOC_KEYWORDS_CAPACITY];
+        int32_t collationLen =
+            uloc_getKeywordValue(defaultLocale, "collation", collationValueTemp, ULOC_KEYWORDS_CAPACITY, &status);
+
+        if (U_SUCCESS(status) && collationLen > 0)
         {
-            int localeNameLen = FixupLocaleName(value, valueLength);
-
-            char collationValueTemp[ULOC_KEYWORDS_CAPACITY];
-            int32_t collationLen =
-                uloc_getKeywordValue(defaultLocale, "collation", collationValueTemp, ULOC_KEYWORDS_CAPACITY, &status);
-
-            if (U_SUCCESS(status) && collationLen > 0)
-            {
-                // copy the collation; managed uses a "_" to represent collation (not
-                // "@collation=")
-                status = u_charsToUChars_safe("_", &value[localeNameLen], valueLength - localeNameLen);
-                if (U_SUCCESS(status))
-                {
-                    status = u_charsToUChars_safe(
-                        collationValueTemp, &value[localeNameLen + 1], valueLength - localeNameLen - 1);
-                }
-            }
+            // copy the collation; managed uses a "_" to represent collation (not
+            // "@collation=")
+            u_charsToUChars_safe("_", &value[localeNameLen], valueLength - localeNameLen, &status);
+            u_charsToUChars_safe(collationValueTemp, &value[localeNameLen + 1], valueLength - localeNameLen - 1, &status);
         }
     }
 
