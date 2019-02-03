@@ -319,39 +319,44 @@ bool EnumSymbols(const char* locale,
     udat_setCalendar(pFormat, pCalendar);
 
     int32_t symbolCount = udat_countSymbols(pFormat, type);
+    UChar stackSymbolBuf[100];
+    UChar* symbolBuf;
 
-    for (int32_t i = startIndex; i < symbolCount; i++)
+    for (int32_t i = startIndex; U_SUCCESS(err) && i < symbolCount; i++)
     {
         UErrorCode ignore = U_ZERO_ERROR;
         int symbolLen = udat_getSymbols(pFormat, type, i, NULL, 0, &ignore) + 1;
 
-        UChar* symbolBuf = calloc(symbolLen, sizeof(UChar));
-        if (symbolBuf == NULL)
+        if (symbolLen <= sizeof(stackSymbolBuf) / sizeof(stackSymbolBuf[0]))
         {
-            udat_close(pFormat);
-            ucal_close(pCalendar);
-            return false;
+            symbolBuf = stackSymbolBuf;
+        }
+        else
+        {
+            symbolBuf = calloc(symbolLen, sizeof(UChar));
+            if (symbolBuf == NULL)
+            {
+                err = U_MEMORY_ALLOCATION_ERROR;
+                break;
+            }
         }
 
         udat_getSymbols(pFormat, type, i, symbolBuf, symbolLen, &err);
 
-        assert(U_SUCCESS(err));
-
-        if (U_FAILURE(err))
+        if (U_SUCCESS(err))
         {
-            udat_close(pFormat);
-            ucal_close(pCalendar);
-            free(symbolBuf);
-            return false;
+            callback(symbolBuf, context);
         }
 
-        callback(symbolBuf, context);
-        free(symbolBuf);
+        if (symbolBuf != stackSymbolBuf)
+        {
+            free(symbolBuf);
+        }
     }
 
     udat_close(pFormat);
     ucal_close(pCalendar);
-    return true;
+    return U_SUCCESS(err);
 }
 
 bool EnumUResourceBundle(const UResourceBundle* bundle, EnumCalendarInfoCallback callback, const void* context)
