@@ -9,11 +9,11 @@
 #endif
 
 #ifdef static_assert
-#define c_static_assert(e) static_assert((e),"")
+#define c_static_assert_msg(e, msg) static_assert((e), msg)
 #elif __has_extension(c_static_assert)
-#define c_static_assert(e) _Static_assert((e), "")
+#define c_static_assert_msg(e, msg) _Static_assert((e), msg)
 #else
-#define c_static_assert(e) typedef char __c_static_assert__[(e)?1:-1]
+#define c_static_assert_msg(e, msg) typedef char __c_static_assert__[(e)?1:-1]
 #endif
 
 #define DLLEXPORT __attribute__ ((__visibility__ ("default")))

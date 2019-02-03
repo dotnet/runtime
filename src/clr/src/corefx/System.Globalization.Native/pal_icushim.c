@@ -31,7 +31,7 @@ static void* libicui18n = NULL;
 bool FindICULibs(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
 #ifndef OSX_ICU_LIBRARY_PATH
-    static_assert(false, "The ICU Library path is not defined");
+    c_static_assert_msg(false, "The ICU Library path is not defined");
 #endif // OSX_ICU_LIBRARY_PATH
 
     // Usually OSX_ICU_LIBRARY_PATH is "/usr/lib/libicucore.dylib"
@@ -119,10 +119,10 @@ bool OpenICULibraries(int majorVer, int minorVer, int subVer, const char* versio
     char libicuucName[64];
     char libicui18nName[64];
 
-    static_assert(sizeof("libicuuc.so") + MaxICUVersionStringLength <= sizeof(libicuucName), "The libicuucName is too small");
+    c_static_assert_msg(sizeof("libicuuc.so") + MaxICUVersionStringLength <= sizeof(libicuucName), "The libicuucName is too small");
     GetVersionedLibFileName("libicuuc.so", majorVer, minorVer, subVer, versionPrefix, libicuucName);
 
-    static_assert(sizeof("libicui18n.so") + MaxICUVersionStringLength <= sizeof(libicui18nName), "The libicui18nName is too small");
+    c_static_assert_msg(sizeof("libicui18n.so") + MaxICUVersionStringLength <= sizeof(libicui18nName), "The libicui18nName is too small");
     GetVersionedLibFileName("libicui18n.so", majorVer, minorVer, subVer, versionPrefix, libicui18nName);
 
     libicuuc = dlopen(libicuucName, RTLD_LAZY);
@@ -263,7 +263,7 @@ int32_t GlobalizationNative_LoadICU()
 
     // Get pointers to all the ICU functions that are needed
 #define PER_FUNCTION_BLOCK(fn, lib) \
-    static_assert((sizeof(#fn) + MaxICUVersionStringLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
+    c_static_assert_msg((sizeof(#fn) + MaxICUVersionStringLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
     sprintf(symbolName, #fn "%s", symbolVersion); \
     fn##_ptr = (__typeof(fn)*)dlsym(lib, symbolName); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
