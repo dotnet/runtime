@@ -13,6 +13,11 @@
 
 #include "pal_collation.h"
 
+c_static_assert_msg(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
+c_static_assert_msg(UCOL_LESS < 0, "managed side requires less than zero for a < b");
+c_static_assert_msg(UCOL_GREATER > 0, "managed side requires greater than zero for a > b");
+c_static_assert_msg(USEARCH_DONE == -1, "managed side requires -1 for not found");
+
 const int32_t CompareOptionsIgnoreCase = 0x1;
 const int32_t CompareOptionsIgnoreNonSpace = 0x2;
 const int32_t CompareOptionsIgnoreSymbols = 0x4;
@@ -475,10 +480,6 @@ CompareString
 int32_t GlobalizationNative_CompareString(
     SortHandle* pSortHandle, const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length, int32_t options)
 {
-    static_assert(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
-    static_assert(UCOL_LESS < 0, "managed side requires less than zero for a < b");
-    static_assert(UCOL_GREATER > 0, "managed side requires greater than zero for a > b");
-
     UCollationResult result = UCOL_EQUAL;
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
@@ -504,8 +505,6 @@ int32_t GlobalizationNative_IndexOf(
                         int32_t options,
                         int32_t* pMatchedLength)
 {
-    static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
-
     int32_t result = USEARCH_DONE;
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
@@ -543,8 +542,6 @@ int32_t GlobalizationNative_LastIndexOf(
                         int32_t cwSourceLength,
                         int32_t options)
 {
-    static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
-
     int32_t result = USEARCH_DONE;
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
