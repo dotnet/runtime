@@ -56,12 +56,45 @@ namespace System.Json.Tests
             yield return new object[] { "4294967297", "4294967297" };
             yield return new object[] { "9223372036854775807", "9223372036854775807" };
             yield return new object[] { "18446744073709551615", "18446744073709551615" };
+        }
+
+        public static IEnumerable<object[]> ParseIntegralBoundaries_TestData_NetFramework()
+        {
             yield return new object[] { "79228162514264337593543950336", "7.9228162514264338E+28" };
+        }
+
+        public static IEnumerable<object[]> ParseIntegralBoundaries_TestData_NotNetFramework()
+        {
+            yield return new object[] { "79228162514264337593543950336", "7.922816251426434E+28" };
         }
 
         [Theory]
         [MemberData(nameof(ParseIntegralBoundaries_TestData))]
         public void Parse_IntegralBoundaries_LessThanMaxDouble_Works(string jsonString, string expectedToString)
+        {
+            Parse(jsonString, value =>
+            {
+                Assert.Equal(JsonType.Number, value.JsonType);
+                Assert.Equal(expectedToString, value.ToString());
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseIntegralBoundaries_TestData_NetFramework))]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void Parse_IntegralBoundaries_LessThanMaxDouble_Works_NetFramework(string jsonString, string expectedToString)
+        {
+            Parse(jsonString, value =>
+            {
+                Assert.Equal(JsonType.Number, value.JsonType);
+                Assert.Equal(expectedToString, value.ToString());
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseIntegralBoundaries_TestData_NotNetFramework))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void Parse_IntegralBoundaries_LessThanMaxDouble_Works_NotNetFramework(string jsonString, string expectedToString)
         {
             Parse(jsonString, value =>
             {
