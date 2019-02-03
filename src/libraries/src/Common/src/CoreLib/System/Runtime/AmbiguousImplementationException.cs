@@ -13,16 +13,19 @@ namespace System.Runtime
         public AmbiguousImplementationException()
             : base(SR.AmbiguousImplementationException_NullMessage)
         {
+            HResult = HResults.COR_E_AMBIGUOUSIMPLEMENTATION;
         }
 
         public AmbiguousImplementationException(string message)
             : base(message)
         {
+            HResult = HResults.COR_E_AMBIGUOUSIMPLEMENTATION;
         }
 
         public AmbiguousImplementationException(string message, Exception innerException)
             : base(message, innerException)
         {
+            HResult = HResults.COR_E_AMBIGUOUSIMPLEMENTATION;
         }
 
         private AmbiguousImplementationException(SerializationInfo info, StreamingContext context)
