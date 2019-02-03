@@ -12,13 +12,13 @@ const UNormalizer2* GetNormalizerForForm(NormalizationForm normalizationForm, UE
 {
     switch (normalizationForm)
     {
-        case C:
+        case FormC:
             return unorm2_getNFCInstance(pErrorCode);
-        case D:
+        case FormD:
             return unorm2_getNFDInstance(pErrorCode);
-        case KC:
+        case FormKC:
             return unorm2_getNFKCInstance(pErrorCode);
-        case KD:
+        case FormKD:
             return unorm2_getNFKDInstance(pErrorCode);
     }
 
