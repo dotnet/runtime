@@ -32,9 +32,24 @@ const int32_t CompareOptionsIgnoreWidth = 0x10;
 // change ICU's default behavior here isn't really justified unless someone has a strong reason
 // for !StringSort to behave differently.
 
+typedef struct { int32_t key; UCollator* UCollator; } TCollatorMap;
+
+/*
+ * For increased performance, we cache the UCollator objects for a locale and
+ * share them across threads. This is safe (and supported in ICU) if we ensure
+ * multiple threads are only ever dealing with const UCollators.
+ */
+struct SortHandle
+{
+    UCollator* regular;
+    TCollatorMap* collatorsPerOption;
+    pthread_mutex_t collatorsLockObject;
+    void* pRoot;
+};
+
 typedef struct { UChar* items; size_t capacity; size_t size; } UCharList;
 
-int TreeComparer(const void* left, const void* right)
+static int TreeComparer(const void* left, const void* right)
 {
     const TCollatorMap* leftMap = left;
     const TCollatorMap* rightMap = right;

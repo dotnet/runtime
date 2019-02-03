@@ -6,20 +6,7 @@
 #include "pal_locale.h"
 #include "pal_errors.h"
 
-typedef struct { int32_t key; UCollator* UCollator; } TCollatorMap;
-
-/*
- * For increased performance, we cache the UCollator objects for a locale and
- * share them across threads. This is safe (and supported in ICU) if we ensure
- * multiple threads are only ever dealing with const UCollators.
- */
-typedef struct
-{
-    UCollator* regular;
-    TCollatorMap* collatorsPerOption;
-    pthread_mutex_t collatorsLockObject;
-    void* pRoot;
-} SortHandle;
+typedef struct SortHandle SortHandle;
 
 DLLEXPORT ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle);
 

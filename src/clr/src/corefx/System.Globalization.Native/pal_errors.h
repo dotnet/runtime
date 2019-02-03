@@ -21,7 +21,7 @@ typedef enum
 /*
 Converts a UErrorCode to a ResultCode.
 */
-DLLEXPORT static ResultCode GetResultCode(UErrorCode err)
+static ResultCode GetResultCode(UErrorCode err)
 {
     if (err == U_BUFFER_OVERFLOW_ERROR || err == U_STRING_NOT_TERMINATED_WARNING)
     {
