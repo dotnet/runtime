@@ -1184,7 +1184,7 @@ typedef enum {
 #define MONO_REGION_TRY       0
 #define MONO_REGION_FINALLY  16
 #define MONO_REGION_CATCH    32
-#define MONO_REGION_FAULT    64         /* Currently unused */
+#define MONO_REGION_FAULT    64
 #define MONO_REGION_FILTER  128
 
 #define MONO_BBLOCK_IS_IN_REGION(bblock, regtype) (((bblock)->region & (0xf << 4)) == (regtype))
