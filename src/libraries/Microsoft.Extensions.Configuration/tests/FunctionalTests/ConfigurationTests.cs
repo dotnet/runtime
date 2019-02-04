@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Testing;
+using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Extensions.Configuration.Ini;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Configuration.Xml;
@@ -461,7 +463,9 @@ IniKey1=IniValue2");
             Assert.NotNull(provider);
         }
 
-        [Fact]
+        [ConditionalFact]
+        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "File watching is flaky on non windows.")]
+        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "File watching is flaky on non windows.")]
         public void CanSetValuesAndReloadValues()
         {
             WriteTestFiles();
@@ -503,7 +507,9 @@ IniKey1=IniValue2");
             Assert.Equal("XmlValue6", config["CommonKey1:CommonKey2:CommonKey3:CommonKey4"]);
         }
 
-        [Fact]
+        [ConditionalFact]
+        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "File watching is flaky on non windows.")]
+        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "File watching is flaky on non windows.")]
         public async Task ReloadOnChangeWorksAfterError()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -533,7 +539,9 @@ IniKey1=IniValue2");
             Assert.Equal("JsonValue2", config["JsonKey1"]);
         }
 
-        [Fact]
+        [ConditionalFact]
+        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "File watching is flaky on non windows.")]
+        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "File watching is flaky on non windows.")]
         public async Task TouchingFileWillReload()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -569,7 +577,9 @@ IniKey1=IniValue2");
             Assert.True(token.HasChanged);
         }
 
-        [Fact]
+        [ConditionalFact]
+        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "File watching is flaky on non windows.")]
+        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "File watching is flaky on non windows.")]
         public async Task CreatingOptionalFileInNonExistentDirectoryWillReload()
         {
             var directory = Path.GetRandomFileName();
@@ -602,7 +612,9 @@ IniKey1=IniValue2");
             Assert.True(createToken.HasChanged);
         }
 
-        [Theory]
+        [ConditionalTheory]
+        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "File watching is flaky on non windows.")]
+        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "File watching is flaky on non windows.")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DeletingFilesThatRedefineKeysWithReload(bool optional)
@@ -682,7 +694,9 @@ IniKey1=IniValue2");
             Assert.True(token.HasChanged);
         }
         
-        [Theory]
+        [ConditionalTheory]
+        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "File watching is flaky on non windows.")]
+        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "File watching is flaky on non windows.")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DeletingFileWillReload(bool optional)
@@ -720,7 +734,9 @@ IniKey1=IniValue2");
             Assert.True(token.HasChanged);
         }
 
-        [Fact]
+        [ConditionalFact]
+        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "File watching is flaky on non windows.")]
+        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "File watching is flaky on non windows.")]
         public async Task CreatingWritingDeletingCreatingFileWillReload()
         {
             var config = CreateBuilder()
@@ -897,7 +913,9 @@ IniKey1=IniValue2");
             Assert.NotNull(providers.Single(p => p is IniConfigurationProvider));
         }
 
-        [Fact]
+        [ConditionalFact]
+        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "File watching is flaky on non windows.")]
+        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "File watching is flaky on non windows.")]
         public async Task TouchingFileWillReloadForUserSecrets()
         {
             string userSecretsId = "Test";
