@@ -207,15 +207,7 @@ typedef struct {
 } ObjRef;
 
 
-static void
-free_objref (gpointer value)
-{
-	ObjRef *o = (ObjRef *)value;
-
-	mono_gchandle_free_internal (o->handle);
-
-	g_free (o);
-}
+void mono_debugger_free_objref (gpointer value);
 
 typedef int DbgEngineErrorCode;
 #define DE_ERR_NONE 0

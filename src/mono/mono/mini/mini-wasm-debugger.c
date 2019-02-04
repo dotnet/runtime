@@ -31,6 +31,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_get_var_info (int scope, int pos);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name);
@@ -42,7 +43,9 @@ extern void mono_wasm_add_float_var (float);
 extern void mono_wasm_add_double_var (double);
 extern void mono_wasm_add_string_var (const char*);
 extern void mono_wasm_add_obj_var (const char*, guint64);
+extern void mono_wasm_add_array_var (const char*, guint64);
 extern void mono_wasm_add_properties_var (const char*);
+extern void mono_wasm_add_array_item (int);
 
 G_END_DECLS
 
@@ -328,7 +331,7 @@ mono_wasm_debugger_init (void)
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 
 	obj_to_objref = g_hash_table_new (NULL, NULL);
-	objrefs = g_hash_table_new_full (NULL, NULL, NULL, free_objref);
+	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 }
 
 MONO_API void
@@ -516,6 +519,19 @@ mono_wasm_current_bp_id (void)
 	return evt->id;
 }
 
+static int get_object_id(MonoObject *obj) 
+{
+	ObjRef *ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
+	if (ref)
+		return ref->id;
+	ref = g_new0 (ObjRef, 1);
+	ref->id = mono_atomic_inc_i32 (&objref_id);
+	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
+	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
+	g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
+	return ref->id;
+}
+
 static gboolean
 list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 {
@@ -611,6 +627,8 @@ static gboolean decode_value(MonoType * type, gpointer addr)
 			g_free (str);
 			break;
 		}
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_CLASS: {
 			MonoObject *obj = *(MonoObject**)addr;
@@ -624,12 +642,10 @@ static gboolean decode_value(MonoType * type, gpointer addr)
 					g_string_append_c (class_name, '.');
 				}
 				g_string_append (class_name, obj->vtable->klass->name);
-				ObjRef *ref = g_new0 (ObjRef, 1); //ok
-				ref->id = mono_atomic_inc_i32 (&objref_id); //ok
-				ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE); //ok
-				g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
-				mono_wasm_add_obj_var (class_name->str, ref->id);
-				g_hash_table_insert (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)), ref);
+				if (m_class_get_byval_arg (obj->vtable->klass)->type == MONO_TYPE_SZARRAY || m_class_get_byval_arg (obj->vtable->klass)->type == MONO_TYPE_ARRAY)
+					mono_wasm_add_array_var (class_name->str, get_object_id(obj));
+				else
+					mono_wasm_add_obj_var (class_name->str, get_object_id(obj));
 				g_string_free(class_name, FALSE);
 				break;
 			}
@@ -679,6 +695,30 @@ describe_object_properties (guint64 objectId)
 	while ((p = mono_class_get_properties (obj->vtable->klass, &iter))) {
 		mono_wasm_add_properties_var(p->name);
 	}*/
+	return TRUE;
+}
+
+
+static gboolean 
+describe_array_values (guint64 objectId)
+{
+	int esize;
+	gpointer elem;
+	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
+	if (!ref) {
+		return FALSE;
+	}
+	MonoArray *arr = (MonoArray *)mono_gchandle_get_target_internal (ref->handle);
+	MonoObject *obj = &arr->obj;
+	if (!obj) {
+		return FALSE;
+	}
+	esize = mono_array_element_size (obj->vtable->klass);
+	for (int i = 0; i < arr->max_length; i++) {
+		mono_wasm_add_array_item(i);
+		elem = (gpointer*)((char*)arr->vector + (i * esize));
+		decode_value(m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)), elem);
+	}
 	return TRUE;
 }
 
@@ -749,6 +789,14 @@ mono_wasm_get_object_properties (int object_id)
 	DEBUG_PRINTF (2, "getting properties of object %d\n", object_id);
 
 	describe_object_properties(object_id);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_get_array_values (int object_id)
+{
+	DEBUG_PRINTF (2, "getting array values %d\n", object_id);
+
+	describe_array_values(object_id);
 }
 
 // Functions required by debugger-state-machine.

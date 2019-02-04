@@ -1910,7 +1910,7 @@ static MonoGHashTable *suspended_objs;
 static void
 objrefs_init (void)
 {
-	objrefs = g_hash_table_new_full (NULL, NULL, NULL, free_objref);
+	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 	obj_to_objref = g_hash_table_new (NULL, NULL);
 	suspended_objs = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Suspended Object Table");
 }

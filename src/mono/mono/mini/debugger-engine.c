@@ -1554,4 +1554,13 @@ mono_de_cleanup (void)
 	domains_cleanup ();
 }
 
+void
+mono_debugger_free_objref (gpointer value)
+{
+	ObjRef *o = (ObjRef *)value;
+
+	mono_gchandle_free_internal (o->handle);
+
+	g_free (o);
+}
 #endif
