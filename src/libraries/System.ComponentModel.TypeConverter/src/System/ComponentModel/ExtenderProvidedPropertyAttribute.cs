@@ -52,9 +52,17 @@ namespace System.ComponentModel
             {
                 return true;
             }
+            if (!(obj is ExtenderProvidedPropertyAttribute other))
+            {
+                return false;
+            }
 
-            return obj is ExtenderProvidedPropertyAttribute other
-                && other.ExtenderProperty.Equals(ExtenderProperty)
+            if (other.IsDefaultAttribute())
+            {
+                return IsDefaultAttribute();
+            }
+
+            return other.ExtenderProperty.Equals(ExtenderProperty)
                 && other.Provider.Equals(Provider)
                 && other.ReceiverType.Equals(ReceiverType);
         }

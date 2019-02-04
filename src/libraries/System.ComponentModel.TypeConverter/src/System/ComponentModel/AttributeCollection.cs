@@ -54,7 +54,7 @@ namespace System.ComponentModel
             }
         }
 
-        protected AttributeCollection()
+        protected AttributeCollection() : this(Array.Empty<Attribute>())
         {
         }
 
