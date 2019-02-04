@@ -348,12 +348,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/methodimpl/methodimpl/*">
             <Issue>9565</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveEvent/ResolveEventTests/*">
-            <Issue>21964</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveCallback/CallbackTests/*">
-            <Issue>21964</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/16064/methodimpl/*">
             <Issue>9565</Issue>
         </ExcludeList>
