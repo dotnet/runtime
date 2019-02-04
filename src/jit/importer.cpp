@@ -6696,10 +6696,12 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         return true;
     }
 
-#ifdef _TARGET_AMD64_
-    // On x64, we disable pinvoke inlining inside of try regions.
-    // Here is the comment from JIT64 explaining why:
+#ifdef _TARGET_64BIT_
+    // On 64-bit platforms, we disable pinvoke inlining inside of try regions.
+    // Note that this could be needed on other architectures too, but we
+    // haven't done enough investigation to know for sure at this point.
     //
+    // Here is the comment from JIT64 explaining why:
     //   [VSWhidbey: 611015] - because the jitted code links in the
     //   Frame (instead of the stub) we rely on the Frame not being
     //   'active' until inside the stub.  This normally happens by the
@@ -6721,7 +6723,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
     {
         return false;
     }
-#endif // _TARGET_AMD64_
+#endif // _TARGET_64BIT_
 
     return true;
 }
