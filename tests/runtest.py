@@ -1020,22 +1020,19 @@ def run_tests(host_os,
     # Setup the dotnetcli location
     dotnetcli_location = os.path.join(coreclr_repo_location, "Tools", "dotnetcli", "dotnet%s" % (".exe" if host_os == "Windows_NT" else ""))
 
-    # Default timeout for unix is 15 minutes
-    print("Setting __TestTimeout=%s" % str(15*60*1000))
-    os.environ["__TestTimeout"] = str(15*60*1000) # 900,000 ms
+    # Set default per-test timeout to 15 minutes (in milliseconds).
+    per_test_timeout = 15*60*1000
 
     # Setup the environment
     if is_long_gc:
         print("Running Long GC Tests, extending timeout to 20 minutes.")
-        print("Setting __TestTimeout=%s" % str(20*60*1000))
-        os.environ["__TestTimeout"] = str(20*60*1000) # 1,200,000 ms
+        per_test_timeout = 20*60*1000
         print("Setting RunningLongGCTests=1")
         os.environ["RunningLongGCTests"] = "1"
     
     if is_gcsimulator:
         print("Running GCSimulator tests, extending timeout to one hour.")
-        print("Setting __TestTimeout=%s" % str(60*60*1000))
-        os.environ["__TestTimeout"] = str(60*60*1000) # 3,600,000 ms
+        per_test_timeout = 60*60*1000
         print("Setting RunningGCSimulatorTests=1")
         os.environ["RunningGCSimulatorTests"] = "1"
 
@@ -1060,13 +1057,17 @@ def run_tests(host_os,
 
     if gc_stress:
         print("Running GCStress, extending timeout to 120 minutes.")
-        print("Setting __TestTimeout=%s" % str(120*60*1000))
-        os.environ["__TestTimeout"] = str(120*60*1000) # 1,800,000 ms
+        per_test_timeout = 120*60*1000
 
     if limited_core_dumps:
         setup_coredump_generation(host_os)
 
-    # Set Core_Root
+    # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
+    # This is read by the test wrapper invoker, in tests\src\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
+    print("Setting __TestTimeout=%s" % str(per_test_timeout))
+    os.environ["__TestTimeout"] = str(per_test_timeout)
+
+    # Set CORE_ROOT
     print("Setting CORE_ROOT=%s" % core_root)
     os.environ["CORE_ROOT"] = core_root
 
