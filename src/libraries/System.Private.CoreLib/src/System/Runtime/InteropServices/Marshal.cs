@@ -847,21 +847,10 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
             }
 
-            foreach (CustomAttributeData cad in type.GetCustomAttributesData())
+            ProgIdAttribute progIdAttribute = type.GetCustomAttribute<ProgIdAttribute>();
+            if (progIdAttribute != null)
             {
-                if (cad.Constructor.DeclaringType == typeof(ProgIdAttribute))
-                {
-                    // Retrieve the PROGID string from the ProgIdAttribute.
-                    IList<CustomAttributeTypedArgument> caConstructorArgs = cad.ConstructorArguments;
-                    Debug.Assert(caConstructorArgs.Count == 1, "caConstructorArgs.Count == 1");
-
-                    CustomAttributeTypedArgument progIdConstructorArg = caConstructorArgs[0];
-                    Debug.Assert(progIdConstructorArg.ArgumentType == typeof(string), "progIdConstructorArg.ArgumentType == typeof(string)");
-
-                    string strProgId = (string)progIdConstructorArg.Value;
-
-                    return strProgId ?? string.Empty;
-                }
+                return progIdAttribute.Value ?? string.Empty;
             }
 
             // If there is no prog ID attribute then use the full name of the type as the prog id.
