@@ -21,6 +21,11 @@ namespace System.ComponentModel
         /// </summary>
         public InstallerTypeAttribute(Type installerType)
         {
+            if (installerType == null)
+            {
+                throw new ArgumentNullException(nameof(installerType));
+            }
+
             _typeName = installerType.AssemblyQualifiedName;
         }
 

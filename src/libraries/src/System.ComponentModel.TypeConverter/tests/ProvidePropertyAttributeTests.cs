@@ -35,7 +35,7 @@ namespace System.ComponentModel
         [Fact]
         public void Ctor_NullReceiverType_ThrowsNullReferenceException()
         {
-            Assert.Throws<NullReferenceException>(() => new ProvidePropertyAttribute("propertyName", (Type)null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("receiverType", () => new ProvidePropertyAttribute("propertyName", (Type)null));
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -72,17 +72,32 @@ namespace System.ComponentModel
         }
 
         [Fact]
-        public void GetHashCode_NullPropertyName_ThrowsNullReferenceException()
+        public void GetHashCode_NullPropertyName_ReturnsEqual()
         {
             var attribute = new ProvidePropertyAttribute(null, "receiverTypeName");
-            Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.Equal(attribute.GetHashCode(), attribute.GetHashCode());
+            }
+            else
+            {
+                Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
+            }
         }
 
         [Fact]
-        public void GetHashCode_NullReceiverTypeName_ThrowsNullReferenceException()
+        public void GetHashCode_NullReceiverTypeName_ReturnsEqual()
         {
             var attribute = new ProvidePropertyAttribute("propertyName", (string)null);
-            Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
+
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.Equal(attribute.GetHashCode(), attribute.GetHashCode());
+            }
+            else
+            {
+                Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
+            }
         }
     }
 }

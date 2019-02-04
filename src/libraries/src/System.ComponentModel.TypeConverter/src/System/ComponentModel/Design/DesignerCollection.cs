@@ -37,7 +37,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerCollection(IList designers)
         {
-            _designers = designers;
+            _designers = designers ?? new ArrayList();
         }
 
         /// <summary>

@@ -23,14 +23,14 @@ namespace System.ComponentModel.Design.Serialization.Tests
         [Fact]
         public void Ctor_NullSerializerType_ThrowsNullReferenceException()
         {
-            Assert.Throws<NullReferenceException>(() => new RootDesignerSerializerAttribute((Type)null, typeof(int), false));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("serializerType", () => new RootDesignerSerializerAttribute((Type)null, typeof(int), false));
         }
 
         [Fact]
         public void Ctor_NullBaseSerializerType_ThrowsNullReferenceException()
         {
-            Assert.Throws<NullReferenceException>(() => new RootDesignerSerializerAttribute(typeof(int), (Type)null, false));
-            Assert.Throws<NullReferenceException>(() => new RootDesignerSerializerAttribute("int", (Type)null, false));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("baseSerializerType", () => new RootDesignerSerializerAttribute(typeof(int), (Type)null, false));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("baseSerializerType", () => new RootDesignerSerializerAttribute("int", (Type)null, false));
         }
 
         [Theory]
@@ -66,10 +66,17 @@ namespace System.ComponentModel.Design.Serialization.Tests
         }
 
         [Fact]
-        public void TypeId_NullBaseSerializerTypeName_ThrowsNullReferenceException()
+        public void TypeId_NullBaseSerializerTypeName_ReturnsExpected()
         {
             var attribute = new RootDesignerSerializerAttribute("SerializerType", (string)null, reloadable: true);
-            Assert.Throws<NullReferenceException>(() => attribute.TypeId);
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.Equal("System.ComponentModel.Design.Serialization.RootDesignerSerializerAttribute", attribute.TypeId);
+            }
+            else
+            {
+                Assert.Throws<NullReferenceException>(() => attribute.TypeId);
+            }
         }
     }
 #pragma warning restore 0618
