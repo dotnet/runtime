@@ -1302,13 +1302,22 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
     // actual ICLRPrivBinder instance in which the assembly was loaded.
     PTR_ICLRPrivBinder pBindingContext = pPEAssembly->GetBindingContext();
     UINT_PTR assemblyBinderID = 0;
-    IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
 
-    // If the assembly was bound using the TPA binder,
-    // then we will return the reference to "Default" binder from the managed implementation when this QCall returns.
-    //
-    // See earlier comment about "Default" binder for additional context.
-    pOpaqueBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+    if (pBindingContext)
+    {
+        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
+
+        // If the assembly was bound using the TPA binder,
+        // then we will return the reference to "Default" binder from the managed implementation when this QCall returns.
+        //
+        // See earlier comment about "Default" binder for additional context.
+        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+    }
+    else
+    {
+        // GetBindingContext() returns NULL for System.Private.CoreLib
+        pOpaqueBinder = pTPABinder;
+    }
 
     // We should have a load context binder at this point.
     _ASSERTE(pOpaqueBinder != nullptr);
