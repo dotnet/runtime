@@ -3,19 +3,19 @@
 // See the LICENSE file in the project root for more information.
 //
 
-// Enable calling ICU functions through shims to enable support for 
+// Enable calling ICU functions through shims to enable support for
 // multiple versions of ICU.
 
 #ifndef __ICUSHIM_H__
 #define __ICUSHIM_H__
 
 #include "config.h"
+#include "pal_compiler.h"
 
 #define U_DISABLE_RENAMING 1
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
-#include <unicode/locid.h>
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>
@@ -138,7 +138,7 @@
 #endif
 
 // Declare pointers to all the used ICU functions
-#define PER_FUNCTION_BLOCK(fn, lib) extern decltype(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, lib) extern __typeof(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
@@ -240,3 +240,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
 
 #endif // __ICUSHIM_H__
+
+DLLEXPORT int32_t GlobalizationNative_LoadICU(void);
+
+DLLEXPORT int32_t GlobalizationNative_GetICUVersion(void);
