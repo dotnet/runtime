@@ -5,7 +5,9 @@
 
 #include <assert.h>
 #include <stdint.h>
-#include "icushim.h"
+
+#include "pal_casing.h"
+#include "pal_icushim.h"
 
 /*
 Function:
@@ -14,16 +16,16 @@ ChangeCase
 Performs upper or lower casing of a string into a new buffer.
 No special casing is performed beyond that provided by ICU.
 */
-extern "C" void GlobalizationNative_ChangeCase(
+void GlobalizationNative_ChangeCase(
     const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
     // Iterate through the string, decoding the next one or two UTF-16 code units
-    // into a codepoint and updating srcIdx to point to the next UTF-16 code unit 
-    // to decode.  Then upper or lower case it, write dstCodepoint into lpDst at 
+    // into a codepoint and updating srcIdx to point to the next UTF-16 code unit
+    // to decode.  Then upper or lower case it, write dstCodepoint into lpDst at
     // offset dstIdx, and update dstIdx.
 
     // (The loop here has been manually cloned for each of the four cases, rather
-    // than having a single loop that internally branched based on bToUpper as the 
+    // than having a single loop that internally branched based on bToUpper as the
     // compiler wasn't doing that optimization, and it results in an ~15-20% perf
     // improvement on longer strings.)
 
@@ -58,10 +60,10 @@ Function:
 ChangeCaseInvariant
 
 Performs upper or lower casing of a string into a new buffer.
-Special casing is performed to ensure that invariant casing 
+Special casing is performed to ensure that invariant casing
 matches that of Windows in certain situations, e.g. Turkish i's.
 */
-extern "C" void GlobalizationNative_ChangeCaseInvariant(
+void GlobalizationNative_ChangeCaseInvariant(
     const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
     // See algorithmic comment in ChangeCase.
@@ -105,7 +107,7 @@ ChangeCaseTurkish
 Performs upper or lower casing of a string into a new buffer, performing special
 casing for Turkish.
 */
-extern "C" void GlobalizationNative_ChangeCaseTurkish(
+void GlobalizationNative_ChangeCaseTurkish(
     const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
     // See algorithmic comment in ChangeCase.

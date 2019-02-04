@@ -1,5 +1,4 @@
-
-project(System.Globalization.Native)
+project(System.Globalization.Native C)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -7,6 +6,9 @@ add_definitions(-DPIC=1)
 add_definitions(-DBIT64=1)
 
 set(ICU_HOMEBREW_INC_PATH "/usr/local/opt/icu4c/include")
+
+# We mark the function which needs exporting with DLLEXPORT
+add_compile_options(-fvisibility=hidden)
 
 find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
 if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
@@ -39,18 +41,19 @@ endif()
 include(configure.cmake)
 
 add_compile_options(-fPIC)
+add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
 
 set(NATIVEGLOBALIZATION_SOURCES
-    calendarData.cpp
-    casing.cpp
-    collation.cpp
-    idna.cpp
-    locale.cpp
-    localeNumberData.cpp
-    localeStringData.cpp
-    normalization.cpp
-    timeZoneInfo.cpp
-    icushim.cpp
+    pal_calendarData.c
+    pal_casing.c
+    pal_collation.c
+    pal_idna.c
+    pal_locale.c
+    pal_localeNumberData.c
+    pal_localeStringData.c
+    pal_normalization.c
+    pal_timeZoneInfo.c
+    pal_icushim.c
 )
 
 include_directories(${UTYPES_H})
@@ -97,4 +100,3 @@ verify_dependencies(
 # add the install targets
 install_clr(System.Globalization.Native)
 install(TARGETS System.Globalization.Native_Static DESTINATION .)
-
