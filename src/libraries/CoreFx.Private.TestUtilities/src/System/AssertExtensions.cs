@@ -101,9 +101,29 @@ namespace System
 
         public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, Action action)
             where TNetCoreExceptionType : ArgumentException
-            where TNetFxExceptionType : ArgumentException
+            where TNetFxExceptionType : Exception
         {
-            Throws<TNetCoreExceptionType, TNetFxExceptionType>(paramName, paramName, action);
+            if (IsFullFramework)
+            {
+                // Support cases where the .NET Core exception derives from ArgumentException
+                // but the .NET Framework exception is not.
+                if (typeof(ArgumentException).IsAssignableFrom(typeof(TNetFxExceptionType)))
+                {
+                    Exception exception = Assert.Throws(typeof(TNetFxExceptionType), action);
+                    if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
+                    {
+                        Assert.Equal(paramName, ((ArgumentException)exception).ParamName);
+                    }
+                }
+                else
+                {
+                    AssertExtensions.Throws<TNetFxExceptionType>(action);
+                }
+            }
+            else
+            {
+                AssertExtensions.Throws<TNetCoreExceptionType>(paramName, action);
+            }
         }
 
         public static Exception Throws<TNetCoreExceptionType, TNetFxExceptionType>(Action action)
