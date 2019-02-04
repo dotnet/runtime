@@ -66,6 +66,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ExecInDefAppDom/ExecInDefAppDom/*">
             <Issue>Issue building native components for the test.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/b152292/b152292/*">
+            <Issue>20358</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
@@ -537,9 +540,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
             <Issue>17129</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/b152292/b152292/*">
-            <Issue>20358</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/interlocked/compareexchange/CompareExchangeTClass/*">
             <Issue>22303</Issue>
         </ExcludeList>
@@ -552,9 +552,6 @@
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' != 'true' and '$(BuildTestsAgainstPackages)' != 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/runtimeeventsource/*">
             <Issue>19340</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/b152292/b152292/*">
-            <Issue>20358</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19361/GitHub_19361/*">
             <Issue>20232</Issue>
