@@ -2244,6 +2244,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml', true)
                         }
                     }
+
+                    // Archive the logs, even if the build failed (which is when they are most interesting).
+                    Utilities.addArchival(newJob, "bin/Logs/*.log,bin/Logs/*.wrn,bin/Logs/*.err", "", /* doNotFailIfNothingArchived */ true, /* archiveOnlyIfSuccessful */ false)
                     break
                 case 'arm':
                 case 'arm64':
@@ -2293,6 +2296,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // Add archival.
                         Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip", "bin/Product/**/.nuget/**")
                     }
+
+                    // Archive the logs, even if the build failed (which is when they are most interesting).
+                    Utilities.addArchival(newJob, "bin/Logs/*.log,bin/Logs/*.wrn,bin/Logs/*.err", "", /* doNotFailIfNothingArchived */ true, /* archiveOnlyIfSuccessful */ false)
                     break
                 default:
                     println("Unknown architecture: ${architecture}");
@@ -2414,6 +2420,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/**/testResults.xml")
                         }
                     }
+
+                    // Archive the logs, even if the build failed (which is when they are most interesting).
+                    Utilities.addArchival(newJob, "bin/Logs/*.log,bin/Logs/*.wrn,bin/Logs/*.err", "", /* doNotFailIfNothingArchived */ true, /* archiveOnlyIfSuccessful */ false)
                     break
                 case 'armem':
                     // Emulator cross builds for ARM runs on Tizen currently
@@ -2537,8 +2546,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         Utilities.addArchival(newJob, "${testArtifactsTgzFileName}", "")
                     }
 
-                    // Archive the build logs from both product and test builds.
-                    Utilities.addArchival(newJob, "bin/Logs/*.log,bin/Logs/*.wrn,bin/Logs/*.err", "")
+                    // Archive the logs, even if the build failed (which is when they are most interesting).
+                    Utilities.addArchival(newJob, "bin/Logs/*.log,bin/Logs/*.wrn,bin/Logs/*.err", "", /* doNotFailIfNothingArchived */ true, /* archiveOnlyIfSuccessful */ false)
 
                     // We need to clean up the build machines; the docker build leaves newly built files with root permission, which
                     // the cleanup task in Jenkins can't remove.
