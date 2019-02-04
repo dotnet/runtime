@@ -88,11 +88,17 @@ namespace System.ComponentModel.Tests
             Assert.Throws<NullReferenceException>(() => new InvalidEnumArgumentException("argumentName", 1, null));
         }
 
-        [Serializable]
-        public class SubException : InvalidEnumArgumentException
+        [Fact]
+        public void Ctor_SerializationInfo_StreamingContext()
         {
-            public SubException() : base() { }
-            protected SubException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+            using (var stream = new MemoryStream())
+            {
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(stream, new InvalidEnumArgumentException());
+                stream.Seek(0, SeekOrigin.Begin);
+
+                Assert.IsType<InvalidEnumArgumentException>(formatter.Deserialize(stream));
+            }
         }
     }
 }
