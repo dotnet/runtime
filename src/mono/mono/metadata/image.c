@@ -1482,6 +1482,26 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 MonoImage *
 mono_image_loaded_full (const char *name, gboolean refonly)
 {
+	MonoImage *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_image_loaded_internal (name, refonly);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+/**
+ * mono_image_loaded_internal:
+ * \param name path or assembly name of the image to load
+ * \param refonly Check with respect to reflection-only loads?
+ *
+ * This routine verifies that the given image is loaded.
+ * It checks either reflection-only loads only, or normal loads only, as specified by parameter.
+ *
+ * \returns the loaded \c MonoImage, or NULL on failure.
+ */
+MonoImage *
+mono_image_loaded_internal (const char *name, gboolean refonly)
+{
 	MonoImage *res;
 
 	mono_images_lock ();
@@ -1502,7 +1522,11 @@ mono_image_loaded_full (const char *name, gboolean refonly)
 MonoImage *
 mono_image_loaded (const char *name)
 {
-	return mono_image_loaded_full (name, FALSE);
+	MonoImage *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_image_loaded_internal (name, FALSE);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 typedef struct {

@@ -8,6 +8,9 @@
 
 #include <mono/metadata/image.h>
 
+MonoImage*
+mono_image_loaded_internal (const char *name, mono_bool refonly);
+
 MonoImage *
 mono_find_image_owner (void *ptr);
 

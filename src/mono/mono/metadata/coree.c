@@ -20,6 +20,7 @@
 #include "cil-coff.h"
 #include "metadata-internals.h"
 #include "image.h"
+#include "image-internals.h"
 #include "assembly-internals.h"
 #include "domain-internals.h"
 #include "appdomain.h"
@@ -132,7 +133,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			/* The process is terminating. */
 			return TRUE;
 		file_name = mono_get_module_file_name (hInst);
-		image = mono_image_loaded (file_name);
+		image = mono_image_loaded_internal (file_name, FALSE);
 		if (image)
 			mono_image_close (image);
 

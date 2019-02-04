@@ -660,7 +660,11 @@ mono_get_exception_argument_internal (const char *type, const char *arg, const c
 MonoException*
 mono_get_exception_argument_null (const char *arg)
 {
-	return mono_get_exception_argument_internal ("ArgumentNullException", arg, NULL);
+	MonoException *ex;
+	MONO_ENTER_GC_UNSAFE;
+	ex = mono_get_exception_argument_internal ("ArgumentNullException", arg, NULL);
+	MONO_EXIT_GC_UNSAFE;
+	return ex;
 }
 
 /**

@@ -100,7 +100,7 @@ mono_get_exception_not_implemented     (const char *msg);
 MONO_API MonoException *
 mono_get_exception_not_supported       (const char *msg);
 
-MONO_API MonoException*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoException*
 mono_get_exception_argument_null       (const char *arg);
 
 MONO_API MonoException *
