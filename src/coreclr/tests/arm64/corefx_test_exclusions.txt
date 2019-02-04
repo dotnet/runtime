@@ -2,7 +2,6 @@ Invariant.Tests
 System.ComponentModel.Composition.Tests                 # https://github.com/dotnet/coreclr/issues/18913
 System.Diagnostics.Process.Tests                        # https://github.com/dotnet/coreclr/issues/16001
 System.Drawing.Common.Tests                             # https://github.com/dotnet/coreclr/issues/18886
-System.Linq.Expressions.Tests                           # JitStress=1 JitStress=2 https://github.com/dotnet/coreclr/issues/18886
 System.Management.Tests                                 # https://github.com/dotnet/coreclr/issues/18886
 System.Net.HttpListener.Tests                           # https://github.com/dotnet/coreclr/issues/17584
 System.Numerics.Vectors.Tests                           # https://github.com/dotnet/coreclr/issues/18886
