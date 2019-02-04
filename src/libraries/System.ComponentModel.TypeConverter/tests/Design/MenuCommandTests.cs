@@ -108,10 +108,17 @@ namespace System.ComponentModel.Design.Tests
         }
 
         [Fact]
-        public void ToString_NullCommandId_ThrowsNullReferenceException()
+        public void ToString_NullCommandI_ReturnsExpected()
         {
             var command = new MenuCommand(new EventHandler(EventHandler), null);
-            Assert.Throws<NullReferenceException>(() => command.ToString());
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.Equal(" : Supported|Enabled|Visible", command.ToString());
+            }
+            else
+            {
+                Assert.Throws<NullReferenceException>(() => command.ToString());
+            }
         }
 
         [Fact]

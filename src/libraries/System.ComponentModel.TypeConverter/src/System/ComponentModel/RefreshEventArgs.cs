@@ -16,7 +16,7 @@ namespace System.ComponentModel
         public RefreshEventArgs(object componentChanged)
         {
             ComponentChanged = componentChanged;
-            TypeChanged = componentChanged.GetType();
+            TypeChanged = componentChanged?.GetType();
         }
 
         /// <summary>

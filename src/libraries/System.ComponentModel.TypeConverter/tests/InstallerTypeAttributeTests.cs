@@ -12,16 +12,16 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(InstallerTypeAttribute))]
-        public void Ctor_InheritanceLevel(Type installerType)
+        public void Ctor_Type(Type installerType)
         {
             var attribute = new InstallerTypeAttribute(installerType);
             Assert.Equal(installerType, attribute.InstallerType);
         }
 
         [Fact]
-        public void Ctor_NullInstallerType_ThrowsNullReferenceException()
+        public void Ctor_NullInstallerType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new InstallerTypeAttribute((Type)null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("installerType", () => new InstallerTypeAttribute((Type)null));
         }
 
         [Theory]
