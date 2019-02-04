@@ -4,7 +4,9 @@
 //
 
 #include <stdint.h>
-#include "icushim.h"
+
+#include "pal_icushim.h"
+#include "pal_idna.h"
 
 const uint32_t AllowUnassigned = 0x1;
 const uint32_t UseStd3AsciiRules = 0x2;
@@ -38,7 +40,7 @@ Return values:
 0: internal error during conversion.
 >0: the length of the converted string (not including the null terminator).
 */
-extern "C" int32_t GlobalizationNative_ToAscii(
+int32_t GlobalizationNative_ToAscii(
     uint32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
 {
     UErrorCode err = U_ZERO_ERROR;
@@ -64,7 +66,7 @@ Return values:
 0: internal error during conversion.
 >0: the length of the converted string (not including the null terminator).
 */
-extern "C" int32_t GlobalizationNative_ToUnicode(
+int32_t GlobalizationNative_ToUnicode(
     int32_t flags, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
 {
     UErrorCode err = U_ZERO_ERROR;

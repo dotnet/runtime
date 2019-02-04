@@ -4,35 +4,26 @@
 //
 
 #include <stdint.h>
-#include "icushim.h"
 
-/*
- * These values should be kept in sync with System.Text.NormalizationForm
- */
-enum class NormalizationForm : int32_t
-{
-    C = 0x1,
-    D = 0x2,
-    KC = 0x5,
-    KD = 0x6
-};
+#include "pal_icushim.h"
+#include "pal_normalization.h"
 
 const UNormalizer2* GetNormalizerForForm(NormalizationForm normalizationForm, UErrorCode* pErrorCode)
 {
     switch (normalizationForm)
     {
-        case NormalizationForm::C:
+        case FormC:
             return unorm2_getNFCInstance(pErrorCode);
-        case NormalizationForm::D:
+        case FormD:
             return unorm2_getNFDInstance(pErrorCode);
-        case NormalizationForm::KC:
+        case FormKC:
             return unorm2_getNFKCInstance(pErrorCode);
-        case NormalizationForm::KD:
+        case FormKD:
             return unorm2_getNFKDInstance(pErrorCode);
     }
 
     *pErrorCode = U_ILLEGAL_ARGUMENT_ERROR;
-    return nullptr;
+    return NULL;
 }
 
 /*
@@ -48,7 +39,7 @@ Return values:
 1: lpStr is normalized.
 -1: internal error during normalization.
 */
-extern "C" int32_t GlobalizationNative_IsNormalized(
+int32_t GlobalizationNative_IsNormalized(
     NormalizationForm normalizationForm, const UChar* lpStr, int32_t cwStrLength)
 {
     UErrorCode err = U_ZERO_ERROR;
@@ -77,7 +68,7 @@ Return values:
 0: internal error during normalization.
 >0: the length of the normalized string (not counting the null terminator).
 */
-extern "C" int32_t GlobalizationNative_NormalizeString(
+int32_t GlobalizationNative_NormalizeString(
     NormalizationForm normalizationForm, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
 {
     UErrorCode err = U_ZERO_ERROR;
