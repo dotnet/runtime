@@ -32,7 +32,7 @@ namespace System
         public static void Throws<T>(string netCoreParamName, string netFxParamName, System.Action action) where T : System.ArgumentException { }
         public static void Throws<T>(string netCoreParamName, string netFxParamName, System.Func<object> testCode) where T : System.ArgumentException { }
         public static System.Exception Throws<TNetCoreExceptionType, TNetFxExceptionType>(System.Action action) where TNetCoreExceptionType : System.Exception where TNetFxExceptionType : System.Exception { throw null; }
-        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, System.Action action) where TNetCoreExceptionType : System.ArgumentException where TNetFxExceptionType : System.ArgumentException { }
+        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, System.Action action) where TNetCoreExceptionType : System.ArgumentException where TNetFxExceptionType : System.Exception { }
         public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string netCoreParamName, string netFxParamName, System.Action action) where TNetCoreExceptionType : System.ArgumentException where TNetFxExceptionType : System.ArgumentException { }
     }
     public static partial class PlatformDetection
