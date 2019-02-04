@@ -56,8 +56,13 @@ if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
     target_link_libraries(${DOTNET_HOST_EXE_NAME} shell32.lib)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    target_link_libraries (${DOTNET_HOST_EXE_NAME} "dl" "pthread")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
+    target_link_libraries (${DOTNET_HOST_EXE_NAME} "pthread")
 endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    target_link_libraries (${DOTNET_HOST_EXE_NAME} "dl")
+endif()
+
 
 
