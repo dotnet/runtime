@@ -36,6 +36,7 @@ set "__SourceDir=%__ProjectDir%\src"
 set "__PackagesDir=%__ProjectDir%\packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
+set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 :: Default __Exclude to issues.targets
 set __Exclude=%__TestDir%\issues.targets
@@ -158,6 +159,10 @@ if not exist "%__TestBinDir%"                   md "%__TestBinDir%"
 if not exist "%__NativeTestIntermediatesDir%"   md "%__NativeTestIntermediatesDir%"
 if not exist "%__ManagedTestIntermediatesDir%"  md "%__ManagedTestIntermediatesDir%"
 if not exist "%__LogsDir%"                      md "%__LogsDir%"
+if not exist "%__MsbuildDebugLogsDir%"          md "%__MsbuildDebugLogsDir%"
+
+REM Set up the directory for MSBuild debug logs.
+set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 
 echo %__MsgPrefix%Checking prerequisites
 

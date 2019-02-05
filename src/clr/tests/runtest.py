@@ -640,7 +640,14 @@ def call_msbuild(coreclr_repo_location,
     logs_dir = os.path.join(coreclr_repo_location, "bin", "Logs")
     if not os.path.isdir(logs_dir):
         os.makedirs(logs_dir)
-    
+
+    msbuild_debug_logs_dir = os.path.join(logs_dir, "MsbuildDebugLogs")
+    if not os.path.isdir(msbuild_debug_logs_dir):
+        os.makedirs(msbuild_debug_logs_dir)
+
+    # Set up the directory for MSBuild debug logs.
+    os.environ["MSBUILDDEBUGPATH"] = msbuild_debug_logs_dir
+
     command =   [dotnetcli_location,
                  "msbuild",
                  os.path.join(coreclr_repo_location, "tests", "runtest.proj"),
