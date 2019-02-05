@@ -5,10 +5,10 @@
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="JsonArrayTests.cs" />
-    <Compile Include="JsonObjectTests.cs" />
-    <Compile Include="JsonPrimitiveTests.cs" />
-    <Compile Include="JsonValueTests.cs" />
+    <Compile Include="System\Json\JsonArrayTests.cs" />
+    <Compile Include="System\Json\JsonObjectTests.cs" />
+    <Compile Include="System\Json\JsonPrimitiveTests.cs" />
+    <Compile Include="System\Json\JsonValueTests.cs" />
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>

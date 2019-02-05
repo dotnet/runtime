@@ -12,22 +12,21 @@ namespace System.Json.Tests
 {
     public class JsonObjectTests
     {
-        [Fact]
-        public void Ctor_EmptyArray_Works()
+        public static IEnumerable<object[]> Ctor_Array_TestData()
         {
-            Assert.Equal(0, new JsonObject(new KeyValuePair<string, JsonValue>[0]).Count);
-            Assert.Equal(0, new JsonObject(Enumerable.Empty<KeyValuePair<string, JsonValue>>()).Count);
+            yield return new object[] { null };
+            yield return new object[] { new KeyValuePair<string, JsonValue>[0] };
+            yield return new object[] { new KeyValuePair<string, JsonValue>[] { new KeyValuePair<string, JsonValue>("key", new JsonPrimitive(true)) } };
         }
 
-        [Fact]
-        public void Ctor_Array()
+        [Theory]
+        [MemberData(nameof(Ctor_Array_TestData))]
+        public void Ctor_Array(KeyValuePair<string, JsonValue>[] items)
         {
-            // Workaround xunit/xunit#987: InvalidOperationException thrown if this is in MemberData
-            KeyValuePair<string, JsonValue>[] items = new KeyValuePair<string, JsonValue>[] { new KeyValuePair<string, JsonValue>("key", new JsonPrimitive(true)) };
-            JsonObject obj = new JsonObject(items);
+            var obj = new JsonObject(items);
 
-            Assert.Equal(items.Length, obj.Count);
-            for (int i = 0; i < items.Length; i++)
+            Assert.Equal(items?.Length ?? 0, obj.Count);
+            for (int i = 0; i < (items?.Length ?? 0); i++)
             {
                 Assert.Equal(items[i].Value.ToString(), obj[items[i].Key].ToString());
 
@@ -37,29 +36,28 @@ namespace System.Json.Tests
             }
         }
 
-        [Fact]
-        public void Ctor_IEnumerable()
+        public static IEnumerable<object[]> Ctor_Enumerable_TestData()
         {
-            // Workaround xunit/xunit#987: InvalidOperationException thrown if this is in MemberData
-            KeyValuePair<string, JsonValue>[] items = new KeyValuePair<string, JsonValue>[] { new KeyValuePair<string, JsonValue>("key", new JsonPrimitive(true)) };
-            JsonObject obj = new JsonObject((IEnumerable<KeyValuePair<string, JsonValue>>)items);
-
-            Assert.Equal(items.Length, obj.Count);
-            for (int i = 0; i < items.Length; i++)
-            {
-                Assert.Equal(items[i].Value.ToString(), obj[items[i].Key].ToString());
-
-                JsonValue value;
-                Assert.True(obj.TryGetValue(items[i].Key, out value));
-                Assert.Equal(items[i].Value.ToString(), value.ToString());
-            }
+            yield return new object[] { Enumerable.Empty<KeyValuePair<string, JsonValue>>() };
+            yield return new object[] { new KeyValuePair<string, JsonValue>[] { new KeyValuePair<string, JsonValue>("key", new JsonPrimitive(true)) } };
         }
 
-        [Fact]
-        public void Ctor_NullArray_Works()
+        [Theory]
+        [MemberData(nameof(Ctor_Enumerable_TestData))]
+        public void Ctor_IEnumerable(IEnumerable<KeyValuePair<string, JsonValue>> items)
         {
-            JsonObject obj = new JsonObject(null);
-            Assert.Equal(0, obj.Count);
+            var obj = new JsonObject(items);
+
+            KeyValuePair<string, JsonValue>[] expectedItems = items.ToArray();
+            Assert.Equal(expectedItems.Length, obj.Count);
+            for (int i = 0; i < expectedItems.Length; i++)
+            {
+                Assert.Equal(expectedItems[i].Value.ToString(), obj[expectedItems[i].Key].ToString());
+
+                JsonValue value;
+                Assert.True(obj.TryGetValue(expectedItems[i].Key, out value));
+                Assert.Equal(expectedItems[i].Value.ToString(), value.ToString());
+            }
         }
 
         [Fact]
@@ -69,20 +67,20 @@ namespace System.Json.Tests
         }
         
         [Fact]
-        public void JsonType_ReturnsObject()
+        public void JsonType_Get_ReturnsObject()
         {
             Assert.Equal(JsonType.Object, new JsonObject().JsonType);
         }
 
         [Fact]
-        public void IsReadOnly_ReturnsFalse()
+        public void IsReadOnly_Get_ReturnsFalse()
         {
             ICollection<KeyValuePair<string, JsonValue>> iCollection = new JsonObject();
             Assert.False(iCollection.IsReadOnly);
         }
 
         [Fact]
-        public void Item_Set_Get()
+        public void Item_Set_GetReturnsExpected()
         {
             JsonObject obj = new JsonObject();
 
