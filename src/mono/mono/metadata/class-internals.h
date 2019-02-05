@@ -329,6 +329,11 @@ int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf,
 
 typedef gpointer MonoRuntimeGenericContext;
 
+typedef enum {
+	/* array or string */
+	MONO_VT_FLAG_ARRAY_OR_STRING = (1 << 0)
+} MonoVTableFlags;
+
 /* the interface_offsets array is stored in memory before this struct */
 struct MonoVTable {
 	MonoClass  *klass;
@@ -338,12 +343,14 @@ struct MonoVTable {
 	 */
 	MonoGCDescriptor gc_descr;
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
-        gpointer    type; /* System.Type type for klass */
+	gpointer    type; /* System.Type type for klass */
 	guint8     *interface_bitmap;
 	guint32     max_interface_id;
 	guint8      rank;
 	/* Keep this a guint8, the jit depends on it */
 	guint8      initialized; /* cctor has been run */
+	/* Keep this a guint8, the jit depends on it */
+	guint8      flags; /* MonoVTableFlags */
 	guint remote          : 1; /* class is remotely activated */
 	guint init_failed     : 1; /* cctor execution failed */
 	guint has_static_fields : 1; /* pointer to the data stored at the end of the vtable array */

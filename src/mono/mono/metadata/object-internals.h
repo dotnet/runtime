@@ -239,7 +239,9 @@ mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBoun
 
 typedef struct {
 	MonoObject obj;
+#ifndef ENABLE_NETCORE
 	MonoObject *identity;
+#endif
 } MonoMarshalByRefObject;
 
 /* This is a copy of System.AppDomain */

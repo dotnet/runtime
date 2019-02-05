@@ -274,6 +274,15 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			ins->type = STACK_OBJ;
 			ins->klass = mono_get_object_class ();
 			return ins;
+		} else if (ctx->method_inst->type_argc == 1) {
+			// Casts the given object to the specified type, performs no dynamic type checking.
+			g_assert (fsig->param_count == 1);
+			g_assert (fsig->params [0]->type == MONO_TYPE_OBJECT);
+			dreg = alloc_preg (cfg);
+			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
+			ins->type = STACK_OBJ;
+			ins->klass = mono_class_from_mono_type_internal (ctx->method_inst->type_argv [0]);
+			return ins;
 		}
 	} else if (!strcmp (cmethod->name, "AsPointer")) {
 		g_assert (ctx);
@@ -397,6 +406,20 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			ins->flags |= MONO_INST_UNALIGNED;
 			return ins;
 		}
+	} else if (!strcmp (cmethod->name, "WriteUnaligned")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		t = ctx->method_inst->type_argv [0];
+		t = mini_get_underlying_type (t);
+		if (MONO_TYPE_IS_PRIMITIVE (t) && t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8) {
+			dreg = alloc_ireg (cfg);
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, t, args [0]->dreg, 0, args [1]->dreg);
+			ins->flags |= MONO_INST_UNALIGNED;
+			return ins;
+		}
 	}
 
 	return NULL;
@@ -502,7 +525,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_array_generic_access (cfg, fsig, args, TRUE);
 		else if (!strcmp (cmethod->name, "GetRawSzArrayData")) {
 			int dreg = alloc_preg (cfg);
-			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->sreg1, MONO_STRUCT_OFFSET (MonoArray, vector));
+			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
 		}
 
@@ -613,6 +636,20 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				EMIT_NEW_BIALU_IMM (cfg, ins, OP_ISUB_IMM, dreg, info->dreg, 1);
 			}
 
+			return ins;
+		} else if (!strcmp (cmethod->name, "ObjectHasComponentSize")) {
+			g_assert (fsig->param_count == 1);
+			g_assert (fsig->params [0]->type == MONO_TYPE_OBJECT);
+			// Return true for arrays and string
+			int dreg;
+
+			dreg = alloc_ireg (cfg);
+
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoVTable, flags));
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, dreg, dreg, 	MONO_VT_FLAG_ARRAY_OR_STRING);
+			EMIT_NEW_BIALU_IMM (cfg, ins, OP_COMPARE_IMM, -1, dreg, 0);
+			EMIT_NEW_UNALU (cfg, ins, OP_ICGT, dreg, -1);
+			ins->type = STACK_I4;
 			return ins;
 		} else
 			return NULL;
