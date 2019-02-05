@@ -3,37 +3,37 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>The exception that is thrown when using invalid arguments that are enumerators.</para>
+    /// The exception that is thrown when using invalid arguments that are enumerators.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class InvalidEnumArgumentException : ArgumentException
     {
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='InvalidEnumArgumentException'/> class without a message.</para>
+        /// Initializes a new instance of the <see cref='InvalidEnumArgumentException'/>
+        /// class without a message.
         /// </summary>
         public InvalidEnumArgumentException() : this(null)
         {
         }
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='InvalidEnumArgumentException'/> class with 
-        ///    the specified message.</para>
+        /// Initializes a new instance of the <see cref='InvalidEnumArgumentException'/>
+        /// class with the specified message.
         /// </summary>
-        public InvalidEnumArgumentException(string message)
-            : base(message)
+        public InvalidEnumArgumentException(string message) : base(message)
         {
         }
 
         /// <summary>
-        ///     Initializes a new instance of the Exception class with a specified error message and a 
-        ///     reference to the inner exception that is the cause of this exception.
-        ///     FxCop CA1032: Multiple constructors are required to correctly implement a custom exception.
+        /// Initializes a new instance of the Exception class with a specified error message
+        /// and a reference to the inner exception that is the cause of this exception.
         /// </summary>
         public InvalidEnumArgumentException(string message, Exception innerException)
             : base(message, innerException)
@@ -41,9 +41,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='InvalidEnumArgumentException'/> class with a 
-        ///    message generated from the argument, invalid value, and enumeration
-        ///    class.</para>
+        /// Initializes a new instance of the <see cref='InvalidEnumArgumentException'/>
+        /// class with a message generated from the argument, invalid value, and
+        /// enumeration class.
         /// </summary>
         public InvalidEnumArgumentException(string argumentName, int invalidValue, Type enumClass)
             : base(SR.Format(SR.InvalidEnumArgument,
@@ -54,8 +54,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Need this constructor since Exception implements ISerializable. We don't have any fields,
-        ///     so just forward this to base.
+        /// Need this constructor since Exception implements ISerializable.
+        /// We don't have any fields, so just forward this to base.
         /// </summary>
         protected InvalidEnumArgumentException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
