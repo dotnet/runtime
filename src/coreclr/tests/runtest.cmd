@@ -34,6 +34,7 @@ if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__RootBinDir=%__ProjectDir%\..\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
+set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 set __Sequential=
 set __msbuildExtraArgs=
@@ -283,7 +284,11 @@ if defined DoLink (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /p:RunTestsViaIllink=true
 )
 
-if not exist %__LogsDir% md %__LogsDir%
+if not exist "%__LogsDir%"                      md "%__LogsDir%"
+if not exist "%__MsbuildDebugLogsDir%"          md "%__MsbuildDebugLogsDir%"
+
+REM Set up the directory for MSBuild debug logs.
+set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 
 REM These log files are created automatically by the test run process. Q: what do they depend on being set?
 set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
