@@ -180,6 +180,13 @@ generate_layout()
         echo "Creating LogsDir: ${__LogsDir}"
         mkdir -p $__LogsDir
     fi
+    if [ ! -f "$__MsbuildDebugLogsDir" ]; then
+        echo "Creating MsbuildDebugLogsDir: ${__MsbuildDebugLogsDir}"
+        mkdir -p $__MsbuildDebugLogsDir
+    fi
+
+    # Set up the directory for MSBuild debug logs.
+    export MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
 
     __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
 
@@ -283,6 +290,13 @@ build_Tests()
         echo "Creating LogsDir: ${__LogsDir}"
         mkdir -p $__LogsDir
     fi
+    if [ ! -f "$__MsbuildDebugLogsDir" ]; then
+        echo "Creating MsbuildDebugLogsDir: ${__MsbuildDebugLogsDir}"
+        mkdir -p $__MsbuildDebugLogsDir
+    fi
+
+    # Set up the directory for MSBuild debug logs.
+    export MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
 
     __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
 
@@ -898,6 +912,7 @@ fi
 
 # Set dependent variables
 __LogsDir="$__RootBinDir/Logs"
+__MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # init the host distro name
 initHostDistroRid
