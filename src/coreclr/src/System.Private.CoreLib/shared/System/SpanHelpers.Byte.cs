@@ -266,10 +266,36 @@ namespace System
                 offset += 1;
             }
 
+            // We get past SequentialScan only if IsHardwareAccelerated or intrinsic .IsSupported is true; and remain length is greater than Vector length.
+            // However, we still have the redundant check to allow the JIT to see that the code is unreachable and eliminate it when the platform does not
+            // have hardware accelerated. After processing Vector lengths we return to SequentialScan to finish any remaining.
             if (Avx2.IsSupported)
             {
                 if ((int)(byte*)offset < length)
                 {
+                    if ((((nuint)Unsafe.AsPointer(ref searchSpace) + (nuint)offset) & (nuint)(Vector256<byte>.Count - 1)) != 0)
+                    {
+                        // Not currently aligned to Vector256 (is aligned to Vector128); this can cause a problem for searches
+                        // with no upper bound e.g. String.strlen.
+                        // Start with a check on Vector128 to align to Vector256, before moving to processing Vector256.
+                        // This ensures we do not fault across memory pages while searching for an end of string.
+                        Vector128<byte> values = Vector128.Create(value);
+                        Vector128<byte> search = LoadVector128(ref searchSpace, offset);
+
+                        // Same method as below
+                        int matches = Sse2.MoveMask(Sse2.CompareEqual(values, search));
+                        if (matches == 0)
+                        {
+                            // Zero flags set so no matches
+                            offset += Vector128<byte>.Count;
+                        }
+                        else
+                        {
+                            // Find bitflag offset of first match and add to current offset
+                            return ((int)(byte*)offset) + BitOps.TrailingZeroCount(matches);
+                        }
+                    }
+
                     nLength = GetByteVector256SpanLength(offset, length);
                     if ((byte*)nLength > (byte*)offset)
                     {
