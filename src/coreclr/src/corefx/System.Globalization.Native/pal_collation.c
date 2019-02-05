@@ -42,9 +42,8 @@ typedef struct { int32_t key; UCollator* UCollator; } TCollatorMap;
 struct SortHandle
 {
     UCollator* regular;
-    TCollatorMap* collatorsPerOption;
     pthread_mutex_t collatorsLockObject;
-    void* pRoot;
+    void* collatorsPerOptionRoot;
 };
 
 typedef struct { UChar* items; size_t capacity; size_t size; } UCharList;
@@ -372,7 +371,7 @@ void CreateSortHandle(SortHandle** ppSortHandle)
         return;
     }
 
-    (*ppSortHandle)->pRoot = NULL;
+    (*ppSortHandle)->collatorsPerOptionRoot = NULL;
     int result = pthread_mutex_init(&(*ppSortHandle)->collatorsLockObject, NULL);
 
     if (result != 0)
@@ -410,10 +409,10 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
     ucol_close(pSortHandle->regular);
     pSortHandle->regular = NULL;
 
-    while (pSortHandle->pRoot != NULL)
+    while (pSortHandle->collatorsPerOptionRoot != NULL)
     {
-        TCollatorMap* data = *(TCollatorMap **)pSortHandle->pRoot;
-        tdelete(data, &pSortHandle->pRoot, TreeComparer);
+        TCollatorMap* data = *(TCollatorMap **)pSortHandle->collatorsPerOptionRoot;
+        tdelete(data, &pSortHandle->collatorsPerOptionRoot, TreeComparer);
         ucol_close(data->UCollator);
         free(data);
     }
@@ -440,12 +439,11 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
 
         TCollatorMap* map = (TCollatorMap*)malloc(sizeof(TCollatorMap));
         map->key = options;
-        void* entry = tfind(map, &pSortHandle->pRoot, TreeComparer);
-        if (entry == NULL)
+        void* entry = tsearch(map, &pSortHandle->collatorsPerOptionRoot, TreeComparer);
+        if ((*(TCollatorMap**)entry) == map)
         {
             pCollator = CloneCollatorWithOptions(pSortHandle->regular, options, pErr);
             map->UCollator = pCollator;
-            tsearch(map, &pSortHandle->pRoot, TreeComparer);
         }
         else
         {
