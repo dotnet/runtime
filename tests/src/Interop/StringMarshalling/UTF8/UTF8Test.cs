@@ -141,6 +141,9 @@ class UTF8StructMarshalling
     [DllImport("UTF8TestNative", CallingConvention = CallingConvention.Cdecl)]
     public static extern void TestStructWithUtf8Field(Utf8Struct utfStruct);
 
+    [DllImport("UTF8TestNative", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void SetStringInStruct(ref Utf8Struct utfStruct, [MarshalAs(UnmanagedType.LPUTF8Str)] string str);
+
     public static void TestUTF8StructMarshalling(string[] utf8Strings)
     {
         Utf8Struct utf8Struct = new Utf8Struct();
@@ -152,6 +155,15 @@ class UTF8StructMarshalling
         }
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
          CompareWithUTF8Encoding();
+
+        string testString = "StructTestString\uD83D\uDE00";
+
+        SetStringInStruct(ref utf8Struct, testString);
+
+        if (utf8Struct.FirstName != testString)
+        {
+            throw new Exception("Incorrect UTF8 string marshalled back from native to managed.");
+        }
    }
    
    unsafe static void CompareWithUTF8Encoding()
