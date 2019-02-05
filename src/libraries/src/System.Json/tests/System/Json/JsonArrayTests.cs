@@ -1,65 +1,57 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Xunit;
-using System.Collections.Generic;
-using System.Collections;
 
 namespace System.Json.Tests
 {
     public class JsonArrayTests
     {
-        public static IEnumerable<object[]> JsonValues_TestData()
+        public static IEnumerable<object[]> Ctor_JsonValueArray_TestData()
         {
+            yield return new object[] { null };
             yield return new object[] { new JsonValue[0] };
             yield return new object[] { new JsonValue[] { null } };
+            yield return new object[] { new JsonValue[] { new JsonPrimitive(true) } };
         }
 
         [Theory]
-        [MemberData(nameof(JsonValues_TestData))]
-        public void Ctor(JsonValue[] items)
+        [MemberData(nameof(Ctor_JsonValueArray_TestData))]
+        public void Ctor_JsonValueArray(JsonValue[] items)
         {
-            VerifyJsonArray(new JsonArray(items), items);
-            VerifyJsonArray(new JsonArray((IEnumerable<JsonValue>)items), items);
-        }
+            var array = new JsonArray(items);
 
-        private static void VerifyJsonArray(JsonArray array, JsonValue[] values)
-        {
-            Assert.Equal(values.Length, array.Count);
-            for (int i = 0; i < values.Length; i++)
+            Assert.Equal(items?.Length ?? 0, array.Count);
+            for (int i = 0; i < (items?.Length ?? 0); i++)
             {
-                Assert.Equal(values[i], array[i]);
+                Assert.Same(items[i], array[i]);
             }
         }
-        
-        [Fact]
-        public void Ctor_Array_Works()
+
+        public static IEnumerable<object[]> Ctor_IEnumerableJsonValue_TestData()
         {
-        	// Workaround xunit/xunit#987: InvalidOperationException thrown if this is in MemberData
-            JsonValue[] items = new JsonValue[] { new JsonPrimitive(true) };
-            JsonArray array = new JsonArray(items);
-            Assert.Equal(1, array.Count);
-            Assert.Same(items[0], array[0]);
+            yield return new object[] { new JsonValue[0] };
+            yield return new object[] { new JsonValue[] { null } };
+            yield return new object[] { new JsonValue[] { new JsonPrimitive(true) } };
         }
 
-        [Fact]
-        public void Ctor_IEnumerable_Works()
+        [Theory]
+        [MemberData(nameof(Ctor_IEnumerableJsonValue_TestData))]
+        public void Ctor_IEnumerableJsonValue(IEnumerable<JsonValue> items)
         {
-        	// Workaround xunit/xunit#987: InvalidOperationException thrown if this is in MemberData
-            JsonValue[] items = new JsonValue[] { new JsonPrimitive(true) };
-            JsonArray array = new JsonArray((IEnumerable<JsonValue>)items);
-            Assert.Equal(1, array.Count);
-            Assert.Same(items[0], array[0]);
-        }
+            var array = new JsonArray(items);
 
-        [Fact]
-        public void Ctor_NullArray_Works()
-        {
-            JsonArray array = new JsonArray(null);
-            Assert.Equal(0, array.Count);
+            JsonValue[] expectedItems = items.ToArray();
+            Assert.Equal(expectedItems.Length, array.Count);
+            for (int i = 0; i < expectedItems.Length; i++)
+            {
+                Assert.Same(expectedItems[i], array[i]);
+            }
         }
 
         [Fact]

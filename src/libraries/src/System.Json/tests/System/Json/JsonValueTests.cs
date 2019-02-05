@@ -56,6 +56,7 @@ namespace System.Json.Tests
             yield return new object[] { "4294967297", "4294967297" };
             yield return new object[] { "9223372036854775807", "9223372036854775807" };
             yield return new object[] { "18446744073709551615", "18446744073709551615" };
+            yield return new object[] { "79228162514264337593543950335", "79228162514264337593543950335" };
         }
 
         public static IEnumerable<object[]> ParseIntegralBoundaries_TestData_NetFramework()
@@ -206,9 +207,11 @@ namespace System.Json.Tests
         [InlineData("{\"name\":1")]
         [InlineData("1e")]
         [InlineData("1e-")]
+        [InlineData("1.1a")]
         [InlineData("\0")]
         [InlineData("\u000B1")]
         [InlineData("\u000C1")]
+        [InlineData("\"\\u\"")]
         [InlineData("{\"\\a\"}")]
         [InlineData("{\"\\z\"}")]
         public void Parse_InvalidInput_ThrowsArgumentException(string value)
@@ -248,6 +251,7 @@ namespace System.Json.Tests
 
         [Theory]
         [InlineData("0", 0)]
+        [InlineData("9", 9)]
         [InlineData("-0", 0)]
         [InlineData("0.00", 0)]
         [InlineData("-0.00", 0)]
@@ -277,6 +281,17 @@ namespace System.Json.Tests
                     Assert.Equal(double.Parse(expectedInner, CultureInfo.InvariantCulture), (double)JsonValue.Parse(jsonInner));
                 }
             }, json, expected.ToString("R", CultureInfo.InvariantCulture)).Dispose();
+        }
+
+        [Theory]
+        [InlineData("\"\"", "")]
+        [InlineData("\"abc\"", "abc")]
+        [InlineData("\"\\u1234\"", "\u1234")]
+        [InlineData("\"\\u@234\"", "\u0234")]
+        [InlineData("\"\\b\\f\\n\\r\\t\"", "\b\f\n\r\t")]
+        public void JsonValue_Parse_String(string json, string expected)
+        {
+            Assert.Equal(expected, (string)JsonValue.Parse(json));
         }
 
         // Convert a number to json and parse the string, then compare the result to the original value
@@ -348,7 +363,6 @@ namespace System.Json.Tests
         
         [Theory]
         [InlineData("Fact\b\f\n\r\t\"\\/</\0x")]
-        [InlineData("\ud800")]
         [InlineData("x\ud800")]
         [InlineData("\udfff\ud800")]
         [InlineData("\ude03\ud912")]
