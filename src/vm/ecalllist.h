@@ -716,6 +716,7 @@ FCFuncStart(gWaitHandleFuncs)
     FCFuncElement("WaitOneNative", WaitHandleNative::CorWaitOneNative)
     FCFuncElement("WaitMultiple", WaitHandleNative::CorWaitMultipleNative)
     FCFuncElement("SignalAndWaitOne", WaitHandleNative::CorSignalAndWaitOneNative)
+    FCFuncElement("WaitMultipleIgnoringSyncContext", WaitHandleNative::WaitHelper)
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP
@@ -949,7 +950,6 @@ FCFuncStart(gRuntimeHelpers)
 FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
-    FCFuncElement("WaitHelperNative", SynchronizationContextNative::WaitHelper)
 #ifdef FEATURE_APPX
     QCFuncElement("GetWinRTDispatcherForCurrentThread", SynchronizationContextNative::GetWinRTDispatcherForCurrentThread)
 #endif

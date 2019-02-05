@@ -221,6 +221,9 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int WaitMultiple(WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext, bool WaitAll);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern int WaitMultipleIgnoringSyncContext(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout);
+
         public static bool WaitAll(WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext)
         {
             if (waitHandles == null)

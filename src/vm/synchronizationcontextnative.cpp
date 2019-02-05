@@ -18,37 +18,8 @@
 #include <roapi.h>
 #include <windows.ui.core.h>
 #include "winrtdispatcherqueue.h"
-#endif
 #include "synchronizationcontextnative.h"
-
-FCIMPL3(DWORD, SynchronizationContextNative::WaitHelper, PTRArray *handleArrayUNSAFE, CLR_BOOL waitAll, DWORD millis)
-{
-    FCALL_CONTRACT;
-
-    DWORD ret = 0;
-
-    PTRARRAYREF handleArrayObj = (PTRARRAYREF) handleArrayUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(handleArrayObj);
-
-    CQuickArray<HANDLE> qbHandles;
-    int cHandles = handleArrayObj->GetNumComponents();
-
-    // Since DoAppropriateWait could cause a GC, we need to copy the handles to an unmanaged block
-    // of memory to ensure they aren't relocated during the call to DoAppropriateWait.
-    qbHandles.AllocThrows(cHandles);
-    memcpy(qbHandles.Ptr(), handleArrayObj->GetDataPtr(), cHandles * sizeof(HANDLE));
-
-    Thread * pThread = GetThread();
-    ret = pThread->DoAppropriateWait(cHandles, qbHandles.Ptr(), waitAll, millis, 
-                                     (WaitMode)(WaitMode_Alertable | WaitMode_IgnoreSyncCtx));
     
-    HELPER_METHOD_FRAME_END();
-    return ret;
-}
-FCIMPLEND
-    
-#ifdef FEATURE_APPX
-
 Volatile<ABI::Windows::UI::Core::ICoreWindowStatic*> g_pICoreWindowStatic;
 
 void* QCALLTYPE SynchronizationContextNative::GetWinRTDispatcherForCurrentThread()
