@@ -234,6 +234,16 @@ extern "C" DLL_EXPORT void __cdecl TestStructWithUtf8Field(struct FieldWithUtf8 
     free_utf8_string(pszNative);
 }
 
+extern "C" DLL_EXPORT void __cdecl SetStringInStruct(FieldWithUtf8* fieldStruct, char* str)
+{
+    size_t strLength = strlen(str);
+    char* strCopy = (char*)CoreClrAlloc(sizeof(char) * strlen(str) + 1);
+
+    memcpy(strCopy, str, strLength + 1);
+    fieldStruct->pFirst = strCopy;
+    fieldStruct->index = 0;
+}
+
 // test c# out keyword
 extern "C" DLL_EXPORT void __cdecl StringParameterRefOut(/*out*/ char **s, int index)
 {
