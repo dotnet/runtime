@@ -1928,10 +1928,19 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         needsTrigger = false
                         break
                     }
-
-                    if (scenario == 'crossgen_comparison') {
-                        if (os == 'Ubuntu' && architecture == 'arm' && (configuration == 'Checked' || configuration == 'Release')) {
-                            isDefaultTrigger = true
+                    if (os == 'Ubuntu' && architecture == 'arm') {
+                        switch (scenario) {
+                            case 'innerloop':
+                            case 'no_tiered_compilation_innerloop':
+                                if (configuration == 'Checked') {
+                                    isDefaultTrigger = true
+                                }
+                                break
+                             case 'crossgen_comparison':
+                                if (configuration == 'Checked' || configuration == 'Release') {
+                                    isDefaultTrigger = true
+                                }
+                                break
                         }
                     }
                     break
