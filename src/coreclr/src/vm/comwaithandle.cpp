@@ -311,3 +311,29 @@ FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
     return retVal;
 }
 FCIMPLEND
+
+FCIMPL3(DWORD, WaitHandleNative::WaitHelper, PTRArray *handleArrayUNSAFE, CLR_BOOL waitAll, DWORD millis)
+{
+    FCALL_CONTRACT;
+
+    DWORD ret = 0;
+
+    PTRARRAYREF handleArrayObj = (PTRARRAYREF) handleArrayUNSAFE;
+    HELPER_METHOD_FRAME_BEGIN_RET_1(handleArrayObj);
+
+    CQuickArray<HANDLE> qbHandles;
+    int cHandles = handleArrayObj->GetNumComponents();
+
+    // Since DoAppropriateWait could cause a GC, we need to copy the handles to an unmanaged block
+    // of memory to ensure they aren't relocated during the call to DoAppropriateWait.
+    qbHandles.AllocThrows(cHandles);
+    memcpy(qbHandles.Ptr(), handleArrayObj->GetDataPtr(), cHandles * sizeof(HANDLE));
+
+    Thread * pThread = GetThread();
+    ret = pThread->DoAppropriateWait(cHandles, qbHandles.Ptr(), waitAll, millis, 
+                                     (WaitMode)(WaitMode_Alertable | WaitMode_IgnoreSyncCtx));
+    
+    HELPER_METHOD_FRAME_END();
+    return ret;
+}
+FCIMPLEND
