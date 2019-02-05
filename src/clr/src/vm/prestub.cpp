@@ -369,11 +369,16 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     {
         pCode = GetPrecompiledCode(pConfig);
     }
+
     if (pCode == NULL)
     {
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
+    }
+    else
+    {
+        DACNotifyCompilationFinished(this, pCode);
     }
 
     // Mark the code as hot in case the method ends up in the native image
@@ -397,6 +402,14 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
         pCode = GetPrecompiledR2RCode(pConfig);
         if (pCode != NULL)
         {
+            LOG((LF_ZAP, LL_INFO10000,
+                    "ZAP: Using R2R precompiled code" FMT_ADDR "for %s.%s sig=\"%s\" (token %x).\n",
+                    DBG_ADDR(pCode),
+                    m_pszDebugClassName,
+                    m_pszDebugMethodName,
+                    m_pszDebugMethodSignature,
+                    GetMemberDef()));
+
             pConfig->SetNativeCode(pCode, &pCode);
         }
     }
@@ -449,7 +462,7 @@ PCODE MethodDesc::GetPrecompiledNgenCode(PrepareCodeConfig* pConfig)
     if (pCode != NULL)
     {
         LOG((LF_ZAP, LL_INFO10000,
-            "ZAP: Using code" FMT_ADDR "for %s.%s sig=\"%s\" (token %x).\n",
+            "ZAP: Using NGEN precompiled code" FMT_ADDR "for %s.%s sig=\"%s\" (token %x).\n",
             DBG_ADDR(pCode),
             m_pszDebugClassName,
             m_pszDebugMethodName,
