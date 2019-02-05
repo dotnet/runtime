@@ -58,6 +58,7 @@ set "__PackagesDir=%DotNetRestorePackagesPath%"
 if [%__PackagesDir%]==[] set "__PackagesDir=%__ProjectDir%\packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
+set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 set __BuildAll=
 
@@ -319,9 +320,13 @@ REM Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 
-if not exist "%__BinDir%"           md "%__BinDir%"
-if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
-if not exist "%__LogsDir%"          md "%__LogsDir%"
+if not exist "%__BinDir%"              md "%__BinDir%"
+if not exist "%__IntermediatesDir%"    md "%__IntermediatesDir%"
+if not exist "%__LogsDir%"             md "%__LogsDir%"
+if not exist "%__MsbuildDebugLogsDir%" md "%__MsbuildDebugLogsDir%"
+
+REM Set up the directory for MSBuild debug logs.
+set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 
 REM It is convenient to have your Nuget search path include the location where the build
 REM will place packages.  However nuget used during the build will fail if that directory
