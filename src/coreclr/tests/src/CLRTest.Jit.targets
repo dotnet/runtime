@@ -115,8 +115,8 @@ fi
         <![CDATA[
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
-  echo $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments
-  $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments
+  echo $(_CLRTestRunFile) $(TargetAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+  $(_CLRTestRunFile) $(TargetAssemblyName) "${CLRTestExecutionArguments[@]}"
   if [  $? -ne $CLRTestExpectedExitCode ]
   then
     echo END EXECUTION OF IL{D}ASM BINARY - FAILED $? vs $CLRTestExpectedExitCode
