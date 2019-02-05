@@ -14,9 +14,9 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>373df9c049aaa6daa967f0bea3bac44c065051f0</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview.19103.4">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview.19104.4">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>634afbde43e7e0f4b40b0a2670cc23873c0c1a83</Sha>
+      <Sha>53a33cf2662ac8c9a45d13067012d80cf0ba6956</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview-27403-72">
       <Uri>https://github.com/dotnet/coreclr</Uri>
