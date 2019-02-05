@@ -140,6 +140,7 @@ setup_dirs()
     mkdir -p "$__RootBinDir"
     mkdir -p "$__BinDir"
     mkdir -p "$__LogsDir"
+    mkdir -p "$__MsbuildDebugLogsDir"
     mkdir -p "$__IntermediatesDir"
 
     if [ $__CrossBuild == 1 ]; then
@@ -996,6 +997,7 @@ fi
 
 # Set dependent variables
 __LogsDir="$__RootBinDir/Logs"
+__MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # init the host distro name
 initHostDistroRid
@@ -1046,6 +1048,9 @@ initTargetDistroRid
 
 # Make the directories necessary for build if they don't exist
 setup_dirs
+
+# Set up the directory for MSBuild debug logs.
+export MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
 
 # Check prereqs.
 check_prereqs
