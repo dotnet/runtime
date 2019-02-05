@@ -5991,8 +5991,12 @@ elif test x$target_osx = xyes; then
 		mono_native_compat=yes
 		mono_native_text="Mac OSX (compat+unified)"
 		MONO_NATIVE_COMPAT_CFLAGS="$CFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_CPPFLAGS="$CPPFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_CXXFLAGS="$CXXFLAGS $mono_native_compat_version"
 		MONO_NATIVE_COMPAT_LDFLAGS="$LDFLAGS $mono_native_compat_version"
 		MONO_NATIVE_UNIFIED_CFLAGS="$MONO_NATIVE_CFLAGS -mmacosx-version-min=10.12"
+		MONO_NATIVE_UNIFIED_CPPFLAGS="$MONO_NATIVE_CPPFLAGS -mmacosx-version-min=10.12"
+		MONO_NATIVE_UNIFIED_CXXFLAGS="$MONO_NATIVE_CXXFLAGS -mmacosx-version-min=10.12"
 		MONO_NATIVE_UNIFIED_LDFLAGS="$MONO_NATIVE_LDFLAGS -mmacosx-version-min=10.12"
 	else
 		mono_native_compat=no
@@ -6076,8 +6080,12 @@ elif test x$mono_native_platform_ios = xyes; then
 	if test x$mono_native_compat = xyes; then
 		mono_native_text="$mono_native_text (compat+unified)"
 		MONO_NATIVE_COMPAT_CFLAGS="$CFLAGS $mono_native_compat_version"
-		MONO_NATIVE_COMPAT_LDFLAGS="$LDFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_CPPFLAGS="$CPPFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_CXXFLAGS="$CXXFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_LDFLAGS="$LDFLAGS $mono_native_ldflags $mono_native_compat_version"
 		MONO_NATIVE_UNIFIED_CFLAGS="$MONO_NATIVE_CFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
+		MONO_NATIVE_UNIFIED_CPPFLAGS="$MONO_NATIVE_CPPFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
+		MONO_NATIVE_UNIFIED_CXXFLAGS="$MONO_NATIVE_CXXFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
 		MONO_NATIVE_UNIFIED_LDFLAGS="$MONO_NATIVE_LDFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
 	fi
 
@@ -6165,7 +6173,11 @@ AC_SUBST(MONO_NATIVE_PLATFORM)
 AC_SUBST(MONO_NATIVE_CC)
 AC_SUBST(MONO_NATIVE_CXX)
 AC_SUBST(MONO_NATIVE_CPPFLAGS)
+AC_SUBST(MONO_NATIVE_COMPAT_CPPFLAGS)
+AC_SUBST(MONO_NATIVE_UNIFIED_CPPFLAGS)
 AC_SUBST(MONO_NATIVE_CXXFLAGS)
+AC_SUBST(MONO_NATIVE_COMPAT_CXXFLAGS)
+AC_SUBST(MONO_NATIVE_UNIFIED_CXXFLAGS)
 AC_SUBST(MONO_NATIVE_CFLAGS)
 AC_SUBST(MONO_NATIVE_COMPAT_CFLAGS)
 AC_SUBST(MONO_NATIVE_UNIFIED_CFLAGS)
