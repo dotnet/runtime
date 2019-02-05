@@ -73,7 +73,7 @@ namespace System.Resources
 #if FEATURE_APPX
             Type WinRTResourceManagerType = Type.GetType("System.Resources.WindowsRuntimeResourceManager, System.Runtime.WindowsRuntime", throwOnError: true);
 #else // ENABLE_WINRT
-            Assembly hiddenScopeAssembly = Assembly.Load(RuntimeAugments.HiddenScopeAssemblyName);
+            Assembly hiddenScopeAssembly = Assembly.Load(Internal.Runtime.Augments.RuntimeAugments.HiddenScopeAssemblyName);
             Type WinRTResourceManagerType = hiddenScopeAssembly.GetType("System.Resources.WindowsRuntimeResourceManager", true);
 #endif
             return (WindowsRuntimeResourceManagerBase)Activator.CreateInstance(WinRTResourceManagerType, true);
@@ -142,6 +142,7 @@ namespace System.Resources
             if (!ApplicationModel.IsUap)
                 return;
 #else // ENABLE_WINRT
+            Internal.Runtime.Augments.WinRTInteropCallbacks callbacks = Internal.Runtime.Augments.WinRTInterop.UnsafeCallbacks;
             if (!(callbacks != null && callbacks.IsAppxModel()))
                 return;
 #endif
