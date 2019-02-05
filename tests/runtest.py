@@ -2225,18 +2225,25 @@ def print_summary(tests):
             # XUnit results are captured as escaped characters.
             test_output = test_output.replace("\\r", "\r")
             test_output = test_output.replace("\\n", "\n")
-
-            print(test_output)
             test_output = test_output.replace("/r", "\r")
             test_output = test_output.replace("/n", "\n")
+
+            # Replace CR/LF by just LF; Python "print", below, will map as necessary on the platform.
+            # If we don't do this, then Python on Windows will convert \r\n to \r\r\n on output.
+            test_output = test_output.replace("\r\n", "\n")
+
             unicode_output = None
             if sys.version_info < (3,0):
                 # Handle unicode characters in output in python2.*
-                unicode_output = unicode(test_output, "utf-8")
+                try:
+                    unicode_output = unicode(test_output, "utf-8")
+                except:
+                    print("Error: failed to convert Unicode output")
             else:
                 unicode_output = test_output
 
-            print(unicode_output)
+            if unicode_output is not None:
+                print(unicode_output)
             print("")
 
         print("")
