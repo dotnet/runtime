@@ -2555,6 +2555,12 @@ public:
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
 
+    // Given an address expression, compute its costs and addressing mode opportunities,
+    // and mark addressing mode candidates as GTF_DONT_CSE.
+    // TODO-Throughput - Consider actually instantiating these early, to avoid
+    // having to re-run the algorithm that looks for them (might also improve CQ).
+    bool gtMarkAddrMode(GenTree* addr, int* costEx, int* costSz, var_types type);
+
     unsigned gtSetEvalOrder(GenTree* tree);
 
     void gtSetStmtInfo(GenTree* stmt);
