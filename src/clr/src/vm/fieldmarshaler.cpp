@@ -3291,16 +3291,12 @@ VOID FieldMarshaler_StringUtf8::UpdateCLRImpl(const VOID *pNativeValue, OBJECTRE
 
     STRINGREF pString = NULL;
     LPCUTF8  sz = (LPCUTF8)MAYBE_UNALIGNED_READ(pNativeValue, _PTR);
-    if (!sz)
-    {
-        pString = NULL;
-    }
-    else
+    if (sz)
     {
         MethodDescCallSite convertToManaged(METHOD__CUTF8MARSHALER__CONVERT_TO_MANAGED);
         ARG_SLOT args[] =
         {
-            PtrToArgSlot(pNativeValue),
+            PtrToArgSlot(sz),
         };
         pString = convertToManaged.Call_RetSTRINGREF(args);
     }
