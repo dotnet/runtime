@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.CompilerServices;
 
 namespace System.Windows.Markup
@@ -18,7 +17,7 @@ namespace System.Windows.Markup
     public sealed class ValueSerializerAttribute : Attribute
     {
         private Type _valueSerializerType;
-        private string _valueSerializerTypeName;
+        private readonly string _valueSerializerTypeName;
 
         /// <summary>
         /// Constructor for the ValueSerializerAttribute
@@ -46,7 +45,10 @@ namespace System.Windows.Markup
             get
             {
                 if (_valueSerializerType == null && _valueSerializerTypeName != null)
+                {
                     _valueSerializerType = Type.GetType(_valueSerializerTypeName);
+                }
+
                 return _valueSerializerType;
             }
         }
@@ -59,9 +61,13 @@ namespace System.Windows.Markup
             get
             {
                 if (_valueSerializerType != null)
+                {
                     return _valueSerializerType.AssemblyQualifiedName;
+                }
                 else
+                {
                     return _valueSerializerTypeName;
+                }
             }
         }
     }
