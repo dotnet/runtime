@@ -14,7 +14,7 @@ public class GitHub_20958
     public static int IndexerWithRangeTest()
     {
         int returnVal = 100;
-   
+
         ReadOnlySpan<char> span = "Hello".AsSpan();
         ReadOnlySpan<char> sliced = span[Range.Create(new Index(1, fromEnd: false), new Index(1, fromEnd: true))];
         if (span.Slice(1, 3) != sliced)

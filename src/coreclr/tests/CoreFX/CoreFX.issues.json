@@ -1054,7 +1054,6 @@
                     "name": "System.Tests.TimeSpanTests.Parse",
                     "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
                 },
-                
                 {
                     "name": "System.Tests.SingleTests.Test_ToString",
                     "reason" : "https://github.com/dotnet/coreclr/pull/22040"
