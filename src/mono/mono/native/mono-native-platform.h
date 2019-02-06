@@ -2,7 +2,7 @@
 
 #include "mono/utils/mono-publib.h"
 
-// Keep in sync with mcs/class/corlib/Mono/MonoNativePlatformType.cs
+// Keep in sync with mcs/class/corlib/Test/Mono/MonoNativePlatformType.cs
 
 typedef enum {
 	MONO_NATIVE_PLATFORM_TYPE_UNKNOWN	= 0,

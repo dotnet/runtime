@@ -5958,7 +5958,7 @@ fi
 #
 # For testing purpuses, there is a function called `mono_native_get_platform_type ()`
 # (see mono/native/mono-native-platform.c), which returns a `MonoNativePlatformType` enum value.
-# There is also `Mono.MonoNativePlatform.GetPlatformType ()` (see mcs/class/System/Mono/MonoNativePlatform.cs).
+# There is also `Mono.MonoNativePlatform.GetPlatformType ()` (see mcs/class/corlib/Test/Mono/MonoNativePlatform.cs).
 #
 # This can be called by automated tests both to ensure that the library has been correctly installed and also
 # to verify that it's the correct version of it.
