@@ -30,7 +30,6 @@ common_sources = \
 	../../external/corefx/src/Native/Unix/System.Native/pal_uid.h \
 	../../external/corefx/src/Native/Unix/System.Native/pal_time.c \
 	../../external/corefx/src/Native/Unix/System.Native/pal_time.h \
-	../../external/corefx/src/Native/AnyOS/brotli/tools/brotli.c \
 	../../external/corefx/src/Native/AnyOS/brotli/enc/dictionary_hash.c \
 	../../external/corefx/src/Native/AnyOS/brotli/enc/backward_references_hq.c \
 	../../external/corefx/src/Native/AnyOS/brotli/enc/histogram.c \
@@ -109,7 +108,7 @@ macos_sources += $(gss_sources)
 ios_sources += $(gss_sources)
 endif
 
-EXTRA_libmono_native_la_SOURCES = $(common_sources) $(brotli_sources) $(macos_sources) $(ios_sources) $(linux_sources) $(aix_sources) $(unix_sources) $(gss_sources)
+EXTRA_libmono_native_la_SOURCES = $(common_sources) $(macos_sources) $(ios_sources) $(linux_sources) $(aix_sources) $(unix_sources) $(gss_sources)
 
 if MONO_NATIVE_PLATFORM_MACOS
 platform_sources = $(macos_sources)
