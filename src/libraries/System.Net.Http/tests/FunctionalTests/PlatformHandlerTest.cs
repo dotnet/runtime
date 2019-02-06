@@ -154,7 +154,8 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
-#if netcoreapp
+// Enable this to run HTTP2 tests on platform handler
+#if PLATFORM_HANDLER_HTTP2_TESTS
     public sealed class PlatformHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
         protected override bool UseSocketsHttpHandler => false;

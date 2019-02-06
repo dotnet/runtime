@@ -9,8 +9,6 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    using Configuration = System.Net.Test.Common.Configuration;
-
     public abstract class HttpClientHandlerTest_Http2 : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
@@ -447,10 +445,11 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
                 await server.WriteFrameAsync(invalidFrame);
 
-// TODO: WinHttpHandler?
-                // The server should close the connection as this is a fatal connection level error.
-                Exception ex = await Assert.ThrowsAsync<Exception>(async () => await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
-                Assert.Equal("Connection stream closed while attempting to read frame header.", ex.Message);
+                if (!IsWinHttpHandler)
+                {
+                    // The client should close the connection as this is a fatal connection level error.
+                    Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+                }
             }
         }
 
@@ -478,10 +477,11 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
                 await server.WriteFrameAsync(invalidFrame);
 
-// TODO: WinHttpHandler?
-                // The server should close the connection as this is a fatal connection level error.
-                Exception ex = await Assert.ThrowsAsync<Exception>(async () => await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
-                Assert.Equal("Connection stream closed while attempting to read frame header.", ex.Message);
+                if (!IsWinHttpHandler)
+                {
+                    // The client should close the connection as this is a fatal connection level error.
+                    Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+                }
             }
         }
 
@@ -510,10 +510,11 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
                 await server.WriteFrameAsync(invalidFrame);
 
-// TODO: WinHttpHandler?
-                // The server should close the connection as this is a fatal connection level error.
-                Exception ex = await Assert.ThrowsAsync<Exception>(async () => await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
-                Assert.Equal("Connection stream closed while attempting to read frame header.", ex.Message);
+                if (!IsWinHttpHandler)
+                {
+                    // The client should close the connection as this is a fatal connection level error.
+                    Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+                }
             }
         }
 
@@ -601,6 +602,9 @@ namespace System.Net.Http.Functional.Tests
                 await server.SendResponseBodyAsync(streamId1, new byte[10], endStream: true);
                 await server.SendResponseBodyAsync(streamId2, new byte[10], endStream: true);
                 await server.SendResponseBodyAsync(streamId3, new byte[5], endStream: true);
+
+                // We will not send any more frames, so send EOF now, and ensure the client handles this properly.
+                server.ShutdownSend();
 
                 // Receive all responses
                 HttpResponseMessage response1 = await sendTask1;
