@@ -472,25 +472,7 @@ fx_definition_t* fx_muxer_t::resolve_fx(
     // If it is not activated, then only .exe directory will be considered
 
     std::vector<pal::string_t> hive_dir;
-    std::vector<pal::string_t> global_dirs;
-    bool multilevel_lookup = multilevel_lookup_enabled();
-
-    // dotnet_dir contains DIR_SEPARATOR appended that we need to remove.
-    pal::string_t dotnet_dir_temp = dotnet_dir;
-    remove_trailing_dir_seperator(&dotnet_dir_temp);
-
-    hive_dir.push_back(dotnet_dir_temp);
-    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
-    {
-        for (pal::string_t dir : global_dirs)
-        {
-            // Avoid duplicate of dotnet_dir_temp
-            if (!pal::are_paths_equal_with_normalized_casing(dir, dotnet_dir_temp))
-            {
-                hive_dir.push_back(dir);
-            }
-        }
-    }
+    get_framework_and_sdk_locations(dotnet_dir, &hive_dir);
 
     pal::string_t selected_fx_dir;
     pal::string_t selected_fx_version;
