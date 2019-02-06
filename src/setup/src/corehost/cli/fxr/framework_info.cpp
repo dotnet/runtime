@@ -27,26 +27,8 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
     const pal::string_t& fx_name,
     std::vector<framework_info>* framework_infos)
 {
-    std::vector<pal::string_t> global_dirs;
-    bool multilevel_lookup = multilevel_lookup_enabled();
-
-    // own_dir contains DIR_SEPARATOR appended that we need to remove.
-    pal::string_t own_dir_temp = own_dir;
-    remove_trailing_dir_seperator(&own_dir_temp);
-
     std::vector<pal::string_t> hive_dir;
-    hive_dir.push_back(own_dir_temp);
-
-    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
-    {
-        for (pal::string_t dir : global_dirs)
-        {
-            if (!pal::are_paths_equal_with_normalized_casing(dir, own_dir_temp))
-            {
-                hive_dir.push_back(dir);
-            }
-        }
-    }
+    get_framework_and_sdk_locations(own_dir, &hive_dir);
 
     for (pal::string_t dir : hive_dir)
     {

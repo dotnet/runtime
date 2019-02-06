@@ -337,6 +337,34 @@ bool multilevel_lookup_enabled()
     return multilevel_lookup;
 }
 
+void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, std::vector<pal::string_t>* locations)
+{
+    bool multilevel_lookup = multilevel_lookup_enabled();
+
+    pal::string_t dotnet_dir_temp;
+    if (!dotnet_dir.empty())
+    {
+        // own_dir contains DIR_SEPARATOR appended that we need to remove.
+        dotnet_dir_temp = dotnet_dir;
+        remove_trailing_dir_seperator(&dotnet_dir_temp);
+
+        locations->push_back(dotnet_dir_temp);
+    }
+
+    std::vector<pal::string_t> global_dirs;
+    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
+    {
+        for (pal::string_t dir : global_dirs)
+        {
+            // avoid duplicate paths
+            if (!pal::are_paths_equal_with_normalized_casing(dir, dotnet_dir_temp))
+            {
+                locations->push_back(dir);
+            }
+        }
+    }
+}
+
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
 {
     recv->clear();
