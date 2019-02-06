@@ -34,6 +34,20 @@ extern "C" LPWSTR ReturnErrString()
 }
 
 //Test Method1
+extern "C" DLL_EXPORT LPWSTR Marshal_In(/*[In]*/LPWSTR s)
+{
+    //Check the Input
+    size_t len = TP_slen(s);
+
+    if((len != lenstrManaged)||(TP_wmemcmp(s,(WCHAR*)strManaged,len)!=0))
+    {
+        printf("Error in Function Marshal_In(Native Client)\n");
+        return ReturnErrString();
+    }
+
+    //Return
+    return ReturnString();
+}
 
 //Test Method2
 extern "C" DLL_EXPORT LPWSTR Marshal_InOut(/*[In,Out]*/LPWSTR s)
