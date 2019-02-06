@@ -76,6 +76,14 @@ IF NOT "%COMPlus_GCStress%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(UnloadabilityIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%__RunInUnloadableContext%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with unloadability
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
     <![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
@@ -162,6 +170,7 @@ Exit /b 0
         <Command><![CDATA[
     IF EXIST "%2" (
         set _DebuggerFullPath=%2
+        shift
     ) ELSE (
         ECHO The Debugger FullPath "%2" doesn't exist
         GOTO :USAGE
@@ -246,7 +255,7 @@ IF defined DoLink (
     copy *.txt %LinkBin% > nul 2> nul
 
     set ExePath=%LinkBin%\$(InputAssemblyName)
-    set CORE_ROOT=%~dp0%LinkBin%
+    set CORE_ROOT=%scriptPath%LinkBin%
 )
 ]]>
           </BatchLinkerTestLaunchCmds>
@@ -272,7 +281,7 @@ COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
       <BatchCLRTestLaunchCmds><![CDATA[
 IF NOT "%CLRCustomTestLauncher%"=="" (
-  set LAUNCHER=call %CLRCustomTestLauncher% %~dp0
+  set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
 ) ELSE (
   set LAUNCHER=%_DebuggerFullPath% $(_CLRTestRunFile)
 )
@@ -377,6 +386,7 @@ $(BatchCLRTestArgPrep)
 setlocal ENABLEDELAYEDEXPANSION
 set "lockFolder=%~dp0\lock"
 pushd %~dp0
+set "scriptPath=%~dp0"
 
 $(BatchCLRTestArgPrep)
 $(BatchCLRTestExitCodePrep)

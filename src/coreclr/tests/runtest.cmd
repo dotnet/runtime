@@ -52,6 +52,7 @@ set __CoreFXTestsRunAllAvailable=
 set __SkipGenerateLayout=
 set __BuildXUnitWrappers=
 set __PrintLastResultsOnly=
+set __RunInUnloadableContext=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -109,6 +110,8 @@ if /i "%1" == "altjitarch"                              (set __AltJitArch=%2&shi
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
 if /i "%1" == "collectdumps"                            (set __CollectDumps=true&shift&goto Arg_Loop)
+
+if /i "%1" == "runincontext"                            (set __RunInUnloadableContext=1&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -221,6 +224,10 @@ if defined __PrintLastResultsOnly (
 
 if defined __AltJitArch (
     set __RuntestPyArgs=%__RuntestPyArgs% -altjit_arch %__AltJitArch%
+)
+
+if defined __RunInUnloadableContext (
+    set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
 REM __ProjectDir is poorly named, it is actually <projectDir>/tests
@@ -749,6 +756,7 @@ echo gcname ^<name^>             - Runs the tests with COMPlus_GCName=name
 echo timeout ^<n^>               - Sets the per-test timeout in milliseconds ^(default is 10 minutes = 10 * 60 * 1000 = 600000^).
 echo                             Note: some options override this ^(gcstresslevel, longgc, gcsimulator^).
 echo printlastresultsonly      - Print the last test results without running tests.
+echo runincontext              - Run each tests in an unloadable AssemblyLoadContext
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
 echo.

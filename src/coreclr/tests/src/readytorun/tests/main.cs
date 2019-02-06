@@ -331,7 +331,9 @@ class Program
 #if CORECLR
     class MyLoadContext : AssemblyLoadContext
     {
-        public MyLoadContext()
+        // If running in a collectible context, make the MyLoadContext collectible too so that it doesn't prevent
+        // unloading.
+        public MyLoadContext() : base(AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly()).IsCollectible)
         {
         }
 
