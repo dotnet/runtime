@@ -6,6 +6,7 @@
     <AssemblyName>System.Diagnostics.Process</AssemblyName>
     <DefineConstants Condition="'$(TargetGroup)' != 'uap'">$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <Configurations>netcoreapp-FreeBSD-Debug;netcoreapp-FreeBSD-Release;netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
@@ -36,8 +37,8 @@
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
     <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
     <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
-    <Compile Include="..\..\Common\src\System\PasteArguments.cs">
-      <Link>Common\System\PasteArguments.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
+      <Link>Common\CoreLib\System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
@@ -46,6 +47,9 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcessModules.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.EnumProcessModules.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
@@ -193,7 +197,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.AdjustTokenPrivileges.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.AdjustTokenPrivileges.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetComputerName.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetComputerName.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetComputerName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs">
@@ -301,10 +305,10 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Common\Interop\Unix\Interop.GetHostName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SysConf.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.SysConf.cs">
       <Link>Common\Interop\Unix\Interop.SysConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ForkAndExecProcess.cs">
@@ -316,7 +320,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\Interop.GetPid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPwUid.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetSetPriority.cs">
@@ -349,7 +353,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.WaitPid.cs">
       <Link>Common\Interop\Unix\Interop.WaitPid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Access.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Access.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
     </Compile>
   </ItemGroup>
@@ -382,8 +386,8 @@
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetTimestamp.cs">
-      <Link>Common\Unix\System.Native\Interop.GetTimestamp.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetAbsoluteTime.cs">
+      <Link>Common\Unix\System.Native\Interop.GetAbsoluteTime.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' AND '$(TargetsWindows)' == 'true'">
@@ -399,6 +403,9 @@
     <Compile Include="System\Diagnostics\ProcessManager.Uap.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Uap.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
+    <Compile Include="System\Diagnostics\Process.NonUap.cs" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.FreeBSD.cs" />
@@ -410,9 +417,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Process.cs">
       <Link>Common\Interop\FreeBSD\Interop.Process.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetTimestamp.cs">
-      <Link>Common\Unix\System.Native\Interop.GetTimestamp.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Unix\System.Native\Interop.Stat.cs</Link>

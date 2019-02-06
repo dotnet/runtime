@@ -122,6 +122,52 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
+        public static void OldCredentialsShouldFail()
+        {
+            String user = "u" + Guid.NewGuid().ToString().Replace("-", "");
+            String passStr = "Pax561O$T5K#jD";
+
+            try
+            {
+                createTestUser(user, passStr);
+
+                SqlConnectionStringBuilder sqlConnectionStringBuilder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
+                sqlConnectionStringBuilder.Remove("User ID");
+                sqlConnectionStringBuilder.Remove("Password");
+                sqlConnectionStringBuilder.IntegratedSecurity = false;
+
+                SecureString password = new SecureString();
+                passStr.ToCharArray().ToList().ForEach(x => password.AppendChar(x));
+                password.MakeReadOnly();
+                SqlCredential credential = new SqlCredential(user, password);
+
+                using (SqlConnection conn1 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, credential))
+                using (SqlConnection conn2 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, credential))
+                using (SqlConnection conn3 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, credential))
+                using (SqlConnection conn4 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, credential))
+                {
+                    conn1.Open();
+                    conn2.Open();
+                    conn3.Open();
+                    conn4.Open();
+
+                    SecureString newPassword = new SecureString();
+                    "newPassword".ToCharArray().ToList().ForEach(x => newPassword.AppendChar(x));
+                    newPassword.MakeReadOnly();
+                    SqlConnection.ChangePassword(sqlConnectionStringBuilder.ConnectionString, credential, newPassword);
+                    using (SqlConnection conn5 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, new SqlCredential(user, password)))
+                    {
+                        Assert.Throws<SqlException>(() => conn5.Open());
+                    }
+                }
+            }
+            finally
+            {
+                dropTestUser(user);
+            }
+        }
+
         private static void createTestUser(string username, string password)
         {
             // Creates a test user with read permissions.

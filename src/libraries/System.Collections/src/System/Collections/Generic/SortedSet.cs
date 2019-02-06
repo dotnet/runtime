@@ -1449,17 +1449,10 @@ namespace System.Collections.Generic
             int originalLastIndex = Count;
             int intArrayLength = BitHelper.ToIntArrayLength(originalLastIndex);
 
-            BitHelper bitHelper;
-            if (intArrayLength <= StackAllocThreshold)
-            {
-                int* bitArrayPtr = stackalloc int[intArrayLength];
-                bitHelper = new BitHelper(bitArrayPtr, intArrayLength);
-            }
-            else
-            {
-                int[] bitArray = new int[intArrayLength];
-                bitHelper = new BitHelper(bitArray, intArrayLength);
-            }
+            Span<int> span = stackalloc int[StackAllocThreshold];
+            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
+                new BitHelper(span.Slice(0, intArrayLength), clear: true) :
+                new BitHelper(new int[intArrayLength], clear: false);
 
             // count of items in other not found in this
             int UnfoundCount = 0;

@@ -215,8 +215,7 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             }
 
-            T[] tArray = array as T[];
-            if (tArray != null)
+            if (array is T[] tArray)
             {
                 items.CopyTo(tArray, index);
             }
@@ -294,8 +293,7 @@ namespace System.Collections.ObjectModel
                 // readonly collections are fixed size, if our internal item 
                 // collection does not implement IList.  Note that Array implements
                 // IList, and therefore T[] and U[] will be fixed-size.
-                IList list = items as IList;
-                if (list != null)
+                if (items is IList list)
                 {
                     return list.IsFixedSize;
                 }

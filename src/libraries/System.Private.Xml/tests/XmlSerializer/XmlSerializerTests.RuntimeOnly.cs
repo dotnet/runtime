@@ -145,12 +145,30 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<float>((float)2.3,
 @"<?xml version=""1.0""?>
 <float>2.3</float>"), (float)2.3);
+    }
+
+    [Fact]
+    [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+    public static void Xml_FloatAsRoot_NetFramework()
+    {
         Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue,
 @"<?xml version=""1.0""?>
 <float>-3.40282347E+38</float>"), float.MinValue);
         Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue,
 @"<?xml version=""1.0""?>
 <float>3.40282347E+38</float>"), float.MaxValue);
+    }
+
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+    public static void Xml_FloatAsRoot_NotNetFramework()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue,
+@"<?xml version=""1.0""?>
+<float>-3.4028235E+38</float>"), float.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue,
+@"<?xml version=""1.0""?>
+<float>3.4028235E+38</float>"), float.MaxValue);
     }
 
     [Fact]

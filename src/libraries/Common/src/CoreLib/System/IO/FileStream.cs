@@ -135,7 +135,7 @@ namespace System.IO
 
             if (handle.IsClosed)
                 throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.Value)
+            if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.GetValueOrDefault())
                 throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
 
             _exposedHandle = true;

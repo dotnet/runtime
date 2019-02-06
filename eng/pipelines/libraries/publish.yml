@@ -43,13 +43,15 @@ jobs:
 
       - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
                 -warnaserror:0 -ci
-                /t:PublishToAzureBlobFeed
+                /t:PublishPackagesToBlobFeed
                 /p:ManifestBuildId=$(Build.BuildNumber)
+                /p:ManifestBuildData=Location=$(_dotnetFeedUrl)
                 /p:ManifestBranch=$(Build.SourceBranchName)
                 /p:ManifestCommit=$(Build.SourceVersion)
                 /p:ManifestRepoUri=$(Build.Repository.Uri)
                 /p:AccountKey=$(dotnetfeed-storage-access-key-1)
                 /p:ExpectedFeedUrl=$(_dotnetFeedUrl)
+                /p:IncludeSymbolsOnPackagePublish=true
         displayName: Push to dotnet feed
 
       - task: PublishBuildArtifacts@1

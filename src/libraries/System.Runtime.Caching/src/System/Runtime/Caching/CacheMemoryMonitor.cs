@@ -7,7 +7,6 @@ using System.Runtime.Caching.Configuration;
 using System.Runtime.Caching.Hosting;
 using System.Diagnostics;
 using System.Security;
-using System.Security.Permissions;
 using System.Threading;
 
 namespace System.Runtime.Caching

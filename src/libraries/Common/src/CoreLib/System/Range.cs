@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System
 {
     public readonly struct Range : IEquatable<Range>
@@ -35,7 +37,31 @@ namespace System
 
         public override string ToString()
         {
-            return Start + ".." + End;
+            Span<char> span = stackalloc char[2 + (2 * 11)]; // 2 for "..", then for each index 1 for '^' and 10 for longest possible uint
+            int charsWritten;
+            int pos = 0;
+
+            if (Start.FromEnd)
+            {
+                span[0] = '^';
+                pos = 1;
+            }
+            bool formatted = ((uint)Start.Value).TryFormat(span.Slice(pos), out charsWritten);
+            Debug.Assert(formatted);
+            pos += charsWritten;
+
+            span[pos++] = '.';
+            span[pos++] = '.';
+
+            if (End.FromEnd)
+            {
+                span[pos++] = '^';
+            }
+            formatted = ((uint)End.Value).TryFormat(span.Slice(pos), out charsWritten);
+            Debug.Assert(formatted);
+            pos += charsWritten;
+
+            return new string(span.Slice(0, pos));
         }
 
         public static Range Create(Index start, Index end) => new Range(start, end);

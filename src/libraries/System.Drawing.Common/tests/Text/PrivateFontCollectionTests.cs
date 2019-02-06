@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Drawing.Tests;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using Xunit;
 
 namespace System.Drawing.Text.Tests

@@ -1371,9 +1371,7 @@ namespace System.Globalization
 
         public override bool Equals(object value)
         {
-            CompareInfo that = value as CompareInfo;
-
-            if (that != null)
+            if (value is CompareInfo that)
             {
                 return this.Name == that.Name;
             }

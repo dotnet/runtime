@@ -4,6 +4,7 @@
     <RootNamespace>Microsoft.Win32.Registry</RootNamespace>
     <AssemblyName>Microsoft.Win32.Registry</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS' AND '$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>

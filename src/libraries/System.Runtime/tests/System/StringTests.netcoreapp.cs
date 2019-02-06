@@ -1003,5 +1003,24 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".IndexOf('o', StringComparison.CurrentCulture - 1));
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".IndexOf('o', StringComparison.OrdinalIgnoreCase + 1));
         }
+
+        [Theory]
+        [MemberData(nameof(Concat_Strings_2_3_4_TestData))]
+        public static void Concat_Spans(string[] values, string expected)
+        {
+            Assert.InRange(values.Length, 2, 4);
+
+            string result =
+                values.Length == 2 ? string.Concat(values[0].AsSpan(), values[1].AsSpan()) :
+                values.Length == 3 ? string.Concat(values[0].AsSpan(), values[1].AsSpan(), values[2].AsSpan()) :
+                string.Concat(values[0].AsSpan(), values[1].AsSpan(), values[2].AsSpan(), values[3].AsSpan());
+
+            if (result.Length == 0)
+            {
+                Assert.Same(string.Empty, result);
+            }
+
+            Assert.Equal(expected, result);
+        }
     }
 }

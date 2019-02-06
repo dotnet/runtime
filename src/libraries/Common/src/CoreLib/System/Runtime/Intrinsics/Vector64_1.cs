@@ -28,7 +28,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                ThrowIfUnsupportedType();
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
                 return Vector64.Size / Unsafe.SizeOf<T>();
             }
         }
@@ -39,7 +39,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                ThrowIfUnsupportedType();
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
                 return default;
             }
         }
@@ -77,15 +77,6 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowIfUnsupportedType()
-        {
-            if (!IsSupported)
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
         /// <summary>Reinterprets the current instance as a new <see cref="Vector64{U}" />.</summary>
         /// <typeparam name="U">The type of the vector the current instance should be reinterpreted as.</typeparam>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector64{U}" />.</returns>
@@ -94,8 +85,8 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector64<U> As<U>() where U : struct
         {
-            ThrowIfUnsupportedType();
-            Vector64<U>.ThrowIfUnsupportedType();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<U>();
             return Unsafe.As<Vector64<T>, Vector64<U>>(ref Unsafe.AsRef(in this));
         }
 
@@ -169,7 +160,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public bool Equals(Vector64<T> other)
         {
-            ThrowIfUnsupportedType();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
             for (int i = 0; i < Count; i++)
             {
@@ -198,11 +189,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public T GetElement(int index)
         {
-            ThrowIfUnsupportedType();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
             if ((uint)(index) >= (uint)(Count))
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
             ref T e0 = ref Unsafe.As<Vector64<T>, T>(ref Unsafe.AsRef(in this));
@@ -217,7 +208,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public Vector64<T> WithElement(int index, T value)
         {
-            ThrowIfUnsupportedType();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
             if ((uint)(index) >= (uint)(Count))
             {
@@ -235,7 +226,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public override int GetHashCode()
         {
-            ThrowIfUnsupportedType();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
             int hashCode = 0;
 
@@ -252,7 +243,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public T ToScalar()
         {
-            ThrowIfUnsupportedType();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
             return Unsafe.As<Vector64<T>, T>(ref Unsafe.AsRef(in this));
         }
 
@@ -280,7 +271,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public string ToString(string format, IFormatProvider formatProvider)
         {
-            ThrowIfUnsupportedType();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
             int lastElement = Count - 1;
@@ -305,8 +296,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public Vector128<T> ToVector128()
         {
-            ThrowIfUnsupportedType();
-            Vector128<T>.ThrowIfUnsupportedType();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
             Vector128<T> result = Vector128<T>.Zero;
             Unsafe.As<Vector128<T>, Vector64<T>>(ref result) = this;
@@ -318,8 +308,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public unsafe Vector128<T> ToVector128Unsafe()
         {
-            ThrowIfUnsupportedType();
-            Vector128<T>.ThrowIfUnsupportedType();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.

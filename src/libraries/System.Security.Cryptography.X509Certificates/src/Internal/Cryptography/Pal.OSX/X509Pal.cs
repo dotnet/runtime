@@ -87,7 +87,7 @@ namespace Internal.Cryptography.Pal
                 RSA rsa = RSA.Create();
                 try
                 {
-                    rsa.ImportRSAPublicKey(encodedKeyValue.AsSpan(), out _);
+                    rsa.ImportRSAPublicKey(new ReadOnlySpan<byte>(encodedKeyValue), out _);
                     return rsa;
                 }
                 catch (Exception)

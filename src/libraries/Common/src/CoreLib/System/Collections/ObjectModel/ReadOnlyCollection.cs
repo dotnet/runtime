@@ -147,8 +147,7 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             }
 
-            T[] items = array as T[];
-            if (items != null)
+            if (array is T[] items)
             {
                 list.CopyTo(items, index);
             }

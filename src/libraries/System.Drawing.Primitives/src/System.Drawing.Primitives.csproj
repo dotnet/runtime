@@ -37,7 +37,7 @@
     <Compile Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
       <Link>System\Drawing\KnownColorTable.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
   </ItemGroup>

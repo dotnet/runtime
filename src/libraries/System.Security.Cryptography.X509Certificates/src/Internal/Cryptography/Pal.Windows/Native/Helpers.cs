@@ -73,7 +73,7 @@ namespace Internal.Cryptography.Pal.Native
             return Encoding.ASCII.GetBytes(oid.Value);
         }
 
-        public unsafe delegate void DecodedObjectReceiver(void* pvDecodedObject);
+        public unsafe delegate void DecodedObjectReceiver(void* pvDecodedObject, int cbDecodedObject);
 
         public static void DecodeObject(this byte[] encoded, CryptDecodeObjectStructType lpszStructType, DecodedObjectReceiver receiver)
         {
@@ -85,10 +85,11 @@ namespace Internal.Cryptography.Pal.Native
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                 byte* decoded = stackalloc byte[cb];
+                new Span<byte>(decoded, cb).Clear();
                 if (!Interop.crypt32.CryptDecodeObjectPointer(CertEncodingType.All, lpszStructType, encoded, encoded.Length, CryptDecodeObjectFlags.None, (byte*)decoded, ref cb))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
-                receiver(decoded);
+                receiver(decoded, cb);
             }
         }
 
@@ -102,10 +103,11 @@ namespace Internal.Cryptography.Pal.Native
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                 byte* decoded = stackalloc byte[cb];
+                new Span<byte>(decoded, cb).Clear();
                 if (!Interop.crypt32.CryptDecodeObjectPointer(CertEncodingType.All, lpszStructType, encoded, encoded.Length, CryptDecodeObjectFlags.None, (byte*)decoded, ref cb))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
-                receiver(decoded);
+                receiver(decoded, cb);
             }
         }
 
@@ -119,10 +121,11 @@ namespace Internal.Cryptography.Pal.Native
                     return false;
 
                 byte* decoded = stackalloc byte[cb];
+                new Span<byte>(decoded, cb).Clear();
                 if (!Interop.crypt32.CryptDecodeObjectPointer(CertEncodingType.All, lpszStructType, encoded, encoded.Length, CryptDecodeObjectFlags.None, (byte*)decoded, ref cb))
                     return false;
 
-                receiver(decoded);
+                receiver(decoded, cb);
             }
             return true;
         }

@@ -20,7 +20,7 @@ namespace System.Net.Http.Functional.Tests
 
     [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core.")]
-    public abstract class DiagnosticsTest : HttpClientTestBase
+    public abstract class DiagnosticsTest : HttpClientHandlerTestBase
     {
         [Fact]
         public static void EventSource_ExistsWithCorrectId()
@@ -88,7 +88,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
-                    diagnosticListenerObserver.Enable( s => !s.Contains("HttpRequestOut"));
+                    diagnosticListenerObserver.Enable(s => !s.Contains("HttpRequestOut"));
                     using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         client.GetAsync(Configuration.Http.RemoteEchoServer).Result.Dispose();
@@ -325,7 +325,7 @@ namespace System.Net.Http.Functional.Tests
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
                     if (kvp.Key.Equals("System.Net.Http.Request")) { requestLogged = true; }
-                    else if (kvp.Key.Equals("System.Net.Http.Response")) { responseLogged = true;}
+                    else if (kvp.Key.Equals("System.Net.Http.Response")) { responseLogged = true; }
                     else if (kvp.Key.Equals("System.Net.Http.Exception")) { exceptionLogged = true; }
                     else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Start"))
                     {
@@ -382,6 +382,57 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Fact]
+        public void SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteHeader()
+        {
+            RemoteInvoke(useSocketsHttpHandlerString =>
+            {
+                bool activityStartLogged = false;
+                bool activityStopLogged = false;
+
+                Activity parentActivity = new Activity("parent");
+                parentActivity.AddBaggage("correlationId", Guid.NewGuid().ToString());
+                parentActivity.Start();
+
+                string customRequestIdHeader = "|foo.bar.";
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
+                {
+                    if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Start"))
+                    {
+                        var request = GetPropertyValueFromAnonymousTypeInstance<HttpRequestMessage>(kvp.Value, "Request");
+                        request.Headers.Add("Request-Id", customRequestIdHeader);
+
+                        activityStartLogged = true;
+                    }
+                    else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop"))
+                    {
+                        var request = GetPropertyValueFromAnonymousTypeInstance<HttpRequestMessage>(kvp.Value, "Request");
+                        Assert.Single(request.Headers.GetValues("Request-Id"));
+                        Assert.Equal(customRequestIdHeader, request.Headers.GetValues("Request-Id").Single());
+                        activityStopLogged = true;
+                    }
+                });
+
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable();
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
+                    {
+                        client.GetAsync(Configuration.Http.RemoteEchoServer).Result.Dispose();
+                    }
+
+                    Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
+
+                    // Poll with a timeout since logging response is not synchronized with returning a response.
+                    WaitForTrue(() => activityStopLogged, TimeSpan.FromSeconds(1), "HttpRequestOut.Stop was not logged within 1 second timeout.");
+                    diagnosticListenerObserver.Disable();
+                }
+
+                return SuccessExitCode;
+            }, UseSocketsHttpHandler.ToString()).Dispose();
+        }
+
+        [OuterLoop("Uses external server")]
+        [Fact]
         public void SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging()
         {
             RemoteInvoke(useSocketsHttpHandlerString =>
@@ -391,8 +442,8 @@ namespace System.Net.Http.Functional.Tests
 
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
-                    if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Start")){activityStartLogged = true;}
-                    else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop")) {activityStopLogged = true;}
+                    if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Start")) { activityStartLogged = true; }
+                    else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop")) { activityStopLogged = true; }
                 });
 
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
@@ -570,7 +621,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (kvp.Key.Equals("System.Net.Http.Request")) { requestLogged = true; }
                     else if (kvp.Key.Equals("System.Net.Http.Response")) { responseLogged = true; }
-                    else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Start")) { activityStartLogged = true;}
+                    else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Start")) { activityStartLogged = true; }
                     else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop")) { activityStopLogged = true; }
                 });
 

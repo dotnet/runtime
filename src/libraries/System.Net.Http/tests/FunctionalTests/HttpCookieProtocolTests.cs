@@ -13,7 +13,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class HttpCookieProtocolTests : HttpClientTestBase
+    public abstract class HttpCookieProtocolTests : HttpClientHandlerTestBase
     {
         public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
 

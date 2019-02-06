@@ -8,8 +8,8 @@
 
   <PropertyGroup>
     <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">corefx</GitHubRepositoryName>
-    <AssetManifestFileName Condition="'$(AssetsManifestFileName)' == '' AND '$(ManifestBuildId)' != ''">$(GitHubRepositoryName)-$(ManifestBuildId)</AssetManifestFileName>
-    <AssetManifestFileName Condition="'$(AssetsManifestFileName)' == ''">$(GitHubRepositoryName)</AssetManifestFileName>
+    <AssetManifestFileName Condition="'$(AssetManifestFileName)' == '' AND '$(ManifestBuildId)' != ''">$(GitHubRepositoryName)-$(ManifestBuildId)</AssetManifestFileName>
+    <AssetManifestFileName Condition="'$(AssetManifestFileName)' == ''">$(GitHubRepositoryName)</AssetManifestFileName>
     <AssetManifestFilePath>$(ArtifactsDir)AssetManifests\$(AssetManifestFileName).xml</AssetManifestFilePath>
 
     <PackageOutputRoot Condition="'$(PackagesOutputRoot)' == ''">$(ArtifactsDir)/packages/</PackageOutputRoot>
@@ -19,6 +19,8 @@
 
     <SymbolsOutputRoot Condition="'$(SymbolsOutputRoot)' == ''">$(PackageOutputRoot)/symbols/</SymbolsOutputRoot>
     <SymbolsPublishPattern>$(SymbolsOutputRoot)*.nupkg</SymbolsPublishPattern>
+    <SymbolsPublishPrivatePattern>$(SymbolsOutputRoot)*Private*.nupkg</SymbolsPublishPrivatePattern>
+    <SymbolsPublishExperimentalPattern>$(SymbolsOutputRoot)*Experimental*.nupkg</SymbolsPublishExperimentalPattern>
   </PropertyGroup>
 
 
@@ -34,31 +36,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <SymbolPackagesToPublish  Include="$(SymbolsPublishPattern)">
+    <SymbolPackagesToPublish  Include="$(SymbolsPublishPrivatePattern);$(SymbolsPublishExperimentalPattern)">
       <ManifestArtifactData>NonShipping=true</ManifestArtifactData>
     </SymbolPackagesToPublish>
+    <SymbolPackagesToPublish Include="$(SymbolsPublishPattern)" Exclude="@(SymbolPackagesToPublish)" />
+
+    <PackagesToPublish Condition="'$(IncludeSymbolsOnPackagePublish)' == 'true'" Include="@(SymbolPackagesToPublish)" />
 
     <PublishSymbolsDependsOn Include="SetupPublishSymbols" />
   </ItemGroup>
-
-  <Target Name="PublishToAzureBlobFeed">
-    <Error Condition="'@(PackagesToPublish)'==''" Text="PackagesToPublish for packages is empty." />
-
-    <!-- Include Symbols when publishing to blob feed so that the manifest contains symbols and we send all the assets to BAR -->
-    <ItemGroup>
-      <PackagesToPublish Include="@(SymbolPackagesToPublish)" />
-    </ItemGroup>
-
-    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
-                    AccountKey="$(AccountKey)"
-                    ItemsToPush="@(PackagesToPublish)"
-                    Overwrite="$(PublishOverwrite)"
-                    AssetManifestPath="$(AssetManifestFilePath)"
-                    ManifestBuildId="$(ManifestBuildId)"
-                    ManifestBranch="$(ManifestBranch)"
-                    ManifestCommit="$(ManifestCommit)"
-                    ManifestRepoUri="$(ManifestRepoUri)" />
-  </Target>
 
   <Target Name="NuGetPush">
 

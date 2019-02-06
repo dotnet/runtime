@@ -150,11 +150,7 @@ namespace System.IO
 
             if (value > _capacity)
             {
-                int newCapacity = value;
-                if (newCapacity < 256)
-                {
-                    newCapacity = 256;
-                }
+                int newCapacity = Math.Max(value, 256);
 
                 // We are ok with this overflowing since the next statement will deal
                 // with the cases where _capacity*2 overflows.
@@ -167,7 +163,7 @@ namespace System.IO
                 // And we want to give the user the value that they asked for
                 if ((uint)(_capacity * 2) > Array.MaxByteArrayLength)
                 {
-                    newCapacity = value > Array.MaxByteArrayLength ? value : Array.MaxByteArrayLength;
+                    newCapacity = Math.Max(value, Array.MaxByteArrayLength);
                 }
 
                 Capacity = newCapacity;
@@ -230,18 +226,24 @@ namespace System.IO
             return _position;
         }
 
-        // PERF: Takes out Int32 as fast as possible
-        internal int InternalReadInt32()
+        // PERF: Expose internal buffer for BinaryReader instead of going via the regular Stream interface which requires to copy the data out
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<byte> InternalReadSpan(int count)
         {
             EnsureNotClosed();
 
-            int pos = (_position += 4); // use temp to avoid a race condition
-            if (pos > _length)
+            int origPos = _position;
+            int newPos = origPos + count;
+            
+            if ((uint)newPos > (uint)_length)
             {
                 _position = _length;
                 throw Error.GetEndOfFile();
             }
-            return (int)(_buffer[pos - 4] | _buffer[pos - 3] << 8 | _buffer[pos - 2] << 16 | _buffer[pos - 1] << 24);
+
+            var span = new ReadOnlySpan<byte>(_buffer, origPos, count);
+            _position = newPos;
+            return span;
         }
 
         // PERF: Get actual length of bytes available for read; do sanity checks; shift position - i.e. everything except actual copying bytes
@@ -418,7 +420,7 @@ namespace System.IO
             }
             catch (OperationCanceledException oce)
             {
-                return Task.FromCancellation<int>(oce);
+                return Task.FromCanceled<int>(oce);
             }
             catch (Exception exception)
             {
@@ -454,7 +456,7 @@ namespace System.IO
             }
             catch (OperationCanceledException oce)
             {
-                return new ValueTask<int>(Task.FromCancellation<int>(oce));
+                return new ValueTask<int>(Task.FromCanceled<int>(oce));
             }
             catch (Exception exception)
             {
@@ -531,8 +533,7 @@ namespace System.IO
                 return Task.CompletedTask;
 
             // If destination is not a memory stream, write there asynchronously:
-            MemoryStream memStrDest = destination as MemoryStream;
-            if (memStrDest == null)
+            if (!(destination is MemoryStream memStrDest))
                 return destination.WriteAsync(_buffer, pos, n, cancellationToken);
 
             try
@@ -744,7 +745,7 @@ namespace System.IO
             }
             catch (OperationCanceledException oce)
             {
-                return Task.FromCancellation<VoidTaskResult>(oce);
+                return Task.FromCanceled(oce);
             }
             catch (Exception exception)
             {
@@ -775,7 +776,7 @@ namespace System.IO
             }
             catch (OperationCanceledException oce)
             {
-                return new ValueTask(Task.FromCancellation<VoidTaskResult>(oce));
+                return new ValueTask(Task.FromCanceled(oce));
             }
             catch (Exception exception)
             {

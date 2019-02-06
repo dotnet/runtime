@@ -5,49 +5,41 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Specifies whether the property this attribute is bound to
-    ///       is read-only or read/write.</para>
+    /// Specifies whether the property this attribute is bound to
+    /// is read-only or read/write.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class ReadOnlyAttribute : Attribute
     {
         /// <summary>
-        ///    <para>
-        ///       Specifies that the property this attribute is bound to is read-only and
-        ///       cannot be modified in the server explorer. This <see langword='static '/>field is
-        ///       read-only.
-        ///    </para>
+        /// Specifies that the property this attribute is bound to is read-only and
+        /// cannot be modified in the server explorer.
+        /// This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly ReadOnlyAttribute Yes = new ReadOnlyAttribute(true);
 
         /// <summary>
-        ///    <para>
-        ///       Specifies that the property this attribute is bound to is read/write and can
-        ///       be modified at design time. This <see langword='static '/>field is read-only.
-        ///    </para>
+        /// Specifies that the property this attribute is bound to is read/write and can
+        /// be modified at design time. This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly ReadOnlyAttribute No = new ReadOnlyAttribute(false);
 
         /// <summary>
-        ///    <para>
-        ///       Specifies the default value for the <see cref='System.ComponentModel.ReadOnlyAttribute'/> , which is <see cref='System.ComponentModel.ReadOnlyAttribute.No'/>, that is,
-        ///       the property this attribute is bound to is read/write. This <see langword='static'/> field is read-only.
-        ///    </para>
+        /// Specifies the default value for the <see cref='System.ComponentModel.ReadOnlyAttribute'/>,
+        /// which is <see cref='System.ComponentModel.ReadOnlyAttribute.No'/>, that is, the
+        /// property this attribute is bound to is read/write.
+        /// This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly ReadOnlyAttribute Default = No;
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.ReadOnlyAttribute'/> class.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.ReadOnlyAttribute'/> class.
         /// </summary>
         public ReadOnlyAttribute(bool isReadOnly) => IsReadOnly = isReadOnly;
 
         /// <summary>
-        ///    <para>
-        ///       Gets a value indicating whether the property this attribute is bound to is
-        ///       read-only.
-        ///    </para>
+        /// Gets a value indicating whether the property this attribute is bound to is
+        /// read-only.
         /// </summary>
         public bool IsReadOnly { get; }
 

@@ -100,7 +100,12 @@ namespace Microsoft.Win32.SafeHandles
                 if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     retHandle.Dispose();
-                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
+                    throw new Interop.NetSecurityNative.GssApiException(
+                        status,
+                        minorStatus,
+                        (status == Interop.NetSecurityNative.Status.GSS_S_BAD_MECH && isNtlmOnly) ?
+                            SR.net_gssapi_ntlm_missing_plugin :
+                            null);
                 }
             }
 

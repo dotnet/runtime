@@ -273,7 +273,6 @@ namespace System.Collections.Concurrent
             ToList().CopyTo(array, index);
         }
 
-#pragma warning disable 0420 // No warning for Interlocked.xxx if compiled with new managed compiler (Roslyn)
         /// <summary>
         /// Inserts an object at the top of the <see cref="ConcurrentStack{T}"/>.
         /// </summary>
@@ -384,7 +383,7 @@ namespace System.Collections.Concurrent
             // Keep trying to CAS the existing head with the new node until we succeed.
             do
             {
-                spin.SpinOnce();
+                spin.SpinOnce(sleep1Threshold: -1);
                 // Reread the head and link our new node.
                 tail._next = _head;
             }
@@ -645,7 +644,7 @@ namespace System.Collections.Concurrent
                 // We failed to CAS the new head.  Spin briefly and retry.
                 for (int i = 0; i < backoff; i++)
                 {
-                    spin.SpinOnce();
+                    spin.SpinOnce(sleep1Threshold: -1);
                 }
 
                 if (spin.NextSpinWillYield)
@@ -662,7 +661,6 @@ namespace System.Collections.Concurrent
                 }
             }
         }
-#pragma warning restore 0420
 
         /// <summary>
         /// Local helper function to copy the popped elements into a given collection
