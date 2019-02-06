@@ -2,7 +2,7 @@
 <Theme xmlns="http://wixtoolset.org/schemas/thmutil/2010">
   <Window Width="660" Height="468" HexStyle="100a0000" FontId="0">#(loc.Caption)</Window>
     <Font Id="0" Height="-12" Weight="500" Foreground="000000" Background="FFFFFF">Segoe UI</Font>
-    <Font Id="1" Height="-24" Weight="900" Foreground="FFFFFF" Background="682079">Segoe UI</Font>
+    <Font Id="1" Height="-24" Weight="900" Foreground="FFFFFF" Background="D42B51">Segoe UI</Font>
     <Font Id="2" Height="-22" Weight="500" Foreground="666666">Segoe UI</Font>
     <Font Id="3" Height="-12" Weight="500" Foreground="000000" Background="FFFFFF">Segoe UI</Font>
     <Font Id="4" Height="-12" Weight="500" Foreground="ff0000" Background="FFFFFF" Underline="yes">Segoe UI</Font>
