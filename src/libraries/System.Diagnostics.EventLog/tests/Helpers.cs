@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.Eventing.Reader;
 using System.Threading;
 using Xunit;
 
@@ -13,8 +14,9 @@ namespace System.Diagnostics.Tests
 {
     internal class Helpers
     {
+        public static bool NotElevatedAndSupportsEventLogs { get => !AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
         public static bool IsElevatedAndSupportsEventLogs { get => AdminHelpers.IsProcessElevated() && SupportsEventLogs; }
-        public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoServer; }
+        public static bool SupportsEventLogs { get => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsNotWindowsIoTCore; }
 
         public static void RetryOnWin7(Action func)
         {
@@ -81,6 +83,14 @@ namespace System.Diagnostics.Tests
                 Console.WriteLine($"{stopwatch.ElapsedMilliseconds / 1000 } seconds");
 
             Assert.Equal(entriesExpected, RetryOnWin7((() => eventLog.Entries.Count)));
+        }
+
+        internal static EventBookmark GetBookmark(string log, PathType pathType)
+        {
+            var elq = new EventLogQuery(log, pathType) { ReverseDirection = true };
+            var reader = new EventLogReader(elq);
+            EventRecord record = reader.ReadEvent();
+            return record?.Bookmark;
         }
     }
 }

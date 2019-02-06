@@ -5,6 +5,7 @@
     <RootNamespace>
     </RootNamespace>
     <!-- CommonStrings needs RootNamespace to be empty -->
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>

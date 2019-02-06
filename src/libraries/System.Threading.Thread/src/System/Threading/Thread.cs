@@ -15,12 +15,12 @@ namespace System.Threading
     {
         [ThreadStatic]
         private static Thread t_currentThread;
+        private static AsyncLocal<IPrincipal> s_asyncLocalPrincipal;
 
         private readonly RuntimeThread _runtimeThread;
         private Delegate _start;
         private CultureInfo _startCulture;
         private CultureInfo _startUICulture;
-        private IPrincipal _principal;
 
         private Thread(RuntimeThread runtimeThread)
         {
@@ -190,11 +190,23 @@ namespace System.Threading
         {
             get
             {
-                return CurrentThread._principal ?? (CurrentThread._principal = AppDomain.CurrentDomain.GetThreadPrincipal());
+                if (s_asyncLocalPrincipal is null)
+                {
+                    CurrentPrincipal = AppDomain.CurrentDomain.GetThreadPrincipal();
+                }
+                return s_asyncLocalPrincipal?.Value;
             }
             set
             {
-                CurrentThread._principal = value;
+                if (s_asyncLocalPrincipal is null)
+                {
+                    if (value is null)
+                    {
+                        return;
+                    }
+                    Interlocked.CompareExchange(ref s_asyncLocalPrincipal, new AsyncLocal<IPrincipal>(), null);
+                }
+                s_asyncLocalPrincipal.Value = value;
             }
         }
 

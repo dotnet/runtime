@@ -93,43 +93,29 @@ namespace System.Data.SqlClient.SNI
         /// <param name="flags">SMUX header flags</param>
         private void SendControlPacket(SNISMUXFlags flags)
         {
-            byte[] headerBytes = null;
-
+            Span<byte> headerBytes = stackalloc byte[SNISMUXHeader.HEADER_LENGTH];
             lock (this)
             {
-                GetSMUXHeaderBytes(0, (byte)flags, ref headerBytes);
+                GetSMUXHeaderBytes(0, flags, headerBytes);
             }
 
-            SNIPacket packet = new SNIPacket();
-            packet.SetData(headerBytes, SNISMUXHeader.HEADER_LENGTH);
+            SNIPacket packet = new SNIPacket(SNISMUXHeader.HEADER_LENGTH);
+            packet.AppendData(headerBytes);
             
             _connection.Send(packet);
         }
 
-        /// <summary>
-        /// Generate SMUX header 
-        /// </summary>
-        /// <param name="length">Packet length</param>
-        /// <param name="flags">Packet flags</param>
-        /// <param name="headerBytes">Header in bytes</param>
-        private void GetSMUXHeaderBytes(int length, byte flags, ref byte[] headerBytes)
+        private void GetSMUXHeaderBytes(int length, SNISMUXFlags flags, Span<byte> bytes)
         {
-            headerBytes = new byte[SNISMUXHeader.HEADER_LENGTH];
-
             _currentHeader.SMID = 83;
-            _currentHeader.flags = flags;
+            _currentHeader.flags = (byte)flags;
             _currentHeader.sessionId = _sessionId;
             _currentHeader.length = (uint)SNISMUXHeader.HEADER_LENGTH + (uint)length;
-            _currentHeader.sequenceNumber = ((flags == (byte)SNISMUXFlags.SMUX_FIN) || (flags == (byte)SNISMUXFlags.SMUX_ACK)) ? _sequenceNumber - 1 : _sequenceNumber++;
+            _currentHeader.sequenceNumber = ((flags == SNISMUXFlags.SMUX_FIN) || (flags == SNISMUXFlags.SMUX_ACK)) ? _sequenceNumber - 1 : _sequenceNumber++;
             _currentHeader.highwater = _receiveHighwater;
             _receiveHighwaterLastAck = _currentHeader.highwater;
 
-            BitConverter.GetBytes(_currentHeader.SMID).CopyTo(headerBytes, 0);
-            BitConverter.GetBytes(_currentHeader.flags).CopyTo(headerBytes, 1);
-            BitConverter.GetBytes(_currentHeader.sessionId).CopyTo(headerBytes, 2);
-            BitConverter.GetBytes(_currentHeader.length).CopyTo(headerBytes, 4);
-            BitConverter.GetBytes(_currentHeader.sequenceNumber).CopyTo(headerBytes, 8);
-            BitConverter.GetBytes(_currentHeader.highwater).CopyTo(headerBytes, 12);
+            _currentHeader.Write(bytes);
         }
 
         /// <summary>
@@ -140,14 +126,14 @@ namespace System.Data.SqlClient.SNI
         private SNIPacket GetSMUXEncapsulatedPacket(SNIPacket packet)
         {
             uint xSequenceNumber = _sequenceNumber;
-            byte[] headerBytes = null;
-            GetSMUXHeaderBytes(packet.Length, (byte)SNISMUXFlags.SMUX_DATA, ref headerBytes);
+            Span<byte> header = stackalloc byte[SNISMUXHeader.HEADER_LENGTH];
+            GetSMUXHeaderBytes(packet.Length, SNISMUXFlags.SMUX_DATA, header);
 
-            SNIPacket smuxPacket = new SNIPacket(16 + packet.Length);
-            smuxPacket.Description = string.Format("({0}) SMUX packet {1}", packet.Description == null ? "" : packet.Description, xSequenceNumber);
-            smuxPacket.AppendData(headerBytes, 16);
+
+            SNIPacket smuxPacket = new SNIPacket(SNISMUXHeader.HEADER_LENGTH + packet.Length);
+            smuxPacket.AppendData(header);
             smuxPacket.AppendPacket(packet);
-
+            packet.Dispose();
             return smuxPacket;
         }
 
@@ -175,8 +161,9 @@ namespace System.Data.SqlClient.SNI
                     _ackEvent.Reset();
                 }
             }
+            SNIPacket encapsulatedPacket = GetSMUXEncapsulatedPacket(packet);
 
-            return _connection.Send(GetSMUXEncapsulatedPacket(packet));
+            return _connection.Send(encapsulatedPacket);
         }
 
         /// <summary>
@@ -187,8 +174,6 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         private uint InternalSendAsync(SNIPacket packet, SNIAsyncCallback callback)
         {
-            SNIPacket encapsulatedPacket = null;
-
             lock (this)
             {
                 if (_sequenceNumber >= _sendHighwater)
@@ -196,7 +181,7 @@ namespace System.Data.SqlClient.SNI
                     return TdsEnums.SNI_QUEUE_FULL;
                 }
 
-                encapsulatedPacket = GetSMUXEncapsulatedPacket(packet);
+                SNIPacket encapsulatedPacket = GetSMUXEncapsulatedPacket(packet);
 
                 if (callback != null)
                 {

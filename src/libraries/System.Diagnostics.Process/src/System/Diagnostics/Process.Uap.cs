@@ -22,5 +22,7 @@ namespace System.Diagnostics
         public bool Responding => true;
 
         private bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
+
+        public void Kill(bool entireProcessTree) => throw new PlatformNotSupportedException();
     }
 }

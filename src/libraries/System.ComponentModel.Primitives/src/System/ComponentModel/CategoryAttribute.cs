@@ -5,8 +5,8 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Specifies the category in which the property or event will be displayed in a
-    ///       visual designer.</para>
+    /// Specifies the category in which the property or event will be displayed in a
+    /// visual designer.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public class CategoryAttribute : Attribute
@@ -31,234 +31,133 @@ namespace System.ComponentModel
         private object _locker = new object();
 
         /// <summary>
-        ///    <para>
-        ///       Provides the actual category name.
-        ///    </para>
+        /// Provides the actual category name.
         /// </summary>
         private string _categoryValue;
 
         /// <summary>
-        ///    <para>Gets the action category attribute.</para>
+        /// Gets the action category attribute.
         /// </summary>
         public static CategoryAttribute Action
         {
-            get
-            {
-                if (s_action == null)
-                {
-                    s_action = new CategoryAttribute(nameof(Action));
-                }
-                return s_action;
-            }
+            get => s_action ?? (s_action = new CategoryAttribute(nameof(Action)));
         }
 
         /// <summary>
-        ///    <para>Gets the appearance category attribute.</para>
+        /// Gets the appearance category attribute.
         /// </summary>
         public static CategoryAttribute Appearance
         {
-            get
-            {
-                if (s_appearance == null)
-                {
-                    s_appearance = new CategoryAttribute(nameof(Appearance));
-                }
-                return s_appearance;
-            }
+            get => s_appearance ?? (s_appearance = new CategoryAttribute(nameof(Appearance)));
         }
 
         /// <summary>
-        ///    <para>Gets the asynchronous category attribute.</para>
+        /// Gets the asynchronous category attribute.
         /// </summary>
         public static CategoryAttribute Asynchronous
         {
-            get
-            {
-                if (s_asynchronous == null)
-                {
-                    s_asynchronous = new CategoryAttribute(nameof(Asynchronous));
-                }
-                return s_asynchronous;
-            }
+            get => s_asynchronous ?? (s_asynchronous = new CategoryAttribute(nameof(Asynchronous)));
         }
 
         /// <summary>
-        ///    <para>Gets the behavior category attribute.</para>
+        /// Gets the behavior category attribute.
         /// </summary>
         public static CategoryAttribute Behavior
         {
-            get
-            {
-                if (s_behavior == null)
-                {
-                    s_behavior = new CategoryAttribute(nameof(Behavior));
-                }
-                return s_behavior;
-            }
+            get => s_behavior ?? (s_behavior = new CategoryAttribute(nameof(Behavior)));
         }
 
         /// <summary>
-        ///    <para>Gets the data category attribute.</para>
+        /// Gets the data category attribute.
         /// </summary>
         public static CategoryAttribute Data
         {
-            get
-            {
-                if (s_data == null)
-                {
-                    s_data = new CategoryAttribute(nameof(Data));
-                }
-                return s_data;
-            }
+            get => s_data ?? (s_data = new CategoryAttribute(nameof(Data)));
         }
 
         /// <summary>
-        ///    <para>Gets the default category attribute.</para>
+        /// Gets the default category attribute.
         /// </summary>
         public static CategoryAttribute Default
         {
-            get
-            {
-                if (s_defAttr == null)
-                {
-                    s_defAttr = new CategoryAttribute();
-                }
-                return s_defAttr;
-            }
+            get => s_defAttr ?? (s_defAttr = new CategoryAttribute());
         }
 
         /// <summary>
-        ///    <para>Gets the design category attribute.</para>
+        /// Gets the design category attribute.
         /// </summary>
         public static CategoryAttribute Design
         {
-            get
-            {
-                if (s_design == null)
-                {
-                    s_design = new CategoryAttribute(nameof(Design));
-                }
-                return s_design;
-            }
+            get => s_design ?? (s_design = new CategoryAttribute(nameof(Design)));
         }
 
         /// <summary>
-        ///    <para>Gets the drag and drop category attribute.</para>
+        /// Gets the drag and drop category attribute.
         /// </summary>
         public static CategoryAttribute DragDrop
         {
-            get
-            {
-                if (s_dragDrop == null)
-                {
-                    s_dragDrop = new CategoryAttribute(nameof(DragDrop));
-                }
-                return s_dragDrop;
-            }
+            get => s_dragDrop ?? (s_dragDrop = new CategoryAttribute(nameof(DragDrop)));
         }
 
         /// <summary>
-        ///    <para>Gets the focus category attribute.</para>
+        /// Gets the focus category attribute.
         /// </summary>
         public static CategoryAttribute Focus
         {
-            get
-            {
-                if (s_focus == null)
-                {
-                    s_focus = new CategoryAttribute(nameof(Focus));
-                }
-                return s_focus;
-            }
+            get => s_focus ?? (s_focus = new CategoryAttribute(nameof(Focus)));
         }
 
         /// <summary>
-        ///    <para>Gets the format category attribute.</para>
+        /// Gets the format category attribute.
         /// </summary>
         public static CategoryAttribute Format
         {
-            get
-            {
-                if (s_format == null)
-                {
-                    s_format = new CategoryAttribute(nameof(Format));
-                }
-                return s_format;
-            }
+            get => s_format ?? (s_format = new CategoryAttribute(nameof(Format)));
         }
 
         /// <summary>
-        ///    <para>Gets the keyboard category attribute.</para>
+        /// Gets the keyboard category attribute.
         /// </summary>
         public static CategoryAttribute Key
         {
-            get
-            {
-                if (s_key == null)
-                {
-                    s_key = new CategoryAttribute(nameof(Key));
-                }
-                return s_key;
-            }
+            get => s_key ?? (s_key = new CategoryAttribute(nameof(Key)));
         }
 
         /// <summary>
-        ///    <para>Gets the layout category attribute.</para>
+        /// Gets the layout category attribute.
         /// </summary>
         public static CategoryAttribute Layout
         {
-            get
-            {
-                if (s_layout == null)
-                {
-                    s_layout = new CategoryAttribute(nameof(Layout));
-                }
-                return s_layout;
-            }
+            get => s_layout ?? (s_layout = new CategoryAttribute(nameof(Layout)));
         }
 
         /// <summary>
-        ///    <para>Gets the mouse category attribute.</para>
+        /// Gets the mouse category attribute.
         /// </summary>
         public static CategoryAttribute Mouse
         {
-            get
-            {
-                if (s_mouse == null)
-                {
-                    s_mouse = new CategoryAttribute(nameof(Mouse));
-                }
-                return s_mouse;
-            }
+            get => s_mouse ?? (s_mouse = new CategoryAttribute(nameof(Mouse)));
         }
 
         /// <summary>
-        ///    <para> Gets the window style category 
-        ///       attribute.</para>
+        /// Gets the window style category attribute.
         /// </summary>
         public static CategoryAttribute WindowStyle
         {
-            get
-            {
-                if (s_windowStyle == null)
-                {
-                    s_windowStyle = new CategoryAttribute(nameof(WindowStyle));
-                }
-                return s_windowStyle;
-            }
+            get => s_windowStyle ?? (s_windowStyle = new CategoryAttribute(nameof(WindowStyle)));
         }
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/> 
-        /// class with the default category.</para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/> 
+        /// class with the default category.
         /// </summary>
         public CategoryAttribute() : this(nameof(Default))
         {
         }
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/> class with
-        ///    the specified category name.</para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/>
+        /// class with the specified category name.
         /// </summary>
         public CategoryAttribute(string category)
         {
@@ -266,8 +165,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Gets the name of the category for the property or event 
-        ///       that this attribute is bound to.</para>
+        /// Gets the name of the category for the property or event that this attribute is
+        /// bound to.
         /// </summary>
         public string Category
         {
@@ -305,7 +204,7 @@ namespace System.ComponentModel
         public override int GetHashCode() => Category.GetHashCode();
 
         /// <summary>
-        ///    <para>Looks up the localized name of a given category.</para>
+        /// Looks up the localized name of a given category.
         /// </summary>
         protected virtual string GetLocalizedString(string value) => SR.GetResourceString("PropertyCategory" + value, null);
 

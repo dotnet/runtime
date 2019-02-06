@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Common.Tests;
 using System.ComponentModel.Composition.Factories;
 using System.ComponentModel.Composition.Primitives;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -16,7 +17,7 @@ using Xunit;
 namespace System.ComponentModel.Composition
 {
     [Serializable]
-    public class CompositionExceptionTests
+    public class CompositionExceptionTests : RemoteExecutorTestBase
     {
         [Fact]
         public void Constructor1_ShouldSetMessagePropertyToDefault()
@@ -368,22 +369,25 @@ namespace System.ComponentModel.Composition
         [Fact]
         public void Message_ShouldFormatCountOfRootCausesUsingTheCurrentCulture()
         {
-            IEnumerable<CultureInfo> cultures = Expectations.GetCulturesForFormatting();
-
-            foreach (CultureInfo culture in cultures)
+            RemoteInvoke(() =>
             {
-                // Save old culture and set a fixed culture for object instantiation
-                using (new ThreadCultureChange(culture))
+                IEnumerable<CultureInfo> cultures = Expectations.GetCulturesForFormatting();
+                foreach (CultureInfo culture in cultures)
                 {
-                    CompositionError[] errors = CreateCompositionErrors(1000);
-                    CompositionException exception = CreateCompositionException(errors);
-                    AssertMessage(exception, 1000, culture);
+                    // Save old culture and set a fixed culture for object instantiation
+                    using (new ThreadCultureChange(culture))
+                    {
+                        CompositionError[] errors = CreateCompositionErrors(1000);
+                        CompositionException exception = CreateCompositionException(errors);
+                        AssertMessage(exception, 1000, culture);
 
-                    errors = CreateCompositionErrors(1);
-                    exception = CreateCompositionException(errors);
-                    AssertMessage(exception, 1, culture);
+                        errors = CreateCompositionErrors(1);
+                        exception = CreateCompositionException(errors);
+                        AssertMessage(exception, 1, culture);
+                    }
                 }
-            }
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         private string GetElementGraphString(CompositionError error)

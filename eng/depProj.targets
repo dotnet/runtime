@@ -36,8 +36,6 @@ See the LICENSE file in the project root for more information.
   <PropertyGroup>
     <!-- Always raise runtime/lib items even for frameworks that may not use them -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <!-- Don't reference implicit framework packages, depprojs are meant to be wholy explicit -->
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <!-- We don't need the SDK to validate that we get runtime packages -->
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
     <!-- don't generate netcoreapp files -->

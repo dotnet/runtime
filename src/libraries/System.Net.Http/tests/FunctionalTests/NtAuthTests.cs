@@ -48,13 +48,21 @@ namespace System.Net.Http.Functional.Tests
                 {
                     // Ignore.
                 }
+                catch (ObjectDisposedException)
+                {
+                    // Ignore.
+                }
+                catch (InvalidOperationException)
+                {
+                    // Ignore.
+                }
             });
         }
 
         public void Dispose()
         {
             _listener.Stop();
-            _serverTask.Wait();
+            _serverTask.Wait(TestHelper.PassingTestTimeoutMilliseconds);
         }
 
         public string BaseUrl { get; private set; }

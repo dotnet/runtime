@@ -252,7 +252,7 @@ namespace System.Xml
         }
         private static int ComputeHash32(char[] key, int start, int len)
         {
-            ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(key.AsSpan(start, len));
+            ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(new ReadOnlySpan<char>(key, start, len));
             return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
         }
     }

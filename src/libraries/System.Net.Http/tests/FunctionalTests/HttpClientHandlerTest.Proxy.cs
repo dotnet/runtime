@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
-    public abstract class HttpClientHandler_Proxy_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_Proxy_Test : HttpClientHandlerTestBase
     {
         private readonly ITestOutputHelper _output;
         

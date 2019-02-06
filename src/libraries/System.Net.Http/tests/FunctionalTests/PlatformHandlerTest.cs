@@ -21,11 +21,6 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
-    public sealed class PlatformHandler_HttpClientTest : HttpClientTest
-    {
-        protected override bool UseSocketsHttpHandler => false;
-    }
-
     public sealed class PlatformHandler_DiagnosticsTest : DiagnosticsTest
     {
         protected override bool UseSocketsHttpHandler => false;
@@ -112,6 +107,12 @@ namespace System.Net.Http.Functional.Tests
     public sealed class PlatformHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public PlatformHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
+    public sealed class PlatformHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
+    {
+        public PlatformHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
         protected override bool UseSocketsHttpHandler => false;
     }
 

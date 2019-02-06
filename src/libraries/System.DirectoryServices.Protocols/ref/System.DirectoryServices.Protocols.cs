@@ -643,4 +643,3 @@ namespace System.DirectoryServices.Protocols {
     public int TargetPosition { get { return default(int); } }
   }
 }
-
