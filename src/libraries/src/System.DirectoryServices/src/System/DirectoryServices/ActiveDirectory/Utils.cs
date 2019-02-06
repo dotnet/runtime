@@ -6,7 +6,6 @@ using System.Text;
 using System.Net;
 using System.Collections;
 using System.Security.Principal;
-using System.Security.Permissions;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Globalization;

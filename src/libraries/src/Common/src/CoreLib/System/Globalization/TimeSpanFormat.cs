@@ -400,7 +400,7 @@ namespace System.Globalization
 
                         tmp = fraction;
                         tmp /= TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
-                        result.Append((tmp).ToString(DateTimeFormat.fixedNumberFormats[tokenLen - 1], CultureInfo.InvariantCulture));
+                        result.AppendSpanFormattable(tmp, DateTimeFormat.fixedNumberFormats[tokenLen - 1], CultureInfo.InvariantCulture);
                         break;
                     case 'F':
                         //
@@ -429,7 +429,7 @@ namespace System.Globalization
                         }
                         if (effectiveDigits > 0)
                         {
-                            result.Append((tmp).ToString(DateTimeFormat.fixedNumberFormats[effectiveDigits - 1], CultureInfo.InvariantCulture));
+                            result.AppendSpanFormattable(tmp, DateTimeFormat.fixedNumberFormats[effectiveDigits - 1], CultureInfo.InvariantCulture);
                         }
                         break;
                     case 'd':

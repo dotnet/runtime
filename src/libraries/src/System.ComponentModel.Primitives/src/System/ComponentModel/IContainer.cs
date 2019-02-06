@@ -6,44 +6,37 @@ using System.Runtime.InteropServices;
 
 namespace System.ComponentModel
 {
-    /*
-     * A "container" is an object that logically contains zero or more child
-     * components.
-     *
-     * In this context, "containment" refers to logical containment, not visual
-     * containment.  Components and containers can be used in a variety of
-     * scenarios, including both visual and non-visual scenarios.
-     */
-
     /// <summary>
-    ///    <para>Provides
-    ///       functionality for containers. Containers are objects that logically contain zero or more components.</para>
+    /// A "container" is an object that logically contains zero or more child
+    /// components.
+    /// In this context, "containment" refers to logical containment, not visual
+    /// containment. Components and containers can be used in a variety of
+    /// scenarios, including both visual and non-visual scenarios.
+    /// Provides functionality for containers.
     /// </summary>
     public interface IContainer : IDisposable
     {
-        // Adds a component to the container.
         /// <summary>
-        /// <para>Adds the specified <see cref='System.ComponentModel.IComponent'/> to the <see cref='System.ComponentModel.IContainer'/>
-        /// at the end of the list.</para>
+        /// Adds the specified <see cref='System.ComponentModel.IComponent'/> to the
+        /// <see cref='System.ComponentModel.IContainer'/> at the end of the list.
         /// </summary>
         void Add(IComponent component);
 
         //  Adds a component to the container.
         /// <summary>
-        /// <para>Adds the specified <see cref='System.ComponentModel.IComponent'/> to the <see cref='System.ComponentModel.IContainer'/>
-        /// at the end of the list, and assigns a name to the component.</para>
+        /// Adds the specified <see cref='System.ComponentModel.IComponent'/> to the
+        /// <see cref='System.ComponentModel.IContainer'/> at the end of the list,
+        /// and assigns a name to the component.
         /// </summary>
         void Add(IComponent component, string name);
 
-        // The components in the container.
         /// <summary>
-        /// <para>Gets all the components in the <see cref='System.ComponentModel.IContainer'/>.</para>
+        /// Gets all the components in the <see cref='System.ComponentModel.IContainer'/>.
         /// </summary>
         ComponentCollection Components { get; }
 
-        // Removes a component from the container.
         /// <summary>
-        /// <para>Removes a component from the <see cref='System.ComponentModel.IContainer'/>.</para>
+        /// Removes a component from the <see cref='System.ComponentModel.IContainer'/>.
         /// </summary>
         void Remove(IComponent component);
     }

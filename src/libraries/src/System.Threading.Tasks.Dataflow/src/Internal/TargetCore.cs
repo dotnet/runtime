@@ -155,8 +155,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     Debug.Assert(_numberOfOutstandingOperations > 0 || !storeExceptionEvenIfAlreadyCompleting,
                                 "Calls with storeExceptionEvenIfAlreadyCompleting==true may only be coming from processing task.");
-
-#pragma warning disable 0420
                     Common.AddException(ref _exceptions, exception, unwrapInnerExceptions);
                 }
 

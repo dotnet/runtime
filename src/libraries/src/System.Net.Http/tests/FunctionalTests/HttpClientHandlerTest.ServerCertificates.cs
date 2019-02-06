@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws PNSE for ServerCertificateCustomValidationCallback")]
-    public abstract partial class HttpClientHandler_ServerCertificates_Test : HttpClientTestBase
+    public abstract partial class HttpClientHandler_ServerCertificates_Test : HttpClientHandlerTestBase
     {
         private static bool ClientSupportsDHECipherSuites => (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1607OrGreater);
         private bool BackendSupportsCustomCertificateHandlingAndClientSupportsDHECipherSuites =>

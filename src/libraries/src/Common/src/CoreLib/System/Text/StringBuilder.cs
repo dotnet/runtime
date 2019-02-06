@@ -1179,6 +1179,17 @@ namespace System.Text
             return Append(value.ToString());
         }
 
+        internal StringBuilder AppendSpanFormattable<T>(T value, string format, IFormatProvider provider) where T : ISpanFormattable, IFormattable
+        {
+            if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format, provider))
+            {
+                m_ChunkLength += charsWritten;
+                return this;
+            }
+
+            return Append(value.ToString(format, provider));
+        }
+
         public StringBuilder Append(object value) => (value == null) ? this : Append(value.ToString());
 
         public StringBuilder Append(char[] value)

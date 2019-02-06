@@ -10,12 +10,10 @@ namespace System.Runtime.Serialization
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SerializationException : SystemException
     {
-        private static string s_nullMessage = SR.SerializationException;
-
         // Creates a new SerializationException with its message 
         // string set to a default message.
         public SerializationException()
-            : base(s_nullMessage)
+            : base(SR.SerializationException)
         {
             HResult = HResults.COR_E_SERIALIZATION;
         }

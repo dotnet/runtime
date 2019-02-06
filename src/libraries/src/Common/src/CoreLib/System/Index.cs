@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System
 {
     public readonly struct Index : IEquatable<Index>
@@ -28,10 +30,15 @@ namespace System
             return _value;
         }
 
-        public override string ToString()
+        public override string ToString() => FromEnd ? ToStringFromEnd() : ((uint)Value).ToString();
+
+        private string ToStringFromEnd()
         {
-            string str = Value.ToString();
-            return FromEnd ? "^" + str : str;
+            Span<char> span = stackalloc char[11]; // 1 for ^ and 10 for longest possible uint value
+            bool formatted = ((uint)Value).TryFormat(span.Slice(1), out int charsWritten);
+            Debug.Assert(formatted);
+            span[0] = '^';
+            return new string(span.Slice(0, charsWritten + 1));
         }
 
         public static implicit operator Index(int value)

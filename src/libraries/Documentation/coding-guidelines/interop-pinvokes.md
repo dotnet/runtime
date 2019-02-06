@@ -24,11 +24,11 @@ Attributes
 | [`ExactSpelling`][4] | `true`             | Set this to true (default is false) and gain a slight perf benefit as the framework will avoid looking for an "A" or "W" version. (See NDirectMethodDesc::FindEntryPoint).|
 | [`CharSet`][5]       | Explicitly  use `CharSet.Unicode` or `CharSet.Ansi` when strings are present in the definition | This specifies marshalling behavior of strings and what `ExactSpelling` does when `false`. Be explicit with this one as the documented default is `CharSet.Ansi`. Note that `CharSet.Ansi` is actually UTF8 on Unix (`CharSet.Utf8` is coming). _Most_ of the time Windows uses Unicode while Unix uses UTF8. |
 
-[1]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.aspx "MSDN"
-[2]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.preservesig.aspx "MSDN"
-[3]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.setlasterror.aspx "MSDN"
-[4]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.exactspelling.aspx "MSDN"
-[5]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.charset.aspx "MSDN"
+[1]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.aspx
+[2]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.preservesig.aspx
+[3]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.setlasterror.aspx
+[4]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.exactspelling.aspx
+[5]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.charset.aspx
 
 Strings
 -------
@@ -56,7 +56,7 @@ If you *do* use `StringBuilder` one last gotcha is that the capacity does **not*
 
 **[USE]** Char arrays from `ArrayPool` or `StringBuffer`.
 
-[Default Marshalling for Strings](https://msdn.microsoft.com/en-us/library/s9ts558h.aspx "MSDN")
+[Default Marshalling for Strings](https://msdn.microsoft.com/en-us/library/s9ts558h.aspx)
 
 > ### Windows Specific
 
@@ -70,7 +70,7 @@ as `UnmanagedType.BSTR`.
 > - Pass in 5, get 4: The string is 4 characters long with a trailing null.
 > - Pass in 5, get 6: The string is 5 characters long, need a 6 character buffer to hold the null.
 
-> [Windows Data Types for Strings](http://msdn.microsoft.com/en-us/library/dd374131.aspx "MSDN")
+> [Windows Data Types for Strings](http://msdn.microsoft.com/en-us/library/dd374131.aspx)
 
 Booleans
 --------
@@ -79,7 +79,7 @@ Booleans are easy to mess up. The default marshalling for P/Invoke is as the Win
 
 `bool` is not a blittable type (see blitting below). As such, when defining structs it is recommended to use `Interop.BOOL.cs` for `BOOL` to get the best performance.
 
-[Default Marshalling for Boolean Types](https://msdn.microsoft.com/en-us/library/t2t3725f.aspx "MSDN")  
+[Default Marshalling for Boolean Types](https://msdn.microsoft.com/en-us/library/t2t3725f.aspx)  
 
 Guids
 -----
@@ -95,43 +95,51 @@ Guids are usable directly in signatures. When passed by ref they can either be p
 Common Data Types
 -----------------
 
+The following types are the same size on 32-bit and 64-bit Windows, despite their names. (In contrast
+to Unix, where some of these types are wider on 64-bit, for example native `long` becomes 64-bit.)
 
-|Windows        | C                 | C#    | Alternative |
-|---------------|-------------------|-------|-------------|
-|`BOOL`           |`int`                |`int`    |`bool`
-|`BOOLEAN`        |`unsigned char`      |`byte`   |`[MarshalAs(UnmanagedType.U1)] bool`
-|`BYTE`           |`unsigned char`      |`byte` | |
-|`CHAR`           |`char`               |`sbyte` | |
-|`UCHAR`          |`unsigned char`      |`byte` | |
-|`SHORT`          |`short`              |`short` | |
-|`CSHORT`         |`short`              |`short` | |
-|`USHORT`         |`unsigned short`     |`ushort` | |
-|`WORD`           |`unsigned short`     |`ushort` | |
-|`ATOM`           |`unsigned short`     |`ushort` | |
-|`INT`            |`int`                |`int` | |
-|`LONG`           |`long`               |`int` | |
-|`ULONG`          |`unsigned long`      |`uint` | |
-|`DWORD`          |`unsigned long`      |`uint` | |
-|`LARGE_INTEGER`  |`__int64`            |`long` | |
-|`LONGLONG`       |`__int64`            |`long` | |
-|`ULONGLONG`      |`unsigned __int64`   |`ulong` | |
-|`ULARGE_INTEGER` |`unsigned __int64`   |`ulong` | |
-|`UCHAR`          |`unsigned char`      |`byte` | |
-|`HRESULT`        |`long`               |`int` | |
+| Width | Windows          | C                  | C#       | Alternative                          |
+|:------|:-----------------|:-------------------|:---------|:-------------------------------------|
+| 32    | `BOOL`           | `int`              | `int`    | `bool`                               |
+| 8     | `BOOLEAN`        | `unsigned char`    | `byte`   | `[MarshalAs(UnmanagedType.U1)] bool` |
+| 8     | `BYTE`           | `unsigned char`    | `byte`   |                                      |
+| 8     | `CHAR`           | `char`             | `sbyte`  |                                      |
+| 8     | `UCHAR`          | `unsigned char`    | `byte`   |                                      |
+| 16    | `SHORT`          | `short`            | `short`  |                                      |
+| 16    | `CSHORT`         | `short`            | `short`  |                                      |
+| 16    | `USHORT`         | `unsigned short`   | `ushort` |                                      |
+| 16    | `WORD`           | `unsigned short`   | `ushort` |                                      |
+| 16    | `ATOM`           | `unsigned short`   | `ushort` |                                      |
+| 32    | `INT`            | `int`              | `int`    |                                      |
+| 32    | `LONG`           | `long`             | `int`    |                                      |
+| 32    | `ULONG`          | `unsigned long`    | `uint`   |                                      |
+| 32    | `DWORD`          | `unsigned long`    | `uint`   |                                      |
+| 64    | `QWORD`          | `__int64`          | `long`   |                                      |
+| 64    | `LARGE_INTEGER`  | `__int64`          | `long`   |                                      |
+| 64    | `LONGLONG`       | `__int64`          | `long`   |                                      |
+| 64    | `ULONGLONG`      | `unsigned __int64` | `ulong`  |                                      |
+| 64    | `ULARGE_INTEGER` | `unsigned __int64` | `ulong`  |                                      |
+| 32    | `HRESULT`        | `long`             | `int`    |                                      |
+| 32    | `NTSTATUS`       | `long`             | `int`    |                                      |
 
 
-| Signed Pointer Types (`IntPtr`) | Unsigned Pointer Types (`UIntPtr`) |
-|----------------------------------|-------------------------------------|
-| `HANDLE` | `WPARAM` |
-| `HWND` | `UINT_PTR` |
-| `HINSTANCE` | `ULONG_PTR` |
-| `LPARAM` | `SIZE_T` |
-| `LRESULT` | |
-| `LONG_PTR` | |
-| `INT_PTR` | |
+The following types, being pointers, do follow the width of the platform. Use `IntPtr`/`UIntPtr` for these.
 
-[Windows Data Types](http://msdn.microsoft.com/en-us/library/aa383751.aspx "MSDN")  
-[Data Type Ranges](http://msdn.microsoft.com/en-us/library/s3f49ktz.aspx "MSDN")
+| Signed Pointer Types (use `IntPtr`) | Unsigned Pointer Types (use `UIntPtr`) |
+|:------------------------------------|:---------------------------------------|
+| `HANDLE`                            | `WPARAM`                               |
+| `HWND`                              | `UINT_PTR`                             |
+| `HINSTANCE`                         | `ULONG_PTR`                            |
+| `LPARAM`                            | `SIZE_T`                               |
+| `LRESULT`                           |                                        |
+| `LONG_PTR`                          |                                        |
+| `INT_PTR`                           |                                        |
+
+A Windows `PVOID` which is a C `void*` can be marshaled as either `IntPtr` or `UIntPtr` but we would prefer `void*`.
+
+[Windows Data Types](https://docs.microsoft.com/en-us/windows/desktop/WinProg/windows-data-types)
+
+[Data Type Ranges](https://docs.microsoft.com/en-us/cpp/cpp/data-type-ranges?view=vs-2017)
 
 Blittable Types
 ---------------
@@ -170,8 +178,8 @@ public struct UnicodeCharStruct
 You can see if a type is blittable by attempting to create a pinned `GCHandle`. If the type is not a string or considered blittable `GCHandle.Alloc` will throw an `ArgumentException`.
 
 
-[Blittable and Non-Blittable Types](https://msdn.microsoft.com/en-us/library/75dwhxf7.aspx "MSDN")  
-[Default Marshalling for Value Types](https://msdn.microsoft.com/en-us/library/0t2cwe11.aspx "MSDN")
+[Blittable and Non-Blittable Types](https://msdn.microsoft.com/en-us/library/75dwhxf7.aspx)  
+[Default Marshalling for Value Types](https://msdn.microsoft.com/en-us/library/0t2cwe11.aspx)
 
 Keeping Managed Objects Alive
 -----------------------------
@@ -179,7 +187,7 @@ Keeping Managed Objects Alive
 
 [`HandleRef`][6] allows the marshaller to keep an object alive for the duration of a P/Invoke. It can be used instead of `IntPtr` in method signatures. `SafeHandle` effectively replaces this class and should be used instead.
 
-[6]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.handleref.aspx "MSDN"
+[6]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.handleref.aspx
 
 [`GCHandle`][7] allows pinning a managed object and getting the native pointer to it. Basic pattern is:  
 
@@ -189,7 +197,7 @@ IntPtr ptr = handle.AddrOfPinnedObject();
 handle.Free();
 ```
 
-[7]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.gchandle.aspx "MSDN"
+[7]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.gchandle.aspx
 
 Pinning is not the default for `GCHandle`. The other major pattern is for passing a reference to a managed object through native code back to managed code (via a callback, typically). Here is the pattern:
 
@@ -218,11 +226,37 @@ Blittable structs are much more performant as they they can simply be used direc
 
 Pointers to structs in definitions must either be passed by `ref` or use `unsafe` and `*`.
 
+We always prefer to match the managed struct as closely as possible to the shape and names that are used in the official platform documentation or header.
+
+An array like `INT_PTR Reserved1[2]` has to be marshaled to two `IntPtr` fields, `Reserved1a` and `Reserved1b`. When the native array is a primitive type, we can use the `fixed` keyword to write it a little more cleanly. For example, `SYSTEM_PROCESS_INFORMATION` looks like this in the native header:
+
+```c
+typedef struct _SYSTEM_PROCESS_INFORMATION {
+    ULONG NextEntryOffset;
+    ULONG NumberOfThreads;
+    BYTE Reserved1[48];
+    UNICODE_STRING ImageName;
+...
+} SYSTEM_PROCESS_INFORMATION
+```
+
+In C#, we can write it like this:
+
+```c#
+    internal unsafe struct SYSTEM_PROCESS_INFORMATION
+    {
+        internal uint NextEntryOffset;
+        internal uint NumberOfThreads;
+        private fixed byte Reserved1[48];
+        internal Interop.UNICODE_STRING ImageName;
+        ...
+    }
+```
 
 Other References
 ----------------
 
-[MarshalAs Attribute](http://msdn.microsoft.com/en-us/library/system.runtime.interopservices.marshalasattribute.aspx "MSDN")  
-[GetLastError and managed code](http://blogs.msdn.com/b/adam_nathan/archive/2003/04/25/56643.aspx "MSDN")  
-[Copying and Pinning](https://msdn.microsoft.com/en-us/library/23acw07k.aspx "MSDN")  
+[MarshalAs Attribute](http://msdn.microsoft.com/en-us/library/system.runtime.interopservices.marshalasattribute.aspx)  
+[GetLastError and managed code](http://blogs.msdn.com/b/adam_nathan/archive/2003/04/25/56643.aspx)  
+[Copying and Pinning](https://msdn.microsoft.com/en-us/library/23acw07k.aspx)  
 [Marshalling between Managed and Unmanaged Code (MSDN Magazine January 2008)](http://download.microsoft.com/download/3/A/7/3A7FA450-1F33-41F7-9E6D-3AA95B5A6AEA/MSDNMagazineJanuary2008en-us.chm) *This is a .chm download*  

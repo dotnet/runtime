@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}</ProjectGuid>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

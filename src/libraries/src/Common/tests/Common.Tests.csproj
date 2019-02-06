@@ -67,8 +67,8 @@
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\PasteArguments.cs">
-      <Link>Common\System\PasteArguments.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
+      <Link>Common\CoreLib\System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
@@ -121,8 +121,8 @@
       <Link>Common\CoreLib\System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\Win32Marshal.Tests.cs" />
-    <Compile Include="..\src\System\PasteArguments.Windows.cs">
-      <Link>Common\System\PasteArguments.Windows.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Windows.cs">
+      <Link>Common\CoreLib\System\PasteArguments.Windows.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
@@ -136,8 +136,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="..\src\System\PasteArguments.Unix.cs">
-      <Link>Common\System\PasteArguments.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Unix.cs">
+      <Link>Common\CoreLib\System\PasteArguments.Unix.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

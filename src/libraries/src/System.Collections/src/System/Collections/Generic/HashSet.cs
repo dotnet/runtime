@@ -1360,17 +1360,10 @@ namespace System.Collections.Generic
             int originalLastIndex = _lastIndex;
             int intArrayLength = BitHelper.ToIntArrayLength(originalLastIndex);
 
-            BitHelper bitHelper;
-            if (intArrayLength <= StackAllocThreshold)
-            {
-                int* bitArrayPtr = stackalloc int[intArrayLength];
-                bitHelper = new BitHelper(bitArrayPtr, intArrayLength);
-            }
-            else
-            {
-                int[] bitArray = new int[intArrayLength];
-                bitHelper = new BitHelper(bitArray, intArrayLength);
-            }
+            Span<int> span = stackalloc int[StackAllocThreshold];
+            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
+                new BitHelper(span.Slice(0, intArrayLength), clear: true) :
+                new BitHelper(new int[intArrayLength], clear: false);
 
             // mark if contains: find index of in slots array and mark corresponding element in bit array
             foreach (T item in other)
@@ -1465,24 +1458,15 @@ namespace System.Collections.Generic
             int originalLastIndex = _lastIndex;
             int intArrayLength = BitHelper.ToIntArrayLength(originalLastIndex);
 
-            BitHelper itemsToRemove;
-            BitHelper itemsAddedFromOther;
-            if (intArrayLength <= StackAllocThreshold / 2)
-            {
-                int* itemsToRemovePtr = stackalloc int[intArrayLength];
-                itemsToRemove = new BitHelper(itemsToRemovePtr, intArrayLength);
+            Span<int> itemsToRemoveSpan = stackalloc int[StackAllocThreshold / 2];
+            BitHelper itemsToRemove = intArrayLength <= StackAllocThreshold / 2 ?
+                new BitHelper(itemsToRemoveSpan.Slice(0, intArrayLength), clear: true) :
+                new BitHelper(new int[intArrayLength], clear: false);
 
-                int* itemsAddedFromOtherPtr = stackalloc int[intArrayLength];
-                itemsAddedFromOther = new BitHelper(itemsAddedFromOtherPtr, intArrayLength);
-            }
-            else
-            {
-                int[] itemsToRemoveArray = new int[intArrayLength];
-                itemsToRemove = new BitHelper(itemsToRemoveArray, intArrayLength);
-
-                int[] itemsAddedFromOtherArray = new int[intArrayLength];
-                itemsAddedFromOther = new BitHelper(itemsAddedFromOtherArray, intArrayLength);
-            }
+            Span<int> itemsAddedFromOtherSpan = stackalloc int[StackAllocThreshold / 2];
+            BitHelper itemsAddedFromOther = intArrayLength <= StackAllocThreshold / 2 ?
+                new BitHelper(itemsAddedFromOtherSpan.Slice(0, intArrayLength), clear: true) :
+                new BitHelper(new int[intArrayLength], clear: false);
 
             foreach (T item in other)
             {
@@ -1629,17 +1613,10 @@ namespace System.Collections.Generic
             int originalLastIndex = _lastIndex;
             int intArrayLength = BitHelper.ToIntArrayLength(originalLastIndex);
 
-            BitHelper bitHelper;
-            if (intArrayLength <= StackAllocThreshold)
-            {
-                int* bitArrayPtr = stackalloc int[intArrayLength];
-                bitHelper = new BitHelper(bitArrayPtr, intArrayLength);
-            }
-            else
-            {
-                int[] bitArray = new int[intArrayLength];
-                bitHelper = new BitHelper(bitArray, intArrayLength);
-            }
+            Span<int> span = stackalloc int[StackAllocThreshold];
+            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
+                new BitHelper(span.Slice(0, intArrayLength), clear: true) :
+                new BitHelper(new int[intArrayLength], clear: false);
 
             // count of items in other not found in this
             int unfoundCount = 0;

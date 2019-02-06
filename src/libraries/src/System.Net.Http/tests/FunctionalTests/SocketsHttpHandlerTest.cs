@@ -104,11 +104,6 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class SocketsHttpHandler_HttpClientTest : HttpClientTest
-    {
-        protected override bool UseSocketsHttpHandler => true;
-    }
-
     public sealed class SocketsHttpHandler_DiagnosticsTest : DiagnosticsTest
     {
         protected override bool UseSocketsHttpHandler => true;
@@ -482,6 +477,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
+    public sealed class SocketsHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
+    {
+        public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
+    }
+
     public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
@@ -723,7 +724,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_ConnectionUpgrade_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_ConnectionUpgrade_Test : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
 
@@ -842,7 +843,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_Connect_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_Connect_Test : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
 
@@ -931,7 +932,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
 
@@ -1552,7 +1553,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_ExternalConfiguration_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_ExternalConfiguration_Test : HttpClientHandlerTestBase
     {
         private const string EnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER";
         private const string AppContextSettingName = "System.Net.Http.UseSocketsHttpHandler";

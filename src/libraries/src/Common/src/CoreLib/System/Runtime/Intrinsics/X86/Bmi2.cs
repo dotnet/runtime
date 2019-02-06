@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -10,6 +11,7 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel BMI2 hardware instructions via intrinsics
     /// </summary>
+    [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Bmi2
     {
@@ -17,6 +19,7 @@ namespace System.Runtime.Intrinsics.X86
 
         public static bool IsSupported { get => IsSupported; }
 
+        [Intrinsic]
         public abstract class X64
         {
             internal X64() { }

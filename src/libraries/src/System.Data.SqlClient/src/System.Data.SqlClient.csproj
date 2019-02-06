@@ -3,6 +3,7 @@
     <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
     <AssemblyName>System.Data.SqlClient</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573;</NoWarn>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <IsUAPAssembly Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uap10.0.16299'">true</IsUAPAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_DataSqlClient</GeneratePlatformNotSupportedAssemblyMessage>
@@ -230,6 +231,9 @@
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Windows.cs">
       <Link>Common\CoreLib\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
+      <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
@@ -270,9 +274,13 @@
     <Compile Include="System\Data\ProviderBase\DbConnectionPool.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnectionString.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnectionStringBuilder.NetCoreApp.cs" />
+    <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetCoreApp.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParser.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIPacket.NetCoreApp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS' AND '$(TargetsNetCoreApp)' != 'true'">
+    <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetStandard.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParser.NetStandard.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIPacket.NetStandard.cs" />
   </ItemGroup>
   <!-- Manage the SNI toggle for Windows netstandard and UWP -->
@@ -467,6 +475,9 @@
     <Compile Include="$(CommonPath)\System\Net\Security\Unix\SafeFreeNegoCredentials.cs">
       <Link>Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\Unix\SecChannelBindings.cs">
+      <Link>Common\System\Net\Security\Unix\SecChannelBindings.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
@@ -523,7 +534,6 @@
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Text.Encoding.CodePages" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />

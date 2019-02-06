@@ -562,6 +562,136 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public void TestDecryptSimpleAes256_RsaOaepSha256()
+        {
+            // Generated with:
+            // openssl cms -encrypt -in input.txt -out out.msg -recip cert.pem -keyopt rsa_padding_mode:oaep -keyopt rsa_mgf1_md:sha256 --aes256 -keyopt rsa_oaep_md:sha256
+            byte[] encodedMessage = Convert.FromBase64String(
+                    "MIIBUAYJKoZIhvcNAQcDoIIBQTCCAT0CAQAxgfkwgfYCAQAwNDAgMR4wHAYDVQQD" +
+                    "ExVSU0FTaGEyNTZLZXlUcmFuc2ZlcjECEHLGx3NJFkaMTWCCU9oBdnYwOAYJKoZI" +
+                    "hvcNAQEHMCugDTALBglghkgBZQMEAgGhGjAYBgkqhkiG9w0BAQgwCwYJYIZIAWUD" +
+                    "BAIBBIGAuobMSz1Q4OHRX2aX9AutOPdZX2phA6WATQTOKOWCD//LQwrHYtuNIPAG" +
+                    "Tld+JTZ1EMQD9PoEMyxdkllyie2dn/PSvnE0q/WU+IrHzGzoWofuNs9M6g9Gvpg5" +
+                    "qCGAXK9cL3WkZ9S+M1r6BqlCLwU03bJr6292PiLyjIH80CdMuRUwPAYJKoZIhvcN" +
+                    "AQcBMB0GCWCGSAFlAwQBKgQQezbMDGrefOaUPpfIXBpw7oAQazcOoj9GkvzZMR9Z" +
+                    "NU22nQ==");
+            byte[] content = "68690D0A".HexToByteArray();
+            ContentInfo expectedContentInfo = new ContentInfo(new Oid(Oids.Pkcs7Data), content);
+
+            VerifySimpleDecrypt(encodedMessage, Certificates.RSASha256KeyTransfer1, expectedContentInfo);
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public void TestDecryptSimpleAes256_RsaOaepSha384()
+        {
+            // Generated with:
+            // openssl cms -encrypt -in input.txt -out out.msg -recip cert.pem -keyopt rsa_padding_mode:oaep -keyopt rsa_mgf1_md:sha384 --aes256 -keyopt rsa_oaep_md:sha384
+            byte[] encodedMessage = Convert.FromBase64String(
+                    "MIIB0AYJKoZIhvcNAQcDoIIBwTCCAb0CAQAxggF4MIIBdAIBADAxMCQxIjAgBgNV" +
+                    "BAMMGVJTQTIwNDhTaGEyNTZLZXlUcmFuc2ZlcjECCQDc5NcqfzyljjA4BgkqhkiG" +
+                    "9w0BAQcwK6ANMAsGCWCGSAFlAwQCAqEaMBgGCSqGSIb3DQEBCDALBglghkgBZQME" +
+                    "AgIEggEAIqqdx5zCFnGSNzV+/N0Mu8S8CVABuPv+RcpV8fiFj5TLcHe84lYI/ptr" +
+                    "F7FwyQRfHVDWgJrJqDS/wYfzD6Ar8qLRdfBswCotn/QYm/VLzBXNRLM402t3lWq+" +
+                    "2pgucyGghpnf2I1aZo8U9hJGUOUPISQqkiol9I1O/JYfo9B7sBTW8Vp22W/c8nTI" +
+                    "huQx+tOhzqGAMElrsd+cEaTiVqAMmNU20B2du0wWs0nckzg4KLbz2g/g8L699luU" +
+                    "t8OluQclxfVgruLY28RY8R5w7OH2LZSEhyKxq3PG3KqXqR+E1MCkpdg8PhTJkeYO" +
+                    "Msz1J70aVA8L8nrhtS9xXq0dd8jyfzA8BgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEq" +
+                    "BBA/xHlg1Der3mxzmvPvUcqogBDEEZmz+ECEWMeNGBv/Cw82");
+            byte[] content = "68690D0A".HexToByteArray();
+            ContentInfo expectedContentInfo = new ContentInfo(new Oid(Oids.Pkcs7Data), content);
+
+            VerifySimpleDecrypt(encodedMessage, Certificates.RSA2048Sha256KeyTransfer1, expectedContentInfo);
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public void TestDecryptSimpleAes256_RsaOaepSha512()
+        {
+            // Generated with:
+            // openssl cms -encrypt -in input.txt -out out.msg -recip cert.pem -keyopt rsa_padding_mode:oaep -keyopt rsa_mgf1_md:sha512 --aes256 -keyopt rsa_oaep_md:sha512
+            byte[] encodedMessage = Convert.FromBase64String(
+                    "MIIB0AYJKoZIhvcNAQcDoIIBwTCCAb0CAQAxggF4MIIBdAIBADAxMCQxIjAgBgNV" +
+                    "BAMMGVJTQTIwNDhTaGEyNTZLZXlUcmFuc2ZlcjECCQDc5NcqfzyljjA4BgkqhkiG" +
+                    "9w0BAQcwK6ANMAsGCWCGSAFlAwQCA6EaMBgGCSqGSIb3DQEBCDALBglghkgBZQME" +
+                    "AgMEggEAc6QULhpkV7C63HhSbdYM7QFDTtRj8Wch3QHrFB0jIYlLGxcMuOB3Kw6f" +
+                    "P1Q4W8qmVJgH+dyeKcpu2J6OrjlZVDtK166DrmKCflTMCGhCsPsmCMbKlpBihuXo" +
+                    "7xQ13Fzs9QhudY/B/jUNjOTb3nONBqOdDJVLFsoMxm9cJqnDcdFPJVgIFl3IQW7X" +
+                    "I1ZFdnS6FVKybR94jU4ASx8awQ+zDOgnCsyZ7t5cOwca2NgyQxZCf92WEJjdXqbl" +
+                    "3ax/ULfSWD104Fp4N7lf8Z9BAkjIVJh3EeROzWgDkP5FQ9bDqkn3x+IlVKHfu+3r" +
+                    "fmaUWI/sZCMXnUnLFEEILwCBcZlvBzA8BgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEq" +
+                    "BBDJhteA5Rpug15ksuJ9o/9vgBDQzvGRyFU8AKtfSpF6jBkB");
+            byte[] content = "68690D0A".HexToByteArray();
+            ContentInfo expectedContentInfo = new ContentInfo(new Oid(Oids.Pkcs7Data), content);
+
+            VerifySimpleDecrypt(encodedMessage, Certificates.RSA2048Sha256KeyTransfer1, expectedContentInfo);
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public void TestDecryptSimpleAes256_RsaOaepSha1_Default()
+        {
+            // Generated with:
+            // openssl cms -encrypt -in input.txt -out out.msg -recip cert.pem -keyopt rsa_padding_mode:oaep -keyopt rsa_mgf1_md:sha1 --aes256 -keyopt rsa_oaep_md:sha1
+            byte[] encodedMessage = Convert.FromBase64String(
+                    "MIIBJQYJKoZIhvcNAQcDoIIBFjCCARICAQAxgc4wgcsCAQAwNDAgMR4wHAYDVQQD" +
+                    "ExVSU0FTaGEyNTZLZXlUcmFuc2ZlcjECEHLGx3NJFkaMTWCCU9oBdnYwDQYJKoZI" +
+                    "hvcNAQEHMAAEgYCLNNE4H03P0aP1lBDwKrm549DajTVSeyseWxv7TDDdVVWOTNgh" +
+                    "c5OEVT2lmzxWD6lq28aZqmV8PPxJhvOZl4mnY9ycA5hgwmFRdKyI2hBTWQL8GQcF" +
+                    "nYKc54BMKNaJsfIUIwN89knw7AEYEchGF+USKgQY1qsvdag6ZNBuhs5uwTA8Bgkq" +
+                    "hkiG9w0BBwEwHQYJYIZIAWUDBAEqBBB/OyPGgn42q2XoDE4o8+2ggBDRXtH4O1xQ" +
+                    "BHevgmD2Ev8V");
+            byte[] content = "68690D0A".HexToByteArray();
+            ContentInfo expectedContentInfo = new ContentInfo(new Oid(Oids.Pkcs7Data), content);
+
+            VerifySimpleDecrypt(encodedMessage, Certificates.RSASha256KeyTransfer1, expectedContentInfo);
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public void TestDecryptSimpleAes256_RsaOaep_MaskGenFunc_HashFunc_Mismatch()
+        {
+            // Generated with:
+            // openssl cms -encrypt -in input.txt -out out.msg -recip cert.pem -keyopt rsa_padding_mode:oaep -keyopt rsa_mgf1_md:sha1 --aes256 -keyopt rsa_oaep_md:sha256
+            byte[] encodedMessage = Convert.FromBase64String(
+                    "MIIBNAYJKoZIhvcNAQcDoIIBJTCCASECAQAxgd0wgdoCAQAwNDAgMR4wHAYDVQQD" +
+                    "ExVSU0FTaGEyNTZLZXlUcmFuc2ZlcjECEHLGx3NJFkaMTWCCU9oBdnYwHAYJKoZI" +
+                    "hvcNAQEHMA+gDTALBglghkgBZQMEAgEEgYCw85yDulRtibSZm0xy1mOTIGjDu4yy" +
+                    "pMT++3dV5Cy2GF4vp3mxp89Ylq2boYZ8b4B86IcJqUfyU/fG19O+vXyjn/0VUP3f" +
+                    "OjMM71oqvQc/Qou/LvgDYQZY1koDldoeH89waZ1hgFaVpFEwGZUPSHmzgfsxMOpj" +
+                    "RoToifiTsP3PkjA8BgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEqBBCCufI08zVL4KVc" +
+                    "WgKwZxCNgBA9M9KpJHmKwm5dMtvdcs/Q");
+            byte[] content = "68690D0A".HexToByteArray();
+            ContentInfo expectedContentInfo = new ContentInfo(new Oid(Oids.Pkcs7Data), content);
+
+            Assert.ThrowsAny<CryptographicException>(
+                () => VerifySimpleDecrypt(encodedMessage, Certificates.RSASha256KeyTransfer1, expectedContentInfo));
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public void TestDecryptSimpleAes256_RsaOaep_PSpecified_NonDefault()
+        {
+            // Generated with:
+            // openssl cms -encrypt -in input.txt -out out.msg -recip cert.pem -keyopt rsa_padding_mode:oaep \
+            //   -keyopt rsa_mgf1_md:sha1 --aes256 -keyopt rsa_oaep_md:sha1 -keyopt rsa_oaep_label:0102030405
+            byte[] encodedMessage = Convert.FromBase64String(
+                    "MIIBOwYJKoZIhvcNAQcDoIIBLDCCASgCAQAxgeQwgeECAQAwNDAgMR4wHAYDVQQD" +
+                    "ExVSU0FTaGEyNTZLZXlUcmFuc2ZlcjECEHLGx3NJFkaMTWCCU9oBdnYwIwYJKoZI" +
+                    "hvcNAQEHMBaiFDASBgkqhkiG9w0BAQkEBQECAwQFBIGAoJ7P69rwtexRcLbK+K8z" +
+                    "UrKROLk2tVU8xGA056j8o2GfqQPxGsHl1w8Q3lsnSPsjGHY30+KYmQMQrZJd5zIW" +
+                    "2OpgriYeqnHUwNCd9CrRFVvEqqACZlzTw/L+DgeDXwSNPRzNghjIqWo79FFT9kRI" +
+                    "DHUB10A+sIZevVYtFrWxbVQwPAYJKoZIhvcNAQcBMB0GCWCGSAFlAwQBKgQQfxMe" +
+                    "56xuPm9lTJYYozmQ6oAQd1RIE2hhgx1kdJmIW1Z4/w==");
+            byte[] content = "68690D0A".HexToByteArray();
+            ContentInfo expectedContentInfo = new ContentInfo(new Oid(Oids.Pkcs7Data), content);
+
+            Assert.ThrowsAny<CryptographicException>(
+                () => VerifySimpleDecrypt(encodedMessage, Certificates.RSASha256KeyTransfer1, expectedContentInfo));
+        }
+
+        [Fact]
         public void DecryptEnvelopedOctetStringWithDefiniteLength()
         {
             // enveloped content consists of 5 bytes: <id: 1 byte><length: 1 byte><content: 3 bytes>
@@ -697,7 +827,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             VerifySimpleDecrypt(encodedMessage, certLoader, expectedContentInfo);
         }
 
-        private void VerifySimpleDecrypt(byte[] encodedMessage, CertLoader certLoader, ContentInfo expectedContent)
+        internal void VerifySimpleDecrypt(byte[] encodedMessage, CertLoader certLoader, ContentInfo expectedContent)
         {
             EnvelopedCms ecms = new EnvelopedCms();
             ecms.Decode(encodedMessage);

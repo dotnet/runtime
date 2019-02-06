@@ -5149,9 +5149,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return;
 
             Trace("DateTimeFormatInfo Properties");
-#if !FEATURE_COREFX_GLOBALIZATION
             Trace($" NativeCalendarName {Hex(dtfi.NativeCalendarName)}");
-#endif
             Trace($"       AMDesignator {Hex(dtfi.AMDesignator)}");
             Trace($"       PMDesignator {Hex(dtfi.PMDesignator)}");
             Trace($"      TimeSeparator {Hex(dtfi.TimeSeparator)}");

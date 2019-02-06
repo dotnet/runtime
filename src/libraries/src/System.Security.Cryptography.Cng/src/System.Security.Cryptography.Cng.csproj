@@ -3,7 +3,7 @@
     <AssemblyName>System.Security.Cryptography.Cng</AssemblyName>
     <ProjectGuid>{4C1BD451-6A99-45E7-9339-79C77C42EE9E}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>CS3016;$(NoWarn)</NoWarn>
+    <NoWarn>CS1573;CS3016;$(NoWarn)</NoWarn>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'net461'">true</GenFacadesIgnoreMissingTypes>

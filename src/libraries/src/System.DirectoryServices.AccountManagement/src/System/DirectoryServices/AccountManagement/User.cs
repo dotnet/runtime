@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Security.Permissions;
 using System.Security.Principal;
 
 namespace System.DirectoryServices.AccountManagement

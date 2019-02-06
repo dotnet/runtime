@@ -99,8 +99,7 @@ namespace System.Text
 
         public override bool Equals(object value)
         {
-            UTF7Encoding that = value as UTF7Encoding;
-            if (that != null)
+            if (value is UTF7Encoding that)
             {
                 return (_allowOptionals == that._allowOptionals) &&
                        (EncoderFallback.Equals(that.EncoderFallback)) &&

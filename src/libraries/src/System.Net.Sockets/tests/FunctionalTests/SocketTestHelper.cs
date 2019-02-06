@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
@@ -240,10 +242,12 @@ namespace System.Net.Sockets.Tests
         where T : SocketHelperBase, new()
     {
         private readonly T _socketHelper;
+        public readonly ITestOutputHelper _output;
 
-        public SocketTestHelperBase()
+        public SocketTestHelperBase(ITestOutputHelper output)
         {
             _socketHelper = new T();
+            _output = output;
         }
 
         //

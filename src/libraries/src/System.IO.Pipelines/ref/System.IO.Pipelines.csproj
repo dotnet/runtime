@@ -8,9 +8,9 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Buffers\ref\System.Buffers.csproj" />
-    <ProjectReference Include="..\..\System.Threading.Tasks.Extensions\ref\System.Threading.Tasks.Extensions.csproj" />
   </ItemGroup>
 </Project>

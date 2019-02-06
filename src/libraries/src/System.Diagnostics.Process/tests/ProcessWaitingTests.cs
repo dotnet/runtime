@@ -180,7 +180,7 @@ namespace System.Diagnostics.Tests
         {
             const string expectedSignal = "Signal";
             const string successResponse = "Success";
-            const int timeout = 5 * 1000;
+            const int timeout = 30 * 1000; // 30 seconds, to allow for very slow machines
 
             Process p = CreateProcessPortable(RemotelyInvokable.WriteLineReadLine);
             p.StartInfo.RedirectStandardInput = true;

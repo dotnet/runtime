@@ -1261,7 +1261,7 @@ namespace System.Runtime.Intrinsics
             Vector256<byte> SoftwareFallback(byte x)
             {
                 var result = Vector256<byte>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<byte>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<byte>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1282,7 +1282,7 @@ namespace System.Runtime.Intrinsics
             Vector256<double> SoftwareFallback(double x)
             {
                 var result = Vector256<double>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<double>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<double>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1303,7 +1303,7 @@ namespace System.Runtime.Intrinsics
             Vector256<short> SoftwareFallback(short x)
             {
                 var result = Vector256<short>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<short>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<short>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1324,7 +1324,7 @@ namespace System.Runtime.Intrinsics
             Vector256<int> SoftwareFallback(int x)
             {
                 var result = Vector256<int>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<int>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<int>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1345,7 +1345,7 @@ namespace System.Runtime.Intrinsics
             Vector256<long> SoftwareFallback(long x)
             {
                 var result = Vector256<long>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<long>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<long>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1367,7 +1367,7 @@ namespace System.Runtime.Intrinsics
             Vector256<sbyte> SoftwareFallback(sbyte x)
             {
                 var result = Vector256<sbyte>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<sbyte>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<sbyte>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1388,7 +1388,7 @@ namespace System.Runtime.Intrinsics
             Vector256<float> SoftwareFallback(float x)
             {
                 var result = Vector256<float>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<float>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<float>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1410,7 +1410,7 @@ namespace System.Runtime.Intrinsics
             Vector256<ushort> SoftwareFallback(ushort x)
             {
                 var result = Vector256<ushort>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<ushort>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<ushort>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1432,7 +1432,7 @@ namespace System.Runtime.Intrinsics
             Vector256<uint> SoftwareFallback(uint x)
             {
                 var result = Vector256<uint>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<uint>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<uint>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1454,7 +1454,7 @@ namespace System.Runtime.Intrinsics
             Vector256<ulong> SoftwareFallback(ulong x)
             {
                 var result = Vector256<ulong>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<ulong>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<ulong>, byte>(ref result), x);
                 return result;
             }
         }

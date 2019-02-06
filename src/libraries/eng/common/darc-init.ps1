@@ -1,7 +1,11 @@
+param (
+    $darcVersion = $null
+)
+
 $verbosity = "m"
 . $PSScriptRoot\tools.ps1
 
-function InstallDarcCli {
+function InstallDarcCli ($darcVersion) {
   $darcCliPackageName = "microsoft.dotnet.darc"
 
   $dotnetRoot = InitializeDotNetCli -install:$true
@@ -12,11 +16,17 @@ function InstallDarcCli {
     Invoke-Expression "& `"$dotnet`" tool uninstall $darcCliPackageName -g"
   }
 
-  $toolsetVersion = $GlobalJson.'msbuild-sdks'.'Microsoft.DotNet.Arcade.Sdk'
+  # Until we can anonymously query the BAR API for the latest arcade-services
+  # build applied to the PROD channel, this is hardcoded.
+  if (-not $darcVersion) {
+    $darcVersion = '1.1.0-beta.19057.9'
+  }
+  
+  $arcadeServicesSource = 'https://dotnetfeed.blob.core.windows.net/dotnet-arcade/index.json'
 
-  Write-Host "Installing Darc CLI version $toolsetVersion..."
+  Write-Host "Installing Darc CLI version $darcVersion..."
   Write-Host "You may need to restart your command window if this is the first dotnet tool you have installed."
-  Invoke-Expression "& `"$dotnet`" tool install $darcCliPackageName --version $toolsetVersion -v $verbosity -g"
+  Invoke-Expression "& `"$dotnet`" tool install $darcCliPackageName --version $darcVersion --add-source '$arcadeServicesSource' -v $verbosity -g"
 }
 
-InstallDarcCli
+InstallDarcCli $darcVersion

@@ -60,7 +60,7 @@ namespace System
             _value = (void*)l;
         }
 
-        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
@@ -196,7 +196,7 @@ namespace System
             return new UIntPtr((nuint)pointer._value - (nuint)offset);
         }
 
-        public static unsafe int Size
+        public static int Size
         {
             [Intrinsic]
             [NonVersionable]

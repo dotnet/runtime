@@ -3,6 +3,10 @@
 # Stop script if unbound variable found (use ${var:-} if intentional)
 set -u
 
+# Stop script if command returns non-zero exit code.
+# Prevents hidden errors caused by missing error code propagation.
+set -e
+
 usage()
 {
   echo "Common settings:"
@@ -128,6 +132,12 @@ while [[ $# > 0 ]]; do
       shift
       ;;
     /p:*)
+      properties="$properties $1"
+      ;;
+    /m:*)
+      properties="$properties $1"
+      ;;
+    /bl:*)
       properties="$properties $1"
       ;;
     *)

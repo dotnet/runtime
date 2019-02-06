@@ -75,6 +75,7 @@
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="HttpClientHandlerTest.Authentication.cs" />
+    <Compile Include="HttpClientHandlerTest.AutoRedirect.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
     <Compile Include="HttpClientHandlerTest.ClientCertificates.cs" />
@@ -91,7 +92,7 @@
     <Compile Include="HttpClientHandlerTest.SslProtocols.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="HttpClientHandlerTest.SslProtocols.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="DiagnosticsTests.cs" />
-    <Compile Include="HttpClientTestBase.cs" />
+    <Compile Include="HttpClientHandlerTestBase.cs" />
     <Compile Include="HttpClientTest.cs" />
     <Compile Include="HttpClientEKUTest.cs" />
     <Compile Include="HttpClientMiniStressTest.cs" />
@@ -148,6 +149,7 @@
     <Compile Include="MultiInterfaceReadOnlyStream.cs" />
     <Compile Include="MultiInterfaceStreamContent.cs" />
     <Compile Include="PostScenarioUWPTest.cs" />
+    <Compile Include="XUnitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">

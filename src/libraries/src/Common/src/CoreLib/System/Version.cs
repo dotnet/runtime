@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Diagnostics;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -405,14 +406,20 @@ namespace System
             return int.TryParse(component, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedComponent) && parsedComponent >= 0;
         }
 
+        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Version v1, Version v2)
         {
-            if (v1 is null)
+            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // so it can become a simple test
+            if (v2 is null)
             {
-                return v2 is null;
+                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                return (v1 is null) ? true : false;
             }
 
-            return v1.Equals(v2);
+            // Quick reference equality test prior to calling the virtual Equality
+            return ReferenceEquals(v2, v1) ? true : v2.Equals(v1);
         }
 
         public static bool operator !=(Version v1, Version v2)
