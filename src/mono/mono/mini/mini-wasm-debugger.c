@@ -618,13 +618,14 @@ static gboolean describe_value(MonoType * type, gpointer addr)
 			break;
 		case MONO_TYPE_STRING: {
 			MonoString *str_obj = *(MonoString **)addr;
-			if (!str_obj)
+			if (!str_obj) {
 				mono_wasm_add_string_var (NULL);
-			char *str = mono_string_to_utf8_checked_internal (str_obj, error);
-			mono_error_assert_ok (error); /* FIXME report error */
-
-			mono_wasm_add_string_var (str);
-			g_free (str);
+			} else {
+				char *str = mono_string_to_utf8_checked_internal (str_obj, error);
+				mono_error_assert_ok (error); /* FIXME report error */
+				mono_wasm_add_string_var (str);
+				g_free (str);
+			}
 			break;
 		}
 		case MONO_TYPE_GENERICINST:
