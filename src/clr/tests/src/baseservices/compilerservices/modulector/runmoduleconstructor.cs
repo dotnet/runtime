@@ -13,7 +13,7 @@ class RuntimeHelperTest
 {
     public static int Main(string[] args)
     {
-        AssemblyLoadContext resolver0 = AssemblyLoadContext.Default;
+        AssemblyLoadContext resolver0 = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
         Assembly asm0 = resolver0.LoadFromAssemblyName(new AssemblyName("moduleCctor"));
         Module mod = asm0.ManifestModule;
         

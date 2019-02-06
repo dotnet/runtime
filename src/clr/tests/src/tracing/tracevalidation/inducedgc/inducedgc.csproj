@@ -13,6 +13,8 @@
     <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
     <CLRTestPriority>0</CLRTestPriority>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Due to https://github.com/dotnet/coreclr/issues/22247 -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'"></PropertyGroup>
