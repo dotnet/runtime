@@ -6,6 +6,8 @@
   <PropertyGroup>
     <!-- We need to make sure that all of the surface area on the sources gets rewritten as internal. -->
     <GenerateInternalTypesSource>true</GenerateInternalTypesSource>
+    <!-- We need to disable package file check as the sdk targets will flag README.md file as it is not a known extension. -->
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
   </PropertyGroup>
 
   <!-- Given that System.Text.Json has Resources, we need to make sure we include them (and the SR.cs from Common) 
