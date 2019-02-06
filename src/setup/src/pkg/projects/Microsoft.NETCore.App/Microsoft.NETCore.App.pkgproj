@@ -2,21 +2,15 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
-
   <PropertyGroup>
     <Version>$(SharedFrameworkNugetVersion)</Version>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
-    <PropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</PropsFile>
-    <PlatformManifestFile>$(IntermediateOutputPath)$(MSBuildProjectName).PlatformManifest.txt</PlatformManifestFile>
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
-    <!-- During an official build when we can guarantee that all RID-specific dependencies have been built,
-         restore all of those dependencies and gather the prospective content of the RID-specific Core.App
-         packages.  This is needed so that we have a complete platform manifest in the shipping version of
-         the Microsoft.NETCore.App (RID-agnostic/identity package). -->
-    <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
+    <BuildTargetPath>build/$(NETCoreAppFramework)</BuildTargetPath>
+    <PlatformManifestTargetPath>$(BuildTargetPath)</PlatformManifestTargetPath>
+    <FileVersionPropsTargetPath>$(BuildTargetPath)</FileVersionPropsTargetPath>
   </PropertyGroup>
 
   <!-- Identity / Reference package content -->
@@ -30,14 +24,8 @@
        <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
     </Dependency>
 
-    <File Include="$(PropsFile)">
-      <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
-    </File>
-    <File Include="$(PlatformManifestFile)">
-      <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
-    </File>
     <File Include="$(MSBuildProjectName).targets">
-      <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
+      <TargetPath>$(BuildTargetPath)</TargetPath>
     </File>
   </ItemGroup>
 
@@ -47,25 +35,6 @@
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>
-
-  <Target Name="GenerateFileVersionProps" BeforeTargets="GenerateNuSpec" Condition="'$(PackageTargetRuntime)' == ''">
-    <MSBuild Projects="@(ProjectReference)"
-             Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR
-                        '%(ProjectReference.BuidOnRID)' == '$(PackageRID)' OR
-                        ('$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true' AND
-                         '%(ProjectReference.PackageTargetRuntime)' != '' AND
-                         '%(ProjectReference.ExcludeFromPlatformManifest)' != 'true')"
-             Targets="GetPackageFiles">
-      <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
-    </MSBuild>
-
-    <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
-                              PackageId="$(Id)"
-                              PackageVersion="$(Version)"
-                              PlatformManifestFile="$(PlatformManifestFile)"
-                              PropsFile="$(PropsFile)"
-                              PreferredPackages="$(Id);@(RuntimeDependency)" />
-  </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 

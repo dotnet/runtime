@@ -16,6 +16,8 @@
 
     <IncludeSourceFilesInPackage Condition="'$(DotNetBuildFromSource)' == 'true'">false</IncludeSourceFilesInPackage>
     <IncludeSourceFilesInPackage Condition="'$(IncludeSourceFilesInPackage)' == ''">true</IncludeSourceFilesInPackage>
+
+    <PackProjectDependencies>true</PackProjectDependencies>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">

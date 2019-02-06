@@ -1,6 +1,8 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.targets" />
 
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+
   <PropertyGroup>
     <RestorePackages>true</RestorePackages>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
@@ -107,7 +109,9 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="GetDependenciesToPackage" AfterTargets="ExpandProjectReferences">
+  <Target Name="GetDependenciesToPackage"
+          Condition="'$(PackProjectDependencies)' == 'true'"
+          AfterTargets="ExpandProjectReferences">
     <!-- allow projects to provide dependencies -->
     <MSBuild Targets="GetDependenciesToPackage"
              BuildInParallel="$(BuildInParallel)"
@@ -116,6 +120,64 @@
       <Output TaskParameter="TargetOutputs"
               ItemName="Dependency" />
     </MSBuild>
+  </Target>
+
+  <!--
+    Creates the platform manifest and props file. Set properties "IncludePlatformManifestFile" and
+    "IncludeFileVersionPropsFile" to true to include them, respectively.
+  -->
+  <Target Name="GenerateFileVersionProps">
+    <PropertyGroup>
+      <PropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</PropsFile>
+      <PlatformManifestFile>$(IntermediateOutputPath)$(MSBuildProjectName).PlatformManifest.txt</PlatformManifestFile>
+
+      <!-- During an official build when we can guarantee that all RID-specific dependencies have been built,
+          restore all of those dependencies and gather the prospective content of the RID-specific Core.App
+          packages.  This is needed so that we have a complete platform manifest in the shipping version of
+          the Microsoft.NETCore.App (RID-agnostic/identity package). -->
+      <IncludeAllRuntimePackagesInPlatformManifest
+        Condition="'$(IncludeAllRuntimePackagesInPlatformManifest)' == '' AND
+                   '$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
+    </PropertyGroup>
+
+    <MSBuild Projects="@(ProjectReference)"
+             Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR
+                        '%(ProjectReference.BuidOnRID)' == '$(PackageRID)' OR
+                        ('$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true' AND
+                         '%(ProjectReference.PackageTargetRuntime)' != '' AND
+                         '%(ProjectReference.ExcludeFromPlatformManifest)' != 'true')"
+             Targets="GetPackageFiles">
+      <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
+    </MSBuild>
+
+    <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
+                              PackageId="$(Id)"
+                              PackageVersion="$(Version)"
+                              PlatformManifestFile="$(PlatformManifestFile)"
+                              PropsFile="$(PropsFile)"
+                              PreferredPackages="$(Id);@(RuntimeDependency)" />
+  </Target>
+
+  <Target Name="IncludeFileVersionPropsFile"
+          DependsOnTargets="GenerateFileVersionProps"
+          BeforeTargets="GetFiles"
+          Condition="'$(PackageTargetRuntime)' == '' AND '$(FileVersionPropsTargetPath)' != ''">
+    <ItemGroup>
+      <File Include="$(PropsFile)">
+        <TargetPath>$(FileVersionPropsTargetPath)</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludePlatformManifestFile"
+          DependsOnTargets="GenerateFileVersionProps"
+          BeforeTargets="GetFiles"
+          Condition="'$(PackageTargetRuntime)' == '' AND '$(PlatformManifestTargetPath)' != ''">
+    <ItemGroup>
+      <File Include="$(PlatformManifestFile)">
+        <TargetPath>$(PlatformManifestTargetPath)</TargetPath>
+      </File>
+    </ItemGroup>
   </Target>
 
 </Project>
