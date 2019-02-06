@@ -347,6 +347,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.ErrorCode.cs">
       <Link>Common\Interop\Windows\NCrypt\Interop.ErrorCode.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.Properties.cs">
+      <Link>Common\Interop\Windows\NCrypt\Interop.Properties.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs">
       <Link>Common\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs</Link>
     </Compile>
