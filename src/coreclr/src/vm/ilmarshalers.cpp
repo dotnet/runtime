@@ -252,25 +252,60 @@ LocalDesc ILWSTRMarshaler::GetManagedType()
 void ILWSTRMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
 {
     LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_MSG("Should be in-only and all other paths are covered by the EmitConvertSpaceAndContents* paths");
+    UNREACHABLE_MSG("All paths to this function are covered by the EmitConvertSpaceAndContents* paths");
 }
 
 void ILWSTRMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
 {
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_MSG("Should be in-only and all other paths are covered by the EmitConvertSpaceAndContents* paths");
+    STANDARD_VM_CONTRACT;
+
+    // This code path should only be called by an out marshalling. Other codepaths that convert a string to native
+    // should all go through EmitConvertSpaceAndContentsCLRToNative
+    _ASSERTE(IsOut(m_dwMarshalFlags) && !IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags));
+    
+    ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
+
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(pNullRefLabel);
+
+    EmitLoadManagedValue(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
+
+    EmitLoadManagedValue(pslILEmit);
+    EmitCheckManagedStringLength(pslILEmit);
+    
+    // static void System.String.InternalCopy(String src, IntPtr dest,int len)
+    pslILEmit->EmitCALL(METHOD__STRING__INTERNAL_COPY, 3, 0);
+    pslILEmit->EmitLabel(pNullRefLabel);
 }
 
 void ILWSTRMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
 {
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_MSG("Should be in-only and all other paths are covered by the EmitConvertSpaceAndContents* paths");
+    STANDARD_VM_CONTRACT;
+    // We currently don't marshal strings from the native to the CLR side in a Reverse-PInvoke unless
+    // the parameter is explicitly annotated as an [In] parameter.
+    pslILEmit->EmitLDNULL();
+    EmitStoreManagedValue(pslILEmit);
 }    
 
 void ILWSTRMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
 {
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_MSG("Should be in-only and all other paths are covered by the EmitConvertSpaceAndContents* paths");
+    STANDARD_VM_CONTRACT;
+    
+    ILCodeLabel* pIsNullLabel = pslILEmit->NewCodeLabel();
+        
+    EmitLoadNativeValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(pIsNullLabel);
+
+    EmitLoadNativeValue(pslILEmit);
+    pslILEmit->EmitDUP();
+    EmitCheckNativeStringLength(pslILEmit);
+    pslILEmit->EmitPOP();       // pop num chars
+    
+    pslILEmit->EmitNEWOBJ(METHOD__STRING__CTOR_CHARPTR, 1);
+    EmitStoreManagedValue(pslILEmit);
+    
+    pslILEmit->EmitLabel(pIsNullLabel);
 }    
 
 bool ILWSTRMarshaler::NeedsClearNative()
@@ -446,27 +481,6 @@ void ILWSTRMarshaler::EmitCheckNativeStringLength(ILCodeStream* pslILEmit)
     pslILEmit->EmitDUP();
     pslILEmit->EmitCALL(METHOD__STUBHELPERS__CHECK_STRING_LENGTH, 1, 0);
 }
-
-void ILWSTRMarshaler::EmitConvertSpaceAndContentsNativeToCLR(ILCodeStream* pslILEmit)
-{
-    STANDARD_VM_CONTRACT;
-
-    ILCodeLabel* pIsNullLabelByref = pslILEmit->NewCodeLabel();
-        
-    EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitBRFALSE(pIsNullLabelByref);
-
-    EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitDUP();
-    EmitCheckNativeStringLength(pslILEmit);
-    pslILEmit->EmitPOP();       // pop num chars
-    
-    pslILEmit->EmitNEWOBJ(METHOD__STRING__CTOR_CHARPTR, 1);
-    EmitStoreManagedValue(pslILEmit);
-    
-    pslILEmit->EmitLabel(pIsNullLabelByref);
-}
-
 
 LocalDesc ILOptimizedAllocMarshaler::GetNativeType()
 {
