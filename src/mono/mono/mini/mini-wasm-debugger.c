@@ -584,7 +584,7 @@ typedef struct {
 	int variable;
 } FrameDescData;
 
-static gboolean decode_value(MonoType * type, gpointer addr)
+static gboolean describe_value(MonoType * type, gpointer addr)
 {
 	ERROR_DECL (error);
 	switch (type->type) {
@@ -627,6 +627,7 @@ static gboolean decode_value(MonoType * type, gpointer addr)
 			g_free (str);
 			break;
 		}
+		case MONO_TYPE_GENERICINST:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_OBJECT:
@@ -665,6 +666,13 @@ static gboolean decode_value(MonoType * type, gpointer addr)
 static gboolean 
 describe_object_properties (guint64 objectId)
 {
+	MonoClassField *f;
+	MonoProperty *p;
+	MonoObject *exc;
+	MonoObject *res;
+	MonoMethodSignature *sig;
+	gpointer iter = NULL;
+	ERROR_DECL (error);
 	DEBUG_PRINTF (2, "describe_object_properties %d\n", objectId);
 	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
 	if (!ref) {
@@ -677,10 +685,9 @@ describe_object_properties (guint64 objectId)
 		DEBUG_PRINTF (2, "describe_object_properties !obj\n");
 		return FALSE;
 	}
-	gpointer iter = NULL;
-	MonoClassField *f;
+
 	while (obj && (f = mono_class_get_fields_internal (obj->vtable->klass, &iter))) {
-		DEBUG_PRINTF (2, "f->name - %s - %x\n", f->name, f->type->type);
+		DEBUG_PRINTF (2, "mono_class_get_fields_internal - %s - %x\n", f->name, f->type->type);
 		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (mono_field_is_deleted (f))
@@ -688,13 +695,24 @@ describe_object_properties (guint64 objectId)
 		mono_wasm_add_properties_var(f->name);
 		gpointer field_value = (guint8*)obj + f->offset;
 		
-		decode_value(f->type, field_value);
+		describe_value(f->type, field_value);
 	}
-	/*MonoProperty *p;
+
 	iter = NULL;
 	while ((p = mono_class_get_properties (obj->vtable->klass, &iter))) {
+		DEBUG_PRINTF (2, "mono_class_get_properties - %s - %s\n", p->name, p->get->name);
 		mono_wasm_add_properties_var(p->name);
-	}*/
+		sig = mono_method_signature_internal (p->get);
+		res = mono_runtime_try_invoke (p->get, obj, NULL, &exc, error);
+		if (!mono_error_ok (error) && exc == NULL)
+			exc = (MonoObject*) mono_error_convert_to_exception (error);
+		if (exc)
+			describe_value (mono_get_object_type (), &exc);
+		else if (!m_class_is_valuetype (mono_object_class (res)))
+			describe_value(sig->ret, &res);
+		else
+			describe_value(sig->ret, mono_object_unbox_internal (res));
+	}
 	return TRUE;
 }
 
@@ -717,7 +735,7 @@ describe_array_values (guint64 objectId)
 	for (int i = 0; i < arr->max_length; i++) {
 		mono_wasm_add_array_item(i);
 		elem = (gpointer*)((char*)arr->vector + (i * esize));
-		decode_value(m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)), elem);
+		describe_value(m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)), elem);
 	}
 	return TRUE;
 }
@@ -762,7 +780,7 @@ describe_variable (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 
 	DEBUG_PRINTF (2, "adding val %p type [%p] %s\n", addr, type, mono_type_full_name (type));
 
-	decode_value(type, addr);
+	describe_value(type, addr);
 	if (header)
 		mono_metadata_free_mh (header);
 
