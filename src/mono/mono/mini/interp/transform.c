@@ -876,16 +876,35 @@ create_interp_local (TransformData *td, MonoType *type)
 }
 
 static void
-dump_mint_code (TransformData *td)
+dump_mint_code (const guint16 *start, const guint16* end)
 {
-	const guint16 *p = td->new_code;
-	while (p < td->new_ip) {
-		char *ins = mono_interp_dis_mintop (td->new_code, p);
+	const guint16 *p = start;
+	while (p < end) {
+		char *ins = mono_interp_dis_mintop (start, p);
 		g_print ("%s\n", ins);
 		g_free (ins);
 		p = mono_interp_dis_mintop_len (p);
 	}
 }
+
+/* For debug use */
+void
+mono_interp_print_code (InterpMethod *imethod)
+{
+	MonoJitInfo *jinfo = imethod->jinfo;
+	const guint16 *start;
+
+	if (!jinfo)
+		return;
+
+	char *name = mono_method_full_name (imethod->method, 1);
+	g_print ("Method : %s\n", name);
+	g_free (name);
+
+	start = (guint16*) jinfo->code_start;
+	dump_mint_code (start, start + jinfo->code_size);
+}
+
 
 static MonoMethodHeader*
 interp_method_get_header (MonoMethod* method, MonoError *error)
@@ -5417,7 +5436,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	if (td->verbose_level) {
 		g_print ("Runtime method: %s %p, VT stack size: %d\n", mono_method_full_name (method, TRUE), rtm, td->max_vt_sp);
 		g_print ("Calculated stack size: %d, stated size: %d\n", td->max_stack_height, header->max_stack);
-		dump_mint_code (td);
+		dump_mint_code (td->new_code, td->new_ip);
 	}
 
 	/* Check if we use excessive stack space */

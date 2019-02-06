@@ -166,6 +166,9 @@ mono_interp_transform_init (void);
 InterpMethod *
 mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error);
 
+void
+mono_interp_print_code (InterpMethod *imethod);
+
 static inline int
 mint_type(MonoType *type_)
 {

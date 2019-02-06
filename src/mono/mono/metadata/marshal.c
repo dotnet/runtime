@@ -2184,6 +2184,13 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND;
 		g_assert (!callvirt);
 		invoke_sig = mono_method_signature_internal (target_method);
+		/*
+		 * The wrapper has a different lifetime from the method to be invoked.
+		 * If the method is dynamic we don't want to be using its signature
+		 * in the wrapper since it could get freed early.
+		 */
+		if (method_is_dynamic (target_method))
+			invoke_sig = mono_metadata_signature_dup_full (get_method_image (target_method), invoke_sig);
 	}
 
 	/*
