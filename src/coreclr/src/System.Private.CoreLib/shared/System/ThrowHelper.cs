@@ -119,7 +119,7 @@ namespace System
 
         internal static void ThrowArgumentOutOfRangeException_ArgumentOutOfRange_Enum()
         {
-            throw GetArgumentOutOfRangeException(ExceptionArgument.type, 
+            throw GetArgumentOutOfRangeException(ExceptionArgument.type,
                                                     ExceptionResource.ArgumentOutOfRange_Enum);
         }
 

@@ -39,14 +39,14 @@ namespace System.Runtime.CompilerServices
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
         // but have aliasing behavior of a value class.  The intent is that you would use
         // this function just before an assignment to a variable of type 'Object'.  If the
-        // value being assigned is a mutable value class, then a shallow copy is returned 
+        // value being assigned is a mutable value class, then a shallow copy is returned
         // (because value classes have copy semantics), but otherwise the object itself
-        // is returned.  
+        // is returned.
         //
         // Note: VB calls this method when they're about to assign to an Object
-        // or pass it as a parameter.  The goal is to make sure that boxed 
-        // value types work identical to unboxed value types - ie, they get 
-        // cloned when you pass them around, and are always passed by value.  
+        // or pass it as a parameter.  The goal is to make sure that boxed
+        // value types work identical to unboxed value types - ie, they get
+        // cloned when you pass them around, and are always passed by value.
         // Of course, reference types are not cloned.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -57,8 +57,8 @@ namespace System.Runtime.CompilerServices
         // have at least been started by some thread.  In the absence of class constructor
         // deadlock conditions, the call is further guaranteed to have completed.
         //
-        // This call will generate an exception if the specified class constructor threw an 
-        // exception when it ran. 
+        // This call will generate an exception if the specified class constructor threw an
+        // exception when it ran.
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void _RunClassConstructor(RuntimeType type);
@@ -73,8 +73,8 @@ namespace System.Runtime.CompilerServices
         // have at least been started by some thread.  In the absence of module constructor
         // deadlock conditions, the call is further guaranteed to have completed.
         //
-        // This call will generate an exception if the specified module constructor threw an 
-        // exception when it ran. 
+        // This call will generate an exception if the specified module constructor threw an
+        // exception when it ran.
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void _RunModuleConstructor(System.Reflection.RuntimeModule module);
@@ -91,7 +91,7 @@ namespace System.Runtime.CompilerServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void _PrepareMethod(IRuntimeMethodInfo method, IntPtr* pInstantiation, int cInstantiation);
 
-        public static void PrepareMethod(RuntimeMethodHandle method) 
+        public static void PrepareMethod(RuntimeMethodHandle method)
         {
             unsafe
             {
@@ -132,10 +132,10 @@ namespace System.Runtime.CompilerServices
             get
             {
                 // Number of bytes from the address pointed to by a reference to
-                // a String to the first 16-bit character in the String.  Skip 
-                // over the MethodTable pointer, & String 
-                // length.  Of course, the String reference points to the memory 
-                // after the sync block, so don't count that.  
+                // a String to the first 16-bit character in the String.  Skip
+                // over the MethodTable pointer, & String
+                // length.  Of course, the String reference points to the memory
+                // after the sync block, so don't count that.
                 // This property allows C#'s fixed statement to work on Strings.
                 // On 64 bit platforms, this should be 12 (8+4) and on 32 bit 8 (4+4).
 #if BIT64
@@ -197,6 +197,26 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 
+        /// <summary>
+        /// GetSubArray helper method for the compiler to slice an array using a range.
+        /// </summary>
+        public static T[] GetSubArray<T>(T[] array, Range range)
+        {
+            Type elementType = array.GetType().GetElementType();
+            Span<T> source = array.AsSpan(range);
+
+            if (elementType.IsValueType)
+            {
+                return source.ToArray();
+            }
+            else
+            {
+                T[] newArray = (T[])Array.CreateInstance(elementType, source.Length);
+                source.CopyTo(newArray);
+                return newArray;
+            }
+        }
+
         // Returns true iff the object has a component size;
         // i.e., is variable length like System.String or Array.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -228,7 +248,7 @@ namespace System.Runtime.CompilerServices
             // This is not ideal in terms of minimizing instruction count but is the best we can do at the moment.
 
             return Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
-            
+
             // The JIT currently implements this as:
             // lea tmp, [rax + 8h] ; assume rax contains the object reference, tmp is type IntPtr&
             // mov tmp, qword ptr [tmp - 8h] ; tmp now contains the MethodTable* pointer
