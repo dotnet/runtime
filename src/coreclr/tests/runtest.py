@@ -131,6 +131,7 @@ parser.add_argument("--generate_layout_only", dest="generate_layout_only", actio
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
 parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="store_true", default=False)
+parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
 
 # Only used on Unix
 parser.add_argument("-test_native_bin_location", dest="test_native_bin_location", nargs='?', default=None)
@@ -1002,7 +1003,8 @@ def run_tests(host_os,
               run_crossgen_tests=False,
               large_version_bubble=False,
               run_sequential=False,
-              limited_core_dumps=False):
+              limited_core_dumps=False,
+              run_in_context=False):
     """ Run the coreclr tests
     
     Args:
@@ -1022,6 +1024,7 @@ def run_tests(host_os,
         run_crossgen_tests(bool)    :
         run_sequential(bool)        :
         limited_core_dumps(bool)    :
+        run_in_context(bool)        : run the tests in an unloadable AssemblyLoadContext
     """
 
     # Setup the dotnetcli location
@@ -1068,6 +1071,12 @@ def run_tests(host_os,
 
     if limited_core_dumps:
         setup_coredump_generation(host_os)
+
+    if run_in_context:
+        print("Running test in an unloadable AssemblyLoadContext")
+        os.environ["CLRCustomTestLauncher"] = os.path.join(coreclr_repo_location, "tests", "scripts", "runincontext%s" % (".cmd" if host_os == "Windows_NT" else ".sh"))
+        os.environ["__RunInUnloadableContext"] = "1";
+        per_test_timeout = 20*60*1000
 
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
     # This is read by the test wrapper invoker, in tests\src\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
@@ -1320,6 +1329,11 @@ def setup_args(args):
                               "test_native_bin_location",
                               lambda arg: True,
                               "Error setting test_native_bin_location")
+
+    coreclr_setup_args.verify(args,
+                              "run_in_context",
+                              lambda arg: True,
+                              "Error setting run_in_context")
 
     is_same_os = False
     is_same_arch = False
@@ -2393,7 +2407,8 @@ def do_setup(host_os,
                      run_crossgen_tests=unprocessed_args.run_crossgen_tests,
                      large_version_bubble=unprocessed_args.large_version_bubble,
                      run_sequential=unprocessed_args.sequential,
-                     limited_core_dumps=unprocessed_args.limited_core_dumps)
+                     limited_core_dumps=unprocessed_args.limited_core_dumps,
+                     run_in_context=unprocessed_args.run_in_context)
 
 ################################################################################
 # Main

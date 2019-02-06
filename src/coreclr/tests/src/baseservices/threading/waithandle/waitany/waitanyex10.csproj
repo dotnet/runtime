@@ -12,6 +12,8 @@
     <CLRTestPriority>1</CLRTestPriority>
     <CLRTestExecutionArguments>/size:2 /pos:1</CLRTestExecutionArguments>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- This test leaves threads running at exit -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
 
     <!-- Test unsupported outside of windows -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>

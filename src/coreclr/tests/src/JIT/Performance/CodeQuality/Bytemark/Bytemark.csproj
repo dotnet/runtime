@@ -12,6 +12,8 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>netstandard1.4</NuGetTargetMonikerShort>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- This test takes a very long time when run with runincontext -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
