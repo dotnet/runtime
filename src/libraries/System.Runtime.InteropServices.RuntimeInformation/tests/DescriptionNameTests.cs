@@ -27,9 +27,13 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             Console.WriteLine($@"### CONFIGURATION: {dvs} OS={osd} OSVer={osv} OSArch={osa} Arch={pra} Framework={frd} LibcRelease={lcr} LibcVersion={lcv}");
 
-            string binariesLocation = Path.GetDirectoryName(typeof(object).Assembly.Location);
-            string binariesLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(binariesLocation).DriveFormat;
-            Console.WriteLine($"### BINARIES: {binariesLocation} (drive format {binariesLocationFormat})");
+            if (!PlatformDetection.IsNetNative)
+            {
+                string binariesLocation = Path.GetDirectoryName(typeof(object).Assembly.Location);
+                Console.WriteLine("location: " + binariesLocation);
+                string binariesLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(binariesLocation).DriveFormat;
+                Console.WriteLine($"### BINARIES: {binariesLocation} (drive format {binariesLocationFormat})");
+            }
 
             string tempPathLocation = Path.GetTempPath();
             string tempPathLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(tempPathLocation).DriveFormat;
