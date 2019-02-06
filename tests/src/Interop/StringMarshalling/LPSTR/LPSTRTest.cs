@@ -61,7 +61,6 @@ class Test
             strRet = "\0\0\0";
             return strRet;
         }
-        s = "Managed";
         strRet = "Return\0Return\0";
         return strRet;
     }
@@ -193,6 +192,7 @@ class Test
 
         #region ReversePinvoke
         DelMarshal_InOut d1 = new DelMarshal_InOut(Call_DelMarshal_InOut);
+
         if (!PInvokeDef.RPinvoke_DelMarshal_InOut(d1, "ň"))
         {
             ReportFailure("Method RPinvoke_DelMarshal_InOut[Managed Side],Return value is false");

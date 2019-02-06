@@ -657,6 +657,7 @@ BEGIN
     IDS_EE_BADMARSHAL_BADMETADATA           "Invalid marshaling metadata."
     IDS_EE_BADMARSHAL_CUSTOMMARSHALER       "Custom marshalers are only allowed on classes, strings, arrays, and boxed value types."
     IDS_EE_BADMARSHAL_GENERICS_RESTRICTION  "Generic types cannot be marshaled."
+    IDS_EE_BADMARSHAL_STRING_OUT            "Cannot marshal a string by-value with the [Out] attribute."
 
     IDS_EE_BADMARSHALPARAM_STRINGBUILDER    "Invalid managed/unmanaged type combination (StringBuilders must be paired with LPStr, LPWStr, or LPTStr)."
     IDS_EE_BADMARSHALPARAM_NO_LPTSTR        "Invalid managed/unmanaged type combination (Strings cannot be paired with LPTStr for parameters and return types of methods in interfaces exposed to COM)."
