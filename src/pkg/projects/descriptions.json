@@ -1,7 +1,7 @@
 [
     {
         "Name": "RuntimePackage",
-        "Description": "Internal implementation package not meant for direct consumption.  Please do not reference directly.",
+        "Description": "Internal implementation package not meant for direct consumption. Please do not reference directly.",
         "CommonTypes": [ ]
     },
     {
@@ -37,6 +37,11 @@
     {
         "Name": "Microsoft.NETCore.App",
         "Description": "A set of .NET APIs that are included in the default .NET Core application model.",
+        "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.App.Ref",
+        "Description": "A set of .NET APIs that are included in the default .NET Core application model. Contains reference assemblies, documentation, and other design-time assets.",
         "CommonTypes": [ ]
     }
 ]

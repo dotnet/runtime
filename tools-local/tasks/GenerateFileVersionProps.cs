@@ -98,6 +98,7 @@ namespace Microsoft.DotNet.Build.Tasks
             var manifestFileName = Path.GetFileName(PlatformManifestFile);
             itemGroup.AddItem(PlatformManifestsItem, $"$(MSBuildThisFileDirectory){manifestFileName}");
 
+            Directory.CreateDirectory(Path.GetDirectoryName(PlatformManifestFile));
             using (var manifestWriter = File.CreateText(PlatformManifestFile))
             {
                 foreach (var fileData in fileVersions)
