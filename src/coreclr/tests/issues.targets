@@ -47,6 +47,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
             <Issue>20322</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/misc/waitone2/*">
+            <Issue>6397</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/R2RDumpTest/*">
             <Issue>19441;22020</Issue>
         </ExcludeList>
