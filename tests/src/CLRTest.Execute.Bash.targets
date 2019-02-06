@@ -79,6 +79,14 @@ then
   exit $(GCBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(UnloadabilityIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$__RunInUnloadableContext" ]
+then
+  echo SKIPPING EXECUTION BECAUSE the test is incompatible with unloadability
+  exit $(GCBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'">
     <![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
@@ -152,7 +160,7 @@ fi
         <HasParam>true</HasParam>
         <ParamText>=*</ParamText> <!-- Bash specific -->
         <ParamName>coreRootFullPath</ParamName>
-        <Command><![CDATA[        CORE_ROOT="${i#*=}"]]></Command>
+        <Command><![CDATA[        export CORE_ROOT="${i#*=}"]]></Command>
         <Description>Set CORE_ROOT to the specified value before running the test.</Description>
       </BashCLRTestExecutionScriptArgument>
     </ItemGroup>
@@ -255,8 +263,17 @@ $(BashCLRTestLaunchCmds)
 if [ ! -z ${RunCrossGen+x} ]%3B then
   TakeLock
 fi
-echo $_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
-$_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
+
+if [ ! -z "$CLRCustomTestLauncher" ];
+then
+    LAUNCHER="$CLRCustomTestLauncher $PWD/"
+else
+    LAUNCHER="$_DebuggerFullPath $(_CLRTestRunFile)"
+fi
+
+echo $LAUNCHER $ExePath $CLRTestExecutionArguments
+$LAUNCHER $ExePath $CLRTestExecutionArguments
+
 CLRTestExitCode=$?
 if [ ! -z ${RunCrossGen+x} ]%3B then
   ReleaseLock

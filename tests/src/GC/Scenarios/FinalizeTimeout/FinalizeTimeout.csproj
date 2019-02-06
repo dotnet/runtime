@@ -8,6 +8,7 @@
     <ProjectGuid>{3B0E8096-79D4-413F-9010-F68DF90073B5}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">

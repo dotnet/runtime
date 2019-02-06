@@ -13,6 +13,8 @@
     <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
     <CLRTestExecutionArguments>4 50</CLRTestExecutionArguments>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- This test leaves threads running at exit -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'"></PropertyGroup>

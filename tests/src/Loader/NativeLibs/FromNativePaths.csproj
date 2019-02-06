@@ -7,6 +7,8 @@
     <AssemblyName>FromNativePaths</AssemblyName>
     <ProjectGuid>{649A239B-AB4B-4E20-BDCA-3BA736E8B790}</ProjectGuid>
     <OutputType>Exe</OutputType>
+    <!-- The test cannot be run twice in the same process since it moves a native dll that it uses for pinvoke later -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
