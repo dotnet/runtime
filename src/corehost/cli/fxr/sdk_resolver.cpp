@@ -192,29 +192,7 @@ bool sdk_resolver_t::resolve_sdk_dotnet_path(
     }
 
     std::vector<pal::string_t> hive_dir;
-    std::vector<pal::string_t> global_dirs;
-    bool multilevel_lookup = multilevel_lookup_enabled();
-
-    pal::string_t dotnet_root_temp;
-    if (!dotnet_root.empty())
-    {
-        // dotnet_root contains DIR_SEPARATOR appended that we need to remove.
-        dotnet_root_temp = dotnet_root;
-        remove_trailing_dir_seperator(&dotnet_root_temp);
-        hive_dir.push_back(dotnet_root_temp);
-    }
-
-    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
-    {
-        for (pal::string_t dir : global_dirs)
-        {
-            // Avoid duplicate of dotnet_root_temp
-            if (!pal::are_paths_equal_with_normalized_casing(dir, dotnet_root_temp))
-            {
-                hive_dir.push_back(dir);
-            }
-        }
-    }
+    get_framework_and_sdk_locations(dotnet_root, &hive_dir);
 
     pal::string_t cli_version;
     pal::string_t sdk_path;
