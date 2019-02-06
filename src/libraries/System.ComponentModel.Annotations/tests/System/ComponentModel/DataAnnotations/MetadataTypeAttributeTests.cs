@@ -8,27 +8,19 @@ namespace System.ComponentModel.DataAnnotations.Tests
 {
     public class MetadataTypeAttributeTests
     {
+        [Theory]
+        [InlineData(typeof(int))]
+        public void Ctor_Type(Type metadataClassType)
+        {
+            var attribute = new MetadataTypeAttribute(metadataClassType);
+            Assert.Equal(metadataClassType, attribute.MetadataClassType);
+        }
+
         [Fact]
-        public static void Validate_GetTypeDescriptor_ReturnsMetadataType()
+        public void MetadataClassType_GetWithoutType_ThrowsInvalidOperationException()
         {
-            var provider = new AssociatedMetadataTypeTypeDescriptionProvider(typeof(SomeClassWithMetadataOnAnotherClass));
-            ICustomTypeDescriptor typeDescriptor = provider.GetTypeDescriptor(typeof(SomeClassWithMetadataOnAnotherClass), null);
-            PropertyDescriptorCollection props = typeDescriptor.GetProperties();
-            PropertyDescriptor firstNameProp = props[nameof(SomeClassWithMetadataOnAnotherClass.FirstName)];
-            string displayName = firstNameProp.DisplayName;
-            Assert.Equal("First name", displayName);
-        }
-
-        class MetadataForAnotherClass
-        {
-            [DisplayName("First name")]
-            public string FirstName { get; set; }
-        }
-
-        [MetadataType(typeof(MetadataForAnotherClass))]
-        class SomeClassWithMetadataOnAnotherClass
-        {
-            public string FirstName { get; set; }
+            var attribute = new MetadataTypeAttribute(null);
+            Assert.Throws<InvalidOperationException>(() => attribute.MetadataClassType);
         }
     }
 }
