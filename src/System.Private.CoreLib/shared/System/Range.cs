@@ -3,20 +3,38 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
+    /// <summary>Represent a range has start and end indexes.</summary>
+    /// <remarks>
+    /// Range is used by the C# compiler to support the range syntax.
+    /// <code>
+    /// int[] someArray = new int[5] { 1, 2, 3, 4, 5 };
+    /// int[] subArray1 = someArray[0..2]; // { 1, 2 }
+    /// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
+    /// </code>
+    /// </remarks>
     public readonly struct Range : IEquatable<Range>
     {
+        /// <summary>Represent the inclusive start index of the Range.</summary>
         public Index Start { get; }
+
+        /// <summary>Represent the exclusive end index of the Range.</summary>
         public Index End { get; }
 
-        private Range(Index start, Index end)
+        /// <summary>Construct a Range object using the start and end indexes.</summary>
+        /// <param name="start">Represent the inclusive start index of the range.</param>
+        /// <param name="end">Represent the exclusive end index of the range.</param>
+        public Range(Index start, Index end)
         {
             Start = start;
             End = end;
         }
 
+        /// <summary>Indicates whether the current Range object is equal to another object of the same type.</summary>
+        /// <param name="value">An object to compare with this object</param>
         public override bool Equals(object value)
         {
             if (value is Range)
@@ -28,20 +46,24 @@ namespace System
             return false;
         }
 
+        /// <summary>Indicates whether the current Range object is equal to another Range object.</summary>
+        /// <param name="other">An object to compare with this object</param>
         public bool Equals (Range other) => other.Start.Equals(Start) && other.End.Equals(End);
 
+        /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode()
         {
             return HashCode.Combine(Start.GetHashCode(), End.GetHashCode());
         }
 
+        /// <summary>Converts the value of the current Range object to its equivalent string representation.</summary>
         public override string ToString()
         {
             Span<char> span = stackalloc char[2 + (2 * 11)]; // 2 for "..", then for each index 1 for '^' and 10 for longest possible uint
             int charsWritten;
             int pos = 0;
 
-            if (Start.FromEnd)
+            if (Start.IsFromEnd)
             {
                 span[0] = '^';
                 pos = 1;
@@ -53,7 +75,7 @@ namespace System
             span[pos++] = '.';
             span[pos++] = '.';
 
-            if (End.FromEnd)
+            if (End.IsFromEnd)
             {
                 span[pos++] = '^';
             }
@@ -64,9 +86,63 @@ namespace System
             return new string(span.Slice(0, pos));
         }
 
-        public static Range Create(Index start, Index end) => new Range(start, end);
-        public static Range FromStart(Index start) => new Range(start, new Index(0, fromEnd: true));
-        public static Range ToEnd(Index end) => new Range(new Index(0, fromEnd: false), end);
-        public static Range All() => new Range(new Index(0, fromEnd: false), new Index(0, fromEnd: true));
+        /// <summary>Create a Range object starting from start index to the end of the collection.</summary>
+        public static Range StartAt(Index start) => new Range(start, Index.End);
+
+        /// <summary>Create a Range object starting from first element in the collection to the end Index.</summary>
+        public static Range EndAt(Index end) => new Range(Index.Start, end);
+
+        /// <summary>Create a Range object starting from first element to the end.</summary>
+        public static Range All => new Range(Index.Start, Index.End);
+
+        /// <summary>Destruct the range object according to a collection length and return the start offset from the beginning and the length of this range.</summary>
+        /// <param name="length">The length of the collection that the range will be used with. length has to be a positive value</param>
+        /// <remarks>
+        /// For performance reason, we don't validate the input length parameter against negative values.
+        /// It is expected Range will be used with collections which always have non negative length/count.
+        /// We validate the range is inside the length scope though.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public OffsetAndLength GetOffsetAndLength(int length)
+        {
+            int start;
+            Index startIndex = Start;
+            if (startIndex.IsFromEnd)
+                start = length - startIndex.Value;
+            else
+                start = startIndex.Value;
+
+            int end;
+            Index endIndex = End;
+            if (endIndex.IsFromEnd)
+                end = length - endIndex.Value;
+            else
+                end = endIndex.Value;
+
+            if ((uint)end > (uint)length || (uint)start > (uint)end)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            }
+
+            return new OffsetAndLength(start, end - start);
+        }
+
+        public readonly struct OffsetAndLength
+        {
+            public int Offset { get; }
+            public int Length { get; }
+
+            public OffsetAndLength(int offset, int length)
+            {
+                Offset = offset;
+                Length = length;
+            }
+
+            public void Deconstruct(out int offset, out int length)
+            {
+                offset = Offset;
+                length = Length;
+            }
+        }
     }
 }
