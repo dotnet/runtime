@@ -191,8 +191,7 @@ namespace NetClient
                 Assert.AreEqual(expected, actual);
 
                 actual = local;
-                this.server.Reverse_LPWStr_OutAttr(local, actual); // No-op for strings
-                Assert.AreEqual(local, actual);
+                Assert.Throws<MarshalDirectiveException>( () => this.server.Reverse_LPWStr_OutAttr(local, actual));
             }
 
             foreach (var s in reversableStrings)

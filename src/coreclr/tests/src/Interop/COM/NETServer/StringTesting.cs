@@ -126,6 +126,9 @@ public class StringTesting : Server.Contract.IStringTesting
         b = Reverse(a);
     }
 
+    // This behavior is the "desired" behavior for a string passed by-value with an [Out] attribute.
+    // However, block calling a COM or P/Invoke stub with an "[Out] string" parameter since that would allow users to
+    // edit an immutable string value in place. So, in the NetClient.Primitives.StringTests tests, we expect a MarshalDirectiveException.
     public void Reverse_LPWStr_OutAttr([MarshalAs(UnmanagedType.LPWStr)] string a, [Out][MarshalAs(UnmanagedType.LPWStr)] string b)
     {
         b = Reverse(a);

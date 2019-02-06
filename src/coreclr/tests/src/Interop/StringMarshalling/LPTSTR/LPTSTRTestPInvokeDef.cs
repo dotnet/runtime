@@ -33,6 +33,10 @@ namespace NativeDefs
 
         [DllImport(NativeBinaryName)]
         [return: MarshalAs(UnmanagedType.LPTStr)]
+        public static extern string Marshal_In([In][MarshalAs(UnmanagedType.LPTStr)]string s);
+
+        [DllImport(NativeBinaryName)]
+        [return: MarshalAs(UnmanagedType.LPTStr)]
         public static extern string Marshal_InOut([In, Out][MarshalAs(UnmanagedType.LPTStr)]string s);
 
         [DllImport(NativeBinaryName)]
