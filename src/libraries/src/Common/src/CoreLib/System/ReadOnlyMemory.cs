@@ -188,6 +188,35 @@ namespace System
         }
 
         /// <summary>
+        /// Forms a slice out of the given memory, beginning at 'startIndex'
+        /// </summary>
+        /// <param name="startIndex">The index at which to begin this slice.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlyMemory<T> Slice(Index startIndex)
+        {
+            int actualIndex = startIndex.GetOffset(_length);
+            return Slice(actualIndex);
+        }
+
+        /// <summary>
+        /// Forms a slice out of the given memory using the range start and end indexes.
+        /// </summary>
+        /// <param name="range">The range used to slice the memory using its start and end indexes.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlyMemory<T> Slice(Range range)
+        {
+            (int start, int length) = range.GetOffsetAndLength(_length);
+            // It is expected for _index + start to be negative if the memory is already pre-pinned.
+            return new ReadOnlyMemory<T>(_object, _index + start, length);
+        }
+
+        /// <summary>
+        /// Forms a slice out of the given memory using the range start and end indexes.
+        /// </summary>
+        /// <param name="range">The range used to slice the memory using its start and end indexes.</param>
+        public ReadOnlyMemory<T> this[Range range] => Slice(range);
+
+        /// <summary>
         /// Returns a span from the memory.
         /// </summary>
         public unsafe ReadOnlySpan<T> Span
@@ -386,7 +415,7 @@ namespace System
             // code is based on object identity and referential equality, not deep equality (as common with string).
             return (_object != null) ? HashCode.Combine(RuntimeHelpers.GetHashCode(_object), _index, _length) : 0;
         }
-        
+
         /// <summary>Gets the state of the memory as individual fields.</summary>
         /// <param name="start">The offset.</param>
         /// <param name="length">The count.</param>
