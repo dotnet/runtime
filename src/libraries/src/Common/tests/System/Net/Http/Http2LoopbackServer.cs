@@ -246,17 +246,21 @@ namespace System.Net.Test.Common
             ExpectSettingsAck();
         }
 
+        public void ShutdownSend()
+        {
+            _connectionSocket.Shutdown(SocketShutdown.Send);
+        }
+
         // This will wait for the client to close the connection,
         // and ignore any meaningless frames -- i.e. WINDOW_UPDATE or expected SETTINGS ACK --
         // that we see while waiting for the client to close.
         // Only call this after sending a GOAWAY.
         public async Task WaitForConnectionShutdownAsync()
         {
-            IgnoreWindowUpdates();
-
             // Shutdown our send side, so the client knows there won't be any more frames coming.
-            _connectionSocket.Shutdown(SocketShutdown.Send);
+            ShutdownSend();
 
+            IgnoreWindowUpdates();
             Frame frame = await ReadFrameAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
             if (frame != null)
             {
