@@ -252,6 +252,18 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFT_PFT/AFT_PFT/*">
+            <Issue>22436</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/Assembly_False_False/Assembly_False_False/*">
+            <Issue>22436</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFT_PFT/AFT_PFT/*">
+            <Issue>22436</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/Assembly_False_False/Assembly_False_False/*">
+            <Issue>22436</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x86 specific excludes -->
@@ -279,6 +291,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Char/AFT_PFT/AFT_PFT/*">
+            <Issue>22436</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/LPStr/AFT_PFT/AFT_PFT/*">
+            <Issue>22436</Issue>
         </ExcludeList>
     </ItemGroup>
 
