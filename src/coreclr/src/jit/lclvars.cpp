@@ -4319,28 +4319,28 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *
  *  The frame is laid out as follows for x86:
  *
- *              ESP frames                
+ *              ESP frames
  *
- *      |                       |         
- *      |-----------------------|         
- *      |       incoming        |         
- *      |       arguments       |         
- *      |-----------------------| <---- Virtual '0'         
- *      |    return address     |         
+ *      |                       |
+ *      |-----------------------|
+ *      |       incoming        |
+ *      |       arguments       |
+ *      |-----------------------| <---- Virtual '0'
+ *      |    return address     |
  *      +=======================+
- *      |Callee saved registers |         
- *      |-----------------------|         
- *      |       Temps           |         
- *      |-----------------------|         
- *      |       Variables       |         
+ *      |Callee saved registers |
+ *      |-----------------------|
+ *      |       Temps           |
+ *      |-----------------------|
+ *      |       Variables       |
  *      |-----------------------| <---- Ambient ESP
- *      |   Arguments for the   |         
- *      ~    next function      ~ 
- *      |                       |         
- *      |       |               |         
- *      |       | Stack grows   |         
- *              | downward                
- *              V                         
+ *      |   Arguments for the   |
+ *      ~    next function      ~
+ *      |                       |
+ *      |       |               |
+ *      |       | Stack grows   |
+ *              | downward
+ *              V
  *
  *
  *              EBP frames
@@ -4349,13 +4349,13 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------|
  *      |       incoming        |
  *      |       arguments       |
- *      |-----------------------| <---- Virtual '0'         
- *      |    return address     |         
+ *      |-----------------------| <---- Virtual '0'
+ *      |    return address     |
  *      +=======================+
  *      |    incoming EBP       |
  *      |-----------------------| <---- EBP
- *      |Callee saved registers |         
- *      |-----------------------|         
+ *      |Callee saved registers |
+ *      |-----------------------|
  *      |   security object     |
  *      |-----------------------|
  *      |     ParamTypeArg      |
@@ -4385,39 +4385,39 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *
  *  The frame is laid out as follows for x64:
  *
- *              RSP frames                
- *      |                       |         
- *      |-----------------------|         
- *      |       incoming        |         
- *      |       arguments       |         
- *      |-----------------------|         
- *      |   4 fixed incoming    |         
- *      |    argument slots     |         
+ *              RSP frames
+ *      |                       |
+ *      |-----------------------|
+ *      |       incoming        |
+ *      |       arguments       |
+ *      |-----------------------|
+ *      |   4 fixed incoming    |
+ *      |    argument slots     |
  *      |-----------------------| <---- Caller's SP & Virtual '0'
- *      |    return address     |         
+ *      |    return address     |
  *      +=======================+
- *      | Callee saved Int regs |  
+ *      | Callee saved Int regs |
  *      -------------------------
  *      |        Padding        | <---- this padding (0 or 8 bytes) is to ensure flt registers are saved at a mem location aligned at 16-bytes
  *      |                       |       so that we can save 128-bit callee saved xmm regs using performant "movaps" instruction instead of "movups"
  *      -------------------------
  *      | Callee saved Flt regs | <----- entire 128-bits of callee saved xmm registers are stored here
- *      |-----------------------|         
- *      |         Temps         |         
- *      |-----------------------|         
- *      |       Variables       |         
  *      |-----------------------|
- *      |   Arguments for the   |         
- *      ~    next function      ~ 
- *      |                       |         
- *      |-----------------------|         
- *      |   4 fixed outgoing    |         
- *      |    argument slots     |         
+ *      |         Temps         |
+ *      |-----------------------|
+ *      |       Variables       |
+ *      |-----------------------|
+ *      |   Arguments for the   |
+ *      ~    next function      ~
+ *      |                       |
+ *      |-----------------------|
+ *      |   4 fixed outgoing    |
+ *      |    argument slots     |
  *      |-----------------------| <---- Ambient RSP
- *      |       |               |         
- *      ~       | Stack grows   ~         
- *      |       | downward      |         
- *              V                         
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
+ *              V
  *
  *
  *              RBP frames
@@ -4425,30 +4425,30 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------|
  *      |       incoming        |
  *      |       arguments       |
- *      |-----------------------|         
- *      |   4 fixed incoming    |         
- *      |    argument slots     |         
+ *      |-----------------------|
+ *      |   4 fixed incoming    |
+ *      |    argument slots     |
  *      |-----------------------| <---- Caller's SP & Virtual '0'
- *      |    return address     |         
+ *      |    return address     |
  *      +=======================+
- *      | Callee saved Int regs |         
+ *      | Callee saved Int regs |
  *      -------------------------
- *      |        Padding        | 
+ *      |        Padding        |
  *      -------------------------
- *      | Callee saved Flt regs | 
- *      |-----------------------|         
+ *      | Callee saved Flt regs |
+ *      |-----------------------|
  *      |   security object     |
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
  *      |                       |
- *      |                       | 
+ *      |                       |
  *      ~       Variables       ~
- *      |                       | 
+ *      |                       |
  *      |                       |
  *      |-----------------------|
  *      |        Temps          |
- *      |-----------------------| 
+ *      |-----------------------|
  *      |                       |
  *      ~       localloc        ~   // not in frames with EH
  *      |                       |
@@ -4456,31 +4456,31 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |        PSPSym         |   // only in frames with EH (thus no localloc)
  *      |                       |
  *      |-----------------------| <---- RBP in localloc frames (max 240 bytes from Initial-SP)
- *      |   Arguments for the   |         
- *      ~    next function      ~ 
- *      |                       |         
- *      |-----------------------| 
- *      |   4 fixed outgoing    |         
- *      |    argument slots     |         
+ *      |   Arguments for the   |
+ *      ~    next function      ~
+ *      |                       |
+ *      |-----------------------|
+ *      |   4 fixed outgoing    |
+ *      |    argument slots     |
  *      |-----------------------| <---- Ambient RSP (before localloc, this is Initial-SP)
- *      |       |               |         
- *      ~       | Stack grows   ~         
- *      |       | downward      |         
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
  *              V
  *
  *
  *  The frame is laid out as follows for ARM (this is a general picture; details may differ for different conditions):
  *
- *              SP frames                
- *      |                       |         
- *      |-----------------------|         
- *      |       incoming        |         
- *      |       arguments       |         
+ *              SP frames
+ *      |                       |
+ *      |-----------------------|
+ *      |       incoming        |
+ *      |       arguments       |
  *      +=======================+ <---- Caller's SP
- *      |  Pre-spill registers  |         
+ *      |  Pre-spill registers  |
  *      |-----------------------| <---- Virtual '0'
- *      |Callee saved registers |         
- *      |-----------------------|         
+ *      |Callee saved registers |
+ *      |-----------------------|
  *      ~ possible double align ~
  *      |-----------------------|
  *      |   security object     |
@@ -4501,13 +4501,13 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------|
  *      ~ possible double align ~
  *      |-----------------------|
- *      |   Arguments for the   |         
- *      ~    next function      ~ 
- *      |                       |         
+ *      |   Arguments for the   |
+ *      ~    next function      ~
+ *      |                       |
  *      |-----------------------| <---- Ambient SP
- *      |       |               |         
- *      ~       | Stack grows   ~         
- *      |       | downward      |         
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
  *              V
  *
  *
@@ -4517,10 +4517,10 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |       incoming        |
  *      |       arguments       |
  *      +=======================+ <---- Caller's SP
- *      |  Pre-spill registers  |         
+ *      |  Pre-spill registers  |
  *      |-----------------------| <---- Virtual '0'
- *      |Callee saved registers |         
- *      |-----------------------|         
+ *      |Callee saved registers |
+ *      |-----------------------|
  *      |        PSPSym         |   // Only for frames with EH, which means FP-based frames
  *      |-----------------------|
  *      ~ possible double align ~
@@ -4545,13 +4545,13 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------|
  *      |       localloc        |
  *      |-----------------------|
- *      |   Arguments for the   |         
- *      ~    next function      ~ 
- *      |                       |         
+ *      |   Arguments for the   |
+ *      ~    next function      ~
+ *      |                       |
  *      |-----------------------| <---- Ambient SP
- *      |       |               |         
- *      ~       | Stack grows   ~         
- *      |       | downward      |         
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
  *              V
  *
  *
@@ -4560,17 +4560,17 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *  NOTE: SP must be 16-byte aligned, so there may be alignment slots in the frame.
  *  We will often save and establish a frame pointer to create better ETW stack walks.
  *
- *              SP frames                
- *      |                       |         
- *      |-----------------------|         
- *      |       incoming        |         
- *      |       arguments       |         
+ *              SP frames
+ *      |                       |
+ *      |-----------------------|
+ *      |       incoming        |
+ *      |       arguments       |
  *      +=======================+ <---- Caller's SP
  *      |         homed         | // this is only needed if reg argument need to be homed, e.g., for varargs
- *      |   register arguments  |         
+ *      |   register arguments  |
  *      |-----------------------| <---- Virtual '0'
  *      |Callee saved registers |
- *      |   except fp/lr        |         
+ *      |   except fp/lr        |
  *      |-----------------------|
  *      |   security object     |
  *      |-----------------------|
@@ -4591,13 +4591,13 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |      Saved LR         |
  *      |-----------------------|
  *      |      Saved FP         | <---- Frame pointer
- *      |-----------------------|         
+ *      |-----------------------|
  *      |  Stack arguments for  |
  *      |   the next function   |
  *      |-----------------------| <---- SP
- *      |       |               |         
- *      ~       | Stack grows   ~         
- *      |       | downward      |         
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
  *              V
  *
  *
@@ -4608,10 +4608,10 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |       arguments       |
  *      +=======================+ <---- Caller's SP
  *      |     optional homed    | // this is only needed if reg argument need to be homed, e.g., for varargs
- *      |   register arguments  |         
- *      |-----------------------| <---- Virtual '0'         
+ *      |   register arguments  |
+ *      |-----------------------| <---- Virtual '0'
  *      |Callee saved registers |
- *      |   except fp/lr        |         
+ *      |   except fp/lr        |
  *      |-----------------------|
  *      |        PSPSym         | // Only for frames with EH, which requires FP-based frames
  *      |-----------------------|
@@ -4640,9 +4640,53 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |  Stack arguments for  |
  *      |   the next function   |
  *      |-----------------------| <---- Ambient SP
- *      |       |               |         
- *      ~       | Stack grows   ~         
- *      |       | downward      |         
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
+ *              V
+ *
+ *
+ *              FP (R29 / x29) frames where FP/LR are stored at the top of the frame (frames requiring GS that have localloc)
+ *      |                       |
+ *      |-----------------------|
+ *      |       incoming        |
+ *      |       arguments       |
+ *      +=======================+ <---- Caller's SP
+ *      |     optional homed    | // this is only needed if reg argument need to be homed, e.g., for varargs
+ *      |   register arguments  |
+ *      |-----------------------| <---- Virtual '0'
+ *      |      Saved LR         |
+ *      |-----------------------|
+ *      |      Saved FP         | <---- Frame pointer
+ *      |-----------------------|
+ *      |Callee saved registers |
+ *      |-----------------------|
+ *      |        PSPSym         | // Only for frames with EH, which requires FP-based frames
+ *      |-----------------------|
+ *      |   security object     |
+ *      |-----------------------|
+ *      |     ParamTypeArg      |
+ *      |-----------------------|
+ *      |  possible GS cookie   |
+ *      |-----------------------|
+ *      |       Variables       |
+ *      |-----------------------|
+ *      |  possible GS cookie   |
+ *      |-----------------------|
+ *      |        Temps          |
+ *      |-----------------------|
+ *      |   Stub Argument Var   |
+ *      |-----------------------|
+ *      |Inlined PInvoke Frame V|
+ *      |-----------------------|
+ *      ~       localloc        ~
+ *      |-----------------------|
+ *      |  Stack arguments for  |
+ *      |   the next function   |
+ *      |-----------------------| <---- Ambient SP
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
  *              V
  *
  *
@@ -5576,6 +5620,30 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         codeGen->setFramePointerUsed(codeGen->isFramePointerRequired());
     }
 
+#ifdef _TARGET_ARM64_
+    // Decide where to save FP and LR registers. We store FP/LR registers at the bottom of the frame if there is
+    // a frame pointer used (so we get positive offsets from the frame pointer to access locals), but not if we
+    // need a GS cookie AND localloc is used, since we need the GS cookie to protect the saved return value,
+    // and also the saved frame pointer. See CodeGen::genPushCalleeSavedRegisters() for more details about the
+    // frame types. Since saving FP/LR at high addresses is a relatively rare case, force using it during stress.
+    // (It should be legal to use these frame types for every frame).
+
+    if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
+    {
+        // Default configuration
+        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
+                                                        compStressCompile(STRESS_GENERIC_VARN, 20));
+    }
+    else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
+    {
+        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
+    }
+    else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 2)
+    {
+        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
+    }
+#endif // _TARGET_ARM64_
+
 #ifdef _TARGET_XARCH_
     // On x86/amd64, the return address has already been pushed by the call instruction in the caller.
     stkOffs -= TARGET_POINTER_SIZE; // return address;
@@ -5618,15 +5686,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= initialStkOffs;
     }
 
-    if (isFramePointerUsed())
+    if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() ||
+        !isFramePointerUsed()) // Note that currently we always have a frame pointer
+    {
+        stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
+    }
+    else
     {
         // Subtract off FP and LR.
         assert(compCalleeRegsPushed >= 2);
         stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
-    }
-    else
-    {
-        stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
     }
 
 #else  // !_TARGET_ARM64_
@@ -6207,7 +6276,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif // FEATURE_EH_FUNCLETS && defined(_TARGET_AMD64_)
 
 #ifdef _TARGET_ARM64_
-    if (isFramePointerUsed())
+    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() &&
+        isFramePointerUsed()) // Note that currently we always have a frame pointer
     {
         // Create space for saving FP and LR.
         stkOffs -= 2 * REGSIZE_BYTES;

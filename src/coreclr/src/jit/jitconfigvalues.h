@@ -371,6 +371,37 @@ CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevi
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
 #endif // DEBUG
 
+#if defined(DEBUG)
+// JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
+// file, certain other JIT config variables will be active. If the currently compiled function is not in the file,
+// the specific JIT config variables will not be active.
+//
+// Functions are approximately in the format output by JitFunctionTrace, e.g.:
+//
+// System.CLRConfig:GetBoolValue(ref,byref):bool (MethodHash=3c54d35e)
+//   -- use the MethodHash, not the function name
+//
+// System.CLRConfig:GetBoolValue(ref,byref):bool
+//   -- use just the name
+//
+// Lines with leading ";" "#" or "//" are ignored.
+//
+// If this is unset, then the JIT config values have their normal behavior.
+//
+CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
+#endif // DEBUG
+
+#if defined(DEBUG)
+#if defined(_TARGET_ARM64_)
+// JitSaveFpLrWithCalleeSavedRegisters:
+//    0: use default frame type decision
+//    1: disable frames that save FP/LR registers with the callee-saved registers (at the top of the frame)
+//    2: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
+//    of the frame)
+CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSavedRegisters"), 0)
+#endif // defined(_TARGET_ARM64_)
+#endif // DEBUG
+
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING
 #undef CONFIG_METHODSET

@@ -49,6 +49,10 @@ AssemblyNamesList2* Compiler::s_pAltJitExcludeAssembliesList            = nullpt
 // static
 bool                Compiler::s_pJitDisasmIncludeAssembliesListInitialized = false;
 AssemblyNamesList2* Compiler::s_pJitDisasmIncludeAssembliesList            = nullptr;
+
+// static
+bool       Compiler::s_pJitFunctionFileInitialized = false;
+MethodSet* Compiler::s_pJitMethodSet               = nullptr;
 #endif // DEBUG
 
 /*****************************************************************************
@@ -3207,6 +3211,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitELTHookEnabled = false;
 #endif // PROFILING_SUPPORTED
 
+#if defined(_TARGET_ARM64_)
+    // 0 is default: use the appropriate frame type based on the function.
+    opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
+#endif // defined(_TARGET_ARM64_)
+
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspEmit         = false;
@@ -3417,6 +3426,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
     memset(compActiveStressModes, 0, sizeof(compActiveStressModes));
+
+    // Read function list, if not already read, and there exists such a list.
+    if (!s_pJitFunctionFileInitialized)
+    {
+        const wchar_t* functionFileName = JitConfig.JitFunctionFile();
+        if (functionFileName != nullptr)
+        {
+            s_pJitMethodSet =
+                new (HostAllocator::getHostAllocator()) MethodSet(functionFileName, HostAllocator::getHostAllocator());
+        }
+        s_pJitFunctionFileInitialized = true;
+    }
 
 #endif // DEBUG
 
@@ -3673,6 +3694,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // UNIX_AMD64_ABI
 #endif
+
+#if defined(DEBUG) && defined(_TARGET_ARM64_)
+    if ((s_pJitMethodSet == nullptr) || s_pJitMethodSet->IsActiveMethod(info.compFullName, info.compMethodHash()))
+    {
+        opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
+    }
+#endif // defined(DEBUG) && defined(_TARGET_ARM64_)
 }
 
 #ifdef DEBUG
