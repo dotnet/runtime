@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <DefaultReferenceExclusions Include="System.Diagnostics.Debug" />
+    <DefaultReferenceExclusions Include="System.Runtime.Extensions" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <ReferenceFromRuntime Include="System.Runtime" />
     <ReferenceFromRuntime Include="System.Threading" />

@@ -17,11 +17,11 @@
     <IgnoredReference Include="System.Private.CoreLib" />
     <IgnoredReference Include="Windows" />
     <IgnoredReference Include="System.Private.Interop" />
-    <IgnoredReference Include="Microsoft.Win32.Registry" /> <!-- Ignore for now since it's being exclude from closure below. Issue https://github.com/dotnet/corefx/issues/15966 -->
-    <IgnoredReference Include="System.IO.IsolatedStorage" /> <!-- Ignore for now since it's being exclude from closure below. Issue https://github.com/dotnet/corefx/issues/15968 -->
+    <!-- The following three can be removed if we include RefEmit in UAP - tracked by https://github.com/dotnet/corefx/issues/34937 -->
+    <IgnoredReference Include="System.Reflection.Emit" />
+    <IgnoredReference Include="System.Reflection.Emit.ILGeneration" />
+    <IgnoredReference Include="System.Reflection.Emit.Lightweight" />
 
-    <ExcludeFromClosure Include="System.IO.IsolatedStorage" /> <!-- IsolatedStorage depends on AccessControl which is not available for UAP -->
-    <ExcludeFromClosure Include="Microsoft.Win32.Registry" /> <!-- Most likely this one will be removed from the package, it's just there today for the closure -->
     <!-- Exclude shims from the closure verification -->
     <ExcludeFromClosure Include="mscorlib" />
     <ExcludeFromClosure Include="System" />
@@ -39,7 +39,6 @@
     <!-- Permit the following implementation-only assemblies -->
     <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
       <Value>
-        Microsoft.VisualBasic;
         System.Diagnostics.DiagnosticSource;
         System.Private.DataContractSerialization;
         System.Private.Uri;

@@ -24,7 +24,6 @@
 //
 
 using System.Collections.Generic;
-using System.Security.Permissions;
 using Xunit;
 
 namespace System.Drawing.Drawing2D.Tests

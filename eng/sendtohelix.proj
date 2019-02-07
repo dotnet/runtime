@@ -13,10 +13,12 @@
     <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">600</TimeoutInSeconds>
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
     
-    <!-- We need to enable xunit reporter so that it parses test results -->
-    <EnableXunitReporter>true</EnableXunitReporter>
+    <!-- We need to enable xunit reporter so that it parses test results
+         Package testing doesn't run on xunit. -->
+    <EnableXunitReporter Condition="'$(TargetGroup)' != 'AllConfigurations'">true</EnableXunitReporter>
     
     <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildConfiguration).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(TargetGroup)' == 'AllConfigurations'">$(TestArchiveRuntimeRoot)packages-testPayload-$(ConfigurationGroup).zip</TestArchiveRuntimeFile>
 
     <!-- The helix runtime payload and the tests to run -->
     <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
@@ -28,21 +30,42 @@
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
     test run name will be displayed as $(BuildConfiguration)-$(HelixTargetQueue) -->
     <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
+    <TestRunNamePrefix Condition="'$(IsPackageTesting)' == 'true'">PackageTests-$(ConfigurationGroup)-$(ArchGroup)</TestRunNamePrefix>
+
+    <MaxRetryCount Condition="'$(MaxRetryCount)' == ''">4</MaxRetryCount>
+  </PropertyGroup>
+
+  <!-- If mission control reports a test failure then fail the build whenever helix wait runs. -->
+  <PropertyGroup Condition="'$(FailOnMissionControlTestFailure)' == ''">
+    <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
+    <FailOnMissionControlTestFailure Condition="'$(OfficialBuildId)' != ''">false</FailOnMissionControlTestFailure>
+  </PropertyGroup>
+
+  <!-- If mission control reports a test crash (fireball) then fail the build on helix wait -->
+  <PropertyGroup Condition="'$(FailOnWorkItemFailure)' == ''">
+    <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
+    <FailOnWorkItemFailure Condition="'$(OfficialBuildId)' != ''">false</FailOnWorkItemFailure>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
-    <!-- For PRs we want helixtype to be the same for all frameworks -->
+    <!-- For PRs we want helixtype to be the same for all frameworks except package testing-->
     <HelixType>test/functional/cli/</HelixType>
+    <HelixType Condition="'$(Outerloop)' == 'true' AND '$(OfficialBuildId)' == ''">$(HelixType)/outerloop/</HelixType>
+    <HelixType Condition="'$(TargetGroup)' == 'AllConfigurations'">test/functional/packaging/</HelixType>
     <HelixType Condition="'$(TargetGroup)' == 'netfx' AND '$(OfficialBuildId)' != ''">test/functional/desktop/cli/</HelixType>
     <HelixType Condition="'$(TargetGroup)' == 'uap' AND '$(OfficialBuildId)' != ''">test/functional/uwp/</HelixType>
     <HelixType Condition="'$(TargetGroup)' == 'uapaot' AND '$(OfficialBuildId)' != ''">test/functional/ilc/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(MaxRetryCount)' == ''">
-    <!-- In Windows we need a higher value due to some flakyness in Nano. Can remove when helix provides new containers model -->
-    <MaxRetryCount Condition="'$(TargetsWindows)' == 'true'">9</MaxRetryCount>
-    <MaxRetryCount Condition="'$(TargetsWindows)' != 'true'">1</MaxRetryCount>
+  <PropertyGroup Condition="'$(HelixCommand)' == '' AND '$(TargetGroup)' == 'AllConfigurations'">
+    <HelixPreCommands>set DOTNET_CLI_TELEMETRY_OPTOUT=1;set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1;set DOTNET_MULTILEVEL_LOOKUP=0</HelixPreCommands>
+
+    <HelixCommand>%HELIX_CORRELATION_PAYLOAD%\tools\dotnet.exe msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:PackageTestProjectsDir=%HELIX_WORKITEM_PAYLOAD%</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:RestorePackagesPath=%HELIX_WORKITEM_PAYLOAD%\packages</HelixCommand>
+    <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\</HelixCommand>
   </PropertyGroup>
+
 
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
     <!-- For windows we need to use call, since the command is going to be called from a bat script created by Helix
@@ -58,9 +81,23 @@
     <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
   </ItemGroup>
 
+  <!-- Add global tools to runtime -->
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <TestArchiveRuntimeDependencies Include="$(GlobalToolsDir)**\*.*" />
+  </ItemGroup>
+
   <Target Name="CompressRuntimeDirectory"
-          Inputs="@(_RuntimeInputs)"
-          Outputs="$(TestArchiveRuntimeFile)">
+          Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependencies)"
+          Outputs="$(TestArchiveRuntimeFile)"
+          Condition="'$(TargetGroup)' != 'AllConfigurations'">
+
+    <!-- Copy additional test dependencies. -->
+    <Copy SourceFiles="@(TestArchiveRuntimeDependencies)"
+          DestinationFolder="$(TestHostRootPath)\%(RecursiveDir)"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          Retries="3"
+          RetryDelayMilliseconds="300" />
 
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
     <ZipDirectory
@@ -70,7 +107,8 @@
 
   </Target>
 
-  <Target Name="BuildHelixWorkItems" DependsOnTargets="CompressRuntimeDirectory">
+  <Target Name="BuildHelixWorkItems"
+          DependsOnTargets="CompressRuntimeDirectory">
     <ItemGroup>
 
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
@@ -83,18 +121,5 @@
         <Timeout>$(_timeoutSpan)</Timeout>
       </HelixWorkItem>
     </ItemGroup>
-  </Target>
-
-  <Target Name="ShowMissionControlUrl"
-          AfterTargets="StartTestRuns"
-          Condition="'$(OfficialBuildId)' != ''">
-    <PropertyGroup>
-      <_McUser>dotnet-mc-bot-2</_McUser>
-      <_McHelixType>$([System.String]::Copy('$(HelixType)').ToLowerInvariant().Replace('/', '~2F'))</_McHelixType>
-      <_McHelixSource>$([System.String]::Copy('$(HelixSource)').ToLowerInvariant().Replace('/', '~2F'))</_McHelixSource>
-      <_McUrl>https://mc.dot.net/#/user/$(_McUser)/$(_McHelixSource)/$(_McHelixType)/$(OfficialBuildId)</_McUrl>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="Results will be available at $(_McUrl)" />
   </Target>
 </Project>

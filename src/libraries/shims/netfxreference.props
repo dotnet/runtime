@@ -3,6 +3,7 @@
     <NetFxReference Include="mscorlib">
       <ExcludeFromRuntime>true</ExcludeFromRuntime>
     </NetFxReference>
+    <NetFxReference Condition="'$(TargetGroup)' != 'netcoreapp2.0'" Include="Microsoft.VisualBasic" />
     <NetFxReference Include="System">
       <ExcludeFromRuntime>true</ExcludeFromRuntime>
     </NetFxReference>

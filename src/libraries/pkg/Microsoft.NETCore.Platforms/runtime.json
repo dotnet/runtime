@@ -33,6 +33,28 @@
         "alpine.3.6-x64"
       ]
     },
+    "alpine.3.8": {
+      "#import": [
+        "alpine.3.7"
+      ]
+    },
+    "alpine.3.8-x64": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-x64"
+      ]
+    },
+    "alpine.3.9": {
+      "#import": [
+        "alpine.3.8"
+      ]
+    },
+    "alpine.3.9-x64": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-x64"
+      ]
+    },
     "android": {
       "#import": [
         "linux"

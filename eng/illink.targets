@@ -10,8 +10,8 @@
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(RunningOnCore)' == 'true'">$(ToolsDir)ILLink/netcoreapp2.0/ILLink.Tasks.dll</ILLinkTasksPath>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(RunningOnCore)' != 'true'">$(ToolsDir)ILLink/net46/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' == 'core'">$(ToolsDir)ILLink/netcoreapp2.0/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' != 'core'">$(ToolsDir)ILLink/net46/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
     <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
@@ -63,7 +63,7 @@
        rewriting the assembly to an "output assembly"
   -->
   <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
-  <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'" DependsOnTargets="EnsureBuildToolsRuntime">
+  <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'">
     <PropertyGroup>
       <ILLinkArgs>$(ILLinkArgs)-r $(TargetName)</ILLinkArgs>
       <!-- default action for core assemblies -->

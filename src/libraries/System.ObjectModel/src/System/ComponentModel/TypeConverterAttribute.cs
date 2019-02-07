@@ -39,6 +39,11 @@ namespace System.ComponentModel
         /// </summary>
         public TypeConverterAttribute(Type type)
         {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             ConverterTypeName = type.AssemblyQualifiedName;
         }
 
@@ -50,6 +55,11 @@ namespace System.ComponentModel
         /// </summary>
         public TypeConverterAttribute(string typeName)
         {
+            if (typeName == null)
+            {
+                throw new ArgumentNullException(nameof(typeName));
+            }
+
             ConverterTypeName = typeName;
         }
 

@@ -300,9 +300,7 @@ namespace System.Linq.Parallel
             // write; the CLR 2.0 memory model ensures the write won't move before the write to the
             // corresponding element, so a consumer won't see the new index but the corresponding
             // element in the array as empty.
-#pragma warning disable 0420
             Interlocked.Exchange(ref _producerBufferIndex, (bufferIndex + 1) % _buffer.Length);
-#pragma warning restore 0420
 
             // (If there is a consumer waiting, we have to ensure to signal the event. Unfortunately,
             // this requires that we issue a memory barrier: We need to guarantee that the write to
@@ -338,9 +336,7 @@ namespace System.Linq.Parallel
                 // very quickly, suddenly seeing an empty queue. This would lead to deadlock
                 // if we aren't careful. Therefore we check the empty/full state AGAIN after
                 // setting our flag to see if a real wait is warranted.
-#pragma warning disable 0420
                 Interlocked.Exchange(ref _producerIsWaiting, 1);
-#pragma warning restore 0420
 
                 // (We have to prevent the reads that go into determining whether the buffer
                 // is full from moving before the write to the producer-wait flag. Hence the CAS.)
@@ -557,9 +553,7 @@ namespace System.Linq.Parallel
                 // very quickly, suddenly seeing a full queue. This would lead to deadlock
                 // if we aren't careful. Therefore we check the empty/full state AGAIN after
                 // setting our flag to see if a real wait is warranted.
-#pragma warning disable 0420
                 Interlocked.Exchange(ref _consumerIsWaiting, 1);
-#pragma warning restore 0420
 
                 // (We have to prevent the reads that go into determining whether the buffer
                 // is full from moving before the write to the producer-wait flag. Hence the CAS.)
@@ -619,9 +613,7 @@ namespace System.Linq.Parallel
             // write; the CLR 2.0 memory model ensures the write won't move before the write to the
             // corresponding element, so a consumer won't see the new index but the corresponding
             // element in the array as empty.
-#pragma warning disable 0420
             Interlocked.Exchange(ref _consumerBufferIndex, (consumerBufferIndex + 1) % _buffer.Length);
-#pragma warning restore 0420
 
             // (Unfortunately, this whole sequence requires a memory barrier: We need to guarantee
             // that the write to _consumerBufferIndex doesn't pass the read of the wait-flags; the CLR memory
