@@ -9,9 +9,9 @@
 //
 // This dummy reference to CLRDataCreateInstance prevents the LLVM toolchain from optimizing this important export out.
 //
-#ifdef __llvm__
+#ifdef __GNUC__
 __attribute__((used))
-#endif // __llvm__
+#endif // __GNUC__
 void
 DummyReferenceToExportedAPI()
 {
