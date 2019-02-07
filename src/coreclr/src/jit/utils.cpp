@@ -1557,6 +1557,194 @@ bool AssemblyNamesList2::IsInList(const char* assemblyName)
     return false;
 }
 
+//=============================================================================
+// MethodSet
+//=============================================================================
+
+MethodSet::MethodSet(const wchar_t* filename, HostAllocator alloc) : m_pInfos(nullptr), m_alloc(alloc)
+{
+    FILE* methodSetFile = _wfopen(filename, W("r"));
+    if (methodSetFile == nullptr)
+    {
+        return;
+    }
+
+    MethodInfo* lastInfo = m_pInfos;
+    char        buffer[1024];
+
+    while (true)
+    {
+        // Get next line
+        if (fgets(buffer, sizeof(buffer), methodSetFile) == nullptr)
+        {
+            break;
+        }
+
+        // Ignore lines starting with leading ";" "#" "//".
+        if ((0 == _strnicmp(buffer, ";", 1)) || (0 == _strnicmp(buffer, "#", 1)) || (0 == _strnicmp(buffer, "//", 2)))
+        {
+            continue;
+        }
+
+        // Remove trailing newline, if any.
+        char* p = strpbrk(buffer, "\r\n");
+        if (p != nullptr)
+        {
+            *p = '\0';
+        }
+
+        char*    methodName;
+        unsigned methodHash = 0;
+
+        // Parse the line. Very simple. One of:
+        //
+        //    <method-name>
+        //    <method-name><whitespace>(MethodHash=<hash>)
+
+        const char methodHashPattern[] = " (MethodHash=";
+        p                              = strstr(buffer, methodHashPattern);
+        if (p == nullptr)
+        {
+            // Just use it without the hash.
+            methodName = _strdup(buffer);
+        }
+        else
+        {
+            // There's a method hash; use that.
+
+            // First, get the method name.
+            char* p2 = p;
+            *p       = '\0';
+
+            // Null terminate method at first whitespace. (Don't have any leading whitespace!)
+            p = strpbrk(buffer, " \t");
+            if (p != nullptr)
+            {
+                *p = '\0';
+            }
+            methodName = _strdup(buffer);
+
+            // Now get the method hash.
+            p2 += strlen(methodHashPattern);
+            char* p3 = strchr(p2, ')');
+            if (p3 == nullptr)
+            {
+                // Malformed line: no trailing slash.
+                JITDUMP("Couldn't parse: %s\n", p2);
+                // We can still just use the method name.
+            }
+            else
+            {
+                // Convert the slash to null.
+                *p3 = '\0';
+
+                // Now parse it as hex.
+                int count = sscanf_s(p2, "%x", &methodHash);
+                if (count != 1)
+                {
+                    JITDUMP("Couldn't parse: %s\n", p2);
+                    // Still, use the method name.
+                }
+            }
+        }
+
+        MethodInfo* newInfo = new (m_alloc) MethodInfo(methodName, methodHash);
+        if (m_pInfos == nullptr)
+        {
+            m_pInfos = lastInfo = newInfo;
+        }
+        else
+        {
+            lastInfo->m_next = newInfo;
+            lastInfo         = newInfo;
+        }
+    }
+
+    if (m_pInfos == nullptr)
+    {
+        JITDUMP("No methods read from %ws\n", filename);
+    }
+    else
+    {
+        JITDUMP("Methods read from %ws:\n", filename);
+
+        int methodCount = 0;
+        for (MethodInfo* pInfo = m_pInfos; pInfo != nullptr; pInfo = pInfo->m_next)
+        {
+            JITDUMP("  %s (MethodHash: %x)\n", pInfo->m_MethodName, pInfo->m_MethodHash);
+            ++methodCount;
+        }
+
+        if (methodCount > 100)
+        {
+            JITDUMP("Warning: high method count (%d) for MethodSet with linear search lookups might be slow\n",
+                    methodCount);
+        }
+    }
+}
+
+MethodSet::~MethodSet()
+{
+    for (MethodInfo* pInfo = m_pInfos; pInfo != nullptr; /**/)
+    {
+        MethodInfo* cur = pInfo;
+        pInfo           = pInfo->m_next;
+
+        m_alloc.deallocate(cur->m_MethodName);
+        m_alloc.deallocate(cur);
+    }
+}
+
+// TODO: make this more like JitConfigValues::MethodSet::contains()?
+bool MethodSet::IsInSet(const char* methodName)
+{
+    for (MethodInfo* pInfo = m_pInfos; pInfo != nullptr; pInfo = pInfo->m_next)
+    {
+        if (_stricmp(pInfo->m_MethodName, methodName) == 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool MethodSet::IsInSet(int methodHash)
+{
+    for (MethodInfo* pInfo = m_pInfos; pInfo != nullptr; pInfo = pInfo->m_next)
+    {
+        if (pInfo->m_MethodHash == methodHash)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool MethodSet::IsActiveMethod(const char* methodName, int methodHash)
+{
+    if (methodHash != 0)
+    {
+        // Use the method hash.
+        if (IsInSet(methodHash))
+        {
+            JITDUMP("Method active in MethodSet (hash match): %s Hash: %x\n", methodName, methodHash);
+            return true;
+        }
+    }
+
+    // Else, fall back and use the method name.
+    assert(methodName != nullptr);
+    if (IsInSet(methodName))
+    {
+        JITDUMP("Method active in MethodSet (name match): %s Hash: %x\n", methodName, methodHash);
+        return true;
+    }
+
+    return false;
+}
+
 #ifdef FEATURE_JIT_METHOD_PERF
 CycleCount::CycleCount() : cps(CycleTimer::CyclesPerSecond())
 {
