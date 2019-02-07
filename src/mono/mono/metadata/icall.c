@@ -7362,31 +7362,51 @@ G_EXTERN_C gint32   WriteZStream (gpointer stream, gpointer buffer, gint32 lengt
 gpointer
 ves_icall_System_IO_Compression_DeflateStreamNative_CreateZStream (gint32 compress, MonoBoolean gzip, gpointer feeder, gpointer data)
 {
+#ifdef MONO_CROSS_COMPILE
+	return NULL;
+#else
 	return CreateZStream (compress, gzip, feeder, data);
+#endif
 }
 
 gint32
 ves_icall_System_IO_Compression_DeflateStreamNative_CloseZStream (gpointer stream)
 {
+#ifdef MONO_CROSS_COMPILE
+	return 0;
+#else
 	return CloseZStream (stream);
+#endif
 }
 
 gint32
 ves_icall_System_IO_Compression_DeflateStreamNative_Flush (gpointer stream)
 {
+#ifdef MONO_CROSS_COMPILE
+	return 0;
+#else
 	return Flush (stream);
+#endif
 }
 
 gint32
 ves_icall_System_IO_Compression_DeflateStreamNative_ReadZStream (gpointer stream, gpointer buffer, gint32 length)
 {
+#ifdef MONO_CROSS_COMPILE
+	return 0;
+#else
 	return ReadZStream (stream, buffer, length);
+#endif
 }
 
 gint32
 ves_icall_System_IO_Compression_DeflateStreamNative_WriteZStream (gpointer stream, gpointer buffer, gint32 length)
 {
+#ifdef MONO_CROSS_COMPILE
+	return 0;
+#else
 	return WriteZStream (stream, buffer, length);
+#endif
 }
 
 #endif
