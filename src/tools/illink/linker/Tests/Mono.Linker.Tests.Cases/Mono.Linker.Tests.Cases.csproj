@@ -153,6 +153,8 @@
     <Compile Include="Basic\InterfaceMethodImplementedOnBaseClassDoesNotGetStripped.cs" />
     <Compile Include="Basic\MultiLevelNestedClassesAllRemovedWhenNonUsed.cs" />
     <Compile Include="Basic\NestedDelegateInvokeMethodsPreserved.cs" />
+    <Compile Include="Basic\InstantiatedTypeWithOverridesFromObject.cs" />
+    <Compile Include="Basic\NeverInstantiatedTypeWithOverridesFromObject.cs" />
     <Compile Include="Basic\UninvokedInterfaceMemberGetsRemoved.cs" />
     <Compile Include="Basic\UnusedDelegateGetsRemoved.cs" />
     <Compile Include="Basic\UnusedEnumGetsRemoved.cs" />
@@ -174,7 +176,9 @@
     <Compile Include="CommandLine\ResponseFilesWork.cs" />
     <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
     <Compile Include="CoreLink\DelegateAndMulticastDelegateKeepInstantiatedReqs.cs" />
+    <Compile Include="CoreLink\NeverInstantiatedTypeWithOverridesFromObject.cs" />
     <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
+    <Compile Include="CoreLink\InstantiatedTypeWithOverridesFromObject.cs" />
     <Compile Include="Inheritance.AbstractClasses\UnusedAbstractMethodRemoved.cs" />
     <Compile Include="Inheritance.AbstractClasses\UnusedVirtualMethodRemoved.cs" />
     <Compile Include="Inheritance.AbstractClasses\UsedOverrideOfAbstractMethodIsKept.cs" />
