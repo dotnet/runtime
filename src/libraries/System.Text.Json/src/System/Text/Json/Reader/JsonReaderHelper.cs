@@ -7,11 +7,13 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#if BUILDING_INBOX_LIBRARY
 using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System.Text.Json
 {
-    internal static class JsonReaderHelper
+    internal static partial class JsonReaderHelper
     {
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
@@ -26,6 +28,28 @@ namespace System.Text.Json
                 }
             }
             return (newLines, lastLineFeedIndex);
+        }
+
+        internal static JsonValueType ToValueType(this JsonTokenType tokenType)
+        {
+            switch (tokenType)
+            {
+                case JsonTokenType.None:
+                    return JsonValueType.Undefined;
+                case JsonTokenType.StartArray:
+                    return JsonValueType.Array;
+                case JsonTokenType.StartObject:
+                    return JsonValueType.Object;
+                case JsonTokenType.String:
+                case JsonTokenType.Number:
+                case JsonTokenType.True:
+                case JsonTokenType.False:
+                case JsonTokenType.Null:
+                    return (JsonValueType)((byte)tokenType - 3);
+                default:
+                    Debug.Fail($"No mapping for token type {tokenType}");
+                    return JsonValueType.Undefined;
+            }
         }
 
         // A digit is valid if it is in the range: [0..9]

@@ -156,8 +156,22 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<float>((float)-1.2, "-1.2"), (float)-1.2);
         Assert.StrictEqual(SerializeAndDeserialize<float>((float)0, "0"), (float)0);
         Assert.StrictEqual(SerializeAndDeserialize<float>((float)2.3, "2.3"), (float)2.3);
+    }
+
+    [Fact]
+    [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+    public static void DCJS_FloatAsRoot_NetFramework()
+    {
         Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue, "-3.40282347E+38"), float.MinValue);
         Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue, "3.40282347E+38"), float.MaxValue);
+    }
+
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+    public static void DCJS_FloatAsRoot_NotNetFramework()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue, "-3.4028235E+38"), float.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue, "3.4028235E+38"), float.MaxValue);
     }
 
     [Fact]

@@ -25,20 +25,44 @@ internal static partial class Interop
             }
 
             public GssApiException(Status majorStatus, Status minorStatus)
-                : base(GetGssApiDisplayStatus(majorStatus, minorStatus))
+                : base(GetGssApiDisplayStatus(majorStatus, minorStatus, null))
             {
                 HResult = (int)majorStatus;
                 _minorStatus = minorStatus;
             }
 
-            private static string GetGssApiDisplayStatus(Status majorStatus, Status minorStatus)
+            public GssApiException(Status majorStatus, Status minorStatus, string helpText)
+                : base(GetGssApiDisplayStatus(majorStatus, minorStatus, helpText))
+            {
+                HResult = (int)majorStatus;
+                _minorStatus = minorStatus;
+            }
+
+            private static string GetGssApiDisplayStatus(Status majorStatus, Status minorStatus, string helpText)
             {
                 string majorError = GetGssApiDisplayStatus(majorStatus, isMinor: false);
-                string minorError = GetGssApiDisplayStatus(minorStatus, isMinor: true);
+                string errorMessage;
 
-                return (majorError != null && minorError != null) ?
-                    SR.Format(SR.net_gssapi_operation_failed_detailed, majorError, minorError) :
-                    SR.Format(SR.net_gssapi_operation_failed, majorStatus.ToString("x"), minorStatus.ToString("x"));
+                if (minorStatus != Status.GSS_S_COMPLETE)
+                {
+                    string minorError = GetGssApiDisplayStatus(minorStatus, isMinor: true);
+                    errorMessage = (majorError != null && minorError != null) ?
+                        SR.Format(SR.net_gssapi_operation_failed_detailed, majorError, minorError) :
+                        SR.Format(SR.net_gssapi_operation_failed, majorStatus.ToString("x"), minorStatus.ToString("x"));
+                }
+                else
+                {
+                    errorMessage = (majorError != null) ?
+                        SR.Format(SR.net_gssapi_operation_failed_detailed_majoronly, majorError) :
+                        SR.Format(SR.net_gssapi_operation_failed_majoronly, majorStatus.ToString("x"));
+                }
+
+                if (!string.IsNullOrEmpty(helpText))
+                {
+                    return errorMessage + " " + helpText;
+                }
+
+                return errorMessage;
             }
 
             private static string GetGssApiDisplayStatus(Status status, bool isMinor)

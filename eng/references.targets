@@ -1,0 +1,39 @@
+<Project>
+  <PropertyGroup>
+    <ContractOutputPath>$(RefPath)</ContractOutputPath>
+    <FrameworkPathOverride>$(ContractOutputPath)</FrameworkPathOverride>
+    <AssemblySearchPaths>$(AssemblySearchPaths);$(ContractOutputPath);{RawFileName}</AssemblySearchPaths>
+    <!-- Disable RAR from transitively discovering dependencies for References -->
+    <_FindDependencies>false</_FindDependencies>
+    <!--
+      We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder
+      that exists to skip the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644).
+      Need to set these after the common targets import.
+      -->
+    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)</_TargetFrameworkDirectories>
+    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)</_FullFrameworkReferenceAssemblyPaths>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IncludeDefaultReferences)' == ''">
+    <IncludeDefaultReferences Condition="'$(MSBuildProjectExtension)' == '.csproj'">true</IncludeDefaultReferences>
+    <IncludeDefaultReferences Condition="'$(MSBuildProjectExtension)' == '.vbproj'">true</IncludeDefaultReferences>
+  </PropertyGroup>
+  <Target Name="SetupDefaultReferences">
+    <ItemGroup Condition="'$(IncludeDefaultReferences)' =='true'">
+      <!-- netstandard is a default reference whenever building for NETStandard or building an implementation assembly -->
+      <DefaultReference Condition="($(NuGetTargetMoniker.StartsWith('.NETStandard')) OR '$(IsReferenceAssembly)' != 'true') AND Exists('$(RefPath)netstandard.dll')" Include="netstandard" />
+    </ItemGroup>
+  </Target>
+  <Target Name="UpdateReferenceItems" DependsOnTargets="SetupDefaultReferences" BeforeTargets="AddReferencesDynamically">
+    <ItemGroup>
+      <Reference Include="@(DefaultReference)" />
+    </ItemGroup>
+    <ItemGroup>
+      <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to output -->
+      <Reference Condition="'%(Reference.Extension)' != '.dll'">
+        <Private>false</Private>
+      </Reference>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddReferencesDynamically" BeforeTargets="BeforeResolveReferences;ResolveAssemblyReferences" />
+</Project>

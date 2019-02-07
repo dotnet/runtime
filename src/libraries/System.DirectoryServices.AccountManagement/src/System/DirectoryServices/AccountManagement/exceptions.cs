@@ -9,7 +9,6 @@ using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Security.Authentication;
-using System.Security.Permissions;
 
 namespace System.DirectoryServices.AccountManagement
 {

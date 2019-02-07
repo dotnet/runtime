@@ -16,9 +16,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
     <!-- We're building some non-netcoreapp target, run on the Tools CLI.
-         Reuse the same runtimeconfig used by CSC. -->
-    <GeneratorRuntimeConfig>$(ToolsDir)csc.runtimeconfig.json</GeneratorRuntimeConfig>
-    <GeneratorCliPath>$(ToolsDir)dotnetcli/</GeneratorCliPath>
+         Reuse the same runtimeconfig used by MSBuild. -->
+    <GeneratorRuntimeConfig>$(MSBuildToolsPath)\msbuild.runtimeconfig.json</GeneratorRuntimeConfig>
+    <GeneratorCliPath>$(DotNetRoot)</GeneratorCliPath>
   </PropertyGroup>
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
     <Compile Include=".\SGenTests.cs" />

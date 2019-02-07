@@ -2,8 +2,6 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. See the LICENSE file in the project root for more information. -->
 <Project DefaultTargets="Build">
 
-  <UsingTask TaskName="UpdateVSConfigurations" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-
   <Import Project="Directory.Build.props" />
 
   <PropertyGroup>
@@ -23,6 +21,7 @@
     <ProjectProperties>Configuration=$(BuildConfiguration)</ProjectProperties>
   </PropertyGroup>
 
+  <!-- remove once we no longer use maestro v1 updating -->
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
   <Import Project="Directory.Build.targets" />
@@ -75,8 +74,6 @@
     <MSBuild Projects="@(_PackProjects)" Properties="$(ProjectProperties)" />
   </Target>
 
-  <Import Project="$(ToolsDir)clean.targets" />
-
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
 
   <Target Name="Clean">
@@ -90,18 +87,16 @@
   <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->
   <Import Project="build.override.targets" Condition="Exists('build.override.targets')" />
 
-  <Target Name="UpdateVSConfigurations">
-    <Message Importance="High" Text="Updating configurations for projects ..." />
+  <!-- set up inputs for UpdateVSConfigurations in a target to avoid globbing all the time -->
+  <Target Name="_setProjectsToUpdate" BeforeTargets="UpdateVSConfigurations">
     <ItemGroup>
       <_projectsToExcludeFromUpdate Include="$(MSBuildThisFileDirectory)src/SharedFrameworkValidation/**/*.csproj" />
-      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" Exclude="@(_projectsToExcludeFromUpdate)" />
-      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*ilproj" Exclude="@(_projectsToExcludeFromUpdate)" />
-      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*vbproj" Exclude="@(_projectsToExcludeFromUpdate)" />
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" Exclude="@(_projectsToExcludeFromUpdate)" />
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*ilproj" Exclude="@(_projectsToExcludeFromUpdate)" />
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*vbproj" Exclude="@(_projectsToExcludeFromUpdate)" />
       <_solutionsToUpdateFiles Include="$(MSBuildThisFileDirectory)src/*/Directory.Build.props" />
-      <_solutionsToUpdate Include="@(_solutionsToUpdateFiles->'%(RootDir)%(Directory)')" Exclude="@(_solutionsToExcludeFromUpdate)" />
+      <SolutionsToUpdate Include="@(_solutionsToUpdateFiles->'%(RootDir)%(Directory)')" Exclude="@(_solutionsToExcludeFromUpdate)" />
     </ItemGroup>
-    <UpdateVSConfigurations ProjectsToUpdate="@(_projectsToUpdate)" SolutionsToUpdate="@(_solutionsToUpdate)" />
-    <Message Importance="High" Text="Updating configurations for projects ... Done." />
   </Target>
 
   <!-- Define an empty Execute target for Arcade's publish to BAR finds it: https://github.com/dotnet/arcade/issues/1452 -->

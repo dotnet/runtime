@@ -159,7 +159,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(token1, enumerable.CancellationToken);
         }
 
-        private sealed class TrackFlagsAsyncEnumerable : IAsyncEnumerable<int>, IAsyncEnumerator<int>, IValueTaskSource<bool>, IValueTaskSource
+        private sealed class TrackFlagsAsyncEnumerable : IAsyncEnumerable<int>
         {
             public ValueTaskSourceOnCompletedFlags Flags;
             public CancellationToken CancellationToken;
@@ -167,17 +167,24 @@ namespace System.Runtime.CompilerServices.Tests
             public IAsyncEnumerator<int> GetAsyncEnumerator(CancellationToken cancellationToken = default)
             {
                 CancellationToken = cancellationToken;
-                return this;
+                return new Enumerator(this);
             }
 
-            public ValueTask<bool> MoveNextAsync() => new ValueTask<bool>(this, 0);
-            public int Current => throw new NotImplementedException();
-            public ValueTask DisposeAsync() => new ValueTask(this, 0);
+            private sealed class Enumerator : IAsyncEnumerator<int>, IValueTaskSource<bool>, IValueTaskSource
+            {
+                private readonly TrackFlagsAsyncEnumerable _enumerable;
 
-            public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => Flags = flags;
-            public ValueTaskSourceStatus GetStatus(short token) => ValueTaskSourceStatus.Pending;
-            public bool GetResult(short token) => throw new NotImplementedException();
-            void IValueTaskSource.GetResult(short token) => throw new NotImplementedException();
+                public Enumerator(TrackFlagsAsyncEnumerable enumerable) => _enumerable = enumerable;
+
+                public ValueTask<bool> MoveNextAsync() => new ValueTask<bool>(this, 0);
+                public int Current => throw new NotImplementedException();
+                public ValueTask DisposeAsync() => new ValueTask(this, 0);
+
+                public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => _enumerable.Flags = flags;
+                public ValueTaskSourceStatus GetStatus(short token) => ValueTaskSourceStatus.Pending;
+                public bool GetResult(short token) => throw new NotImplementedException();
+                void IValueTaskSource.GetResult(short token) => throw new NotImplementedException();
+            }
         }
 
         private sealed class EnumerableWithDelayToAsyncEnumerable<T> : IAsyncEnumerable<T>, IAsyncEnumerator<T>

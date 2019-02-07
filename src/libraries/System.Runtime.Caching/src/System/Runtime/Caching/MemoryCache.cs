@@ -12,7 +12,6 @@ using System.Collections.ObjectModel;
 using System.Configuration;
 using System.Diagnostics.CodeAnalysis;
 using System.Security;
-using System.Security.Permissions;
 using System.Threading;
 
 namespace System.Runtime.Caching

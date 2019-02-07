@@ -19,6 +19,8 @@
 
     <SymbolsOutputRoot Condition="'$(SymbolsOutputRoot)' == ''">$(PackageOutputRoot)/symbols/</SymbolsOutputRoot>
     <SymbolsPublishPattern>$(SymbolsOutputRoot)*.nupkg</SymbolsPublishPattern>
+    <SymbolsPublishPrivatePattern>$(SymbolsOutputRoot)*Private*.nupkg</SymbolsPublishPrivatePattern>
+    <SymbolsPublishExperimentalPattern>$(SymbolsOutputRoot)*Experimental*.nupkg</SymbolsPublishExperimentalPattern>
   </PropertyGroup>
 
 
@@ -34,9 +36,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <SymbolPackagesToPublish  Include="$(SymbolsPublishPattern)">
+    <SymbolPackagesToPublish  Include="$(SymbolsPublishPrivatePattern);$(SymbolsPublishExperimentalPattern)">
       <ManifestArtifactData>NonShipping=true</ManifestArtifactData>
     </SymbolPackagesToPublish>
+    <SymbolPackagesToPublish Include="$(SymbolsPublishPattern)" Exclude="@(SymbolPackagesToPublish)" />
 
     <PackagesToPublish Condition="'$(IncludeSymbolsOnPackagePublish)' == 'true'" Include="@(SymbolPackagesToPublish)" />
 

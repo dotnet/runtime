@@ -13,7 +13,6 @@ namespace System.DirectoryServices.AccountManagement
     using System.Runtime.InteropServices;
     using System;
     using System.Security;
-    using System.Security.Permissions;
     using System.Text;
 
     internal class Constants
