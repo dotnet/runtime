@@ -479,10 +479,6 @@ FCFuncStart(gTypeNameParser)
     QCFuncElement("_GetAssemblyName",       TypeName::QGetAssemblyName)
 FCFuncEnd()
 
-FCFuncStart(gManifestBasedResourceGrovelerFuncs)
-    QCFuncElement("GetNeutralResourcesLanguageAttribute", AssemblyNative::GetNeutralResourcesLanguageAttribute)
-FCFuncEnd()
-
 FCFuncStart(gRuntimeAssemblyFuncs)
     QCFuncElement("GetFullName", AssemblyNative::GetFullName)
     QCFuncElement("GetLocation", AssemblyNative::GetLocation)
@@ -1237,7 +1233,6 @@ FCClassElement("InterfaceMarshaler", "System.StubHelpers", gInterfaceMarshalerFu
 #endif
 FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
 FCClassElement("LoaderAllocatorScout", "System.Reflection", gLoaderAllocatorFuncs)
-FCClassElement("ManifestBasedResourceGroveler", "System.Resources",  gManifestBasedResourceGrovelerFuncs)
 FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs)
 FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
