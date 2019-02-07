@@ -19,7 +19,7 @@ class C
 	}
 
 	public static void 
-	JsonValidateMerp ()
+	JsonValidateMerp (string configDir)
 	{
 		var monoType = Type.GetType ("Mono.Runtime", false);
 		var m = monoType.GetMethod("EnableMicrosoftTelemetry", BindingFlags.NonPublic | BindingFlags.Static);
@@ -32,7 +32,6 @@ class C
 		var appVersion = "123456";
 		var eventType = "AppleAppCrash";
 		var appPath = "/where/mono/lives";
-		var configDir = "./";
 
 		var m_params = new object[] { appBundleId, appSignature, appVersion, merpGUIPath, eventType, appPath, configDir };
 
@@ -63,8 +62,6 @@ class C
 		var paramsFilePath = String.Format("{0}MERP.uploadparams.txt", configDir);
 		var crashFilePath = String.Format("{0}lastcrashlog.txt", configDir);
 
-		// Fixme: Maybe parse these json files rather than
-		// just checking they exist
 		var xmlFileExists = File.Exists (xmlFilePath);
 		var paramsFileExists = File.Exists (paramsFilePath);
 		var crashFileExists = File.Exists (crashFilePath);
@@ -81,7 +78,7 @@ class C
 
 		if (crashFileExists) {
 			var crashFile = File.ReadAllText (crashFilePath);
-			//File.Delete (crashFilePath);
+			File.Delete (crashFilePath);
 
 			var checker = new JavaScriptSerializer ();
 
@@ -103,6 +100,13 @@ class C
 	public static void Main ()
 	{
 		JsonValidateState ();
-		JsonValidateMerp ();
+
+		var configDir = "./merp-json-valid/";
+		Directory.CreateDirectory (configDir);
+		try {
+			JsonValidateMerp (configDir);
+		} finally {
+			Directory.Delete (configDir, true);
+		}
 	}
 }

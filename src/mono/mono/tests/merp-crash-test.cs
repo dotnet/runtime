@@ -127,7 +127,7 @@ class C
 		}
 	}
 
-	static string configDir = "./";
+	static string configDir = "./merp-crash-test/";
 
 	public static void 
 	CrashWithMerp (int testNum)
@@ -161,7 +161,7 @@ class C
 	}
 
 	public static void 
-	TestValidateAndCleanup (string configDir, bool silent)
+	TestValidate (string configDir, bool silent)
 	{
 		DumpLogCheck ();
 
@@ -180,6 +180,8 @@ class C
 			if (!silent)
 				Console.WriteLine ("Xml file {0}", text);
 			File.Delete (xmlFilePath);
+		} else {
+			Console.WriteLine ("Xml file {0} missing", xmlFilePath);
 		}
 
 		if (paramsFileExists) {
@@ -187,6 +189,8 @@ class C
 			if (!silent)
 				Console.WriteLine ("Params file {0}", text);
 			File.Delete (paramsFilePath);
+		} else {
+			Console.WriteLine ("Params file {0} missing", paramsFilePath);
 		}
 
 		if (crashFileExists) {
@@ -206,6 +210,8 @@ class C
 
 			File.Delete (crashFilePath);
 			// Assert it has the required merp fields
+		} else {
+			Console.WriteLine ("Crash file {0} missing", crashFilePath);
 		}
 
 		if (!xmlFileExists)
@@ -221,24 +227,7 @@ class C
 	public static void
 	Cleanup (string configDir)
 	{
-		var xmlFilePath = String.Format("{0}CustomLogsMetadata.xml", configDir);
-		var paramsFilePath = String.Format("{0}MERP.uploadparams.txt", configDir);
-		var crashFilePath = String.Format("{0}lastcrashlog.txt", configDir);
-
-		// Fixme: Maybe parse these json files rather than
-		// just checking they exist
-		var xmlFileExists = File.Exists (xmlFilePath);
-		var paramsFileExists = File.Exists (paramsFilePath);
-		var crashFileExists = File.Exists (crashFilePath);
-
-		if (xmlFileExists)
-			File.Delete (xmlFilePath);
-
-		if (paramsFileExists)
-			File.Delete (paramsFilePath);
-
-		if (crashFileExists)
-			File.Delete (crashFilePath);
+		Directory.Delete (configDir, true);
 	}
 
 	static void DumpLogSet ()
@@ -281,13 +270,26 @@ class C
 		pi.Arguments = String.Format ("{0} {1}", asm, testNum);;
 		pi.Environment ["MONO_PATH"] = env;
 
-		if (!silent)
+		if (!silent) {
+			Console.WriteLine ("Running {0}", CrasherClass.Crashers [testNum].Item1);
 			Console.WriteLine ("MONO_PATH={0} {1} {2} {3}", env, runtime, asm, testNum);
+		}
 
-		var process = Diag.Process.Start (pi);
-		process.WaitForExit ();
+		if (Directory.Exists (configDir)) {
+			Console.WriteLine ("Cleaning up left over configDir {0}", configDir);
+			Cleanup (configDir);
+		}
 
-		TestValidateAndCleanup (configDir, silent);
+		Directory.CreateDirectory (configDir);
+
+		try {
+			var process = Diag.Process.Start (pi);
+			process.WaitForExit ();
+
+			TestValidate (configDir, silent);
+		} finally {
+			Cleanup (configDir);
+		}
 	}
 
 	public static void Main (string [] args)
@@ -344,7 +346,6 @@ class C
 					SpawnCrashingRuntime (processExe, CrasherClass.StresserIndex, true);
 				} catch (Exception e) {
 					Console.WriteLine ("Stress test caught failure. Shutting down after {1} iterations.\n {0} \n\n", e.InnerException, iter);
-					Cleanup (configDir);
 					throw;
 				}
 			}
