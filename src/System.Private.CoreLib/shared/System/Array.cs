@@ -2,39 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** Purpose: Base class which can be used to access any array
-**
-===========================================================*/
-
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.Versioning;
-using System.Security;
 using Internal.Runtime.CompilerServices;
-
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
 
 namespace System
 {
-    // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both 
-    // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public abstract class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
+    public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
+        // We impose limits on maximum array lenght in each dimension to allow efficient
+        // implementation of advanced range check elimination in future.
+        // Keep in sync with vm\gcscan.cpp and HashHelpers.MaxPrimeArrayLength.
+        // The constants are defined in this method: inline SIZE_T MaxArrayLength(SIZE_T componentSize) from gcscan
+        // We have different max sizes for arrays with elements of size 1 for backwards compatibility
+        internal const int MaxArrayLength = 0X7FEFFFFF;
+        internal const int MaxByteArrayLength = 0x7FFFFFC7;
+
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
         // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
         internal Array() { }
@@ -65,87 +53,9 @@ namespace System
             if (larray.Length != newSize)
             {
                 T[] newArray = new T[newSize];
-                Array.Copy(larray, 0, newArray, 0, larray.Length > newSize ? newSize : larray.Length);
+                Copy(larray, 0, newArray, 0, larray.Length > newSize ? newSize : larray.Length);
                 array = newArray;
             }
-        }
-
-        // Create instance will create an array
-        public static unsafe Array CreateInstance(Type elementType, int length)
-        {
-            if ((object)elementType == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (length < 0)
-                ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-            return InternalCreate((void*)t.TypeHandle.Value, 1, &length, null);
-        }
-
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
-        {
-            if ((object)elementType == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (length1 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length1, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (length2 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-            int* pLengths = stackalloc int[2];
-            pLengths[0] = length1;
-            pLengths[1] = length2;
-            return InternalCreate((void*)t.TypeHandle.Value, 2, pLengths, null);
-        }
-
-        public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
-        {
-            if ((object)elementType == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (length1 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length1, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (length2 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (length3 < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length3, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-            int* pLengths = stackalloc int[3];
-            pLengths[0] = length1;
-            pLengths[1] = length2;
-            pLengths[2] = length3;
-            return InternalCreate((void*)t.TypeHandle.Value, 3, pLengths, null);
-        }
-
-        public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
-        {
-            if ((object)elementType == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lengths.Length == 0)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
-
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-
-            // Check to make sure the lenghts are all positive. Note that we check this here to give
-            // a good exception message if they are not; however we check this again inside the execution 
-            // engine's low level allocation function after having made a copy of the array to prevent a 
-            // malicious caller from mutating the array after this check.           
-            for (int i = 0; i < lengths.Length; i++)
-                if (lengths[i] < 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            fixed (int* pLengths = &lengths[0])
-                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, null);
         }
 
         public static Array CreateInstance(Type elementType, params long[] lengths)
@@ -162,215 +72,76 @@ namespace System
             for (int i = 0; i < lengths.Length; ++i)
             {
                 long len = lengths[i];
-                if (len > int.MaxValue || len < int.MinValue)
+                int ilen = (int)len;
+                if (len != ilen)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.len, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-                intLengths[i] = (int)len;
+                intLengths[i] = ilen;
             }
 
             return Array.CreateInstance(elementType, intLengths);
         }
 
-
-        public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
-        {
-            if (elementType == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lowerBounds == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lowerBounds);
-            if (lengths.Length != lowerBounds.Length)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
-            if (lengths.Length == 0)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
-
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-
-            // Check to make sure the lenghts are all positive. Note that we check this here to give
-            // a good exception message if they are not; however we check this again inside the execution 
-            // engine's low level allocation function after having made a copy of the array to prevent a 
-            // malicious caller from mutating the array after this check.           
-            for (int i = 0; i < lengths.Length; i++)
-                if (lengths[i] < 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
-            fixed (int* pLengths = &lengths[0])
-            fixed (int* pLowerBounds = &lowerBounds[0])
-                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, pLowerBounds);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe Array InternalCreate(void* elementType, int rank, int* pLengths, int* pLowerBounds);
-
-        // Copies length elements from sourceArray, starting at index 0, to
-        // destinationArray, starting at index 0.
-        //
-        public static void Copy(Array sourceArray, Array destinationArray, int length)
-        {
-            if (sourceArray == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
-            if (destinationArray == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
-
-            Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length, false);
-        }
-
-        // Copies length elements from sourceArray, starting at sourceIndex, to
-        // destinationArray, starting at destinationIndex.
-        //
-        public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, false);
-        }
-
-        // Reliability-wise, this method will either possibly corrupt your 
-        // instance & might fail when called from within a CER, or if the
-        // reliable flag is true, it will either always succeed or always
-        // throw an exception with no side effects.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable);
-
-        // Provides a strong exception guarantee - either it succeeds, or
-        // it throws an exception with no side effects.  The arrays must be
-        // compatible array types based on the array element type - this 
-        // method does not support casting, boxing, or primitive widening.
-        // It will up-cast, assuming the array types are correct.
-        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, true);
-        }
-
         public static void Copy(Array sourceArray, Array destinationArray, long length)
         {
-            if (length > int.MaxValue || length < int.MinValue)
+            int ilength = (int)length;
+            if (length != ilength)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            Array.Copy(sourceArray, destinationArray, (int)length);
+            Copy(sourceArray, destinationArray, ilength);
         }
 
         public static void Copy(Array sourceArray, long sourceIndex, Array destinationArray, long destinationIndex, long length)
         {
-            if (sourceIndex > int.MaxValue || sourceIndex < int.MinValue)
+            int isourceIndex = (int)sourceIndex;
+            int idestinationIndex = (int)destinationIndex;
+            int ilength = (int)length;
+
+            if (sourceIndex != isourceIndex)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceIndex, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (destinationIndex > int.MaxValue || destinationIndex < int.MinValue)
+            if (destinationIndex != idestinationIndex)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.destinationIndex, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (length > int.MaxValue || length < int.MinValue)
+            if (length != ilength)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            Array.Copy(sourceArray, (int)sourceIndex, destinationArray, (int)destinationIndex, (int)length);
-        }
-
-
-        // Sets length elements in array to 0 (or null for Object arrays), starting
-        // at index.
-        //
-        public static unsafe void Clear(Array array, int index, int length)
-        {
-            if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-
-            ref byte p = ref GetRawArrayGeometry(array, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers);
-
-            int offset = index - lowerBound;
-
-            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > numComponents)
-                ThrowHelper.ThrowIndexOutOfRangeException();
-
-            ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * (nuint)elementSize);
-            nuint byteLength = (uint)length * (nuint)elementSize;
-
-            if (containsGCPointers)
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
-            else
-                SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern ref byte GetRawArrayGeometry(Array array, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers);
-
-        // The various Get values...
-        public unsafe object GetValue(params int[] indices)
-        {
-            if (indices == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices.Length)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
-
-            TypedReference elemref = new TypedReference();
-            fixed (int* pIndices = &indices[0])
-                InternalGetReference(&elemref, indices.Length, pIndices);
-            return TypedReference.InternalToObject(&elemref);
-        }
-
-        public unsafe object GetValue(int index)
-        {
-            if (Rank != 1)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
-
-            TypedReference elemref = new TypedReference();
-            InternalGetReference(&elemref, 1, &index);
-            return TypedReference.InternalToObject(&elemref);
-        }
-
-        public unsafe object GetValue(int index1, int index2)
-        {
-            if (Rank != 2)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
-
-            int* pIndices = stackalloc int[2];
-            pIndices[0] = index1;
-            pIndices[1] = index2;
-
-            TypedReference elemref = new TypedReference();
-            InternalGetReference(&elemref, 2, pIndices);
-            return TypedReference.InternalToObject(&elemref);
-        }
-
-        public unsafe object GetValue(int index1, int index2, int index3)
-        {
-            if (Rank != 3)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
-
-            int* pIndices = stackalloc int[3];
-            pIndices[0] = index1;
-            pIndices[1] = index2;
-            pIndices[2] = index3;
-
-            TypedReference elemref = new TypedReference();
-            InternalGetReference(&elemref, 3, pIndices);
-            return TypedReference.InternalToObject(&elemref);
+            Copy(sourceArray, isourceIndex, destinationArray, idestinationIndex, ilength);
         }
 
         public object GetValue(long index)
         {
-            if (index > int.MaxValue || index < int.MinValue)
+            int iindex = (int)index;
+            if (index != iindex)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            return this.GetValue((int)index);
+            return this.GetValue(iindex);
         }
 
         public object GetValue(long index1, long index2)
         {
-            if (index1 > int.MaxValue || index1 < int.MinValue)
+            int iindex1 = (int)index1;
+            int iindex2 = (int)index2;
+
+            if (index1 != iindex1)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index1, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (index2 > int.MaxValue || index2 < int.MinValue)
+            if (index2 != iindex2)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index2, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            return this.GetValue((int)index1, (int)index2);
+            return this.GetValue(iindex1, iindex2);
         }
 
         public object GetValue(long index1, long index2, long index3)
         {
-            if (index1 > int.MaxValue || index1 < int.MinValue)
+            int iindex1 = (int)index1;
+            int iindex2 = (int)index2;
+            int iindex3 = (int)index3;
+
+            if (index1 != iindex1)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index1, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (index2 > int.MaxValue || index2 < int.MinValue)
+            if (index2 != iindex2)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index2, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (index3 > int.MaxValue || index3 < int.MinValue)
+            if (index3 != iindex3)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index3, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            return this.GetValue((int)index1, (int)index2, (int)index3);
+            return this.GetValue(iindex1, iindex2, iindex3);
         }
 
         public object GetValue(params long[] indices)
@@ -385,95 +156,52 @@ namespace System
             for (int i = 0; i < indices.Length; ++i)
             {
                 long index = indices[i];
-                if (index > int.MaxValue || index < int.MinValue)
+                int iindex = (int)index;
+                if (index != iindex)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-                intIndices[i] = (int)index;
+                intIndices[i] = iindex;
             }
 
             return this.GetValue(intIndices);
         }
 
-
-        public unsafe void SetValue(object value, int index)
-        {
-            if (Rank != 1)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
-
-            TypedReference elemref = new TypedReference();
-            InternalGetReference(&elemref, 1, &index);
-            InternalSetValue(&elemref, value);
-        }
-
-        public unsafe void SetValue(object value, int index1, int index2)
-        {
-            if (Rank != 2)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
-
-            int* pIndices = stackalloc int[2];
-            pIndices[0] = index1;
-            pIndices[1] = index2;
-
-            TypedReference elemref = new TypedReference();
-            InternalGetReference(&elemref, 2, pIndices);
-            InternalSetValue(&elemref, value);
-        }
-
-        public unsafe void SetValue(object value, int index1, int index2, int index3)
-        {
-            if (Rank != 3)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
-
-            int* pIndices = stackalloc int[3];
-            pIndices[0] = index1;
-            pIndices[1] = index2;
-            pIndices[2] = index3;
-
-            TypedReference elemref = new TypedReference();
-            InternalGetReference(&elemref, 3, pIndices);
-            InternalSetValue(&elemref, value);
-        }
-
-        public unsafe void SetValue(object value, params int[] indices)
-        {
-            if (indices == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices.Length)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
-
-            TypedReference elemref = new TypedReference();
-            fixed (int* pIndices = &indices[0])
-                InternalGetReference(&elemref, indices.Length, pIndices);
-            InternalSetValue(&elemref, value);
-        }
-
         public void SetValue(object value, long index)
         {
-            if (index > int.MaxValue || index < int.MinValue)
+            int iindex = (int)index;
+
+            if (index != iindex)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            this.SetValue(value, (int)index);
+            this.SetValue(value, iindex);
         }
 
         public void SetValue(object value, long index1, long index2)
         {
-            if (index1 > int.MaxValue || index1 < int.MinValue)
+            int iindex1 = (int)index1;
+            int iindex2 = (int)index2;
+
+            if (index1 != iindex1)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index1, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (index2 > int.MaxValue || index2 < int.MinValue)
+            if (index2 != iindex2)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index2, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            this.SetValue(value, (int)index1, (int)index2);
+            this.SetValue(value, iindex1, iindex2);
         }
 
         public void SetValue(object value, long index1, long index2, long index3)
         {
-            if (index1 > int.MaxValue || index1 < int.MinValue)
+            int iindex1 = (int)index1;
+            int iindex2 = (int)index2;
+            int iindex3 = (int)index3;
+
+            if (index1 != iindex1)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index1, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (index2 > int.MaxValue || index2 < int.MinValue)
+            if (index2 != iindex2)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index2, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-            if (index3 > int.MaxValue || index3 < int.MinValue)
+            if (index3 != iindex3)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index3, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            this.SetValue(value, (int)index1, (int)index2, (int)index3);
+            this.SetValue(value, iindex1, iindex2, iindex3);
         }
 
         public void SetValue(object value, params long[] indices)
@@ -488,27 +216,13 @@ namespace System
             for (int i = 0; i < indices.Length; ++i)
             {
                 long index = indices[i];
-                if (index > int.MaxValue || index < int.MinValue)
+                int iindex = (int)index;
+                if (index != iindex)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-                intIndices[i] = (int)index;
+                intIndices[i] = iindex;
             }
 
             this.SetValue(value, intIndices);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        // reference to TypedReference is banned, so have to pass result as pointer
-        private extern unsafe void InternalGetReference(void* elemRef, int rank, int* pIndices);
-
-        // Ideally, we would like to use TypedReference.SetValue instead. Unfortunately, TypedReference.SetValue
-        // always throws not-supported exception
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void InternalSetValue(void* target, object value);
-
-        public extern int Length
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
         }
 
         private static int GetMedian(int low, int hi)
@@ -519,46 +233,11 @@ namespace System
             return low + ((hi - low) >> 1);
         }
 
-        // We impose limits on maximum array lenght in each dimension to allow efficient 
-        // implementation of advanced range check elimination in future.
-        // Keep in sync with vm\gcscan.cpp and HashHelpers.MaxPrimeArrayLength.
-        // The constants are defined in this method: inline SIZE_T MaxArrayLength(SIZE_T componentSize) from gcscan
-        // We have different max sizes for arrays with elements of size 1 for backwards compatibility
-        internal const int MaxArrayLength = 0X7FEFFFFF;
-        internal const int MaxByteArrayLength = 0x7FFFFFC7;
-
-        public extern long LongLength
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern int GetLength(int dimension);
-
         public long GetLongLength(int dimension)
         {
             //This method should throw an IndexOufOfRangeException for compat if dimension < 0 or >= Rank
             return GetLength(dimension);
         }
-
-        public extern int Rank
-        {
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            get;
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern int GetUpperBound(int dimension);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern int GetLowerBound(int dimension);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern ref byte GetRawArrayData();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern int GetElementSize();
 
         // Number of elements in the Array.
         int ICollection.Count
@@ -698,8 +377,7 @@ namespace System
             return true;
         }
 
-        // From System.Web.Util.HashCodeCombiner
-        internal static int CombineHashCodes(int h1, int h2)
+        private static int CombineHashCodes(int h1, int h2)
         {
             return (((h1 << 5) + h1) ^ h2);
         }
@@ -776,8 +454,7 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            int lb = array.GetLowerBound(0);
-            return BinarySearch(array, lb, array.Length, value, comparer);
+            return BinarySearch(array, array.GetLowerBound(0), array.Length, value, comparer);
         }
 
         // Searches a section of an array for a given element using a binary search
@@ -810,6 +487,7 @@ namespace System
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
 
             if (comparer == null) comparer = Comparer.Default;
+#if CORECLR
             if (comparer == Comparer.Default)
             {
                 int retval;
@@ -817,6 +495,7 @@ namespace System
                 if (r)
                     return retval;
             }
+#endif
 
             int lo = index;
             int hi = index + length - 1;
@@ -827,7 +506,7 @@ namespace System
                     // i might overflow if lo and hi are both large positive numbers. 
                     int i = GetMedian(lo, hi);
 
-                    int c = 0;
+                    int c;
                     try
                     {
                         c = comparer.Compare(objArray[i], value);
@@ -835,6 +514,7 @@ namespace System
                     catch (Exception e)
                     {
                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+                        return default;
                     }
                     if (c == 0) return i;
                     if (c < 0)
@@ -853,7 +533,7 @@ namespace System
                 {
                     int i = GetMedian(lo, hi);
 
-                    int c = 0;
+                    int c;
                     try
                     {
                         c = comparer.Compare(array.GetValue(i), value);
@@ -861,6 +541,7 @@ namespace System
                     catch (Exception e)
                     {
                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+                        return default;
                     }
                     if (c == 0) return i;
                     if (c < 0)
@@ -875,9 +556,6 @@ namespace System
             }
             return ~lo;
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZBinarySearch(Array sourceArray, int sourceIndex, int count, object value, out int retVal);
 
         public static int BinarySearch<T>(T[] array, T value)
         {
@@ -950,10 +628,11 @@ namespace System
 
         public void CopyTo(Array array, long index)
         {
-            if (index > int.MaxValue || index < int.MinValue)
+            int iindex = (int)index;
+            if (index != iindex)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            this.CopyTo(array, (int)index);
+            this.CopyTo(array, iindex);
         }
 
         private static class EmptyArray<T>
@@ -1229,8 +908,7 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            int lb = array.GetLowerBound(0);
-            return IndexOf(array, value, lb, array.Length);
+            return IndexOf(array, value, array.GetLowerBound(0), array.Length);
         }
 
         // Returns the index of the first occurrence of a given value in a range of
@@ -1266,11 +944,13 @@ namespace System
             if (count < 0 || count > array.Length - startIndex + lb)
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
+#if CORECLR
             // Try calling a quick native method to handle primitive types.
             int retVal;
             bool r = TrySZIndexOf(array, startIndex, count, value, out retVal);
             if (r)
                 return retVal;
+#endif
 
             object[] objArray = array as object[];
             int endIndex = startIndex + count;
@@ -1371,12 +1051,12 @@ namespace System
                 return (result >= 0 ? startIndex : 0) + result;
             }
 
+#if CORECLR
             return EqualityComparer<T>.Default.IndexOf(array, value, startIndex, count);
+#else
+            return IndexOfImpl(array, value, startIndex, count);
+#endif
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZIndexOf(Array sourceArray, int sourceIndex, int count, object value, out int retVal);
-
 
         // Returns the index of the last occurrence of a given value in an array.
         // The array is searched backwards, and the elements of the array are
@@ -1428,11 +1108,13 @@ namespace System
             if (array.Rank != 1)
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
 
+#if CORECLR
             // Try calling a quick native method to handle primitive types.
             int retVal;
             bool r = TrySZLastIndexOf(array, startIndex, count, value, out retVal);
             if (r)
                 return retVal;
+#endif
 
             object[] objArray = array as object[];
             int endIndex = startIndex - count + 1;
@@ -1552,12 +1234,12 @@ namespace System
                 return (result >= 0 ? endIndex : 0) + result;
             }
 
+#if CORECLR
             return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);
+#else
+            return LastIndexOfImpl(array, value, startIndex, count);
+#endif
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZLastIndexOf(Array sourceArray, int sourceIndex, int count, object value, out int retVal);
-
 
         // Reverses all elements of the given array. Following a call to this
         // method, an element previously located at index i will now be
@@ -1595,9 +1277,11 @@ namespace System
             if (length <= 1)
                 return;
 
+#if CORECLR
             bool r = TrySZReverse(array, index, length);
             if (r)
                 return;
+#endif
 
             if (array is object[] objArray)
             {
@@ -1617,9 +1301,6 @@ namespace System
                 }
             }
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZReverse(Array array, int index, int count);
 
         public static void Reverse<T>(T[] array)
         {
@@ -1765,32 +1446,9 @@ namespace System
 
             if (length > 1)
             {
-                if (comparer == Comparer.Default || comparer == null)
-                {
-                    bool r = TrySZSort(keys, items, index, index + length - 1);
-                    if (r)
-                        return;
-                }
-
-                object[] objKeys = keys as object[];
-                object[] objItems = null;
-                if (objKeys != null)
-                    objItems = items as object[];
-                if (objKeys != null && (items == null || objItems != null))
-                {
-                    SorterObjectArray sorter = new SorterObjectArray(objKeys, objItems, comparer);
-                    sorter.Sort(index, length);
-                }
-                else
-                {
-                    SorterGenericArray sorter = new SorterGenericArray(keys, items, comparer);
-                    sorter.Sort(index, length);
-                }
+                SortImpl(keys, items, index, length, comparer ?? Comparer.Default);
             }
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZSort(Array keys, Array items, int left, int right);
 
         public static void Sort<T>(T[] array)
         {
@@ -1843,6 +1501,7 @@ namespace System
 
             if (length > 1)
             {
+#if CORECLR
                 if (comparer == null || comparer == Comparer<T>.Default)
                 {
                     if (TrySZSort(array, null, index, index + length - 1))
@@ -1850,6 +1509,7 @@ namespace System
                         return;
                     }
                 }
+#endif
 
                 ArraySortHelper<T>.Default.Sort(array, index, length, comparer);
             }
@@ -1868,6 +1528,7 @@ namespace System
 
             if (length > 1)
             {
+#if CORECLR
                 if (comparer == null || comparer == Comparer<TKey>.Default)
                 {
                     if (TrySZSort(keys, items, index, index + length - 1))
@@ -1875,6 +1536,7 @@ namespace System
                         return;
                     }
                 }
+#endif
 
                 if (items == null)
                 {
@@ -1933,7 +1595,6 @@ namespace System
 
             internal SorterObjectArray(object[] keys, object[] items, IComparer comparer)
             {
-                if (comparer == null) comparer = Comparer.Default;
                 this.keys = keys;
                 this.items = items;
                 this.comparer = comparer;
@@ -2139,7 +1800,6 @@ namespace System
 
             internal SorterGenericArray(Array keys, Array items, IComparer comparer)
             {
-                if (comparer == null) comparer = Comparer.Default;
                 this.keys = keys;
                 this.items = items;
                 this.comparer = comparer;
@@ -2481,222 +2141,5 @@ namespace System
                 _indices[_indices.Length - 1]--;
             }
         }
-
-
-        // if this is an array of value classes and that value class has a default constructor 
-        // then this calls this default constructor on every element in the value class array.
-        // otherwise this is a no-op.  Generally this method is called automatically by the compiler
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern void Initialize();
-    }
-
-
-
-
-
-
-
-    //----------------------------------------------------------------------------------------
-    // ! READ THIS BEFORE YOU WORK ON THIS CLASS.
-    // 
-    // The methods on this class must be written VERY carefully to avoid introducing security holes.
-    // That's because they are invoked with special "this"! The "this" object
-    // for all of these methods are not SZArrayHelper objects. Rather, they are of type U[]
-    // where U[] is castable to T[]. No actual SZArrayHelper object is ever instantiated. Thus, you will
-    // see a lot of expressions that cast "this" "T[]". 
-    //
-    // This class is needed to allow an SZ array of type T[] to expose IList<T>,
-    // IList<T.BaseType>, etc., etc. all the way up to IList<Object>. When the following call is
-    // made:
-    //
-    //   ((IList<T>) (new U[n])).SomeIListMethod()
-    //
-    // the interface stub dispatcher treats this as a special case, loads up SZArrayHelper,
-    // finds the corresponding generic method (matched simply by method name), instantiates
-    // it for type <T> and executes it. 
-    //
-    // The "T" will reflect the interface used to invoke the method. The actual runtime "this" will be
-    // array that is castable to "T[]" (i.e. for primitivs and valuetypes, it will be exactly
-    // "T[]" - for orefs, it may be a "U[]" where U derives from T.)
-    //----------------------------------------------------------------------------------------
-    internal sealed class SZArrayHelper
-    {
-        // It is never legal to instantiate this class.
-        private SZArrayHelper()
-        {
-            Debug.Fail("Hey! How'd I get here?");
-        }
-
-        // -----------------------------------------------------------
-        // ------- Implement IEnumerable<T> interface methods --------
-        // -----------------------------------------------------------
-        internal IEnumerator<T> GetEnumerator<T>()
-        {
-            //! Warning: "this" is an array, not an SZArrayHelper. See comments above
-            //! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            return _this.Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(_this);
-        }
-
-        // -----------------------------------------------------------
-        // ------- Implement ICollection<T> interface methods --------
-        // -----------------------------------------------------------
-        private void CopyTo<T>(T[] array, int index)
-        {
-            //! Warning: "this" is an array, not an SZArrayHelper. See comments above
-            //! or you may introduce a security hole!
-
-            T[] _this = Unsafe.As<T[]>(this);
-            Array.Copy(_this, 0, array, index, _this.Length);
-        }
-
-        internal int get_Count<T>()
-        {
-            //! Warning: "this" is an array, not an SZArrayHelper. See comments above
-            //! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            return _this.Length;
-        }
-
-        // -----------------------------------------------------------
-        // ---------- Implement IList<T> interface methods -----------
-        // -----------------------------------------------------------
-        internal T get_Item<T>(int index)
-        {
-            //! Warning: "this" is an array, not an SZArrayHelper. See comments above
-            //! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            if ((uint)index >= (uint)_this.Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
-            }
-
-            return _this[index];
-        }
-
-        internal void set_Item<T>(int index, T value)
-        {
-            //! Warning: "this" is an array, not an SZArrayHelper. See comments above
-            //! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            if ((uint)index >= (uint)_this.Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
-            }
-
-            _this[index] = value;
-        }
-
-        private void Add<T>(T value)
-        {
-            // Not meaningful for arrays.
-            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
-        }
-
-        private bool Contains<T>(T value)
-        {
-            //! Warning: "this" is an array, not an SZArrayHelper. See comments above
-            //! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            return Array.IndexOf(_this, value, 0, _this.Length) >= 0;
-        }
-
-        private bool get_IsReadOnly<T>()
-        {
-            return true;
-        }
-
-        private void Clear<T>()
-        {
-            //! Warning: "this" is an array, not an SZArrayHelper. See comments above
-            //! or you may introduce a security hole!
-
-            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-        }
-
-        private int IndexOf<T>(T value)
-        {
-            //! Warning: "this" is an array, not an SZArrayHelper. See comments above
-            //! or you may introduce a security hole!
-            T[] _this = Unsafe.As<T[]>(this);
-            return Array.IndexOf(_this, value, 0, _this.Length);
-        }
-
-        private void Insert<T>(int index, T value)
-        {
-            // Not meaningful for arrays
-            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
-        }
-
-        private bool Remove<T>(T value)
-        {
-            // Not meaningful for arrays
-            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
-            return default;
-        }
-
-        private void RemoveAt<T>(int index)
-        {
-            // Not meaningful for arrays
-            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
-        }
-
-        // This is a normal generic Enumerator for SZ arrays. It doesn't have any of the "this" stuff
-        // that SZArrayHelper does.
-        //
-        private sealed class SZGenericArrayEnumerator<T> : IEnumerator<T>
-        {
-            private readonly T[] _array;
-            private int _index;
-
-            // Array.Empty is intentionally omitted here, since we don't want to pay for generic instantiations that
-            // wouldn't have otherwise been used.
-            internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(new T[0]);
-
-            internal SZGenericArrayEnumerator(T[] array)
-            {
-                Debug.Assert(array != null);
-
-                _array = array;
-                _index = -1;
-            }
-
-            public bool MoveNext()
-            {
-                int index = _index + 1;
-                if ((uint)index >= (uint)_array.Length)
-                {
-                    _index = _array.Length;
-                    return false;
-                }
-                _index = index;
-                return true;
-            }
-
-            public T Current
-            {
-                get
-                {
-                    int index = _index;
-                    T[] array = _array;
-
-                    if ((uint)index >= (uint)array.Length)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_EnumCurrent(index);
-                    }
-
-                    return array[index];
-                }
-            }
-    
-            object IEnumerator.Current => Current;
-
-            void IEnumerator.Reset() => _index = -1;
-
-            public void Dispose()
-            {
-            }
-        }
     }
 }
-
