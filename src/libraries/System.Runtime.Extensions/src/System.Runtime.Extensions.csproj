@@ -76,29 +76,29 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOLEAN.cs">
       <Link>Common\Interop\Windows\Interop.BOOLEAN.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetLogicalDrives.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
       <Link>Common\Interop\Windows\Interop.GetLogicalDrives.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetSystemDirectoryW.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetSystemDirectoryW.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.QueryPerformanceCounter.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.QueryPerformanceCounter.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.QueryPerformanceFrequency.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.QueryPerformanceFrequency.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.SetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.SetCurrentDirectory.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathHelper.Windows.cs">
       <Link>CoreLib\System\IO\PathHelper.Windows.cs</Link>
