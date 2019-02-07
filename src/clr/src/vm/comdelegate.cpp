@@ -1657,7 +1657,7 @@ FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetU
 
     // Use the Unboxing stub for value class methods, since the value
     // class is constructed using the boxed instance.
-    if (pMTTarg->IsValueType() && !pCorrectedMethod->IsUnboxingStub())
+    if (pCorrectedMethod->GetMethodTable()->IsValueType() && !pCorrectedMethod->IsUnboxingStub())
     {
         // those should have been ruled out at jit time (code:COMDelegate::GetDelegateCtor)
         _ASSERTE((pMTMeth != g_pValueTypeClass) && (pMTMeth != g_pObjectClass));
