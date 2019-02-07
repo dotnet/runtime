@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Security;
-using System.Security.Permissions;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;

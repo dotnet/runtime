@@ -10,7 +10,6 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Net;
 using System.Security.Principal;
-using System.Security.Permissions;
 
 using System.DirectoryServices;
 using System.Text;

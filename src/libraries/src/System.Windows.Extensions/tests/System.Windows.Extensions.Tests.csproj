@@ -19,9 +19,15 @@
     <Compile Include="System\Drawing\ImageConverterTests.cs" />
     <Compile Include="System\Drawing\ImageFormatConverterTests.cs" />
     <Compile Include="System\Drawing\Printing\MarginsConverterTests.cs" />
+    <Compile Include="System\Media\SoundPlayerTests.cs" />
+    <Compile Include="System\Media\SystemSoundTests.cs" />
+    <Compile Include="System\Media\SystemSoundsTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.componentmodel.typeconverter.testdata\$(TestDataPackageVersion)\content\**\*.*">
+      <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </SupplementalTestData>
+    <SupplementalTestData Include="$(PackagesDir)system.windows.extensions.testdata\$(TestDataPackageVersion)\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
   </ItemGroup>

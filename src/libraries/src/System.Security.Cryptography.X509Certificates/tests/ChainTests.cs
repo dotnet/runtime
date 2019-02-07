@@ -177,6 +177,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.ExtraStore.Add(sampleCert);
                 bool valid = chain.Build(sampleCert);
                 Assert.False(valid);
+                chainHolder.DisposeChainElements();
 
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                 chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
@@ -186,6 +187,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.True(valid, "Chain built validly");
 
                 Assert.Equal(1, chain.ChainElements.Count);
+                chainHolder.DisposeChainElements();
 
                 chain.Reset();
                 Assert.Equal(0, chain.ChainElements.Count);

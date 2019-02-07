@@ -291,5 +291,29 @@ namespace System.Threading.Tasks.Tests
 
             Assert.True(reg.DisposeAsync().IsCompletedSuccessfully);
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void CancellationTokenSource_Ctor_ZeroTimeout(bool timeSpan)
+        {
+            var cts = timeSpan ?
+                new CancellationTokenSource(TimeSpan.Zero) :
+                new CancellationTokenSource(0);
+
+            Assert.True(cts.IsCancellationRequested);
+            Assert.True(cts.Token.IsCancellationRequested);
+
+            Assert.NotEqual(CancellationToken.None, cts.Token);
+            Assert.NotEqual(new CancellationTokenSource(0).Token, cts.Token);
+
+            for (int i = 0; i < 2; i++)
+            {
+                int invokedCount = 0;
+                CancellationTokenRegistration r = cts.Token.Register(() => invokedCount++);
+                Assert.Equal(1, invokedCount);
+                Assert.False(r.Unregister());
+            }
+        }
     }
 }

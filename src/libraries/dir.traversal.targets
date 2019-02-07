@@ -76,10 +76,6 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <!-- Dumpling.targets needs to install dumpling.py before running tests. -->
-  <!-- Disabling dumpling for the time being since the script only runs on python 2: https://github.com/dotnet/core-eng/issues/4753 -->
-  <!-- <Import Project="$(ToolsDir)Dumpling.targets" Condition="Exists('$(ToolsDir)Dumpling.targets') AND ('$(EnableDumpling)' == 'true' OR '$(EnableCloudTest)' == 'true')" /> -->
-
   <Target Name="GetFilesToPackage"
           DependsOnTargets="FilterProjects"
           Returns="@(FilesToPackage)">

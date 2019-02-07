@@ -151,7 +151,7 @@ namespace System.Text.Json
                         else
                         {
                             // if (!IsLowSurrogate(ch) && !IsHighSurrogate(ch))
-                            if (!IsInRangeInclusive(ch, JsonConstants.HighSurrogateStart, JsonConstants.LowSurrogateEnd))
+                            if (!JsonHelpers.IsInRangeInclusive(ch, JsonConstants.HighSurrogateStart, JsonConstants.LowSurrogateEnd))
                             {
                                 // 3 byte encoding
                                 chd = unchecked((sbyte)0xE0) | (ch >> 12);
@@ -169,7 +169,7 @@ namespace System.Text.Json
                                 chd = *pSrc;
 
                                 // if (!IsLowSurrogate(chd)) {
-                                if (!IsInRangeInclusive(chd, JsonConstants.LowSurrogateStart, JsonConstants.LowSurrogateEnd))
+                                if (!JsonHelpers.IsInRangeInclusive(chd, JsonConstants.LowSurrogateStart, JsonConstants.LowSurrogateEnd))
                                 {
                                     // high not followed by low -> bad
                                     goto InvalidData;
@@ -240,7 +240,7 @@ namespace System.Text.Json
                     else
                     {
                         // if (!IsLowSurrogate(ch) && !IsHighSurrogate(ch))
-                        if (!IsInRangeInclusive(ch, JsonConstants.HighSurrogateStart, JsonConstants.LowSurrogateEnd))
+                        if (!JsonHelpers.IsInRangeInclusive(ch, JsonConstants.HighSurrogateStart, JsonConstants.LowSurrogateEnd))
                         {
                             if (pAllocatedBufferEnd - pTarget <= 2)
                                 goto DestinationFull;
@@ -267,7 +267,7 @@ namespace System.Text.Json
                             chd = *pSrc;
 
                             // if (!IsLowSurrogate(chd)) {
-                            if (!IsInRangeInclusive(chd, JsonConstants.LowSurrogateStart, JsonConstants.LowSurrogateEnd))
+                            if (!JsonHelpers.IsInRangeInclusive(chd, JsonConstants.LowSurrogateStart, JsonConstants.LowSurrogateEnd))
                             {
                                 // high not followed by low -> bad
                                 goto InvalidData;

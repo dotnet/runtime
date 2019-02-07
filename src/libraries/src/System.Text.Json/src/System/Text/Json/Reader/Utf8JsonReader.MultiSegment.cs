@@ -35,6 +35,7 @@ namespace System.Text.Json
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
             _numberFormat = state._numberFormat;
+            _stringHasEscaping = state._stringHasEscaping;
             _tokenType = state._tokenType;
             _previousTokenType = state._previousTokenType;
             _readerOptions = state._readerOptions;
@@ -81,6 +82,8 @@ namespace System.Text.Json
         {
             bool retVal = false;
             HasValueSequence = false;
+            ValueSpan = default;
+            ValueSequence = default;
 
             if (!HasMoreDataMultiSegment())
             {
@@ -266,6 +269,9 @@ namespace System.Text.Json
                 {
                     break;
                 }
+                // _currentPosition needs to point to last non-empty segment
+                // Since memory.Length == 0, we need to revert back to previous.
+                _currentPosition = copy;
             }
 
             if (_isFinalBlock)
@@ -286,6 +292,7 @@ namespace System.Text.Json
             {
                 _bitStack.SetFirstBit();
                 _tokenType = JsonTokenType.StartObject;
+                ValueSpan = _buffer.Slice(_consumed, 1);
                 _consumed++;
                 _bytePositionInLine++;
                 _inObject = true;
@@ -295,6 +302,7 @@ namespace System.Text.Json
             {
                 _bitStack.ResetFirstBit();
                 _tokenType = JsonTokenType.StartArray;
+                ValueSpan = _buffer.Slice(_consumed, 1);
                 _consumed++;
                 _bytePositionInLine++;
                 _isNotPrimitive = true;
@@ -647,21 +655,13 @@ namespace System.Text.Json
 
             if (_consumed >= (uint)_buffer.Length)
             {
-                if (!_isNotPrimitive)
-                {
-                    return true;
-                }
-                if (IsLastSpan || !GetNextSpan())
-                {
-                    ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, _buffer[_consumed - 1]);
-                }
+                Debug.Assert(IsLastSpan);
+
+                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, _buffer[_consumed - 1]);
             }
 
-            // TODO: https://github.com/dotnet/corefx/issues/33294
-            if (JsonConstants.Delimiters.IndexOf(_buffer[_consumed]) < 0)
-            {
-                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, _buffer[_consumed]);
-            }
+            Debug.Assert(JsonConstants.Delimiters.IndexOf(_buffer[_consumed]) >= 0);
+
             return true;
         }
 
@@ -726,6 +726,7 @@ namespace System.Text.Json
                     _bytePositionInLine += idx + 2; // Add 2 for the start and end quotes.
                     ValueSpan = localBuffer.Slice(0, idx);
                     HasValueSequence = false;
+                    _stringHasEscaping = false;
                     _tokenType = JsonTokenType.String;
                     _consumed += idx + 2;
                     return true;
@@ -783,6 +784,7 @@ namespace System.Text.Json
                         _bytePositionInLine += leftOver + idx + 1;  // Add 1 for the end quote of the string.
                         _totalConsumed += leftOver;
                         _consumed = idx + 1;    // Add 1 for the end quote of the string.
+                        _stringHasEscaping = false;
                         break;
                     }
                     else
@@ -790,6 +792,7 @@ namespace System.Text.Json
                         long prevLineNumber = _lineNumber;
 
                         _bytePositionInLine += idx + 1; // Add 1 for the first quote
+                        _stringHasEscaping = true;
 
                         bool nextCharEscaped = false;
                         bool sawNewLine = false;
@@ -1099,6 +1102,8 @@ namespace System.Text.Json
                 _consumed += idx + 2;
                 ValueSpan = data.Slice(0, idx);
             }
+
+            _stringHasEscaping = true;
             _tokenType = JsonTokenType.String;
             return true;
         }
@@ -1201,7 +1206,7 @@ namespace System.Text.Json
 
             Debug.Assert(nextByte == 'E' || nextByte == 'e');
             i++;
-            _numberFormat = 'e';
+            _numberFormat = JsonConstants.ScientificNotationFormat;
             _bytePositionInLine++;
 
             signResult = ConsumeSignMultiSegment(ref data, ref i);
@@ -1306,7 +1311,7 @@ namespace System.Text.Json
                 if (IsLastSpan)
                 {
                     // A payload containing a single value: "0" is valid
-                    // If we are v with multi-value JSON,
+                    // If we are dealing with multi-value JSON,
                     // ConsumeNumber will validate that we have a delimiter following the "0".
                     return ConsumeNumberResult.Success;
                 }
@@ -2408,7 +2413,6 @@ namespace System.Text.Json
             }
             else
             {
-
                 ValueSpan = _buffer.Slice(previousConsumed, i + 3); // Include the slash/asterisk and final slash at the end of the comment as part of it.
             }
 

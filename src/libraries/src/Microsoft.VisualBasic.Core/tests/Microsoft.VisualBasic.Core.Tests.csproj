@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{325260D6-D5DD-4E06-9DA2-9AF2AD9DE8C8}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CollectionsTests.cs" />
+    <Compile Include="CompilerServices\BooleanTypeTests.cs" />
+    <Compile Include="CompilerServices\DoubleTypeTests.cs" />
+    <Compile Include="CompilerServices\DecimalTypeTests.cs" />
+    <Compile Include="CompilerServices\VersionedTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/ComClassAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/HideModuleNameAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/MyGroupCollectionAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/VBFixedArrayAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/VBFixedStringAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/ApplicationServices/StartupEventArgsTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/ApplicationServices/StartupNextInstanceEventArgsTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/ApplicationServices/UnhandledExceptionEventArgsTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/DesignerGeneratedAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/OptionCompareAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/OptionTextAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/StandardModuleAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/StructUtilsTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/Devices/NetworkAvailableEventArgsTests.cs" />
+    <Compile Include="ConversionsTests.cs" />
+    <Compile Include="OperatorsTests.cs" />
+    <Compile Include="OperatorsTests.Comparison.cs" />
+    <Compile Include="DateAndTimeTests.cs" />
+    <Compile Include="IConvertibleWrapper.cs" />
+    <Compile Include="InformationTests.cs" />
+    <Compile Include="UtilsTests.cs" />
+    <Compile Include="VBMathTests.cs" />
+    <Compile Include="StringsTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+</Project>

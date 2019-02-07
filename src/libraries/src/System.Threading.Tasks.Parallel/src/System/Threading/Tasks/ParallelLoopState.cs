@@ -13,7 +13,6 @@ using System.Diagnostics;
 
 // Prevents compiler warnings/errors regarding the use of ref params in Interlocked methods
 
-#pragma warning disable 0420
 namespace System.Threading.Tasks
 {
     /// <summary>
@@ -624,5 +623,3 @@ namespace System.Threading.Tasks
         public long? LowestBreakIteration { get { return _lowestBreakIteration; } }
     }
 }
-
-#pragma warning restore 0420

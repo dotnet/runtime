@@ -529,10 +529,10 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     return result;
 }
 
-int32_t SystemNative_FcntlSetCloseOnExec(intptr_t fd)
+int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
 {
     int result;
-    while ((result = fcntl(ToFileDescriptor(fd), F_SETFD, FD_CLOEXEC)) < 0 && errno == EINTR);
+    while ((result = fcntl(ToFileDescriptor(fd), F_SETFD, ConvertOpenFlags(flags))) < 0 && errno == EINTR);
     return result;
 }
 
