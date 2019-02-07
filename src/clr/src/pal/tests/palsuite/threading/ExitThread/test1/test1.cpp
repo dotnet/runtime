@@ -22,7 +22,7 @@ DWORD PALAPI ExitThreadTestThread( LPVOID lpParameter)
     DWORD dwRet = 0;
 
     /* Save parameter for test */
-    dwExitThreadTestParameter = (DWORD)lpParameter;
+    dwExitThreadTestParameter = (DWORD)(SIZE_T)lpParameter;
 
     /* Call the ExitThread function */
     ExitThread(dwRet);
@@ -77,7 +77,7 @@ BOOL ExitThreadTest()
             /* Check to ensure that the parameter set in the Thread
                function is correct.
             */
-            if (dwExitThreadTestParameter != (DWORD)lpParameter)
+            if (dwExitThreadTestParameter != (DWORD)(SIZE_T)lpParameter)
             {
                 Trace("ERROR: The paramater passed should have been "
                        "%d but turned up as %d.",

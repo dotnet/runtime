@@ -86,7 +86,7 @@ int __cdecl main(int argc, char *argv[])
              "the variable PALTEST.\n");    
     }
 
-    memset(NewValue,0,BUF_SIZE);
+    memset(NewValue,0,BUF_SIZE * sizeof(NewValue[0]));
 
     /* Grab the Environment variable we just set */
     if(GetEnvironmentVariable(VariableBuffer,NewValue,BUF_SIZE) <= 0)
@@ -122,7 +122,7 @@ int __cdecl main(int argc, char *argv[])
              "the variable PALTEST.\n");    
     }
 
-    memset(NewValue,0,BUF_SIZE);
+    memset(NewValue,0,BUF_SIZE*sizeof(NewValue[0]));
     
     /* Grab the Environment variable we just set, ensure that it's 
        empty now.

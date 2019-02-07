@@ -25,7 +25,7 @@ DWORD PALAPI ResumeThreadTestThread( LPVOID lpParameter)
        properly.
     */
     
-    dwResumeThreadTestParameter = (DWORD)lpParameter;
+    dwResumeThreadTestParameter = (DWORD)(SIZE_T)lpParameter;
 
     return dwRet;
 }
@@ -101,7 +101,7 @@ BOOL ResumeThreadTest()
                         /* Check the param now and it should have been
                            set.
                         */
-                        if (dwResumeThreadTestParameter != (DWORD)lpParameter)
+                        if (dwResumeThreadTestParameter != (DWORD)(SIZE_T)lpParameter)
                         {
                             Trace("ResumeThreadTest:parameter error\n");
                         }
