@@ -7,7 +7,6 @@ namespace Microsoft.Win32
     using System;
     using System.Diagnostics;
     using System.Security;
-    using System.Security.Permissions;
     using System.Collections;
     using System.Collections.Generic;
     using System.ComponentModel;

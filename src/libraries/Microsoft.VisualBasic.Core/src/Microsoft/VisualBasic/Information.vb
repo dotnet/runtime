@@ -5,7 +5,6 @@
 Imports System
 Imports System.Globalization
 Imports System.Security
-Imports System.Security.Permissions
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils

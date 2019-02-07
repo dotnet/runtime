@@ -5,52 +5,50 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>
-    ///       Indicates whether the parent property is notified
-    ///       if a child namespace property is modified.
-    ///    </para>
+    /// Indicates whether the parent property is notified if a child namespace
+    /// property is modified.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class NotifyParentPropertyAttribute : Attribute
     {
         /// <summary>
-        ///    <para>
-        ///       Specifies that the parent property should be notified on changes to the child class property. This field is read-only.
-        ///    </para>
+        /// Specifies that the parent property should be notified on changes to the
+        /// child class property. This field is read-only.
         /// </summary>
         public static readonly NotifyParentPropertyAttribute Yes = new NotifyParentPropertyAttribute(true);
 
         /// <summary>
-        ///    <para>Specifies that the parent property should not be notified of changes to the child class property. This field is read-only.</para>
+        /// Specifies that the parent property should not be notified of changes to the
+        /// child class property. This field is read-only.
         /// </summary>
         public static readonly NotifyParentPropertyAttribute No = new NotifyParentPropertyAttribute(false);
 
         /// <summary>
-        ///    <para>Specifies the default attribute state, that the parent property should not be notified of changes to the child class property.
-        ///       This field is read-only.</para>
+        /// Specifies the default attribute state, that the parent property should not be
+        /// notified of changes to the child class property.
+        /// This field is read-only.
         /// </summary>
         public static readonly NotifyParentPropertyAttribute Default = No;
 
         /// <summary>
-        /// <para>Initializes a new instance of the NotifyPropertyAttribute class 
-        ///    that uses the specified value
-        ///    to indicate whether the parent property should be notified when a child namespace property is modified.</para>
+        /// Initializes a new instance of the NotifyPropertyAttribute class that uses the
+        /// specified value to indicate whether the parent property should be notified
+        /// when a child namespace property is modified.
         /// </summary>
-        public NotifyParentPropertyAttribute(bool notifyParent) => NotifyParent = notifyParent;
+        public NotifyParentPropertyAttribute(bool notifyParent)
+        {
+            NotifyParent = notifyParent;
+        }
 
 
         /// <summary>
-        ///    <para>
-        ///       Gets or sets whether the parent property should be notified
-        ///       on changes to a child namespace property.
-        ///    </para>
+        /// Gets or sets whether the parent property should be notified on changes to a
+        /// child namespace property.
         /// </summary>
         public bool NotifyParent { get; }
 
         /// <summary>
-        ///    <para>
-        ///       Tests whether the specified object is the same as the current object.
-        ///    </para>
+        /// Tests whether the specified object is the same as the current object.
         /// </summary>
         public override bool Equals(object obj)
         {

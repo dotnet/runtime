@@ -10,7 +10,6 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security.Permissions;
 using Microsoft.Win32.SafeHandles;
 using System.Buffers;
 
@@ -274,7 +273,6 @@ namespace System.Data.SqlTypes
             _m_fs.Flush();
         }
 
-        [HostProtection(ExternalThreading = true)]
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             if (_m_disposed)
@@ -291,7 +289,6 @@ namespace System.Data.SqlTypes
             return _m_fs.EndRead(asyncResult);
         }
 
-        [HostProtection(ExternalThreading = true)]
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             if (_m_disposed)
