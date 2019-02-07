@@ -28,6 +28,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(34547)]
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [InlineData("System")]

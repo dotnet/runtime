@@ -273,7 +273,6 @@ namespace System.Collections.Concurrent
             ToList().CopyTo(array, index);
         }
 
-#pragma warning disable 0420 // No warning for Interlocked.xxx if compiled with new managed compiler (Roslyn)
         /// <summary>
         /// Inserts an object at the top of the <see cref="ConcurrentStack{T}"/>.
         /// </summary>
@@ -662,7 +661,6 @@ namespace System.Collections.Concurrent
                 }
             }
         }
-#pragma warning restore 0420
 
         /// <summary>
         /// Local helper function to copy the popped elements into a given collection

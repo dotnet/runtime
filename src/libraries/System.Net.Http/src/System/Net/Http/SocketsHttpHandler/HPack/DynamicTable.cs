@@ -38,7 +38,7 @@ namespace System.Net.Http.HPack
             }
         }
 
-        public void Insert(Span<byte> name, Span<byte> value)
+        public void Insert(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
             int entryLength = HeaderField.GetLength(name.Length, value.Length);
             EnsureAvailable(entryLength);

@@ -10,6 +10,8 @@ parameters:
   targetOS: ''
   waitForCompletion: '' # true | false
   officialBuildId: ''
+  enableAzurePipelinesReporter: '' # true | false
+  outerloop: '' # true | false
 
 steps:
   - script: ${{ parameters.msbuildScript }}
@@ -18,6 +20,7 @@ steps:
             /p:ArchGroup=${{ parameters.archGroup }}
             /p:ConfigurationGroup=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
+            /p:Outerloop=${{ parameters.outerloop }}
             /p:TargetGroup=${{ parameters.framework }}
             /p:HelixTargetQueues=${{ parameters.helixQueues }}
             /p:HelixBuild=$(Build.BuildNumber)
@@ -26,7 +29,7 @@ steps:
             /p:IsExternal=${{ parameters.isExternal }}
             /p:Creator=${{ parameters.creator }}
             /p:OfficialBuildId=${{ parameters.officialBuildId }}
-            /p:EnableAzurePipelinesReporter=true
+            /p:EnableAzurePipelinesReporter=${{ parameters.enableAzurePipelinesReporter }}
     displayName: Send to Helix
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops

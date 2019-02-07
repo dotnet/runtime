@@ -2809,8 +2809,6 @@ namespace System.Data.SqlClient
             }
         }
 
-#pragma warning disable 0420 // a reference to a volatile field will not be treated as volatile
-
         public void WriteAsyncCallback(PacketHandle packet, uint sniError)
         {
             WriteAsyncCallback(IntPtr.Zero, packet, sniError);
@@ -2898,8 +2896,6 @@ namespace System.Data.SqlClient
             }
         }
 
-#pragma warning restore 0420
-
         /////////////////////////////////////////
         // Network/Packet Writing & Processing //
         /////////////////////////////////////////
@@ -2936,13 +2932,11 @@ namespace System.Data.SqlClient
         internal Task WaitForAccumulatedWrites()
         {
             // Checked for stored exceptions
-#pragma warning disable 420 // A reference to a volatile field will not be treated as volatile - Disabling since the Interlocked APIs are volatile aware
             var delayedException = Interlocked.Exchange(ref _delayedWriteAsyncCallbackException, null);
             if (delayedException != null)
             {
                 throw delayedException;
             }
-#pragma warning restore 420
 
             if (_asyncWriteCount == 0)
             {
@@ -2962,13 +2956,11 @@ namespace System.Data.SqlClient
             }
 
             // Check for stored exceptions
-#pragma warning disable 420 // A reference to a volatile field will not be treated as volatile - Disabling since the Interlocked APIs are volatile aware
             delayedException = Interlocked.Exchange(ref _delayedWriteAsyncCallbackException, null);
             if (delayedException != null)
             {
                 throw delayedException;
             }
-#pragma warning restore 420
 
             // If there are no outstanding writes, see if we can shortcut and return null
             if ((_asyncWriteCount == 0) && ((!task.IsCompleted) || (task.Exception == null)))
@@ -3128,8 +3120,7 @@ namespace System.Data.SqlClient
         private void WriteBytesSetupContinuation(byte[] array, int len, TaskCompletionSource<object> completion, int offset, Task packetTask)
         {
             AsyncHelper.ContinueTask(packetTask, completion,
-                () => WriteBytes(ReadOnlySpan<byte>.Empty, len: len, offsetBuffer: offset, canAccumulate: false, completion: completion, array),
-                connectionToDoom: _parser.Connection
+                onSuccess: () => WriteBytes(ReadOnlySpan<byte>.Empty, len: len, offsetBuffer: offset, canAccumulate: false, completion: completion, array)
             );
         }
 
@@ -3200,7 +3191,7 @@ namespace System.Data.SqlClient
             if (willCancel)
             {
                 // If we have been cancelled, then ensure that we write the ATTN packet as well
-                task = AsyncHelper.CreateContinuationTask(task, CancelWritePacket, _parser.Connection);
+                task = AsyncHelper.CreateContinuationTask(task, CancelWritePacket);
             }
 
             return task;
@@ -3225,8 +3216,6 @@ namespace System.Data.SqlClient
                 _parser.Connection.ThreadHasParserLockForClose = false;
             }
         }
-
-#pragma warning disable 0420 // a reference to a volatile field will not be treated as volatile
 
         private Task SNIWritePacket(PacketHandle packet, out uint sniError, bool canAccumulate, bool callerHasConnectionLock)
         {
@@ -3364,8 +3353,6 @@ namespace System.Data.SqlClient
         internal abstract bool IsValidPacket(PacketHandle packetPointer);
 
         internal abstract uint WritePacket(PacketHandle packet, bool sync);
-
-#pragma warning restore 0420
 
         // Sends an attention signal - executing thread will consume attn.
         internal void SendAttention(bool mustTakeWriteLock = false)

@@ -14,7 +14,7 @@
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
     <Reference Include="System.Runtime" />
-    <PackageReference Include="$(MicrosoftNetCoreIldasmPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" PrivateAssets="all" />
+    <PackageReference Include="$(MicrosoftNetCoreIldasmPackageName)" Version="$(MicrosoftNETCoreILAsmPackageVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <Target Name="AddResourcesFileToIlasm" 
@@ -23,9 +23,9 @@
           Inputs="$(ContractOutputPath)/$(MSBuildProjectName).dll"
           Outputs="$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj">
     <ItemGroup>
-      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreIldasmPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
-      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreRuntimeCoreClrPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
-      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreJitPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
+      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreIldasmPackageName)\$(MicrosoftNETCoreILAsmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
+      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreRuntimeCoreClrPackageName)\$(MicrosoftNETCoreILAsmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
+      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreJitPackageName)\$(MicrosoftNETCoreILAsmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
     </ItemGroup>
 
     <PropertyGroup>

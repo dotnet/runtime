@@ -313,7 +313,7 @@ namespace System.Xml.Schema
 
             if (convert)
             {
-                canonicalUri = nameTable.Add(uri.Substring(0, offset) + CultureInfo.InvariantCulture.TextInfo.ToUpper(uri.Substring(offset, uri.Length - offset)));
+                canonicalUri = nameTable.Add(string.Concat(uri.AsSpan(0, offset), CultureInfo.InvariantCulture.TextInfo.ToUpper(uri.Substring(offset, uri.Length - offset))));
             }
             else
             {

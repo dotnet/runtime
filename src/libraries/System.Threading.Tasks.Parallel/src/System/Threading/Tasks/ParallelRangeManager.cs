@@ -11,7 +11,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 0420
 namespace System.Threading.Tasks
 {
     /// <summary>
@@ -299,4 +298,3 @@ namespace System.Threading.Tasks
         }
     }
 }
-#pragma warning restore 0420
