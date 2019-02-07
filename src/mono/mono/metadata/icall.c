@@ -87,6 +87,7 @@
 #include <mono/metadata/w32semaphore.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/loader-internals.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
@@ -7793,7 +7794,7 @@ prelink_method (MonoMethod *method, MonoError *error)
 	error_init (error);
 	if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return;
-	mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
+	mono_lookup_pinvoke_call_internal (method, &exc_class, &exc_arg);
 	if (exc_class) {
 		mono_error_set_generic_error (error, "System", exc_class, "%s", exc_arg);
 		return;
