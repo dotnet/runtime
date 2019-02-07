@@ -353,7 +353,7 @@
     <Compile Include="Symbols\ReferenceWithMdbDeleteActionAndSymbolLinkingEnabled.cs" />
     <Compile Include="Symbols\ReferenceWithPdb.cs" />
     <Compile Include="Symbols\ReferenceWithPdbAndSymbolLinkingEnabled.cs" />
-    <Compile Include="Symbols\AssemlbyWithDefaultSymbolsAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Symbols\AssemblyWithDefaultSymbolsAndSymbolLinkingEnabled.cs" />
     <Compile Include="Symbols\AssemblyWithDefaultSymbols.cs" />
     <Compile Include="Symbols\Dependencies\LibraryWithCompilerDefaultSymbols.cs" />
     <Compile Include="Symbols\Dependencies\LibraryWithPdb\LibraryWithPdb.cs" />
