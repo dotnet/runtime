@@ -395,17 +395,14 @@ namespace System.Tests
             Assert.Equal(0x7FF00000_00000000u, DoubleToUInt64Bits(double.PositiveInfinity));
         }
 
-        public static IEnumerable<object[]> ToString_TestData()
+        private static IEnumerable<object[]> ToString_TestData()
         {
-            yield return new object[] { double.MinValue, "G", null, "-1.79769313486232E+308" };
             yield return new object[] { -4567.0, "G", null, "-4567" };
             yield return new object[] { -4567.89101, "G", null, "-4567.89101" };
             yield return new object[] { 0.0, "G", null, "0" };
             yield return new object[] { 4567.0, "G", null, "4567" };
             yield return new object[] { 4567.89101, "G", null, "4567.89101" };
-            yield return new object[] { double.MaxValue, "G", null, "1.79769313486232E+308" };
 
-            yield return new object[] { double.Epsilon, "G", null, "4.94065645841247E-324" };
             yield return new object[] { double.NaN, "G", null, "NaN" };
 
             yield return new object[] { 2468.0, "N", null, "2,468.00" };
@@ -432,27 +429,75 @@ namespace System.Tests
             yield return new object[] { -2468.0, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { double.Epsilon, "G", invariantFormat, "4.94065645841247E-324" };
             yield return new object[] { double.NaN, "G", invariantFormat, "NaN" };
             yield return new object[] { double.PositiveInfinity, "G", invariantFormat, "Infinity" };
             yield return new object[] { double.NegativeInfinity, "G", invariantFormat, "-Infinity" };
         }
 
+        public static IEnumerable<object[]> ToString_TestData_NetFramework()
+        {
+            foreach (var testData in ToString_TestData())
+            {
+                yield return testData;
+            }
+
+            yield return new object[] { double.MinValue, "G", null, "-1.79769313486232E+308" };
+            yield return new object[] { double.MaxValue, "G", null, "1.79769313486232E+308" };
+
+            yield return new object[] { double.Epsilon, "G", null, "4.94065645841247E-324" };
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { double.Epsilon, "G", invariantFormat, "4.94065645841247E-324" };
+        }
+
+        public static IEnumerable<object[]> ToString_TestData_NotNetFramework()
+        {
+            foreach (var testData in ToString_TestData())
+            {
+                yield return testData;
+            }
+
+            yield return new object[] { double.MinValue, "G", null, "-1.7976931348623157E+308" };
+            yield return new object[] { double.MaxValue, "G", null, "1.7976931348623157E+308" };
+
+            yield return new object[] { double.Epsilon, "G", null, "5E-324" };
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { double.Epsilon, "G", invariantFormat, "5E-324" };
+        }
+
         [Fact]
-        public static void Test_ToString()
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Test_ToString_NetFramework()
         {
             RemoteInvoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-                foreach (var testdata in ToString_TestData())
+                foreach (var testdata in ToString_TestData_NetFramework())
                 {
                     ToString((double)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
                 }
                 return SuccessExitCode;
             }).Dispose();
         }
-        
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Test_ToString_NotNetFramework()
+        {
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
+                foreach (var testdata in ToString_TestData_NotNetFramework())
+                {
+                    ToString((double)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                }
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
         private static void ToString(double d, string format, IFormatProvider provider, string expected)
         {
             bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);

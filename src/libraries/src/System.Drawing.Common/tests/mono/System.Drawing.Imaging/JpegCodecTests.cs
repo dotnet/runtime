@@ -35,7 +35,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using Xunit;
 using System.IO;
-using System.Security.Permissions;
 
 namespace MonoTests.System.Drawing.Imaging
 {

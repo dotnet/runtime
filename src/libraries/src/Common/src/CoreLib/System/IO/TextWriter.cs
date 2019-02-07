@@ -786,12 +786,6 @@ namespace System.IO
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override ValueTask DisposeAsync()
-            {
-                return _out.DisposeAsync();
-            }
-
-            [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Flush() => _out.Flush();
 
             [MethodImpl(MethodImplOptions.Synchronized)]
@@ -802,6 +796,9 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(char[] buffer, int index, int count) => _out.Write(buffer, index, count);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void Write(ReadOnlySpan<char> buffer) => _out.Write(buffer);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(bool value) => _out.Write(value);
@@ -864,6 +861,9 @@ namespace System.IO
             public override void WriteLine(char[] buffer, int index, int count) => _out.WriteLine(buffer, index, count);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void WriteLine(ReadOnlySpan<char> buffer) => _out.WriteLine(buffer);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine(bool value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
@@ -910,6 +910,13 @@ namespace System.IO
             //
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override ValueTask DisposeAsync()
+            {
+                Dispose();
+                return default;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteAsync(char value)
             {
                 Write(value);
@@ -926,6 +933,11 @@ namespace System.IO
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteAsync(StringBuilder value, CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
+
                 Write(value);
                 return Task.CompletedTask;
             }
@@ -938,9 +950,40 @@ namespace System.IO
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
+
+                Write(buffer.Span);
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
+
+                WriteLine(buffer.Span);
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteLineAsync(char value)
             {
                 WriteLine(value);
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task WriteLineAsync()
+            {
+                WriteLine();
                 return Task.CompletedTask;
             }
 
@@ -954,6 +997,11 @@ namespace System.IO
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
+
                 WriteLine(value);
                 return Task.CompletedTask;
             }

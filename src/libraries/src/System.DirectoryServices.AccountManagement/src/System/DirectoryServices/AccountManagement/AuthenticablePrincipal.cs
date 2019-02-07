@@ -6,7 +6,6 @@ using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Permissions;
 
 namespace System.DirectoryServices.AccountManagement
 {

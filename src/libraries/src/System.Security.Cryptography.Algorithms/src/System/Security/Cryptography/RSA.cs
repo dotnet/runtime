@@ -391,7 +391,7 @@ namespace System.Security.Cryptography
                             continue;
                         }
 
-                        return RSAKeyFormatHelper.WritePkcs8PrivateKey(rented.AsSpan(0, pkcs1Size));
+                        return RSAKeyFormatHelper.WritePkcs8PrivateKey(new ReadOnlySpan<byte>(rented, 0, pkcs1Size));
                     }
                     finally
                     {

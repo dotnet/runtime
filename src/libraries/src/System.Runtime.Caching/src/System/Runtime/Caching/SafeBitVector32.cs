@@ -37,10 +37,7 @@ namespace System.Runtime.Caching
                         newData = oldData & ~bit;
                     }
 
-#pragma warning disable 0420
                     int result = Interlocked.CompareExchange(ref _data, newData, oldData);
-#pragma warning restore 0420
-
                     if (result == oldData)
                     {
                         break;
@@ -69,10 +66,7 @@ namespace System.Runtime.Caching
                     return false;
                 }
 
-#pragma warning disable 0420
                 int result = Interlocked.CompareExchange(ref _data, newData, oldData);
-#pragma warning restore 0420
-
                 if (result == oldData)
                 {
                     return true;

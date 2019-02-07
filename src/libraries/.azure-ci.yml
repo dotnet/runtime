@@ -1,9 +1,10 @@
 # Disable triggers for now. TODO: add right merge triggers.
-trigger: none
+trigger:
+- master
 
 # TODO: add paths to exclude CI when modifying docs or stuff not affecting the build
-# TODO: enable PR triggers when helix SDK issues are fixed
-pr: none
+pr:
+- master
 
 resources:
   containers:
@@ -47,7 +48,7 @@ jobs:
     - template: /eng/pipelines/redhat6.yml
 
     # FreeBSD leg is only for official builds
-    - template: /eng/pipelines/freebsd.yml
+    # - template: /eng/pipelines/freebsd.yml
 
     # Publish step
     - template: /eng/pipelines/publish.yml
@@ -60,4 +61,4 @@ jobs:
           - LinuxNoTest
           - MacOS
           - RedHat6
-          - FreeBSD
+          # - FreeBSD

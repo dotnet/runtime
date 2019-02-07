@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 public partial class TimerFiringTests
 {
@@ -254,51 +255,66 @@ public partial class TimerFiringTests
         const int MillisecondsPadding = 100; // for each timer, out of range == Math.Abs(actualTime - dueTime) > MillisecondsPadding
         const int MaxAllowedOutOfRangePercentage = 20; // max % allowed out of range to pass test
 
-        var outOfRange = new ConcurrentQueue<KeyValuePair<int, long>>();
-
-        long totalTimers = 0;
-        await Task.WhenAll(from p in Enumerable.Range(0, Environment.ProcessorCount)
-                           select Task.Run(async () =>
-                           {
-                               await Task.WhenAll(from dueTimeTemplate in dueTimes
-                                                  from dueTime in Enumerable.Repeat(dueTimeTemplate, 10)
-                                                  select Task.Run(async () =>
-                                                  {
-                                                      var sw = new Stopwatch();
-                                                      for (int i = 1; i <= 1_000 / dueTime; i++)
-                                                      {
-                                                          sw.Restart();
-                                                          await DueTimeAsync(dueTime);
-                                                          sw.Stop();
-
-                                                          Interlocked.Increment(ref totalTimers);
-                                                          if (Math.Abs(sw.ElapsedMilliseconds - dueTime) > MillisecondsPadding)
-                                                          {
-                                                              outOfRange.Enqueue(new KeyValuePair<int, long>(dueTime, sw.ElapsedMilliseconds));
-                                                          }
-                                                      }
-                                                  }));
-                           }));
-
-        double percOutOfRange = (double)outOfRange.Count / totalTimers * 100;
-        if (percOutOfRange > MaxAllowedOutOfRangePercentage)
+        for (int tries = 0; ; tries++)
         {
-            IOrderedEnumerable<IGrouping<int, KeyValuePair<int, long>>> results =
-                from sample in outOfRange
-                group sample by sample.Key into groupedByDueTime
-                orderby groupedByDueTime.Key
-                select groupedByDueTime;
-
-            var sb = new StringBuilder();
-            sb.AppendFormat("{0}% out of {1} timer firings were off by more than {2}ms",
-                percOutOfRange, totalTimers, MillisecondsPadding);
-            foreach (IGrouping<int, KeyValuePair<int, long>> result in results)
+            try
             {
-                sb.AppendLine();
-                sb.AppendFormat("Expected: {0}, Actuals: {1}", result.Key, string.Join(", ", result.Select(k => k.Value)));
+                var outOfRange = new ConcurrentQueue<KeyValuePair<int, long>>();
+
+                long totalTimers = 0;
+                await Task.WhenAll(from p in Enumerable.Range(0, Environment.ProcessorCount)
+                                   select Task.Run(async () =>
+                                   {
+                                       await Task.WhenAll(from dueTimeTemplate in dueTimes
+                                                          from dueTime in Enumerable.Repeat(dueTimeTemplate, 10)
+                                                          select Task.Run(async () =>
+                                                          {
+                                                              var sw = new Stopwatch();
+                                                              for (int i = 1; i <= 1_000 / dueTime; i++)
+                                                              {
+                                                                  sw.Restart();
+                                                                  await DueTimeAsync(dueTime);
+                                                                  sw.Stop();
+
+                                                                  Interlocked.Increment(ref totalTimers);
+                                                                  if (Math.Abs(sw.ElapsedMilliseconds - dueTime) > MillisecondsPadding)
+                                                                  {
+                                                                      outOfRange.Enqueue(new KeyValuePair<int, long>(dueTime, sw.ElapsedMilliseconds));
+                                                                  }
+                                                              }
+                                                          }));
+                                   }));
+
+                double percOutOfRange = (double)outOfRange.Count / totalTimers * 100;
+                if (percOutOfRange > MaxAllowedOutOfRangePercentage)
+                {
+                    IOrderedEnumerable<IGrouping<int, KeyValuePair<int, long>>> results =
+                        from sample in outOfRange
+                        group sample by sample.Key into groupedByDueTime
+                        orderby groupedByDueTime.Key
+                        select groupedByDueTime;
+
+                    var sb = new StringBuilder();
+                    sb.AppendFormat("{0}% out of {1} timer firings were off by more than {2}ms",
+                        percOutOfRange, totalTimers, MillisecondsPadding);
+                    foreach (IGrouping<int, KeyValuePair<int, long>> result in results)
+                    {
+                        sb.AppendLine();
+                        sb.AppendFormat("Expected: {0}, Actuals: {1}", result.Key, string.Join(", ", result.Select(k => k.Value)));
+                    }
+
+                    Assert.True(false, sb.ToString());
+                }
+            }
+            catch (XunitException) when (tries < 3)
+            {
+                // This test will occasionally fail apparently because it was switched out
+                // for a short period. Eat and go around again
+                await Task.Delay(TimeSpan.FromSeconds(10)); // Should be very rare: wait for machine to settle
+                continue;
             }
 
-            Assert.True(false, sb.ToString());
+            return;
         }
     }
 

@@ -7,7 +7,6 @@ using System.Security.Principal;
 
 namespace System.IO.Pipes
 {
-    // [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
     public sealed class PipeAccessRule : AccessRule
     {
         //

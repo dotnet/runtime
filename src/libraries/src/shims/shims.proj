@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <Import Project="Directory.Build.props" />
-
   <PropertyGroup>
     <PackageConfigurations>
-      netcoreapp2.0;
+      netcoreapp2.0
     </PackageConfigurations>
     <BuildConfigurations>
-      $(BuildConfigurations);
-      $(PackageConfigurations);
+      $(PackageConfigurations)
     </BuildConfigurations>
   </PropertyGroup>
+
+  <Import Project="Directory.Build.props" />
 
   <Target Name="GetGenFacadesInputs">
     <ItemGroup>
@@ -18,7 +17,9 @@
         <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' == ''">StrongName</StrongNameSig>
         <StrongNameSig Condition="'%(NetfxReference.StrongNameSig)' != ''">%(NetfxReference.StrongNameSig)</StrongNameSig>
       </NetFxContracts>
-      <NETStandardContracts Include="$(NetStandardRefPath)netstandard.dll" />
+      <!-- TODO - once we retarget everything to netstandard2.1, remove netcoreapp2.0 reference to netstandard2.0 netstandard.dll -->
+      <NETStandardContracts Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(NetStandardRefPath)netstandard.dll" />
+      <NETStandardContracts Condition="'$(TargetGroup)' != 'netcoreapp2.0'" Include="$(NetStandard21RefPath)netstandard.dll" />
       <GenFacadesContracts Include="@(NetFxContracts);@(NETStandardContracts)" />
       <GenFacadesSeeds Include="$(RefPath)*.dll" />
     </ItemGroup>
