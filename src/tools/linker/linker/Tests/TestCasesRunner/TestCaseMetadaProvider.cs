@@ -92,6 +92,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 
+		public virtual IEnumerable<SourceAndDestinationPair> GetResponseFiles ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerResponseFileAttribute))
+				.Select (GetSourceAndRelativeDestinationValue);
+		}
+
 		public virtual IEnumerable<NPath> GetExtraLinkerSearchDirectories ()
 		{
 			yield break;

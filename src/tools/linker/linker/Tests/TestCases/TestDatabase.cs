@@ -121,6 +121,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("BCLFeatures");
 		}
 
+		public static IEnumerable<TestCaseData> CommandLineTests ()
+		{
+			return NUnitCasesBySuiteName ("CommandLine");
+		}
+
 		public static TestCaseCollector CreateCollector ()
 		{
 			string rootSourceDirectory;

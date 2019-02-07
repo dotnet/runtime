@@ -103,6 +103,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			foreach (var linkXmlFile in sandbox.LinkXmlFiles)
 				builder.AddLinkXmlFile (linkXmlFile);
 
+			foreach (var linkXmlFile in sandbox.ResponseFiles)
+				builder.AddResponseFile (linkXmlFile);
+
 			builder.AddSearchDirectory (sandbox.InputDirectory);
 			foreach (var extraSearchDir in metadataProvider.GetExtraLinkerSearchDirectories ())
 				builder.AddSearchDirectory (extraSearchDir);
