@@ -21,10 +21,6 @@ namespace System.Threading.Tasks
                                                                                 where TCompletedHandler : class
                                                                                 where TProgressHandler : class
     {
-        // This class uses interlocked operations on volatile fields, and this pragma suppresses the compiler's complaint
-        // that passing a volatile by ref to a function removes the volatility. That's not necessary for interlocked.
-#pragma warning disable 0420
-
         #region Private Types, Statics and Constants
 
         // ! THIS DIAGRAM ILLUSTRATES THE CONSTANTS BELOW. UPDATE THIS IF UPDATING THE CONSTANTS BELOW!:
@@ -1023,9 +1019,6 @@ namespace System.Threading.Tasks
             }
         }
         #endregion Implementation of IAsyncInfo
-
-#pragma warning restore 0420
-
     }  // class TaskToAsyncInfoAdapter<TCompletedHandler, TProgressHandler, TResult, TProgressInfo>
 }  // namespace
 

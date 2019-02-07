@@ -268,9 +268,7 @@ namespace System.Net.Http
             {
                 _incomingBuffer.Discard(frameHeader.Length);
 
-                // Don't wait for completion, which could happen asynchronously.
-                ValueTask ignored = SendRstStreamAsync(streamId, Http2ProtocolErrorCode.StreamClosed);
-                return;
+                throw new Http2ProtocolException(Http2ProtocolErrorCode.StreamClosed);
             }
 
             // TODO: Figure out how to cache this delegate.
@@ -346,9 +344,7 @@ namespace System.Net.Http
             {
                 _incomingBuffer.Discard(frameHeader.Length);
 
-                // Don't wait for completion, which could happen asynchronously.
-                ValueTask ignored = SendRstStreamAsync(frameHeader.StreamId, Http2ProtocolErrorCode.StreamClosed);
-                return;
+                throw new Http2ProtocolException(Http2ProtocolErrorCode.StreamClosed);
             }
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
@@ -546,7 +542,7 @@ namespace System.Net.Http
                 if (http2Stream == null)
                 {
                     // Don't wait for completion, which could happen asynchronously.
-                    ValueTask ignored = SendRstStreamAsync(frameHeader.StreamId, Http2ProtocolErrorCode.StreamClosed);
+                    Task ignored = SendRstStreamAsync(frameHeader.StreamId, Http2ProtocolErrorCode.StreamClosed);
                     return;
                 }
 
@@ -665,17 +661,16 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode)
+        private async Task SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode)
         {
             await AcquireWriteLockAsync().ConfigureAwait(false);
             try
             {
                 _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size + FrameHeader.RstStreamLength);
                 WriteFrameHeader(new FrameHeader(FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, streamId));
-                _outgoingBuffer.AvailableSpan[0] = (byte)(((int)errorCode & 0xFF000000) >> 24);
-                _outgoingBuffer.AvailableSpan[1] = (byte)(((int)errorCode & 0x00FF0000) >> 16);
-                _outgoingBuffer.AvailableSpan[2] = (byte)(((int)errorCode & 0x0000FF00) >> 8);
-                _outgoingBuffer.AvailableSpan[3] = (byte)((int)errorCode & 0x000000FF);
+
+                BinaryPrimitives.WriteInt32BigEndian(_outgoingBuffer.AvailableSpan, (int)errorCode);
+
                 _outgoingBuffer.Commit(FrameHeader.RstStreamLength);
 
                 await FlushOutgoingBytesAsync().ConfigureAwait(false);

@@ -24,7 +24,7 @@ namespace System.Text.Json.Tests
 
         public Span<byte> Free => _buffer.AsSpan(_count);
 
-        public Span<byte> Formatted => _buffer.AsSpan(0, _count);
+        public byte[] Formatted => _buffer.AsSpan(0, _count).ToArray();
 
         public Memory<byte> GetMemory(int minimumLength = 0) => _buffer.AsMemory(_count);
 

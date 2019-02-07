@@ -8,6 +8,19 @@
     <AssemblyInfoFile Condition="'$(MSBuildProjectExtension)' == '.vbproj'">$(IntermediateOutputPath)_AssemblyInfo.vb</AssemblyInfoFile>
   </PropertyGroup>
 
+  <!-- Assembly metadata indicating that an assembly is a framework (as opposed to user) assembly:
+       Test projects need to not have this because of the way "IsFrameworkAssembly" APIs work to check this. -->
+  <ItemGroup Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' AND '$(IsTestProject)' != 'true'" >
+    <AssemblyMetadata Include=".NETFrameworkAssembly">
+      <Value></Value>
+    </AssemblyMetadata>
+    <AssemblyMetadata Include="Serviceable">
+      <Value>True</Value>
+    </AssemblyMetadata>
+    <AssemblyMetadata Include="PreferInbox">
+      <Value>True</Value>
+    </AssemblyMetadata>
+  </ItemGroup>
 
   <Target Name="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"
     Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' AND '$(IsTestProject)' != 'true'">
@@ -66,7 +79,7 @@
       <AssemblyInfoLines Condition="'$(CLSCompliant)'=='true'" Include="&lt;Assembly:System.CLSCompliant(True)&gt;" />
 
       <AssemblyInfoLines Condition="'$(IncludeDllSafeSearchPathAttribute)'=='true'"
-        Include="&lt;Assembly:System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute(System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory | System.Runtime.InteropServices.DllImportSearchPath.System32)&gt;" />
+        Include="&lt;Assembly:System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute(System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory Or System.Runtime.InteropServices.DllImportSearchPath.System32)&gt;" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(AssemblyInfoFile)"

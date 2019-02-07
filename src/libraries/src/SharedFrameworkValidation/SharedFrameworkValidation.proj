@@ -8,21 +8,21 @@
     <_LKGSharedFrameworkVersion>1.1.2</_LKGSharedFrameworkVersion>
     <SharedFrameworkExtractPath>$(RefRootPath)sharedFrameworkZip/shared/Microsoft.NETCore.App/$(MicrosoftNETCoreAppPackageVersion)</SharedFrameworkExtractPath>
     <LKGSharedFrameworkExtractPath>$(RefRootPath)sharedFrameworkZip.LKG/shared/Microsoft.NETCore.App/$(_LKGSharedFrameworkVersion)</LKGSharedFrameworkExtractPath>
-    <_RunTestsScriptName Condition="'$(RunningOnUnix)' != 'true'">CloneAndRunTests.cmd</_RunTestsScriptName>
-    <_RunTestsScriptName Condition="'$(RunningOnUnix)' == 'true'">CloneAndRunTests.sh</_RunTestsScriptName>
+    <_RunTestsScriptName Condition="'$(OS)' == 'Windows_NT'">CloneAndRunTests.cmd</_RunTestsScriptName>
+    <_RunTestsScriptName Condition="'$(OS)' != 'Windows_NT'">CloneAndRunTests.sh</_RunTestsScriptName>
   </PropertyGroup>
 
   <Target Name="CreateScriptToDownloadSharedFrameworkZip">
 
-    <ItemGroup Condition="'$(RunningOnUnix)' != 'true'">
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <_DownloadSharedFrameworkScriptLines Include="Invoke-WebRequest %22https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain/dotnet-install.ps1%22 -OutFile $(ToolsDir.Replace('/', '\'))bootstrap.ps1" />
       <_DownloadSharedFrameworkScriptLines Include="%26 %22$(ToolsDir.Replace('/', '\'))bootstrap.ps1%22 -Channel %22master%22 -SharedRuntime -Version %22$(MicrosoftNETCoreAppPackageVersion)%22 -InstallDir %22$(RefRootPath.Replace('/', '\'))sharedFrameworkZip%22 | Out-File %22$(BinDir.Replace('/', '\'))bootstrap.log%22" />
       <_DownloadSharedFrameworkScriptLines Include="%26 %22$(ToolsDir.Replace('/', '\'))bootstrap.ps1%22 -Channel %22rel-1.1.0%22 -InstallDir %22$(RefRootPath.Replace('/', '\'))sharedFrameworkZip.LKG%22 | Out-File %22$(BinDir.Replace('/', '\'))bootstrap.LKG.log%22" />
     </ItemGroup>
 
     <PropertyGroup>
-      <_ScriptName Condition="'$(RunningOnUnix)' != 'true'">$(BinDir)DownloadSharedFramework.ps1</_ScriptName>
-      <_ScriptName Condition="'$(RunningOnUnix)' == 'true'">$(BinDir)DownloadSharedFramework.sh</_ScriptName>
+      <_ScriptName Condition="'$(OS)' == 'Windows_NT'">$(BinDir)DownloadSharedFramework.ps1</_ScriptName>
+      <_ScriptName Condition="'$(OS)' != 'Windows_NT'">$(BinDir)DownloadSharedFramework.sh</_ScriptName>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(RunningOnUnix)' == 'true'">
@@ -168,7 +168,7 @@
     </PropertyGroup>
 
     <!-- Windows script -->
-    <ItemGroup Condition="'$(RunningOnUnix)'!='true'">
+    <ItemGroup Condition="'$(OS)'=='Windows_NT'">
       <_CloneRepoLines Include="@echo off" />
       <_CloneRepoLines Include="pushd $(CoreFxCopyLocation.Replace('/', '\'))" />
       <_CloneRepoLines Include="git clone $(_RepoURL)" />
@@ -180,7 +180,7 @@
     </ItemGroup>
 
     <!-- Unix script -->
-    <ItemGroup Condition="'$(RunningOnUnix)'=='true'">
+    <ItemGroup Condition="'$(OS)'!='Windows_NT'">
       <_CloneRepoLines Include="#!/usr/bin/env bash" />
       <_CloneRepoLines Include="__scriptpath=%24(cd %22%24(dirname %22%240%22)%22%3B pwd -P)" />
       <_CloneRepoLines Include="cd $(CorefxCopyLocation.Replace('\', '/'))" />

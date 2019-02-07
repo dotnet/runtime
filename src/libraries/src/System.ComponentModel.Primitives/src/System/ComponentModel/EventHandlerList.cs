@@ -5,28 +5,31 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides a simple list of delegates. This class cannot be inherited.</para>
+    /// Provides a simple list of delegates. This class cannot be inherited.
     /// </summary>
     public sealed class EventHandlerList : IDisposable
     {
         private ListEntry _head;
-        private Component _parent;
+        private readonly Component _parent;
 
         /// <summary>
-        ///     Creates a new event handler list.  The parent component is used to check the component's
-        ///     CanRaiseEvents property.
+        /// Creates a new event handler list. The parent component is used to check the
+        /// component's CanRaiseEvents property.
         /// </summary>
-        internal EventHandlerList(Component parent) => _parent = parent;
+        internal EventHandlerList(Component parent)
+        {
+            _parent = parent;
+        }
 
         /// <summary>
-        ///    Creates a new event handler list.
+        /// Creates a new event handler list.
         /// </summary>
         public EventHandlerList()
         {
         }
 
         /// <summary>
-        ///    <para>Gets or sets the delegate for the specified key.</para>
+        /// Gets or sets the delegate for the specified key.
         /// </summary>
         public Delegate this[object key]
         {
@@ -54,9 +57,6 @@ namespace System.ComponentModel
             }
         }
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         public void AddHandler(object key, Delegate value)
         {
             ListEntry e = Find(key);
@@ -70,7 +70,6 @@ namespace System.ComponentModel
             }
         }
 
-        /// <summary> allows you to add a list of events to this list </summary>
         public void AddHandlers(EventHandlerList listToAddFrom)
         {
             ListEntry currentListEntry = listToAddFrom._head;
@@ -104,14 +103,12 @@ namespace System.ComponentModel
             {
                 e._handler = Delegate.Remove(e._handler, value);
             }
-            // else... no error for removal of non-existent delegate
-            //
         }
 
         private sealed class ListEntry
         {
-            internal ListEntry _next;
-            internal object _key;
+            internal readonly ListEntry _next;
+            internal readonly object _key;
             internal Delegate _handler;
 
             public ListEntry(object key, Delegate handler, ListEntry next)

@@ -11,6 +11,8 @@ namespace System.Text.Json.Tests
 {
     public class Utf8JsonWriterTests
     {
+        public static bool IsX64 { get; } = IntPtr.Size >= 8;
+
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -854,7 +856,7 @@ namespace System.Text.Json.Tests
             output.Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsX64))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -868,11 +870,21 @@ namespace System.Text.Json.Tests
 
             var jsonUtf8 = new Utf8JsonWriter(output, state);
 
-            Span<byte> key = new byte[1_000_000_000];
-            key.Fill((byte)'a');
+            Span<byte> key;
+            Span<char> keyChars;
 
-            var keyChars = new char[1_000_000_000];
-            keyChars.AsSpan().Fill('a');
+            try
+            {
+                key = new byte[1_000_000_000];
+                keyChars = new char[1_000_000_000];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
+
+            key.Fill((byte)'a');
+            keyChars.Fill('a');
 
             try
             {
@@ -1216,7 +1228,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.Flush();
 
                 Assert.Equal(0, jsonUtf8.CurrentDepth);
-                
+
                 state = jsonUtf8.GetCurrentState();
 
                 jsonUtf8 = new Utf8JsonWriter(output, state);
@@ -2490,7 +2502,7 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter(1024);
                 var jsonUtf8 = new Utf8JsonWriter(output, state);
 
-                ReadOnlySpan<char> keyUtf16 = keyString;
+                ReadOnlySpan<char> keyUtf16 = keyString.AsSpan();
                 ReadOnlySpan<byte> keyUtf8 = Encoding.UTF8.GetBytes(keyString);
 
                 jsonUtf8.WriteStartObject();
@@ -2652,7 +2664,7 @@ namespace System.Text.Json.Tests
 
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            ReadOnlySpan<char> keyUtf16 = keyString;
+            ReadOnlySpan<char> keyUtf16 = keyString.AsSpan();
             ReadOnlySpan<byte> keyUtf8 = Encoding.UTF8.GetBytes(keyString);
 
             for (int i = 0; i < 6; i++)
@@ -2745,7 +2757,7 @@ namespace System.Text.Json.Tests
 
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            ReadOnlySpan<char> keyUtf16 = keyString;
+            ReadOnlySpan<char> keyUtf16 = keyString.AsSpan();
             ReadOnlySpan<byte> keyUtf8 = Encoding.UTF8.GetBytes(keyString);
 
             for (int i = 0; i < 6; i++)
@@ -2838,7 +2850,7 @@ namespace System.Text.Json.Tests
 
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            ReadOnlySpan<char> keyUtf16 = keyString;
+            ReadOnlySpan<char> keyUtf16 = keyString.AsSpan();
             ReadOnlySpan<byte> keyUtf8 = Encoding.UTF8.GetBytes(keyString);
 
             for (int i = 0; i < 6; i++)
@@ -2901,7 +2913,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsX64))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -2911,16 +2923,27 @@ namespace System.Text.Json.Tests
         {
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            Span<byte> key = new byte[1_000_000_001];
-            key.Fill((byte)'a');
-            Span<byte> value = new byte[1_000_000_001];
-            value.Fill((byte)'b');
-
-            var output = new ArrayBufferWriter(1024);
-            var jsonUtf8 = new Utf8JsonWriter(output, state);
+            Span<byte> key;
+            Span<byte> value;
 
             try
             {
+                key = new byte[1_000_000_001];
+                value = new byte[1_000_000_001];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
+
+            key.Fill((byte)'a');
+            value.Fill((byte)'b');
+
+            var output = new ArrayBufferWriter(1024);
+
+            try
+            {
+                var jsonUtf8 = new Utf8JsonWriter(output, state);
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WriteString(key, DateTime.Now, escape: false);
                 Assert.True(false, $"Expected ArgumentException for data too large wasn't thrown. KeyLength: {key.Length}");
@@ -2929,6 +2952,7 @@ namespace System.Text.Json.Tests
 
             try
             {
+                var jsonUtf8 = new Utf8JsonWriter(output, state);
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteStringValue(value, escape: false);
                 Assert.True(false, $"Expected ArgumentException for data too large wasn't thrown. ValueLength: {value.Length}");
@@ -2938,7 +2962,7 @@ namespace System.Text.Json.Tests
             output.Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsX64))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -2948,10 +2972,18 @@ namespace System.Text.Json.Tests
         {
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            Span<byte> key = new byte[1_000_000_001];
-            key.Fill((byte)'a');
-            Span<byte> value = new byte[1_000_000_001];
-            value.Fill((byte)'b');
+            Span<byte> key;
+            Span<byte> value;
+
+            try
+            {
+                key = new byte[1_000_000_001];
+                value = new byte[1_000_000_001];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
 
             WriteTooLargeHelper(state, key, value);
             WriteTooLargeHelper(state, key.Slice(0, 1_000_000_000), value);

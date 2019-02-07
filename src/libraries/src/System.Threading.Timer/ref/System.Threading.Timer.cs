@@ -8,7 +8,7 @@
 
 namespace System.Threading
 {
-    public sealed class Timer : System.MarshalByRefObject, System.IDisposable
+    public sealed class Timer : System.MarshalByRefObject, System.IDisposable, System.IAsyncDisposable
     {
         public Timer(System.Threading.TimerCallback callback) { }
         public Timer(System.Threading.TimerCallback callback, object state, int dueTime, int period) { }

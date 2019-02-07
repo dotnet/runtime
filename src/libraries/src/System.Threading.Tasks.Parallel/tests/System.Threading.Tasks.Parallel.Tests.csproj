@@ -28,5 +28,9 @@
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadPoolHelpers.cs">
       <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
     </Compile>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

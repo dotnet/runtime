@@ -60,10 +60,7 @@ namespace System.ComponentModel.Composition.Primitives
                 {
                     // Guarantee one time only set _queryableParts
                     var p = this.AsQueryable();
-                    // NOTE : According to https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-messages/cs0420, the warning is bogus when used with Interlocked API.
-#pragma warning disable 420
                     Interlocked.CompareExchange(ref _queryableParts, p, null);
-#pragma warning restore 420
                     if (_queryableParts == null)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);

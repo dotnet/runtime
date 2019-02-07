@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{AAADA5D3-CF64-4E9D-943C-EFDC006D6366}</ProjectGuid>
     <RootNamespace>System.Threading.Channels</RootNamespace>
@@ -16,6 +16,7 @@
     <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
     <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
     <Compile Include="System\Threading\Channels\ChannelReader.cs" />
+    <Compile Include="System\Threading\Channels\ChannelReader.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
     <Compile Include="System\Threading\Channels\ChannelWriter.cs" />
     <Compile Include="System\Threading\Channels\Channel_1.cs" />
@@ -38,7 +39,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Threading.ThreadPool"  Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
