@@ -68,8 +68,8 @@
     <Compile Include="$(CommonPath)\System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Win32.cs">
-      <Link>Common\System\IO\DriveInfoInternal.Win32.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\DriveInfoInternal.Windows.cs">
+      <Link>Common\System\IO\DriveInfoInternal.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Windows.cs">
       <Link>Common\CoreLib\System\IO\PathInternal.Windows.cs</Link>
@@ -122,8 +122,8 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
       <Link>Common\CoreLib\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalDrive.cs">
-      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetLogicalDrives.cs">
+      <Link>Common\Interop\Windows\Interop.GetLogicalDrives.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeleteVolumeMountPoint.cs">
       <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs</Link>
@@ -187,7 +187,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.UNICODE_STRING.cs">
       <Link>Common\Interop\Windows\Interop.UNICODE_STRING.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOLEAN.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOLEAN.cs">
       <Link>Common\Interop\Windows\Interop.BOOLEAN.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.IO_STATUS_BLOCK.cs">
@@ -261,7 +261,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEGid.cs">
       <Link>Common\Interop\Unix\Interop.GetEGid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Stat.cs">
@@ -276,7 +276,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Link.cs">
       <Link>Common\Interop\Unix\Interop.Link.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MountPoints.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.MountPoints.cs">
       <Link>Common\Interop\Unix\Interop.MountPoints.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Read.cs">
@@ -294,7 +294,7 @@
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Unix.cs">
       <Link>Common\CoreLib\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Unix.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\DriveInfoInternal.Unix.cs">
       <Link>Common\System\IO\DriveInfoInternal.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Text\ValueUtf8Converter.cs">

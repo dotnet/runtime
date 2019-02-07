@@ -119,20 +119,11 @@ namespace System.Runtime.InteropServices.Tests
             };
 
             Assert.Equal(100, Marshal.ReadByte(structure, pointerOffset));
-
-            // The ReadByte() for object types does an explicit marshal which requires
-            // an allocation on each read. It can occur that the allocation is aligned
-            // on a byte boundary which would yield a value of 0. To mitigate the chance,
-            // marshal several times, choosing 20 as an arbitrary value. If this test
-            // fails, we should reconsider whether it is worth the flakiness.
-            int readBytes = 0;
-            for (int i = 0; i < 20; ++i)
-            {
-                readBytes += Marshal.ReadByte(structure, stringOffset);
-            }
-
-            Assert.NotEqual(0, readBytes);
-
+            // Unlike the Int16/32/64 tests that mirror this one, we aren't going to do any asserts on the value at stringOffset.
+            // The value at stringOffset is a pointer, so it is entirely possible that the first byte is 0.
+            // We tried keeping this test by summing 20 calls, but even that still resulted in 0 too often. As a result, we've
+            // decided to not try to validate this case instead of just incrementally increasing the number of iterations
+            // to avoid getting a 0 value.
             Assert.Equal(3, Marshal.ReadByte(structure, arrayOffset + sizeof(byte) * 2));
         }
 

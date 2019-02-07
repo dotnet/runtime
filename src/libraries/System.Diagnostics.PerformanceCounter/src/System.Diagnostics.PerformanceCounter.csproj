@@ -30,6 +30,7 @@
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterManager.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterType.cs" />
+    <Compile Include="System\Diagnostics\PerformanceDataRegistryKey.cs" />
     <Compile Include="System\Diagnostics\SharedPerformanceCounter.cs" />
     <Compile Include="System\Diagnostics\SystemDiagnosticsSection.cs" />
     <Compile Include="System\Diagnostics\TraceInternal.cs" />
@@ -42,6 +43,21 @@
     <Compile Include="System\Diagnostics\PerformanceData\PerfProviderCollection.cs" />
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOL.cs">
       <Link>Common\CoreLib\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\advapi32\Interop.RegCloseKey.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.RegCloseKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\advapi32\Interop.RegQueryValueEx.cs">
+      <Link>Common\CoreLib\Interop\Windows\advapi32\Interop.RegQueryValueEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs">
+      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs">
+      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
@@ -61,6 +77,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ProcessOptions.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.ProcessOptions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegConnectRegistry.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.RegConnectRegistry.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.TOKEN_INFORMATION_CLASS.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.TOKEN_INFORMATION_CLASS.cs</Link>
     </Compile>
@@ -76,7 +95,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FreeLibrary.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FreeLibrary.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetComputerName.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetComputerName.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetComputerName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_SafeProcessHandle.cs">
@@ -163,6 +182,7 @@
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />

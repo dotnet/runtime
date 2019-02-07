@@ -1,0 +1,106 @@
+Compat issues with assembly mscorlib:
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinAccountReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinApplicationPackageAuthoritySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinAnyPackageSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinCertSvcDComAccessGroup' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinCryptoOperatorsSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinDCOMUsersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinEventLogReadersGroup' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinIUsersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCacheablePrincipalsGroupSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityDocumentsLibrarySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityEnterpriseAuthenticationSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityInternetClientServerSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityInternetClientSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityMusicLibrarySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityPicturesLibrarySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityPrivateNetworkClientServerSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityRemovableStorageSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilitySharedUserCertificatesSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityVideosLibrarySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinConsoleLogonSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCreatorOwnerRightsSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinEnterpriseReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinHighLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinIUserSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinLocalLogonSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinLowLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinMediumLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinMediumPlusLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinNewEnterpriseReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinNonCacheablePrincipalsGroupSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinSystemLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinThisOrganizationCertificateSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinUntrustedLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinWriteRestrictedCodeSid' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.ComponentModel.Annotations:
+CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.ComponentModel.DataAnnotations.DisplayAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Method | AttributeTargets.Parameter | AttributeTargets.Property, AllowMultiple=false)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Method | AttributeTargets.Parameter | AttributeTargets.Property, AllowMultiple=false)]' in the implementation.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.DisplayFormatAttribute.GetNullDisplayText()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.DisplayFormatAttribute.NullDisplayTextResourceType.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.DisplayFormatAttribute.NullDisplayTextResourceType.set(System.Type)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.RangeAttribute.ConvertValueInInvariantCulture.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.RangeAttribute.ConvertValueInInvariantCulture.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.RangeAttribute.ParseLimitsInInvariantCulture.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ComponentModel.DataAnnotations.RangeAttribute.ParseLimitsInInvariantCulture.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.ComponentModel.Composition:
+TypesMustExist : Type 'System.ComponentModel.Composition.AdaptationConstants' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Configuration.ConfigurationManager:
+MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.HasLocalConfig.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.HasRoamingConfig.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.IsAppConfigHttp.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.RefreshConfigPaths()' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Diagnostics.PerformanceCounter:
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Diagnostics.CounterSample' in the contract but not the implementation.
+TypeCannotChangeClassification : Type 'System.Diagnostics.CounterSample' is marked as readonly in the contract so it must also be marked readonly in the implementation.
+Compat issues with assembly System.Security.Cryptography.OpenSsl:
+TypesMustExist : Type 'System.Security.Cryptography.DSAOpenSsl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.ECDsaOpenSsl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.RSAOpenSsl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.SafeEvpPKeyHandle' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Cryptography.Pkcs:
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.Certificates.set(System.Security.Cryptography.X509Certificates.X509Certificate2Collection)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.SignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.UnsignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Permissions:
+MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryCollection..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.CopyTo(System.Array, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryEnumerator..ctor()' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Principal.Windows:
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinAccountReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinApplicationPackageAuthoritySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinAnyPackageSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinCertSvcDComAccessGroup' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinCryptoOperatorsSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinDCOMUsersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinEventLogReadersGroup' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinBuiltinIUsersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCacheablePrincipalsGroupSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityDocumentsLibrarySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityEnterpriseAuthenticationSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityInternetClientServerSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityInternetClientSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityMusicLibrarySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityPicturesLibrarySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityPrivateNetworkClientServerSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityRemovableStorageSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilitySharedUserCertificatesSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCapabilityVideosLibrarySid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinConsoleLogonSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinCreatorOwnerRightsSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinEnterpriseReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinHighLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinIUserSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinLocalLogonSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinLowLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinMediumLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinMediumPlusLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinNewEnterpriseReadonlyControllersSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinNonCacheablePrincipalsGroupSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinSystemLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinThisOrganizationCertificateSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinUntrustedLabelSid' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Security.Principal.WellKnownSidType.WinWriteRestrictedCodeSid' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.ServiceProcess.ServiceController:
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.ServiceProcess.SessionChangeDescription' in the contract but not the implementation.
+TypeCannotChangeClassification : Type 'System.ServiceProcess.SessionChangeDescription' is marked as readonly in the contract so it must also be marked readonly in the implementation.
+Total Issues: 95

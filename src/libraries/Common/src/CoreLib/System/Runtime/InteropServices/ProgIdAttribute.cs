@@ -7,11 +7,11 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class ProgIdAttribute : Attribute
     {
-        public ProgIdAttribute(String progId)
+        public ProgIdAttribute(string progId)
         {
             Value = progId;
         }
 
-        public String Value { get; }
+        public string Value { get; }
     }
 }

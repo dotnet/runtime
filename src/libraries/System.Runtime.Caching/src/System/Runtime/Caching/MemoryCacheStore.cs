@@ -8,7 +8,6 @@ using System.Collections.Specialized;
 using System.Threading;
 using System.Diagnostics;
 using System.Security;
-using System.Security.Permissions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Caching

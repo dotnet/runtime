@@ -16,6 +16,7 @@
   <PropertyGroup>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(TargetFramework)</NuGetTargetMoniker>
   </PropertyGroup>
 
   <PropertyGroup>

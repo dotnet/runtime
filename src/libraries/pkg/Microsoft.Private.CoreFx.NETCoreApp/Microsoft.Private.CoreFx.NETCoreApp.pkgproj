@@ -39,7 +39,6 @@
     <!-- Permit the following implementation-only assemblies -->
     <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
       <Value>
-        Microsoft.VisualBasic;
         Microsoft.Win32.Registry;
         System.IO.FileSystem.AccessControl;
         System.IO.Pipes.AccessControl;

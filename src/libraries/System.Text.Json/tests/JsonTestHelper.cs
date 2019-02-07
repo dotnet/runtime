@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using Newtonsoft.Json;
+using Xunit;
 
 namespace System.Text.Json.Tests
 {
@@ -156,6 +157,40 @@ namespace System.Text.Json.Tests
             return BufferFactory.Create(buffers);
         }
 
+        internal static ReadOnlySequence<byte> SegmentInto(ReadOnlyMemory<byte> data, int segmentCount)
+        {
+            if (segmentCount < 2)
+                throw new ArgumentOutOfRangeException(nameof(segmentCount));
+
+            int perSegment = data.Length / segmentCount;
+            BufferSegment<byte> first;
+
+            if (perSegment == 0 && data.Length > 0)
+            {
+                first = new BufferSegment<byte>(data.Slice(0, 1));
+                data = data.Slice(1);
+            }
+            else
+            {
+                first = new BufferSegment<byte>(data.Slice(0, perSegment));
+                data = data.Slice(perSegment);
+            }
+
+            BufferSegment<byte> last = first;
+            segmentCount--;
+
+            while (segmentCount > 1)
+            {
+                perSegment = data.Length / segmentCount;
+                last = last.Append(data.Slice(0, perSegment));
+                data = data.Slice(perSegment);
+                segmentCount--;
+            }
+
+            last = last.Append(data);
+            return new ReadOnlySequence<byte>(first, 0, last, data.Length);
+        }
+
         public static object ReturnObjectHelper(byte[] data, JsonCommentHandling commentHandling = JsonCommentHandling.Disallow)
         {
             var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
@@ -212,6 +247,24 @@ namespace System.Text.Json.Tests
             {
                 JsonTokenType tokenType = json.TokenType;
                 ReadOnlySpan<byte> valueSpan = json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan;
+                if (json.HasValueSequence)
+                {
+                    Assert.True(json.ValueSpan == default);
+                    if ((tokenType != JsonTokenType.String && tokenType != JsonTokenType.PropertyName) || json.GetString().Length != 0)
+                    {
+                        // Empty strings could still make this true, i.e. ""
+                        Assert.False(json.ValueSequence.IsEmpty);
+                    }
+                }
+                else
+                {
+                    Assert.True(json.ValueSequence.IsEmpty);
+                    if ((tokenType != JsonTokenType.String && tokenType != JsonTokenType.PropertyName) || json.GetString().Length != 0)
+                    {
+                        // Empty strings could still make this true, i.e. ""
+                        Assert.False(json.ValueSpan == default);
+                    }
+                }
                 switch (tokenType)
                 {
                     case JsonTokenType.PropertyName:
@@ -251,6 +304,22 @@ namespace System.Text.Json.Tests
                     case JsonTokenType.Null:
                         // Special casing Null so that it matches what JSON.NET does
                         break;
+                    case JsonTokenType.StartObject:
+                        Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)'{' }));
+                        Assert.True(json.ValueSequence.IsEmpty);
+                        break;
+                    case JsonTokenType.EndObject:
+                        Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)'}' }));
+                        Assert.True(json.ValueSequence.IsEmpty);
+                        break;
+                    case JsonTokenType.StartArray:
+                        Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)'[' }));
+                        Assert.True(json.ValueSequence.IsEmpty);
+                        break;
+                    case JsonTokenType.EndArray:
+                        Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)']' }));
+                        Assert.True(json.ValueSequence.IsEmpty);
+                        break;
                     default:
                         break;
                 }
@@ -274,23 +343,28 @@ namespace System.Text.Json.Tests
                         root = valueSpan[0] == 't';
                         break;
                     case JsonTokenType.Number:
-                        json.TryGetDoubleValue(out double valueDouble);
+                        json.TryGetDouble(out double valueDouble);
                         root = valueDouble;
                         break;
                     case JsonTokenType.String:
-                        string valueString = json.GetStringValue();
+                        string valueString = json.GetString();
                         root = valueString;
                         break;
                     case JsonTokenType.Null:
                         break;
                     case JsonTokenType.StartObject:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'{' }));
                         root = ReaderDictionaryLoop(ref json);
                         break;
                     case JsonTokenType.StartArray:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'[' }));
                         root = ReaderListLoop(ref json);
                         break;
                     case JsonTokenType.EndObject:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'}' }));
+                        break;
                     case JsonTokenType.EndArray:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)']' }));
                         break;
                     case JsonTokenType.None:
                     case JsonTokenType.Comment:
@@ -315,7 +389,7 @@ namespace System.Text.Json.Tests
                 switch (tokenType)
                 {
                     case JsonTokenType.PropertyName:
-                        key = json.GetStringValue();
+                        key = json.GetString();
                         dictionary.Add(key, null);
                         break;
                     case JsonTokenType.True:
@@ -331,7 +405,7 @@ namespace System.Text.Json.Tests
                         }
                         break;
                     case JsonTokenType.Number:
-                        json.TryGetDoubleValue(out double valueDouble);
+                        json.TryGetDouble(out double valueDouble);
                         if (dictionary.TryGetValue(key, out _))
                         {
                             dictionary[key] = valueDouble;
@@ -342,7 +416,7 @@ namespace System.Text.Json.Tests
                         }
                         break;
                     case JsonTokenType.String:
-                        string valueString = json.GetStringValue();
+                        string valueString = json.GetString();
                         if (dictionary.TryGetValue(key, out _))
                         {
                             dictionary[key] = valueString;
@@ -364,6 +438,7 @@ namespace System.Text.Json.Tests
                         }
                         break;
                     case JsonTokenType.StartObject:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'{' }));
                         value = ReaderDictionaryLoop(ref json);
                         if (dictionary.TryGetValue(key, out _))
                         {
@@ -375,6 +450,7 @@ namespace System.Text.Json.Tests
                         }
                         break;
                     case JsonTokenType.StartArray:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'[' }));
                         value = ReaderListLoop(ref json);
                         if (dictionary.TryGetValue(key, out _))
                         {
@@ -386,6 +462,7 @@ namespace System.Text.Json.Tests
                         }
                         break;
                     case JsonTokenType.EndObject:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'}' }));
                         return dictionary;
                     case JsonTokenType.None:
                     case JsonTokenType.Comment:
@@ -414,11 +491,11 @@ namespace System.Text.Json.Tests
                         arrayList.Add(value);
                         break;
                     case JsonTokenType.Number:
-                        json.TryGetDoubleValue(out double doubleValue);
+                        json.TryGetDouble(out double doubleValue);
                         arrayList.Add(doubleValue);
                         break;
                     case JsonTokenType.String:
-                        string valueString = json.GetStringValue();
+                        string valueString = json.GetString();
                         arrayList.Add(valueString);
                         break;
                     case JsonTokenType.Null:
@@ -426,14 +503,17 @@ namespace System.Text.Json.Tests
                         arrayList.Add(value);
                         break;
                     case JsonTokenType.StartObject:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'{' }));
                         value = ReaderDictionaryLoop(ref json);
                         arrayList.Add(value);
                         break;
                     case JsonTokenType.StartArray:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)'[' }));
                         value = ReaderListLoop(ref json);
                         arrayList.Add(value);
                         break;
                     case JsonTokenType.EndArray:
+                        Assert.True(valueSpan.SequenceEqual(new byte[] { (byte)']' }));
                         return arrayList;
                     case JsonTokenType.None:
                     case JsonTokenType.Comment:

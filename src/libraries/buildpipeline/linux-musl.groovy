@@ -13,14 +13,14 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-2017111
     def commonprops = "--ci /p:ArchGroup=${params.AGroup} /p:ConfigurationGroup=${params.CGroup}"
 
     stage ('Build Product') {
-        sh "./build.sh ${commonprops} /p:RuntimeOs=linux-musl /p:PortableBuild=false"
+        sh "./build.sh ${commonprops} /p:RuntimeOs=linux-musl"
     }
     stage ('Build Tests') {
         def additionalArgs = ''
         if (params.TestOuter) {
             additionalArgs = ' /p:OuterLoop=true'
         }
-        sh "./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=false /p:PortableBuild=false${additionalArgs}"
+        sh "./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=false${additionalArgs}"
     }
 
     // TODO: Add submission for Helix testing once we have queue for Alpine Linux working

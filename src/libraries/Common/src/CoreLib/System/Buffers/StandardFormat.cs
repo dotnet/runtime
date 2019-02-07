@@ -146,40 +146,54 @@ namespace System.Buffers
         /// </summary>
         public override string ToString()
         {
-            unsafe
+            Span<char> buffer = stackalloc char[FormatStringLength];
+            int charsWritten = Format(buffer);
+            return new string(buffer.Slice(0, charsWritten));
+        }
+
+        /// <summary>The exact buffer length required by <see cref="Format"/>.</summary>
+        internal const int FormatStringLength = 3;
+
+        /// <summary>
+        /// Formats the format in classic .NET format.
+        /// </summary>
+        internal int Format(Span<char> destination)
+        {
+            Debug.Assert(destination.Length == FormatStringLength);
+
+            int count = 0;
+            char symbol = Symbol;
+
+            if (symbol != default &&
+                (uint)destination.Length == FormatStringLength) // to eliminate bounds checks
             {
-                const int MaxLength = 4;
-                char* pBuffer = stackalloc char[MaxLength];
+                destination[0] = symbol;
+                count = 1;
 
-                int dstIndex = 0;
-                char symbol = Symbol;
-                if (symbol != default)
+                uint precision = Precision;
+                if (precision != NoPrecision)
                 {
-                    pBuffer[dstIndex++] = symbol;
+                    // Note that Precision is stored as a byte, so in theory it could contain
+                    // values > MaxPrecision (99).  But all supported mechanisms for creating a
+                    // StandardFormat limit values to being <= MaxPrecision, so the only way a value
+                    // could be larger than that is if unsafe code or the equivalent were used
+                    // to force a larger invalid value in, in which case we don't need to
+                    // guarantee such an invalid value is properly roundtripped through here;
+                    // we just need to make sure things aren't corrupted further.
 
-                    byte precision = Precision;
-                    if (precision != NoPrecision)
+                    if (precision >= 10)
                     {
-                        if (precision >= 100)
-                        {
-                            pBuffer[dstIndex++] = (char)('0' + (precision / 100) % 10);
-                            precision = (byte)(precision % 100);
-                        }
-
-                        if (precision >= 10)
-                        {
-                            pBuffer[dstIndex++] = (char)('0' + (precision / 10) % 10);
-                            precision = (byte)(precision % 10);
-                        }
-
-                        pBuffer[dstIndex++] = (char)('0' + precision);
+                        uint div = Math.DivRem(precision, 10, out precision);
+                        destination[1] = (char)('0' + div % 10);
+                        count = 2;
                     }
+
+                    destination[count] = (char)('0' + precision);
+                    count++;
                 }
-
-                Debug.Assert(dstIndex <= MaxLength);
-
-                return new string(pBuffer, startIndex: 0, length: dstIndex);
             }
+
+            return count;
         }
 
         /// <summary>

@@ -164,6 +164,7 @@ namespace System.Tests
             rethrownExceptionStackFrame = (null, null, 0);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowException()
         {
             throw new Exception("Boom!");

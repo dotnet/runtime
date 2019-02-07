@@ -17,7 +17,7 @@ namespace System.Diagnostics
                 EnsureState(State.HaveNonExitedId);
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
 
-                return  new DateTime(DateTime.UnixEpoch.Ticks + (stat.startTime * TimeSpan.TicksPerSecond)).ToLocalTime();
+                return new DateTime(DateTime.UnixEpoch.Ticks + (stat.startTime * TimeSpan.TicksPerSecond)).ToLocalTime();
             }
         }
 
@@ -63,11 +63,15 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets parent process ID</summary>
+        private int ParentProcessId =>
+            throw new PlatformNotSupportedException();
+
         // <summary>Gets execution path</summary>
         private string GetPathToOpenFile()
         {
             Interop.Sys.FileStatus stat;
-            if (Interop.Sys.Stat("/usr/local/bin/open", out stat) == 0 )
+            if (Interop.Sys.Stat("/usr/local/bin/open", out stat) == 0)
             {
                 return "/usr/local/bin/open";
             }
