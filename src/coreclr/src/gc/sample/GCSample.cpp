@@ -119,14 +119,6 @@ int __cdecl main(int argc, char* argv[])
         return -1;
     }
 
-    // 
-    // Initialize free object methodtable. The GC uses a special array-like methodtable as placeholder
-    // for collected free space.
-    //
-    static MethodTable freeObjectMT;
-    freeObjectMT.InitializeFreeObject();
-    g_gc_pFreeObjectMethodTable = &freeObjectMT;
-
     //
     // Initialize GC heap
     //

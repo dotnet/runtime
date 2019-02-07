@@ -5,8 +5,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(..)
 include_directories(../env)
 
-add_definitions(-DFEATURE_REDHAWK)
-
 set(SOURCES
     GCSample.cpp
     gcenv.ee.cpp
