@@ -139,3 +139,7 @@ The .NET platform currently doesn't contain a cross-platform XAML-based UI stack
 * [WPFLight](https://github.com/ronnycsharp/WPFLight): An OSS project to create WPF on top of XNA/MonoGame.
 * [Perspex](https://github.com/Perspex/Perspex): A cross-platform UI framework based on WPF.
 * [Granular](https://github.com/yuvaltz/Granular): A OSS project to allow WPF applications to run in the browser.
+
+## Engineering system
+
+* **Helix**. It's a massively-parallel, general-purpose job processing and result aggregation system running in the cloud. The work items that corefx sends to Helix are [xunit](https://github.com/xunit) tests. Test results are shown through the *Mission Control* reporting site, https://mc.dot.net/; to go to the test results in a PR from Azure DevOps, you can click on the *Send to Helix* step in the build, and the logs will have the URL.

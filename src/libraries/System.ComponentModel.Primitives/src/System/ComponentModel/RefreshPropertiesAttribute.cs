@@ -5,41 +5,36 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para> Specifies how a designer refreshes when the property value is changed.</para>
+    /// Specifies how a designer refreshes when the property value is changed.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class RefreshPropertiesAttribute : Attribute
     {
         /// <summary>
-        ///    <para>
-        ///       Indicates all properties should be refreshed if the property value is changed. This field is
-        ///       read-only.
-        ///    </para>
+        /// Indicates all properties should be refreshed if the property value is changed.
+        /// This field is read-only.
         /// </summary>
         public static readonly RefreshPropertiesAttribute All = new RefreshPropertiesAttribute(RefreshProperties.All);
 
         /// <summary>
-        ///    <para>
-        ///       Indicates all properties should be invalidated and repainted if the
-        ///       property value is changed. This field is read-only.
-        ///    </para>
+        /// Indicates all properties should be invalidated and repainted if the property
+        /// value is changed. This field is read-only.
         /// </summary>
         public static readonly RefreshPropertiesAttribute Repaint = new RefreshPropertiesAttribute(RefreshProperties.Repaint);
 
         /// <summary>
-        ///    <para>
-        ///       Indicates that by default no properties should be refreshed if the property value
-        ///       is changed. This field is read-only.
-        ///    </para>
+        /// Indicates that by default no properties should be refreshed if the property
+        /// value is changed. This field is read-only.
         /// </summary>
         public static readonly RefreshPropertiesAttribute Default = new RefreshPropertiesAttribute(RefreshProperties.None);
 
-        public RefreshPropertiesAttribute(RefreshProperties refresh) => RefreshProperties = refresh;
+        public RefreshPropertiesAttribute(RefreshProperties refresh)
+        {
+            RefreshProperties = refresh;
+        }
 
         /// <summary>
-        ///    <para>
-        ///       Gets the refresh properties for the member.
-        ///    </para>
+        /// Gets the refresh properties for the member.
         /// </summary>
         public RefreshProperties RefreshProperties { get; }
 

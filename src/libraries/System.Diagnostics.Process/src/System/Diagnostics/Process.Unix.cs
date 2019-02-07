@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -53,7 +54,7 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
         }
 
-        /// <summary>Stops the associated process immediately.</summary>
+        /// <summary>Terminates the associated process immediately.</summary>
         public void Kill()
         {
             EnsureState(State.HaveNonExitedId);
@@ -61,6 +62,71 @@ namespace System.Diagnostics
             {
                 throw new Win32Exception(); // same exception as on Windows
             }
+        }
+
+        /// <summary>Stops the associated process immediately.</summary>
+        private void Stop()
+        {
+            EnsureState(State.HaveNonExitedId);
+            if (Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGSTOP) != 0)
+            {
+                throw new Win32Exception(); // to match behavior of Kill()
+            }
+        }
+
+        private IEnumerable<Exception> KillTree()
+        {
+            try
+            {
+                // Stop but don't kill the process. Keeps additional children from being started but leaves the process alive 
+                // so that its children can be enumerated.
+                //
+                // This method can return before stopping has completed. Down the road, could possibly wait for stopping to complete (e.g. using waitid) before continuing.
+                Stop();
+            }
+            catch (InvalidOperationException)
+            {
+                // It appears that nothing more can be done with the process. Implies that its children can't be enumerated.
+                return Enumerable.Empty<Exception>();
+            }
+            catch (Win32Exception e)
+            {
+                return new[] { e };
+            }
+
+
+            List<Exception> exceptions = new List<Exception>();
+            IReadOnlyList<Process> children = GetChildProcesses();
+
+            try
+            {
+                try
+                {
+                    // Since children have been enumerated, the process can be terminated.
+                    Kill();
+                }
+                catch (InvalidOperationException)
+                {
+                    // Ignore. The process is already dead.
+                }
+                catch (Win32Exception e)
+                {
+                    exceptions.Add(e);
+                }
+
+                foreach (Process childProcess in children)
+                {
+                    IEnumerable<Exception> exceptionsFromChild = childProcess.KillTree();
+                    exceptions.AddRange(exceptionsFromChild);
+                }
+            }
+            finally
+            {
+                foreach (Process child in children)
+                    child.Dispose();
+            }
+
+            return exceptions;
         }
 
         /// <summary>Discards any information about the associated process.</summary>
@@ -240,6 +306,13 @@ namespace System.Diagnostics
             return Interop.Sys.GetPid();
         }
 
+        /// <summary>Checks whether the argument is a direct child of this process.</summary>
+        private bool IsParentOf(Process possibleChildProcess) =>
+            Id == possibleChildProcess.ParentProcessId;
+
+        private bool Equals(Process process) =>
+            Id == process.Id;
+
         partial void ThrowIfExited(bool refresh)
         {
             // Don't allocate a ProcessWaitState.Holder unless we're refreshing.
@@ -365,7 +438,8 @@ namespace System.Diagnostics
             {
                 Debug.Assert(stdinFd >= 0);
                 _standardInput = new StreamWriter(OpenStream(stdinFd, FileAccess.Write),
-                    startInfo.StandardInputEncoding ?? s_utf8NoBom, StreamBufferSize) { AutoFlush = true };
+                    startInfo.StandardInputEncoding ?? s_utf8NoBom, StreamBufferSize)
+                { AutoFlush = true };
             }
             if (startInfo.RedirectStandardOutput)
             {

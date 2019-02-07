@@ -149,6 +149,7 @@
     <Compile Include="MultiInterfaceReadOnlyStream.cs" />
     <Compile Include="MultiInterfaceStreamContent.cs" />
     <Compile Include="PostScenarioUWPTest.cs" />
+    <Compile Include="XUnitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">

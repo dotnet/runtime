@@ -37,6 +37,17 @@ namespace System.Data.SqlTypes
 
             return XmlReader.Create(stream, settingsToUse);
         }
+
+        internal static XmlReader SqlXmlCreateSqlXmlReader(TextReader textReader, bool closeInput = false, bool async = false)
+        {
+            Debug.Assert(closeInput || !async, "Currently we do not have pre-created settings for !closeInput+async");
+
+            XmlReaderSettings settingsToUse = closeInput ?
+                (async ? s_defaultXmlReaderSettingsAsyncCloseInput : s_defaultXmlReaderSettingsCloseInput) :
+                s_defaultXmlReaderSettings;
+
+            return XmlReader.Create(textReader, settingsToUse);
+        }
         #endregion
 
         #region Work around inability to access SqlDateTime.ToDateTime

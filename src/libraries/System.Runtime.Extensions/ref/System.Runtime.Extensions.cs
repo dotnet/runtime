@@ -1311,7 +1311,7 @@ namespace System.IO
         [System.CLSCompliantAttribute(false)]
         public virtual ulong ReadUInt64() { throw null; }
     }
-    public partial class BinaryWriter : System.IDisposable
+    public partial class BinaryWriter : System.IDisposable, System.IAsyncDisposable
     {
         public static readonly System.IO.BinaryWriter Null;
         protected System.IO.Stream OutStream;
@@ -1573,7 +1573,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
         public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
-    public abstract partial class TextWriter : System.MarshalByRefObject, System.IDisposable
+    public abstract partial class TextWriter : System.MarshalByRefObject, System.IDisposable, System.IAsyncDisposable
     {
         protected char[] CoreNewLine;
         public static readonly System.IO.TextWriter Null;

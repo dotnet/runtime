@@ -174,7 +174,7 @@ Using enums instead of partial, static classes can lead to needing lots of casts
 
 ### Definition
 
-When defining the P/Invoke signatures and structs, the following guidelines should be followed. More details on P/Invoke behavior and these guidelines can be found here: [P/Invokes](interop-pinvokes)
+When defining the P/Invoke signatures and structs, the following guidelines should be followed. More details on P/Invoke behavior and these guidelines can be found here: [P/Invokes](interop-pinvokes.md)
 
 - Interop signatures / structs / constants should be defined using the same name / capitalization / etc. that's used in the corresponding native code.
 - Avoid using `StringBuilder`, particularly as an output buffer to avoid over allocating.

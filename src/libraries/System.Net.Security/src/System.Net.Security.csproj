@@ -222,6 +222,9 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\Interop.Errors.cs">
       <Link>Common\CoreLib\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PrintF.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.PrintF.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs</Link>
     </Compile>
@@ -257,6 +260,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\Unix\SafeFreeNegoCredentials.cs">
       <Link>Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\Unix\SecChannelBindings.cs">
+      <Link>Common\System\Net\Security\Unix\SecChannelBindings.cs</Link>
     </Compile>
     <Compile Include="System\Net\Security\NegotiateStreamPal.Unix.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\EndpointChannelBindingToken.cs" />
@@ -408,6 +414,7 @@
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.OpenSsl" />
     <Reference Include="System.Security.Cryptography.Primitives" />

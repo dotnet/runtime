@@ -205,11 +205,7 @@ namespace System.ComponentModel.Composition.Primitives
                 if (_exportedValue == Export._EmptyValue)
                 {
                     object exportedValue = GetExportedValueCore();
-
-                    // NOTE : According to https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-messages/cs0420, the warning is bogus when used with Interlocked API.
-#pragma warning disable 420
                     Interlocked.CompareExchange(ref _exportedValue, exportedValue, Export._EmptyValue);
-#pragma warning restore 420
                 }
 
                 return _exportedValue;

@@ -38,9 +38,6 @@
   <ItemGroup Condition="'$(TargetsAOT)'!='true'">
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAOT)'=='true'">
-    <Compile Include="System\Diagnostics\SymbolStore\ISymbolDocumentWriter.cs" />
-  </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>

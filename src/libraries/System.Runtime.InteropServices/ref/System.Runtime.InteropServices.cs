@@ -384,6 +384,7 @@ namespace System.Runtime.InteropServices
         public DllImportAttribute(string dllName) { }
         public string Value { get { throw null; } }
     }
+    public delegate System.IntPtr DllImportResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath);
     [System.FlagsAttribute]
     public enum DllImportSearchPath
     {
@@ -729,6 +730,17 @@ namespace System.Runtime.InteropServices
         protected MarshalDirectiveException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MarshalDirectiveException(string message) { }
         public MarshalDirectiveException(string message, System.Exception inner) { }
+    }
+    public static partial class NativeLibrary
+    {
+        public static void Free(System.IntPtr handle) { }
+        public static System.IntPtr GetExport(System.IntPtr handle, string name) { throw null; }
+        public static System.IntPtr Load(string libraryPath) { throw null; }
+        public static System.IntPtr Load(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath) { throw null; }
+        public static void SetDllImportResolver(System.Reflection.Assembly assembly, DllImportResolver resolver) { throw null; }
+        public static bool TryGetExport(IntPtr handle, string name, out IntPtr address) { throw null; }
+        public static bool TryLoad(string libraryPath, out System.IntPtr handle) { throw null; }
+        public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false)]
     public sealed partial class OptionalAttribute : System.Attribute

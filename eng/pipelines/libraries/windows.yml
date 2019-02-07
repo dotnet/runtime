@@ -3,6 +3,9 @@ parameters:
   # Required: value to specify if the job is comming from an official build to run extra steps and sign binaries
   #   Default: false
   isOfficialBuild: false
+  # Required: value to specify if the build is comming from an outerloop pipeline.
+  #   Default: false
+  isOuterloopBuild: false
 
 jobs:
 
@@ -88,6 +91,19 @@ jobs:
               _architecture: arm
               _framework: uap
               _helixQueues: $(windowsArmQueue)
+
+            UAPAOT_x86_Release:
+              _BuildConfig: Release
+              _architecture: x86
+              _framework: uapaot
+              _helixQueues: $(uapNetfxQueues)
+
+            UAPAOT_x64_Release:
+              _BuildConfig: Release
+              _architecture: x64
+              _framework: uapaot
+              _helixQueues: $(uapNetfxQueues)
+
       pool:
         ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           name: dotnet-internal-temp
@@ -101,6 +117,8 @@ jobs:
       variables:
         - _skipTests: true
         - _outerloop: ${{ parameters.isOfficialBuild }}
+        - ${{ if eq(parameters.isOuterloopBuild, 'true') }}:
+          - _outerloop: true
 
         - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
           - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ClientRS4.ES.Open
@@ -113,114 +131,117 @@ jobs:
           - uapNetfxQueues: Windows.10.Amd64.ClientRS4
           - windowsArmQueue: Windows.10.Arm64
 
-    # Packaging all configurations
-    - job: AllConfigurations
-      displayName: Packaging All Configurations
-      strategy:
-        matrix:
-          # PR Validation Matrix
-          ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            x64_Debug:
-              _BuildConfig: Debug
-              _architecture: x64
-              _framework: allConfigurations
+    # There is no point of running legs without outerloop tests, when in an outerloop build.
+    - ${{ if eq(parameters.isOuterloopBuild, 'false') }}:
+      # Packaging all configurations
+      - job: AllConfigurations
+        displayName: Packaging All Configurations
+        strategy:
+          matrix:
+            # PR Validation Matrix
+            ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+              x64_Debug:
+                _BuildConfig: Debug
+                _architecture: x64
+                _framework: allConfigurations
+                _helixQueues: $(allConfigurationsQueues)
 
-          # Official Build Matrix
+            # Official Build Matrix
+            ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+              x64_Release:
+                _BuildConfig: Release
+                _architecture: x64
+                _framework: allConfigurations
+                _helixQueues: $(allConfigurationsQueues)
+
+        pool:
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            x64_Release:
-              _BuildConfig: Release
-              _architecture: x64
-              _framework: allConfigurations
+            name: dotnet-internal-temp
+          ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+            name: Hosted VS2017
 
-      pool:
-        ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-          name: dotnet-internal-temp
-        ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-          name: Hosted VS2017
+        submitToHelix: true
+        # azure pipelines reporter only supports xunit results based tests.
+        enableAzurePipelinesReporter: false
+        enableMicrobuild: ${{ parameters.isOfficialBuild }}
 
-      submitToHelix: false
-      enableMicrobuild: ${{ parameters.isOfficialBuild }}
+        variables:
+          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+            - allConfigurationsQueues: Windows.10.Amd64.ClientRS4.Open
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - allConfigurationsQueues: Windows.10.Amd64.ClientRS4
 
-      customBuildSteps:
-        - script: build.cmd
-                  -ci
-                  -$(_framework)
-                  /p:ArchGroup=$(_architecture)
-                  /p:ConfigurationGroup=$(_BuildConfig)
-                  /p:RuntimeOS=win10
-                  $(_windowsOfficialBuildArguments)
-                  $(_msbuildCommonParameters)
-          displayName: Build Packages
-        - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+        customBuildSteps:
           - script: build.cmd
                     -ci
-                    -test
-                    /p:TargetGroup=netstandard
+                    -$(_framework)
                     /p:ArchGroup=$(_architecture)
                     /p:ConfigurationGroup=$(_BuildConfig)
-                    /p:SkipTests=true
-            displayName: Build Netstandard Test Suite
+                    /p:RuntimeOS=win10
+                    $(_windowsOfficialBuildArguments)
+                    $(_msbuildCommonParameters)
+            displayName: Build Packages
           - script: build.cmd
                     -ci
                     -test
                     -$(_framework)
                     /p:ArchGroup=$(_architecture)
                     /p:ConfigurationGroup=$(_BuildConfig)
-            displayName: Run Package Tests
+                    /p:ArchiveTests=true
+            displayName: Build test projects
+          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+            - script: build.cmd
+                      -ci
+                      -test
+                      /p:TargetGroup=netstandard
+                      /p:ArchGroup=$(_architecture)
+                      /p:ConfigurationGroup=$(_BuildConfig)
+                      /p:SkipTests=true
+              displayName: Build Netstandard Test Suite
 
-    # TODO: UAPAOT official builds should send to helix using continuation runner.
-    # Legs without HELIX testing
-    - job: WindowsNoTest
-      displayName: Windows
-      strategy:
-        matrix:
-          ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            UWP_NETNative_x86_Release:
-              _BuildConfig: Release
-              _architecture: x86
-              _framework: uapaot
+      # TODO: UAPAOT official builds should send to helix using continuation runner.
+      # Legs without HELIX testing
+      - job: WindowsNoTest
+        displayName: Windows
+        strategy:
+          matrix:
+            ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+              UWP_NETNative_x86_Release:
+                _BuildConfig: Release
+                _architecture: x86
+                _framework: uapaot
 
+            ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+              arm_Release:
+                _BuildConfig: Release
+                _architecture: arm
+                _framework: netcoreapp
+
+              arm64_Release:
+                _BuildConfig: Release
+                _architecture: arm64
+                _framework: netcoreapp
+
+              UAPAOT_arm_Release:
+                _BuildConfig: Release
+                _architecture: arm
+                _framework: uapaot
+
+              UAPAOT_arm64_Release:
+                _BuildConfig: Release
+                _architecture: arm64
+                _framework: uapaot
+
+        pool:
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            arm_Release:
-              _BuildConfig: Release
-              _architecture: arm
-              _framework: netcoreapp
+            name: dotnet-internal-temp
+          ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+            name: Hosted VS2017
 
-            arm64_Release:
-              _BuildConfig: Release
-              _architecture: arm64
-              _framework: netcoreapp
+        submitToHelix: false
+        enableMicrobuild: ${{ parameters.isOfficialBuild }}
+        buildExtraArguments: /p:RuntimeOS=win10
 
-            UAPAOT_x86_Release:
-              _BuildConfig: Release
-              _architecture: x86
-              _framework: uapaot
-
-            UAPAOT_x64_Release:
-              _BuildConfig: Release
-              _architecture: x64
-              _framework: uapaot
-
-            UAPAOT_arm_Release:
-              _BuildConfig: Release
-              _architecture: arm
-              _framework: uapaot
-
-            UAPAOT_arm64_Release:
-              _BuildConfig: Release
-              _architecture: arm64
-              _framework: uapaot
-
-      pool:
-        ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-          name: dotnet-internal-temp
-        ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-          name: Hosted VS2017
-
-      submitToHelix: false
-      enableMicrobuild: ${{ parameters.isOfficialBuild }}
-      buildExtraArguments: /p:RuntimeOS=win10
-
-      variables:
-        - _skipTests: true
-        - _outerloop: ${{ parameters.isOfficialBuild }}
+        variables:
+          - _skipTests: true
+          - _outerloop: ${{ parameters.isOfficialBuild }}
