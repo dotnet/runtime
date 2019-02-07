@@ -751,6 +751,14 @@
                     "name": "System.Buffers.Text.Tests.ParserTests.TestParserDouble",
                     "reason": "https://github.com/dotnet/coreclr/pull/20707"
                 },
+                {
+                    "name": "System.Buffers.Text.Tests.FormatterTests.TestGFormatWithPrecisionNotSupported",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22434"
+                },
+                {
+                    "name": "System.Buffers.Text.Tests.FormatterTests.TestBadFormat",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22434"
+                },
             ]
         }
     },
