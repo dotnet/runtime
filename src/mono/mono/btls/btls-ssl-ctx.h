@@ -31,6 +31,7 @@ typedef struct MonoBtlsSslCtx MonoBtlsSslCtx;
 
 typedef int (* MonoBtlsVerifyFunc) (void *instance, int preverify_ok, X509_STORE_CTX *ctx);
 typedef int (* MonoBtlsSelectFunc) (void *instance, int countIssuers, const int *sizes, void **issuerData);
+typedef int (* MonoBtlsServerNameFunc) (void *instance);
 
 MONO_API MonoBtlsSslCtx *
 mono_btls_ssl_ctx_new (void);
@@ -83,5 +84,11 @@ mono_btls_ssl_ctx_set_verify_param (MonoBtlsSslCtx *ctx, const MonoBtlsX509Verif
 
 MONO_API int
 mono_btls_ssl_ctx_set_client_ca_list (MonoBtlsSslCtx *ctx, int count, int *sizes, const void **data);
+
+MONO_API void
+mono_btls_ssl_ctx_set_server_name_callback (MonoBtlsSslCtx *ctx, MonoBtlsServerNameFunc func);
+
+MONO_API const char *
+mono_btls_ssl_ctx_get_servername (MonoBtlsSslCtx *ptr);
 
 #endif /* __btls_ssl_ctx__btls_ssl_ctx__ */
