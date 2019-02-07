@@ -769,9 +769,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 #endif
 
                 // Start the task handling scheduling exceptions
-#pragma warning disable 0420
                 Exception exception = Common.StartTaskSafe(_taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
-#pragma warning restore 0420
                 if (exception != null)
                 {
                     // First, log the exception while the processing state is dirty which is preventing the block from completing.

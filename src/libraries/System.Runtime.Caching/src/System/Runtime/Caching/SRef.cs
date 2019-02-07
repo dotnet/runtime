@@ -6,7 +6,6 @@ using System;
 using System.Globalization;
 using System.Reflection;
 using System.Security;
-using System.Security.Permissions;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 

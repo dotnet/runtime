@@ -13,8 +13,8 @@
     <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
     <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.txt</ApiCompatBaselineFile>
     <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
-    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard20.txt</ApiCompatNSBaselineFile>
-    <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard20Only.txt</ApiCompatNSOnlyBaselineFile>
+    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard.txt</ApiCompatNSBaselineFile>
+    <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
     <ApiCompatImplementationDirs>$(RefPath),$(GenFacadesOutputPath)</ApiCompatImplementationDirs>
     <!-- If we are targeting uap or uapaot run ApiCompat against the implementation assemblies instead since they don't match the reference assemblies -->
     <!-- also include $(RefPath) last to pick up windows.winmd dependency, which we don't place in RuntimePath -->
@@ -62,12 +62,10 @@
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netfx to $(TargetGroup)" />
 
     <PropertyGroup>
-      <NETStandard20OnlyRef>$(NetStandardRefPath)/netstandard.dll</NETStandard20OnlyRef>
-      <!-- For netcoreapp also pass in System.Runtime to workaround issue in apicompat tool when it cannot find a core assembly -->
-      <NETStandard20OnlyRef Condition="'$(TargetGroup)' == 'netcoreapp'">$(NETStandard20OnlyRef);$(RefPath)\System.Runtime.dll</NETStandard20OnlyRef>
+      <NETStandard21OnlyRef>$(NetStandard21RefPath)/netstandard.dll</NETStandard21OnlyRef>
     </PropertyGroup>
 
-    <Exec Command="$(_ApiCompatCommand) &quot;$(NETStandard20OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; --baseline $(ApiCompatNSOnlyBaselineFile)"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(NETStandard21OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; --baseline $(ApiCompatNSOnlyBaselineFile)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
@@ -77,6 +75,7 @@
 
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(TargetGroup)" />
 
+    <!-- TODO: Once the repo targets netstandard2.1, have this instance of APICompat run against NetStandard21RefPath -->
     <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandardRefPath)&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"

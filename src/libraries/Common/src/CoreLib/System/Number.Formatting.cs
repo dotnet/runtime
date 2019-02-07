@@ -243,8 +243,15 @@ namespace System
     internal static partial class Number
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
-        private const int SinglePrecision = 7;
-        private const int DoublePrecision = 15;
+
+        // SinglePrecision and DoublePrecision represent the maximum number of digits required
+        // to guarantee that any given Single or Double can roundtrip. Some numbers may require
+        // less, but none will require more.
+        private const int SinglePrecision = 9;
+        private const int DoublePrecision = 17;
+
+        private const int DefaultPrecisionExponentialFormat = 6;
+
         private const int ScaleNAN = unchecked((int)0x80000000);
         private const int ScaleINF = 0x7FFFFFFF;
         private const int MaxUInt32DecDigits = 10;
@@ -378,6 +385,126 @@ namespace System
                 sb.TryCopyTo(destination, out charsWritten);
         }
 
+        private static int GetFloatingPointMaxDigitsAndPrecision(char fmt, ref int precision, NumberFormatInfo info, out bool isSignificantDigits)
+        {
+            if (fmt == 0)
+            {
+                isSignificantDigits = true;
+                return precision;
+            }
+
+            int maxDigits = precision;
+
+            switch (fmt)
+            {
+                case 'C':
+                case 'c':
+                {
+                    // The currency format uses the precision specifier to indicate the number of
+                    // decimal digits to format. This defaults to NumberFormatInfo.CurrencyDecimalDigits.
+
+                    if (precision == -1)
+                    {
+                        precision = info.CurrencyDecimalDigits;
+                    }
+                    isSignificantDigits = false;
+
+                    break;
+                }
+
+                case 'E':
+                case 'e':
+                {
+                    // The exponential format uses the precision specifier to indicate the number of
+                    // decimal digits to format. This defaults to 6. However, the exponential format
+                    // also always formats a single integral digit, so we need to increase the precision
+                    // specifier and treat it as the number of significant digits to account for this.
+
+                    if (precision == -1)
+                    {
+                        precision = DefaultPrecisionExponentialFormat;
+                    }
+
+                    precision++;
+                    isSignificantDigits = true;
+
+                    break;
+                }
+
+                case 'F':
+                case 'f':
+                case 'N':
+                case 'n':
+                {
+                    // The fixed-point and number formats use the precision specifier to indicate the number 
+                    // of decimal digits to format. This defaults to NumberFormatInfo.NumberDecimalDigits.
+
+                    if (precision == -1)
+                    {
+                        precision = info.NumberDecimalDigits;
+                    }
+                    isSignificantDigits = false;
+
+                    break;
+                }
+
+                case 'G':
+                case 'g':
+                {
+                    // The general format uses the precision specifier to indicate the number of significant
+                    // digits to format. This defaults to the shortest roundtrippable string. Additionally,
+                    // given that we can't return zero significant digits, we treat 0 as returning the shortest
+                    // roundtrippable string as well.
+
+                    if (precision == 0)
+                    {
+                        precision = -1;
+                    }
+                    isSignificantDigits = true;
+
+                    break;
+                }
+
+                case 'P':
+                case 'p':
+                {
+                    // The percent format uses the precision specifier to indicate the number of
+                    // decimal digits to format. This defaults to NumberFormatInfo.PercentDecimalDigits.
+                    // However, the percent format also always multiplies the number by 100, so we need
+                    // to increase the precision specifier to ensure we get the appropriate number of digits.
+
+                    if (precision == -1)
+                    {
+                        precision = info.PercentDecimalDigits;
+                    }
+
+                    precision += 2;
+                    isSignificantDigits = false;
+
+                    break;
+                }
+
+                case 'R':
+                case 'r':
+                {
+                    // The roundtrip format ignores the precision specifier and always returns the shortest
+                    // roundtrippable string.
+
+                    precision = -1;
+                    isSignificantDigits = true;
+
+                    break;
+                }
+
+                default:
+                {
+                    throw new FormatException(SR.Argument_BadFormatSpecifier);
+                }
+            }
+
+            return maxDigits;
+        }
+
         /// <summary>Formats the specified value according to the specified format and info.</summary>
         /// <returns>
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
@@ -385,85 +512,59 @@ namespace System
         /// </returns>
         private static unsafe string FormatDouble(ref ValueStringBuilder sb, double value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            int precision = DoublePrecision;
-
-            byte* pDigits = stackalloc byte[DoubleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, DoubleNumberBufferLength);
-
-            switch (fmt)
+            if (!double.IsFinite(value))
             {
-                case 'R':
-                case 'r':
+                if (double.IsNaN(value))
                 {
-                    // In order to give numbers that are both friendly to display and round-trippable, we parse the
-                    // number using 15 digits and then determine if it round trips to the same value. If it does, we
-                    // convert that NUMBER to a string, otherwise we reparse using 17 digits and display that.
-                    DoubleToNumber(value, DoublePrecision, ref number);
-
-                    if (number.Scale == ScaleNAN)
-                    {
-                        return info.NaNSymbol;
-                    }
-                    else if (number.Scale == ScaleINF)
-                    {
-                        return number.IsNegative ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
-                    }
-
-                    double roundTrip = NumberToDouble(ref number);
-
-                    if (roundTrip == value)
-                    {
-                        NumberToString(ref sb, ref number, 'G', DoublePrecision, info);
-                    }
-                    else
-                    {
-                        DoubleToNumber(value, 17, ref number);
-                        NumberToString(ref sb, ref number, 'G', 17, info);
-                    }
-
-                    return null;
+                    return info.NaNSymbol;
                 }
 
-                case 'E':
-                case 'e':
-                    // Round values less than E14 to 15 digits
-                    if (digits > 14)
-                    {
-                        precision = 17;
-                    }
-                    break;
-
-                case 'G':
-                case 'g':
-                    // Round values less than G15 to 15 digits. G16 and G17 will not be touched.
-                    if (digits > 15)
-                    {
-                        precision = 17;
-                    }
-                    break;
+                return double.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
             }
 
-            DoubleToNumber(value, precision, ref number);
+            char fmt = ParseFormatSpecifier(format, out int precision);
+            byte* pDigits = stackalloc byte[DoubleNumberBufferLength];
 
-            if (number.Scale == ScaleNAN)
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, DoubleNumberBufferLength);
+            number.IsNegative = double.IsNegative(value);
+
+            // We need to track the original precision requested since some formats 
+            // accept values like 0 and others may require additional fixups.
+            int nMaxDigits = GetFloatingPointMaxDigitsAndPrecision(fmt, ref precision, info, out bool isSignificantDigits);
+
+            if ((value != 0.0) && (!isSignificantDigits || !Grisu3.TryRunDouble(value, precision, ref number)))
             {
-                return info.NaNSymbol;
+                Dragon4Double(value, precision, isSignificantDigits, ref number);
             }
-            else if (number.Scale == ScaleINF)
-            {
-                return number.IsNegative ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
-            }
+
+            number.CheckConsistency();
+
+            // When the number is known to be roundtrippable (either because we requested it be, or
+            // because we know we have enough digits to satisfy roundtrippability), we should validate
+            // that the number actually roundtrips back to the original result.
+
+            Debug.Assert(((precision != -1) && (precision < DoublePrecision)) || (BitConverter.DoubleToInt64Bits(value) == BitConverter.DoubleToInt64Bits(NumberToDouble(ref number))));
 
             if (fmt != 0)
             {
-                NumberToString(ref sb, ref number, fmt, digits, info);
+                if (precision == -1)
+                {
+                    Debug.Assert((fmt == 'G') || (fmt == 'g') || (fmt == 'R') || (fmt == 'r'));
+
+                    // For the roundtrip and general format specifiers, when returning the shortest roundtrippable
+                    // string, we need to update the maximum number of digits to be the greater of number.DigitsCount
+                    // or DoublePrecision. This ensures that we continue returning "pretty" strings for values with
+                    // less digits. One example this fixes is "-60", which would otherwise be formatted as "-6E+01"
+                    // since DigitsCount would be 1 and the formatter would almost immediately switch to scientific notation.
+
+                    nMaxDigits = Math.Max(number.DigitsCount, DoublePrecision);
+                }
+                NumberToString(ref sb, ref number, fmt, nMaxDigits, info);
             }
             else
             {
                 NumberToStringFormat(ref sb, ref number, format, info);
             }
-
             return null;
         }
 
@@ -491,78 +592,54 @@ namespace System
         /// </returns>
         private static unsafe string FormatSingle(ref ValueStringBuilder sb, float value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
-            char fmt = ParseFormatSpecifier(format, out int digits);
-            int precision = SinglePrecision;
-
-            byte* pDigits = stackalloc byte[SingleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, SingleNumberBufferLength);
-
-            switch (fmt)
+            if (!float.IsFinite(value))
             {
-                case 'R':
-                case 'r':
+                if (float.IsNaN(value))
                 {
-                    // In order to give numbers that are both friendly to display and round-trippable, we parse the
-                    // number using 7 digits and then determine if it round trips to the same value. If it does, we
-                    // convert that NUMBER to a string, otherwise we reparse using 9 digits and display that.
-                    DoubleToNumber(value, SinglePrecision, ref number);
-
-                    if (number.Scale == ScaleNAN)
-                    {
-                        return info.NaNSymbol;
-                    }
-                    else if (number.Scale == ScaleINF)
-                    {
-                        return number.IsNegative ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
-                    }
-
-                    float roundTrip = NumberToSingle(ref number);
-
-                    if (roundTrip == value)
-                    {
-                        NumberToString(ref sb, ref number, 'G', SinglePrecision, info);
-                    }
-                    else
-                    {
-                        DoubleToNumber(value, 9, ref number);
-                        NumberToString(ref sb, ref number, 'G', 9, info);
-                    }
-                    return null;
+                    return info.NaNSymbol;
                 }
 
-                case 'E':
-                case 'e':
-                    // Round values less than E14 to 15 digits.
-                    if (digits > 6)
-                    {
-                        precision = 9;
-                    }
-                    break;
-
-                case 'G':
-                case 'g':
-                    // Round values less than G15 to 15 digits. G16 and G17 will not be touched.
-                    if (digits > 7)
-                    {
-                        precision = 9;
-                    }
-                    break;
+                return float.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
             }
 
-            DoubleToNumber(value, precision, ref number);
+            char fmt = ParseFormatSpecifier(format, out int precision);
+            byte* pDigits = stackalloc byte[SingleNumberBufferLength];
 
-            if (number.Scale == ScaleNAN)
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, SingleNumberBufferLength);
+            number.IsNegative = float.IsNegative(value);
+
+            // We need to track the original precision requested since some formats 
+            // accept values like 0 and others may require additional fixups.
+            int nMaxDigits = GetFloatingPointMaxDigitsAndPrecision(fmt, ref precision, info, out bool isSignificantDigits);
+
+            if ((value != 0.0f) && (!isSignificantDigits || !Grisu3.TryRunSingle(value, precision, ref number)))
             {
-                return info.NaNSymbol;
+                Dragon4Single(value, precision, isSignificantDigits, ref number);
             }
-            else if (number.Scale == ScaleINF)
-            {
-                return number.IsNegative ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
-            }
+
+            number.CheckConsistency();
+
+            // When the number is known to be roundtrippable (either because we requested it be, or
+            // because we know we have enough digits to satisfy roundtrippability), we should validate
+            // that the number actually roundtrips back to the original result.
+
+            Debug.Assert(((precision != -1) && (precision < SinglePrecision)) || (BitConverter.SingleToInt32Bits(value) == BitConverter.SingleToInt32Bits(NumberToSingle(ref number))));
 
             if (fmt != 0)
             {
-                NumberToString(ref sb, ref number, fmt, digits, info);
+                if (precision == -1)
+                {
+                    Debug.Assert((fmt == 'G') || (fmt == 'g') || (fmt == 'R') || (fmt == 'r'));
+
+                    // For the roundtrip and general format specifiers, when returning the shortest roundtrippable
+                    // string, we need to update the maximum number of digits to be the greater of number.DigitsCount
+                    // or SinglePrecision. This ensures that we continue returning "pretty" strings for values with
+                    // less digits. One example this fixes is "-60", which would otherwise be formatted as "-6E+01"
+                    // since DigitsCount would be 1 and the formatter would almost immediately switch to scientific notation.
+
+                    nMaxDigits = Math.Max(number.DigitsCount, SinglePrecision);
+                }
+                NumberToString(ref sb, ref number, fmt, nMaxDigits, info);
             }
             else
             {
@@ -1554,7 +1631,7 @@ namespace System
                 case 'e':
                 {
                     if (nMaxDigits < 0)
-                        nMaxDigits = 6;
+                        nMaxDigits = DefaultPrecisionExponentialFormat;
                     nMaxDigits++;
 
                     RoundNumber(ref number, nMaxDigits);
@@ -1576,6 +1653,13 @@ namespace System
                         if ((number.Kind == NumberBufferKind.Decimal) && (nMaxDigits == -1))
                         {
                             noRounding = true;  // Turn off rounding for ECMA compliance to output trailing 0's after decimal as significant
+
+                            if (number.Digits[0] == 0)
+                            {
+                                // -0 should be formatted as 0 for decimal. This is normally handled by RoundNumber (which we are skipping)
+                                goto SkipSign;
+                            }
+
                             goto SkipRounding;
                         }
                         else
@@ -1591,6 +1675,7 @@ namespace System
                     if (number.IsNegative)
                         sb.Append(info.NegativeSign);
 
+                SkipSign:
                     FormatGeneral(ref sb, ref number, nMaxDigits, info, (char)(format - ('G' - 'E')), noRounding);
 
                     break;
@@ -1608,6 +1693,14 @@ namespace System
                     FormatPercent(ref sb, ref number, nMaxDigits, info);
 
                     break;
+                }
+
+                case 'R':
+                case 'r':
+                {
+                    format = (char)(format - ('R' - 'G'));
+                    Debug.Assert((format == 'G') || (format == 'g'));
+                    goto case 'G';
                 }
 
                 default:
@@ -1742,6 +1835,11 @@ namespace System
                 }
                 else
                 {
+                    if (number.Kind != NumberBufferKind.FloatingPoint)
+                    {
+                        // The integer types don't have a concept of -0 and decimal always format -0 as 0
+                        number.IsNegative = false;
+                    }
                     number.Scale = 0;      // Decimals with scale ('0.00') should be rounded.
                 }
 
@@ -2269,12 +2367,12 @@ namespace System
             }
             if (i == 0)
             {
-                number.Scale = 0;
-
-                if (number.Kind == NumberBufferKind.Integer)
+                if (number.Kind != NumberBufferKind.FloatingPoint)
                 {
+                    // The integer types don't have a concept of -0 and decimal always format -0 as 0
                     number.IsNegative = false;
                 }
+                number.Scale = 0;      // Decimals with scale ('0.00') should be rounded.
             }
 
             dig[i] = (byte)('\0');
@@ -2335,38 +2433,11 @@ namespace System
             return rem;
         }
 
-        private static unsafe void DoubleToNumber(double value, int precision, ref NumberBuffer number)
+        private static ulong ExtractFractionAndBiasedExponent(double value, out int exponent)
         {
-            if (!double.IsFinite(value))
-            {
-                number.Scale = double.IsNaN(value) ? ScaleNAN : ScaleINF;
-                number.IsNegative = double.IsNegative(value);
-                number.Digits[0] = (byte)('\0');
-            }
-            else if (value == 0.0)
-            {
-                number.Scale = 0;
-                number.IsNegative = double.IsNegative(value);
-                number.Digits[0] = (byte)('\0');
-            }
-            else
-            {
-                number.DigitsCount = precision;
-
-                if (!Grisu3.Run(value, precision, ref number))
-                {
-                    Dragon4(value, precision, ref number);
-                }
-            }
-
-            number.CheckConsistency();
-        }
-
-        private static long ExtractFractionAndBiasedExponent(double value, out int exponent)
-        {
-            var bits = BitConverter.DoubleToInt64Bits(value);
-            long fraction = (bits & 0xFFFFFFFFFFFFF);
-            exponent = (int)((bits >> 52) & 0x7FF);
+            ulong bits = (ulong)(BitConverter.DoubleToInt64Bits(value));
+            ulong fraction = (bits & 0xFFFFFFFFFFFFF);
+            exponent = ((int)(bits >> 52) & 0x7FF);
 
             if (exponent != 0)
             {
@@ -2377,7 +2448,7 @@ namespace System
                 //
                 // So f = (2^52 + mantissa), e = exp - 1075;
 
-                fraction |= ((long)(1) << 52);
+                fraction |= (1UL << 52);
                 exponent -= 1075;
             }
             else
@@ -2389,6 +2460,38 @@ namespace System
                 //       = mantissa * 2^(-1074)
                 // So f = mantissa, e = -1074
                 exponent = -1074;
+            }
+
+            return fraction;
+        }
+
+        private static uint ExtractFractionAndBiasedExponent(float value, out int exponent)
+        {
+            uint bits = (uint)(BitConverter.SingleToInt32Bits(value));
+            uint fraction = (bits & 0x7FFFFF);
+            exponent = ((int)(bits >> 23) & 0xFF);
+
+            if (exponent != 0)
+            {
+                // For normalized value, according to https://en.wikipedia.org/wiki/Single-precision_floating-point_format
+                // value = 1.fraction * 2^(exp - 127)
+                //       = (1 + mantissa / 2^23) * 2^(exp - 127)
+                //       = (2^23 + mantissa) * 2^(exp - 127 - 23)
+                //
+                // So f = (2^23 + mantissa), e = exp - 150;
+
+                fraction |= (1U << 23);
+                exponent -= 150;
+            }
+            else
+            {
+                // For denormalized value, according to https://en.wikipedia.org/wiki/Single-precision_floating-point_format
+                // value = 0.fraction * 2^(1 - 127)
+                //       = (mantissa / 2^23) * 2^(-126)
+                //       = mantissa * 2^(-126 - 23)
+                //       = mantissa * 2^(-149)
+                // So f = mantissa, e = -149
+                exponent = -149;
             }
 
             return fraction;

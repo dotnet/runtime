@@ -13,7 +13,6 @@
     <Compile Include="System\Buffers\BuffersExtensions.cs" />
     <Compile Include="System\Buffers\IBufferWriter.cs" />
     <Compile Include="System\Buffers\MemoryPool.cs" />
-    <Compile Include="System\Buffers\OperationStatus.cs" />
     <Compile Include="System\Buffers\ReadOnlySequence.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceDebugView.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceSegment.cs" />
