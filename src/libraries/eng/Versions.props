@@ -23,7 +23,7 @@
     <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.19081.1</MicrosoftDotNetGenFacadesPackageVersion>
     <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.0-beta.19081.1</MicrosoftDotNetXUnitExtensionsPackageVersion>
     <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19081.1</MicrosoftDotNetBuildTasksPackagingPackageVersion>
-    <MicrosoftDotNetCoreFxTestingPackageVersion>1.0.0-beta.19081.1</MicrosoftDotNetCoreFxTestingPackageVersion>
+    <MicrosoftDotNetCoreFxTestingPackageVersion>1.0.0-beta.19105.4</MicrosoftDotNetCoreFxTestingPackageVersion>
     <MicrosoftDotNetBuildTasksConfigurationPackageVersion>1.0.0-beta.19081.1</MicrosoftDotNetBuildTasksConfigurationPackageVersion>
     <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19081.1</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <!-- Core-setup dependencies -->
@@ -31,10 +31,10 @@
     <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview-27330-4</MicrosoftNETCoreDotNetHostPackageVersion>
     <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview-27330-4</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <!-- Coreclr dependencies -->
-    <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview-27331-72</MicrosoftNETCoreILAsmPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27331-72</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview-27403-72</MicrosoftNETCoreILAsmPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27403-72</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19101.3</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19105.1</MicrosoftNETCorePlatformsPackageVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19074.3</NETStandardLibraryPackageVersion>
   </PropertyGroup>

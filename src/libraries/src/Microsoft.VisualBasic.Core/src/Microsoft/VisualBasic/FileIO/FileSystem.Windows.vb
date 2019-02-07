@@ -8,7 +8,6 @@ Imports System
 Imports System.ComponentModel
 Imports System.Diagnostics
 Imports System.Security
-Imports System.Runtime.Versioning
 Imports System.Text
 
 Imports Microsoft.VisualBasic.CompilerServices
@@ -33,9 +32,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' Copy/MoveFile will call this directly. Copy/MoveDirectory will call ShellCopyOrMoveDirectory first
         ''' to change the path if needed.
         ''' </remarks>
-        <SecurityCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Private Shared Sub ShellCopyOrMove(ByVal Operation As CopyOrMove, ByVal TargetType As FileOrDirectory,
             ByVal FullSourcePath As String, ByVal FullTargetPath As String, ByVal ShowUI As UIOptionInternal, ByVal OnUserCancel As UICancelOption)
             Debug.Assert(System.Enum.IsDefined(GetType(CopyOrMove), Operation))
@@ -98,9 +94,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <remarks>
         ''' We don't need to consider Recursive flag here since we already verify that in DeleteDirectory.
         ''' </remarks>
-        <SecurityCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Private Shared Sub ShellDelete(ByVal FullPath As String,
             ByVal ShowUI As UIOptionInternal, ByVal recycle As RecycleOption, ByVal OnUserCancel As UICancelOption, ByVal FileOrDirectory As FileOrDirectory)
 
@@ -126,14 +119,8 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="FullTarget">The full path to the target. Nothing if this is a Delete operation.</param>
         ''' <param name="OnUserCancel">Value from UICancelOption, specifying to throw or not when user cancels the operation.</param>
         '''<remarks></remarks>
-        '<HostProtection(Resources:=HostProtectionResource.ExternalProcessMgmt, UI:=True)>
-        <SecurityCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Private Shared Sub ShellFileOperation(ByVal OperationType As SHFileOperationType, ByVal OperationFlags As ShFileOperationFlags,
             ByVal FullSource As String, ByVal FullTarget As String, ByVal OnUserCancel As UICancelOption, ByVal FileOrDirectory As FileOrDirectory)
-
-            ' Apply HostProtectionAttribute(UI = true) to indicate this function belongs to UI type.
 
             Debug.Assert(System.Enum.IsDefined(GetType(SHFileOperationType), OperationType))
             Debug.Assert(OperationType <> SHFileOperationType.FO_RENAME, "Don't call Shell to rename!!!")
@@ -173,7 +160,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="SourcePath">The source file / directory path.</param>
         ''' <param name="TargetPath">The target file / directory path. Nothing in case of delete.</param>
         ''' <returns>A fully initialized SHFILEOPSTRUCT.</returns>
-        <SecurityCritical()>
         Private Shared Function GetShellOperationInfo(
                             ByVal OperationType As SHFileOperationType, ByVal OperationFlags As ShFileOperationFlags,
                             ByVal SourcePath As String, Optional ByVal TargetPath As String = Nothing) As SHFILEOPSTRUCT
@@ -190,7 +176,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="SourcePaths">A string array containing the paths of source files. Must not be empty.</param>
         ''' <param name="TargetPath">The target file / directory path. Nothing in case of delete.</param>
         ''' <returns>A fully initialized SHFILEOPSTRUCT.</returns>
-        <SecurityCritical()>
         Private Shared Function GetShellOperationInfo(
                             ByVal OperationType As SHFileOperationType, ByVal OperationFlags As ShFileOperationFlags,
                             ByVal SourcePaths() As String, Optional ByVal TargetPath As String = Nothing) As SHFILEOPSTRUCT
@@ -291,7 +276,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' - Exception message does not contain the path since at this point it is normalized.
         ''' - Instead of using PInvoke of GetMessage and MakeHRFromErrorCode, use managed code.
         ''' </remarks>
-        <SecurityCritical()>
         Private Shared Sub ThrowWinIOError(ByVal errorCode As Integer)
             Select Case errorCode
                 Case NativeTypes.ERROR_FILE_NOT_FOUND

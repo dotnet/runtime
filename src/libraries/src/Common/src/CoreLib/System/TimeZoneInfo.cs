@@ -61,7 +61,6 @@ namespace System
         // For example, TimeZoneInfo.Local can be cleared by another thread calling TimeZoneInfo.ClearCachedData. Without the consistent snapshot,
         // there is a chance that the internal ConvertTime calls will throw since 'source' won't be reference equal to the new TimeZoneInfo.Local.
         //
-#pragma warning disable 0420
         private sealed partial class CachedData
         {
             private volatile TimeZoneInfo _localTimeZone;
@@ -139,7 +138,6 @@ namespace System
             public ReadOnlyCollection<TimeZoneInfo> _readOnlySystemTimeZones;
             public bool _allSystemTimeZonesRead;
         };
-#pragma warning restore 0420
 
         // used by GetUtcOffsetFromUtc (DateTime.Now, DateTime.ToLocalTime) for max/min whole-day range checks
         private static readonly DateTime s_maxDateOnly = new DateTime(9999, 12, 31);

@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 
 namespace System.IO.Pipes
 {
-    //[System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
     public class PipeSecurity : NativeObjectSecurity
     {
         public PipeSecurity()

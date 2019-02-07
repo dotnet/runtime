@@ -5,16 +5,12 @@ Option Strict On
 Option Explicit On
 
 Imports System
-Imports System.Security
 Imports System.Runtime.InteropServices
-Imports System.Runtime.Versioning
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
     <ComVisible(False)>
     Friend NotInheritable Class NativeMethods
-        <SecurityCritical()>
-        <ResourceExposure(ResourceScope.None)>
         <PreserveSig()>
         Friend Declare Function _
             CloseHandle _
@@ -26,9 +22,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' </summary>
         ''' <param name="lpFileOp">32-bit SHFILEOPSTRUCT</param>
         ''' <returns>0 if successful, non-zero otherwise.</returns>
-        <SecurityCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
-        <ResourceConsumption(ResourceScope.Machine)>
         Friend Shared Function SHFileOperation(ByRef lpFileOp As SHFILEOPSTRUCT) As Int32
             If (IntPtr.Size = 4) Then ' 32-bit platforms
                 Return SHFileOperation32(lpFileOp)
@@ -67,8 +60,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' You cannot use SHFileOperation to move special folders My Documents and My Pictures from a local drive to a remote computer.
         ''' File deletion is recursive unless you set the FOF_NORECURSION flag.
         ''' </remarks>
-        <SecurityCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
         <DllImport("shell32.dll", CharSet:=CharSet.Auto, EntryPoint:="SHFileOperation", SetLastError:=True, ThrowOnUnmappableChar:=True)>
         Private Shared Function SHFileOperation32(ByRef lpFileOp As SHFILEOPSTRUCT) As Int32
         End Function
@@ -114,8 +105,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' <summary>
         ''' Copies, moves, renames or deletes a file system object on 64-bit platforms.
         ''' </summary>
-        <SecurityCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
         <DllImport("shell32.dll", CharSet:=CharSet.Auto, EntryPoint:="SHFileOperation", SetLastError:=True, ThrowOnUnmappableChar:=True)>
         Private Shared Function SHFileOperation64(ByRef lpFileOp As SHFILEOPSTRUCT64) As Int32
         End Function
@@ -205,8 +194,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' Win 95/98/Me: SHChangeNotify is supported by Microsoft Layer for Unicode.
         ''' To use this http://msdn.microsoft.com/library/default.asp?url=/library/en-us/mslu/winprog/microsoft_layer_for_unicode_on_windows_95_98_me_systems.asp
         ''' </remarks>
-        <SecurityCritical()>
-        <ResourceExposure(ResourceScope.None)>
         <DllImport("shell32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
         Friend Shared Sub SHChangeNotify(ByVal wEventId As UInt32, ByVal uFlags As UInt32,
                 ByVal dwItem1 As IntPtr, ByVal dwItem2 As IntPtr)
@@ -236,8 +223,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' The MoveFileEx function moves an existing file or directory.
         ''' http://msdn.microsoft.com/library/default.asp?url=/library/en-us/fileio/fs/movefileex.asp
         ''' </summary>
-        <SecurityCritical()>
-        <ResourceExposure(ResourceScope.Machine)>
         <DllImport("kernel32",
              PreserveSig:=True,
              CharSet:=CharSet.Auto,

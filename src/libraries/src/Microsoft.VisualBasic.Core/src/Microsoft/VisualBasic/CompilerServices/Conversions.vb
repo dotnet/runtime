@@ -8,7 +8,6 @@ Imports System.Globalization
 Imports System.Diagnostics
 Imports System.Dynamic
 Imports System.Reflection
-Imports System.Security
 
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Imports Microsoft.VisualBasic.CompilerServices.ConversionResolution
@@ -2490,7 +2489,6 @@ MisMatch:
             Return ChangeType(Expression, TargetType, False)
         End Function
 
-        <SecuritySafeCritical()>
         Friend Shared Function ChangeType(ByVal Expression As Object, ByVal TargetType As Type, ByVal Dynamic As Boolean) As Object
             If TargetType Is Nothing Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidNullValue1, "TargetType"))

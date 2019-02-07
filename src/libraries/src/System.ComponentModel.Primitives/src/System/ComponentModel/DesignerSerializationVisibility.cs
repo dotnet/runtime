@@ -5,24 +5,22 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Specifies the visibility a property has to the design time
-    ///          serializer.
-    ///    </para>
+    /// Specifies the visibility a property has to the design time serializer.
     /// </summary>
     public enum DesignerSerializationVisibility
     {
         /// <summary>
-        ///    <para>The code generator will not produce code for the object.</para>
+        /// The code generator will not produce code for the object.
         /// </summary>
         Hidden,
 
         /// <summary>
-        ///    <para>The code generator will produce code for the object.</para>
+        /// The code generator will produce code for the object.
         /// </summary>
         Visible,
 
         /// <summary>
-        ///    <para>The code generator will produce code for the contents of the object, rather than for the object itself.</para>
+        /// The code generator will produce code for the contents of the object, rather than for the object itself.
         /// </summary>
         Content
     }
