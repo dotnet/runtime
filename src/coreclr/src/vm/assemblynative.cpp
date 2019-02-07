@@ -679,38 +679,6 @@ void QCALLTYPE AssemblyNative::GetModules(QCall::AssemblyHandle pAssembly, BOOL 
     END_QCALL;
 }
 
-BOOL QCALLTYPE AssemblyNative::GetNeutralResourcesLanguageAttribute(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack cultureName, INT16& outFallbackLocation)
-{
-    CONTRACTL {
-        QCALL_CHECK;
-    } CONTRACTL_END;
-
-    BOOL retVal = FALSE;
-    BEGIN_QCALL;
-
-    _ASSERTE(pAssembly);
-    Assembly * pAsm = pAssembly->GetAssembly();
-    _ASSERTE(pAsm);
-    Module * pModule = pAsm->GetManifestModule();
-    _ASSERTE(pModule);
-
-    LPCUTF8 pszCultureName = NULL;
-    ULONG cultureNameLength = 0;
-    INT16 fallbackLocation = 0;
-
-    // find the attribute if it exists
-    if (pModule->GetNeutralResourcesLanguage(&pszCultureName, &cultureNameLength, &fallbackLocation, FALSE)) {
-        StackSString culture(SString::Utf8, pszCultureName, cultureNameLength);
-        cultureName.Set(culture);
-        outFallbackLocation = fallbackLocation;
-        retVal = TRUE;
-    }
-
-    END_QCALL;
-
-    return retVal;
-}
-
 BOOL QCALLTYPE AssemblyNative::GetIsCollectible(QCall::AssemblyHandle pAssembly)
 {
     QCALL_CONTRACT;
