@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -171,6 +171,7 @@
     <Compile Include="Basic\UsedStructIsKept.cs" />
     <Compile Include="BCLFeatures\ETW\LocalsOfModifiedMethodAreRemoved.cs" />
     <Compile Include="BCLFeatures\ETW\StubbedMethodWithExceptionHandlers.cs" />
+    <Compile Include="CommandLine\ResponseFilesWork.cs" />
     <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
     <Compile Include="CoreLink\DelegateAndMulticastDelegateKeepInstantiatedReqs.cs" />
     <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
@@ -486,6 +487,7 @@
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
+    <Content Include="CommandLine\Dependencies\ResponseFilesWork.rsp" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\UnusedTypeHasExplicitInterfaceMethodPreservedViaXml.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\UnusedTypeHasExplicitInterfacePropertyPreservedViaXml.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\UnusedTypeHasInterfaceMethodPreservedViaXml.xml" />

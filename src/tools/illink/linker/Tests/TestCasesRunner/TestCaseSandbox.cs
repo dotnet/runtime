@@ -55,6 +55,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			get { return InputDirectory.Files ("*.xml"); }
 		}
 
+		public IEnumerable<NPath> ResponseFiles {
+			get { return InputDirectory.Files ("*.rsp"); }
+		}
+
 		public IEnumerable<NPath> ResourceFiles => ResourcesDirectory.Files ();
 
 		public virtual void Populate (TestCaseMetadaProvider metadataProvider)
@@ -88,6 +92,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			foreach (var res in metadataProvider.GetResources ()) {
 				res.Source.FileMustExist ().Copy (ResourcesDirectory.Combine (res.DestinationFileName));
+			}
+
+			foreach (var res in metadataProvider.GetResponseFiles()) {
+				res.Source.FileMustExist ().Copy (InputDirectory.Combine (res.DestinationFileName));
 			}
 
 			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesBefore ())

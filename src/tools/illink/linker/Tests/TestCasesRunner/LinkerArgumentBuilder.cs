@@ -29,6 +29,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append (path.ToString ());
 		}
 
+		public virtual void AddResponseFile (NPath path)
+		{
+			Append ($"@{path}");
+		}
+
 		public virtual void AddCoreLink (string value)
 		{
 			Append ("-c");
