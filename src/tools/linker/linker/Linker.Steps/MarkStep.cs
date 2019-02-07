@@ -1790,7 +1790,14 @@ namespace Mono.Linker.Steps {
 			Annotations.MarkInstantiated (type);
 
 			MarkInterfaceImplementations (type);
-			MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
+
+			foreach (var method in type.Methods) {
+				if (method.IsFinalizer ())
+					MarkMethod (method);
+				else if (IsVirtualAndHasPreservedParent (method))
+					MarkMethod (method);
+			}
+
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
 
