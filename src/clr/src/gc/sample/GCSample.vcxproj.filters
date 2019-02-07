@@ -59,7 +59,19 @@
     <ClCompile Include="gcenv.ee.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\gcenv.windows.cpp">
+    <ClCompile Include="..\windows\gcenv.windows.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gchandletable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gcconfig.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gcload.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gceventstatus.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
