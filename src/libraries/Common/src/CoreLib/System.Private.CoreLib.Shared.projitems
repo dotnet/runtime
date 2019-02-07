@@ -492,11 +492,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\FastResourceComparer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\FileBasedResourceGroveler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\IResourceGroveler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\IResourceReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ManifestBasedResourceGroveler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\MissingManifestResourceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\MissingSatelliteAssemblyException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\NeutralResourcesLanguageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceFallbackManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceTypeCode.cs" />
@@ -784,6 +788,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SendOrPostCallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SpinLock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SpinWait.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SynchronizationContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SynchronizationLockException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadLocal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\AsyncCausalityTracerConstants.cs" />
@@ -1078,6 +1083,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureAppX)' == 'true' or '$(EnableWinRT)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Resources\PRIExceptionInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Resources\WindowsRuntimeResourceManagerBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceManager.Uap.cs" />
+  </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix)">
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.IOErrors.cs" />
@@ -1098,11 +1108,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FLock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FSync.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FTruncate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetCpuUtilization.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetCwd.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetEUid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetHostName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetPwUid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetTimestamp.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetUnixName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetUnixRelease.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.LockFileRegion.cs" />

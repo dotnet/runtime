@@ -23,9 +23,6 @@ using Internal.Runtime.CompilerServices;
 using Thread = Internal.Runtime.Augments.RuntimeThread;
 #endif
 
-// Disable the "reference to volatile field not treated as volatile" error.
-#pragma warning disable 0420
-
 namespace System.Threading.Tasks
 {
     /// <summary>
@@ -2621,6 +2618,13 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(stateMachineBox != null);
 
+            // This code path doesn't emit all expected TPL-related events, such as for continuations.
+            // It's expected that all callers check whether events are enabled before calling this function,
+            // and only call it if they're not, so we assert. However, as events can be dynamically turned
+            // on and off, it's possible this assert could fire even when used correctly.  If it becomes
+            // noisy, it can be deleted.
+            Debug.Assert(!TplEventSource.Log.IsEnabled());
+
             // If the caller wants to continue on the current context/scheduler and there is one,
             // fall back to using the state machine's delegate.
             if (continueOnCapturedContext)
@@ -2650,11 +2654,12 @@ namespace System.Threading.Tasks
                 }
             }
 
-            // Otherwise, add the state machine box directly as the ITaskCompletionAction continuation.
-            // If we're unable to because the task has already completed, queue the delegate.
+            // Otherwise, add the state machine box directly as the continuation.
+            // If we're unable to because the task has already completed, queue it.
             if (!AddTaskContinuation(stateMachineBox, addBeforeOthers: false))
             {
-                AwaitTaskContinuation.UnsafeScheduleAction(stateMachineBox.MoveNextAction, this);
+                Debug.Assert(stateMachineBox is Task, "Every state machine box should derive from Task");
+                ThreadPool.UnsafeQueueUserWorkItemInternal(stateMachineBox, preferLocal: true);
             }
         }
 

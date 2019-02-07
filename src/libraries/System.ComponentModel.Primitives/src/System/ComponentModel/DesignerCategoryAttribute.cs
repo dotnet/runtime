@@ -5,63 +5,54 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Specifies that the designer for a class belongs to a certain category.</para>
+    /// Specifies that the designer for a class belongs to a certain category.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class DesignerCategoryAttribute : Attribute
     {
         /// <summary>
-        ///    <para>
-        ///       Specifies that a component marked with this category uses a
-        ///       component designer. This <see langword='static '/>field is read-only.
-        ///    </para>
+        /// Specifies that a component marked with this category uses a component
+        /// designer. This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly DesignerCategoryAttribute Component = new DesignerCategoryAttribute("Component");
 
         /// <summary>
-        ///    <para>
-        ///       Specifies that a component marked with this category cannot use a visual
-        ///       designer. This <see langword='static '/>field is read-only.
-        ///    </para>
+        /// Specifies that a component marked with this category cannot use a visual
+        /// designer. This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly DesignerCategoryAttribute Default = new DesignerCategoryAttribute();
 
         /// <summary>
-        ///    <para>
-        ///       Specifies that a component marked with this category uses a form designer.
-        ///       This <see langword='static '/>field is read-only.
-        ///    </para>
+        /// Specifies that a component marked with this category uses a form designer.
+        /// This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly DesignerCategoryAttribute Form = new DesignerCategoryAttribute("Form");
 
         /// <summary>
-        ///    <para>
-        ///       Specifies that a component marked with this category uses a generic designer.
-        ///       This <see langword='static '/>field is read-only.
-        ///    </para>
+        /// Specifies that a component marked with this category uses a generic designer.
+        /// This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly DesignerCategoryAttribute Generic = new DesignerCategoryAttribute("Designer");
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.DesignerCategoryAttribute'/> class with the
-        ///       default category.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerCategoryAttribute'/> class with the
+        /// default category.
         /// </summary>
-        public DesignerCategoryAttribute() => Category = string.Empty;
+        public DesignerCategoryAttribute() : this(string.Empty)
+        {
+        }
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.DesignerCategoryAttribute'/> class with
-        ///       the given category name.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.DesignerCategoryAttribute'/> class with
+        /// the given category name.
         /// </summary>
-        public DesignerCategoryAttribute(string category) => Category = category;
+        public DesignerCategoryAttribute(string category)
+        {
+            Category = category;
+        }
 
         /// <summary>
-        ///    <para>
-        ///       Gets the name of the category.
-        ///    </para>
+        /// Gets the name of the category.
         /// </summary>
         public string Category { get; }
 

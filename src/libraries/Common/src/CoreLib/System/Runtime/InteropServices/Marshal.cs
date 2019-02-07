@@ -12,6 +12,12 @@ using Microsoft.Win32;
 
 using Internal.Runtime.CompilerServices;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -157,7 +163,30 @@ namespace System.Runtime.InteropServices
             return SizeOfHelper(t, throwIfNotMarshalable: true);
         }
 
-        public static int SizeOf<T>() => SizeOf(typeof(T));        
+        public static int SizeOf<T>() => SizeOf(typeof(T));
+
+        /// <summary>
+        /// IMPORTANT NOTICE: This method does not do any verification on the array.
+        /// It must be used with EXTREME CAUTION since passing in invalid index or
+        /// an array that is not pinned can cause unexpected results.
+        /// </summary>
+        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
+        {
+            if (arr == null)
+                throw new ArgumentNullException(nameof(arr));
+
+            void* pRawData = Unsafe.AsPointer(ref arr.GetRawArrayData());
+            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
+        }
+
+        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
+        {
+            if (arr == null)
+                throw new ArgumentNullException(nameof(arr));
+
+            void* pRawData = Unsafe.AsPointer(ref arr.GetRawSzArrayData());
+            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
+        }
 
         public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
 
@@ -818,21 +847,10 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
             }
 
-            foreach (CustomAttributeData cad in type.GetCustomAttributesData())
+            ProgIdAttribute progIdAttribute = type.GetCustomAttribute<ProgIdAttribute>();
+            if (progIdAttribute != null)
             {
-                if (cad.Constructor.DeclaringType == typeof(ProgIdAttribute))
-                {
-                    // Retrieve the PROGID string from the ProgIdAttribute.
-                    IList<CustomAttributeTypedArgument> caConstructorArgs = cad.ConstructorArguments;
-                    Debug.Assert(caConstructorArgs.Count == 1, "caConstructorArgs.Count == 1");
-
-                    CustomAttributeTypedArgument progIdConstructorArg = caConstructorArgs[0];
-                    Debug.Assert(progIdConstructorArg.ArgumentType == typeof(string), "progIdConstructorArg.ArgumentType == typeof(string)");
-
-                    string strProgId = (string)progIdConstructorArg.Value;
-
-                    return strProgId ?? string.Empty;
-                }
+                return progIdAttribute.Value ?? string.Empty;
             }
 
             // If there is no prog ID attribute then use the full name of the type as the prog id.

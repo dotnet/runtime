@@ -534,7 +534,6 @@
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Text.Encoding.CodePages" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />

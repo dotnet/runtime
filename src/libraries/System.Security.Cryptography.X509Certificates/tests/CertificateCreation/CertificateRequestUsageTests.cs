@@ -114,7 +114,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 "07BFD721B73DDB1751123F99D8FC0D533798C4DBD14719D5D8A85B00A144A367" +
                 "677B48891A9B56F045334811BACB7A";
 
-            Assert.Equal(expectedHex, cert.RawData.ByteArrayToHex());
+            using (cert)
+            {
+                Assert.Equal(expectedHex, cert.RawData.ByteArrayToHex());
+            }
         }
 
         [Theory]
