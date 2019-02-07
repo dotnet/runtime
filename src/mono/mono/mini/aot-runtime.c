@@ -1871,7 +1871,8 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 		msg = g_strdup_printf ("compiled with --aot=full");
 		usable = FALSE;
 	}
-	if (mono_use_interpreter && !interp) {
+	if (mono_use_interpreter && !interp && !strcmp (assembly->aname.name, "mscorlib")) {
+		/* mscorlib contains necessary interpreter trampolines */
 		msg = g_strdup_printf ("not compiled with --aot=interp");
 		usable = FALSE;
 	}
