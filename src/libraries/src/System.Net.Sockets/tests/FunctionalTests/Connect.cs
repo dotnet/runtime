@@ -4,11 +4,14 @@
 
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
     public abstract class Connect<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
+        public Connect(ITestOutputHelper output) : base(output) {}
+
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(Loopbacks))]
@@ -84,9 +87,28 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class ConnectSync : Connect<SocketHelperArraySync> { }
-    public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking> { }
-    public sealed class ConnectApm : Connect<SocketHelperApm> { }
-    public sealed class ConnectTask : Connect<SocketHelperTask> { }
-    public sealed class ConnectEap : Connect<SocketHelperEap> { }
+    public sealed class ConnectSync : Connect<SocketHelperArraySync>
+    {
+        public ConnectSync(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
+    {
+        public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class ConnectApm : Connect<SocketHelperApm>
+    {
+        public ConnectApm(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class ConnectTask : Connect<SocketHelperTask>
+    {
+        public ConnectTask(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class ConnectEap : Connect<SocketHelperEap>
+    {
+        public ConnectEap(ITestOutputHelper output) : base(output) {}
+    }
 }

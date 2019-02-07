@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +12,10 @@ namespace System.IO.Tests
 {
     public class File_GetSetTimes : StaticGetSetTimes
     {
+        // OSX has the limitation of setting upto 2262-04-11T23:47:16 (long.Max) date.
+        // 32bit Unix has time_t up to ~ 2038.
+        private static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows || (RuntimeInformation.ProcessArchitecture != Architecture.Arm && RuntimeInformation.ProcessArchitecture != Architecture.X86 && !PlatformDetection.IsOSX);
+
         public override string GetExistingItem()
         {
             string path = GetTestFilePath();
@@ -144,8 +149,7 @@ namespace System.IO.Tests
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // OSX has the limitation of setting upto 2262-04-11T23:47:16 (long.Max) date.
+        [ConditionalFact(nameof(SupportsLongMaxDateTime))]
         public void SetDateTimeMax()
         {
             string file = GetTestFilePath();

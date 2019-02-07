@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Security;
@@ -835,7 +836,7 @@ namespace System.Diagnostics
                 return null;
 
             CategorySample sample = null;
-            byte[] dataRef = GetPerformanceData(entry.NameIndex.ToString(CultureInfo.InvariantCulture));
+            byte[] dataRef = GetPerformanceData(entry.NameIndex.ToString(CultureInfo.InvariantCulture), usePool: true);
             if (dataRef == null)
                 throw new InvalidOperationException(SR.Format(SR.CantReadCategory, category));
 
@@ -1012,7 +1013,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal byte[] GetPerformanceData(string item)
+        internal byte[] GetPerformanceData(string item, bool usePool = false)
         {
             if (_performanceMonitor == null)
             {
@@ -1023,7 +1024,12 @@ namespace System.Diagnostics
                 }
             }
 
-            return _performanceMonitor.GetData(item);
+            return _performanceMonitor.GetData(item, usePool);
+        }
+
+        internal void ReleasePerformanceData(byte[] data)
+        {
+            _performanceMonitor.ReleaseData(data);
         }
 
         private Hashtable GetStringTable(bool isHelp)
@@ -1262,7 +1268,7 @@ namespace System.Diagnostics
 
     internal class PerformanceMonitor
     {
-        private RegistryKey perfDataKey = null;
+        private PerformanceDataRegistryKey perfDataKey = null;
         private string machineName;
 
         internal PerformanceMonitor(string machineName)
@@ -1277,10 +1283,10 @@ namespace System.Diagnostics
             {
                 if (machineName != "." && !string.Equals(machineName, PerformanceCounterLib.ComputerName, StringComparison.OrdinalIgnoreCase))
                 {
-                    perfDataKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.PerformanceData, machineName);
+                    perfDataKey = PerformanceDataRegistryKey.OpenRemoteBaseKey(machineName);
                 }
                 else
-                    perfDataKey = Registry.PerformanceData;
+                    perfDataKey = PerformanceDataRegistryKey.OpenLocal();
             }
             catch (UnauthorizedAccessException)
             {
@@ -1311,7 +1317,7 @@ namespace System.Diagnostics
         // we wait may not be sufficient if the Win32 code keeps running into this deadlock again 
         // and again. A condition very rare but possible in theory. We would get back to the user 
         // in this case with InvalidOperationException after the wait time expires.
-        internal byte[] GetData(string item)
+        internal byte[] GetData(string item, bool usePool)
         {
             int waitRetries = 17;   //2^16*10ms == approximately 10mins
             int waitSleep = 0;
@@ -1323,7 +1329,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    data = (byte[])perfDataKey.GetValue(item);
+                    data = perfDataKey.GetValue(item, usePool);
                     return data;
                 }
                 catch (IOException e)
@@ -1366,6 +1372,11 @@ namespace System.Diagnostics
             throw new Win32Exception(error);
         }
 
+        internal void ReleaseData(byte[] data)
+        {
+            perfDataKey.ReleaseData(data);
+        }
+
     }
 
     internal class CategoryEntry
@@ -1384,7 +1395,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class CategorySample
+    internal sealed class CategorySample : IDisposable
     {
         internal readonly long _systemFrequency;
         internal readonly long _timeStamp;
@@ -1396,9 +1407,13 @@ namespace System.Diagnostics
         internal bool _isMultiInstance;
         private CategoryEntry _entry;
         private PerformanceCounterLib _library;
+        private bool _disposed;
+        private byte[] _data;
 
-        internal CategorySample(ReadOnlySpan<byte> data, CategoryEntry entry, PerformanceCounterLib library)
+        internal CategorySample(byte[] rawData, CategoryEntry entry, PerformanceCounterLib library)
         {
+            _data = rawData;
+            ReadOnlySpan<byte> data = rawData;
             _entry = entry;
             _library = library;
             int categoryIndex = entry.NameIndex;
@@ -1531,6 +1546,8 @@ namespace System.Diagnostics
 
         internal string[] GetInstanceNamesFromIndex(int categoryIndex)
         {
+            CheckDisposed();
+
             ReadOnlySpan<byte> data = _library.GetPerformanceData(categoryIndex.ToString(CultureInfo.InvariantCulture));
 
             ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
@@ -1584,6 +1601,8 @@ namespace System.Diagnostics
 
         internal CounterDefinitionSample GetCounterDefinitionSample(string counter)
         {
+            CheckDisposed();
+
             for (int index = 0; index < _entry.CounterIndexes.Length; ++index)
             {
                 int counterIndex = _entry.CounterIndexes[index];
@@ -1635,6 +1654,26 @@ namespace System.Diagnostics
             }
 
             return data;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            _library.ReleasePerformanceData(_data);
+        }
+
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(SR.ObjectDisposed_CategorySampleClosed, nameof(CategorySample));
+            }
         }
     }
 

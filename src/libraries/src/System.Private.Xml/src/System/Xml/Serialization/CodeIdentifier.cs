@@ -9,6 +9,7 @@ using System.IO;
 using System.Globalization;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace System.Xml.Serialization
 {
@@ -32,11 +33,18 @@ namespace System.Xml.Serialization
         {
             identifier = MakeValid(identifier);
             if (identifier.Length <= 2)
+            {
                 return CultureInfo.InvariantCulture.TextInfo.ToUpper(identifier);
+            }
             else if (char.IsLower(identifier[0]))
-                return char.ToUpperInvariant(identifier[0]) + identifier.Substring(1);
+            {
+                char upper = char.ToUpperInvariant(identifier[0]);
+                return string.Concat(MemoryMarshal.CreateReadOnlySpan(ref upper, 1), identifier.AsSpan(1));
+            }
             else
+            {
                 return identifier;
+            }
         }
 
         /// <devdoc>
@@ -46,11 +54,18 @@ namespace System.Xml.Serialization
         {
             identifier = MakeValid(identifier);
             if (identifier.Length <= 2)
+            {
                 return CultureInfo.InvariantCulture.TextInfo.ToLower(identifier);
+            }
             else if (char.IsUpper(identifier[0]))
-                return char.ToLower(identifier[0]) + identifier.Substring(1);
+            {
+                char lower = char.ToLower(identifier[0]);
+                return string.Concat(MemoryMarshal.CreateReadOnlySpan(ref lower, 1), identifier.AsSpan(1));
+            }
             else
+            {
                 return identifier;
+            }
         }
 
         /// <devdoc>

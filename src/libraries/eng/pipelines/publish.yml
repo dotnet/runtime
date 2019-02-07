@@ -45,6 +45,7 @@ jobs:
                 -warnaserror:0 -ci
                 /t:PublishPackagesToBlobFeed
                 /p:ManifestBuildId=$(Build.BuildNumber)
+                /p:ManifestBuildData=Location=$(_dotnetFeedUrl)
                 /p:ManifestBranch=$(Build.SourceBranchName)
                 /p:ManifestCommit=$(Build.SourceVersion)
                 /p:ManifestRepoUri=$(Build.Repository.Uri)

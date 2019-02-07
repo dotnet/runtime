@@ -1,5 +1,6 @@
 Compat issues with assembly System.Runtime.InteropServices:
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.UnmanagedMemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.Runtime.InteropServices.DllImportResolver' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GenerateGuidForType(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GenerateProgIdForType(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetComObjectData(System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
@@ -16,4 +17,5 @@ MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetExceptionPo
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetEndComSlot(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.IsTypeVisibleFromCom(System.Type)' does not exist in the implementation but it does exist in the contract.
 TypeCannotChangeClassification : Type 'System.Runtime.InteropServices.HandleRef' is marked as readonly in the contract so it must also be marked readonly in the implementation.
-Total Issues: 17
+TypesMustExist : Type 'System.Runtime.InteropServices.NativeLibrary' does not exist in the implementation but it does exist in the contract.
+Total Issues: 19

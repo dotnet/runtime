@@ -421,7 +421,7 @@ DLLEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets 
  *
  * Returns 0 for success; -1 for failure. Sets errno for failure.
  */
-DLLEXPORT int32_t SystemNative_FcntlSetCloseOnExec(intptr_t fd);
+DLLEXPORT int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags);
 
 /**
  * Determines if the current platform supports getting and setting pipe capacity.

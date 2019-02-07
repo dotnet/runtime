@@ -15,9 +15,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
-// Disable the "reference to volatile field not treated as volatile" error.
-#pragma warning disable 0420
-
 namespace System.Threading.Tasks
 {
     /// <summary>
@@ -67,11 +64,16 @@ namespace System.Threading.Tasks
 
         private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
 
-        // Delegate used by:
-        //     public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks);
-        //     public static Task<Task<TResult>> WhenAny<TResult>(params Task<TResult>[] tasks);
-        // Used to "cast" from Task<Task> to Task<Task<TResult>>.
-        internal static readonly Func<Task<Task>, Task<TResult>> TaskWhenAnyCast = completed => (Task<TResult>)completed.Result;
+        // Extract rarely used helper for a static method in a separate type so that the Func<Task<Task>, Task<TResult>>
+        // generic instantiations don't contribute to all Task instantiations, but only those where WhenAny is used.
+        internal static class TaskWhenAnyCast
+        {
+            // Delegate used by:
+            //     public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks);
+            //     public static Task<Task<TResult>> WhenAny<TResult>(params Task<TResult>[] tasks);
+            // Used to "cast" from Task<Task> to Task<Task<TResult>>.
+            internal static readonly Func<Task<Task>, Task<TResult>> Value = completed => (Task<TResult>)completed.Result;
+        }
 
         // Construct a promise-style task without any options. 
         internal Task() :
@@ -386,6 +388,8 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
 
+            bool returnValue = false;
+
             // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
             // has been made, (2) The result has not already been set, (3) An exception has not previously 
             // been recorded, and (4) Cancellation has not been requested.
@@ -411,10 +415,10 @@ namespace System.Threading.Tasks
                     props.SetCompleted();
                 }
                 FinishContinuations();
-                return true;
+                returnValue = true;
             }
 
-            return false;
+            return returnValue;
         }
 
         // Transitions the promise task into a successfully completed state with the specified result.
@@ -489,95 +493,6 @@ namespace System.Threading.Tasks
             Debug.Assert(IsCompletedSuccessfully, "Task<T>.Result getter: Expected result to have been set.");
 
             return m_result;
-        }
-
-        // Allow multiple exceptions to be assigned to a promise-style task.
-        // This is useful when a TaskCompletionSource<T> stands in as a proxy
-        // for a "real" task (as we do in Unwrap(), ContinueWhenAny() and ContinueWhenAll())
-        // and the "real" task ends up with multiple exceptions, which is possible when
-        // a task has children.
-        //
-        // Called from TaskCompletionSource<T>.SetException(IEnumerable<Exception>).
-        internal bool TrySetException(object exceptionObject)
-        {
-            Debug.Assert(m_action == null, "Task<T>.TrySetException(): non-null m_action");
-
-            // TCS.{Try}SetException() should have checked for this
-            Debug.Assert(exceptionObject != null, "Expected non-null exceptionObject argument");
-
-            // Only accept these types.
-            Debug.Assert(
-                (exceptionObject is Exception) || (exceptionObject is IEnumerable<Exception>) ||
-                (exceptionObject is ExceptionDispatchInfo) || (exceptionObject is IEnumerable<ExceptionDispatchInfo>),
-                "Expected exceptionObject to be either Exception, ExceptionDispatchInfo, or IEnumerable<> of one of those");
-
-            bool returnValue = false;
-
-            // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
-            // has been made, (2) The result has not already been set, (3) An exception has not previously 
-            // been recorded, and (4) Cancellation has not been requested.
-            //
-            // If the reservation is successful, then add the exception(s) and finish completion processing.
-            //
-            // The lazy initialization may not be strictly necessary, but I'd like to keep it here
-            // anyway.  Some downstream logic may depend upon an inflated m_contingentProperties.
-            EnsureContingentPropertiesInitialized();
-            if (AtomicStateUpdate(TASK_STATE_COMPLETION_RESERVED,
-                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
-            {
-                AddException(exceptionObject); // handles singleton exception or exception collection
-                Finish(false);
-                returnValue = true;
-            }
-
-            return returnValue;
-        }
-
-        // internal helper function breaks out logic used by TaskCompletionSource and AsyncMethodBuilder
-        // If the tokenToRecord is not None, it will be stored onto the task.
-        // This method is only valid for promise tasks.
-        internal bool TrySetCanceled(CancellationToken tokenToRecord)
-        {
-            return TrySetCanceled(tokenToRecord, null);
-        }
-
-        // internal helper function breaks out logic used by TaskCompletionSource and AsyncMethodBuilder
-        // If the tokenToRecord is not None, it will be stored onto the task.
-        // If the OperationCanceledException is not null, it will be stored into the task's exception holder.
-        // This method is only valid for promise tasks.
-        internal bool TrySetCanceled(CancellationToken tokenToRecord, object cancellationException)
-        {
-            Debug.Assert(m_action == null, "Task<T>.TrySetCanceled(): non-null m_action");
-#if DEBUG
-            var ceAsEdi = cancellationException as ExceptionDispatchInfo;
-            Debug.Assert(
-                cancellationException == null ||
-                cancellationException is OperationCanceledException ||
-                (ceAsEdi != null && ceAsEdi.SourceException is OperationCanceledException),
-                "Expected null or an OperationCanceledException");
-#endif
-
-            bool returnValue = false;
-
-            // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
-            // has been made, (2) The result has not already been set, (3) An exception has not previously 
-            // been recorded, and (4) Cancellation has not been requested.
-            //
-            // If the reservation is successful, then record the cancellation and finish completion processing.
-            //
-            // Note: I had to access static Task variables through Task<object>
-            // instead of Task, because I have a property named Task and that
-            // was confusing the compiler.  
-            if (AtomicStateUpdate(Task<object>.TASK_STATE_COMPLETION_RESERVED,
-                Task<object>.TASK_STATE_COMPLETION_RESERVED | Task<object>.TASK_STATE_CANCELED |
-                Task<object>.TASK_STATE_FAULTED | Task<object>.TASK_STATE_RAN_TO_COMPLETION))
-            {
-                RecordInternalCancellationRequest(tokenToRecord, cancellationException);
-                CancellationCleanupLogic(); // perform cancellation cleanup actions
-                returnValue = true;
-            }
-
-            return returnValue;
         }
 
         /// <summary>

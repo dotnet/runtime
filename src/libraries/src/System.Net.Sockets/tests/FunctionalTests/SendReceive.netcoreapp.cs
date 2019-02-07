@@ -5,13 +5,24 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public sealed class SendReceiveSpanSync : SendReceive<SocketHelperSpanSync> { }
-    public sealed class SendReceiveSpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking> { }
+    public sealed class SendReceiveSpanSync : SendReceive<SocketHelperSpanSync>
+    {
+        public SendReceiveSpanSync(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendReceiveSpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking>
+    {
+        public SendReceiveSpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
     public sealed class SendReceiveMemoryArrayTask : SendReceive<SocketHelperMemoryArrayTask>
     {
+        public SendReceiveMemoryArrayTask(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         public async Task Precanceled_Throws()
         {
@@ -55,5 +66,8 @@ namespace System.Net.Sockets.Tests
             }
         }
     }
-    public sealed class SendReceiveMemoryNativeTask : SendReceive<SocketHelperMemoryNativeTask> { }
+    public sealed class SendReceiveMemoryNativeTask : SendReceive<SocketHelperMemoryNativeTask>
+    {
+        public SendReceiveMemoryNativeTask(ITestOutputHelper output) : base(output) { }
+    }
 }

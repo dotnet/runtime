@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Security.Permissions;
 using System.Runtime.Versioning;
 using System.Text;
 
@@ -88,8 +87,8 @@ namespace System.Management
 
                 hGlobal = Marshal.AllocHGlobal(rg.Length);
                 Marshal.Copy(rg, 0, hGlobal, rg.Length);
-                stream = CreateStreamOnHGlobal(hGlobal, 0);
-                pWbemClassObject = CoUnmarshalInterface(stream, ref IID_IWbemClassObject);
+                stream = Interop.Ole32.CreateStreamOnHGlobal(hGlobal, false);
+                pWbemClassObject = Interop.Ole32.CoUnmarshalInterface(stream, IID_IWbemClassObject);
             }
             finally
             {
@@ -108,20 +107,20 @@ namespace System.Management
             try
             {
                 // Stream will own the HGlobal
-                stream = CreateStreamOnHGlobal(IntPtr.Zero, 1);
+                stream = Interop.Ole32.CreateStreamOnHGlobal(IntPtr.Zero, true);
 
-                CoMarshalInterface(stream, ref IID_IWbemClassObject, pWbemClassObject, (uint)MSHCTX.MSHCTX_DIFFERENTMACHINE, IntPtr.Zero, (uint)MSHLFLAGS.MSHLFLAGS_TABLEWEAK);
+                Interop.Ole32.CoMarshalInterface(stream, IID_IWbemClassObject, pWbemClassObject, (uint)MSHCTX.MSHCTX_DIFFERENTMACHINE, IntPtr.Zero, (uint)MSHLFLAGS.MSHLFLAGS_TABLEWEAK);
 
                 System.Runtime.InteropServices.ComTypes.STATSTG statstg;
                 stream.Stat(out statstg, (int)STATFLAG.STATFLAG_DEFAULT);
                 rg = new byte[statstg.cbSize];
-                pData = GlobalLock(GetHGlobalFromStream(stream));
+                pData = Interop.Kernel32.GlobalLock(Interop.Ole32.GetHGlobalFromStream(stream));
                 Marshal.Copy(pData, rg, 0, (int)statstg.cbSize);
             }
             finally
             {
                 if(pData != IntPtr.Zero)
-                    GlobalUnlock(pData);
+                    Interop.Kernel32.GlobalUnlock(pData);
                 if(stream != null)
                     Marshal.ReleaseComObject(stream);
             }
@@ -421,34 +420,6 @@ namespace System.Management
             MSHLFLAGS_TABLEWEAK      = 2,
             MSHLFLAGS_NOPING         = 3
         }
-
-        [DllImport("ole32.dll", PreserveSig=false)]
-        static extern System.Runtime.InteropServices.ComTypes.IStream CreateStreamOnHGlobal(IntPtr hGlobal, int fDeleteOnRelease);
-
-        [DllImport("ole32.dll", PreserveSig=false)]
-        static extern IntPtr GetHGlobalFromStream([In] System.Runtime.InteropServices.ComTypes.IStream pstm);
-
-        [DllImport("kernel32.dll", PreserveSig=true)]
-        static extern IntPtr GlobalLock([In] IntPtr hGlobal);
-
-        [DllImport("kernel32.dll", PreserveSig=true)]
-        static extern int GlobalUnlock([In] IntPtr pData);
-
-        [DllImport("ole32.dll", PreserveSig=false)]
-        static extern void CoMarshalInterface(
-            [In] System.Runtime.InteropServices.ComTypes.IStream pStm,        //Pointer to the stream used for marshaling
-            [In] ref Guid riid,          //Reference to the identifier of the 
-            [In] IntPtr Unk,      //Pointer to the interface to be marshaled
-            [In] uint dwDestContext,  //Destination process
-            [In] IntPtr pvDestContext,   //Reserved for future use
-            [In] uint mshlflags       //Reason for marshaling
-            );
-
-        [DllImport("ole32.dll", PreserveSig=false)]
-        static extern IntPtr CoUnmarshalInterface(
-            [In] System.Runtime.InteropServices.ComTypes.IStream pStm,  //Pointer to the stream
-            [In] ref Guid riid     //Reference to the identifier of the interface
-            );
     }
 
     sealed class IWbemQualifierSetFreeThreaded : IDisposable
@@ -1911,11 +1882,6 @@ namespace System.Management
         static Guid IID_IObjectContext = new Guid("51372AE0-CAE7-11CF-BE81-00AA00A2FA25");
         static Guid IID_IComThreadingInfo = new Guid("000001ce-0000-0000-C000-000000000046");
 
-
-        // Import of CoGetObjectContext
-        [ DllImport("ole32.dll")]
-        static extern int CoGetObjectContext([In] ref Guid riid, [Out] out IntPtr pUnk);
-
         // A variable that is initialized once to tell us if we are on
         // a Win2k platform or above.
         static bool CanCallCoGetObjectContext = IsWindows2000OrHigher();
@@ -1942,7 +1908,7 @@ namespace System.Management
             {
                 // If we CANNOT call CoGetObjectContext, assume we are not in the 'no context MTA' for safety
                 // (NOTE: This call is expected to always succeed)
-                if(0 != CoGetObjectContext(ref IID_IComThreadingInfo, out pComThreadingInfo))
+                if(0 != Interop.Ole32.CoGetObjectContext(IID_IComThreadingInfo, out pComThreadingInfo))
                     return false;
 
                 WmiNetUtilsHelper.APTTYPE aptType;

@@ -15,7 +15,6 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Collections;
-using System.Security.Permissions;
 
 namespace System.DirectoryServices.AccountManagement
 {

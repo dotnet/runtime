@@ -12,7 +12,6 @@ using System.Runtime.InteropServices;
 using System.Xml;
 using System.Threading;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Permissions;
 
 namespace System.DirectoryServices.Protocols
 {

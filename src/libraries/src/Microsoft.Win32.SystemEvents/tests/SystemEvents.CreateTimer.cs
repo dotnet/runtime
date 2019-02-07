@@ -85,13 +85,16 @@ namespace Microsoft.Win32.SystemEventsTests
             TimerElapsedEventHandler handler = (sender, args) =>
             {
                 bool signaled = false;
-                if (timersSignalled.TryGetValue(args.TimerId, out signaled) && !signaled)
+                lock (timersSignalled)
                 {
-                    timersSignalled[args.TimerId] = true;
-
-                    if (Interlocked.Increment(ref numSignaled) == NumConcurrentTimers)
+                    if (timersSignalled.TryGetValue(args.TimerId, out signaled) && !signaled)
                     {
-                        elapsed.Set();
+                        timersSignalled[args.TimerId] = true;
+
+                        if (Interlocked.Increment(ref numSignaled) == NumConcurrentTimers)
+                        {
+                            elapsed.Set();
+                        }
                     }
                 }
             };
@@ -107,15 +110,21 @@ namespace Microsoft.Win32.SystemEventsTests
 
                 for (int i = 0; i < NumConcurrentTimers; i++)
                 {
-                    timersSignalled[SystemEvents.CreateTimer(TimerInterval)] = false;
+                    lock (timersSignalled)
+                    {
+                        timersSignalled[SystemEvents.CreateTimer(TimerInterval)] = false;
+                    }
                 }
 
                 Assert.True(elapsed.WaitOne(TimerInterval * SystemEventsTest.ExpectedEventMultiplier));
 
-                foreach (var timer in timersSignalled.Keys.ToArray())
+                lock (timersSignalled)
                 {
-                    Assert.True(timersSignalled[timer]);
-                    SystemEvents.KillTimer(timer);
+                    foreach (var timer in timersSignalled.Keys.ToArray())
+                    {
+                        Assert.True(timersSignalled[timer]);
+                        SystemEvents.KillTimer(timer);
+                    }
                 }
             }
             finally

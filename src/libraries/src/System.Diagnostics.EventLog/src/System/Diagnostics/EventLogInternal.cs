@@ -10,7 +10,6 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Threading;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
@@ -1171,7 +1170,6 @@ namespace System.Diagnostics
             boolFlags[Flag_monitoring] = isMonitoring;
         }
 
-        [HostProtection(Synchronization = true)]
         private static void RemoveListenerComponent(EventLogInternal component, string compLogName)
         {
             lock (InternalSyncObject)

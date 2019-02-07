@@ -2316,6 +2316,9 @@ namespace System
         public static System.String Concat(System.String str0, System.String str1) { throw null; }
         public static System.String Concat(System.String str0, System.String str1, System.String str2) { throw null; }
         public static System.String Concat(System.String str0, System.String str1, System.String str2, System.String str3) { throw null; }
+        public static System.String Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1) { throw null; }
+        public static System.String Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1, System.ReadOnlySpan<char> str2) { throw null; }
+        public static System.String Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1, System.ReadOnlySpan<char> str2, System.ReadOnlySpan<char> str3) { throw null; }
         public static System.String Concat(params string[] values) { throw null; }
         public static System.String Concat<T>(System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public bool Contains(char value) { throw null; }
@@ -5195,7 +5198,7 @@ namespace System.IO
         Current = 1,
         End = 2,
     }
-    public abstract partial class Stream : System.MarshalByRefObject, System.IDisposable
+    public abstract partial class Stream : System.MarshalByRefObject, System.IDisposable, System.IAsyncDisposable
     {
         public static readonly System.IO.Stream Null;
         protected Stream() { }
@@ -7829,7 +7832,7 @@ namespace System.Threading
         public void ThrowIfCancellationRequested() { }
         public System.Threading.CancellationTokenRegistration UnsafeRegister(System.Action<object> callback, object state) { throw null; }
     }
-    public readonly partial struct CancellationTokenRegistration : System.IDisposable, System.IEquatable<System.Threading.CancellationTokenRegistration>
+    public readonly partial struct CancellationTokenRegistration : System.IDisposable, System.IAsyncDisposable, System.IEquatable<System.Threading.CancellationTokenRegistration>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
