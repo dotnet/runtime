@@ -1370,6 +1370,24 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void Start_RedirectStandardOutput_StartAgain_DoesntThrow()
+        {
+            using (Process process = CreateProcess(() =>
+            {
+                Console.WriteLine("hello world");
+                return SuccessExitCode;
+            }))
+            {
+                process.StartInfo.RedirectStandardOutput = true;
+
+                Assert.True(process.Start());
+                process.BeginOutputReadLine();
+
+                Assert.True(process.Start());
+            }
+        }
+
+        [Fact]
         public void Start_Disposed_ThrowsObjectDisposedException()
         {
             var process = new Process();

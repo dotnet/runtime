@@ -861,7 +861,7 @@ namespace System.Diagnostics
                     {
                         if (_outputStreamReadMode == StreamReadMode.AsyncMode)
                         {
-                            _output.CancelOperation();
+                            _output?.CancelOperation();
                         }
                         _standardOutput.Close();
                     }
@@ -870,7 +870,7 @@ namespace System.Diagnostics
                     {
                         if (_errorStreamReadMode == StreamReadMode.AsyncMode)
                         {
-                            _error.CancelOperation();
+                            _error?.CancelOperation();
                         }
                         _standardError.Close();
                     }
