@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -14,18 +14,19 @@
     <ProjectGuid>{58D6B7AE-0A12-49F0-BCF7-200ED8BA445A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>GCSample</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -83,13 +84,17 @@
     <ClInclude Include="gcenv.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gcenv.ee.cpp" />
     <ClCompile Include="GCSample.cpp" />
-    <ClCompile Include="..\gccommon.cpp" />
-    <ClCompile Include="..\gceewks.cpp" />
+    <ClCompile Include="gcenv.ee.cpp" />
     <ClCompile Include="..\windows\gcenv.windows.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\gcconfig.cpp" />
+    <ClCompile Include="..\gceventstatus.cpp" />
+    <ClCompile Include="..\gchandletable.cpp" />
+    <ClCompile Include="..\gcload.cpp" />
+    <ClCompile Include="..\gccommon.cpp" />
+    <ClCompile Include="..\gceewks.cpp" />
     <ClCompile Include="..\gcscan.cpp" />
     <ClCompile Include="..\gcwks.cpp" />
     <ClCompile Include="..\handletable.cpp" />

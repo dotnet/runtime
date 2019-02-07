@@ -10,6 +10,8 @@
 #undef BUILD_AS_STANDALONE
 #endif // BUILD_AS_STANDALONE
 
+#define FEATURE_REDHAWK
+
 #if defined(_DEBUG)
 #ifndef _DEBUG_IMPL
 #define _DEBUG_IMPL 1
