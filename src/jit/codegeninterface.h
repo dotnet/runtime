@@ -176,6 +176,11 @@ public:
     int genSPtoFPdelta();
     int genTotalFrameSize();
 
+#ifdef _TARGET_ARM64_
+    virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value) = 0;
+    virtual bool IsSaveFpLrWithAllCalleeSavedRegisters()            = 0;
+#endif // _TARGET_ARM64_
+
     regNumber genGetThisArgReg(GenTreeCall* call) const;
 
 #ifdef _TARGET_XARCH_
