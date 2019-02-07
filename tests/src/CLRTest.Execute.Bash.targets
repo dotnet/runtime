@@ -122,7 +122,7 @@ echo BEGIN EXECUTION]]>
       </BashCLRTestExitCodePrep>
     
       <BashCLRTestArgPrep Condition=" '$(CLRTestExecutionArguments)'!='' ">
-<![CDATA[if [ -z ${CLRTestExecutionArguments+x} ]%3B then export CLRTestExecutionArguments='$(CLRTestExecutionArguments)'%3B fi]]>
+<![CDATA[if [ -z ${CLRTestExecutionArguments+x} ]%3B then CLRTestExecutionArguments=($(CLRTestExecutionArguments))%3B fi]]>
       </BashCLRTestArgPrep>
     
       <!-- By default, be prepared to do a full check -->
@@ -271,8 +271,8 @@ else
     LAUNCHER="$_DebuggerFullPath $(_CLRTestRunFile)"
 fi
 
-echo $LAUNCHER $ExePath $CLRTestExecutionArguments
-$LAUNCHER $ExePath $CLRTestExecutionArguments
+echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+$LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
 CLRTestExitCode=$?
 if [ ! -z ${RunCrossGen+x} ]%3B then
@@ -284,8 +284,8 @@ $(BashLinkerTestCleanupCmds)
 $(BashCLRTestLaunchCmds)
 echo export CDPATH="$%28dirname "$0")"
 export CDPATH="$%28dirname "$0")"
-echo /bin/sh $(InputAssemblyName) 
-/bin/sh $(InputAssemblyName)
+echo /usr/bin/env bash $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+/usr/bin/env bash $(InputAssemblyName) "${CLRTestExecutionArguments[@]}"
 CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]></BashCLRTestLaunchCmds>
@@ -341,7 +341,7 @@ for i in "$@"
 %(Command)
         %3B%3B')
         *)
-        CLRTestExecutionArguments="$CLRTestExecutionArguments $i"
+        CLRTestExecutionArguments+=("${i}")
     esac
 done
 

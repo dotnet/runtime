@@ -63,9 +63,6 @@
 
     <!-- All Unix targets -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartString_1/*">
-            <Issue>3627</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutExp/*">
             <Issue>Issue building native components for the test.</Issue>
         </ExcludeList>
@@ -1782,9 +1779,6 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/mutex/openexisting/openmutexpos4/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartString_1/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/readerwriterlockslim/ensurelockordering/*">
