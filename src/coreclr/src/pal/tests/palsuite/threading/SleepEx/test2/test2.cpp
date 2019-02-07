@@ -152,7 +152,7 @@ DWORD PALAPI SleeperProc(LPVOID lpParameter)
     BOOL Alertable;
     DWORD ret;
 
-    Alertable = (BOOL) lpParameter;
+    Alertable = (BOOL)(SIZE_T) lpParameter;
 
     LARGE_INTEGER performanceFrequency;
     if (!QueryPerformanceFrequency(&performanceFrequency))

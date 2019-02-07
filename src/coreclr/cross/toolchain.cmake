@@ -31,6 +31,19 @@ else()
   message(FATAL_ERROR "Arch is ${TARGET_ARCH_NAME}. Only armel, arm, arm64 and x86 are supported!")
 endif()
 
+if(DEFINED ENV{TOOLCHAIN})
+  set(TOOLCHAIN $ENV{TOOLCHAIN})
+endif()
+
+# This gets called with CLR_CMAKE_COMPILER set on the first invocation
+# but the cmake variable is not getting populated into other calls.
+# Use environment variable to keep CLR_CMAKE_COMPILER around.
+if (NOT DEFINED CLR_CMAKE_COMPILER)
+  set(CLR_CMAKE_COMPILER $ENV{CLR_CMAKE_COMPILER})
+else()
+  set(ENV{CLR_CMAKE_COMPILER} ${CLR_CMAKE_COMPILER})
+endif()
+
 # Specify include paths
 if(TARGET_ARCH_NAME STREQUAL "armel")
   if(DEFINED TIZEN_TOOLCHAIN)
@@ -58,8 +71,11 @@ endmacro()
 
 # Specify link flags
 add_compile_param(CROSS_LINK_FLAGS "--sysroot=${CROSS_ROOTFS}")
-add_compile_param(CROSS_LINK_FLAGS "--gcc-toolchain=${CROSS_ROOTFS}/usr")
-add_compile_param(CROSS_LINK_FLAGS "--target=${TOOLCHAIN}")
+if (CLR_CMAKE_COMPILER STREQUAL "Clang")
+  add_compile_param(CROSS_LINK_FLAGS "--gcc-toolchain=${CROSS_ROOTFS}/usr")
+  add_compile_param(CROSS_LINK_FLAGS "--target=${TOOLCHAIN}")
+endif()
+
 add_compile_param(CROSS_LINK_FLAGS "-fuse-ld=gold")
 
 if(TARGET_ARCH_NAME STREQUAL "armel")
@@ -79,8 +95,10 @@ add_compile_param(CMAKE_MODULE_LINKER_FLAGS "${CROSS_LINK_FLAGS}" "TOOLCHAIN_EXE
 
 # Specify compile options
 add_compile_options("--sysroot=${CROSS_ROOTFS}")
-add_compile_options("--target=${TOOLCHAIN}")
-add_compile_options("--gcc-toolchain=${CROSS_ROOTFS}/usr")
+if (CLR_CMAKE_COMPILER STREQUAL "Clang")
+  add_compile_options("--target=${TOOLCHAIN}")
+  add_compile_options("--gcc-toolchain=${CROSS_ROOTFS}/usr")
+endif()
 
 if(TARGET_ARCH_NAME MATCHES "^(arm|armel|arm64)$")
   set(CMAKE_C_COMPILER_TARGET ${TOOLCHAIN})

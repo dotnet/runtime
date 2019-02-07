@@ -153,7 +153,7 @@ satisfying any threads that were waiting on the object.
             "GetLastError returned %d\n", GetLastError());
     }
 
-    Alertable = (BOOL) lpParameter;
+    Alertable = (BOOL)(SIZE_T) lpParameter;
 
     LARGE_INTEGER performanceFrequency;
     if (!QueryPerformanceFrequency(&performanceFrequency))

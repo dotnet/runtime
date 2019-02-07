@@ -14,8 +14,15 @@ endif()
 
 list(APPEND COMMON_TEST_LIBRARIES coreclrpal)
 
-add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
-add_compile_options(-Wno-int-to-void-pointer-cast)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
+  add_compile_options(-Wno-int-to-void-pointer-cast)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  add_compile_options(-Wno-sign-compare)
+  add_compile_options(-Wno-narrowing)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive" )
+  add_compile_options(-Wno-int-to-pointer-cast)
+endif()
 
 # TODO: make these tests compile
 # add_subdirectory(composite)

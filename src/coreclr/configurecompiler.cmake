@@ -441,36 +441,42 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DDISABLE_CONTRACTS)
   # The -ferror-limit is helpful during the porting, it makes sure the compiler doesn't stop
   # after hitting just about 20 errors.
-  add_compile_options(-ferror-limit=4096)
 
   if (CLR_CMAKE_WARNINGS_ARE_ERRORS)
     # All warnings that are not explicitly disabled are reported as errors
     add_compile_options(-Werror)
   endif(CLR_CMAKE_WARNINGS_ARE_ERRORS)
 
-  # Disabled warnings
-  add_compile_options(-Wno-unused-private-field)
-  add_compile_options(-Wno-unused-variable)
-  # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
-  add_compile_options(-Wno-microsoft)
-  # This warning is caused by comparing 'this' to NULL
-  add_compile_options(-Wno-tautological-compare)
-  # There are constants of type BOOL used in a condition. But BOOL is defined as int
-  # and so the compiler thinks that there is a mistake.
-  add_compile_options(-Wno-constant-logical-operand)
-  # We use pshpack1/2/4/8.h and poppack.h headers to set and restore packing. However
-  # clang 6.0 complains when the packing change lifetime is not contained within 
-  # a header file.
-  add_compile_options(-Wno-pragma-pack)
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options(-ferror-limit=4096)
 
-  add_compile_options(-Wno-unknown-warning-option)
+    # Disabled warnings
+    add_compile_options(-Wno-unused-private-field)
+    add_compile_options(-Wno-unused-variable)
+    # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
+    add_compile_options(-Wno-microsoft)
+    # This warning is caused by comparing 'this' to NULL
+    add_compile_options(-Wno-tautological-compare)
+    # There are constants of type BOOL used in a condition. But BOOL is defined as int
+    # and so the compiler thinks that there is a mistake.
+    add_compile_options(-Wno-constant-logical-operand)
+    # We use pshpack1/2/4/8.h and poppack.h headers to set and restore packing. However
+    # clang 6.0 complains when the packing change lifetime is not contained within 
+    # a header file.
+    add_compile_options(-Wno-pragma-pack)
 
-  #These seem to indicate real issues
-  add_compile_options(-Wno-invalid-offsetof)
-  # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied
-  # to a struct or a class that has virtual members or a base class. In that case, clang
-  # may not generate the same object layout as MSVC.
-  add_compile_options(-Wno-incompatible-ms-struct)
+    add_compile_options(-Wno-unknown-warning-option)
+
+    #These seem to indicate real issues
+    add_compile_options(-Wno-invalid-offsetof)
+    # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied
+    # to a struct or a class that has virtual members or a base class. In that case, clang
+    # may not generate the same object layout as MSVC.
+    add_compile_options(-Wno-incompatible-ms-struct)
+  else()
+    add_compile_options(-Wno-unused-variable)
+    add_compile_options(-Wno-unused-but-set-variable)
+  endif()
 
   # Some architectures (e.g., ARM) assume char type is unsigned while CoreCLR assumes char is signed
   # as x64 does. It has been causing issues in ARM (https://github.com/dotnet/coreclr/issues/4746)

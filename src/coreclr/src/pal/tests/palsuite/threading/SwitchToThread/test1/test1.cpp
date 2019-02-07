@@ -83,7 +83,7 @@ INT __cdecl main( INT argc, CHAR **argv )
 void  PALAPI Run_Thread (LPVOID lpParam)
 {
     int i = 0;
-    int Id=(int)lpParam;
+    int Id=(int)(SIZE_T)lpParam;
 
     for(i=0; i < REPEAT_COUNT; i++ )
     {

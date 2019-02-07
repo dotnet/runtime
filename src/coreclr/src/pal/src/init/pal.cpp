@@ -153,7 +153,7 @@ int
 PALAPI
 PAL_Initialize(
     int argc,
-    const char *const argv[])
+    char *const argv[])
 {
     return Initialize(argc, argv, PAL_INITIALIZE);
 }
