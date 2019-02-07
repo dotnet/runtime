@@ -143,11 +143,13 @@ typedef void * NATIVE_LIBRARY_HANDLE;
 #define LANG_THAI                        0x1e
 
 /******************* Compiler-specific glue *******************************/
-#if defined(_MSC_VER) || defined(__llvm__)
+#ifndef THROW_DECL
+#if defined(_MSC_VER) || defined(__llvm__) || !defined(__cplusplus)
 #define THROW_DECL
 #else
 #define THROW_DECL throw()
-#endif
+#endif // !_MSC_VER
+#endif // !THROW_DECL
 
 #ifndef _MSC_VER
 #if defined(CORECLR)
@@ -367,7 +369,7 @@ int
 PALAPI
 PAL_Initialize(
     int argc,
-    const char * const argv[]);
+    char * const argv[]);
 
 PALIMPORT
 void
@@ -4316,7 +4318,7 @@ EXTERN_C
 PALIMPORT
 void *PAL_memcpy (void *dest, const void *src, size_t count);
 
-PALIMPORT void * __cdecl memcpy(void *, const void *, size_t);
+PALIMPORT void * __cdecl memcpy(void *, const void *, size_t) THROW_DECL;
 
 #define memcpy PAL_memcpy
 #define IS_PAL_memcpy 1

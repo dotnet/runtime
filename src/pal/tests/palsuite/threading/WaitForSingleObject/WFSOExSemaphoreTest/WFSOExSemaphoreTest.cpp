@@ -145,7 +145,7 @@ DWORD PALAPI WaiterProc(LPVOID lpParameter)
             GetLastError());
     }
 
-    Alertable = (BOOL) lpParameter;
+    Alertable = (BOOL)(SIZE_T) lpParameter;
 
     OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
 

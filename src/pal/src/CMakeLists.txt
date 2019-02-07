@@ -5,7 +5,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
-include_directories(SYSTEM /usr/local/include)
+if(NOT DEFINED ENV{ROOTFS_DIR})
+  include_directories(SYSTEM /usr/local/include)
+endif()
 
 add_compile_options(-fPIC)
 

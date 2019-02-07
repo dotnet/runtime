@@ -10,7 +10,11 @@
 #define LOCAL_LABEL(name) L##name
 #else
 #define C_FUNC(name) name
+#if defined(_AMD64_) || defined(_X86_)
 #define EXTERNAL_C_FUNC(name) C_FUNC(name)@plt
+#else
+#define EXTERNAL_C_FUNC(name) C_FUNC(name)
+#endif
 #define LOCAL_LABEL(name) .L##name
 #endif
 

@@ -25,7 +25,7 @@ int test1(int num, ...)
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
     
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
@@ -69,7 +69,7 @@ int test2(int num, ...)
     va_list TheList;
     va_start(TheList,num);
   
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
 
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
@@ -106,7 +106,7 @@ int test3(int num, ...) {
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
         TheString,                       /* message source */
@@ -144,7 +144,7 @@ int test4(int num, ...) {
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
         TheString,                       /* message source */
@@ -182,7 +182,7 @@ int test5(int num, ...)
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
 
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
@@ -222,7 +222,7 @@ int test6(int num, ...) {
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
 
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
@@ -264,7 +264,7 @@ int test7(int num, ...)
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
 
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
@@ -307,7 +307,7 @@ int test8(int num, ...)
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
 
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
@@ -351,7 +351,7 @@ int test9(int num, ...) {
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
         TheString,                       /* message source */
@@ -393,7 +393,7 @@ int test10(int num, ...)
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
         TheString,                       /* message source */
@@ -435,7 +435,7 @@ int test11(int num, ...)
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
 
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
@@ -505,7 +505,7 @@ int test12(int num, ...)
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-    memset( OutBuffer, 0, 1024 );
+    memset( OutBuffer, 0, 1024 * sizeof(OutBuffer[0]) );
 
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */

@@ -31,11 +31,13 @@ typedef int errno_t;
 // define the return value for success 
 #define SAFECRT_SUCCESS 0
 
-#if defined(_MSC_VER) || defined(__llvm__)
+#ifndef THROW_DECL
+#if defined(_MSC_VER) || defined(__llvm__) || !defined(__cplusplus)
 #define THROW_DECL
 #else
 #define THROW_DECL throw()
-#endif
+#endif // !_MSC_VER
+#endif // !THROW_DECL
 
 #ifdef __cplusplus
     extern "C" {

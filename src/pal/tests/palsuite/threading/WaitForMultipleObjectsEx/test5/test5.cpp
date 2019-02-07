@@ -74,7 +74,7 @@ DWORD PALAPI WaitForProcess(LPVOID lpParameter)
     DWORD dwRet;
     HANDLE handles[MAX_HELPER_PROCESS+1];
 
-    index = (DWORD) lpParameter;
+    index = (DWORD)(SIZE_T) lpParameter;
 
     /* The helper thread 0 will wait for helper process 0, helper thread 1 will
        wait for helper process 0 and 1, helper thread 2 will wait for helper

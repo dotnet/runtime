@@ -23,9 +23,9 @@ volatile DWORD dwThreadId1[NUM_TESTS];
 
 DWORD PALAPI Thread( LPVOID lpParameter)
 {
-    dwThreadId1[(DWORD) lpParameter] = GetCurrentThreadId();
-    bResult[(DWORD) lpParameter] = TRUE;
-    return (DWORD) lpParameter;
+    dwThreadId1[(DWORD)(SIZE_T)lpParameter] = GetCurrentThreadId();
+    bResult[(DWORD)(SIZE_T) lpParameter] = TRUE;
+    return (DWORD)(SIZE_T) lpParameter;
 }
 
 struct testCase 

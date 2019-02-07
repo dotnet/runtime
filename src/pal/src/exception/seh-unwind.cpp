@@ -31,10 +31,14 @@ Abstract:
 // Sub-headers included from the libunwind.h contain an empty struct
 // and clang issues a warning. Until the libunwind is fixed, disable
 // the warning.
+#ifdef __llvm__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wextern-c-compat"
+#endif
 #include <libunwind.h>
+#ifdef __llvm__
 #pragma clang diagnostic pop
+#endif
 
 //----------------------------------------------------------------------
 // Virtual Unwinding

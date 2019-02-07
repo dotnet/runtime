@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
   HANDLE h;
   unsigned int b;
 
-  PAL_Initialize(argc, (const char**)argv);
+  PAL_Initialize(argc, argv);
   SetCurrentDirectoryW(dir);
   SetCurrentDirectoryW(dir);
   h =  CreateFileW(src, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, 0, NULL);
