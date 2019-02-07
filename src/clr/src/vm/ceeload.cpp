@@ -2577,79 +2577,6 @@ BOOL Module::IsNoStringInterning()
     return !!(m_dwPersistedFlags & NO_STRING_INTERNING);
 }
 
-BOOL Module::GetNeutralResourcesLanguage(LPCUTF8 * cultureName, ULONG * cultureNameLength, INT16 * fallbackLocation, BOOL cacheAttribute)
-{
-    STANDARD_VM_CONTRACT;
-
-    BOOL retVal = FALSE;
-    if (!(m_dwPersistedFlags & NEUTRAL_RESOURCES_LANGUAGE_IS_CACHED))
-    {
-        const BYTE *pVal = NULL;
-        ULONG cbVal = 0;
-
-        // This flag applies to assembly, but it is stored on module so it can be cached in ngen image
-        // Thus, we should ever need it for manifest module only.
-        IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
-        _ASSERTE(mdImport);
-
-        mdToken token;
-        IfFailThrow(mdImport->GetAssemblyFromScope(&token));
-
-        // Check for the existance of the attribute.
-        HRESULT hr = mdImport->GetCustomAttributeByName(token,"System.Resources.NeutralResourcesLanguageAttribute",(const void **)&pVal, &cbVal);
-        if (hr == S_OK) {
-
-            // we should not have a native image (it would have been cached at ngen time)
-            _ASSERTE(!HasNativeImage());
-
-            CustomAttributeParser cap(pVal, cbVal);
-            IfFailThrow(cap.SkipProlog());
-            IfFailThrow(cap.GetString(cultureName, cultureNameLength));
-            IfFailThrow(cap.GetI2(fallbackLocation));
-            // Should only be true on Module.Save(). Update flag to show we have the attribute cached
-            if (cacheAttribute)
-                FastInterlockOr(&m_dwPersistedFlags, NEUTRAL_RESOURCES_LANGUAGE_IS_CACHED);
-
-            retVal = TRUE;
-        }
-    }
-    else 
-    {
-        *cultureName = m_pszCultureName;
-        *cultureNameLength = m_CultureNameLength;
-        *fallbackLocation = m_FallbackLocation;
-        retVal = TRUE;
-
-#ifdef _DEBUG
-        // confirm that the NGENed attribute is correct
-        LPCUTF8 pszCultureNameCheck = NULL;
-        ULONG cultureNameLengthCheck = 0;
-        INT16 fallbackLocationCheck = 0;
-        const BYTE *pVal = NULL;
-        ULONG cbVal = 0;
-
-        IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
-        _ASSERTE(mdImport);
-        mdToken token;
-        IfFailThrow(mdImport->GetAssemblyFromScope(&token));
-
-        // Confirm that the attribute exists, and has the save value as when we ngen'd it
-        HRESULT hr = mdImport->GetCustomAttributeByName(token,"System.Resources.NeutralResourcesLanguageAttribute",(const void **)&pVal, &cbVal);
-        _ASSERTE(hr == S_OK);
-        CustomAttributeParser cap(pVal, cbVal);
-        IfFailThrow(cap.SkipProlog());
-        IfFailThrow(cap.GetString(&pszCultureNameCheck, &cultureNameLengthCheck));
-        IfFailThrow(cap.GetI2(&fallbackLocationCheck));
-        _ASSERTE(cultureNameLengthCheck == m_CultureNameLength);
-        _ASSERTE(fallbackLocationCheck == m_FallbackLocation);
-        _ASSERTE(strncmp(pszCultureNameCheck,m_pszCultureName,m_CultureNameLength) == 0);
-#endif // _DEBUG
-    }
-
-    return retVal;
-}
-
-
 BOOL Module::HasDefaultDllImportSearchPathsAttribute()
 {
     CONTRACTL
@@ -8540,15 +8467,6 @@ void Module::Save(DataImage *image)
     //
     CorProfileData * profileData = GetProfileData();
 
-    // ngen the neutral resources culture
-    if(GetNeutralResourcesLanguage(&m_pszCultureName, &m_CultureNameLength, &m_FallbackLocation, TRUE)) {
-        image->StoreStructure((void *) m_pszCultureName,
-                                        (ULONG)(m_CultureNameLength + 1),
-                                        DataImage::ITEM_BINDER_ITEMS,
-                                        1);
-    }
-
-
     m_TypeRefToMethodTableMap.Save(image, DataImage::ITEM_TYPEREF_MAP, profileData, mdtTypeRef);
     image->BindPointer(&m_TypeRefToMethodTableMap, pModuleNode, offsetof(Module, m_TypeRefToMethodTableMap));
 
@@ -9603,11 +9521,6 @@ void Module::Fixup(DataImage *image)
     image->ZeroField(this, offsetof(Module, m_pProfileData), sizeof(m_pProfileData));
 
     image->ZeroPointerField(this, offsetof(Module, m_pNgenStats));
-
-    // fixup the pointer for NeutralResourcesLanguage, if we have it cached
-    if(!!(m_dwPersistedFlags & NEUTRAL_RESOURCES_LANGUAGE_IS_CACHED)) {
-        image->FixupPointerField(this, offsetof(Module, m_pszCultureName));
-    }
 
     // Fixup the property name set
     image->FixupPointerField(this, offsetof(Module, m_propertyNameSet));
