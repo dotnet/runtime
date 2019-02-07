@@ -65,8 +65,8 @@
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreCLR.cs" />
     <Compile Include="System\Threading\WindowsRuntimeSynchronizationContext.cs" />
     <Compile Include="System\WindowsRuntimeSystemExtensions.CoreCLR.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetActivationFactory.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RoGetActivationFactory.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
       <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
@@ -91,8 +91,8 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
