@@ -13,7 +13,7 @@ namespace System.Composition.Hosting.Providers.Metadata
 {
     internal static class MetadataViewProvider
     {
-        private static readonly MethodInfo s_getMetadataValueMethod = typeof(MetadataViewProvider).GetTypeInfo().GetDeclaredMethod("GetMetadataValue");
+        private static readonly MethodInfo s_getMetadataValueMethod = typeof(MetadataViewProvider).GetTypeInfo().GetDeclaredMethod(nameof(GetMetadataValue));
 
         // While not called through the composition pipeline, we use the dependency mechanism to surface errors
         // with appropriate context information.
