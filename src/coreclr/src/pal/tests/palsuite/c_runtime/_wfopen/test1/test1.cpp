@@ -69,7 +69,7 @@ int __cdecl main(int argc, char **argv)
             free(PrintResult);
         }    
 
-        memset(name, '\0', 128);  
+        memset(name, '\0', 128 * sizeof(name[0]));
     }      
   
     PAL_Terminate();

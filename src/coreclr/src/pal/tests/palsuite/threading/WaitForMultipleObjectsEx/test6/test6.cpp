@@ -154,7 +154,7 @@ DWORD PALAPI TestThread(PVOID pArg)
     BOOL bRemoteWaitAll = g_bRemoteWaitAll;
     int iDesiredExitCode;
         
-    dwThreadNum = (DWORD)pArg;
+    dwThreadNum = (DWORD)(SIZE_T)pArg;
 
     sprintf_s (szTestName, 128, "Test6_%u", dwThreadNum);
     szTestName[127] = 0;

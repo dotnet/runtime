@@ -61,7 +61,7 @@ int __cdecl main(int argc, char *argv[])
 
     /* Initialize the buffer.
      */
-    memset(szDirectory, '\0', 256);
+    memset(szDirectory, '\0', 256 * sizeof(szDirectory[0]));
 
     /* Create the path to the next level of directory to create.
      */

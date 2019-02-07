@@ -7,6 +7,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(configure.cmake)
 
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  add_compile_options(-Wformat=0)
+  add_compile_options(-Wno-unused-value)
+endif()
+
 # The HAVE___THREAD set to 1 causes creation of thread local variable with tls_model("initial-exec")
 # which is incompatible with usage of the unwind code in a shared library.
 add_definitions(-DHAVE___THREAD=0)
@@ -19,15 +24,19 @@ add_definitions(-D_GNU_SOURCE)
 # Ensure that the remote and local unwind code can reside in the same binary without name clashing
 add_definitions("-Ddwarf_search_unwind_table_int=UNW_OBJ(dwarf_search_unwind_table_int)")
 
-add_compile_options(-Wno-header-guard)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  add_compile_options(-Wno-header-guard)
+endif()
 
 if(CLR_CMAKE_PLATFORM_ARCH_ARM)
     # Ensure that the remote and local unwind code can reside in the same binary without name clashing
     add_definitions("-Darm_search_unwind_table=UNW_OBJ(arm_search_unwind_table)")
     # Disable warning in asm: use of SP or PC in the list is deprecated
     add_compile_options(-Wno-inline-asm)
-    # Disable warning due to labs function called on unsigned argument
-    add_compile_options(-Wno-absolute-value)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        # Disable warning due to labs function called on unsigned argument
+        add_compile_options(-Wno-absolute-value)
+    endif()
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
     add_compile_options(-Wno-format)
     # Disable warning for a bug in the libunwind source src/arm/Gtrace.c:529, but not in code that we exercise
@@ -41,8 +50,10 @@ if(CLR_CMAKE_PLATFORM_ARCH_ARM)
     # the include/tdep-arm to include directories
     include_directories(../include/tdep-arm)
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
-    # Disable warning due to labs function called on unsigned argument
-    add_compile_options(-Wno-absolute-value)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        # Disable warning due to labs function called on unsigned argument
+        add_compile_options(-Wno-absolute-value)
+    endif()
     # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
     add_definitions(-Dasm=__asm__)
 elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
