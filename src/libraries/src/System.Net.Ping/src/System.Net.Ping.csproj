@@ -112,23 +112,23 @@
     <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.ICMP.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.ICMP.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalAlloc.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.LocalAlloc.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalAlloc.Constants.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.LocalAlloc.Constants.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalFree.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.LocalFree.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalFree.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalFree.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.closesocket.cs">
-      <Link>Common\Interop\Windows\Winsock\Interop.closesocket.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.closesocket.cs">
+      <Link>Common\Interop\Windows\WinSock\Interop.closesocket.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.cs">
-      <Link>Common\Interop\Windows\Winsock\Interop.WSASocketW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSASocketW.cs">
+      <Link>Common\Interop\Windows\WinSock\Interop.WSASocketW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs">
-      <Link>Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs">
+      <Link>Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs</Link>
     </Compile>
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
