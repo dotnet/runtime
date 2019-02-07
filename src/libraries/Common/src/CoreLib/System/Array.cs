@@ -414,8 +414,7 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            int lb = array.GetLowerBound(0);
-            return BinarySearch(array, lb, array.Length, value, null);
+            return BinarySearch(array, array.GetLowerBound(0), array.Length, value, null);
         }
 
         // Searches a section of an array for a given element using a binary search
@@ -776,7 +775,8 @@ namespace System
             int endIndex = startIndex + count;
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (match(array[i])) return i;
+                if (match(array[i]))
+                    return i;
             }
             return -1;
         }
@@ -887,19 +887,6 @@ namespace System
             }
         }
 
-        // GetEnumerator returns an IEnumerator over this Array.  
-        // 
-        // Currently, only one dimensional arrays are supported.
-        // 
-        public IEnumerator GetEnumerator()
-        {
-            int lowerBound = GetLowerBound(0);
-            if (Rank == 1 && lowerBound == 0)
-                return new SZArrayEnumerator(this);
-            else
-                return new ArrayEnumerator(this, lowerBound, Length);
-        }
-
         // Returns the index of the first occurrence of a given value in an array.
         // The array is searched forwards, and the elements of the array are
         // compared to the given value using the Object.Equals method.
@@ -960,7 +947,8 @@ namespace System
                 {
                     for (int i = startIndex; i < endIndex; i++)
                     {
-                        if (objArray[i] == null) return i;
+                        if (objArray[i] == null)
+                            return i;
                     }
                 }
                 else
@@ -968,7 +956,8 @@ namespace System
                     for (int i = startIndex; i < endIndex; i++)
                     {
                         object obj = objArray[i];
-                        if (obj != null && obj.Equals(value)) return i;
+                        if (obj != null && obj.Equals(value))
+                            return i;
                     }
                 }
             }
@@ -979,11 +968,13 @@ namespace System
                     object obj = array.GetValue(i);
                     if (obj == null)
                     {
-                        if (value == null) return i;
+                        if (value == null)
+                            return i;
                     }
                     else
                     {
-                        if (obj.Equals(value)) return i;
+                        if (obj.Equals(value))
+                            return i;
                     }
                 }
             }
@@ -1124,7 +1115,8 @@ namespace System
                 {
                     for (int i = startIndex; i >= endIndex; i--)
                     {
-                        if (objArray[i] == null) return i;
+                        if (objArray[i] == null)
+                            return i;
                     }
                 }
                 else
@@ -1132,7 +1124,8 @@ namespace System
                     for (int i = startIndex; i >= endIndex; i--)
                     {
                         object obj = objArray[i];
-                        if (obj != null && obj.Equals(value)) return i;
+                        if (obj != null && obj.Equals(value))
+                            return i;
                     }
                 }
             }
@@ -1143,11 +1136,13 @@ namespace System
                     object obj = array.GetValue(i);
                     if (obj == null)
                     {
-                        if (value == null) return i;
+                        if (value == null)
+                            return i;
                     }
                     else
                     {
-                        if (obj.Equals(value)) return i;
+                        if (obj.Equals(value))
+                            return i;
                     }
                 }
             }
@@ -1308,7 +1303,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Reverse(array, 0, array.Length);
         }
-        
+
         public static void Reverse<T>(T[] array, int index, int length)
         {
             if (array == null)
@@ -1585,7 +1580,7 @@ namespace System
             return true;
         }
 
-
+#if !CORERT
         // Private value type used by the Sort methods.
         private readonly struct SorterObjectArray
         {
@@ -1998,6 +1993,15 @@ namespace System
             }
         }
 
+        public IEnumerator GetEnumerator()
+        {
+            int lowerBound = GetLowerBound(0);
+            if (Rank == 1 && lowerBound == 0)
+                return new SZArrayEnumerator(this);
+            else
+                return new ArrayEnumerator(this, lowerBound, Length);
+        }
+
         private sealed class SZArrayEnumerator : IEnumerator, ICloneable
         {
             private readonly Array _array;
@@ -2032,8 +2036,10 @@ namespace System
             {
                 get
                 {
-                    if (_index < 0) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
-                    if (_index >= _endIndex) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
+                    if (_index < 0)
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
+                    if (_index >= _endIndex)
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
                     return _array.GetValue(_index);
                 }
             }
@@ -2141,5 +2147,6 @@ namespace System
                 _indices[_indices.Length - 1]--;
             }
         }
+#endif // !CORERT
     }
 }
