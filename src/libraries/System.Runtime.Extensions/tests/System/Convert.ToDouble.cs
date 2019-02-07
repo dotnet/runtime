@@ -115,7 +115,7 @@ namespace System.Tests
         public void FromString_NotNetFramework()
         {
             string[] overflowValues = { Double.MaxValue.ToString(), Double.MinValue.ToString() };
-            VerifyFromString(Convert.ToDouble, Convert.ToDouble, overflowValues, new double[] { double.PositiveInfinity, double.NegativeInfinity });
+            VerifyFromString(Convert.ToDouble, Convert.ToDouble, overflowValues, new double[] { 1.7976931348623157E+308, -1.7976931348623157E+308 });
         }
 
         [Fact]

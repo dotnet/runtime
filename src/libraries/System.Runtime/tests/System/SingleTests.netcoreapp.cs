@@ -192,5 +192,40 @@ namespace System.Tests
                 return SuccessExitCode;
             }).Dispose();
         }
+
+        public static IEnumerable<object[]> ToStringRoundtrip_TestData()
+        {
+            yield return new object[] { float.NegativeInfinity };
+            yield return new object[] { float.MinValue };
+            yield return new object[] { -MathF.PI };
+            yield return new object[] { -MathF.E };
+            yield return new object[] { -float.Epsilon };
+            yield return new object[] { -0.845512408f };
+            yield return new object[] { -0.0f };
+            yield return new object[] { float.NaN };
+            yield return new object[] { 0.0f };
+            yield return new object[] { 0.845512408f };
+            yield return new object[] { float.Epsilon };
+            yield return new object[] { MathF.E };
+            yield return new object[] { MathF.PI };
+            yield return new object[] { float.MaxValue };
+            yield return new object[] { float.PositiveInfinity };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToStringRoundtrip_TestData))]
+        public static void ToStringRoundtrip(float value)
+        {
+            float result = float.Parse(value.ToString());
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+        }
+
+        [Theory]
+        [MemberData(nameof(ToStringRoundtrip_TestData))]
+        public static void ToStringRoundtrip_R(float value)
+        {
+            float result = float.Parse(value.ToString("R"));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+        }
     }
 }

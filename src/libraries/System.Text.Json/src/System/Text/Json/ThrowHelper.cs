@@ -189,6 +189,24 @@ namespace System.Text.Json
             return new InvalidOperationException(SR.Format(SR.InvalidCast, tokenType, message));
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static InvalidOperationException GetJsonElementWrongTypeException(
+            JsonTokenType expectedType,
+            JsonTokenType actualType)
+        {
+            return new InvalidOperationException(
+                SR.Format(SR.JsonElementHasWrongType, expectedType.ToValueType(), actualType.ToValueType()));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static InvalidOperationException GetJsonElementWrongTypeException(
+            string expectedTypeName,
+            JsonTokenType actualType)
+        {
+            return new InvalidOperationException(
+                SR.Format(SR.JsonElementHasWrongType, expectedTypeName, actualType.ToValueType()));
+        }
+
         public static void ThrowJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte = default, ReadOnlySpan<byte> bytes = default)
         {
             throw GetJsonReaderException(ref json, resource, nextByte, bytes);
@@ -292,6 +310,9 @@ namespace System.Text.Json
                 case ExceptionResource.ZeroDepthAtEnd:
                     message = SR.Format(SR.ZeroDepthAtEnd, json.CurrentDepth);
                     break;
+                case ExceptionResource.ExpectedJsonTokens:
+                    message = SR.ExpectedJsonTokens;
+                    break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");
                     break;
@@ -337,6 +358,21 @@ namespace System.Text.Json
             throw new ArgumentException(SR.Format(SR.CannotWriteInvalidUTF16, $"0x{charAsInt:X2}"));
         }
 
+        public static void ThrowInvalidOperationException_ReadInvalidUTF16(int charAsInt)
+        {
+            throw new InvalidOperationException(SR.Format(SR.CannotReadInvalidUTF16, $"0x{charAsInt:X2}"));
+        }
+
+        public static void ThrowInvalidOperationException_ReadInvalidUTF16()
+        {
+            throw new InvalidOperationException(SR.CannotReadIncompleteUTF16);
+        }
+
+        public static InvalidOperationException GetInvalidOperationException_ReadInvalidUTF8(DecoderFallbackException innerException)
+        {
+            return new InvalidOperationException(SR.CannotTranscodeInvalidUtf8, innerException);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static InvalidOperationException GetInvalidOperationException(ExceptionResource resource, int currentDepth, byte token, JsonTokenType tokenType)
         {
@@ -379,6 +415,41 @@ namespace System.Text.Json
 
             return message;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static FormatException GetFormatException(NumericType numericType)
+        {
+            string message = "";
+
+            switch (numericType)
+            {
+                case NumericType.Int32:
+                    message = SR.FormatInt32;
+                    break;
+                case NumericType.Int64:
+                    message = SR.FormatInt64;
+                    break;
+                case NumericType.UInt32:
+                    message = SR.FormatUInt32;
+                    break;
+                case NumericType.UInt64:
+                    message = SR.FormatUInt64;
+                    break;
+                case NumericType.Single:
+                    message = SR.FormatSingle;
+                    break;
+                case NumericType.Double:
+                    message = SR.FormatDouble;
+                    break;
+                case NumericType.Decimal:
+                    message = SR.FormatDecimal;
+                    break;
+                default:
+                    Debug.Fail($"The NumericType enum value: {numericType} is not part of the switch. Add the appropriate case and exception message.");
+                    break;
+            }
+            return new FormatException(message);
+        }
     }
 
     internal enum ExceptionResource
@@ -416,5 +487,17 @@ namespace System.Text.Json
         FailedToGetMinimumSizeSpan,
         FailedToGetLargerSpan,
         CannotWritePropertyWithinArray,
+        ExpectedJsonTokens
+    }
+
+    internal enum NumericType
+    {
+        Int32,
+        Int64,
+        UInt32,
+        UInt64,
+        Single,
+        Double,
+        Decimal
     }
 }

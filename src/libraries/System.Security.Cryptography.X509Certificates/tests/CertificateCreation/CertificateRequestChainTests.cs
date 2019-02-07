@@ -187,6 +187,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     }
 
                     RunChain(chain, leafCert, true, "Chain verification");
+                    DisposeChainCerts(chain);
                 }
             }
             finally
@@ -513,6 +514,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         chain.ChainPolicy.VerificationTime = notBefore.ToLocalTime().DateTime;
 
                         RunChain(chain, leafCert, true, "Chain build");
+                        DisposeChainCerts(chain);
                     }
                 }
                 finally

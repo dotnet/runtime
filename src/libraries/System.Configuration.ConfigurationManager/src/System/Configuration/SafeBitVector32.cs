@@ -32,10 +32,7 @@ namespace System.Configuration
                     if (value) newData = oldData | bit;
                     else newData = oldData & ~bit;
 
-#pragma warning disable 0420
                     int result = Interlocked.CompareExchange(ref _data, newData, oldData);
-#pragma warning restore 0420
-
                     if (result == oldData) break;
                 }
             }

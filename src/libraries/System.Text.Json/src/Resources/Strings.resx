@@ -123,14 +123,23 @@
   <data name="CallFlushToAvoidDataLoss" xml:space="preserve">
     <value>The JSON writer needs to be flushed before getting the current state. There are {0} bytes that have not been committed to the output.</value>
   </data>
+  <data name="CannotReadIncompleteUTF16" xml:space="preserve">
+    <value>Cannot read incomplete UTF-16 JSON text as string with missing low surrogate.</value>
+  </data>
+  <data name="CannotReadInvalidUTF16" xml:space="preserve">
+    <value>Cannot read invalid UTF-16 JSON text as string. Invalid surrogate value: '{0}'.</value>
+  </data>
   <data name="CannotStartObjectArrayAfterPrimitiveOrClose" xml:space="preserve">
     <value>Cannot write the start of an object/array after a single JSON value or outside of an existing closed object/array. Current token type is '{0}'.</value>
   </data>
   <data name="CannotStartObjectArrayWithoutProperty" xml:space="preserve">
     <value>Cannot write the start of an object or array without a property name. Current token type is '{0}'.</value>
   </data>
+  <data name="CannotTranscodeInvalidUtf8" xml:space="preserve">
+    <value>Cannot transcode invalid UTF-8 JSON text to UTF-16 string.</value>
+  </data>
   <data name="CannotWriteInvalidUTF16" xml:space="preserve">
-    <value>Cannot write invalid UTF-16 text as JSON. Invalid surrogate pair: '{0}'.</value>
+    <value>Cannot write invalid UTF-16 text as JSON. Invalid surrogate value: '{0}'.</value>
   </data>
   <data name="CannotWriteInvalidUTF8" xml:space="preserve">
     <value>Cannot write invalid UTF-8 text as JSON. Invalid input: '{0}'.</value>
@@ -164,6 +173,9 @@
   </data>
   <data name="ExpectedFalse" xml:space="preserve">
     <value>'{0}' is an invalid JSON literal. Expected the literal 'false'.</value>
+  </data>
+  <data name="ExpectedJsonTokens" xml:space="preserve">
+    <value>The input does not contain any JSON tokens. Expected the input to start with a valid JSON token, when isFinalBlock is true.</value>
   </data>
   <data name="ExpectedNextDigitEValueNotFound" xml:space="preserve">
     <value>'{0}' is an invalid end of a number. Expected 'E' or 'e'.</value>
@@ -213,6 +225,12 @@
   <data name="InvalidHexCharacterWithinString" xml:space="preserve">
     <value>'{0}' is not a hex digit following '\u' within a JSON string. The string should be correctly escaped.</value>
   </data>
+  <data name="JsonDocumentDoesNotSupportComments" xml:space="preserve">
+    <value>Comments cannot be stored in a JsonDocument, only the Skip and Disallow comment handling modes are supported.</value>
+  </data>
+  <data name="JsonElementHasWrongType" xml:space="preserve">
+    <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
+  </data>
   <data name="MaxDepthMustBePositive" xml:space="preserve">
     <value>Max depth must be positive.</value>
   </data>
@@ -224,6 +242,27 @@
   </data>
   <data name="PropertyNameTooLarge" xml:space="preserve">
     <value>The JSON property name of length {0} is too large and not supported by the JSON writer.</value>
+  </data>
+  <data name="FormatDecimal" xml:space="preserve">
+    <value>The JSON value is either too large or too small for a Decimal.</value>
+  </data>
+  <data name="FormatDouble" xml:space="preserve">
+    <value>The JSON value is either too large or too small for a Double.</value>
+  </data>
+  <data name="FormatInt32" xml:space="preserve">
+    <value>The JSON value is either of incorrect numeric format, or too large or too small for an Int32.</value>
+  </data>
+  <data name="FormatInt64" xml:space="preserve">
+    <value>The JSON value is either of incorrect numeric format, or too large or too small for an Int64.</value>
+  </data>
+  <data name="FormatSingle" xml:space="preserve">
+    <value>The JSON value is either too large or too small for a Single.</value>
+  </data>
+  <data name="FormatUInt32" xml:space="preserve">
+    <value>The JSON value is either of incorrect numeric format, or too large or too small for a UInt32.</value>
+  </data>
+  <data name="FormatUInt64" xml:space="preserve">
+    <value>The JSON value is either of incorrect numeric format, or too large or too small for a UInt64.</value>
   </data>
   <data name="RequiredDigitNotFoundAfterDecimal" xml:space="preserve">
     <value>'{0}' is invalid within a number, immediately after a decimal point ('.'). Expected a digit ('0'-'9').</value>

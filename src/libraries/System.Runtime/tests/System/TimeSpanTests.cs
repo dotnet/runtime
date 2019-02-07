@@ -97,7 +97,7 @@ namespace System.Tests
         public static void Total_Days_Hours_Minutes_Seconds_Milliseconds(TimeSpan timeSpan, double expectedDays, double expectedHours, double expectedMinutes, double expectedSeconds, double expectedMilliseconds)
         {
             // Use ToString() to prevent any rounding errors when comparing
-            Assert.Equal(expectedDays.ToString(), timeSpan.TotalDays.ToString());
+            Assert.Equal(expectedDays.ToString("G15"), timeSpan.TotalDays.ToString("G15"));
             Assert.Equal(expectedHours, timeSpan.TotalHours);
             Assert.Equal(expectedMinutes, timeSpan.TotalMinutes);
             Assert.Equal(expectedSeconds, timeSpan.TotalSeconds);

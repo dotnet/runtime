@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{da95454e-5f0e-4f8a-871a-25d1ab62867a}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="FileIOTestBase.vb" />
+    <Compile Include="Helpers.vb" />
+    <Compile Include="SpecialDirectoriesTests.vb" />
+    <Compile Include="Dummy.vb" />
+    <Compile Include="FileIOTests.vb" />
+    <Compile Include="TextFieldParserTests.vb" />
+  </ItemGroup>
+</Project>

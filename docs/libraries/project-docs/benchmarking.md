@@ -4,7 +4,7 @@ We recommend using [BenchmarkDotNet](https://github.com/dotnet/BenchmarkDotNet) 
 
 ```
 <ItemGroup>
-   <PackageReference Include="BenchmarkDotNet" Version="0.11.1" />
+   <PackageReference Include="BenchmarkDotNet" Version="0.11.3" />
 </ItemGroup>
 ```
 
@@ -16,7 +16,7 @@ See [BenchmarkDotNet](https://benchmarkdotnet.org/articles/guides/getting-starte
 
 Since `0.11.1` BenchmarkDotNet knows how to run benchmarks with CoreRun. So you just need to provide it the path to CoreRun! The simplest way to do that is via console line arguments:
 
-    dotnet run -c Release -f netcoreapp2.1 -- -f *MyBenchmarkName* --coreRun "C:\Projects\corefx\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe"
+    dotnet run -c Release -f netcoreapp3.0 -- -f *MyBenchmarkName* --coreRun "C:\Projects\corefx\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe"
 
 **Hint:** If you are curious to know what BDN does internally you just need to apply `[KeepBenchmarkFiles]` attribute to your class or set `KeepBenchmarkFiles = true` in your config file. After running the benchmarks you can find the auto-generated files in `%pathToBenchmarkApp\bin\Release\$TFM\` folder.
 
@@ -56,7 +56,7 @@ If you want to run your benchmarks without spawning a new process per benchmark 
 
 After that, you should be able to find `CoreRun.exe` in a location similar to:
 
-        C:\Projects\corefx\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe
+        C:\Projects\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe
 
 2. Create a new .NET Core console app using your favorite IDE
 3. Install BenchmarkDotNet (0.11.1+)
@@ -70,9 +70,9 @@ class Program
 ```
 5. Run the benchmarks using `--coreRun` from the first step. Save the results in a dedicated folder.
 
-        dotnet run -c Release -f netcoreapp2.1 -- -f * --coreRun "C:\Projects\corefx\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe" --artifacts ".\before"
+        dotnet run -c Release -f netcoreapp3.0 -- -f * --coreRun "C:\Projects\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe" --artifacts ".\before"
 
-6. Go to the corresponding CoreFX source folder (an example `corefx\src\System.Collections.Immutable`)
+6. Go to the corresponding CoreFX source folder (for example `corefx\src\System.Collections.Immutable`)
 7. Apply the optimization that you want to test
 8. Rebuild given CoreFX part in Release:
 
@@ -82,9 +82,64 @@ You should notice that given `.dll` file have been updated in the `CoreRun` fold
 
 9. Run the benchmarks using `--coreRun` from the first step. Save the results in a dedicated folder.
 
-        dotnet run -c Release -f netcoreapp2.1 -- -f * --coreRun "C:\Projects\corefx\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe" --artifacts ".\after"
+        dotnet run -c Release -f netcoreapp3.0 -- -f * --coreRun "C:\Projects\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe" --artifacts ".\after"
 
 10. Compare the results and repeat steps `7 - 9` until you are happy about the results.
+
+## Benchmarking APIs implemented within System.Private.Corelib
+
+1. The steps for this scenario are very similar to the above recommended workflow with a couple of extra steps to copy bits from one repo to the other. Before you start benchmarking the code you need to build entire CoreCLR in Release which is going to generate the `System.Private.Corelib.dll` for you:
+
+        C:\Projects\coreclr>build.cmd -release -skiptests
+
+After that, you should be able to find `System.Private.Corelib.dll` in a location similar to:
+
+        C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
+
+2. Build entire CoreFX in Release using your local private build of coreclr (See [Testing With Private CoreCLR Bits](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md#testing-with-private-coreclr-bits))
+
+        C:\Projects\corefx>build.cmd -release /p:CoreCLROverridePath=C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
+
+After that, you should be able to find `CoreRun.exe` in a location similar to:
+
+        C:\Projects\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe
+
+3. Create a new .NET Core console app using your favorite IDE
+4. Install BenchmarkDotNet (0.11.1+)
+5. Define the benchmarks and pass the arguments to BenchmarkSwitcher
+
+```cs
+class Program
+{
+   static void Main(string[] args) => BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+}
+```
+6. Run the benchmarks using `--coreRun` from the second step. Save the results in a dedicated folder.
+
+        dotnet run -c Release -f netcoreapp3.0 -- -f * --coreRun "C:\Projects\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe" --artifacts ".\before"
+
+7. Go to the corresponding CoreCLR source folder where the API you want to change exists (for example `coreclr\src\System.Private.CoreLib\shared\System`)
+8. Apply the optimization that you want to test
+9. Rebuild System.Private.Corelib with your change (optionally adding `-skipnative` if the change is isolated to managed code):
+
+        C:\Projects\coreclr>build.cmd -release -skiptests -skipnative
+
+10. For the next step, you have one of two options:
+
+  - Rebuild given CoreFX part in Release:
+
+          C:\Projects\corefx>build.cmd -release /p:CoreCLROverridePath=C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
+
+  - OR manually copy over the relevant files from within the root of the coreclr output folder to where `CoreRun.exe` lives within corefx (excluding the subdirectories). This ends up being much faster than the first option and if the only thing that changed is   `System.Private.Corelib.dll`, just copy that over:
+
+          Copy from: C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
+          To: C:\Projects\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\
+
+11. Run the benchmarks using `--coreRun` from the first step. Save the results in a dedicated folder.
+
+        dotnet run -c Release -f netcoreapp3.0 -- -f * --coreRun "C:\Projects\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe" --artifacts ".\after"
+
+12. Compare the results and repeat steps `8 - 11` until you are happy about the results.
 
 # Reporting results
 

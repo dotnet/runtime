@@ -372,6 +372,59 @@ namespace System
                 }
             }
 
+            public static void Add(ref BigInteger lhs, ref BigInteger rhs, out BigInteger result)
+            {
+                // determine which operand has the smaller length
+                ref BigInteger large = ref (lhs._length < rhs._length) ? ref rhs : ref lhs;
+                ref BigInteger small = ref (lhs._length < rhs._length) ? ref lhs : ref rhs;
+
+                int largeLength = large._length;
+                int smallLength = small._length;
+
+                // The output will be at least as long as the largest input
+                result = new BigInteger(0);
+                result._length = largeLength;
+
+                // Add each block and add carry the overflow to the next block
+                ulong carry = 0;
+
+                int largeIndex = 0;
+                int smallIndex = 0;
+                int resultIndex = 0;
+
+                while (smallIndex < smallLength)
+                {
+                    ulong sum = carry + large._blocks[largeIndex] + small._blocks[smallIndex];
+                    carry = sum >> 32;
+                    result._blocks[resultIndex] = (uint)(sum);
+
+                    largeIndex++;
+                    smallIndex++;
+                    resultIndex++;
+                }
+
+                // Add the carry to any blocks that only exist in the large operand
+                while (largeIndex < largeLength)
+                {
+                    ulong sum = carry + large._blocks[largeIndex];
+                    carry = sum >> 32;
+                    result._blocks[resultIndex] = (uint)(sum);
+
+                    largeIndex++;
+                    resultIndex++;
+                }
+
+                // If there's still a carry, append a new block
+                if (carry != 0)
+                {
+                    Debug.Assert(carry == 1);
+                    Debug.Assert((resultIndex == largeLength) && (largeLength < MaxBlockCount));
+
+                    result._blocks[resultIndex] = 1;
+                    result._length += 1;
+                }
+            }
+
             public static int Compare(ref BigInteger lhs, ref BigInteger rhs)
             {
                 Debug.Assert(unchecked((uint)(lhs._length)) <= MaxBlockCount);
@@ -849,6 +902,12 @@ namespace System
                 }
             }
 
+            public static void Pow2(uint exponent, out BigInteger result)
+            {
+                result = new BigInteger(0);
+                ShiftLeft(1, exponent, ref result);
+            }
+
             public static void Pow10(uint exponent, out BigInteger result)
             {
                 // We leverage two arrays - s_Pow10UInt32Table and s_Pow10BigNumTable to speed up the Pow10 calculation.
@@ -896,8 +955,11 @@ namespace System
                     if ((exponent & 1) != 0)
                     {
                         // Multiply into the next temporary
-                        ref BigInteger rhs = ref *(BigInteger*)(Unsafe.AsPointer(ref s_Pow10BigNumTable[s_Pow10BigNumTableIndices[index]]));
-                        Multiply(ref lhs, ref rhs, ref product);
+                        fixed (uint* pBigNumEntry = &s_Pow10BigNumTable[s_Pow10BigNumTableIndices[index]])
+                        {
+                            ref BigInteger rhs = ref *(BigInteger*)(pBigNumEntry);
+                            Multiply(ref lhs, ref rhs, ref product);
+                        }
 
                         // Swap to the next temporary
                         ref BigInteger temp = ref product;
@@ -912,27 +974,6 @@ namespace System
 
                 result = new BigInteger(0);
                 result.SetValue(ref lhs);
-            }
-
-            public static void PrepareHeuristicDivide(ref BigInteger dividend, ref BigInteger divisor)
-            {
-                uint hiBlock = divisor._blocks[divisor._length - 1];
-
-                if ((hiBlock < 8) || (hiBlock > 429496729))
-                {
-                    // Inspired by http://www.ryanjuckett.com/programming/printing-floating-point-numbers/
-                    // Perform a bit shift on all values to get the highest block of the divisor into
-                    // the range [8,429496729]. We are more likely to make accurate quotient estimations
-                    // in heuristicDivide() with higher divisor values so
-                    // we shift the divisor to place the highest bit at index 27 of the highest block.
-                    // This is safe because (2^28 - 1) = 268435455 which is less than 429496729. This means
-                    // that all values with a highest bit at index 27 are within range.
-                    uint hiBlockLog2 = LogBase2(hiBlock);
-                    uint shift = (59 - hiBlockLog2) % 32;
-
-                    divisor.ShiftLeft(shift);
-                    dividend.ShiftLeft(shift);
-                }
             }
 
             public static void ShiftLeft(ulong input, uint shift, ref BigInteger output)
@@ -1106,6 +1147,11 @@ namespace System
             {
                 Debug.Assert(index < _length);
                 return _blocks[index];
+            }
+
+            public int GetLength()
+            {
+                return _length;
             }
 
             public bool IsOne()

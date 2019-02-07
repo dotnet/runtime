@@ -36,6 +36,7 @@ namespace System.Runtime.Loader
         public void SetProfileOptimizationRoot(string directoryPath) { }
         public void StartProfileOptimization(string profile) { }
         public event Func<AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly> Resolving;
+        public event Func<System.Reflection.Assembly, string, System.IntPtr> ResolvingUnmanagedDll;
         public event Action<AssemblyLoadContext> Unloading;
     }
 
