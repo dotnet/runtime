@@ -630,7 +630,6 @@ namespace System.Collections.Concurrent
                     return ((InternalPartitionEnumerable)this).GetEnumerator();
                 }
 
-#pragma warning disable 0420 // No warning for Interlocked.xxx if compiled with new managed compiler (Roslyn)
                 ///////////////////
                 //
                 // Used by GrabChunk_Buffered()
@@ -939,8 +938,11 @@ namespace System.Collections.Concurrent
                     {
                         _localList = new KeyValuePair<long, TSource>[_maxChunkSize];
                     }
+
+#pragma warning disable 0420 // TODO: https://github.com/dotnet/corefx/issues/35022
                     // make the actual call to the enumerable that grabs a chunk
                     return _enumerable.GrabChunk(_localList, requestedChunkSize, ref _currentChunkSize.Value);
+#pragma warning restore 0420
                 }
 
                 /// <summary>
@@ -987,7 +989,6 @@ namespace System.Collections.Concurrent
                 }
             }
             #endregion
-#pragma warning restore 0420
         }
         #endregion
 

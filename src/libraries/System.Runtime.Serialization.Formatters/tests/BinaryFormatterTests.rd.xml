@@ -3,6 +3,7 @@
   <Library Name="System.Runtime.Serialization.Formatters.Tests">
     <!-- This test builds a big collection of objects to serialize in a way that's hard to track as well as reflecting for Equals methods-->
     <Assembly Name="Microsoft.CSharp" BinaryFormatter="All" Dynamic="Required Public" />
+    <Assembly Name="System.CodeDom" BinaryFormatter="All" Dynamic="Required Public" />
     <Assembly Name="System.Collections" BinaryFormatter="All" Dynamic="Required Public" />
     <Assembly Name="System.Collections.NonGeneric" BinaryFormatter="All" Dynamic="Required Public" />
     <Assembly Name="System.Collections.Specialized" BinaryFormatter="All" Dynamic="Required Public" />

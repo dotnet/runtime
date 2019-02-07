@@ -7,7 +7,6 @@ using System.Security.Principal;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
-using System.Security.Permissions;
 using System.IO;
 
 namespace System.DirectoryServices.ActiveDirectory

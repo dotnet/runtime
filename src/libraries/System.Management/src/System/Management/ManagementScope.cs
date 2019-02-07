@@ -9,7 +9,6 @@ using System.IO;
 using System.Reflection;
 using System.ComponentModel.Design.Serialization;
 using System.Security;
-using System.Security.Permissions;
 using Microsoft.Win32;
 
 namespace System.Management

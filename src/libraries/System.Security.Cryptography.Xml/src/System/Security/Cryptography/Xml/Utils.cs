@@ -11,7 +11,6 @@ using System.IO;
 using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using System.Xml;

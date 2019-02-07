@@ -107,6 +107,11 @@ namespace System.Threading.Tests
             waitForThread();
         }
 
+        public static void RunTestInBackgroundThread(Func<Task> test)
+        {
+            RunTestInBackgroundThread(() => test().Wait());
+        }
+
         public static void WaitForCondition(Func<bool> condition)
         {
             WaitForConditionWithCustomDelay(condition, () => Thread.Sleep(1));

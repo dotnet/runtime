@@ -5198,7 +5198,7 @@ namespace System.IO
         Current = 1,
         End = 2,
     }
-    public abstract partial class Stream : System.MarshalByRefObject, System.IDisposable
+    public abstract partial class Stream : System.MarshalByRefObject, System.IDisposable, System.IAsyncDisposable
     {
         public static readonly System.IO.Stream Null;
         protected Stream() { }
@@ -7832,7 +7832,7 @@ namespace System.Threading
         public void ThrowIfCancellationRequested() { }
         public System.Threading.CancellationTokenRegistration UnsafeRegister(System.Action<object> callback, object state) { throw null; }
     }
-    public readonly partial struct CancellationTokenRegistration : System.IDisposable, System.IEquatable<System.Threading.CancellationTokenRegistration>
+    public readonly partial struct CancellationTokenRegistration : System.IDisposable, System.IAsyncDisposable, System.IEquatable<System.Threading.CancellationTokenRegistration>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;

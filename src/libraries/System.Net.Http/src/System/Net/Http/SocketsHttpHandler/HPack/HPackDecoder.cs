@@ -282,8 +282,8 @@ namespace System.Net.Http.HPack
                         {
                             OnString(nextState: State.Ready);
 
-                            var headerNameSpan = new Span<byte>(_headerName, 0, _headerNameLength);
-                            var headerValueSpan = new Span<byte>(_headerValueOctets, 0, _headerValueLength);
+                            var headerNameSpan = new ReadOnlySpan<byte>(_headerName, 0, _headerNameLength);
+                            var headerValueSpan = new ReadOnlySpan<byte>(_headerValueOctets, 0, _headerValueLength);
 
                             onHeader(headerNameSpan, headerValueSpan);
 
@@ -328,7 +328,7 @@ namespace System.Net.Http.HPack
         private void OnIndexedHeaderField(int index, HeaderCallback onHeader)
         {
             HeaderField header = GetHeader(index);
-            onHeader(new Span<byte>(header.Name), new Span<byte>(header.Value));
+            onHeader(new ReadOnlySpan<byte>(header.Name), new ReadOnlySpan<byte>(header.Value));
             _state = State.Ready;
         }
 

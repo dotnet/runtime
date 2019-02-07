@@ -5,37 +5,33 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Specifies whether a property or event should be displayed in
-    ///       a property browsing window.</para>
+    /// Specifies whether a property or event should be displayed in a property
+    /// browsing window.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class BrowsableAttribute : Attribute
     {
         /// <summary>
-        ///    <para>
-        ///       Specifies that a property or event can be modified at
-        ///       design time. This <see langword='static '/>
-        ///       field is read-only.
-        ///    </para>
+        /// Specifies that a property or event can be modified at design time.
+        /// This <see langword='static '/> field is read-only.
         /// </summary>
         public static readonly BrowsableAttribute Yes = new BrowsableAttribute(true);
 
         /// <summary>
-        ///    <para>
-        ///       Specifies that a property or event cannot be modified at
-        ///       design time. This <see langword='static '/>field is read-only.
-        ///    </para>
+        /// Specifies that a property or event cannot be modified at design time.'
+        /// This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly BrowsableAttribute No = new BrowsableAttribute(false);
 
         /// <summary>
-        /// <para>Specifies the default value for the <see cref='System.ComponentModel.BrowsableAttribute'/>,
-        ///    which is <see cref='System.ComponentModel.BrowsableAttribute.Yes'/>. This <see langword='static '/>field is read-only.</para>
+        /// Specifies the default value for the <see cref='System.ComponentModel.BrowsableAttribute'/>,
+        /// which is <see cref='System.ComponentModel.BrowsableAttribute.Yes'/>.
+        /// This <see langword='static'/> field is read-only.
         /// </summary>
         public static readonly BrowsableAttribute Default = Yes;
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.BrowsableAttribute'/> class.</para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.BrowsableAttribute'/> class.
         /// </summary>
         public BrowsableAttribute(bool browsable)
         {
@@ -43,9 +39,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///       Gets a value indicating whether an object is browsable.
-        ///    </para>
+        /// Gets a value indicating whether an object is browsable.
         /// </summary>
         public bool Browsable { get; }
 

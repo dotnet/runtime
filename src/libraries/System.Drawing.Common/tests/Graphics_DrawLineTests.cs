@@ -7,7 +7,7 @@ namespace System.Drawing.Tests
 {
     public class Graphics_DrawLineTests : DrawingTest
     {
-        [ActiveIssue(30180, TestPlatforms.Linux)]
+        [ActiveIssue(30683, TargetFrameworkMonikers.Netcoreapp)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_Points()
         {

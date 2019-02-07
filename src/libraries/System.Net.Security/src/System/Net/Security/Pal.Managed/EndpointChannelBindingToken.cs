@@ -17,7 +17,7 @@ namespace System.Net.Security
                 if (cert == null)
                     return null;
 
-                SafeChannelBindingHandle bindingHandle = new SafeChannelBindingHandle(ChannelBindingKind.Unique);
+                SafeChannelBindingHandle bindingHandle = new SafeChannelBindingHandle(ChannelBindingKind.Endpoint);
 
                 using (HashAlgorithm hashAlgo = GetHashForChannelBinding(cert))
                 {

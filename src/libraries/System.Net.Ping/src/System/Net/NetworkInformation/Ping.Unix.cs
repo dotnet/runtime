@@ -100,6 +100,11 @@ namespace System.Net.NetworkInformation
                 socket.Ttl = (short)socketConfig.Options.Ttl;
             }
 
+            if (socketConfig.Options != null && addrFamily == AddressFamily.InterNetwork)
+            {
+                socket.DontFragment = socketConfig.Options.DontFragment;
+            }
+
 #pragma warning disable 618
             // Disable warning about obsolete property. We could use GetAddressBytes but that allocates.
             // IPv4 multicast address starts with 1110 bits so mask rest and test if we get correct value e.g. 0xe0.
@@ -270,7 +275,13 @@ namespace System.Net.NetworkInformation
                 throw new PlatformNotSupportedException(SR.net_ping_utility_not_found);
             }
 
-            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4, options?.Ttl ?? 0);
+            UnixCommandLinePing.PingFragmentOptions fragmentOption = UnixCommandLinePing.PingFragmentOptions.Default;
+            if (options != null && address.AddressFamily == AddressFamily.InterNetwork)
+            {
+                fragmentOption = options.DontFragment ? UnixCommandLinePing.PingFragmentOptions.Do : UnixCommandLinePing.PingFragmentOptions.Dont;
+            }
+
+            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
 
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;

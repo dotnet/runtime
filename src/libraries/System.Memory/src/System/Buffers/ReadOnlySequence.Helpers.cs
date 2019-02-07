@@ -542,7 +542,7 @@ namespace System.Buffers
             {
                 // Negative start and negative end index == string
                 ReadOnlySpan<char> spanOfChar = ((string)startObject).AsSpan(startIndex & ReadOnlySequence.IndexBitMask, endIndex - startIndex);
-                return MemoryMarshal.CreateSpan(ref Unsafe.As<char, T>(ref MemoryMarshal.GetReference(spanOfChar)), spanOfChar.Length);
+                return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<char, T>(ref MemoryMarshal.GetReference(spanOfChar)), spanOfChar.Length);
             }
             else
             {

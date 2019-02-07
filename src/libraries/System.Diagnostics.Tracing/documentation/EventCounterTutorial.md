@@ -2,7 +2,7 @@
 
 While `EventSource` is fast, logging too many events for very frequent events is still a performance hit. In this tutorial, we will introduce `EventCounter`, a mechanism for measuring performance for very frequent events.
 
-For event that happen very frequently (for example, if it happen every few milliseconds), in general, you will want the performance overhead per event to be very low (e.g. less than a millisecond), otherwise it is going to cost a significant performance overhead. Logging an event, at the end of the day, need to write something to the disk. If the disk is not fast enough, you will lost events. We need a solution other than logging the event itself.
+For events that happen very frequently (for example, if it happens every few milliseconds), in general, you will want the performance overhead per event to be very low (e.g. less than a millisecond); otherwise, it is going to cost a significant performance overhead. Logging an event, at the end of the day, needs to write something to the disk. If the disk is not fast enough, you will lose events. We need a solution other than logging the event itself.
 
 When dealing with large number of events, knowing the measure per event is not very useful either. Most of the time all we need is just some statistics out of it. So we could crank the statistics within the process itself and then write an event once in a while to report the statistics, that's what `EventCounter` will do for us. Let's take a look at an example how to do this in `Microsoft.Diagnostics.Tracing.EventSource`.
 
@@ -25,7 +25,7 @@ public sealed class MinimalEventCounterSource : EventSource
     }
 
     /// <summary>
-    /// Call this method to indicate that a request for a URL was made which tool a particular amount of time
+    /// Call this method to indicate that a request for a URL was made which took a particular amount of time
     public void Request(string url, float elapsedMSec)
     {
         // Notes:
@@ -42,7 +42,7 @@ public sealed class MinimalEventCounterSource : EventSource
 }
 ```
 
-The` WriteEvent` line is the `EventSource` part and is not part of `EventCounter`, it is shown to show that you can log a message together with the event counter.
+The `WriteEvent` line is the `EventSource` part and is not part of `EventCounter`, it was written to show that you can log a message together with the event counter.
 
 So, with that, we logged the metric to the `EventCounter`, but unless we can actually get the statistics out of it, it is not useful. To get the statistics, we need to enable the `EventCounter` by setting off a timer how frequently we want the events, as well as a listener to capture the events, to do that, you can use PerfView. Again, we assumed familiarity with PerfView, if not, you can refer to Vance's blog on that.
 
@@ -54,11 +54,11 @@ PerfView /onlyProviders=*Samples-EventCounterDemos-Minimal:EventCounterIntervalS
 
 Note the part about `EventCounterIntervalSec`, that indicate the frequency of the sampling.
 
-As usual, turn on PerfView, and then run the sample code, we will have something like this
+As usual, turn on PerfView, and then run the sample code - we get have something like this
 
 <img src="PerfViewCapture_Counters.png" alt="PerfView Capture of EventCounter traces" title="PerfView Capture of EventCounter traces" />
 
-Now let's drill into what the data captured meant - when I copied from PerfView, it looks like this
+Now let's drill into what the data captured means - when I copied from PerfView, it looks like this
 
 ```
 ThreadID="17,800" ProcessorNumber="5" Payload="{ Name:"request", Mean:142.0735, StandardDeviation:42.07355, Count:2, Min:100, Max:184.1471, IntervalSec:1.000588 }" 
@@ -66,7 +66,7 @@ ThreadID="17,800" ProcessorNumber="5" Payload="{ Name:"request", Mean:142.0735, 
 
 Now it is obvious that within a sampling period, we have 9 events, and all the other statistics.
 
-Notice that, this command also log the events, so we will get both the events and the counter statistics.
+Notice that this command also logs the events, so we will get both the events and the counter statistics.
 
 <img src="PerfViewCapture_Events.png" alt="PerfView Capture of Event Traces" title="PerfView Capture of Event Traces" />
 

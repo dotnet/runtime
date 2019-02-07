@@ -23,6 +23,7 @@ namespace System.Text.Json
         internal bool _inObject;
         internal bool _isNotPrimitive;
         internal char _numberFormat;
+        internal bool _stringHasEscaping;
         internal JsonTokenType _tokenType;
         internal JsonTokenType _previousTokenType;
         internal JsonReaderOptions _readerOptions;
@@ -71,6 +72,7 @@ namespace System.Text.Json
             _inObject = default;
             _isNotPrimitive = default;
             _numberFormat = default;
+            _stringHasEscaping = default;
             _tokenType = default;
             _previousTokenType = default;
             _readerOptions = options;

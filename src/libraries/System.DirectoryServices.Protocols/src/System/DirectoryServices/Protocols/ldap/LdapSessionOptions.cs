@@ -12,7 +12,6 @@ using System.Text;
 using System.Diagnostics;
 using System.Security.Authentication;
 using System.Runtime.CompilerServices;
-using System.Security.Permissions;
 
 namespace System.DirectoryServices.Protocols
 {

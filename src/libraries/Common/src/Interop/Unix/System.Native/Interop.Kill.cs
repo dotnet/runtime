@@ -13,6 +13,7 @@ internal static partial class Interop
         {
             None = 0,
             SIGKILL = 9,
+            SIGSTOP = 19
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Kill", SetLastError = true)]
