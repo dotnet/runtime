@@ -17,11 +17,25 @@
 struct CallCounterEntry
 {
     CallCounterEntry() {}
-    CallCounterEntry(const MethodDesc* m, const int c)
-        : pMethod(m), callCount(c) {}
+    CallCounterEntry(const MethodDesc* m, const int tier0CallCountLimit)
+        : pMethod(m), tier0CallCountLimit(tier0CallCountLimit) {}
 
     const MethodDesc* pMethod;
-    int callCount;
+    int tier0CallCountLimit;
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    bool IsTier0CallCountingEnabled() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return tier0CallCountLimit != INT_MAX;
+    }
+
+    void DisableTier0CallCounting()
+    {
+        LIMITED_METHOD_CONTRACT;
+        tier0CallCountLimit = INT_MAX;
+    }
+#endif
 };
 
 class CallCounterHashTraits : public DefaultSHashTraits<CallCounterEntry>
@@ -70,7 +84,26 @@ public:
     CallCounter();
 #endif
 
-    void OnMethodCalled(MethodDesc* pMethodDesc, TieredCompilationManager *pTieredCompilationManager, BOOL* shouldStopCountingCallsRef, BOOL* wasPromotedToTier1Ref);
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    static bool IsEligibleForCallCounting(MethodDesc* pMethodDesc)
+    {
+        WRAPPER_NO_CONTRACT;
+        return IsEligibleForTier0CallCounting(pMethodDesc);
+    }
+
+    static bool IsEligibleForTier0CallCounting(MethodDesc* pMethodDesc);
+
+    bool IsCallCountingEnabled(MethodDesc* pMethodDesc)
+    {
+        WRAPPER_NO_CONTRACT;
+        return IsTier0CallCountingEnabled(pMethodDesc);
+    }
+
+    bool IsTier0CallCountingEnabled(MethodDesc* pMethodDesc);
+    void DisableTier0CallCounting(MethodDesc* pMethodDesc);
+#endif
+
+    void OnMethodCalled(MethodDesc* pMethodDesc, TieredCompilationManager *pTieredCompilationManager, BOOL* shouldStopCountingCallsRef, BOOL* wasPromotedToNextTierRef);
 
 private:
 
