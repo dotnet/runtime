@@ -13,6 +13,9 @@
     <Authors>Microsoft</Authors>
     <NugetLicenseFile>$(RepoRoot)LICENSE.TXT</NugetLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Managed API isn't completely documented yet. TODO: https://github.com/dotnet/core-setup/issues/5108 -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
