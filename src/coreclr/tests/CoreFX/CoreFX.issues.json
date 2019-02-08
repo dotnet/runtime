@@ -1279,4 +1279,178 @@
             ]
         }
     },
+    {
+        "name": "System.ObjectModel.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTest.StringComparer",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntInt.AddExistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntInt.ChangeItemDoesNotExistThrows",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntInt.ChangeItemKeyKeyAlreadyChanged",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntInt.ChangeItemKeyKeyAlreadyChangedNewKeyIsDifferent",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntInt.ChangeItemKeyKeyAlreadyChangedNewKeyIsOldKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntInt.ChangeItemKeyThrowsPreexistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntInt.Insert",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntInt.NonGenericAddExistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntString.AddExistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntString.ChangeItemDoesNotExistThrows",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntString.ChangeItemKeyKeyAlreadyChanged",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntString.ChangeItemKeyKeyAlreadyChangedNewKeyIsDifferent",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntString.ChangeItemKeyKeyAlreadyChangedNewKeyIsOldKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntString.ChangeItemKeyThrowsPreexistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntString.Insert",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsIntString.NonGenericAddExistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.AddExistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.ChangeItemDoesNotExistThrows",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.ChangeItemKeyKeyAlreadyChanged",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.ChangeItemKeyKeyAlreadyChangedNewKeyIsDifferent",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.ChangeItemKeyKeyAlreadyChangedNewKeyIsOldKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.ChangeItemKeyNullItemNotPresent",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.ChangeItemKeyNullToNewKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.ChangeItemKeyNullToOldKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.ChangeItemKeyNullToOtherKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.ChangeItemKeyThrowsPreexistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.Insert",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringInt.NonGenericAddExistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.AddExistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.ChangeItemDoesNotExistThrows",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.ChangeItemKeyKeyAlreadyChanged",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.ChangeItemKeyKeyAlreadyChangedNewKeyIsDifferent",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.ChangeItemKeyKeyAlreadyChangedNewKeyIsOldKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.ChangeItemKeyNullItemNotPresent",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.ChangeItemKeyNullToNewKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.ChangeItemKeyNullToOldKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.ChangeItemKeyNullToOtherKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.ChangeItemKeyThrowsPreexistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.Insert",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+                {
+                    "name": "System.Collections.ObjectModel.Tests.KeyedCollectionTestsStringString.NonGenericAddExistingKey",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22455"
+                },
+            ]
+        }
+    },
 ]
