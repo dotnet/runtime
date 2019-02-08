@@ -48,6 +48,7 @@ namespace Mono.Linker {
 		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> override_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 		protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
+		protected readonly Dictionary<TypeDefinition, List<TypeDefinition>> class_type_base_hierarchy = new Dictionary<TypeDefinition, List<TypeDefinition>> ();
 
 		protected readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		protected readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
@@ -355,5 +356,17 @@ namespace Mono.Linker {
 			return marked_types_with_cctor.Add (type);
 		}
 
+		public void SetClassHierarchy (TypeDefinition type, List<TypeDefinition> bases)
+		{
+			class_type_base_hierarchy [type] = bases;
+		}
+
+		public List<TypeDefinition> GetClassHierarchy (TypeDefinition type)
+		{
+			if (class_type_base_hierarchy.TryGetValue (type, out List<TypeDefinition> bases))
+				return bases;
+
+			return null;
+		}
 	}
 }

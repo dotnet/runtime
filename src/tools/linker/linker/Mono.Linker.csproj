@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
   <!--
       TODO: Remove this workaround once supported.
@@ -65,6 +65,7 @@
     <Compile Include="Linker.Steps\RegenerateGuidStep.cs" />
     <Compile Include="Linker.Steps\LoadI18nAssemblies.cs" />
     <Compile Include="Linker.Steps\RemoveSecurityStep.cs" />
+    <Compile Include="Linker\MethodBodyScanner.cs" />
     <Compile Include="Linker\IXApiVisitor.cs" />
     <Compile Include="Linker\I18nAssemblies.cs" />
     <Compile Include="Linker.Steps\IStep.cs" />
@@ -91,6 +92,7 @@
     <Compile Include="Linker\MethodAction.cs" />
     <Compile Include="Linker\MethodReferenceExtensions.cs" />
     <Compile Include="Linker\Pipeline.cs" />
+    <Compile Include="Linker\TypeDefinitionExtensions.cs" />
     <Compile Include="Linker\TypePreserve.cs" />
     <Compile Include="Linker\TypeReferenceExtensions.cs" />
     <Compile Include="Linker\TypeNameParser.cs" />
