@@ -5843,7 +5843,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                     // Restore sp from fp; here that's #outsz from SP
                     //      sub sp, fp, #outsz
                     int SPtoFPdelta = genSPtoFPdelta();
-                    assert(SPtoFPdelta == compiler->lvaOutgoingArgSpaceSize);
+                    assert(SPtoFPdelta == (int)compiler->lvaOutgoingArgSpaceSize);
                     getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, SPtoFPdelta);
                     compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
                 }
