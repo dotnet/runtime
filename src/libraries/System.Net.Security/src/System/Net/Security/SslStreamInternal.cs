@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -470,7 +469,7 @@ namespace System.Net.Security
                 ValueTask<int> t = adapter.ReadAsync(_internalBuffer, _internalBufferCount, _internalBuffer.Length - _internalBufferCount);
                 if (!t.IsCompletedSuccessfully)
                 {
-                    return new ValueTask<int>(InternalFillBufferAsync(adapter, t, minSize, initialCount));
+                    return InternalFillBufferAsync(adapter, t, minSize, initialCount);
                 }
                 int bytes = t.Result;
                 if (bytes == 0)
@@ -489,7 +488,7 @@ namespace System.Net.Security
 
             return new ValueTask<int>(minSize);
 
-            async Task<int> InternalFillBufferAsync(TReadAdapter adap, ValueTask<int> task, int min, int initial)
+            async ValueTask<int> InternalFillBufferAsync(TReadAdapter adap, ValueTask<int> task, int min, int initial)
             {
                 while (true)
                 {

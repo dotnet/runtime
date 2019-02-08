@@ -2,27 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509ChainPolicy
     {
+        private X509RevocationMode _revocationMode;
+        private X509RevocationFlag _revocationFlag;
+        private X509VerificationFlags _verificationFlags;
+        private OidCollection _applicationPolicy;
+        private OidCollection _certificatePolicy;
+        private X509Certificate2Collection _extraStore;
+
         public X509ChainPolicy()
         {
             Reset();
         }
 
-        public OidCollection ApplicationPolicy { get; private set; }
+        public OidCollection ApplicationPolicy => _applicationPolicy ?? (_applicationPolicy = new OidCollection());
 
-        public OidCollection CertificatePolicy { get; private set; }
+        public OidCollection CertificatePolicy => _certificatePolicy ?? (_certificatePolicy = new OidCollection());
+
+        public X509Certificate2Collection ExtraStore => _extraStore ?? (_extraStore = new X509Certificate2Collection());
 
         public X509RevocationMode RevocationMode
         {
@@ -70,23 +72,17 @@ namespace System.Security.Cryptography.X509Certificates
 
         public TimeSpan UrlRetrievalTimeout { get; set; }
 
-        public X509Certificate2Collection ExtraStore { get; private set; }
-
         public void Reset()
         {
-            ApplicationPolicy = new OidCollection();
-            CertificatePolicy = new OidCollection();
+            _applicationPolicy = null;
+            _certificatePolicy = null;
+            _extraStore = null;
             _revocationMode = X509RevocationMode.Online;
             _revocationFlag = X509RevocationFlag.ExcludeRoot;
             _verificationFlags = X509VerificationFlags.NoFlag;
             VerificationTime = DateTime.Now;
-            UrlRetrievalTimeout = new TimeSpan(0, 0, 0); // default timeout
-            ExtraStore = new X509Certificate2Collection();
+            UrlRetrievalTimeout = TimeSpan.Zero; // default timeout
         }
-
-        private X509RevocationMode _revocationMode;
-        private X509RevocationFlag _revocationFlag;
-        private X509VerificationFlags _verificationFlags;
     }
 }
 
