@@ -282,6 +282,7 @@ public:
     // Tiered Compilation config
 #if defined(FEATURE_TIERED_COMPILATION)
     bool          TieredCompilation(void)           const {LIMITED_METHOD_CONTRACT;  return fTieredCompilation; }
+    bool          TieredCompilation_DisableTier0Jit() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_DisableTier0Jit; }
     bool          TieredCompilation_CallCounting()  const {LIMITED_METHOD_CONTRACT;  return fTieredCompilation_CallCounting; }
     bool          TieredCompilation_OptimizeTier0() const {LIMITED_METHOD_CONTRACT; return fTieredCompilation_OptimizeTier0; }
     DWORD         TieredCompilation_Tier1CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_tier1CallCountThreshold; }
@@ -1023,6 +1024,7 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_TIERED_COMPILATION)
     bool fTieredCompilation;
+    bool fTieredCompilation_DisableTier0Jit;
     bool fTieredCompilation_CallCounting;
     bool fTieredCompilation_OptimizeTier0;
     DWORD tieredCompilation_tier1CallCountThreshold;

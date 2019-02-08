@@ -65,7 +65,6 @@ TieredCompilationManager::TieredCompilationManager() :
     m_lock(CrstTieredCompilation),
     m_isAppDomainShuttingDown(FALSE),
     m_countOptimizationThreadsRunning(0),
-    m_callCountOptimizationThreshhold(1),
     m_optimizationQuantumMs(50),
     m_methodsPendingCountingForTier1(nullptr),
     m_tieringDelayTimerHandle(nullptr),
@@ -88,7 +87,6 @@ void TieredCompilationManager::Init(ADID appDomainId)
 
     CrstHolder holder(&m_lock);
     m_domainId = appDomainId;
-    m_callCountOptimizationThreshhold = g_pConfig->TieredCompilation_Tier1CallCountThreshold();
 }
 
 #endif // FEATURE_TIERED_COMPILATION && !DACCESS_COMPILE
@@ -98,71 +96,81 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != NULL);
 
-#ifdef FEATURE_TIERED_COMPILATION
+#if defined(FEATURE_TIERED_COMPILATION) && !defined(DACCESS_COMPILE)
+    if (!pMethodDesc->IsEligibleForTieredCompilation())
+    {
+        // The optimization tier is not used
+        return NativeCodeVersion::OptimizationTier0;
+    }
+
     if (pMethodDesc->RequestedAggressiveOptimization())
     {
         // Methods flagged with MethodImplOptions.AggressiveOptimization begin at tier 1, as a workaround to cold methods with
         // hot loops performing poorly (https://github.com/dotnet/coreclr/issues/19751)
         return NativeCodeVersion::OptimizationTier1;
     }
-#endif // FEATURE_TIERED_COMPILATION
+
+    if (!g_pConfig->TieredCompilation_CallCounting())
+    {
+        // Call counting is disabled altogether through config, the intention is to remain at the initial tier
+        return NativeCodeVersion::OptimizationTier0;
+    }
+
+    if (!pMethodDesc->GetCallCounter()->IsTier0CallCountingEnabled(pMethodDesc))
+    {
+        // Tier 0 call counting may have been disabled based on information about precompiled code or for other reasons, the
+        // intention is to begin at tier 1
+        return NativeCodeVersion::OptimizationTier1;
+    }
+#endif
 
     return NativeCodeVersion::OptimizationTier0;
 }
 
 #if defined(FEATURE_TIERED_COMPILATION) && !defined(DACCESS_COMPILE)
 
-bool TieredCompilationManager::RequiresCallCounting(MethodDesc* pMethodDesc)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(pMethodDesc != NULL);
-    _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
-
-    return
-        g_pConfig->TieredCompilation_CallCounting() &&
-        GetInitialOptimizationTier(pMethodDesc) == NativeCodeVersion::OptimizationTier0;
-}
-
 // Called each time code in this AppDomain has been run. This is our sole entrypoint to begin
 // tiered compilation for now. Returns TRUE if no more notifications are necessary, but
 // more notifications may come anyways.
 //
-// currentCallCount is pre-incremented, that is to say the value is 1 on first call for a given
-//      method.
-void TieredCompilationManager::OnMethodCalled(
+// currentCallCountLimit is pre-decremented, that is to say the value is <= 0 when the
+//      threshold for promoting to tier 1 is reached.
+void TieredCompilationManager::OnTier0MethodCalled(
     MethodDesc* pMethodDesc,
-    DWORD currentCallCount,
+    bool isFirstCall,
+    int currentCallCountLimit,
     BOOL* shouldStopCountingCallsRef,
-    BOOL* wasPromotedToTier1Ref)
+    BOOL* wasPromotedToNextTierRef)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
     _ASSERTE(shouldStopCountingCallsRef != nullptr);
-    _ASSERTE(wasPromotedToTier1Ref != nullptr);
+    _ASSERTE(wasPromotedToNextTierRef != nullptr);
 
     *shouldStopCountingCallsRef =
         // Stop call counting when the delay is in effect
         IsTieringDelayActive() ||
         // Initiate the delay on tier 0 activity (when a new eligible method is called the first time)
-        (currentCallCount == 1 && g_pConfig->TieredCompilation_Tier1CallCountingDelayMs() != 0) ||
+        (isFirstCall && g_pConfig->TieredCompilation_Tier1CallCountingDelayMs() != 0) ||
         // Stop call counting when ready for tier 1 promotion
-        currentCallCount >= m_callCountOptimizationThreshhold;
+        currentCallCountLimit <= 0;
 
-    *wasPromotedToTier1Ref = currentCallCount >= m_callCountOptimizationThreshhold;
+    *wasPromotedToNextTierRef = currentCallCountLimit <= 0;
 
-    if (currentCallCount == m_callCountOptimizationThreshhold)
+    if (currentCallCountLimit == 0)
     {
         AsyncPromoteMethodToTier1(pMethodDesc);
     }
 }
 
-void TieredCompilationManager::OnMethodCallCountingStoppedWithoutTier1Promotion(MethodDesc* pMethodDesc)
+void TieredCompilationManager::OnMethodCallCountingStoppedWithoutTierPromotion(MethodDesc* pMethodDesc)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
 
-    if (g_pConfig->TieredCompilation_Tier1CallCountingDelayMs() == 0)
+    if (g_pConfig->TieredCompilation_Tier1CallCountingDelayMs() == 0 ||
+        !pMethodDesc->GetCallCounter()->IsCallCountingEnabled(pMethodDesc))
     {
         return;
     }
