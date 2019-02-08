@@ -147,11 +147,23 @@ void NativeCodeVersionNode::SetActiveChildFlag(BOOL isActive)
 
 
 #ifdef FEATURE_TIERED_COMPILATION
+
 NativeCodeVersion::OptimizationTier NativeCodeVersionNode::GetOptimizationTier() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return m_optTier;
 }
+
+#ifndef DACCESS_COMPILE
+void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationTier tier)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(tier >= m_optTier);
+
+    m_optTier = tier;
+}
+#endif
+
 #endif // FEATURE_TIERED_COMPILATION
 
 NativeCodeVersion::NativeCodeVersion() :
@@ -327,6 +339,7 @@ MethodDescVersioningState* NativeCodeVersion::GetMethodDescVersioningState()
 #endif
 
 #ifdef FEATURE_TIERED_COMPILATION
+
 NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -339,6 +352,23 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
         return TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc());
     }
 }
+
+#ifndef DACCESS_COMPILE
+void NativeCodeVersion::SetOptimizationTier(OptimizationTier tier)
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        AsNode()->SetOptimizationTier(tier);
+    }
+    else
+    {
+        // State changes should have been made previously such that the initial tier is the new tier
+        _ASSERTE(TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc()) == tier);
+    }
+}
+#endif
+
 #endif
 
 PTR_NativeCodeVersionNode NativeCodeVersion::AsNode() const

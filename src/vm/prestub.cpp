@@ -372,6 +372,17 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
     if (pCode == NULL)
     {
+#ifdef FEATURE_TIERED_COMPILATION
+        if (g_pConfig->TieredCompilation_DisableTier0Jit() &&
+            IsEligibleForTieredCompilation() &&
+            pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+            CallCounter::IsEligibleForTier0CallCounting(this))
+        {
+            GetCallCounter()->DisableTier0CallCounting(this);
+            pConfig->GetCodeVersion().SetOptimizationTier(NativeCodeVersion::OptimizationTier1);
+        }
+#endif
+
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
@@ -1810,13 +1821,12 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
 #ifdef FEATURE_TIERED_COMPILATION
     BOOL fNeedsCallCounting = FALSE;
     TieredCompilationManager* pTieredCompilationManager = nullptr;
-    if (IsEligibleForTieredCompilation() && TieredCompilationManager::RequiresCallCounting(this))
+    if (IsEligibleForTieredCompilation() && CallCounter::IsEligibleForCallCounting(this))
     {
         pTieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
-        CallCounter * pCallCounter = GetCallCounter();
-        BOOL fWasPromotedToTier1 = FALSE;
-        pCallCounter->OnMethodCalled(this, pTieredCompilationManager, &fCanBackpatchPrestub, &fWasPromotedToTier1);
-        fNeedsCallCounting = !fWasPromotedToTier1;
+        BOOL fWasPromotedToNextTier = FALSE;
+        GetCallCounter()->OnMethodCalled(this, pTieredCompilationManager, &fCanBackpatchPrestub, &fWasPromotedToNextTier);
+        fNeedsCallCounting = !fWasPromotedToNextTier;
     }
 #endif
 
@@ -1834,7 +1844,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
 #ifdef FEATURE_TIERED_COMPILATION
         if (pTieredCompilationManager != nullptr && fNeedsCallCounting && fCanBackpatchPrestub && pCode != NULL)
         {
-            pTieredCompilationManager->OnMethodCallCountingStoppedWithoutTier1Promotion(this);
+            pTieredCompilationManager->OnMethodCallCountingStoppedWithoutTierPromotion(this);
         }
 #endif
 
