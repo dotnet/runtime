@@ -3112,7 +3112,7 @@ void CodeGen::genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode)
     else
 #endif
     {
-#ifdef _TARGET_X64_
+#ifdef _TARGET_AMD64_
         assert(size > CPBLK_UNROLL_LIMIT && size < CPBLK_MOVS_LIMIT);
 #else
         assert(size > CPBLK_UNROLL_LIMIT);
