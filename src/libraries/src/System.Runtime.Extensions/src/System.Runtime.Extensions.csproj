@@ -26,6 +26,7 @@
     <Compile Include="System\IO\InvalidDataException.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Reflection\AssemblyNameProxy.cs" />
+    <Compile Include="System\Runtime\CompilerServices\SwitchExpressionException.cs" />
     <Compile Include="System\Runtime\ProfileOptimization.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
