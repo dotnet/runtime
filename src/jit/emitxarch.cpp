@@ -145,6 +145,75 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
     return ((CodeGenInterface::instInfo[ins] & INS_Flags_IsDstSrcSrcAVXInstruction) != 0) && IsAVXInstruction(ins);
 }
 
+//------------------------------------------------------------------------
+// AreUpper32BitsZero: check if some previously emitted
+//     instruction set the upper 32 bits of reg to zero.
+//
+// Arguments:
+//    reg - register of interest
+//
+// Return Value:
+//    true if previous instruction zeroed reg's upper 32 bits.
+//    false if it did not, or if we can't safely determine.
+//
+// Notes:
+//    Currently only looks back one instruction.
+//
+//    movsx eax, ... might seem viable but we always encode this
+//    instruction with a 64 bit destination. See TakesRexWPrefix.
+
+bool emitter::AreUpper32BitsZero(regNumber reg)
+{
+    // Don't look back across IG boundaries (possible control flow)
+    if (emitCurIGinsCnt == 0)
+    {
+        return false;
+    }
+
+    instrDesc* id  = emitLastIns;
+    insFormat  fmt = id->idInsFmt();
+
+    // This isn't meant to be a comprehensive check. Just look for what
+    // seems to be common.
+    switch (fmt)
+    {
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_MRD:
+        case IF_RWR_SRD:
+        case IF_RWR_ARD:
+
+            // Bail if not writing to the right register
+            if (id->idReg1() != reg)
+            {
+                return false;
+            }
+
+            // Bail if movsx, we always have movsx sign extend to 8 bytes
+            if (id->idIns() == INS_movsx)
+            {
+                return false;
+            }
+
+            // movzx always zeroes the upper 32 bits.
+            if (id->idIns() == INS_movzx)
+            {
+                return true;
+            }
+
+            // Else rely on operation size.
+            return (id->idOpSize() == EA_4BYTE);
+
+        default:
+            break;
+    }
+
+    return false;
+}
+
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // IsDstSrcImmAvxInstruction: Checks if the instruction has a "reg, reg/mem, imm" or
