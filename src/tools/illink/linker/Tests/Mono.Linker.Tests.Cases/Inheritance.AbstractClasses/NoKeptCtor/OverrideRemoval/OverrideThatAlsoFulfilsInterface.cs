@@ -6,7 +6,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.Overrid
 		{
 			Base b = HelperToMarkFooAndRequireBase ();
 			b.Method ();
-			
+
+			MethodToUseTheInterface ();
+		}
+
+		[Kept]
+		static void MethodToUseTheInterface ()
+		{
 			// Now use the interface method so that it is kept
 			IFoo f = new Bar ();
 			f.Method ();
