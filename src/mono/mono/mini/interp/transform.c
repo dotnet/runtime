@@ -1727,6 +1727,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		PUSH_VT (td, vararg_stack);
 	}
 
+	if (need_null_check) {
+		ADD_CODE (td, MINT_CKNULL_N);
+		ADD_CODE (td, csignature->param_count + 1);
+	}
+
 	g_assert (csignature->call_convention != MONO_CALL_FASTCALL);
 	if ((mono_interp_opt & INTERP_OPT_INLINE) && op == -1 && !is_virtual && target_method && interp_method_check_inlining (td, target_method)) {
 		MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
@@ -1754,11 +1759,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			vt_stack_used += size;
 		}
-	}
-
-	if (need_null_check) {
-		ADD_CODE (td, MINT_CKNULL_N);
-		ADD_CODE (td, csignature->param_count + 1);
 	}
 
 	/* need to handle typedbyref ... */
@@ -3123,9 +3123,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		case CEE_LDIND_I:
 			CHECK_STACK (td, 1);
-			ADD_CODE (td, MINT_CKNULL);
-			SIMPLE_OP (td, MINT_LDIND_I);
-			ADD_CODE (td, 0);
+			SIMPLE_OP (td, MINT_LDIND_REF_CHECK);
 			SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_I);
 			BARRIER_IF_VOLATILE (td);
 			break;
@@ -3143,8 +3141,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		case CEE_LDIND_REF:
 			CHECK_STACK (td, 1);
-			ADD_CODE (td, MINT_CKNULL);
-			SIMPLE_OP (td, MINT_LDIND_REF);
+			SIMPLE_OP (td, MINT_LDIND_REF_CHECK);
 			BARRIER_IF_VOLATILE (td);
 			SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_O);
 			break;
