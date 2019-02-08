@@ -20,7 +20,7 @@
       <PropertyGroup>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <!-- Suppress warnings for unnecessary CLSCompliance attributes -->
-        <NoWarn>3021</NoWarn>
+        <NoWarn>$(NoWarn);3021</NoWarn>
       </PropertyGroup>
       <ItemGroup>
         <PackageReference Include="Microsoft.Bcl.Json.Sources">
