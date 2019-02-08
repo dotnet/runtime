@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpCookieProtocolTests : HttpClientHandlerTestBase
+    public abstract class HttpClientHandlerTest_Cookies : HttpClientHandlerTestBase
     {
         private const string s_cookieName = "ABC";
         private const string s_cookieValue = "123";
@@ -675,7 +675,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public abstract class HttpCookieProtocolTests_Http11 : HttpClientHandlerTestBase
+    public abstract class HttpClientHandlerTest_Cookies_Http11 : HttpClientHandlerTestBase
     {
         [Fact]
         public async Task GetAsync_ReceiveMultipleSetCookieHeaders_CookieAdded()

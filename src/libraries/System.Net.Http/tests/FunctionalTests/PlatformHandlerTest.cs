@@ -135,12 +135,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
-    public sealed class PlatformHandler_HttpCookieProtocolTests : HttpCookieProtocolTests
+    public sealed class PlatformHandlerTest_Cookies : HttpClientHandlerTest_Cookies
     {
         protected override bool UseSocketsHttpHandler => false;
     }
 
-    public sealed class PlatformHandler_HttpCookieProtocolTests_Http11 : HttpCookieProtocolTests_Http11
+    public sealed class PlatformHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
         protected override bool UseSocketsHttpHandler => false;
     }
@@ -168,7 +168,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-    public sealed class PlatformHandlerTest_Cookies_Http2 : HttpCookieProtocolTests
+    public sealed class PlatformHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {
         protected override bool UseSocketsHttpHandler => false;
         protected override bool UseHttp2LoopbackServer => true;
