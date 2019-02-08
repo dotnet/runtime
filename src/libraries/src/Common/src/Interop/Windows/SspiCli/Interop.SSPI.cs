@@ -161,18 +161,8 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct SecPkgContext_IssuerListInfoEx
         {
-            public SafeHandle aIssuers;
+            public IntPtr aIssuers;
             public uint cIssuers;
-
-            public unsafe SecPkgContext_IssuerListInfoEx(SafeHandle handle, byte[] nativeBuffer)
-            {
-                aIssuers = handle;
-                fixed (byte* voidPtr = nativeBuffer)
-                {
-                    // TODO (Issue #3114): Properly marshal the struct instead of assuming no padding.
-                    cIssuers = *((uint*)(voidPtr + IntPtr.Size));
-                }
-            }
         }
 
         [StructLayout(LayoutKind.Sequential)]

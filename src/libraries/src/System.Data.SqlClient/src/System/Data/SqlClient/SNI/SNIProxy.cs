@@ -89,18 +89,8 @@ namespace System.Data.SqlClient.SNI
                 credentialsHandle = NegotiateStreamPal.AcquireDefaultCredential(securityPackage, false);
             }
 
-            SecurityBuffer[] inSecurityBufferArray = null;
-            if (receivedBuff != null)
-            {
-                inSecurityBufferArray = new SecurityBuffer[] { new SecurityBuffer(receivedBuff, SecurityBufferType.SECBUFFER_TOKEN) };
-            }
-            else
-            {
-                inSecurityBufferArray = Array.Empty<SecurityBuffer>();
-            }
-
             int tokenSize = NegotiateStreamPal.QueryMaxTokenSize(securityPackage);
-            SecurityBuffer outSecurityBuffer = new SecurityBuffer(tokenSize, SecurityBufferType.SECBUFFER_TOKEN);
+            byte[] resultToken = new byte[tokenSize];
 
             ContextFlagsPal requestedContextFlags = ContextFlagsPal.Connection
                 | ContextFlagsPal.Confidentiality
@@ -110,23 +100,23 @@ namespace System.Data.SqlClient.SNI
             string serverSPN = System.Text.Encoding.UTF8.GetString(serverName);
 
             SecurityStatusPal statusCode = NegotiateStreamPal.InitializeSecurityContext(
-                       credentialsHandle,
+                       ref credentialsHandle,
                        ref securityContext,
                        serverSPN,
                        requestedContextFlags,
-                       inSecurityBufferArray,
-                       outSecurityBuffer,
+                       receivedBuff,
+                       null,
+                       ref resultToken,
                        ref contextFlags);
 
             if (statusCode.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded ||
                 statusCode.ErrorCode == SecurityStatusPalErrorCode.CompAndContinue)
             {
-                inSecurityBufferArray = new SecurityBuffer[] { outSecurityBuffer };
-                statusCode = NegotiateStreamPal.CompleteAuthToken(ref securityContext, inSecurityBufferArray);
-                outSecurityBuffer.token = null;
+                statusCode = NegotiateStreamPal.CompleteAuthToken(ref securityContext, resultToken);
+                resultToken = null;
             }
 
-            sendBuff = outSecurityBuffer.token;
+            sendBuff = resultToken;
             if (sendBuff == null)
             {
                 sendBuff = Array.Empty<byte>();
