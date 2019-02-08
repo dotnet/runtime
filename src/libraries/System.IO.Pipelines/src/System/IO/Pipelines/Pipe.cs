@@ -100,7 +100,9 @@ namespace System.IO.Pipelines
             _readerCompletion = default;
             _writerCompletion = default;
 
-            _pool = options.Pool;
+            // If we're using the default pool then mark it as null since we're just going to use the 
+            // array pool under the covers
+            _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
             _minimumSegmentSize = options.MinimumSegmentSize;
             _pauseWriterThreshold = options.PauseWriterThreshold;
             _resumeWriterThreshold = options.ResumeWriterThreshold;
@@ -179,8 +181,7 @@ namespace System.IO.Pipelines
             if (_writingHead == null)
             {
                 // We need to allocate memory to write since nobody has written before
-                BufferSegment newSegment = CreateSegmentUnsynchronized();
-                newSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
+                BufferSegment newSegment = AllocateSegment(sizeHint);
 
                 // Set all the pointers
                 _writingHead = _readHead = _readTail = newSegment;
@@ -191,8 +192,7 @@ namespace System.IO.Pipelines
 
                 if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
                 {
-                    BufferSegment newSegment = CreateSegmentUnsynchronized();
-                    newSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
+                    BufferSegment newSegment = AllocateSegment(sizeHint);
 
                     _writingHead.SetNext(newSegment);
                     _writingHead = newSegment;
@@ -200,12 +200,28 @@ namespace System.IO.Pipelines
             }
         }
 
-        private int GetSegmentSize(int sizeHint)
+        private BufferSegment AllocateSegment(int sizeHint)
+        {
+            BufferSegment newSegment = CreateSegmentUnsynchronized();
+
+            if (_pool is null)
+            {
+                newSegment.SetMemory(ArrayPool<byte>.Shared.Rent(GetSegmentSize(sizeHint)));
+            }
+            else
+            {
+                newSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint, _pool.MaxBufferSize)));
+            }
+
+            return newSegment;
+        }
+
+        private int GetSegmentSize(int sizeHint, int maxBufferSize = int.MaxValue)
         {
             // First we need to handle case where hint is smaller than minimum segment size
             sizeHint = Math.Max(_minimumSegmentSize, sizeHint);
             // After that adjust it to fit into pools max buffer size
-            var adjustedToMaximumSize = Math.Min(_pool.MaxBufferSize, sizeHint);
+            var adjustedToMaximumSize = Math.Min(maxBufferSize, sizeHint);
             return adjustedToMaximumSize;
         }
 
