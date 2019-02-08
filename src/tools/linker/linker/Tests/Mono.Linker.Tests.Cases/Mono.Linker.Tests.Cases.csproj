@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -305,6 +305,7 @@
     <Compile Include="PreserveDependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction.cs" />
     <Compile Include="PreserveDependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
     <Compile Include="References\AssemblyOnlyUsedByUsingWithCsc.cs" />
+    <Compile Include="References\AssemblyOnlyUsedByUsingWithCscWithKeepFacades.cs" />
     <Compile Include="References\AssemblyOnlyUsedByUsingWithMcs.cs" />
     <Compile Include="References\Dependencies\AssemblyOnlyUsedByUsing_Copied.cs" />
     <Compile Include="References\Dependencies\AssemblyOnlyUsedByUsing_Lib.cs" />
