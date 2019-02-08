@@ -67,6 +67,11 @@ jobs:
         value: true
       - name: _BuildConfig
         value: $(buildConfigUpper)
+    - name: officialBuildIdArg
+      value: ''
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: officialBuildIdArg
+        value: '-officialbuildid=$(Build.BuildNumber)'
 
     steps:
 
@@ -84,7 +89,7 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build.sh $(buildConfig) $(archType) $(crossArg) -skiptests -skipnuget $(clangArg) $(stripSymbolsArg)
+      - script: ./build.sh $(buildConfig) $(archType) $(crossArg) -skiptests -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build product
         ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
           env:
@@ -92,8 +97,8 @@ jobs:
             # Once we are using Arcade, use DotNetCoreSdkDir instead, as we do below.
             DotNetBootstrapCliTarPath: /dotnet-sdk-freebsd-x64.tar
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      # TODO: IBCOptimize? EnforcePGO? pass an OfficialBuildId? SignType? file logging parameters?
-      - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -skiptests -skipbuildpackages
+      # TODO: IBCOptimize? EnforcePGO? file logging parameters?
+      - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -skiptests -skipbuildpackages $(officialBuildIdArg)
         displayName: Build product
 
     # Sign on Windows
