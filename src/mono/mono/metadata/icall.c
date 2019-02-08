@@ -4654,7 +4654,7 @@ replace_shadow_path (MonoDomain *domain, gchar *dirname, gchar **filename)
 }
 
 MonoStringHandle
-ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoBoolean escaped, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoBoolean escaped, MonoError *error)
 {
 	error_init (error);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
@@ -4696,7 +4696,7 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssemblyHandle
 }
 
 MonoBoolean
-ves_icall_System_Reflection_Assembly_get_global_assembly_cache (MonoReflectionAssemblyHandle assembly, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_get_global_assembly_cache (MonoReflectionAssemblyHandle assembly, MonoError *error)
 {
 	error_init (error);
 	MonoAssembly *mass = MONO_HANDLE_GETVAL (assembly,assembly);
@@ -4726,7 +4726,7 @@ leave:
 }
 
 MonoStringHandle
-ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssemblyHandle refassembly, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_get_location (MonoReflectionAssemblyHandle refassembly, MonoError *error)
 {
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (refassembly);
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (refassembly, assembly);
@@ -4734,7 +4734,7 @@ ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssemblyHandle 
 }
 
 MonoBoolean
-ves_icall_System_Reflection_Assembly_get_ReflectionOnly (MonoReflectionAssemblyHandle assembly_h, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_get_ReflectionOnly (MonoReflectionAssemblyHandle assembly_h, MonoError *error)
 {
 	error_init (error);
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
@@ -4742,7 +4742,7 @@ ves_icall_System_Reflection_Assembly_get_ReflectionOnly (MonoReflectionAssemblyH
 }
 
 MonoStringHandle
-ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion (MonoReflectionAssemblyHandle refassembly, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_InternalImageRuntimeVersion (MonoReflectionAssemblyHandle refassembly, MonoError *error)
 {
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (refassembly);
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (refassembly, assembly);
@@ -4751,7 +4751,7 @@ ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion (MonoReflection
 }
 
 MonoReflectionMethodHandle
-ves_icall_System_Reflection_Assembly_get_EntryPoint (MonoReflectionAssemblyHandle assembly_h, MonoError *error) 
+ves_icall_System_Reflection_RuntimeAssembly_get_EntryPoint (MonoReflectionAssemblyHandle assembly_h, MonoError *error) 
 {
 	error_init (error);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_h);
@@ -4794,7 +4794,7 @@ leave:
 }
 
 MonoArrayHandle
-ves_icall_System_Reflection_Assembly_GetManifestResourceNames (MonoReflectionAssemblyHandle assembly_h, MonoError *error) 
+ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceNames (MonoReflectionAssemblyHandle assembly_h, MonoError *error) 
 {
 	error_init (error);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_h);
@@ -4814,7 +4814,7 @@ fail:
 }
 
 MonoStringHandle
-ves_icall_System_Reflection_Assembly_GetAotId (MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_GetAotId (MonoError *error)
 {
 	char *guid = mono_runtime_get_aotid ();
 	if (guid == NULL)
@@ -4888,7 +4888,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 }
 
 void *
-ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error) 
+ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32 *size, MonoReflectionModuleHandleOut ref_module, MonoError *error) 
 {
 	error_init (error);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_h);
@@ -5015,7 +5015,7 @@ leave:
 }
 
 MonoBoolean
-ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, MonoManifestResourceInfoHandle info_h, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceInfoInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, MonoManifestResourceInfoHandle info_h, MonoError *error)
 {
 	error_init (error);
 	return get_manifest_resource_info_internal (assembly_h, name, info_h, error);
@@ -5037,7 +5037,7 @@ leave:
 }
 
 MonoObjectHandle
-ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, MonoBoolean resource_modules, MonoError *error) 
+ves_icall_System_Reflection_RuntimeAssembly_GetFilesInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, MonoBoolean resource_modules, MonoError *error) 
 {
 	error_init (error);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly_h);
@@ -5135,7 +5135,7 @@ leave:
 }
 
 MonoArrayHandle
-ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssemblyHandle assembly_h, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_GetModulesInternal (MonoReflectionAssemblyHandle assembly_h, MonoError *error)
 {
 	error_init (error);
 	MonoDomain *domain = mono_domain_get();
@@ -5377,7 +5377,7 @@ ves_icall_RuntimeMethodInfo_get_core_clr_security_level (MonoReflectionMethodHan
 }
 
 MonoStringHandle
-ves_icall_System_Reflection_Assembly_get_fullName (MonoReflectionAssemblyHandle assembly, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_get_fullname (MonoReflectionAssemblyHandle assembly, MonoError *error)
 {
 	error_init (error);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
@@ -5457,7 +5457,7 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 }
 
 MonoBoolean
-ves_icall_System_Reflection_Assembly_LoadPermissions (MonoReflectionAssemblyHandle assembly_h,
+ves_icall_System_Reflection_RuntimeAssembly_LoadPermissions (MonoReflectionAssemblyHandle assembly_h,
 						      char **minimum, guint32 *minLength, char **optional, guint32 *optLength, char **refused, guint32 *refLength, MonoError *error)
 {
 	error_init (error);
