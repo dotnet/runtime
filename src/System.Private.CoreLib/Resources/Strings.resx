@@ -2617,6 +2617,9 @@
   <data name="InvalidOperation_SetData_OnlyOnce" xml:space="preserve">
     <value>SetData can only be used to set the value of a given name once.</value>
   </data>
+  <data name="InvalidOperation_SetLatencyModeNoGC" xml:space="preserve">
+    <value>The NoGCRegion mode is in progress.End it and then set a different mode.</value>
+  </data>
   <data name="InvalidOperation_ShouldNotHaveMethodBody" xml:space="preserve">
     <value>Method body should not exist.</value>
   </data>
