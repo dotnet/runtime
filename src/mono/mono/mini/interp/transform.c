@@ -2200,10 +2200,6 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 
 	g_byte_array_free (array, TRUE);
 
-	mono_domain_lock (domain);
-	g_hash_table_insert (domain_jit_info (domain)->seq_points, rtm->method, info);
-	mono_domain_unlock (domain);
-
 	jinfo->seq_points = info;
 }
 
@@ -5635,9 +5631,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	return_if_nok (error);
 
-	// FIXME: Add a different callback ?
-	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
-
 	/* Copy changes back */
 	imethod = real_imethod;
 	mono_os_mutex_lock (&calc_section);
@@ -5648,7 +5641,16 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		mono_memory_barrier ();
 		imethod->transformed = TRUE;
 		mono_atomic_fetch_add_i32 (&mono_jit_stats.methods_with_interp, 1);
+
 	}
 	mono_os_mutex_unlock (&calc_section);
+
+	mono_domain_lock (domain);
+	if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, imethod->method))
+		g_hash_table_insert (domain_jit_info (domain)->seq_points, imethod->method, imethod->jinfo->seq_points);
+	mono_domain_unlock (domain);
+
+	// FIXME: Add a different callback ?
+	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
 }
 
