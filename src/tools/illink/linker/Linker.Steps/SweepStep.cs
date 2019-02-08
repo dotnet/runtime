@@ -190,10 +190,12 @@ namespace Mono.Linker.Steps {
 				// That depends on the AssemblyAction set for the `assembly`
 				switch (Annotations.GetAction (assembly)) {
 				case AssemblyAction.Copy:
+					// We need to save the assembly if a reference was removed, otherwise we can end up
+					// with an assembly that references an assembly that no longer exists
+					Annotations.SetAction (assembly, AssemblyAction.Save);
 					// Copy means even if "unlinked" we still want that assembly to be saved back 
 					// to disk (OutputStep) without the (removed) reference
 					if (!Context.KeepTypeForwarderOnlyAssemblies) {
-						Annotations.SetAction (assembly, AssemblyAction.Save);
 						ResolveAllTypeReferences (assembly);
 					}
 					break;

@@ -8,7 +8,9 @@ namespace Mono.Linker.Tests.Cases.References {
 	/// Because of that, `copied` needs to have it's reference to `library` removed even though we specified an assembly action of `copy`
 	/// </summary>
 	[SetupLinkerAction ("copy", "copied")]
-	[SetupLinkerArgument ("--keep-facades", "false")]
+
+	// --keep-facades sends the sweep step down a different code path that caused problems for this corner case
+	[SetupLinkerArgument ("--keep-facades", "true")]
 	[SetupCompileBefore ("library.dll", new [] {"Dependencies/AssemblyOnlyUsedByUsing_Lib.cs"})]
 	
 	// When csc is used, `copied.dll` will have a reference to `library.dll`
@@ -20,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.References {
 	// We library should be gone.  The `using` statement leaves no traces in the IL so nothing in `library` will be marked
 	[RemovedAssembly ("library.dll")]
 	[KeptReferencesInAssembly ("copied.dll", new [] {"mscorlib"})]
-	public class AssemblyOnlyUsedByUsingWithCsc {
+	public class AssemblyOnlyUsedByUsingWithCscWithKeepFacades {
 		public static void Main ()
 		{
 			// Use something to keep the reference at compile time
