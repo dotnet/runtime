@@ -136,17 +136,20 @@ jobs:
 
 # FreeBSD
 
-- template: ${{ parameters.jobTemplate }}
-  parameters:
-    buildConfig: ${{ parameters.buildConfig }}
-    archType: x64
-    osGroup: FreeBSD
-    osIdentifier: FreeBSD
-    # There are no FreeBSD helix queues, so we don't run tests at the moment.
-    helixQueues:
-      asString: ''
-      asArray: []
-    ${{ insert }}: ${{ parameters.jobParameters }}
+# FreeBSD machines are currenrly offline. Re-enable in the official build when
+# the machines are healthy.
+
+# - template: ${{ parameters.jobTemplate }}
+#   parameters:
+#     buildConfig: ${{ parameters.buildConfig }}
+#     archType: x64
+#     osGroup: FreeBSD
+#     osIdentifier: FreeBSD
+#     # There are no FreeBSD helix queues, so we don't run tests at the moment.
+#     helixQueues:
+#       asString: ''
+#       asArray: []
+#     ${{ insert }}: ${{ parameters.jobParameters }}
 
 # macOS x64
 
