@@ -150,19 +150,21 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="mono.external.targets" />
+  <Import Project="mono.winconfig.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 
   <Target Name="AfterBuildWinSetup">
     <PropertyGroup>
-      <_OptionalDefines Condition="'$(MONO_ENABLE_BTLS)' == 'true'">$(_OptionalDefines);HAVE_BTLS</_OptionalDefines>
-      <_OptionalDefines Condition="'$(MONO_ENABLE_LLVM)' == 'true'">$(_OptionalDefines);ENABLE_LLVM;ENABLE_LLVM_RUNTIME</_OptionalDefines>
-      <_OptionalDefines>$(_OptionalDefines.Trim(';'))</_OptionalDefines>
+      <_EnableDefines Condition="'$(MONO_ENABLE_LLVM)' == 'true'">$(_EnableDefines);ENABLE_LLVM;ENABLE_LLVM_RUNTIME</_EnableDefines>
+      <_HaveDefines Condition="'$(MONO_ENABLE_BTLS)' == 'true'">$(_HaveDefines);HAVE_BTLS</_HaveDefines>
+      <_EnableDefines>$(_EnableDefines.Trim(';'))</_EnableDefines>
+      <_HaveDefines>$(_HaveDefines.Trim(';'))</_HaveDefines>
     </PropertyGroup>
-    <Exec Command="winsetup.bat &quot;$(_OptionalDefines)&quot;">
-      <Output TaskParameter="ExitCode" PropertyName="WinSetupExitCode" />
-    </Exec>
-    <Error Text="Failed running winsetup.bat" Condition="$(WinSetupExitCode) != 0" />
+    <WinConfigSetup ConfigFileRoot="$(MSBuildThisFileDirectory)..\"
+                    DisableDefines=""
+                    EnableDefines="$(_EnableDefines)"
+                    HaveDefines="$(_HaveDefines)"/>
   </Target>
 
   <Target Name="AfterBuild" DependsOnTargets="AfterBuildWinSetup" />

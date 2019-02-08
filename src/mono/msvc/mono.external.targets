@@ -23,7 +23,7 @@
                 if (File.Exists (ConfFile))
                 {
                     var regex = new Regex (ConfRegEx);
-                    using (StreamReader reader = new StreamReader(ConfFile))
+                    using (StreamReader reader = new StreamReader (ConfFile))
                     {
                         string line;
                         while ((line = reader.ReadLine ()) != null)
