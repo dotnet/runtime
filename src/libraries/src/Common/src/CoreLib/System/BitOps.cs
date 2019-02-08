@@ -8,31 +8,56 @@ using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
 
+// Some routines inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
+// http://graphics.stanford.edu/~seander/bithacks.html
+
 namespace System
 {
     internal static class BitOps
     {
+        // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
+        // https://github.com/dotnet/roslyn/pull/24621
+
+        private static ReadOnlySpan<byte> s_TrailingZeroCountDeBruijn => new byte[32]
+        {
+            00, 01, 28, 02, 29, 14, 24, 03,
+            30, 22, 20, 15, 25, 17, 04, 08,
+            31, 27, 13, 23, 21, 19, 16, 07,
+            26, 12, 18, 06, 11, 05, 10, 09
+        };
+
+        /// <summary>
+        /// Count the number of trailing zero bits in an integer value.
+        /// Similar in behavior to the x86 instruction TZCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int TrailingZeroCount(int matches)
+        public static int TrailingZeroCount(int value)
+            => TrailingZeroCount((uint)value);
+
+        /// <summary>
+        /// Count the number of trailing zero bits in an integer value.
+        /// Similar in behavior to the x86 instruction TZCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int TrailingZeroCount(uint value)
         {
             if (Bmi1.IsSupported)
             {
-                return (int)Bmi1.TrailingZeroCount((uint)matches);
+                // Note that TZCNT contract specifies 0->32
+                return (int)Bmi1.TrailingZeroCount(value);
             }
-            else // Software fallback
-            {
-                // https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightMultLookup
-                // uint.MaxValue >> 27 is always in range [0 - 31] so we use Unsafe.AddByteOffset to avoid bounds check
-                return Unsafe.AddByteOffset(
-                    ref MemoryMarshal.GetReference(TrailingCountMultiplyDeBruijn),
-                    ((uint)((matches & -matches) * 0x077CB531U)) >> 27);
-            }
-        }
 
-        private static ReadOnlySpan<byte> TrailingCountMultiplyDeBruijn => new byte[32]
-        {
-            0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
-            31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
-        };
+            // Main code has behavior 0->0, so special-case in order to match intrinsic path 0->32
+            if (value == 0u)
+                return 32;
+
+            // uint.MaxValue >> 27 is always in range [0 - 31] so we use Unsafe.AddByteOffset to avoid bounds check
+            return Unsafe.AddByteOffset(
+                ref MemoryMarshal.GetReference(s_TrailingZeroCountDeBruijn), 
+                // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_0111_1100_1011_0101_0011_0001u
+                ((uint)((value & -value) * 0x077CB531u)) >> 27);
+        }
     }
 }
