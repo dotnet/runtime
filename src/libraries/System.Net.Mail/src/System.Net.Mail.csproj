@@ -139,12 +139,6 @@
     <Compile Include="$(CommonPath)\System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBuffer.cs">
-      <Link>Common\System\Net\Security\SecurityBuffer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBufferType.cs">
-      <Link>Common\System\Net\Security\SecurityBufferType.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\SSPIHandleCache.cs">
       <Link>Common\System\Net\Security\SSPIHandleCache.cs</Link>
     </Compile>
@@ -198,6 +192,12 @@
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBuffer.Windows.cs">
+      <Link>Common\System\Net\Security\SecurityBuffer.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBufferType.Windows.cs">
+      <Link>Common\System\Net\Security\SecurityBufferType.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\SecurityContextTokenHandle.cs">
       <Link>Common\System\Net\Security\SecurityContextTokenHandle.cs</Link>
@@ -292,6 +292,7 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Globalization.Extensions" />
     <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />

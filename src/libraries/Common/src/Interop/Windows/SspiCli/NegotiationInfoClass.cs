@@ -8,51 +8,50 @@ namespace System.Net
 {
     // This class is used to determine if NTLM or
     // Kerberos are used in the context of a Negotiate handshake
-    internal partial class NegotiationInfoClass
+    internal static partial class NegotiationInfoClass
     {
-        internal string AuthenticationPackage;
-
-        internal NegotiationInfoClass(SafeHandle safeHandle, int negotiationState)
+        internal static string GetAuthenticationPackageName(SafeHandle safeHandle, int negotiationState)
         {
             if (safeHandle.IsInvalid)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Invalid handle:{safeHandle}");
-                return;
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Invalid handle:{safeHandle}");
+                return null;
             }
 
-            IntPtr packageInfo = safeHandle.DangerousGetHandle();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x}");
-
-            if (negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_COMPLETE
-                || negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_OPTIMISTIC)
+            bool gotRef = false;
+            try
             {
-                string name = null;
+                safeHandle.DangerousAddRef(ref gotRef);
+                IntPtr packageInfo = safeHandle.DangerousGetHandle();
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x}");
 
-                unsafe
+                if (negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_COMPLETE ||
+                    negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_OPTIMISTIC)
                 {
-                    IntPtr unmanagedString = ((SecurityPackageInfo *)packageInfo)->Name;
-                    if (unmanagedString != IntPtr.Zero)
+                    string name;
+                    unsafe
                     {
-                        name = Marshal.PtrToStringUni(unmanagedString);
+                        name = Marshal.PtrToStringUni(((SecurityPackageInfo*)packageInfo)->Name);
                     }
-                }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x} name:{name}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x} name:{name}");
 
-                // An optimization for future string comparisons.
-                if (string.Equals(name, Kerberos, StringComparison.OrdinalIgnoreCase))
-                {
-                    AuthenticationPackage = Kerberos;
-                }
-                else if (string.Equals(name, NTLM, StringComparison.OrdinalIgnoreCase))
-                {
-                    AuthenticationPackage = NTLM;
-                }
-                else
-                {
-                    AuthenticationPackage = name;
+                    // An optimization for future string comparisons.
+                    return
+                        string.Equals(name, Kerberos, StringComparison.OrdinalIgnoreCase) ? Kerberos :
+                        string.Equals(name, NTLM, StringComparison.OrdinalIgnoreCase) ? NTLM :
+                        name;
                 }
             }
+            finally
+            {
+                if (gotRef)
+                {
+                    safeHandle.DangerousRelease();
+                }
+            }
+
+            return null;
         }
     }
 }

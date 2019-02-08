@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -45,10 +46,7 @@ namespace System.Net
                         }
                         finally
                         {
-                            if (arrayBaseHandle != null)
-                            {
-                                arrayBaseHandle.Dispose();
-                            }
+                            arrayBaseHandle?.Dispose();
                         }
                     }
                 }
@@ -142,51 +140,40 @@ namespace System.Net
             return outCredential;
         }
 
-        internal static int InitializeSecurityContext(SSPIInterface secModule, ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
+        internal static int InitializeSecurityContext(SSPIInterface secModule, ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, ReadOnlySpan<SecurityBuffer> inputBuffers, ref SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Log.InitializeSecurityContext(credential, context, targetName, inFlags);
 
-            int errorCode = secModule.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, datarep, inputBuffer, outputBuffer, ref outFlags);
+            int errorCode = secModule.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, datarep, inputBuffers, ref outputBuffer, ref outFlags);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffer(nameof(InitializeSecurityContext), inputBuffer?.size ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffers(nameof(InitializeSecurityContext), inputBuffers.Length, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
 
-        internal static int InitializeSecurityContext(SSPIInterface secModule, SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Log.InitializeSecurityContext(credential, context, targetName, inFlags);
-
-            int errorCode = secModule.InitializeSecurityContext(credential, ref context, targetName, inFlags, datarep, inputBuffers, outputBuffer, ref outFlags);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffers(nameof(InitializeSecurityContext), inputBuffers?.Length ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
-
-            return errorCode;
-        }
-
-        internal static int AcceptSecurityContext(SSPIInterface secModule, SafeFreeCredentials credential, ref SafeDeleteContext context, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
+        internal static int AcceptSecurityContext(SSPIInterface secModule, SafeFreeCredentials credential, ref SafeDeleteContext context, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, ReadOnlySpan<SecurityBuffer> inputBuffers, ref SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Log.AcceptSecurityContext(credential, context, inFlags);
 
-            int errorCode = secModule.AcceptSecurityContext(credential, ref context, inputBuffers, inFlags, datarep, outputBuffer, ref outFlags);
+            int errorCode = secModule.AcceptSecurityContext(credential, ref context, inputBuffers, inFlags, datarep, ref outputBuffer, ref outFlags);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffers(nameof(AcceptSecurityContext), inputBuffers?.Length ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
+            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffers(nameof(AcceptSecurityContext), inputBuffers.Length, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
 
-        internal static int CompleteAuthToken(SSPIInterface secModule, ref SafeDeleteContext context, SecurityBuffer[] inputBuffers)
+        internal static int CompleteAuthToken(SSPIInterface secModule, ref SafeDeleteContext context, in SecurityBuffer inputBuffer)
         {
-            int errorCode = secModule.CompleteAuthToken(ref context, inputBuffers);
+            int errorCode = secModule.CompleteAuthToken(ref context, in inputBuffer);
 
             if (NetEventSource.IsEnabled) NetEventSource.Log.OperationReturnedSomething(nameof(CompleteAuthToken), (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
 
-        internal static int ApplyControlToken(SSPIInterface secModule, ref SafeDeleteContext context, SecurityBuffer[] inputBuffers)
+        internal static int ApplyControlToken(SSPIInterface secModule, ref SafeDeleteContext context, in SecurityBuffer inputBuffer)
         {
-            int errorCode = secModule.ApplyControlToken(ref context, inputBuffers);
+            int errorCode = secModule.ApplyControlToken(ref context, in inputBuffer);
 
             if (NetEventSource.IsEnabled) NetEventSource.Log.OperationReturnedSomething(nameof(ApplyControlToken), (Interop.SECURITY_STATUS)errorCode);
 
@@ -198,22 +185,22 @@ namespace System.Net
             return secModule.QuerySecurityContextToken(context, out token);
         }
 
-        public static int EncryptMessage(SSPIInterface secModule, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
+        public static int EncryptMessage(SSPIInterface secModule, SafeDeleteContext context, Span<SecurityBuffer> input, uint sequenceNumber)
         {
             return EncryptDecryptHelper(OP.Encrypt, secModule, context, input, sequenceNumber);
         }
 
-        public static int DecryptMessage(SSPIInterface secModule, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
+        public static int DecryptMessage(SSPIInterface secModule, SafeDeleteContext context, Span<SecurityBuffer> input, uint sequenceNumber)
         {
             return EncryptDecryptHelper(OP.Decrypt, secModule, context, input, sequenceNumber);
         }
 
-        internal static int MakeSignature(SSPIInterface secModule, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
+        internal static int MakeSignature(SSPIInterface secModule, SafeDeleteContext context, Span<SecurityBuffer> input, uint sequenceNumber)
         {
             return EncryptDecryptHelper(OP.MakeSignature, secModule, context, input, sequenceNumber);
         }
 
-        public static int VerifySignature(SSPIInterface secModule, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
+        public static int VerifySignature(SSPIInterface secModule, SafeDeleteContext context, Span<SecurityBuffer> input, uint sequenceNumber)
         {
             return EncryptDecryptHelper(OP.VerifySignature, secModule, context, input, sequenceNumber);
         }
@@ -226,21 +213,23 @@ namespace System.Net
             VerifySignature
         }
 
-        private static unsafe int EncryptDecryptHelper(OP op, SSPIInterface secModule, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
+        private static unsafe int EncryptDecryptHelper(OP op, SSPIInterface secModule, SafeDeleteContext context, Span<SecurityBuffer> input, uint sequenceNumber)
         {
             Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(input.Length);
-            var unmanagedBuffer = new Interop.SspiCli.SecBuffer[input.Length];
+            Span<Interop.SspiCli.SecBuffer> unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[input.Length];
+            unmanagedBuffer.Clear();
 
             fixed (Interop.SspiCli.SecBuffer* unmanagedBufferPtr = unmanagedBuffer)
             {
                 sdcInOut.pBuffers = unmanagedBufferPtr;
-                GCHandle[] pinnedBuffers = new GCHandle[input.Length];
+                Span<GCHandle> pinnedBuffers = stackalloc GCHandle[input.Length];
+                pinnedBuffers.Clear();
                 byte[][] buffers = new byte[input.Length][];
                 try
                 {
                     for (int i = 0; i < input.Length; i++)
                     {
-                        SecurityBuffer iBuffer = input[i];
+                        ref readonly SecurityBuffer iBuffer = ref input[i];
                         unmanagedBuffer[i].cbBuffer = iBuffer.size;
                         unmanagedBuffer[i].BufferType = iBuffer.type;
                         if (iBuffer.token == null || iBuffer.token.Length == 0)
@@ -283,7 +272,7 @@ namespace System.Net
                     // Marshalling back returned sizes / data.
                     for (int i = 0; i < input.Length; i++)
                     {
-                        SecurityBuffer iBuffer = input[i];
+                        ref SecurityBuffer iBuffer = ref input[i];
                         iBuffer.size = unmanagedBuffer[i].cbBuffer;
                         iBuffer.type = unmanagedBuffer[i].BufferType;
 
@@ -380,159 +369,148 @@ namespace System.Net
             return result;
         }
 
-        public static object QueryContextAttributes(SSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute)
-        {
-            int errorCode;
-            return QueryContextAttributes(secModule, securityContext, contextAttribute, out errorCode);
-        }
-
-        public static object QueryContextAttributes(SSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute, out int errorCode)
+        public static bool QueryBlittableContextAttributes<T>(SSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute, ref T attribute) where T : unmanaged
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, contextAttribute);
 
-            int nativeBlockSize = IntPtr.Size;
-            Type handleType = null;
+            Span<T> span =
+#if netstandard
+                stackalloc T[1] { attribute };
+#else
+                MemoryMarshal.CreateSpan(ref attribute, 1);
+#endif
+            int errorCode = secModule.QueryContextAttributes(
+                securityContext, contextAttribute,
+                MemoryMarshal.AsBytes(span),
+                null,
+                out SafeHandle sspiHandle);
+#if netstandard
+            attribute = span[0];
+#endif
 
-            switch (contextAttribute)
+            using (sspiHandle)
             {
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES:
-                    nativeBlockSize = SecPkgContext_Sizes.SizeOf;
-                    break;
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_STREAM_SIZES:
-                    nativeBlockSize = SecPkgContext_StreamSizes.SizeOf;
-                    break;
+                if (errorCode != 0)
+                {
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"ERROR = {ErrorDescription(errorCode)}");
+                    return false;
+                }
 
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES:
-                    handleType = typeof(SafeFreeContextBuffer);
-                    break;
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, attribute);
+                return true;
+            }
+        }
 
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_PACKAGE_INFO:
-                    handleType = typeof(SafeFreeContextBuffer);
-                    break;
+        public static bool QueryBlittableContextAttributes<T>(SSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute, Type safeHandleType, out SafeHandle sspiHandle, ref T attribute) where T : unmanaged
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, contextAttribute);
 
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NEGOTIATION_INFO:
-                    handleType = typeof(SafeFreeContextBuffer);
-                    unsafe
-                    {
-                        nativeBlockSize = sizeof(SecPkgContext_NegotiationInfoW);
-                    }
-                    break;
+            Span<T> span =
+#if netstandard
+                stackalloc T[1] { attribute };
+#else
+                MemoryMarshal.CreateSpan(ref attribute, 1);
+#endif
+            int errorCode = secModule.QueryContextAttributes(
+                securityContext, contextAttribute,
+                MemoryMarshal.AsBytes(span),
+                safeHandleType,
+                out sspiHandle);
+#if netstandard
+            attribute = span[0];
+#endif
 
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_SPECIFIED_TARGET:
-                    handleType = typeof(SafeFreeContextBuffer);
-                    break;
-
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CONTEXT:
-                    handleType = typeof(SafeFreeCertContext);
-                    break;
-
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_LOCAL_CERT_CONTEXT:
-                    handleType = typeof(SafeFreeCertContext);
-                    break;
-
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_ISSUER_LIST_EX:
-                    nativeBlockSize = Marshal.SizeOf<Interop.SspiCli.SecPkgContext_IssuerListInfoEx>();
-                    handleType = typeof(SafeFreeContextBuffer);
-                    break;
-
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CONNECTION_INFO:
-                    nativeBlockSize = Marshal.SizeOf<SecPkgContext_ConnectionInfo>();
-                    break;
-
-                case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL:
-                    nativeBlockSize = Marshal.SizeOf<Interop.SecPkgContext_ApplicationProtocol>();
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(contextAttribute)), nameof(contextAttribute));
+            if (errorCode != 0)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"ERROR = {ErrorDescription(errorCode)}");
+                return false;
             }
 
-            SafeHandle sspiHandle = null;
-            object attribute = null;
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, attribute);
+            return true;
+        }
 
-            try
+        public static string QueryStringContextAttributes(SSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute)
+        {
+            Debug.Assert(
+                contextAttribute == Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES ||
+                contextAttribute == Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_SPECIFIED_TARGET);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null, contextAttribute);
+
+            Span<IntPtr> buffer = stackalloc IntPtr[1];
+            int errorCode = secModule.QueryContextAttributes(
+                securityContext,
+                contextAttribute,
+                MemoryMarshal.AsBytes(buffer),
+                typeof(SafeFreeContextBuffer),
+                out SafeHandle sspiHandle);
+            using (sspiHandle)
             {
-                var nativeBuffer = new byte[nativeBlockSize];
-                errorCode = secModule.QueryContextAttributes(securityContext, contextAttribute, nativeBuffer, handleType, out sspiHandle);
                 if (errorCode != 0)
                 {
                     if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"ERROR = {ErrorDescription(errorCode)}");
                     return null;
                 }
 
-                switch (contextAttribute)
-                {
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES:
-                        attribute = new SecPkgContext_Sizes(nativeBuffer);
-                        break;
-
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_STREAM_SIZES:
-                        attribute = new SecPkgContext_StreamSizes(nativeBuffer);
-                        break;
-
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES:
-                        attribute = Marshal.PtrToStringUni(sspiHandle.DangerousGetHandle());
-                        break;
-
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_PACKAGE_INFO:
-                        attribute = new SecurityPackageInfoClass(sspiHandle, 0);
-                        break;
-
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NEGOTIATION_INFO:
-                        unsafe
-                        {
-                            fixed (void* ptr = &nativeBuffer[0])
-                            {
-                                attribute = new NegotiationInfoClass(sspiHandle, (int)((SecPkgContext_NegotiationInfoW*)ptr)->NegotiationState);
-                            }
-                        }
-                        break;
-
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_SPECIFIED_TARGET:
-                        attribute = Marshal.PtrToStringUni(sspiHandle.DangerousGetHandle());
-                        break;
-
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_LOCAL_CERT_CONTEXT:
-                    // Fall-through to RemoteCertificate is intentional.
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CONTEXT:
-                        attribute = sspiHandle;
-                        sspiHandle = null;
-                        break;
-
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_ISSUER_LIST_EX:
-                        attribute = new Interop.SspiCli.SecPkgContext_IssuerListInfoEx(sspiHandle, nativeBuffer);
-                        sspiHandle = null;
-                        break;
-
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CONNECTION_INFO:
-                        attribute = new SecPkgContext_ConnectionInfo(nativeBuffer);
-                        break;
-
-                    case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL:
-                        unsafe
-                        {
-                            fixed (void *ptr = nativeBuffer)
-                            {
-                                attribute = Marshal.PtrToStructure<Interop.SecPkgContext_ApplicationProtocol>(new IntPtr(ptr));
-                            }
-                        }
-                        break;
-
-                    default:
-                        // Will return null.
-                        break;
-                }
+                string result = Marshal.PtrToStringUni(sspiHandle.DangerousGetHandle());
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, result);
+                return result;
             }
-            finally
+        }
+
+        public static SafeFreeCertContext QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(SSPIInterface secModule, SafeDeleteContext securityContext)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
+
+            Span<IntPtr> buffer = stackalloc IntPtr[1];
+            int errorCode = secModule.QueryContextAttributes(
+                securityContext,
+                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_REMOTE_CERT_CONTEXT,
+                MemoryMarshal.AsBytes(buffer),
+                typeof(SafeFreeCertContext),
+                out SafeHandle sspiHandle);
+
+            if (errorCode != 0)
             {
-                if (sspiHandle != null)
-                {
-                    sspiHandle.Dispose();
-                }
+                sspiHandle?.Dispose();
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"ERROR = {ErrorDescription(errorCode)}");
+                return null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, attribute);
-            return attribute;
+            var result = (SafeFreeCertContext)sspiHandle;
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, result);
+            return result;
+        }
+
+        public static bool QueryContextAttributes_SECPKG_ATTR_ISSUER_LIST_EX(SSPIInterface secModule, SafeDeleteContext securityContext, ref Interop.SspiCli.SecPkgContext_IssuerListInfoEx ctx, out SafeHandle sspiHandle)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(null);
+
+            Span<Interop.SspiCli.SecPkgContext_IssuerListInfoEx> buffer =
+#if netstandard
+                stackalloc Interop.SspiCli.SecPkgContext_IssuerListInfoEx[1] { ctx };
+#else
+                MemoryMarshal.CreateSpan(ref ctx, 1);
+#endif
+            int errorCode = secModule.QueryContextAttributes(
+                securityContext,
+                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_ISSUER_LIST_EX,
+                MemoryMarshal.AsBytes(buffer),
+                typeof(SafeFreeContextBuffer),
+                out sspiHandle);
+#if netstandard
+            ctx = buffer[0];
+#endif
+
+            if (errorCode != 0)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, $"ERROR = {ErrorDescription(errorCode)}");
+                return false;
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ctx);
+            return true;
         }
 
         public static string ErrorDescription(int errorCode)

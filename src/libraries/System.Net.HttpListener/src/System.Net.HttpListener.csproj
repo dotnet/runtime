@@ -14,6 +14,7 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />
@@ -238,11 +239,11 @@
     <Compile Include="$(CommonPath)\System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBuffer.cs">
-      <Link>Common\System\Net\Security\SecurityBuffer.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBuffer.Windows.cs">
+      <Link>Common\System\Net\Security\SecurityBuffer.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBufferType.cs">
-      <Link>Common\System\Net\Security\SecurityBufferType.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBufferType.Windows.cs">
+      <Link>Common\System\Net\Security\SecurityBufferType.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\SSPIHandleCache.cs">
       <Link>Common\System\Net\Security\SSPIHandleCache.cs</Link>
@@ -351,7 +352,7 @@
     </Compile>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.Net.ServicePoint" />
+    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 </Project>
