@@ -4682,6 +4682,7 @@ register_icalls (void)
 	register_icall (mini_llvmonly_init_vtable_slot, "mini_llvmonly_init_vtable_slot", "ptr ptr int", FALSE);
 	register_icall (mini_llvmonly_init_delegate, "mini_llvmonly_init_delegate", "void object", TRUE);
 	register_icall (mini_llvmonly_init_delegate_virtual, "mini_llvmonly_init_delegate_virtual", "void object object ptr", TRUE);
+	register_icall (mini_llvmonly_throw_nullref_exception, "mini_llvmonly_throw_nullref_exception", "void", TRUE);
 
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);
 	register_icall (mono_get_method_object, "mono_get_method_object", "object ptr", TRUE);

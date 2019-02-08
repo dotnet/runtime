@@ -12603,6 +12603,7 @@ static const char *preinited_jit_icalls[] = {
 	"mini_llvmonly_init_gshared_method_this",
 	"mini_llvmonly_init_gshared_method_mrgctx",
 	"mini_llvmonly_init_gshared_method_vtable",
+	"mini_llvmonly_throw_nullref_exception",
 	"mono_llvm_throw_corlib_exception",
 	"mini_llvmonly_init_vtable_slot",
 	"mono_helper_ldstr_mscorlib",

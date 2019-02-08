@@ -2244,19 +2244,29 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	LLVMPositionBuilderAtEnd (builder, ex_bb);
 
 	if (ctx->cfg->llvm_only) {
-		static LLVMTypeRef sig;
-
-		if (!sig)
-			sig = LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE);
-		callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_llvm_throw_corlib_exception");
-
 		LLVMBuildBr (builder, ex2_bb);
 
 		ctx->builder = builder = create_builder (ctx);
 		LLVMPositionBuilderAtEnd (ctx->builder, ex2_bb);
 
-		args [0] = LLVMConstInt (LLVMInt32Type (), m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF, FALSE);
-		emit_call (ctx, bb, &builder, callee, args, 1);
+		if (!strcmp (exc_type, "NullReferenceException")) {
+			static LLVMTypeRef sig;
+
+			if (!sig)
+				sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
+			callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mini_llvmonly_throw_nullref_exception");
+			emit_call (ctx, bb, &builder, callee, NULL, 0);
+		} else {
+			static LLVMTypeRef sig;
+
+			if (!sig)
+				sig = LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE);
+			callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_llvm_throw_corlib_exception");
+
+			args [0] = LLVMConstInt (LLVMInt32Type (), m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF, FALSE);
+			emit_call (ctx, bb, &builder, callee, args, 1);
+		}
+
 		LLVMBuildUnreachable (builder);
 
 		ctx->builder = builder = create_builder (ctx);

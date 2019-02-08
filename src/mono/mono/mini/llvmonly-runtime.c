@@ -840,3 +840,15 @@ mini_llvmonly_init_gshared_method_vtable (gpointer aot_module, guint32 method_in
 
 	init_llvmonly_method (amodule, method_index, klass, NULL, TRUE);
 }
+
+static GENERATE_GET_CLASS_WITH_CACHE (nullref, "System", "NullReferenceException")
+
+void
+mini_llvmonly_throw_nullref_exception (void)
+{
+	MonoClass *klass = mono_class_get_nullref_class ();
+
+	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
+
+	mono_llvm_throw_corlib_exception (ex_token_index);
+}

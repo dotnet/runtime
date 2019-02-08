@@ -32,4 +32,6 @@ G_EXTERN_C void mini_llvmonly_init_gshared_method_this  (gpointer aot_module, gu
 G_EXTERN_C void mini_llvmonly_init_gshared_method_mrgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx);
 G_EXTERN_C void mini_llvmonly_init_gshared_method_vtable  (gpointer aot_module, guint32 method_index, MonoVTable *vtable);
 
+G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
+
 #endif
