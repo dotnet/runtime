@@ -3041,7 +3041,19 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                             }
                             else
                             {
-                                TypeHandle typeHnd = pJitMan->ResolveEHClause(&EHClause, pcfThisFrame);
+                                TypeHandle typeHnd;
+                                EX_TRY
+                                {
+                                    typeHnd = pJitMan->ResolveEHClause(&EHClause, pcfThisFrame);
+                                }
+                                EX_CATCH_EX(Exception)
+                                {
+                                    SString msg;
+                                    GET_EXCEPTION()->GetMessage(msg);
+                                    msg.Insert(msg.Begin(), W("Cannot resolve EH clause:\n"));
+                                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, msg.GetUnicode());
+                                }
+                                EX_END_CATCH(RethrowTransientExceptions);
 
                                 EH_LOG((LL_INFO100,
                                         "  clause type = %s\n",
