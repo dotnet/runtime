@@ -77,6 +77,7 @@ Notes:
 // that can be supported cross-platform.
 //
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT
 CreateProcessForLaunch(
     __in LPWSTR lpCommandLine,
@@ -137,6 +138,7 @@ CreateProcessForLaunch(
 // ResumeProcess - to be used with the CreateProcessForLaunch resume handle
 //
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT
 ResumeProcess(
     __in HANDLE hResumeHandle)
@@ -155,6 +157,7 @@ ResumeProcess(
 // CloseResumeHandle - to be used with the CreateProcessForLaunch resume handle
 //
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT
 CloseResumeHandle(
     __in HANDLE hResumeHandle)
@@ -692,6 +695,7 @@ StartupHelperThread(LPVOID p)
 // ppUnregisterToken -- pointer to put the UnregisterForRuntimeStartup token.
 //
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT
 RegisterForRuntimeStartup(
     __in DWORD dwProcessId,
@@ -732,6 +736,7 @@ RegisterForRuntimeStartup(
 // ppUnregisterToken -- pointer to put the UnregisterForRuntimeStartup token.
 //
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT
 RegisterForRuntimeStartupEx(
     __in DWORD dwProcessId,
@@ -780,6 +785,7 @@ RegisterForRuntimeStartupEx(
 //
 // pUnregisterToken -- unregister token from RegisterForRuntimeStartup or NULL.
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT
 UnregisterForRuntimeStartup(
     __in PVOID pUnregisterToken)
@@ -815,8 +821,9 @@ const int cchEventNameBufferSize = (sizeof(StartupNotifyEventNamePrefix) + sizeo
                                     + 8  // + hex process id DWORD 
                                     + 10 // + decimal session id DWORD 
                                     + 1;  // '\' after session id
-                                        
-HRESULT 
+
+DLLEXPORT
+HRESULT
 GetStartupNotificationEvent(
     __in DWORD debuggeePID,
     __out HANDLE* phStartupEvent)
@@ -1210,6 +1217,7 @@ EnumProcessModulesInternal(
 // Notes:
 //   Callers use  code:CloseCLREnumeration to free the returned arrays.
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT 
 EnumerateCLRs(
     DWORD debuggeePID, 
@@ -1347,6 +1355,7 @@ EnumerateCLRs(
 // dwArrayLength -- array length originally returned by EnumerateCLRs
 //
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT 
 CloseCLREnumeration(
     __in HANDLE* pHandleArray,
@@ -1473,6 +1482,7 @@ const WCHAR *c_versionStrFormat = W("%08x;%08x;%p");
 //   The version string is an opaque string that can only be passed back to other 
 //   DbgShim APIs.
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT 
 CreateVersionStringFromModule(
     __in DWORD pidDebuggee,
@@ -1707,6 +1717,7 @@ CheckDbiAndRuntimeVersion(
 //    the right debug pack is not installed.
 //  else Error. (*ppCordb will be null)
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT 
 CreateDebuggingInterfaceFromVersionEx(
     __in int iDebuggerVersion,
@@ -1735,7 +1746,8 @@ CreateDebuggingInterfaceFromVersionEx(
 //    the right debug pack is not installed.
 //  else Error. (*ppCordb will be null)
 //-----------------------------------------------------------------------------
-HRESULT 
+DLLEXPORT
+HRESULT
 CreateDebuggingInterfaceFromVersion2(
     __in int iDebuggerVersion,
     __in LPCWSTR szDebuggeeVersion,
@@ -1867,6 +1879,7 @@ Exit:
 //    the right debug pack is not installed.
 //  else Error. (*ppCordb will be null)
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT 
 CreateDebuggingInterfaceFromVersion(
     __in LPCWSTR szDebuggeeVersion, 
@@ -1960,6 +1973,7 @@ GetContinueStartupEvent(
 // Return:
 //  S_OK on success.
 //-----------------------------------------------------------------------------
+DLLEXPORT
 HRESULT 
 CLRCreateInstance(
     REFCLSID clsid,

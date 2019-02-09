@@ -15149,7 +15149,7 @@ DECLARE_API(ExposeDML)
 // According to kksharma the Windows debuggers always sign-extend
 // arguments when calling externally, therefore StackObjAddr 
 // conforms to CLRDATA_ADDRESS contract.
-HRESULT CALLBACK 
+HRESULT CALLBACK
 _EFN_GetManagedExcepStack(
     PDEBUG_CLIENT client,
     ULONG64 StackObjAddr,
@@ -15196,7 +15196,7 @@ _EFN_GetManagedExcepStackW(
 // According to kksharma the Windows debuggers always sign-extend
 // arguments when calling externally, therefore objAddr 
 // conforms to CLRDATA_ADDRESS contract.
-HRESULT CALLBACK 
+HRESULT CALLBACK
 _EFN_GetManagedObjectName(
     PDEBUG_CLIENT client,
     ULONG64 objAddr,
@@ -15224,7 +15224,7 @@ _EFN_GetManagedObjectName(
 // According to kksharma the Windows debuggers always sign-extend
 // arguments when calling externally, therefore objAddr 
 // conforms to CLRDATA_ADDRESS contract.
-HRESULT CALLBACK 
+HRESULT CALLBACK
 _EFN_GetManagedObjectFieldInfo(
     PDEBUG_CLIENT client,
     ULONG64 objAddr,

@@ -7,7 +7,7 @@ export ghprbCommentBody=
 
 # resolve python-version to use
 if [ "$PYTHON" == "" ] ; then
-    if ! PYTHON=$(command -v python3 || command -v python2 || command -v python)
+    if ! PYTHON=$(command -v python3 || command -v python2 || command -v python || command -v py)
     then
        echo "Unable to locate build-dependency python!" 1>&2
        exit 1

@@ -447,7 +447,7 @@ static OptionDependencies g_dependencies[] =
 // 
 
 // This function gets the Dispenser interface given the CLSID and REFIID.
-STDAPI MetaDataGetDispenser(
+DLLEXPORT STDAPI MetaDataGetDispenser(
     REFCLSID     rclsid,    // The class to desired.
     REFIID       riid,      // Interface wanted on class factory.
     LPVOID FAR * ppv)       // Return interface pointer here.

@@ -21,10 +21,9 @@
 #include <wchar.h>
 #include <stdio.h>
 
-#ifndef PUB
-// PUB is defined to influence method visibility for some compilers.
-#define PUB
-#endif // !PUB
+#ifndef DLLEXPORT
+// DLLEXPORT is defined to influence method visibility for some compilers.
+#define DLLEXPORT
+#endif // !DLLEXPORT
 
 #endif // __CrtWrap_h__
-

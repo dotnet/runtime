@@ -130,7 +130,7 @@ STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
 // Notes:
 //    It's inconsistent that this takes a (handle, pid) but hands back an ICorDebug instead of an ICorDebugProcess.
 //    Callers will need to call *ppCordb->DebugActiveProcess(pid).
-STDAPI CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, HMODULE hmodTargetCLR, IUnknown ** ppCordb)
+STDAPI DLLEXPORT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, HMODULE hmodTargetCLR, IUnknown ** ppCordb)
 {
     if (ppCordb == NULL)
     {
@@ -180,7 +180,7 @@ STDAPI CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPCWSTR lpApp
 // Notes:
 //    It's inconsistent that this takes a (handle, pid) but hands back an ICorDebug instead of an ICorDebugProcess.
 //    Callers will need to call *ppCordb->DebugActiveProcess(pid).
-STDAPI CoreCLRCreateCordbObject(int iDebuggerVersion, DWORD pid, HMODULE hmodTargetCLR, IUnknown ** ppCordb)
+STDAPI DLLEXPORT CoreCLRCreateCordbObject(int iDebuggerVersion, DWORD pid, HMODULE hmodTargetCLR, IUnknown ** ppCordb)
 {
     return CoreCLRCreateCordbObjectEx(iDebuggerVersion, pid, NULL, hmodTargetCLR, ppCordb);
 }
@@ -309,7 +309,7 @@ const GUID IID_IDebugRemoteCorDebug = {0x83C91210, 0xA34F, 0x427c, {0xB3, 0x5F, 
 // Called by COM to get a class factory for a given CLSID.  If it is one we
 // support, instantiate a class factory object and prepare for create instance.
 //*****************************************************************************
-STDAPI DllGetClassObjectInternal(               // Return code.
+STDAPI DLLEXPORT DllGetClassObjectInternal(               // Return code.
     REFCLSID    rclsid,                 // The class to desired.
     REFIID      riid,                   // Interface wanted on class factory.
     LPVOID FAR  *ppv)                   // Return interface pointer here.
@@ -369,7 +369,7 @@ STDAPI DllGetClassObjectInternal(               // Return code.
 // (we went through the shim). CoreCLR doesn't have a shim and we go back to the COM model so we re-expose
 // DllGetClassObject to make that work.
 
-STDAPI DllGetClassObject(               // Return code.
+STDAPI DLLEXPORT DllGetClassObject(               // Return code.
     REFCLSID    rclsid,                 // The class to desired.
     REFIID      riid,                   // Interface wanted on class factory.
     LPVOID FAR  *ppv)                   // Return interface pointer here.
