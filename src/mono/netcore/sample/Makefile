@@ -1,6 +1,6 @@
 all: run
 
-URL:=https://dotnetcli.azureedge.net/dotnet/Sdk/3.0.100-preview-009817/dotnet-sdk-3.0.100-preview-009817-osx-x64.tar.gz
+URL:=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/3.0.100-preview4-010272/dotnet-sdk-3.0.100-preview4-010272-osx-x64.tar.gz
 
 download-macos:
 	curl $(URL) --output dotnet-sdk-3.tar.gz
@@ -9,7 +9,7 @@ download-macos:
 build-sample:
 	./dotnet build HelloWorld
 
-SHAREDRUNTIME:=shared/Microsoft.NETCore.App/3.0.0-preview-27122-01/
+SHAREDRUNTIME:=shared/Microsoft.NETCore.App/3.0.0-preview-27408-5/
 
 link-mono:
 	cp ../../mono/mini/.libs/libmonosgen-2.0.dylib $(SHAREDRUNTIME)/libcoreclr.dylib
