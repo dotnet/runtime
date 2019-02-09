@@ -38,6 +38,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentOutOfRangeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArithmeticException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Array.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Array.Enumerators.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArraySegment.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArrayTypeMismatchException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AssemblyLoadEventArgs.cs" />
