@@ -32,5 +32,6 @@
     <Compile Include="PipeLengthTests.cs" />
     <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />
     <Compile Include="PipeResetTests.nonnetstandard.cs" />
+    <Compile Include="PipePoolTests.nonnetstandard.cs" />
   </ItemGroup>
 </Project>

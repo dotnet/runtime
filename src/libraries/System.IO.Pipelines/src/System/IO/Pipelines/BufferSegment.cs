@@ -51,17 +51,20 @@ namespace System.IO.Pipelines
         {
             _memoryOwner = memoryOwner;
 
-            AvailableMemory = memoryOwner.Memory;
-            RunningIndex = 0;
-            End = 0;
-            NextSegment = null;
+            SetUnownedMemory(memoryOwner.Memory);
         }
 
         public void SetMemory(byte[] arrayPoolBuffer)
         {
             _memoryOwner = arrayPoolBuffer;
 
-            AvailableMemory = arrayPoolBuffer;
+            SetUnownedMemory(arrayPoolBuffer);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetUnownedMemory(Memory<byte> memory)
+        {
+            AvailableMemory = memory;
             RunningIndex = 0;
             End = 0;
             NextSegment = null;
@@ -73,9 +76,9 @@ namespace System.IO.Pipelines
             {
                 owner.Dispose();
             }
-            else
+            else if (_memoryOwner is byte[] array)
             {
-                ArrayPool<byte>.Shared.Return((byte[])_memoryOwner);
+                ArrayPool<byte>.Shared.Return(array);
             }
 
             _memoryOwner = null;
