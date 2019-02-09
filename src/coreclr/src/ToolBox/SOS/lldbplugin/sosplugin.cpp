@@ -5,7 +5,7 @@
 #include "sosplugin.h"
 
 namespace lldb {
-    bool PluginInitialize (lldb::SBDebugger debugger);
+    DLLEXPORT bool PluginInitialize (lldb::SBDebugger debugger);
 }
 
 bool

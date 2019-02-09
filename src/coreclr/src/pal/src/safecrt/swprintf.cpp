@@ -80,7 +80,7 @@
 *
 *******************************************************************************/
 
-int __cdecl swprintf_s (
+DLLEXPORT int __cdecl swprintf_s (
         wchar_t *string,
         size_t sizeInWords,
         const wchar_t *format,
@@ -99,7 +99,7 @@ int __cdecl swprintf_s (
     return ret;
 }
 
-int __cdecl _snwprintf_s (
+DLLEXPORT int __cdecl _snwprintf_s (
         wchar_t *string,
         size_t sizeInWords,
         size_t count,

@@ -65,8 +65,7 @@
 *Exceptions:
 *
 *******************************************************************************/
-
-int sprintf_s (
+DLLEXPORT int sprintf_s (
         char *string,
         size_t sizeInBytes,
         const char *format,
@@ -81,7 +80,7 @@ int sprintf_s (
         return ret;
 }
 
-int _snprintf_s (
+DLLEXPORT int _snprintf_s (
         char *string,
         size_t sizeInBytes,
         size_t count,

@@ -183,13 +183,13 @@ private:
     void SpinEnter();
 
 #ifndef DACCESS_COMPILE
-    DEBUG_NOINLINE static void AcquireLock(CrstBase *c) PUB {
+    DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
         ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Enter(); 
     }
 
-    DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) PUB { 
+    DLLEXPORT DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
         ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Leave(); 
@@ -202,8 +202,8 @@ private:
     // Argument: 
     //     input: c - the lock to be checked. 
     // Note: Throws
-    static void AcquireLock(CrstBase * c) PUB
-    { 
+    DLLEXPORT static void AcquireLock(CrstBase * c)
+    {
         SUPPORTS_DAC;
         if (c->GetEnterCount() != 0) 
         {
@@ -211,8 +211,8 @@ private:
         }
     };
 
-    static void ReleaseLock(CrstBase *c) PUB
-    { 
+    DLLEXPORT static void ReleaseLock(CrstBase *c)
+    {
         SUPPORTS_DAC;
     };
 #endif // DACCESS_COMPILE
@@ -537,5 +537,3 @@ __inline BOOL IsOwnerOfCrst(LPVOID lock)
 void DebugTryCrst(CrstBase * pLock);
 #endif
 #endif // __crst_h__
-
-

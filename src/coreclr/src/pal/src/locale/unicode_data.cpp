@@ -22,7 +22,7 @@ Abstract:
 
 #if !HAVE_COREFOUNDATION
 
-CONST UnicodeDataRec UnicodeData[] = {
+CONST UnicodeDataRec UnicodeData[] DLLEXPORT = {
 
 
 { 0x0000,	0x0020,	0x0000,	0 },
@@ -1846,7 +1846,7 @@ CONST UnicodeDataRec UnicodeData[] = {
 { 0xffe0,	0x0010,	0x0000,	13 },
 };
 
-CONST UINT UNICODE_DATA_SIZE = sizeof(UnicodeData)/sizeof(UnicodeDataRec);
-CONST UINT UNICODE_DATA_DIRECT_ACCESS = 256;
+CONST UINT UNICODE_DATA_SIZE DLLEXPORT = sizeof(UnicodeData)/sizeof(UnicodeDataRec);
+CONST UINT UNICODE_DATA_DIRECT_ACCESS DLLEXPORT = 256;
 
 #endif // !HAVE_COREFOUNDATION

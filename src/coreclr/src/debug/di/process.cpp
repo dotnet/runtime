@@ -61,7 +61,7 @@ extern RSDebuggingInfo * g_pRSDebuggingInfo;
 //    @dbgtodo attach-bit: need to determine fate of attach bit.
 //
 //---------------------------------------------------------------------------------------
-STDAPI OpenVirtualProcessImpl(
+STDAPI DLLEXPORT OpenVirtualProcessImpl(
     ULONG64 clrInstanceId,
     IUnknown * pDataTarget,
     HMODULE hDacModule,
@@ -172,7 +172,7 @@ STDAPI OpenVirtualProcessImpl(
 // Return Value:
 //    S_OK on success. Else failure
 //---------------------------------------------------------------------------------------
-STDAPI OpenVirtualProcessImpl2(
+STDAPI DLLEXPORT OpenVirtualProcessImpl2(
     ULONG64 clrInstanceId,
     IUnknown * pDataTarget,
     LPCWSTR pDacModulePath,
@@ -195,7 +195,7 @@ STDAPI OpenVirtualProcessImpl2(
 // We'd like a beta1 shim/VS to still be able to open dumps using a CLR v4 Beta2+ mscordbi.dll,
 // so we'll leave this in place (at least until after Beta2 is in wide use).
 //---------------------------------------------------------------------------------------
-STDAPI OpenVirtualProcess2(
+STDAPI DLLEXPORT OpenVirtualProcess2(
     ULONG64 clrInstanceId,
     IUnknown * pDataTarget,
     HMODULE hDacModule,
@@ -213,7 +213,7 @@ STDAPI OpenVirtualProcess2(
 // Public OpenVirtualProcess method to get an ICorDebugProcess4 instance
 // Used directly in CLR v4 pre Beta1 - can probably be safely removed now
 //---------------------------------------------------------------------------------------
-STDAPI OpenVirtualProcess(
+STDAPI DLLEXPORT OpenVirtualProcess(
     ULONG64 clrInstanceId,
     IUnknown * pDataTarget,
     REFIID riid,

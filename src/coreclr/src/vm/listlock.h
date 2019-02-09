@@ -196,14 +196,14 @@ public:
 
     // LockHolder holds the lock of the element, not the element itself
 
-    DEBUG_NOINLINE static void LockHolderEnter(Entry_t *pThis) PUB
+    DLLEXPORT DEBUG_NOINLINE static void LockHolderEnter(Entry_t *pThis)
     {
         WRAPPER_NO_CONTRACT;
         ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         pThis->Enter();
     }
 
-    DEBUG_NOINLINE static void LockHolderLeave(Entry_t *pThis) PUB
+    DLLEXPORT DEBUG_NOINLINE static void LockHolderLeave(Entry_t *pThis)
     {
         WRAPPER_NO_CONTRACT;
         ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;

@@ -161,6 +161,7 @@ extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const c
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+DLLEXPORT
 int coreclr_initialize(
             const char* exePath,
             const char* appDomainFriendlyName,
@@ -280,6 +281,7 @@ int coreclr_initialize(
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+DLLEXPORT
 int coreclr_shutdown(
             void* hostHandle,
             unsigned int domainId)
@@ -310,6 +312,7 @@ int coreclr_shutdown(
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+DLLEXPORT
 int coreclr_shutdown_2(
             void* hostHandle,
             unsigned int domainId,
@@ -344,6 +347,7 @@ int coreclr_shutdown_2(
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+DLLEXPORT
 int coreclr_create_delegate(
             void* hostHandle,
             unsigned int domainId,
@@ -383,6 +387,7 @@ int coreclr_create_delegate(
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+DLLEXPORT
 int coreclr_execute_assembly(
             void* hostHandle,
             unsigned int domainId,
