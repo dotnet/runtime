@@ -1190,20 +1190,8 @@ void ZapInfo::setEHinfo(unsigned EHnumber,
     {
         ilClause->ClassToken = clause->ClassToken;
 
-        if (m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB) && (clause->ClassToken != 0))
+        if (ilClause->ClassToken != 0)
         {
-            // IL stub tokens are 'private' and do not resolve correctly in their parent module's metadata.
-
-            // Currently, the only place we are using a token here is for a COM-to-CLR exception-to-HRESULT
-            // mapping catch clause.  We want this catch clause to catch all exceptions, so we override the
-            // token to be mdTypeRefNil, which used by the EH system to mean catch(...)
-
-#ifdef _DEBUG
-            // The proper way to do this, should we ever want to support arbitrary types here, is to "pre-
-            // resolve" the token and store the TypeHandle in the clause.  But this requires additional 
-            // infrastructure to ensure the TypeHandle is saved and fixed-up properly.  For now, we will
-            // simply assert that the original type was System.Object.
-
             CORINFO_RESOLVED_TOKEN resolvedToken = { 0 };
             resolvedToken.tokenContext = MAKE_METHODCONTEXT(m_currentMethodInfo.ftn);
             resolvedToken.tokenScope = m_currentMethodInfo.scope;
@@ -1212,11 +1200,32 @@ void ZapInfo::setEHinfo(unsigned EHnumber,
 
             resolveToken(&resolvedToken);
 
-            CORINFO_CLASS_HANDLE systemObjectHandle = getBuiltinClass(CLASSID_SYSTEM_OBJECT);
-            _ASSERTE(systemObjectHandle == resolvedToken.hClass);
-#endif // _DEBUG
+            if (m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB))
+            {
+                // IL stub tokens are 'private' and do not resolve correctly in their parent module's metadata.
 
-            ilClause->ClassToken = mdTypeRefNil; 
+                // Currently, the only place we are using a token here is for a COM-to-CLR exception-to-HRESULT
+                // mapping catch clause.  We want this catch clause to catch all exceptions, so we override the
+                // token to be mdTypeRefNil, which used by the EH system to mean catch(...)
+#ifdef _DEBUG
+                // The proper way to do this, should we ever want to support arbitrary types here, is to "pre-
+                // resolve" the token and store the TypeHandle in the clause.  But this requires additional
+                // infrastructure to ensure the TypeHandle is saved and fixed-up properly.  For now, we will
+                // simply assert that the original type was System.Object.
+
+                CORINFO_CLASS_HANDLE systemObjectHandle = getBuiltinClass(CLASSID_SYSTEM_OBJECT);
+                _ASSERTE(systemObjectHandle == resolvedToken.hClass);
+#endif // _DEBUG
+                ilClause->ClassToken = mdTypeRefNil;
+            }
+            else
+            {
+                // For all clause types add fixup to ensure the types are loaded before the code of the method
+                // containing the catch blocks is executed. This ensures that a failure to load the types would
+                // not happen when the exception handling is in progress and it is looking for a catch handler.
+                // At that point, we could only fail fast.
+                classMustBeLoadedBeforeCodeIsRun(resolvedToken.hClass);
+            }
         }
     }
 
