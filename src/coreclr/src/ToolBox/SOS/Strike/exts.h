@@ -182,8 +182,16 @@ inline BOOL IsInterrupt()
 //
 #undef DECLARE_API
 
+#ifndef DLLEXPORT
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__ ((visibility ("default")))
+#endif // _MSC_VER
+#endif // DLLEXPORT
+
 #define DECLARE_API(extension)     \
-CPPMOD HRESULT CALLBACK extension(PDEBUG_CLIENT client, PCSTR args)
+CPPMOD DLLEXPORT HRESULT CALLBACK extension(PDEBUG_CLIENT client, PCSTR args)
 
 class __ExtensionCleanUp
 {

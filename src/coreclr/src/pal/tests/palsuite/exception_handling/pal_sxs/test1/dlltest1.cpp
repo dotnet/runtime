@@ -15,7 +15,9 @@
 #include <palsuite.h>
 
 extern "C"
-int InitializeDllTest1()
+int
+PALAPI
+InitializeDllTest1()
 {
     PAL_SetInitializeDLLFlags(PAL_INITIALIZE_DLL | PAL_INITIALIZE_REGISTER_SIGNALS);
     return PAL_InitializeDLL();
@@ -36,7 +38,9 @@ BOOL bTry    = FALSE;
 BOOL bExcept = FALSE;
 
 extern "C"
-int DllTest1()
+int
+PALAPI
+DllTest1()
 {
     Trace("Starting pal_sxs test1 DllTest1\n");
 

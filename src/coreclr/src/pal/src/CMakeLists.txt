@@ -295,10 +295,18 @@ add_library(coreclrpal
   ${LIBUNWIND_OBJECTS}
 )
 
-add_library(tracepointprovider
-  STATIC
-  misc/tracepointprovider.cpp
-)
+# There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
+# which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
+#
+# > warning: /Applications/Xcode-9.4.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib:
+# > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
+#
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+  add_library(tracepointprovider
+    STATIC
+    misc/tracepointprovider.cpp
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   find_library(COREFOUNDATION CoreFoundation)

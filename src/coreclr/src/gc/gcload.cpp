@@ -13,11 +13,13 @@
 #include "gcenv.h"
 #include "gc.h"
 
+#ifndef DLLEXPORT
 #ifdef _MSC_VER
 #define DLLEXPORT __declspec(dllexport)
 #else
 #define DLLEXPORT __attribute__ ((visibility ("default")))
 #endif // _MSC_VER
+#endif // DLLEXPORT
 
 #define GC_EXPORT extern "C" DLLEXPORT
 

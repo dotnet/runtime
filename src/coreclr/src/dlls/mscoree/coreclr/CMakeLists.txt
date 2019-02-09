@@ -120,12 +120,17 @@ else()
     list(APPEND CORECLR_LIBRARIES
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
-        tracepointprovider
         ${END_WHOLE_ARCHIVE}
         mscorrc_debug
         palrt
     )
 endif(WIN32)
+
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+    list(APPEND CORECLR_LIBRARIES
+        tracepointprovider
+    )
+endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 if(FEATURE_PERFTRACING)
     list(APPEND CORECLR_LIBRARIES
