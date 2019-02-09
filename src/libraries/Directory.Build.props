@@ -14,6 +14,10 @@
     -->
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
 
+    <!-- We use the compiler toolset that comes from NuGet Packages rather than the SDK built-in.
+    This one sets UseSharedCompilation to false by default. -->
+    <UseSharedCompilation>true</UseSharedCompilation>
+
     <ToolSetCommonDirectory>$(MSBuildThisFileDirectory)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))">true</IsSourceProject>
   </PropertyGroup>
