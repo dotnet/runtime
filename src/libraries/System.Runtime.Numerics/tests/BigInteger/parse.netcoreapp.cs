@@ -9,6 +9,24 @@ namespace System.Numerics.Tests
 {
     public partial class parseTest
     {
+        [Theory]
+        [InlineData("123456789", 0, 9, "123456789")]
+        [InlineData("123456789", 0, 1, "1")]
+        [InlineData("123456789", 1, 3, "234")]
+        public void Parse_Subspan_Success(string input, int offset, int length, string expected)
+        {
+            Eval(BigInteger.Parse(input.AsSpan(offset, length)), expected);
+            Assert.True(BigInteger.TryParse(input.AsSpan(offset, length), out BigInteger test));
+            Eval(test, expected);
+        }
+
+        [Fact]
+        public void Parse_EmptySubspan_Fails()
+        {
+            Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out BigInteger result));
+            Assert.Equal(0, result);
+        }
+
         static partial void VerifyParseSpanToString(string num1, NumberStyles ns, bool failureNotExpected, string expected)
         {
             if (failureNotExpected)
