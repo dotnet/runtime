@@ -8,7 +8,7 @@
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />
-    <Compile Include="System\Diagnostics\Tracing\EventCounter.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\EventCounter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
