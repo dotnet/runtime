@@ -206,11 +206,18 @@ namespace System.IO.Pipelines
 
             if (_pool is null)
             {
+                // Use the array pool
                 newSegment.SetMemory(ArrayPool<byte>.Shared.Rent(GetSegmentSize(sizeHint)));
+            }
+            else if (sizeHint <= _pool.MaxBufferSize)
+            {
+                // Use the specified pool if it fits
+                newSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint, _pool.MaxBufferSize)));
             }
             else
             {
-                newSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint, _pool.MaxBufferSize)));
+                // We can't use the pool so allocate an array
+                newSegment.SetUnownedMemory(new byte[sizeHint]);
             }
 
             return newSegment;
