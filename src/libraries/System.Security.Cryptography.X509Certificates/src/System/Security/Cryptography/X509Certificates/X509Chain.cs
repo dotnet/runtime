@@ -118,9 +118,9 @@ namespace System.Security.Cryptography.X509Certificates
                 _pal = ChainPal.BuildChain(
                     _useMachineContext,
                     certificate.Pal,
-                    chainPolicy._extraStore,
-                    chainPolicy._applicationPolicy,
-                    chainPolicy._certificatePolicy,
+                    chainPolicy.ExtraStore,
+                    chainPolicy.ApplicationPolicy,
+                    chainPolicy.CertificatePolicy,
                     chainPolicy.RevocationMode,
                     chainPolicy.RevocationFlag,
                     chainPolicy.VerificationTime,
