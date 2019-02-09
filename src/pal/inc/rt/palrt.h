@@ -388,10 +388,10 @@ typedef WCHAR *BSTR;
 
 STDAPI_(BSTR) SysAllocString(const OLECHAR*);
 STDAPI_(BSTR) SysAllocStringLen(const OLECHAR*, UINT);
-STDAPI_(BSTR) SysAllocStringByteLen(const char *, UINT);
+DLLEXPORT STDAPI_(BSTR) SysAllocStringByteLen(const char *, UINT);
 STDAPI_(void) SysFreeString(BSTR);
 STDAPI_(UINT) SysStringLen(BSTR);
-STDAPI_(UINT) SysStringByteLen(BSTR);
+DLLEXPORT STDAPI_(UINT) SysStringByteLen(BSTR);
 
 typedef double DATE;
 

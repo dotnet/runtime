@@ -96,17 +96,20 @@ extern "C" {
 #else
 #define PALIMPORT   __declspec(dllimport)
 #endif
+#define DLLEXPORT __declspec(dllexport)
 #define PAL_NORETURN __declspec(noreturn)
 
 #else
 
 #define PALIMPORT
+#define DLLEXPORT __attribute__((visibility("default")))
 #define PAL_NORETURN    __attribute__((noreturn))
 
 #endif
 
-#define PALAPI      __cdecl
-#define PALAPIV     __cdecl
+#define PALAPI             DLLEXPORT __cdecl
+#define PALAPI_NOEXPORT    __cdecl
+#define PALAPIV            __cdecl
 
 ////////////////////////////////////////////////////////////////////////
 // Type attribute stuff

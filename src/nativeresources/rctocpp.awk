@@ -78,7 +78,7 @@ function writefooter(arrayName, tableName)
     print "};";
     print "";
 
-    print "const NativeStringResourceTable " tableName " = {";
+    print "const NativeStringResourceTable " tableName " __attribute__((visibility(\"default\"))) = {";
     print numEntries ",";
     print arrayName "};";
 }

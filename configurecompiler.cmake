@@ -482,6 +482,9 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   # as x64 does. It has been causing issues in ARM (https://github.com/dotnet/coreclr/issues/4746)
   add_compile_options(-fsigned-char)
 
+  # We mark the function which needs exporting with DLLEXPORT
+  add_compile_options(-fvisibility=hidden)
+
   # Specify the minimum supported version of macOS
   if(CLR_CMAKE_PLATFORM_DARWIN)
     set(MACOS_VERSION_MIN_FLAGS "-mmacosx-version-min=10.12")

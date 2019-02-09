@@ -189,7 +189,7 @@ static int __cdecl vnwscan_fn (
 *
 *******************************************************************************/
 
-int __cdecl sscanf_s (
+DLLEXPORT int __cdecl sscanf_s (
         const char *string,
         const char *format,
         ...
