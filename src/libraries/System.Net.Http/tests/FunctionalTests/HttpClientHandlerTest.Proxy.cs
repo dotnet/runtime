@@ -25,7 +25,7 @@ namespace System.Net.Http.Functional.Tests
         }
         
         [OuterLoop("Uses external server")]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Issue #32809
         [InlineData(AuthenticationSchemes.Ntlm, true, false)]
         [InlineData(AuthenticationSchemes.Negotiate, true, false)]
         [InlineData(AuthenticationSchemes.Basic, false, false)]
