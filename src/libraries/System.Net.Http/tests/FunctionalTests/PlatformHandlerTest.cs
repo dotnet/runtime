@@ -151,6 +151,7 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class PlatformHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
+        public PlatformHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
         protected override bool UseSocketsHttpHandler => false;
     }
 

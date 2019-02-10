@@ -13,6 +13,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs" Condition="'$(TargetsUnix)' == 'true'">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" Condition="'$(TargetsUnix)' == 'true'">
+      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Buffers\NativeMemoryManager.cs">
       <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
     </Compile>
@@ -39,6 +42,12 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.cs">
       <Link>Common\System\Net\Capability.Security.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.Windows.cs" Condition="'$(TargetsWindows)' == 'true'">
+      <Link>Common\System\Net\Capability.Security.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.Unix.cs" Condition="'$(TargetsUnix)' == 'true'">
+      <Link>Common\System\Net\Capability.Security.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
       <Link>Common\System\Net\Configuration.cs</Link>
