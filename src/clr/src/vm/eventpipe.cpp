@@ -751,11 +751,6 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
 
     // Get the current thread;
     Thread *pThread = GetThread();
-    if(pThread == NULL)
-    {
-        // We can't write an event without the thread object.
-        return;
-    }
 
     if(s_pConfig == NULL)
     {
@@ -764,8 +759,9 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
     }
     _ASSERTE(s_pSession != NULL);
 
-    // If the activity id isn't specified, pull it from the current thread.
-    if(pActivityId == NULL)
+    // If the activity id isn't specified AND we are in a managed thread, pull it from the current thread.
+    // If pThread is NULL (we aren't in writing from a managed thread) then pActivityId can be NULL 
+    if(pActivityId == NULL && pThread != NULL)
     {
         pActivityId = pThread->GetActivityId();
     }
@@ -780,7 +776,7 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
         // We're not interested in these events and they can cause corrupted trace files because rundown
         // events are written synchronously and not under lock.
         // If we encounter an event that did not originate on the thread that is doing rundown, ignore it.
-        if(!s_pConfig->IsRundownThread(pThread))
+        if(pThread == NULL || !s_pConfig->IsRundownThread(pThread))
         {
             return;
         }
