@@ -11,17 +11,17 @@
 
 #include "common.h" 
 
-DLLEXPORT STDAPI_(LPVOID) CoTaskMemAlloc(SIZE_T cb)
+STDAPI_(LPVOID) CoTaskMemAlloc(SIZE_T cb)
 {
     return LocalAlloc(LMEM_FIXED, cb);
 }
 
-DLLEXPORT STDAPI_(LPVOID) CoTaskMemRealloc(LPVOID pv, SIZE_T cb)
+STDAPI_(LPVOID) CoTaskMemRealloc(LPVOID pv, SIZE_T cb)
 {
     return LocalReAlloc(pv, cb, LMEM_MOVEABLE);
 }
 
-DLLEXPORT STDAPI_(void) CoTaskMemFree(LPVOID pv)
+STDAPI_(void) CoTaskMemFree(LPVOID pv)
 {
     LocalFree(pv);
 }

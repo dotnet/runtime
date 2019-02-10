@@ -846,7 +846,7 @@ public:
         pThis->Enter();
     }
 
-    DLLEXPORT DEBUG_NOINLINE static void HolderLeave(PEFileListLock *pThis)
+    DEBUG_NOINLINE static void HolderLeave(PEFileListLock *pThis)
     {
         WRAPPER_NO_CONTRACT;
         ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
