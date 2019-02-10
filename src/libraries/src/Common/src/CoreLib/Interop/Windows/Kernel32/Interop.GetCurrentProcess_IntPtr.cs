@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        [DllImport(Libraries.Kernel32)]
         internal static extern IntPtr GetCurrentProcess();
     }
 }
