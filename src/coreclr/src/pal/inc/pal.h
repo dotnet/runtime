@@ -4314,6 +4314,7 @@ See MSDN doc for memcpy
 --*/
 EXTERN_C
 PALIMPORT
+DLLEXPORT
 void *PAL_memcpy (void *dest, const void *src, size_t count);
 
 PALIMPORT void * __cdecl memcpy(void *, const void *, size_t) THROW_DECL;
@@ -4600,13 +4601,14 @@ PALIMPORT char * __cdecl _strdup(const char *);
 PALIMPORT PAL_NORETURN void __cdecl exit(int);
 int __cdecl atexit(void (__cdecl *function)(void));
 
-PALIMPORT DLLEXPORT void __cdecl qsort(void *, size_t, size_t, int (__cdecl *)(const void *, const void *));
-PALIMPORT void * __cdecl bsearch(const void *, const void *, size_t, size_t,
-int (__cdecl *)(const void *, const void *));
-
 PALIMPORT char * __cdecl _fullpath(char *, const char *, size_t);
 
 #ifndef PAL_STDCPP_COMPAT
+
+PALIMPORT DLLEXPORT void __cdecl qsort(void *, size_t, size_t, int(__cdecl *)(const void *, const void *));
+PALIMPORT DLLEXPORT void * __cdecl bsearch(const void *, const void *, size_t, size_t,
+    int(__cdecl *)(const void *, const void *));
+
 PALIMPORT time_t __cdecl time(time_t *);
 
 struct tm {
@@ -4725,8 +4727,8 @@ PALIMPORT DLLEXPORT int * __cdecl PAL_errno(int caller);
 #define errno  (*PAL_errno(PAL_get_caller))
 #endif // PAL_STDCPP_COMPAT
 
-PALIMPORT char * __cdecl getenv(const char *);
-PALIMPORT int __cdecl _putenv(const char *);
+PALIMPORT DLLEXPORT char * __cdecl getenv(const char *);
+PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #define ERANGE          34
 

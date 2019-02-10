@@ -20,7 +20,7 @@ CoreDllMain
 DllMain
 GetCLRRuntimeHost
 
-; Win32 API and other PAL functions used by the mscorlib
+; Win32 API and other PAL functions used by the System.Private.CoreLib
 CloseHandle
 CoTaskMemAlloc
 CoTaskMemRealloc
@@ -31,29 +31,23 @@ CreateMutexW
 CreateMutexExW
 CreateSemaphoreW
 CreateSemaphoreExW
-DuplicateHandle
 FormatMessageW
 FreeEnvironmentStringsW
-GetACP
 GetCurrentProcessId
 GetCurrentThreadId
 GetEnvironmentStringsW
 GetEnvironmentVariableW
-GetProcAddress
 GetStdHandle
 GetSystemInfo
 LocalAlloc
 LocalReAlloc
 LocalFree
-MetaDataGetDispenser
-MultiByteToWideChar
 OpenEventW
 OpenMutexW
 OpenSemaphoreW
 OutputDebugStringW
 QueryPerformanceCounter  
 QueryPerformanceFrequency
-RaiseException
 ReleaseMutex
 ReleaseSemaphore
 ResetEvent
@@ -62,11 +56,5 @@ SetEvent
 SysAllocStringByteLen
 SysAllocStringLen
 SysFreeString
-SysStringByteLen
 SysStringLen
-VirtualAlloc
-VirtualFree
-GlobalMemoryStatusEx
-VirtualQuery
-WideCharToMultiByte
 WriteFile

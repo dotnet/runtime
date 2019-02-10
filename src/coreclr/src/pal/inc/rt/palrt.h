@@ -372,9 +372,9 @@ typedef union _ULARGE_INTEGER {
 
 /******************* OLE, BSTR, VARIANT *************************/
 
-STDAPI_(LPVOID) CoTaskMemAlloc(SIZE_T cb);
-STDAPI_(LPVOID) CoTaskMemRealloc(LPVOID pv, SIZE_T cb);
-STDAPI_(void) CoTaskMemFree(LPVOID pv);
+DLLEXPORT STDAPI_(LPVOID) CoTaskMemAlloc(SIZE_T cb);
+DLLEXPORT STDAPI_(LPVOID) CoTaskMemRealloc(LPVOID pv, SIZE_T cb);
+DLLEXPORT STDAPI_(void) CoTaskMemFree(LPVOID pv);
 
 typedef SHORT VARIANT_BOOL;
 #define VARIANT_TRUE ((VARIANT_BOOL)-1)
@@ -386,11 +386,11 @@ typedef const OLECHAR* LPCOLESTR;
 
 typedef WCHAR *BSTR;
 
-STDAPI_(BSTR) SysAllocString(const OLECHAR*);
-STDAPI_(BSTR) SysAllocStringLen(const OLECHAR*, UINT);
+DLLEXPORT STDAPI_(BSTR) SysAllocString(const OLECHAR*);
+DLLEXPORT STDAPI_(BSTR) SysAllocStringLen(const OLECHAR*, UINT);
 DLLEXPORT STDAPI_(BSTR) SysAllocStringByteLen(const char *, UINT);
-STDAPI_(void) SysFreeString(BSTR);
-STDAPI_(UINT) SysStringLen(BSTR);
+DLLEXPORT STDAPI_(void) SysFreeString(BSTR);
+DLLEXPORT STDAPI_(UINT) SysStringLen(BSTR);
 DLLEXPORT STDAPI_(UINT) SysStringByteLen(BSTR);
 
 typedef double DATE;

@@ -21,9 +21,10 @@
 #include <wchar.h>
 #include <stdio.h>
 
-#ifndef DLLEXPORT
-// DLLEXPORT is defined to influence method visibility for some compilers.
+#ifndef FEATURE_PAL
+// CoreCLR.dll uses linker .def files to control the exported symbols.
+// Define DLLEXPORT macro as empty on Windows.
 #define DLLEXPORT
-#endif // !DLLEXPORT
+#endif
 
 #endif // __CrtWrap_h__
