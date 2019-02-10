@@ -11,9 +11,9 @@ namespace System.Security.Cryptography.X509Certificates
         private X509RevocationMode _revocationMode;
         private X509RevocationFlag _revocationFlag;
         private X509VerificationFlags _verificationFlags;
-        private OidCollection _applicationPolicy;
-        private OidCollection _certificatePolicy;
-        private X509Certificate2Collection _extraStore;
+        internal OidCollection _applicationPolicy;
+        internal OidCollection _certificatePolicy;
+        internal X509Certificate2Collection _extraStore;
 
         public X509ChainPolicy()
         {
