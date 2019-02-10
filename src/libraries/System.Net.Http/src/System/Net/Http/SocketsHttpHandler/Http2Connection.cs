@@ -46,7 +46,7 @@ namespace System.Net.Http
 
         private static readonly byte[] s_http2ConnectionPreface = Encoding.ASCII.GetBytes("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n");
 
-        private const int InitialBufferSize = 4096;
+        private const int InitialConnectionBufferSize = 4096;
 
         private const int DefaultInitialWindowSize = 65535;
 
@@ -60,9 +60,9 @@ namespace System.Net.Http
             _pool = pool;
             _stream = stream;
             _syncObject = new object();
-            _incomingBuffer = new ArrayBuffer(InitialBufferSize);
-            _outgoingBuffer = new ArrayBuffer(InitialBufferSize);
-            _headerBuffer = new ArrayBuffer(InitialBufferSize);
+            _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
+            _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
+            _headerBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
             _hpackDecoder = new HPackDecoder();
 
