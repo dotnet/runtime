@@ -18,6 +18,9 @@
 
 #include <sys/param.h>
 #include <fcntl.h>
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
 #include <utils/mono-threads-debug.h>
 
 extern GCStats mono_gc_stats;
