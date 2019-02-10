@@ -1050,7 +1050,6 @@ See MSDN for more details.
 Note:   The BSD implementation can cause
         memory leaks. See man pages for more details.
 --*/
-DLLEXPORT
 int
 __cdecl 
 _putenv( const char * envstring )
@@ -1080,7 +1079,7 @@ Function : PAL_getenv
     
 See MSDN for more details.
 --*/
-DLLEXPORT char * __cdecl PAL_getenv(const char *varname)
+char * __cdecl PAL_getenv(const char *varname)
 {
     char *retval;
 

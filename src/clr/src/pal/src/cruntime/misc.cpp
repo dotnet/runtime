@@ -243,7 +243,6 @@ PAL_qsort(void *base, size_t nmemb, size_t size,
     PERF_EXIT(qsort);
 }
 
-DLLEXPORT
 PALIMPORT 
 void * __cdecl 
 PAL_bsearch(const void *key, const void *base, size_t nmemb, size_t size,
@@ -299,7 +298,6 @@ PAL_memcpy
 Overlapping buffer-safe version of memcpy.
 See MSDN doc for memcpy
 --*/
-DLLEXPORT
 EXTERN_C
 PALIMPORT
 void *PAL_memcpy (void *dest, const void *src, size_t count)

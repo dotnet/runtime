@@ -71,7 +71,7 @@ inline HRESULT CbSysStringSize(ULONG cchSize, BOOL isByteLen, ULONG *result)
 *  return value = BSTR, NULL if the allocation failed.
 *
 ***********************************************************************/
-DLLEXPORT STDAPI_(BSTR) SysAllocStringLen(const OLECHAR *psz, UINT len)
+STDAPI_(BSTR) SysAllocStringLen(const OLECHAR *psz, UINT len)
 {
     
     BSTR bstr;
@@ -168,7 +168,7 @@ SysAllocStringByteLen(const char FAR* psz, unsigned int len)
 *  None
 *
 ***********************************************************************/
-DLLEXPORT STDAPI_(void) SysFreeString(BSTR bstr)
+STDAPI_(void) SysFreeString(BSTR bstr)
 {
     if(bstr == NULL)
       return;
@@ -187,7 +187,7 @@ DLLEXPORT STDAPI_(void) SysFreeString(BSTR bstr)
 *  return value = unsigned int, length in characters.
 *
 ***********************************************************************/
-DLLEXPORT STDAPI_(unsigned int)
+STDAPI_(unsigned int)
 SysStringLen(BSTR bstr)
 {
     if(bstr == NULL)
