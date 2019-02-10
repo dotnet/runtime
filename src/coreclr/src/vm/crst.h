@@ -189,7 +189,7 @@ private:
         c->Enter(); 
     }
 
-    DLLEXPORT DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) {
+    DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
         ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Leave(); 
@@ -202,7 +202,7 @@ private:
     // Argument: 
     //     input: c - the lock to be checked. 
     // Note: Throws
-    DLLEXPORT static void AcquireLock(CrstBase * c)
+    static void AcquireLock(CrstBase * c)
     {
         SUPPORTS_DAC;
         if (c->GetEnterCount() != 0) 
@@ -211,7 +211,7 @@ private:
         }
     };
 
-    DLLEXPORT static void ReleaseLock(CrstBase *c)
+    static void ReleaseLock(CrstBase *c)
     {
         SUPPORTS_DAC;
     };

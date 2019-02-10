@@ -56,13 +56,16 @@ extern "C" IExecutionEngine* IEE();
 extern "C" BOOL WINAPI _CRT_INIT(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
 #endif
 
-extern "C" DLLEXPORT BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
+extern "C" BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
 
 // For the CoreClr, this is the real DLL entrypoint. We make ourselves the first entrypoint as
 // we need to capture coreclr's hInstance before the C runtime initializes. This function
 // will capture hInstance, let the C runtime initialize and then invoke the "classic"
 // DllMain that initializes everything else.
-extern "C" DLLEXPORT BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
+#ifdef FEATURE_PAL
+DLLEXPORT // For Win32 PAL LoadLibrary emulation
+#endif
+extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
     STATIC_CONTRACT_NOTHROW;
 
@@ -115,8 +118,10 @@ extern "C" DLLEXPORT BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, L
     return result;
 }
 
-extern "C"
-DLLEXPORT BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
+#ifdef FEATURE_PAL
+DLLEXPORT // For Win32 PAL LoadLibrary emulation
+#endif
+extern "C" BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
     STATIC_CONTRACT_NOTHROW;
 

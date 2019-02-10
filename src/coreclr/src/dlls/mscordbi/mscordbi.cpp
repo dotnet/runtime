@@ -18,8 +18,10 @@ extern BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason,
 // The main dll entry point for this module.  This routine is called by the
 // OS when the dll gets loaded.  Control is simply deferred to the main code.
 //*****************************************************************************
-DLLEXPORT extern "C"
-BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
+#ifdef FEATURE_PAL
+DLLEXPORT // For Win32 PAL LoadLibrary emulation
+#endif
+extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
 	// Defer to the main debugging code.
     return DbgDllMain(hInstance, dwReason, lpReserved);
