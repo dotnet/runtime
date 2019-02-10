@@ -1801,7 +1801,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 		}
 		if (op == MINT_LDELEMA || op == MINT_LDELEMA_TC) {
-			ADD_CODE (td, get_data_item_index (td, target_method->klass));
+			ADD_CODE (td, get_data_item_index (td, m_class_get_element_class (target_method->klass)));
 			ADD_CODE (td, 1 + m_class_get_rank (target_method->klass));
 		}
 
