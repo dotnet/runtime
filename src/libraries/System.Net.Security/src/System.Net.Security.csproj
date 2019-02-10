@@ -240,6 +240,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs">
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs">
+      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextFlagsAdapterPal.Unix.cs">
       <Link>Common\System\Net\ContextFlagsAdapterPal.Unix.cs</Link>
     </Compile>
