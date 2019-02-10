@@ -15,6 +15,32 @@
 
 class EventPipeBufferList;
 
+// This class is a TLS wrapper around a pointer to thread-specific EventPipeBufferList
+// The struct wrapper is present mainly because we need a way to free the EventPipeBufferList
+// when the thread that owns it dies. Placing this class as a TLS variable will call ~ThreadEventBufferList()
+// when the thread dies so we can free EventPipeBufferList in the destructor.  
+class ThreadEventBufferList
+{
+#ifndef __llvm__
+__declspec(thread) static ThreadEventBufferList gCurrentThreadEventBufferList;
+#else // !__llvm__
+thread_local static ThreadEventBufferList gCurrentThreadEventBufferList;
+#endif // !__llvm__
+    EventPipeBufferList * m_pThreadEventBufferList = NULL;
+    ~ThreadEventBufferList();
+
+public:
+    static EventPipeBufferList* Get()
+    {
+        return gCurrentThreadEventBufferList.m_pThreadEventBufferList;
+    }
+
+    static void Set(EventPipeBufferList * bl)
+    {
+        gCurrentThreadEventBufferList.m_pThreadEventBufferList = bl;
+    }
+};
+
 class EventPipeBufferManager
 {
 
@@ -37,6 +63,7 @@ private:
     // Lock to protect access to the per-thread buffer list and total allocation size.
     SpinLock m_lock;
 
+
 #ifdef _DEBUG
     // For debugging purposes.
     unsigned int m_numBuffersAllocated;
@@ -50,7 +77,7 @@ private:
     // Allocate a new buffer for the specified thread.
     // This function will store the buffer in the thread's buffer list for future use and also return it here.
     // A NULL return value means that a buffer could not be allocated.
-    EventPipeBuffer* AllocateBufferForThread(EventPipeSession &session, Thread *pThread, unsigned int requestSize);
+    EventPipeBuffer* AllocateBufferForThread(EventPipeSession &session, unsigned int requestSize);
 
     // Add a buffer to the thread buffer list.
     void AddBufferToThreadBufferList(EventPipeBufferList *pThreadBuffers, EventPipeBuffer *pBuffer);
@@ -114,6 +141,9 @@ private:
     // If it is false, then this buffer can be de-allocated after it is drained.
     Volatile<bool> m_ownedByThread;
 
+    // True if a thread is writing something to this list
+    Volatile<bool> m_threadEventWriteInProgress;
+
 #ifdef _DEBUG
     // For diagnostics, keep the thread pointer.
     Thread *m_pCreatingThread;
@@ -145,13 +175,33 @@ public:
     EventPipeEventInstance* PopNextEvent(LARGE_INTEGER beforeTimeStamp);
 
     // True if a thread owns this list.
-    bool OwnedByThread();
+    bool OwnedByThread() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_ownedByThread;
+    }
 
     // Set whether or not this list is owned by a thread.
     // If it is not owned by a thread, then it can be de-allocated
     // after the buffer is drained.
     // The default value is true.
-    void SetOwnedByThread(bool value);
+    void SetOwnedByThread(bool value)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_ownedByThread = value;
+    }
+
+    bool GetThreadEventWriteInProgress() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_threadEventWriteInProgress;
+    }
+
+    void SetThreadEventWriteInProgress(bool value)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_threadEventWriteInProgress = value;
+    }
 
 #ifdef _DEBUG
     // Get the thread associated with this list.
@@ -162,6 +212,7 @@ public:
     bool EnsureConsistency();
 #endif // _DEBUG
 };
+
 
 #endif // FEATURE_PERFTRACING
 
