@@ -12,7 +12,7 @@ namespace System.Net.Http
     internal sealed class HttpConnectionResponseContent : HttpContent
     {
         private Stream _stream;
-        private bool _consumedStream;
+        private bool _consumedStream; // separate from _stream so that Dispose can drain _stream
 
         public void SetStream(Stream stream)
         {
