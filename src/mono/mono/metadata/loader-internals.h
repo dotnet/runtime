@@ -7,8 +7,9 @@
 
 #include <glib.h>
 #include <mono/metadata/object-forward.h>
+#include <mono/utils/mono-error.h>
 
 gpointer
-mono_lookup_pinvoke_call_internal (MonoMethod *method, const char **exc_class, const char **exc_arg);
+mono_lookup_pinvoke_call_internal (MonoMethod *method, MonoError *error);
 
 #endif

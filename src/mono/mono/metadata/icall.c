@@ -7809,16 +7809,10 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 static void
 prelink_method (MonoMethod *method, MonoError *error)
 {
-	const char *exc_class, *exc_arg;
-
 	error_init (error);
 	if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return;
-	mono_lookup_pinvoke_call_internal (method, &exc_class, &exc_arg);
-	if (exc_class) {
-		mono_error_set_generic_error (error, "System", exc_class, "%s", exc_arg);
-		return;
-	}
+	mono_lookup_pinvoke_call_internal (method, error);
 	/* create the wrapper, too? */
 }
 

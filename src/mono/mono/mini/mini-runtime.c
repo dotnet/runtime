@@ -1612,16 +1612,11 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
 		/* run_cctors == 0 -> AOT */
 		if (patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-			const char *exc_class;
-			const char *exc_arg;
-
 			if (run_cctors) {
-				target = mono_lookup_pinvoke_call_internal (patch_info->data.method, &exc_class, &exc_arg);
+				target = mono_lookup_pinvoke_call_internal (patch_info->data.method, error);
 				if (!target) {
-					if (mono_aot_only) {
-						mono_error_set_exception_instance (error, mono_exception_from_name_msg (mono_defaults.corlib, "System", exc_class, exc_arg));
+					if (mono_aot_only)
 						return NULL;
-					}
 					g_error ("Unable to resolve pinvoke method '%s' Re-run with MONO_LOG_LEVEL=debug for more information.\n", mono_method_full_name (patch_info->data.method, TRUE));
 				}
 			} else {
@@ -2213,8 +2208,11 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 #else
 				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono on this platform. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
 #endif
-			else
-				mono_lookup_pinvoke_call_internal (method, NULL, NULL);
+			else {
+				ERROR_DECL (ignored_error);
+				mono_lookup_pinvoke_call_internal (method, ignored_error);
+				mono_error_cleanup (ignored_error);
+			}
 		}
 		nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
 		gpointer compiled_method = mono_jit_compile_method_jit_only (nm, error);

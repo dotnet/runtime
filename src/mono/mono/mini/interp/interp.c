@@ -496,6 +496,10 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 		mono_error_cleanup (error); /* FIXME: don't swallow the error */
 	}
 
+	if (virtual_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		virtual_method = mono_marshal_get_native_wrapper (virtual_method, TRUE, FALSE);
+	}
+
 	if (virtual_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 		virtual_method = mono_marshal_get_synchronized_wrapper (virtual_method);
 	}

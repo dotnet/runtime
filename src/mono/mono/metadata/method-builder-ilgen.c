@@ -591,7 +591,9 @@ mono_mb_emit_exception_for_error (MonoMethodBuilder *mb, MonoError *error)
 	 * the behaviour should conform with mono_error_prepare_exception().
 	 */
 	g_assert (mono_error_get_error_code (error) == MONO_ERROR_GENERIC && "Unsupported error code.");
-	mono_mb_emit_exception_full (mb, "System", mono_error_get_exception_name (error), mono_error_get_message (error));
+	/* Have to copy the message because it will be referenced from JITed code while the MonoError may be freed. */
+	char *msg = mono_mb_strdup (mb, mono_error_get_message (error));
+	mono_mb_emit_exception_full (mb, "System", mono_error_get_exception_name (error), msg);
 }
 
 /**

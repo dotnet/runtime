@@ -45,6 +45,9 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 guint32
 mono_mb_add_data (MonoMethodBuilder *mb, gpointer data);
 
+char*
+mono_mb_strdup (MonoMethodBuilder *mb, const char *s);
+
 void
 mono_install_method_builder_callbacks (MonoMethodBuilderCallbacks *cb);
 
