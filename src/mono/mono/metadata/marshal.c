@@ -799,7 +799,7 @@ mono_string_utf16_to_builder_copy (MonoStringBuilderHandle sb, const gunichar2 *
 	gchandle_t gchandle = 0;
 	memcpy (MONO_ARRAY_HANDLE_PIN (chunkChars, gunichar2, 0, &gchandle), text, sizeof (gunichar2) * string_len);
 	mono_gchandle_free_internal (gchandle);
-	MONO_HANDLE_SETRAW (sb, chunkLength, string_len);
+	MONO_HANDLE_SETVAL (sb, chunkLength, int, string_len);
 }
 
 MonoStringBuilderHandle
