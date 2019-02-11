@@ -489,7 +489,7 @@ namespace System.IO.Pipelines
                     // Prevent deadlock where reader awaits new data and writer await backpressure
                     if (!_writerAwaitable.IsCompleted)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_BackpressureDeadlock();
+                        ThrowHelper.ThrowInvalidOperationException_BackpressureDeadlock(_resumeWriterThreshold);
                     }
                     _readerAwaitable.SetUncompleted();
                 }
