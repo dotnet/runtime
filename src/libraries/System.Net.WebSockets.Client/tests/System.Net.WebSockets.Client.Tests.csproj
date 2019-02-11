@@ -30,6 +30,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.cs">
       <Link>Common\System\Net\Http\LoopbackServer.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\GenericLoopbackServer.cs">
+      <Link>Common\System\Net\Http\GenericLoopbackServer.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>

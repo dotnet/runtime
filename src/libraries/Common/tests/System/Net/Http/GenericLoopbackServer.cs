@@ -32,35 +32,6 @@ namespace System.Net.Test.Common
         }
     }
 
-    public sealed class Http11LoopbackServerFactory : LoopbackServerFactory
-    {
-        public static readonly Http11LoopbackServerFactory Singleton = new Http11LoopbackServerFactory();
-
-        public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync)
-        {
-            return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri));
-        }
-
-        public override bool IsHttp11 => true;
-        public override bool IsHttp2 => false;
-    }
-
-    public sealed class Http2LoopbackServerFactory : LoopbackServerFactory
-    {
-        public static readonly Http2LoopbackServerFactory Singleton = new Http2LoopbackServerFactory();
-
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync)
-        {
-            using (var server = Http2LoopbackServer.CreateServer())
-            {
-                await funcAsync(server, server.Address);
-            }
-        }
-
-        public override bool IsHttp11 => false;
-        public override bool IsHttp2 => true;
-    }
-
     public abstract class GenericLoopbackServer : IDisposable
     {
         // Accept a new connection, process a single request and send the specified response, and gracefully close the connection.

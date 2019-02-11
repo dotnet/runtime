@@ -151,7 +151,7 @@ namespace System.Net.Test.Common
             var sep = new char[] { ':' };
             foreach (string line in headers)
             {
-                string[] tokens = line.Split(sep , 2);
+                string[] tokens = line.Split(sep, 2);
                 if (name.Equals(tokens[0], StringComparison.InvariantCultureIgnoreCase))
                 {
                     return tokens[1].Trim();
@@ -333,7 +333,7 @@ namespace System.Net.Test.Common
             "Transfer-Encoding: chunked\r\n" +
             additionalHeaders +
             "\r\n" +
-            (string.IsNullOrEmpty(content) ? "" : string.Concat(content.Select(c => $"1\r\n{c}\r\n"))) + 
+            (string.IsNullOrEmpty(content) ? "" : string.Concat(content.Select(c => $"1\r\n{c}\r\n"))) +
             $"0\r\n" +
             $"\r\n";
 
@@ -360,7 +360,7 @@ namespace System.Net.Test.Common
             public string Username { get; set; }
             public string Domain { get; set; }
             public string Password { get; set; }
-            public bool IsProxy  { get; set; } = false;
+            public bool IsProxy { get; set; } = false;
         }
 
         public sealed class Connection : IDisposable
@@ -475,11 +475,26 @@ namespace System.Net.Test.Common
             // Skip first line since it's the status line
             foreach (var line in headerLines.Skip(1))
             {
-                splits = line.Split(": ", 2);
-                requestData.Headers.Add(new HttpHeaderData(splits[0], splits[1]));
+                int offset = line.IndexOf(':');
+                string name = line.Substring(0, offset);
+                string value = line.Substring(offset + 1).TrimStart();
+                requestData.Headers.Add(new HttpHeaderData(name, value));
             }
 
             return requestData;
         }
+    }
+
+    public sealed class Http11LoopbackServerFactory : LoopbackServerFactory
+    {
+        public static readonly Http11LoopbackServerFactory Singleton = new Http11LoopbackServerFactory();
+
+        public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync)
+        {
+            return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri));
+        }
+
+        public override bool IsHttp11 => true;
+        public override bool IsHttp2 => false;
     }
 }
