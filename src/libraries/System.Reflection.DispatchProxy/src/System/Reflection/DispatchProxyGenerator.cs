@@ -439,7 +439,9 @@ namespace System.Reflection
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     // args[i] = argi;
-                    if (!parameters[i].IsOut)
+                    bool isOutRef = parameters[i].IsOut && parameters[i].ParameterType.IsByRef && !parameters[i].IsIn;
+
+                    if (!isOutRef)
                     {
                         argsArr.BeginSet(i);
                         args.Get(i);
