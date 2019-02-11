@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tracing
     /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
     /// which shows tests, which are also useful in seeing actual use.  
     /// </summary>
-    public class EventCounter : IDisposable
+    public partial class EventCounter : IDisposable
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="EventCounter"/> class.
