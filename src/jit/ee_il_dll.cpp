@@ -26,6 +26,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include <errno.h> // For EINVAL
 #endif
 
+#ifndef DLLEXPORT
+#define DLLEXPORT
+#endif // !DLLEXPORT
+
 /*****************************************************************************/
 
 FILE* jitstdout = nullptr;
