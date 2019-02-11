@@ -12,6 +12,7 @@ trigger:
 # TODO: add paths to exclude CI when modifying docs or stuff not affecting the build
 pr:
 - master
+- release/3.0
 
 resources:
   containers:
