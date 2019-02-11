@@ -1168,6 +1168,12 @@ public:
     // Handles
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    IGCHandleStore* GetHandleStore()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_handleStore;
+    }
+
     OBJECTHANDLE CreateTypedHandle(OBJECTREF object, HandleType type)
     {
         WRAPPER_NO_CONTRACT;

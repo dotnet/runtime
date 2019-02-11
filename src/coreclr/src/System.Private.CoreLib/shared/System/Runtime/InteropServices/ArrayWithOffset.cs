@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
             {
                 if (!(array is Array arrayObj) || (arrayObj.Rank != 1) || !Marshal.IsPinnable(arrayObj))
                 {
-                    throw new ArgumentException(SR.Argument_NotIsomorphic);
+                    throw new ArgumentException(SR.ArgumentException_NotIsomorphic);
                 }
 
                 nuint nativeTotalSize = (nuint)arrayObj.LongLength * (nuint)arrayObj.GetElementSize();

@@ -627,6 +627,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ExternalException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\GuidAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\GCHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\HandleRef.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomAdapter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomFactory.cs" />
