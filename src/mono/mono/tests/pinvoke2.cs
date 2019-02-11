@@ -335,9 +335,6 @@ public unsafe class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_out_unicode", CharSet=CharSet.Unicode)]
 	public static extern void mono_test_marshal_stringbuilder_out_unicode (out StringBuilder sb);
 
-	[DllImport ("libtest", EntryPoint="mono_test_last_error", SetLastError=true)]
-	public static extern void mono_test_last_error (int err);
-
 	[DllImport ("libtest", EntryPoint="mono_test_asany")]
 	public static extern int mono_test_asany ([MarshalAs (UnmanagedType.AsAny)] object o, int what);
 
@@ -966,14 +963,6 @@ public unsafe class Tests {
 		if (sb2.ToString () != "ABC")
 			return 6;
 		return 0;
-	}
-
-	public static int test_0_last_error () {
-		mono_test_last_error (5);
-		if (Marshal.GetLastWin32Error () == 5)
-			return 0;
-		else
-			return 1;
 	}
 
 	public static int test_0_entry_point_not_found () {
