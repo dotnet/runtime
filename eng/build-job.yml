@@ -171,6 +171,12 @@ jobs:
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
             NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages 
+      # Save nuget packages in pipeline for update dotnet/versions
+      - task: PublishPipelineArtifact@0
+        displayName: Save packages as pipeline artifact
+        inputs:
+          artifactName: ${{ format('build_{0}_{1}_{2}_nuget', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+          targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)/.nuget/pkg
 
 
     # Kill tasks that hold onto files on Windows. Otherwise git clean
