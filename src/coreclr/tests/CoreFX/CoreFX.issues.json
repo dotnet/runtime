@@ -692,6 +692,10 @@
                 {
                     "name": "System.Drawing.Tests.IconTests.ExtractAssociatedIcon_InvalidFilePath_ThrowsArgumentException",
                     "reason": "https://github.com/dotnet/corefx/issues/34122"
+                },
+                {
+                    "name": "System.Drawing.Tests.FontTests.ToLogFont_DisposedGraphics_ThrowsArgumentException",
+                    "reason": "outdated"
                 }
             ]
         }
@@ -815,6 +819,10 @@
             "namespaces": null,
             "classes": null,
             "methods": [
+                {
+                    "name": "System.Runtime.InteropServices.Tests.GCHandleTests.Alloc_InvalidPinnedObject_ThrowsArgumentException",
+                    "reason": "outdated"
+                },
                 {
                     "name": "System.Runtime.InteropServices.Tests.GetHINSTANCETests.GetHINSTANCE_NonRuntimeModule_ThrowsArgumentNullException",
                     "reason": "https://github.com/dotnet/coreclr/pull/30925"

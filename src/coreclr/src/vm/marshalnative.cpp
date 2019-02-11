@@ -33,7 +33,6 @@
 #include "fcall.h"
 #include "dllimportcallback.h"
 #include "comdelegate.h"
-#include "mdaassistants.h"
 #include "typestring.h"
 #include "appdomain.inl"
 
@@ -550,49 +549,67 @@ void ValidatePinnedObject(OBJECTREF obj)
     COMPlusThrow(kArgumentException, IDS_EE_NOTISOMORPHIC);
 }
 
+NOINLINE static OBJECTHANDLE FCDiagCreateHandle(OBJECTREF objRef, int type)
+{
+    OBJECTHANDLE hnd = NULL;
+
+    FC_INNER_PROLOG(MarshalNative::GCHandleInternalAlloc);
+
+    // Make the stack walkable for the profiler
+    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXACT_DEPTH | Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
+    hnd = GetAppDomain()->CreateTypedHandle(objRef, static_cast<HandleType>(type));
+    HELPER_METHOD_FRAME_END_POLL();
+
+    FC_INNER_EPILOG();
+
+    return hnd;
+}
+
 FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 {
     FCALL_CONTRACT;
 
     OBJECTREF objRef(obj);
-    OBJECTHANDLE hnd = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-
-    // If it is a pinned handle, check the object type.
-    if (type == HNDTYPE_PINNED)
-        ValidatePinnedObject(objRef);
 
     assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_WEAK_WINRT);
-    // Create the handle.
-    hnd = GetAppDomain()->CreateTypedHandle(objRef, static_cast<HandleType>(type));
 
-    HELPER_METHOD_FRAME_END_POLL();
+    if (CORProfilerTrackGC())
+    {
+        FC_INNER_RETURN(LPVOID, (LPVOID) FCDiagCreateHandle(objRef, type));
+    }
+
+    OBJECTHANDLE hnd = GetAppDomain()->GetHandleStore()->CreateHandleOfType(OBJECTREFToObject(objRef), static_cast<HandleType>(type));
+    if (!hnd)
+    {
+        FCThrow(kOutOfMemoryException);
+    }
     return (LPVOID) hnd;
 }
 FCIMPLEND
+
+NOINLINE static void FCDiagDestroyHandle(OBJECTHANDLE handle)
+{
+    FC_INNER_PROLOG(MarshalNative::GCHandleInternalFree);
+
+    // Make the stack walkable for the profiler
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH | Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
+    DestroyTypedHandle(handle);
+    HELPER_METHOD_FRAME_END();
+
+    FC_INNER_EPILOG();
+}
 
 // Free a GC handle.
 FCIMPL1(VOID, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
-    
-    HELPER_METHOD_FRAME_BEGIN_0();
 
-#ifdef MDA_SUPPORTED
-    UINT handleType = HandleFetchType(handle);
-#endif
-
-    DestroyTypedHandle(handle);
-
-#ifdef MDA_SUPPORTED
-    if (handleType == HNDTYPE_PINNED)
+    if (CORProfilerTrackGC())
     {
-        MDA_TRIGGER_ASSISTANT(GcManagedToUnmanaged, TriggerGC());
+        FC_INNER_RETURN_VOID(FCDiagDestroyHandle(handle));
     }
-#endif
 
-    HELPER_METHOD_FRAME_END();
+    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
 }
 FCIMPLEND
 
@@ -610,78 +627,26 @@ FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGet, OBJECTHANDLE handle)
 FCIMPLEND
 
 // Update the object referenced by a GC handle.
-FCIMPL3(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *obj, CLR_BOOL isPinned)
+FCIMPL2(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *obj)
 {
     FCALL_CONTRACT;
 
     OBJECTREF objRef(obj);
-    HELPER_METHOD_FRAME_BEGIN_1(objRef);
-    
-    if (isPinned)
-    {
-        ValidatePinnedObject(objRef);
-    }
-
-    // Update the stored object reference.
     StoreObjectInHandle(handle, objRef);
-    HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
 
 // Update the object referenced by a GC handle.
-FCIMPL4(Object*, MarshalNative::GCHandleInternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj, CLR_BOOL isPinned)
+FCIMPL3(Object*, MarshalNative::GCHandleInternalCompareExchange, OBJECTHANDLE handle, Object *obj, Object* oldObj)
 {
     FCALL_CONTRACT;
 
     OBJECTREF newObjref(obj);
     OBJECTREF oldObjref(oldObj);
     LPVOID ret = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-
-    if (isPinned)
-        ValidatePinnedObject(newObjref);
-
     // Update the stored object reference.
     ret = InterlockedCompareExchangeObjectInHandle(handle, newObjref, oldObjref);
-    HELPER_METHOD_FRAME_END_POLL();
     return (Object*)ret;
-}
-FCIMPLEND
-
-// Get the address of a pinned object referenced by the supplied pinned
-// handle.  This routine assumes the handle is pinned and does not check.
-FCIMPL1(LPVOID, MarshalNative::GCHandleInternalAddrOfPinnedObject, OBJECTHANDLE handle)
-{
-    FCALL_CONTRACT;
-
-    LPVOID p;
-    OBJECTREF objRef = ObjectFromHandle(handle);
-
-    if (objRef == NULL)
-    {
-        p = NULL;
-    }
-    else
-    {
-        // Get the interior pointer for the supported pinned types.
-        if (objRef->GetMethodTable() == g_pStringClass)
-            p = ((*(StringObject **)&objRef))->GetBuffer();
-        else if (objRef->GetMethodTable()->IsArray())
-            p = (*((ArrayBase**)&objRef))->GetDataPtr();
-        else
-            p = objRef->GetData();
-    }
-
-    return p;
-}
-FCIMPLEND
-
-// Make sure the handle is accessible from the current domain.  (Throw if not.)
-FCIMPL1(INT32, MarshalNative::GCHandleInternalGetHandleType, OBJECTHANDLE handle)
-{
-    FCALL_CONTRACT;
-
-    return GCHandleUtilities::GetGCHandleManager()->HandleFetchType(handle);
 }
 FCIMPLEND
 
