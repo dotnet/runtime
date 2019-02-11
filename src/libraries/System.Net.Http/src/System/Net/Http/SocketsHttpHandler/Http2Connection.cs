@@ -9,6 +9,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +40,7 @@ namespace System.Net.Http
         private bool _expectingSettingsAck;
         private int _initialWindowSize;
         private int _maxConcurrentStreams;
+        private DateTimeOffset _idleSinceTime;
 
         private bool _disposed;
 
@@ -943,6 +945,40 @@ namespace System.Net.Http
             return _disposed;
         }
 
+        /// <summary>Gets whether the connection exceeded any of the connection limits.</summary>
+        /// <param name="now">The current time.  Passed in to amortize the cost of calling DateTime.UtcNow.</param>
+        /// <param name="connectionLifetime">How long a connection can be open to be considered reusable.</param>
+        /// <param name="connectionIdleTimeout">How long a connection can have been idle in the pool to be considered reusable.</param>
+        /// <returns>
+        /// true if we believe the connection is expired; otherwise, false.  There is an inherent race condition here,
+        /// in that the server could terminate the connection or otherwise make it unusable immediately after we check it,
+        /// but there's not much difference between that and starting to use the connection and then having the server
+        /// terminate it, which would be considered a failure, so this race condition is largely benign and inherent to
+        /// the nature of connection pooling.
+        /// </returns>
+
+        public bool IsExpired(DateTimeOffset now,
+                              TimeSpan connectionLifetime,
+                              TimeSpan connectionIdleTimeout)
+
+        {
+            if (_disposed)
+            {
+                return true;
+            }
+
+            // Check idle timeout when there are not pending requests for a while.
+            if ((connectionIdleTimeout != Timeout.InfiniteTimeSpan) && (_httpStreams.Count == 0) &&
+                    (now - _idleSinceTime > connectionIdleTimeout))
+            {
+                if (NetEventSource.IsEnabled) Trace($"Connection no longer usable. Idle {now - _idleSinceTime} > {connectionIdleTimeout}.");
+
+                return true;
+            }
+
+            return LifetimeExpired(now, connectionLifetime);
+        }
+
         private void AbortStreams(int lastValidStream)
         {
             lock (_syncObject)
@@ -1191,6 +1227,12 @@ namespace System.Net.Http
 
                 Debug.Assert(removed == http2Stream, "_httpStreams.TryRemove returned unexpected stream");
 
+                if (_httpStreams.Count == 0)
+                {
+                    // If this was last pending request, get timestamp so we can monitor idle time.
+                    _idleSinceTime = DateTimeOffset.UtcNow;
+                }
+
                 if (_disposed)
                 {
                     CheckForShutdown();
@@ -1249,5 +1291,16 @@ namespace System.Net.Http
 
             return totalBytesRead;
         }
+
+        public sealed override string ToString() => $"{nameof(Http2Connection)}({_pool})"; // Description for diagnostic purposes
+
+        internal override void Trace(string message, [CallerMemberName] string memberName = null) =>
+            NetEventSource.Log.HandlerMessage(
+                _pool?.GetHashCode() ?? 0,    // pool ID
+                GetHashCode(),                // connection ID
+                _stream?.GetHashCode() ?? 0,  // stream ID
+                memberName,                   // method name
+                ToString() + ": " + message); // message
+
     }
 }
