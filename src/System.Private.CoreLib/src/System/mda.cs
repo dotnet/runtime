@@ -65,12 +65,6 @@ namespace System
         internal static extern void DateTimeInvalidLocalFormat();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInvalidGCHandleCookieProbeEnabled();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void FireInvalidGCHandleCookieProbe(IntPtr cookie);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void ReportErrorSafeHandleRelease(Exception ex);
     }
 #endif

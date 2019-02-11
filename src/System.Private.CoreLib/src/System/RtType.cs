@@ -2412,7 +2412,7 @@ namespace System
             if (cache == null)
             {
                 cache = new RuntimeTypeCache(this);
-                RuntimeTypeCache existingCache = (RuntimeTypeCache)GCHandle.InternalCompareExchange(m_cache, cache, null, false);
+                RuntimeTypeCache existingCache = (RuntimeTypeCache)GCHandle.InternalCompareExchange(m_cache, cache, null);
                 if (existingCache != null)
                     cache = existingCache;
             }
