@@ -23,9 +23,9 @@ namespace System.Linq
         {
             foreach (object obj in source)
             {
-                if (obj is TResult)
+                if (obj is TResult result)
                 {
-                    yield return (TResult)obj;
+                    yield return result;
                 }
             }
         }
