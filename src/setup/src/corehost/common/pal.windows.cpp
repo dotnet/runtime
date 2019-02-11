@@ -271,6 +271,7 @@ bool get_sdk_self_registered_dir(pal::string_t* recv)
     if (result != ERROR_SUCCESS || size == 0)
     {
         trace::verbose(_X("Can't get the size of the SDK location registry value or it's empty, result: 0x%X"), result);
+        ::RegCloseKey(hkey);
         return false;
     }
 
@@ -280,11 +281,12 @@ bool get_sdk_self_registered_dir(pal::string_t* recv)
     if (result != ERROR_SUCCESS)
     {
         trace::verbose(_X("Can't get the value of the SDK location registry value, result: 0x%X"), result);
+        ::RegCloseKey(hkey);
         return false;
     }
 
     recv->assign(buffer.data());
-
+    ::RegCloseKey(hkey);
     return true;
 #endif
 }
