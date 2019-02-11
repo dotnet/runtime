@@ -14,7 +14,7 @@ def branch = GithubBranchName
 // will have a trigger that can be
 // **************************
 
-def linPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/linux.groovy')
+//def linPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/linux.groovy')
 //def linArm64Pipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/linux.arm64.groovy')
 def centos6Pipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/centos.6.groovy')
 def linmuslPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/linux-musl.groovy')
@@ -22,7 +22,7 @@ def osxPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'build
 def winPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/windows.groovy')
 
 def configurations = [
-    ['TGroup':"netcoreapp", 'Pipeline':linPipeline, 'Name':'Linux' ,'ForPR':"Release-x64", 'Arch':['x64']],
+    //['TGroup':"netcoreapp", 'Pipeline':linPipeline, 'Name':'Linux' ,'ForPR':"Release-x64", 'Arch':['x64']],
     //['TGroup':"netcoreapp", 'Pipeline':linArm64Pipeline, 'Name':'Linux' ,'ForPR':"Release-arm64", 'Arch':['arm64']],
     ['TGroup':"netcoreapp", 'Pipeline':centos6Pipeline, 'Name':'CentOS.6' ,'ForPR':"", 'Arch':['x64']],
     ['TGroup':"netcoreapp", 'Pipeline':linmuslPipeline, 'Name':'Linux-musl' ,'ForPR':"Debug-x64", 'Arch':['x64']],
