@@ -39,6 +39,7 @@ jobs:
               _architecture: x86
               _framework: netfx
               _helixQueues: $(uapNetfxQueues)
+              _skipPublishPackages: true # In NETFX leg we don't produce packages
 
             UWP_CoreCLR_x64_Debug:
               _BuildConfig: Debug

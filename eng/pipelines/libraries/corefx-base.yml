@@ -187,11 +187,10 @@ jobs:
                   # TODO: Enable azure pipelines reporter for PRs once retry feature is available.
                   enableAzurePipelinesReporter: false
 
-          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - task: PublishBuildArtifacts@1
-              displayName: Publish packages to artifacts container
-              inputs:
-                pathToPublish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)
-                artifactName: packages
-                artifactType: container
-              condition: and(succeeded(), ne(variables['_skipPublishPackages'], 'true'))
+          - task: PublishBuildArtifacts@1
+            displayName: Publish packages to artifacts container
+            inputs:
+              pathToPublish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)
+              artifactName: packages
+              artifactType: container
+            condition: and(succeeded(), ne(variables['_skipPublishPackages'], 'true'))
