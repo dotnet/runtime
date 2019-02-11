@@ -12,14 +12,14 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<int> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 long sum = e.Current;
@@ -41,7 +41,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<int?> e = source.GetEnumerator())
@@ -78,14 +78,14 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<long> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 long sum = e.Current;
@@ -107,7 +107,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<long?> e = source.GetEnumerator())
@@ -144,14 +144,14 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<float> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 double sum = e.Current;
@@ -170,7 +170,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<float?> e = source.GetEnumerator())
@@ -207,14 +207,14 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<double> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 double sum = e.Current;
@@ -236,7 +236,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<double?> e = source.GetEnumerator())
@@ -273,14 +273,14 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<decimal> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 decimal sum = e.Current;
@@ -299,7 +299,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             using (IEnumerator<decimal?> e = source.GetEnumerator())
@@ -333,19 +333,19 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 long sum = selector(e.Current);
@@ -367,12 +367,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -409,19 +409,19 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 long sum = selector(e.Current);
@@ -443,12 +443,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -485,19 +485,19 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 double sum = selector(e.Current);
@@ -516,12 +516,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -558,19 +558,19 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 double sum = selector(e.Current);
@@ -592,12 +592,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -634,19 +634,19 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
-                    throw Error.NoElements();
+                    ThrowHelper.ThrowNoElementsException();
                 }
 
                 decimal sum = selector(e.Current);
@@ -665,12 +665,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
