@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             return source is IIListProvider<TSource> arrayProvider
@@ -24,7 +24,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             return source is IIListProvider<TSource> listProvider ? listProvider.ToList() : new List<TSource>(source);
@@ -37,12 +37,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (keySelector == null)
             {
-                throw Error.ArgumentNull(nameof(keySelector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
             int capacity = 0;
@@ -103,17 +103,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (keySelector == null)
             {
-                throw Error.ArgumentNull(nameof(keySelector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
             if (elementSelector == null)
             {
-                throw Error.ArgumentNull(nameof(elementSelector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
             }
 
             int capacity = 0;
@@ -173,7 +173,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             // Don't pre-allocate based on knowledge of size, as potentially many elements will be dropped.

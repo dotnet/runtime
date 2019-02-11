@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (source is IPartition<TSource> partition)
@@ -47,14 +47,15 @@ namespace System.Linq
                 }
             }
 
-            throw Error.ArgumentOutOfRange(nameof(index));
+            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            return default;
         }
 
         public static TSource ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (source is IPartition<TSource> partition)
