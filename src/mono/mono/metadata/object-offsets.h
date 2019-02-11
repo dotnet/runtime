@@ -74,6 +74,7 @@ DECL_OFFSET(MonoVTable, interface_bitmap)
 DECL_OFFSET(MonoVTable, vtable)
 DECL_OFFSET(MonoVTable, rank)
 DECL_OFFSET(MonoVTable, initialized)
+DECL_OFFSET(MonoVTable, flags)
 DECL_OFFSET(MonoVTable, type)
 DECL_OFFSET(MonoVTable, runtime_generic_context)
 

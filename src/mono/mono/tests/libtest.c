@@ -299,7 +299,7 @@ struct Rect {
 LIBTEST_API char * STDCALL
 mono_return_struct_4_double (void *ptr, struct Rect rect, struct Scalar4 sc4, int a, int b, int c)
 {
-	char *buffer = (char *) malloc (1024 * sizeof (char));
+	char *buffer = (char *)marshal_alloc (1024 * sizeof (char));
 	sprintf (buffer, "sc4 = {%.1f, %.1f, %.1f, %.1f }, a=%x, b=%x, c=%x\n", (float) sc4.val [0], (float) sc4.val [1], (float) sc4.val [2], (float) sc4.val [3], a, b, c);
 	return buffer;
 }

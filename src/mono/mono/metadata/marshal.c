@@ -50,6 +50,7 @@
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/custom-attrs-internals.h"
+#include "mono/metadata/loader-internals.h"
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
@@ -347,7 +348,7 @@ mono_delegate_to_ftnptr_impl (MonoDelegateHandle delegate, MonoError *error)
 		const char *exc_class, *exc_arg;
 		gpointer ftnptr;
 
-		ftnptr = mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
+		ftnptr = mono_lookup_pinvoke_call_internal (method, &exc_class, &exc_arg);
 		if (!ftnptr) {
 			g_assert (exc_class);
 			mono_error_set_generic_error (error, "System", exc_class, "%s", exc_arg);
@@ -2184,6 +2185,13 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND;
 		g_assert (!callvirt);
 		invoke_sig = mono_method_signature_internal (target_method);
+		/*
+		 * The wrapper has a different lifetime from the method to be invoked.
+		 * If the method is dynamic we don't want to be using its signature
+		 * in the wrapper since it could get freed early.
+		 */
+		if (method_is_dynamic (target_method))
+			invoke_sig = mono_metadata_signature_dup_full (get_method_image (target_method), invoke_sig);
 	}
 
 	/*
@@ -3344,7 +3352,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
 				exc_arg = "Method contains unsupported native code";
 			else if (!aot)
-				mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
+				mono_lookup_pinvoke_call_internal (method, &exc_class, &exc_arg);
 		} else {
 			if (!aot || (method->klass == mono_defaults.string_class))
 				piinfo->addr = mono_lookup_internal_call (method);

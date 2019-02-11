@@ -52,6 +52,7 @@
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/icall-internals.h>
+#include <mono/metadata/loader-internals.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -1615,7 +1616,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			const char *exc_arg;
 
 			if (run_cctors) {
-				target = mono_lookup_pinvoke_call (patch_info->data.method, &exc_class, &exc_arg);
+				target = mono_lookup_pinvoke_call_internal (patch_info->data.method, &exc_class, &exc_arg);
 				if (!target) {
 					if (mono_aot_only) {
 						mono_error_set_exception_instance (error, mono_exception_from_name_msg (mono_defaults.corlib, "System", exc_class, exc_arg));
@@ -2213,7 +2214,7 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono on this platform. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
 #endif
 			else
-				mono_lookup_pinvoke_call (method, NULL, NULL);
+				mono_lookup_pinvoke_call_internal (method, NULL, NULL);
 		}
 		nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
 		gpointer compiled_method = mono_jit_compile_method_jit_only (nm, error);
@@ -4681,6 +4682,7 @@ register_icalls (void)
 	register_icall (mini_llvmonly_init_vtable_slot, "mini_llvmonly_init_vtable_slot", "ptr ptr int", FALSE);
 	register_icall (mini_llvmonly_init_delegate, "mini_llvmonly_init_delegate", "void object", TRUE);
 	register_icall (mini_llvmonly_init_delegate_virtual, "mini_llvmonly_init_delegate_virtual", "void object object ptr", TRUE);
+	register_icall (mini_llvmonly_throw_nullref_exception, "mini_llvmonly_throw_nullref_exception", "void", TRUE);
 
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);
 	register_icall (mono_get_method_object, "mono_get_method_object", "object ptr", TRUE);

@@ -876,16 +876,35 @@ create_interp_local (TransformData *td, MonoType *type)
 }
 
 static void
-dump_mint_code (TransformData *td)
+dump_mint_code (const guint16 *start, const guint16* end)
 {
-	const guint16 *p = td->new_code;
-	while (p < td->new_ip) {
-		char *ins = mono_interp_dis_mintop (td->new_code, p);
+	const guint16 *p = start;
+	while (p < end) {
+		char *ins = mono_interp_dis_mintop (start, p);
 		g_print ("%s\n", ins);
 		g_free (ins);
 		p = mono_interp_dis_mintop_len (p);
 	}
 }
+
+/* For debug use */
+void
+mono_interp_print_code (InterpMethod *imethod)
+{
+	MonoJitInfo *jinfo = imethod->jinfo;
+	const guint16 *start;
+
+	if (!jinfo)
+		return;
+
+	char *name = mono_method_full_name (imethod->method, 1);
+	g_print ("Method : %s\n", name);
+	g_free (name);
+
+	start = (guint16*) jinfo->code_start;
+	dump_mint_code (start, start + jinfo->code_size);
+}
+
 
 static MonoMethodHeader*
 interp_method_get_header (MonoMethod* method, MonoError *error)
@@ -1708,6 +1727,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		PUSH_VT (td, vararg_stack);
 	}
 
+	if (need_null_check) {
+		ADD_CODE (td, MINT_CKNULL_N);
+		ADD_CODE (td, csignature->param_count + 1);
+	}
+
 	g_assert (csignature->call_convention != MONO_CALL_FASTCALL);
 	if ((mono_interp_opt & INTERP_OPT_INLINE) && op == -1 && !is_virtual && target_method && interp_method_check_inlining (td, target_method)) {
 		MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
@@ -1735,11 +1759,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			vt_stack_used += size;
 		}
-	}
-
-	if (need_null_check) {
-		ADD_CODE (td, MINT_CKNULL_N);
-		ADD_CODE (td, csignature->param_count + 1);
 	}
 
 	/* need to handle typedbyref ... */
@@ -1782,7 +1801,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 		}
 		if (op == MINT_LDELEMA || op == MINT_LDELEMA_TC) {
-			ADD_CODE (td, get_data_item_index (td, target_method->klass));
+			ADD_CODE (td, get_data_item_index (td, m_class_get_element_class (target_method->klass)));
 			ADD_CODE (td, 1 + m_class_get_rank (target_method->klass));
 		}
 
@@ -2180,10 +2199,6 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 	mono_atomic_fetch_add_i32 (&mono_jit_stats.allocated_seq_points_size, seq_info_size);
 
 	g_byte_array_free (array, TRUE);
-
-	mono_domain_lock (domain);
-	g_hash_table_insert (domain_jit_info (domain)->seq_points, rtm->method, info);
-	mono_domain_unlock (domain);
 
 	jinfo->seq_points = info;
 }
@@ -3108,9 +3123,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		case CEE_LDIND_I:
 			CHECK_STACK (td, 1);
-			ADD_CODE (td, MINT_CKNULL);
-			SIMPLE_OP (td, MINT_LDIND_I);
-			ADD_CODE (td, 0);
+			SIMPLE_OP (td, MINT_LDIND_REF_CHECK);
 			SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_I);
 			BARRIER_IF_VOLATILE (td);
 			break;
@@ -3128,8 +3141,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		case CEE_LDIND_REF:
 			CHECK_STACK (td, 1);
-			ADD_CODE (td, MINT_CKNULL);
-			SIMPLE_OP (td, MINT_LDIND_REF);
+			SIMPLE_OP (td, MINT_LDIND_REF_CHECK);
 			BARRIER_IF_VOLATILE (td);
 			SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_O);
 			break;
@@ -5417,7 +5429,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	if (td->verbose_level) {
 		g_print ("Runtime method: %s %p, VT stack size: %d\n", mono_method_full_name (method, TRUE), rtm, td->max_vt_sp);
 		g_print ("Calculated stack size: %d, stated size: %d\n", td->max_stack_height, header->max_stack);
-		dump_mint_code (td);
+		dump_mint_code (td->new_code, td->new_ip);
 	}
 
 	/* Check if we use excessive stack space */
@@ -5616,9 +5628,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	return_if_nok (error);
 
-	// FIXME: Add a different callback ?
-	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
-
 	/* Copy changes back */
 	imethod = real_imethod;
 	mono_os_mutex_lock (&calc_section);
@@ -5629,7 +5638,16 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		mono_memory_barrier ();
 		imethod->transformed = TRUE;
 		mono_atomic_fetch_add_i32 (&mono_jit_stats.methods_with_interp, 1);
+
 	}
 	mono_os_mutex_unlock (&calc_section);
+
+	mono_domain_lock (domain);
+	if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, imethod->method))
+		g_hash_table_insert (domain_jit_info (domain)->seq_points, imethod->method, imethod->jinfo->seq_points);
+	mono_domain_unlock (domain);
+
+	// FIXME: Add a different callback ?
+	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
 }
 

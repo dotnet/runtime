@@ -820,6 +820,28 @@ class Tests
 			arr [i] = 1;
 		return llvm_ldlen_licm (arr);
 	}
+
+	private unsafe static void WritePtr (FooStruct *val, out FooStruct* ptr)
+	{
+		ptr = val;
+	}
+
+	public unsafe static int test_0_ldelema_ptr () {
+		int i;
+		int len = 10;
+		FooStruct*[] ptr_array = new FooStruct* [len];
+		FooStruct str = new FooStruct (3);
+
+		for (i = 0; i < len; i++)
+			WritePtr (&str, out ptr_array [i]);
+
+		for (i = 0; i < len; i++) {
+			if (ptr_array [i]->i != 3)
+				return i;
+		}
+
+                return 0;
+	}
 }
 
 

@@ -7,6 +7,7 @@
 
 #if defined(HOST_DARWIN) || defined(HOST_BSD)
 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>		/* in_addr_t */
 

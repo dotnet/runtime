@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 #AC_PREREQ([2.62])
 
-AC_INIT(mono, [5.23.0],
+AC_INIT(mono, [6.1.0],
         [https://github.com/mono/mono/issues/new])
 
 AC_CONFIG_SRCDIR([README.md])
@@ -48,7 +48,7 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # There is no ordering of corlib versions, no old or new,
 # the runtime expects an exact match.
 #
-MONO_CORLIB_VERSION=9032116E-BB4E-4ED5-9C71-9E5E0B0230CA
+MONO_CORLIB_VERSION=C79A0703-DD79-437D-BE29-99A84058CAC5
 
 #
 # Put a quoted #define in config.h.
@@ -5958,7 +5958,7 @@ fi
 #
 # For testing purpuses, there is a function called `mono_native_get_platform_type ()`
 # (see mono/native/mono-native-platform.c), which returns a `MonoNativePlatformType` enum value.
-# There is also `Mono.MonoNativePlatform.GetPlatformType ()` (see mcs/class/System/Mono/MonoNativePlatform.cs).
+# There is also `Mono.MonoNativePlatform.GetPlatformType ()` (see mcs/class/corlib/Test/Mono/MonoNativePlatform.cs).
 #
 # This can be called by automated tests both to ensure that the library has been correctly installed and also
 # to verify that it's the correct version of it.
@@ -5991,8 +5991,12 @@ elif test x$target_osx = xyes; then
 		mono_native_compat=yes
 		mono_native_text="Mac OSX (compat+unified)"
 		MONO_NATIVE_COMPAT_CFLAGS="$CFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_CPPFLAGS="$CPPFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_CXXFLAGS="$CXXFLAGS $mono_native_compat_version"
 		MONO_NATIVE_COMPAT_LDFLAGS="$LDFLAGS $mono_native_compat_version"
 		MONO_NATIVE_UNIFIED_CFLAGS="$MONO_NATIVE_CFLAGS -mmacosx-version-min=10.12"
+		MONO_NATIVE_UNIFIED_CPPFLAGS="$MONO_NATIVE_CPPFLAGS -mmacosx-version-min=10.12"
+		MONO_NATIVE_UNIFIED_CXXFLAGS="$MONO_NATIVE_CXXFLAGS -mmacosx-version-min=10.12"
 		MONO_NATIVE_UNIFIED_LDFLAGS="$MONO_NATIVE_LDFLAGS -mmacosx-version-min=10.12"
 	else
 		mono_native_compat=no
@@ -6076,8 +6080,12 @@ elif test x$mono_native_platform_ios = xyes; then
 	if test x$mono_native_compat = xyes; then
 		mono_native_text="$mono_native_text (compat+unified)"
 		MONO_NATIVE_COMPAT_CFLAGS="$CFLAGS $mono_native_compat_version"
-		MONO_NATIVE_COMPAT_LDFLAGS="$LDFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_CPPFLAGS="$CPPFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_CXXFLAGS="$CXXFLAGS $mono_native_compat_version"
+		MONO_NATIVE_COMPAT_LDFLAGS="$LDFLAGS $mono_native_ldflags $mono_native_compat_version"
 		MONO_NATIVE_UNIFIED_CFLAGS="$MONO_NATIVE_CFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
+		MONO_NATIVE_UNIFIED_CPPFLAGS="$MONO_NATIVE_CPPFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
+		MONO_NATIVE_UNIFIED_CXXFLAGS="$MONO_NATIVE_CXXFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
 		MONO_NATIVE_UNIFIED_LDFLAGS="$MONO_NATIVE_LDFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
 	fi
 
@@ -6132,6 +6140,22 @@ elif case $host_os in aix*|os400*) true;; *) false;; esac; then
 	AC_MSG_RESULT(aix)
 
 	MONO_NATIVE_PLATFORM_TYPE="MONO_NATIVE_PLATFORM_TYPE_AIX"
+elif case $host_os in freebsd*) true;; *) false;; esac; then
+	mono_native_text="FreeBSD"
+	MONO_NATIVE_CC=$CC
+	MONO_NATIVE_CXX=$CXX
+	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
+	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
+	MONO_NATIVE_CFLAGS=$CFLAGS
+	MONO_NATIVE_LDFLAGS=$LDFLAGS
+
+	mono_native=yes
+	mono_native_compat=no
+	MONO_NATIVE_PLATFORM=freebsd
+	AC_MSG_CHECKING([Mono.Native support])
+	AC_MSG_RESULT(freebsd)
+
+	MONO_NATIVE_PLATFORM_TYPE="MONO_NATIVE_PLATFORM_TYPE_FREEBSD"
 elif test x$platform_android = xyes; then
 	mono_native_text="Android"
 	MONO_NATIVE_CC=$CC
@@ -6165,7 +6189,11 @@ AC_SUBST(MONO_NATIVE_PLATFORM)
 AC_SUBST(MONO_NATIVE_CC)
 AC_SUBST(MONO_NATIVE_CXX)
 AC_SUBST(MONO_NATIVE_CPPFLAGS)
+AC_SUBST(MONO_NATIVE_COMPAT_CPPFLAGS)
+AC_SUBST(MONO_NATIVE_UNIFIED_CPPFLAGS)
 AC_SUBST(MONO_NATIVE_CXXFLAGS)
+AC_SUBST(MONO_NATIVE_COMPAT_CXXFLAGS)
+AC_SUBST(MONO_NATIVE_UNIFIED_CXXFLAGS)
 AC_SUBST(MONO_NATIVE_CFLAGS)
 AC_SUBST(MONO_NATIVE_COMPAT_CFLAGS)
 AC_SUBST(MONO_NATIVE_UNIFIED_CFLAGS)
@@ -6182,6 +6210,7 @@ AM_CONDITIONAL(MONO_NATIVE_PLATFORM_IOS, test x$MONO_NATIVE_PLATFORM = xios)
 AM_CONDITIONAL(MONO_NATIVE_PLATFORM_LINUX, test x$MONO_NATIVE_PLATFORM = xlinux)
 AM_CONDITIONAL(MONO_NATIVE_PLATFORM_AIX, test x$MONO_NATIVE_PLATFORM = xaix)
 AM_CONDITIONAL(MONO_NATIVE_PLATFORM_ANDROID, test x$MONO_NATIVE_PLATFORM = xandroid)
+AM_CONDITIONAL(MONO_NATIVE_PLATFORM_FREEBSD, test x$MONO_NATIVE_PLATFORM = xfreebsd)
 
 MONO_NATIVE_PLATFORM_TYPE_COMPAT="$MONO_NATIVE_PLATFORM_TYPE | MONO_NATIVE_PLATFORM_TYPE_COMPAT"
 MONO_NATIVE_PLATFORM_TYPE_UNIFIED="$MONO_NATIVE_PLATFORM_TYPE | MONO_NATIVE_PLATFORM_TYPE_UNIFIED"
