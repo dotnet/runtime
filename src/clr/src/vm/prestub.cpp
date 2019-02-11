@@ -2378,7 +2378,11 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             DispatchToken token;
             if (pMT->IsInterface() || MethodTable::VTableIndir_t::isRelative)
             {
-                token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+                if (pMT->IsInterface())
+                    token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+                else
+                    token = DispatchToken::CreateDispatchToken(slot);
+
                 StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
                 pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
             }
