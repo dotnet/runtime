@@ -1,1 +1,28 @@
 TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Range.OffsetAndLength' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Index.GetOffset(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Index.IsFromEnd.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Memory<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Memory<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Memory<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Range..ctor(System.Index, System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Range.All.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Range.EndAt(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Range.GetOffsetAndLength(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Range.StartAt(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlyMemory<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlyMemory<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlyMemory<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlySpan<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlySpan<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Chars.get(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Chars.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Substring(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Substring(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.CompilerServices.RuntimeHelpers.GetSubArray<T>(T[], System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Index.End.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Index.FromEnd(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Index.FromStart(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Index.Start.get()' does not exist in the implementation but it does exist in the contract.

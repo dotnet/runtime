@@ -5,8 +5,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot' or '$(TargetGroup)'=='netcoreappaot'">
     <Compile Include="FxCopBaseline.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\EventCounter.cs" />
   </ItemGroup>
