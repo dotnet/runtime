@@ -14,7 +14,7 @@ namespace System
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Nullable<T> where T : struct
+    public partial struct Nullable<T> where T : struct
     {
         private readonly bool hasValue; // Do not rename (binary serialization)
         internal T value; // Do not rename (binary serialization) or make readonly (can be mutated in ToString, etc.)
