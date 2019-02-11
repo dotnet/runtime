@@ -1,5 +1,6 @@
 trigger:
 - master
+- release/3.0
 
 variables:
   - name: TeamName
