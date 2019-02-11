@@ -92,15 +92,6 @@ namespace System.IO.Pipelines
 
         public int Length => End;
 
-        /// <summary>
-        /// The amount of writable bytes in this segment. It is the amount of bytes between Length and End
-        /// </summary>
-        public int WritableBytes
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => AvailableMemory.Length - End;
-        }
-
         public void SetNext(BufferSegment segment)
         {
             Debug.Assert(segment != null);
