@@ -7705,10 +7705,11 @@ mono_test_MerpCrashDladdr (void)
 LIBTEST_API void STDCALL
 mono_test_MerpCrashMalloc (void)
 {
-	void *mem = malloc (sizeof (char) * 10);
-	memset (mem, sizeof (mem) * 10, 'A');
-	int x = 100;
-	g_free (&x);
+	gpointer x = g_malloc (sizeof(gpointer));
+	g_free (x);
+
+	// Double free
+	g_free (x);
 }
 
 LIBTEST_API void STDCALL
