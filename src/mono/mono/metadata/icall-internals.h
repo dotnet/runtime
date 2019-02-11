@@ -21,7 +21,7 @@ const gchar *
 mono_icall_get_file_path_prefix (const gchar *path);
 
 gpointer
-mono_icall_module_get_hinstance (MonoReflectionModuleHandle module);
+mono_icall_module_get_hinstance (MonoImage *image);
 
 MonoStringHandle
 mono_icall_get_machine_name (MonoError *error);
