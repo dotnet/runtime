@@ -291,11 +291,8 @@ jobs:
 # official builds if we add more platform/arch combinations.
 
 - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-  - template: /eng/common/templates/job/publish-build-assets.yml
+  - template: /eng/finalize-publish.yml
     parameters:
-      configuration: Release
-      pool:
-        name: dotnet-internal-temp
       dependsOn:
       - build_Linux_arm_release
       - build_Linux_arm64_release
