@@ -10,6 +10,7 @@
     <!-- This is actually a library for test projects, not a test project. -->
     <IsUnitTestProject>false</IsUnitTestProject>
     <IsShipping>true</IsShipping>
+    <HasReferenceAssembly>false</HasReferenceAssembly>
   </PropertyGroup>
 
   <ItemGroup>
