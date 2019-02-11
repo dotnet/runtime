@@ -632,4 +632,20 @@ namespace System.Net.Test.Common
         public bool UseSsl { get; set; } = true;
         public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls12;
     }
+
+    public sealed class Http2LoopbackServerFactory : LoopbackServerFactory
+    {
+        public static readonly Http2LoopbackServerFactory Singleton = new Http2LoopbackServerFactory();
+
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync)
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            {
+                await funcAsync(server, server.Address);
+            }
+        }
+
+        public override bool IsHttp11 => false;
+        public override bool IsHttp2 => true;
+    }
 }
