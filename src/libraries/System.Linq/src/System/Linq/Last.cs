@@ -13,7 +13,7 @@ namespace System.Linq
             TSource last = source.TryGetLast(out bool found);
             if (!found)
             {
-                throw Error.NoElements();
+                ThrowHelper.ThrowNoElementsException();
             }
 
             return last;
@@ -24,7 +24,7 @@ namespace System.Linq
             TSource last = source.TryGetLast(predicate, out bool found);
             if (!found)
             {
-                throw Error.NoMatch();
+                ThrowHelper.ThrowNoMatchException();
             }
 
             return last;
@@ -40,7 +40,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (source is IPartition<TSource> partition)
@@ -84,12 +84,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull(nameof(predicate));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
             if (source is OrderedEnumerable<TSource> ordered)

@@ -13,7 +13,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             return OfTypeIterator<TResult>(source);
@@ -40,7 +40,7 @@ namespace System.Linq
             
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
             
             return CastIterator<TResult>(source);
