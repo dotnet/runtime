@@ -27,7 +27,7 @@ namespace System.IO.Pipelines
                 Debug.Assert(value <= AvailableMemory.Length);
 
                 _end = value;
-                Memory = AvailableMemory.Slice(0, _end);
+                Memory = AvailableMemory.Slice(0, value);
             }
         }
 
@@ -42,32 +42,26 @@ namespace System.IO.Pipelines
             get => _next;
             set
             {
-                _next = value;
                 Next = value;
+                _next = value;
             }
         }
 
-        public void SetMemory(IMemoryOwner<byte> memoryOwner)
+        public void SetOwnedMemory(IMemoryOwner<byte> memoryOwner)
         {
             _memoryOwner = memoryOwner;
-
-            SetUnownedMemory(memoryOwner.Memory);
+            AvailableMemory = memoryOwner.Memory;
         }
 
-        public void SetMemory(byte[] arrayPoolBuffer)
+        public void SetOwnedMemory(byte[] arrayPoolBuffer)
         {
             _memoryOwner = arrayPoolBuffer;
-
-            SetUnownedMemory(arrayPoolBuffer);
+            AvailableMemory = arrayPoolBuffer;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetUnownedMemory(Memory<byte> memory)
         {
             AvailableMemory = memory;
-            RunningIndex = 0;
-            End = 0;
-            NextSegment = null;
         }
 
         public void ResetMemory()
@@ -81,7 +75,14 @@ namespace System.IO.Pipelines
                 ArrayPool<byte>.Shared.Return(array);
             }
 
+            // Order of below field clears is significant as it clears in a sequential order
+            // https://github.com/dotnet/corefx/pull/35256#issuecomment-462800477
+            Next = null;
+            RunningIndex = 0;
+            Memory = default;
             _memoryOwner = null;
+            _next = null;
+            _end = 0;
             AvailableMemory = default;
         }
 
