@@ -7,24 +7,10 @@ class fx_definition_t;
 struct fx_ver_t;
 struct host_startup_info_t;
 
+#include <corehost.h>
 #include "libhost.h"
 
 const int Max_Framework_Resolve_Retries = 100;
-
-int execute_app(
-    const pal::string_t& impl_dll_dir,
-    corehost_init_t* init,
-    const int argc,
-    const pal::char_t* argv[]);
-
-int execute_host_command(
-    const pal::string_t& impl_dll_dir,
-    corehost_init_t* init,
-    const int argc,
-    const pal::char_t* argv[],
-    pal::char_t result_buffer[],
-    int32_t buffer_size,
-    int32_t* required_buffer_size);
 
 class fx_muxer_t
 {
@@ -37,7 +23,9 @@ public:
         pal::char_t result_buffer[],
         int32_t buffer_size,
         int32_t* required_buffer_size);
-    static bool resolve_sdk_dotnet_path(const pal::string_t& dotnet_root, const pal::string_t& cwd, pal::string_t* cli_sdk);
+    static int get_com_activation_delegate(
+        const host_startup_info_t &host_info,
+        void **delegate);
 private:
     static int parse_args(
         const host_startup_info_t& host_info,

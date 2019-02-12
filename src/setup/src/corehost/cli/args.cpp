@@ -6,14 +6,15 @@
 #include "coreclr.h"
 #include "libhost.h"
 
-arguments_t::arguments_t() :
-    managed_application(_X("")),
-    host_path(_X("")),
-    app_root(_X("")),
-    app_argc(0),
-    app_argv(nullptr),
-    core_servicing(_X("")),
-    deps_path(_X(""))
+arguments_t::arguments_t()
+    : managed_application(_X(""))
+    , host_mode(host_mode_t::invalid)
+    , host_path(_X(""))
+    , app_root(_X(""))
+    , app_argc(0)
+    , app_argv(nullptr)
+    , core_servicing(_X(""))
+    , deps_path(_X(""))
 {
 }
 
@@ -62,7 +63,22 @@ bool parse_arguments(
     arguments_t& args)
 {
     pal::string_t managed_application_path;
-    if (init.host_mode != host_mode_t::apphost)
+    if (init.host_mode == host_mode_t::apphost)
+    {
+        // Find the managed app in the same directory
+        managed_application_path = init.host_info.app_path;
+
+        args.app_argv = &argv[1];
+        args.app_argc = argc - 1;
+    }
+    else if (init.host_mode == host_mode_t::libhost)
+    {
+        // Find the managed assembly in the same directory
+        managed_application_path = init.host_info.app_path;
+
+        assert(argc == 0 && argv == nullptr);
+    }
+    else
     {
         // First argument is managed app
         if (argc < 2)
@@ -74,14 +90,6 @@ bool parse_arguments(
 
         args.app_argc = argc - 2;
         args.app_argv = &argv[2];
-    }
-    else
-    {
-        // Find the managed app in the same directory
-        managed_application_path = init.host_info.app_path;
-
-        args.app_argv = &argv[1];
-        args.app_argc = argc - 1;
     }
 
     return init_arguments(
@@ -105,6 +113,7 @@ bool init_arguments(
     const std::vector<pal::string_t>& probe_paths,
     arguments_t& args)
 {
+    args.host_mode = host_mode;
     args.host_path = host_info.host_path;
     args.additional_deps_serialized = additional_deps_serialized;
 

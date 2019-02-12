@@ -10,7 +10,7 @@ enum StatusCode
     CoreHostLibLoadFailure      = 0x80008082,
     CoreHostLibMissingFailure   = 0x80008083,
     CoreHostEntryPointFailure   = 0x80008084,
-    CoreHostCurExeFindFailure   = 0x80008085,
+    CoreHostCurHostFindFailure  = 0x80008085,
     CoreHostResolveModeFailure  = 0x80008086,
     CoreClrResolveFailure       = 0x80008087,
     CoreClrBindFailure          = 0x80008088,

@@ -83,10 +83,12 @@
       <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\dotnet\$(ConfigurationGroup)\dotnet.pdb" />
       <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\apphost\$(ConfigurationGroup)\apphost.exe" />
       <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\apphost\$(ConfigurationGroup)\apphost.pdb" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\comhost\$(ConfigurationGroup)\comhost.dll" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\comhost\$(ConfigurationGroup)\comhost.pdb" />
       <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\hostpolicy\$(ConfigurationGroup)\$(HostPolicyBaseName)" />
       <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\hostpolicy\$(ConfigurationGroup)\hostpolicy.pdb" />
       <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\fxr\$(ConfigurationGroup)\$(DotnetHostFxrBaseName)" />
-      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\fxr\$(ConfigurationGroup)\hostfxr.pdb" />      
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\fxr\$(ConfigurationGroup)\hostfxr.pdb" />
     </ItemGroup>
     
     <Copy SourceFiles="@(CMakeOutput)"

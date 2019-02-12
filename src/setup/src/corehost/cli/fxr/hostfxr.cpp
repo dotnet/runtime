@@ -9,176 +9,10 @@
 #include "fx_muxer.h"
 #include "error_codes.h"
 #include "libhost.h"
+#include "corehost.h"
 #include "runtime_config.h"
 #include "sdk_info.h"
 #include "sdk_resolver.h"
-
-typedef int(*corehost_load_fn) (const host_interface_t* init);
-typedef int(*corehost_main_fn) (const int argc, const pal::char_t* argv[]);
-typedef int(*corehost_main_with_output_buffer_fn) (const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size);
-typedef int(*corehost_unload_fn) ();
-typedef void(*corehost_error_writer_fn) (const pal::char_t* message);
-typedef corehost_error_writer_fn(*corehost_set_error_writer_fn) (corehost_error_writer_fn error_writer);
-
-int load_host_library_common(
-    const pal::string_t& lib_dir,
-    pal::string_t& host_path,
-    pal::dll_t* h_host,
-    corehost_load_fn* load_fn,
-    corehost_unload_fn* unload_fn,
-    corehost_set_error_writer_fn* set_error_writer_fn)
-{
-    if (!library_exists_in_dir(lib_dir, LIBHOSTPOLICY_NAME, &host_path))
-    {
-        return StatusCode::CoreHostLibMissingFailure;
-    }
-
-    // Load library
-    if (!pal::load_library(&host_path, h_host))
-    {
-        trace::info(_X("Load library of %s failed"), host_path.c_str());
-        return StatusCode::CoreHostLibLoadFailure;
-    }
-
-    // Obtain entrypoint symbols
-    *load_fn = (corehost_load_fn)pal::get_symbol(*h_host, "corehost_load");
-    *unload_fn = (corehost_unload_fn)pal::get_symbol(*h_host, "corehost_unload");
-    *set_error_writer_fn = (corehost_set_error_writer_fn)pal::get_symbol(*h_host, "corehost_set_error_writer");
-
-    // It's possible to not have corehost_set_error_writer, since this was only introduced in 3.0
-    // so 2.0 hostpolicy would not have the export. In this case we will not propagate the error writer
-    // and errors will still be reported to stderr.
-
-    return (*load_fn != nullptr) && (*unload_fn != nullptr)
-        ? StatusCode::Success
-        : StatusCode::CoreHostEntryPointFailure;
-}
-
-int load_host_library(
-    const pal::string_t& lib_dir,
-    pal::dll_t* h_host,
-    corehost_load_fn* load_fn,
-    corehost_main_fn* main_fn,
-    corehost_unload_fn* unload_fn,
-    corehost_set_error_writer_fn* set_error_writer_fn)
-{
-    pal::string_t host_path;
-    int rc = load_host_library_common(lib_dir, host_path, h_host, load_fn, unload_fn, set_error_writer_fn);
-    if (rc != StatusCode::Success)
-    {
-        return rc;
-    }
-
-    // Obtain entrypoint symbol
-    *main_fn = (corehost_main_fn)pal::get_symbol(*h_host, "corehost_main");
-
-    return (*main_fn != nullptr)
-        ? StatusCode::Success
-        : StatusCode::CoreHostEntryPointFailure;
-}
-
-int load_host_library_with_return(
-    const pal::string_t& lib_dir,
-    pal::dll_t* h_host,
-    corehost_load_fn* load_fn,
-    corehost_main_with_output_buffer_fn* main_fn,
-    corehost_unload_fn* unload_fn,
-    corehost_set_error_writer_fn* set_error_writer_fn)
-{
-    pal::string_t host_path;
-    int rc = load_host_library_common(lib_dir, host_path, h_host, load_fn, unload_fn, set_error_writer_fn);
-    if (rc != StatusCode::Success)
-    {
-        return rc;
-    }
-
-    // Obtain entrypoint symbol
-    *main_fn = (corehost_main_with_output_buffer_fn)pal::get_symbol(*h_host, "corehost_main_with_output_buffer");
-
-    return (*main_fn != nullptr)
-        ? StatusCode::Success
-        : StatusCode::CoreHostEntryPointFailure;
-}
-
-int execute_app(
-    const pal::string_t& impl_dll_dir,
-    corehost_init_t* init,
-    const int argc,
-    const pal::char_t* argv[])
-{
-    pal::dll_t corehost;
-    corehost_main_fn host_main = nullptr;
-    corehost_load_fn host_load = nullptr;
-    corehost_unload_fn host_unload = nullptr;
-    corehost_set_error_writer_fn host_set_error_writer = nullptr;
-
-    int code = load_host_library(impl_dll_dir, &corehost, &host_load, &host_main, &host_unload, &host_set_error_writer);
-    if (code != StatusCode::Success)
-    {
-        trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, impl_dll_dir.c_str());
-        return code;
-    }
-
-    // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
-    trace::flush();
-
-    {
-        propagate_error_writer_t propagate_error_writer_to_corehost(host_set_error_writer);
-
-        const host_interface_t& intf = init->get_host_init_data();
-        if ((code = host_load(&intf)) == 0)
-        {
-            code = host_main(argc, argv);
-            (void)host_unload();
-        }
-    }
-
-    pal::unload_library(corehost);
-
-    return code;
-}
-
-int execute_host_command(
-    const pal::string_t& impl_dll_dir,
-    corehost_init_t* init,
-    const int argc,
-    const pal::char_t* argv[],
-    pal::char_t result_buffer[],
-    int32_t buffer_size,
-    int32_t* required_buffer_size)
-{
-    pal::dll_t corehost;
-    corehost_main_with_output_buffer_fn host_main = nullptr;
-    corehost_load_fn host_load = nullptr;
-    corehost_unload_fn host_unload = nullptr;
-    corehost_set_error_writer_fn host_set_error_writer = nullptr;
-
-    int code = load_host_library_with_return(impl_dll_dir, &corehost, &host_load, &host_main, &host_unload, &host_set_error_writer);
-
-    if (code != StatusCode::Success)
-    {
-        trace::error(_X("An error occurred while loading required library %s from [%s] for a host command"), LIBHOSTPOLICY_NAME, impl_dll_dir.c_str());
-        return code;
-    }
-
-    // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
-    trace::flush();
-
-    {
-        propagate_error_writer_t propagate_error_writer_to_corehost(host_set_error_writer);
-
-        const host_interface_t& intf = init->get_host_init_data();
-        if ((code = host_load(&intf)) == 0)
-        {
-            code = host_main(argc, argv, result_buffer, buffer_size, required_buffer_size);
-            (void)host_unload();
-        }
-    }
-
-    pal::unload_library(corehost);
-
-    return code;
-}
 
 SHARED_API int hostfxr_main_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path)
 {
@@ -188,8 +22,7 @@ SHARED_API int hostfxr_main_startupinfo(const int argc, const pal::char_t* argv[
 
     host_startup_info_t startup_info(host_path, dotnet_root, app_path);
 
-    fx_muxer_t muxer;
-    return muxer.execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
+    return fx_muxer_t::execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
 }
 
 SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
@@ -201,8 +34,7 @@ SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
     host_startup_info_t startup_info;
     startup_info.parse(argc, argv);
 
-    fx_muxer_t muxer;
-    return muxer.execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
+    return fx_muxer_t::execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
 }
 
 // [OBSOLETE] Replaced by hostfxr_resolve_sdk2
@@ -509,7 +341,7 @@ SHARED_API int32_t hostfxr_get_available_sdks(
 //
 // Return value:
 //   0 on success, otherwise failure
-//   0x800080980 - Buffer is too small (HostApiBufferTooSmall)
+//   0x80008098 - Buffer is too small (HostApiBufferTooSmall)
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
@@ -530,12 +362,9 @@ SHARED_API int32_t hostfxr_get_native_search_directories(const int argc, const p
     host_startup_info_t startup_info;
     startup_info.parse(argc, argv);
 
-    fx_muxer_t muxer;
-    int rc = muxer.execute(_X("get-native-search-directories"), argc, argv, startup_info, buffer, buffer_size, required_buffer_size);
+    int rc = fx_muxer_t::execute(_X("get-native-search-directories"), argc, argv, startup_info, buffer, buffer_size, required_buffer_size);
     return rc;
 }
-
-
 
 typedef void(*hostfxr_error_writer_fn)(const pal::char_t* message);
 
@@ -565,4 +394,38 @@ typedef void(*hostfxr_error_writer_fn)(const pal::char_t* message);
 SHARED_API hostfxr_error_writer_fn hostfxr_set_error_writer(hostfxr_error_writer_fn error_writer)
 {
     return trace::set_error_writer(error_writer);
+}
+
+//
+// Gets a typed delegate to perform an action on the currently loaded CoreCLR or on a newly created one.
+//
+// Parameters:
+//     libhost_path
+//          Absolute path of the entry hosting library
+//     dotnet_root
+//     app_path
+//     delegate
+//          COM activation delegate.
+// Return value:
+//     The error code result.
+//
+// A new CoreCLR instance will be created or reused if the existing instance can satisfy the configuration
+// requirements supplied by the runtimeconfig.json file.
+//
+SHARED_API int32_t hostfxr_get_com_activation_delegate(
+    const pal::char_t* libhost_path,
+    const pal::char_t* dotnet_root,
+    const pal::char_t* app_path,
+    void **delegate)
+{
+    if (libhost_path == nullptr || dotnet_root == nullptr || delegate == nullptr)
+        return StatusCode::InvalidArgFailure;
+
+    trace::setup();
+
+    trace::info(_X("--- Invoked hostfxr comhost [commit hash: %s]"), _STRINGIFY(REPO_COMMIT_HASH));
+
+    host_startup_info_t startup_info{ libhost_path, dotnet_root, app_path };
+
+    return fx_muxer_t::get_com_activation_delegate(startup_info, delegate);
 }

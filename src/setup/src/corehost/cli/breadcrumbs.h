@@ -9,7 +9,7 @@
 class breadcrumb_writer_t
 {
 public:
-    breadcrumb_writer_t(bool enabled, const std::unordered_set<pal::string_t>* files);
+    breadcrumb_writer_t(bool enabled, const std::unordered_set<pal::string_t> &files);
     ~breadcrumb_writer_t();
 
     void begin_write();
@@ -21,7 +21,7 @@ private:
 
     pal::string_t m_breadcrumb_store;
     std::thread m_thread;
-    const std::unordered_set<pal::string_t>* m_files;
+    const std::unordered_set<pal::string_t> &m_files;
     bool m_enabled;
     volatile bool m_status;
 };

@@ -18,9 +18,11 @@ enum host_mode_t
 
     apphost,        // Invoked as <appname>.exe from the application base; this is the renamed "apphost.exe".
 
-    split_fx        // Invoked as "corehost.exe" for xunit scenarios. Supported for backwards compat for 1.x apps.
+    split_fx,       // Invoked as "corehost.exe" for xunit scenarios. Supported for backwards compat for 1.x apps.
                     // Split FX means, the host is operating like "corerun.exe" in a split location from the application base (CORE_ROOT equivalent),
                     // but it has its "hostfxr.dll" next to it.
+
+    libhost,        // Invoked from a non-exe scenario (e.g. COM Activation or self-hosting native application)
 };
 
 class fx_ver_t;
@@ -378,10 +380,8 @@ struct hostpolicy_init_t
             }
         }
 
-        if (input->version_lo >= offsetof(host_interface_t, host_command) + sizeof(input->host_command))
-        {
-            init->host_command = input->host_command;
-        }
+        // Initialize the host command
+        init_host_command(input, init);
 
         if (input->version_lo >= offsetof(host_interface_t, host_info_host_path) + sizeof(input->host_info_host_path))
         {
@@ -392,6 +392,14 @@ struct hostpolicy_init_t
         }
 
         return true;
+    }
+
+    static void init_host_command(host_interface_t* input, hostpolicy_init_t* init)
+    {
+        if (input->version_lo >= offsetof(host_interface_t, host_command) + sizeof(input->host_command))
+        {
+            init->host_command = input->host_command;
+        }
     }
 
 private:

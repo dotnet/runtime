@@ -85,6 +85,7 @@
     </PropertyGroup>
     <PropertyGroup>
       <TestArgs>--no-restore $(MSBuildPassThroughPropertyList)</TestArgs>
+      <IsCrossArch>false</IsCrossArch>
       <IsCrossArch Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel'">true</IsCrossArch>
       <TestResultsXml>$(SystemPathTestsOutputDir)$(TestProjectFilename)-testResults.trx</TestResultsXml>
     </PropertyGroup>
@@ -102,9 +103,10 @@
       <TestResults Include="$(TestProject)">
         <ResultsXml>$(TestResultsXml)</ResultsXml>
         <ExitCode>$(_ErrorCode)</ExitCode>
+        <ExitCode Condition="'$(_ErrorCode)' == ''">0</ExitCode>
       </TestResults>
     </ItemGroup>
-    <Message Importance="High" Condition="'$(_ErrorCode)' != '0'" Text="Test run failed with exit code '$(_ErrorCode)', see $(TestResultsXml)" />
+    <Message Importance="High" Condition="'$(_ErrorCode)' != '0' and '$(_ErrorCode)' != ''" Text="Test run failed with exit code '$(_ErrorCode)', see $(TestResultsXml)" />
   </Target>
 
   <Target Name="RunTests"
