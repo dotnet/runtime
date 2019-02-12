@@ -92,7 +92,7 @@
 namespace pal
 {
 #if defined(_WIN32)
-    #ifdef COREHOST_MAKE_DLL
+    #ifdef EXPORT_SHARED_API
         #define SHARED_API extern "C" __declspec(dllexport)
     #else
         #define SHARED_API
@@ -110,6 +110,7 @@ namespace pal
     // typedef std::basic_ifstream<pal::char_t> ifstream_t.
     typedef std::basic_ifstream<char> ifstream_t;
     typedef std::istreambuf_iterator<ifstream_t::char_type> istreambuf_iterator_t;
+    typedef std::basic_istream<char> istream_t;
     typedef HRESULT hresult_t;
     typedef HMODULE dll_t;
     typedef FARPROC proc_t;
@@ -135,7 +136,7 @@ namespace pal
     bool clr_palstring(const char* cstr, pal::string_t* out);
 
 #else
-    #ifdef COREHOST_MAKE_DLL
+    #ifdef EXPORT_SHARED_API
         #define SHARED_API extern "C" __attribute__((__visibility__("default")))
     #else
         #define SHARED_API
@@ -157,6 +158,7 @@ namespace pal
     typedef std::stringstream stringstream_t;
     typedef std::basic_ifstream<char> ifstream_t;
     typedef std::istreambuf_iterator<ifstream_t::char_type> istreambuf_iterator_t;
+    typedef std::basic_istream<char> istream_t;
     typedef int hresult_t;
     typedef void* dll_t;
     typedef void* proc_t;
@@ -213,6 +215,8 @@ namespace pal
     void readdir_onlydirectories(const string_t& path, std::vector<pal::string_t>* list);
 
     bool get_own_executable_path(string_t* recv);
+    bool get_own_module_path(string_t* recv);
+    bool get_current_module(dll_t *mod);
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_servicing_directory(string_t* recv);
     

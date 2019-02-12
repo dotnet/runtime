@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#include <mutex>
 #include "pal.h"
 #include "args.h"
 #include "trace.h"
@@ -8,270 +9,366 @@
 #include "fx_muxer.h"
 #include "utils.h"
 #include "coreclr.h"
+#include "corehost.h"
 #include "cpprest/json.h"
 #include "libhost.h"
 #include "error_codes.h"
 #include "breadcrumbs.h"
 #include "host_startup_info.h"
 
-hostpolicy_init_t g_init;
-
-int run(const arguments_t& args, pal::string_t* out_host_command_result = nullptr)
+namespace
 {
-    // Load the deps resolver
-    deps_resolver_t resolver(
-        args,
-        g_init.fx_definitions,
-        /* root_framework_rid_fallback_graph */ nullptr, // This means that the fx_definitions contains the root framework
-        g_init.is_framework_dependent);
+    std::mutex g_init_lock;
+    bool g_init_done;
+    hostpolicy_init_t g_init;
 
-    pal::string_t resolver_errors;
-    if (!resolver.valid(&resolver_errors))
+    std::shared_ptr<coreclr_t> g_coreclr;
+
+    std::mutex g_lib_lock;
+    std::weak_ptr<coreclr_t> g_lib_coreclr;
+
+    class prepare_to_run_t
     {
-        trace::error(_X("Error initializing the dependency resolver: %s"), resolver_errors.c_str());
-        return StatusCode::ResolverInitFailure;
+    public:
+        prepare_to_run_t(
+            hostpolicy_init_t &hostpolicy_init,
+            const arguments_t& args,
+            bool breadcrumbs_enabled)
+            : _hostpolicy_init{ hostpolicy_init }
+            , _resolver
+                {
+                    args,
+                    hostpolicy_init.fx_definitions,
+                    /* root_framework_rid_fallback_graph */ nullptr, // This means that the fx_definitions contains the root framework
+                    hostpolicy_init.is_framework_dependent
+                }
+            , _breadcrumbs_enabled{ breadcrumbs_enabled }
+        { }
+
+        int build_coreclr_properties(
+            coreclr_property_bag_t &properties,
+            pal::string_t &clr_path,
+            pal::string_t &clr_dir)
+        {
+            pal::string_t resolver_errors;
+            if (!_resolver.valid(&resolver_errors))
+            {
+                trace::error(_X("Error initializing the dependency resolver: %s"), resolver_errors.c_str());
+                return StatusCode::ResolverInitFailure;
+            }
+
+            probe_paths_t probe_paths;
+
+            // Setup breadcrumbs.
+            if (_breadcrumbs_enabled)
+            {
+                pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
+                pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
+
+                // Always insert the hostpolicy that the code is running on.
+                _breadcrumbs.insert(policy_name);
+                _breadcrumbs.insert(policy_name + _X(",") + policy_version);
+
+                if (!_resolver.resolve_probe_paths(&probe_paths, &_breadcrumbs))
+                {
+                    return StatusCode::ResolverResolveFailure;
+                }
+            }
+            else
+            {
+                if (!_resolver.resolve_probe_paths(&probe_paths, nullptr))
+                {
+                    return StatusCode::ResolverResolveFailure;
+                }
+            }
+
+            clr_path = probe_paths.coreclr;
+            if (clr_path.empty() || !pal::realpath(&clr_path))
+            {
+                trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));;
+                return StatusCode::CoreClrResolveFailure;
+            }
+
+            // Get path in which CoreCLR is present.
+            clr_dir = get_directory(clr_path);
+
+            // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
+            pal::string_t corelib_path = clr_dir;
+            append_path(&corelib_path, CORELIB_NAME);
+
+            // Append CoreLib path
+            if (probe_paths.tpa.back() != PATH_SEPARATOR)
+            {
+                probe_paths.tpa.push_back(PATH_SEPARATOR);
+            }
+
+            probe_paths.tpa.append(corelib_path);
+            probe_paths.tpa.push_back(PATH_SEPARATOR);
+
+            pal::string_t clrjit_path = probe_paths.clrjit;
+            if (clrjit_path.empty())
+            {
+                trace::warning(_X("Could not resolve CLRJit path"));
+            }
+            else if (pal::realpath(&clrjit_path))
+            {
+                trace::verbose(_X("The resolved JIT path is '%s'"), clrjit_path.c_str());
+            }
+            else
+            {
+                clrjit_path.clear();
+                trace::warning(_X("Could not resolve symlink to CLRJit path '%s'"), probe_paths.clrjit.c_str());
+            }
+
+            pal::pal_clrstring(probe_paths.tpa, &_tpa_paths_cstr);
+            pal::pal_clrstring(_resolver.get_app_dir(), &_app_base_cstr);
+            pal::pal_clrstring(probe_paths.native, &_native_dirs_cstr);
+            pal::pal_clrstring(probe_paths.resources, &_resources_dirs_cstr);
+
+            const fx_definition_vector_t &fx_definitions = _resolver.get_fx_definitions();
+
+            pal::string_t fx_deps_str;
+            if (_resolver.is_framework_dependent())
+            {
+                // Use the root fx to define FX_DEPS_FILE
+                fx_deps_str = get_root_framework(fx_definitions).get_deps_file();
+            }
+            pal::pal_clrstring(fx_deps_str, &_fx_deps);
+
+            fx_definition_vector_t::iterator fx_begin;
+            fx_definition_vector_t::iterator fx_end;
+            _resolver.get_app_fx_definition_range(&fx_begin, &fx_end);
+
+            pal::string_t app_context_deps_str;
+            fx_definition_vector_t::iterator fx_curr = fx_begin;
+            while (fx_curr != fx_end)
+            {
+                if (fx_curr != fx_begin)
+                    app_context_deps_str += _X(';');
+
+                app_context_deps_str += (*fx_curr)->get_deps_file();
+                ++fx_curr;
+            }
+
+            pal::pal_clrstring(app_context_deps_str, &_app_context_deps);
+            pal::pal_clrstring(_resolver.get_lookup_probe_directories(), &_probe_directories);
+
+            if (_resolver.is_framework_dependent())
+            {
+                pal::pal_clrstring(get_root_framework(fx_definitions).get_found_version(), &_clr_library_version);
+            }
+            else
+            {
+                pal::pal_clrstring(_resolver.get_coreclr_library_version(), &_clr_library_version);
+            }
+
+            properties.add(common_property::TrustedPlatformAssemblies, _tpa_paths_cstr.data());
+            properties.add(common_property::NativeDllSearchDirectories, _native_dirs_cstr.data());
+            properties.add(common_property::PlatformResourceRoots, _resources_dirs_cstr.data());
+            properties.add(common_property::AppDomainCompatSwitch, "UseLatestBehaviorWhenTFMNotSpecified");
+            properties.add(common_property::AppContextBaseDirectory, _app_base_cstr.data());
+            properties.add(common_property::AppContextDepsFiles, _app_context_deps.data());
+            properties.add(common_property::FxDepsFile, _fx_deps.data());
+            properties.add(common_property::ProbingDirectories, _probe_directories.data());
+            properties.add(common_property::FxProductVersion, _clr_library_version.data());
+
+            if (!clrjit_path.empty())
+            {
+                pal::pal_clrstring(clrjit_path, &_clrjit_path_cstr);
+                properties.add(common_property::JitPath, _clrjit_path_cstr.data());
+            }
+
+            bool set_app_paths = false;
+
+            // Runtime options config properties.
+            for (int i = 0; i < _hostpolicy_init.cfg_keys.size(); ++i)
+            {
+                // Provide opt-in compatible behavior by using the switch to set APP_PATHS
+                if (pal::cstrcasecmp(_hostpolicy_init.cfg_keys[i].data(), "Microsoft.NETCore.DotNetHostPolicy.SetAppPaths") == 0)
+                {
+                    set_app_paths = (pal::cstrcasecmp(_hostpolicy_init.cfg_values[i].data(), "true") == 0);
+                }
+
+                properties.add(_hostpolicy_init.cfg_keys[i].data(), _hostpolicy_init.cfg_values[i].data());
+            }
+
+            // App paths and App NI paths.
+            // Note: Keep this check outside of the loop above since the _last_ key wins
+            // and that could indicate the app paths shouldn't be set.
+            if (set_app_paths)
+            {
+                properties.add(common_property::AppPaths, _app_base_cstr.data());
+                properties.add(common_property::AppNIPaths, _app_base_cstr.data());
+            }
+
+            // Startup hooks
+            pal::string_t startup_hooks;
+            if (pal::getenv(_X("DOTNET_STARTUP_HOOKS"), &startup_hooks))
+            {
+                pal::pal_clrstring(startup_hooks, &_startup_hooks_cstr);
+                properties.add(common_property::StartUpHooks, _startup_hooks_cstr.data());
+            }
+
+            return StatusCode::Success;
+        }
+
+        const std::unordered_set<pal::string_t>& breadcrumbs() const
+        {
+            return _breadcrumbs;
+        }
+
+    private:
+        hostpolicy_init_t &_hostpolicy_init;
+
+        deps_resolver_t _resolver;
+        const bool _breadcrumbs_enabled;
+        std::unordered_set<pal::string_t> _breadcrumbs;
+
+        // Note: these variables' lifetime should be longer than a call to coreclr_initialize.
+        std::vector<char> _tpa_paths_cstr;
+        std::vector<char> _app_base_cstr;
+        std::vector<char> _native_dirs_cstr;
+        std::vector<char> _resources_dirs_cstr;
+        std::vector<char> _fx_deps;
+        std::vector<char> _app_context_deps;
+        std::vector<char> _clrjit_path_cstr;
+        std::vector<char> _probe_directories;
+        std::vector<char> _clr_library_version;
+        std::vector<char> _startup_hooks_cstr;
+    };
+}
+
+int run_as_lib(
+    hostpolicy_init_t &hostpolicy_init,
+    const arguments_t &args,
+    std::shared_ptr<coreclr_t> &coreclr)
+{
+    coreclr = g_lib_coreclr.lock();
+    if (coreclr != nullptr)
+    {
+        // [TODO] Validate the current CLR instance is acceptable for this request
+
+        trace::info(_X("Using existing CoreClr instance"));
+        return StatusCode::Success;
     }
 
-    // Setup breadcrumbs. Breadcrumbs are not enabled for API calls because they do not execute
+    {
+        std::lock_guard<std::mutex> lock{ g_lib_lock };
+        coreclr = g_lib_coreclr.lock();
+        if (coreclr != nullptr)
+        {
+            trace::info(_X("Using existing CoreClr instance"));
+            return StatusCode::Success;
+        }
+
+        prepare_to_run_t prep{ hostpolicy_init, args, false /* breadcrumbs_enabled */ };
+
+        // Build variables for CoreCLR instantiation
+        coreclr_property_bag_t properties;
+        pal::string_t clr_path;
+        pal::string_t clr_dir;
+        int rc = prep.build_coreclr_properties(properties, clr_path, clr_dir);
+        if (rc != StatusCode::Success)
+            return rc;
+
+        // Verbose logging
+        if (trace::is_enabled())
+        {
+            properties.log_properties();
+        }
+
+        std::vector<char> host_path;
+        pal::pal_clrstring(args.host_path, &host_path);
+
+        // Create a CoreCLR instance
+        trace::verbose(_X("CoreCLR path = '%s', CoreCLR dir = '%s'"), clr_path.c_str(), clr_dir.c_str());
+        std::unique_ptr<coreclr_t> coreclr_local;
+        auto hr = coreclr_t::create(
+            clr_dir,
+            host_path.data(),
+            "clr_libhost",
+            properties,
+            coreclr_local);
+
+        if (!SUCCEEDED(hr))
+        {
+            trace::error(_X("Failed to create CoreCLR, HRESULT: 0x%X"), hr);
+            return StatusCode::CoreClrInitFailure;
+        }
+
+        assert(g_coreclr == nullptr);
+        g_coreclr = std::move(coreclr_local);
+        g_lib_coreclr = g_coreclr;
+    }
+
+    coreclr = g_coreclr;
+    return StatusCode::Success;
+}
+
+int run_as_app(
+    hostpolicy_init_t &hostpolicy_init,
+    const arguments_t &args,
+    pal::string_t* out_host_command_result = nullptr)
+{
+    // Breadcrumbs are not enabled for API calls because they do not execute
     // the app and may be re-entry
-    probe_paths_t probe_paths;
-    std::unordered_set<pal::string_t> breadcrumbs;
     bool breadcrumbs_enabled = (out_host_command_result == nullptr);
-    if (breadcrumbs_enabled)
-    {
-        pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
-        pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
+    prepare_to_run_t prep{ hostpolicy_init, args, breadcrumbs_enabled };
 
-        // Always insert the hostpolicy that the code is running on.
-        breadcrumbs.insert(policy_name);
-        breadcrumbs.insert(policy_name + _X(",") + policy_version);
-
-        if (!resolver.resolve_probe_paths(&probe_paths, &breadcrumbs))
-        {
-            return StatusCode::ResolverResolveFailure;
-        }
-    }
-    else
-    {
-        if (!resolver.resolve_probe_paths(&probe_paths, nullptr))
-        {
-            return StatusCode::ResolverResolveFailure;
-        }
-    }
-
-    pal::string_t clr_path = probe_paths.coreclr;
-    if (clr_path.empty() || !pal::realpath(&clr_path))
-    {
-        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));;
-        return StatusCode::CoreClrResolveFailure;
-    }
-
-    // Get path in which CoreCLR is present.
-    pal::string_t clr_dir = get_directory(clr_path);
-
-    // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
-    pal::string_t corelib_path = clr_dir;
-    append_path(&corelib_path, CORELIB_NAME);
-
-    // Append CoreLib path
-    if (probe_paths.tpa.back() != PATH_SEPARATOR)
-    {
-        probe_paths.tpa.push_back(PATH_SEPARATOR);
-    }
-
-    probe_paths.tpa.append(corelib_path);
-    probe_paths.tpa.push_back(PATH_SEPARATOR);
-
-    pal::string_t clrjit_path = probe_paths.clrjit;
-    if (clrjit_path.empty())
-    {
-        trace::warning(_X("Could not resolve CLRJit path"));
-    }
-    else if (pal::realpath(&clrjit_path))
-    {
-        trace::verbose(_X("The resolved JIT path is '%s'"), clrjit_path.c_str());
-    }
-    else
-    {
-        clrjit_path.clear();
-        trace::warning(_X("Could not resolve symlink to CLRJit path '%s'"), probe_paths.clrjit.c_str());
-    }
-
-    // Build CoreCLR properties
-    std::vector<const char*> property_keys = {
-        "TRUSTED_PLATFORM_ASSEMBLIES",
-        "NATIVE_DLL_SEARCH_DIRECTORIES",
-        "PLATFORM_RESOURCE_ROOTS",
-        "AppDomainCompatSwitch",
-        // Workaround: mscorlib does not resolve symlinks for AppContext.BaseDirectory dotnet/coreclr/issues/2128
-        "APP_CONTEXT_BASE_DIRECTORY",
-        "APP_CONTEXT_DEPS_FILES",
-        "FX_DEPS_FILE",
-        "PROBING_DIRECTORIES",
-        "FX_PRODUCT_VERSION"
-    };
-
-    // Note: these variables' lifetime should be longer than coreclr_initialize.
-    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr, probe_directories, clr_library_version, startup_hooks_cstr;
-    pal::pal_clrstring(probe_paths.tpa, &tpa_paths_cstr);
-    pal::pal_clrstring(args.app_root, &app_base_cstr);
-    pal::pal_clrstring(probe_paths.native, &native_dirs_cstr);
-    pal::pal_clrstring(probe_paths.resources, &resources_dirs_cstr);
-
-    pal::string_t fx_deps_str;
-    if (resolver.get_fx_definitions().size() >= 2)
-    {
-        // Use the root fx to define FX_DEPS_FILE
-        fx_deps_str = get_root_framework(resolver.get_fx_definitions()).get_deps_file();
-    }
-    pal::pal_clrstring(fx_deps_str, &fx_deps);
-
-    // Get all deps files
-    pal::string_t allDeps;
-    for (int i = 0; i < resolver.get_fx_definitions().size(); ++i)
-    {
-        allDeps += resolver.get_fx_definitions()[i]->get_deps_file();
-        if (i < resolver.get_fx_definitions().size() - 1)
-        {
-            allDeps += _X(";");
-        }
-    }
-    pal::pal_clrstring(allDeps, &deps);
-
-    pal::pal_clrstring(resolver.get_lookup_probe_directories(), &probe_directories);
-
-    if (resolver.is_framework_dependent())
-    {
-        pal::pal_clrstring(get_root_framework(resolver.get_fx_definitions()).get_found_version() , &clr_library_version);
-    }
-    else
-    {
-        pal::pal_clrstring(resolver.get_coreclr_library_version(), &clr_library_version);
-    }
-
-    std::vector<const char*> property_values = {
-        // TRUSTED_PLATFORM_ASSEMBLIES
-        tpa_paths_cstr.data(),
-        // NATIVE_DLL_SEARCH_DIRECTORIES
-        native_dirs_cstr.data(),
-        // PLATFORM_RESOURCE_ROOTS
-        resources_dirs_cstr.data(),
-        // AppDomainCompatSwitch
-        "UseLatestBehaviorWhenTFMNotSpecified",
-        // APP_CONTEXT_BASE_DIRECTORY
-        app_base_cstr.data(),
-        // APP_CONTEXT_DEPS_FILES,
-        deps.data(),
-        // FX_DEPS_FILE
-        fx_deps.data(),
-        //PROBING_DIRECTORIES
-        probe_directories.data(),
-        //FX_PRODUCT_VERSION
-        clr_library_version.data()
-    };
-
-    if (!clrjit_path.empty())
-    {
-        pal::pal_clrstring(clrjit_path, &clrjit_path_cstr);
-        property_keys.push_back("JIT_PATH");
-        property_values.push_back(clrjit_path_cstr.data());
-    }
-
-    bool set_app_paths = false;
-
-    // Runtime options config properties.
-    for (int i = 0; i < g_init.cfg_keys.size(); ++i)
-    {
-        // Provide opt-in compatible behavior by using the switch to set APP_PATHS
-        if (pal::cstrcasecmp(g_init.cfg_keys[i].data(), "Microsoft.NETCore.DotNetHostPolicy.SetAppPaths") == 0)
-        {
-            set_app_paths = (pal::cstrcasecmp(g_init.cfg_values[i].data(), "true") == 0);
-        }
-
-        property_keys.push_back(g_init.cfg_keys[i].data());
-        property_values.push_back(g_init.cfg_values[i].data());
-    }
-
-    // App paths and App NI paths
-    if (set_app_paths)
-    {
-        property_keys.push_back("APP_PATHS");
-        property_keys.push_back("APP_NI_PATHS");
-        property_values.push_back(app_base_cstr.data());
-        property_values.push_back(app_base_cstr.data());
-    }
-
-    // Startup hooks
-    pal::string_t startup_hooks;
-    if (pal::getenv(_X("DOTNET_STARTUP_HOOKS"), &startup_hooks))
-    {
-        pal::pal_clrstring(startup_hooks, &startup_hooks_cstr);
-        property_keys.push_back("STARTUP_HOOKS");
-        property_values.push_back(startup_hooks_cstr.data());
-    }
-
-    size_t property_size = property_keys.size();
-    assert(property_keys.size() == property_values.size());
-
-    unsigned int exit_code = 1;
+    // Build variables for CoreCLR instantiation
+    coreclr_property_bag_t properties;
+    pal::string_t clr_path;
+    pal::string_t clr_dir;
+    int rc = prep.build_coreclr_properties(properties, clr_path, clr_dir);
+    if (rc != StatusCode::Success)
+        return rc;
 
     // Check for host command(s)
-    if (pal::strcasecmp(g_init.host_command.c_str(), _X("get-native-search-directories")) == 0)
+    if (pal::strcasecmp(hostpolicy_init.host_command.c_str(), _X("get-native-search-directories")) == 0)
     {
-        // Verify property_keys[1] contains the correct information
-        if (pal::cstrcasecmp(property_keys[1], "NATIVE_DLL_SEARCH_DIRECTORIES"))
+        const char *value;
+        if (!properties.try_get(common_property::NativeDllSearchDirectories, &value))
         {
             trace::error(_X("get-native-search-directories failed to find NATIVE_DLL_SEARCH_DIRECTORIES property"));
-            exit_code = HostApiFailed;
-        }
-        else
-        {
-            assert(out_host_command_result != nullptr);
-            pal::clr_palstring(property_values[1], out_host_command_result);
-            exit_code = 0; // Success
+            return StatusCode::HostApiFailed;
         }
 
-        return exit_code;
-    }
-
-    // Bind CoreCLR
-    trace::verbose(_X("CoreCLR path = '%s', CoreCLR dir = '%s'"), clr_path.c_str(), clr_dir.c_str());
-    if (!coreclr::bind(clr_dir))
-    {
-        trace::error(_X("Failed to bind to CoreCLR at '%s'"), clr_path.c_str());
-        return StatusCode::CoreClrBindFailure;
+        assert(out_host_command_result != nullptr);
+        pal::clr_palstring(value, out_host_command_result);
+        return StatusCode::Success;
     }
 
     // Verbose logging
     if (trace::is_enabled())
     {
-        for (size_t i = 0; i < property_size; ++i)
-        {
-            pal::string_t key, val;
-            pal::clr_palstring(property_keys[i], &key);
-            pal::clr_palstring(property_values[i], &val);
-            trace::verbose(_X("Property %s = %s"), key.c_str(), val.c_str());
-        }
+        properties.log_properties();
     }
 
     std::vector<char> host_path;
     pal::pal_clrstring(args.host_path, &host_path);
 
-    // Initialize CoreCLR
-    coreclr::host_handle_t host_handle;
-    coreclr::domain_id_t domain_id;
-    auto hr = coreclr::initialize(
+    // Create a CoreCLR instance
+    trace::verbose(_X("CoreCLR path = '%s', CoreCLR dir = '%s'"), clr_path.c_str(), clr_dir.c_str());
+    std::unique_ptr<coreclr_t> coreclr;
+    auto hr = coreclr_t::create(
+        clr_dir,
         host_path.data(),
         "clrhost",
-        property_keys.data(),
-        property_values.data(),
-        property_size,
-        &host_handle,
-        &domain_id);
+        properties,
+        coreclr);
+
     if (!SUCCEEDED(hr))
     {
-        trace::error(_X("Failed to initialize CoreCLR, HRESULT: 0x%X"), hr);
+        trace::error(_X("Failed to create CoreCLR, HRESULT: 0x%X"), hr);
         return StatusCode::CoreClrInitFailure;
+    }
+
+    assert(g_coreclr == nullptr);
+    g_coreclr = std::move(coreclr);
+
+    {
+        std::lock_guard<std::mutex> lock{ g_lib_lock };
+        g_lib_coreclr = g_coreclr;
     }
 
     // Initialize clr strings for arguments
@@ -301,16 +398,15 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
     pal::pal_clrstring(args.managed_application, &managed_app);
 
     // Leave breadcrumbs for servicing.
-    breadcrumb_writer_t writer(breadcrumbs_enabled, &breadcrumbs);
+    breadcrumb_writer_t writer(breadcrumbs_enabled, prep.breadcrumbs());
     writer.begin_write();
 
     // Previous hostpolicy trace messages must be printed before executing assembly
     trace::flush();
 
     // Execute the application
-    hr = coreclr::execute_assembly(
-        host_handle,
-        domain_id,
+    unsigned int exit_code;
+    hr = g_coreclr->execute_assembly(
         argv.size(),
         argv.data(),
         managed_app.data(),
@@ -322,14 +418,14 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
         return StatusCode::CoreClrExeFailure;
     }
 
+    trace::info(_X("Execute managed assembly exit code: 0x%X"), exit_code);
+
     // Shut down the CoreCLR
-    hr = coreclr::shutdown(host_handle, domain_id, (int*)&exit_code);
+    hr = g_coreclr->shutdown((int*)&exit_code);
     if (!SUCCEEDED(hr))
     {
         trace::warning(_X("Failed to shut down CoreCLR, HRESULT: 0x%X"), hr);
     }
-
-    coreclr::unload();
 
     return exit_code;
 
@@ -347,22 +443,46 @@ void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
         entryPointName.c_str());
 }
 
+//
+// Loads and initilizes the hostpolicy.
+//
+// If hostpolicy is already initalized, the library will not be
+// reinitialized.
+//
 SHARED_API int corehost_load(host_interface_t* init)
 {
+    assert(init != nullptr);
+    std::lock_guard<std::mutex> lock{ g_init_lock };
+
+    if (g_init_done)
+    {
+        // Since the host command is set during load _and_
+        // load is considered re-entrant due to how testing is
+        // done, permit the re-initialization of the host command.
+        hostpolicy_init_t::init_host_command(init, &g_init);
+        return StatusCode::Success;
+    }
+
     trace::setup();
 
-    // Re-initialize global state in case of re-entry
-    g_init = hostpolicy_init_t();
+    g_init = hostpolicy_init_t{};
 
     if (!hostpolicy_init_t::init(init, &g_init))
     {
+        g_init_done = false;
         return StatusCode::LibHostInitFailure;
     }
-    
-    return 0;
+
+    g_init_done = true;
+    return StatusCode::Success;
 }
 
-int corehost_main_init(const int argc, const pal::char_t* argv[], const pal::string_t& location, arguments_t& args)
+int corehost_main_init(
+    hostpolicy_init_t &hostpolicy_init,
+    const int argc,
+    const pal::char_t* argv[],
+    const pal::string_t& location,
+    arguments_t& args)
 {
     if (trace::is_enabled())
     {
@@ -374,36 +494,36 @@ int corehost_main_init(const int argc, const pal::char_t* argv[], const pal::str
         }
         trace::info(_X("}"));
 
-        trace::info(_X("Deps file: %s"), g_init.deps_file.c_str());
-        for (const auto& probe : g_init.probe_paths)
+        trace::info(_X("Deps file: %s"), hostpolicy_init.deps_file.c_str());
+        for (const auto& probe : hostpolicy_init.probe_paths)
         {
             trace::info(_X("Additional probe dir: %s"), probe.c_str());
         }
     }
 
     // Take care of arguments
-    if (!g_init.host_info.is_valid())
+    if (!hostpolicy_init.host_info.is_valid())
     {
         // For backwards compat (older hostfxr), default the host_info
-        g_init.host_info.parse(argc, argv);
+        hostpolicy_init.host_info.parse(argc, argv);
     }
 
-    if (!parse_arguments(g_init, argc, argv, args))
+    if (!parse_arguments(hostpolicy_init, argc, argv, args))
     {
         return StatusCode::LibHostInvalidArgs;
     }
 
     args.trace();
-    return 0;
+    return StatusCode::Success;
 }
 
 SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 {
     arguments_t args;
-    int rc = corehost_main_init(argc, argv, _X("corehost_main"), args);
+    int rc = corehost_main_init(g_init, argc, argv, _X("corehost_main"), args);
     if (!rc)
     {
-        rc = run(args);
+        rc = run_as_app(g_init, args);
     }
 
     return rc;
@@ -412,14 +532,13 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 SHARED_API int corehost_main_with_output_buffer(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size)
 {
     arguments_t args;
-
-    int rc = corehost_main_init(argc, argv, _X("corehost_main_with_output_buffer "), args);
+    int rc = corehost_main_init(g_init, argc, argv, _X("corehost_main_with_output_buffer"), args);
     if (!rc)
     {
         if (g_init.host_command == _X("get-native-search-directories"))
         {
             pal::string_t output_string;
-            rc = run(args, &output_string);
+            rc = run_as_app(g_init, args, &output_string);
             if (!rc)
             {
                 // Get length in character count not including null terminator
@@ -427,7 +546,7 @@ SHARED_API int corehost_main_with_output_buffer(const int argc, const pal::char_
 
                 if (len + 1 > buffer_size)
                 {
-                    rc = HostApiBufferTooSmall;
+                    rc = StatusCode::HostApiBufferTooSmall;
                     *required_buffer_size = len + 1;
                     trace::info(_X("get-native-search-directories failed with buffer too small"), output_string.c_str());
                 }
@@ -443,16 +562,62 @@ SHARED_API int corehost_main_with_output_buffer(const int argc, const pal::char_
         else
         {
             trace::error(_X("Unknown command: %s"), g_init.host_command.c_str());
-            rc = LibHostUnknownCommand;
+            rc = StatusCode::LibHostUnknownCommand;
         }
     }
 
     return rc;
 }
 
+int corehost_libhost_init(hostpolicy_init_t &hostpolicy_init, const pal::string_t& location, arguments_t& args)
+{
+    if (trace::is_enabled())
+    {
+        trace_hostpolicy_entrypoint_invocation(location);
+        trace::info(_X("}"));
+
+        trace::info(_X("Deps file: %s"), hostpolicy_init.deps_file.c_str());
+        for (const auto& probe : hostpolicy_init.probe_paths)
+        {
+            trace::info(_X("Additional probe dir: %s"), probe.c_str());
+        }
+    }
+
+    // Host info should always be valid in the delegate scenario
+    assert(hostpolicy_init.host_info.is_valid());
+
+    if (!parse_arguments(hostpolicy_init, 0, nullptr, args))
+    {
+        return StatusCode::LibHostInvalidArgs;
+    }
+
+    args.trace();
+    return StatusCode::Success;
+}
+
+SHARED_API int corehost_get_com_activation_delegate(void **delegate)
+{
+    arguments_t args;
+
+    int rc = corehost_libhost_init(g_init, _X("corehost_get_com_activation_delegate"), args);
+    if (rc != StatusCode::Success)
+        return rc;
+
+    std::shared_ptr<coreclr_t> coreclr;
+    rc = run_as_lib(g_init, args, coreclr);
+    if (rc != StatusCode::Success)
+        return rc;
+
+    return coreclr->create_delegate(
+        "System.Private.CoreLib",
+        "Internal.Runtime.InteropServices.ComActivator",
+        "GetClassFactoryForTypeInternal",
+        delegate);
+}
+
 SHARED_API int corehost_unload()
 {
-    return 0;
+    return StatusCode::Success;
 }
 
 typedef void(*corehost_resolve_component_dependencies_result_fn)(
@@ -491,14 +656,17 @@ SHARED_API int corehost_resolve_component_dependencies(
         return StatusCode::CoreHostLibLoadFailure;
     }
 
+    // If the current host mode is libhost, use apphost instead.
+    host_mode_t host_mode = g_init.host_mode == host_mode_t::libhost ? host_mode_t::apphost : g_init.host_mode;
+
     // Initialize arguments (basically the structure describing the input app/component to resolve)
     arguments_t args;
     if (!init_arguments(
             component_main_assembly_path,
             g_init.host_info,
             g_init.tfm,
-            g_init.host_mode,
-            /* additional_deps_serialized */ pal::string_t(), // Additiona deps - don't use those from the app, they're already in the app
+            host_mode,
+            /* additional_deps_serialized */ pal::string_t(), // Additional deps - don't use those from the app, they're already in the app
             /* deps_file */ pal::string_t(), // Avoid using any other deps file than the one next to the component
             g_init.probe_paths,
             args))

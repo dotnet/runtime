@@ -53,7 +53,7 @@ bool parse_known_args(
     const std::vector<host_option>& known_opts,
     opt_map_t* opts,
     int* num_args);
-bool skip_utf8_bom(pal::ifstream_t* stream);
+bool skip_utf8_bom(pal::istream_t* stream);
 bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
 bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
 bool multilevel_lookup_enabled();

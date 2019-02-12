@@ -9,13 +9,14 @@ namespace HostApiInvokerApp
     {
         internal static class hostfxr
         {
-            [DllImport(nameof(hostfxr), CharSet = Utils.OSCharSet)]
+            [DllImport(nameof(hostfxr), CharSet = Utils.OSCharSet, CallingConvention = CallingConvention.Cdecl)]
             internal static extern uint hostfxr_get_native_search_directories(
                 int argc, 
                 [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)]
-                string[] argv, 
-                StringBuilder buffer, 
-                int bufferSize, 
+                string[] argv,
+                [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3), Out]
+                char[] buffer,
+                int bufferSize,
                 ref int required_buffer_size);
 
             [Flags]
@@ -83,8 +84,8 @@ namespace HostApiInvokerApp
             string[] argv = new[] { pathToDotnet, pathToApp };
 
             // Start with 0 bytes allocated to test re-entry and required_buffer_size
-            StringBuilder buffer = new StringBuilder(0);
             int required_buffer_size = 0;
+            char[] buffer = new char[required_buffer_size];
 
             uint rc = 0;
             StringBuilder errorBuilder = new StringBuilder();
@@ -95,15 +96,11 @@ namespace HostApiInvokerApp
             });
             try
             {
-                for (int i = 0; i < 2; i++)
+                rc = hostfxr.hostfxr_get_native_search_directories(argv.Length, argv, buffer, buffer.Length, ref required_buffer_size);
+                if (rc == hostfxr.HostApiBufferTooSmall)
                 {
-                    rc = hostfxr.hostfxr_get_native_search_directories(argv.Length, argv, buffer, buffer.Capacity + 1, ref required_buffer_size);
-                    if (rc != hostfxr.HostApiBufferTooSmall)
-                    {
-                        break;
-                    }
-
-                    buffer = new StringBuilder(required_buffer_size);
+                    buffer = new char[required_buffer_size];
+                    rc = hostfxr.hostfxr_get_native_search_directories(argv.Length, argv, buffer, buffer.Length, ref required_buffer_size);
                 }
             }
             finally
@@ -114,7 +111,7 @@ namespace HostApiInvokerApp
             if (rc == 0)
             {
                 Console.WriteLine("hostfxr_get_native_search_directories:Success");
-                Console.WriteLine($"hostfxr_get_native_search_directories buffer:[{buffer}]");
+                Console.WriteLine($"hostfxr_get_native_search_directories buffer:[{new string(buffer)}]");
             }
             else
             {
@@ -151,7 +148,7 @@ namespace HostApiInvokerApp
                 }
 
                 Console.WriteLine("negative buffer size.");
-                StringBuilder buffer = new StringBuilder(100);
+                char[] buffer = new char[100];
                 rc = hostfxr.hostfxr_get_native_search_directories(0, null, buffer, -1, ref required_buffer_size);
                 Console.WriteLine($"hostfxr_get_native_search_directories error code: {rc}");
                 if (rc != hostfxr.InvalidArgFailure)

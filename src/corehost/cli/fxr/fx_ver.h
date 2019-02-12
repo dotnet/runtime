@@ -4,7 +4,7 @@
 #ifndef __FX_VER_H__
 #define __FX_VER_H__
 
-#include "pal.h"
+#include <pal.h>
 
 // Note: This is not SemVer (esp., in comparing pre-release part, fx_ver_t does not
 // compare multiple dot separated identifiers individually.) ex: 1.0.0-beta.2 vs. 1.0.0-beta.11

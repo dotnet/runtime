@@ -12,6 +12,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             Reporter.Output.WriteLine($"[{type.PadRight(10)} >]".Green() + $" [....] [{(DateTime.Now - _initialTime).ToString(TimeSpanFormat)}]".Blue() + $" {name}");
         }
 
+        public static void SectionComment(string type, string comment)
+        {
+            Reporter.Output.WriteLine($"[{type.PadRight(10)} -]".Green() + $" [....] [{(DateTime.Now - _initialTime).ToString(TimeSpanFormat)}]".Blue() + $" {comment}");
+        }
+
         public static void EndSection(string type, string name, bool success)
         {
             var header = $"[{type.PadRight(10)} <]";

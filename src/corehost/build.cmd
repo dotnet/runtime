@@ -34,7 +34,7 @@ if /i [%1] == [rid]         ( set __TargetRid=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [toolsetDir]  ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [hostver]     (set __HostVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [apphostver]  (set __AppHostVersion=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [fxrver]      (set __HostResolverVersion=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [fxrver]      (set __HostFxrVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [policyver]   (set __HostPolicyVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 
@@ -122,9 +122,9 @@ exit /b 1
 :GenVSSolution
 :: Regenerate the VS solution
 
-echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat %~dp0 "%__VSVersion%" %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion%"
+echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat %~dp0 "%__VSVersion%" %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostFxrVersion% %__HostPolicyVersion% %__PortableBuild%"
 pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 "%__VSVersion%" %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion% %__PortableBuild%
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 "%__VSVersion%" %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostFxrVersion% %__HostPolicyVersion% %__PortableBuild%
 popd
 
 :CheckForProj
