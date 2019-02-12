@@ -779,6 +779,8 @@ void ArrayBase::AssertArrayTypeDescLoaded()
 {
     _ASSERTE (m_pMethTab->IsArray());
 
+    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
+
     // The type should already be loaded
     // See also: MethodTable::DoFullyLoad
     TypeHandle th = ClassLoader::LoadArrayTypeThrowing(m_pMethTab->GetApproxArrayElementTypeHandle(),
