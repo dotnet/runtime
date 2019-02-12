@@ -8,7 +8,7 @@ namespace HelloWorld
         {
             Console.WriteLine("Hello World!");
 
-            Console.WriteLine(typeof(object).Assembly.Location);
+            Console.WriteLine(typeof(object).Assembly.FullName);
         }
     }
 }
