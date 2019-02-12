@@ -156,6 +156,13 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             break;
 
+        case GT_START_PREEMPTGC:
+            // This kills GC refs in callee save regs
+            srcCount = 0;
+            assert(dstCount == 0);
+            BuildDefsWithKills(tree, 0, RBM_NONE, RBM_NONE);
+            break;
+
         case GT_PROF_HOOK:
             srcCount = 0;
             assert(dstCount == 0);

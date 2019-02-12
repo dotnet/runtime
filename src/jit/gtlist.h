@@ -255,6 +255,8 @@ GTNODE(NO_OP            , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // nop!
 
 GTNODE(START_NONGC      , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // starts a new instruction group that will be non-gc interruptible
 
+GTNODE(START_PREEMPTGC  , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // starts a new instruction group where preemptive GC is enabled
+
 GTNODE(PROF_HOOK        , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // profiler Enter/Leave/TailCall hook
 
 GTNODE(RETFILT          , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)   // end filter with TYP_I_IMPL return value

@@ -1947,6 +1947,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_SWITCH:
             case GT_RETFILT:
             case GT_START_NONGC:
+            case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
 #if !FEATURE_EH_FUNCLETS
             case GT_END_LFIN:

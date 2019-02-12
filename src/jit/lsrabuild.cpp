@@ -1113,6 +1113,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
 // Arguments:
 //    tree       - the tree for which kill positions should be generated
 //    currentLoc - the location at which the kills should be added
+//    killMask   - The mask of registers killed by this node
 //
 // Return Value:
 //    true       - kills were inserted
@@ -1124,10 +1125,14 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
 //    the multiple defs for a regPair are in different locations.
 //    If we generate any kills, we will mark all currentLiveVars as being preferenced
 //    to avoid the killed registers.  This is somewhat conservative.
+//
+//    This method can add kills even if killMask is RBM_NONE, if this tree is one of the
+//    special cases that signals that we can't permit callee save registers to hold GC refs.
 
 bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskTP killMask)
 {
-    bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
+    bool insertedKills = false;
+
     if (killMask != RBM_NONE)
     {
         // The killMask identifies a set of registers that will be used during codegen.
@@ -1143,7 +1148,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         addRefsForPhysRegMask(killMask, currentLoc, RefTypeKill, true);
 
         // TODO-CQ: It appears to be valuable for both fp and int registers to avoid killing the callee
-        // save regs on infrequently exectued paths.  However, it results in a large number of asmDiffs,
+        // save regs on infrequently executed paths.  However, it results in a large number of asmDiffs,
         // many of which appear to be regressions (because there is more spill on the infrequently path),
         // but are not really because the frequent path becomes smaller.  Validating these diffs will need
         // to be done before making this change.
@@ -1171,7 +1176,9 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 {
                     continue;
                 }
-                Interval* interval = getIntervalForLocalVar(varIndex);
+                Interval*  interval   = getIntervalForLocalVar(varIndex);
+                const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
+
                 if (isCallKill)
                 {
                     interval->preferCalleeSave = true;
@@ -1192,15 +1199,17 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             }
         }
 
-        if (compiler->killGCRefs(tree))
-        {
-            RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree,
-                                              (allRegs(TYP_REF) & ~RBM_ARG_REGS));
-        }
-        return true;
+        insertedKills = true;
     }
 
-    return false;
+    if (compiler->killGCRefs(tree))
+    {
+        RefPosition* pos =
+            newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree, (allRegs(TYP_REF) & ~RBM_ARG_REGS));
+        insertedKills = true;
+    }
+
+    return insertedKills;
 }
 
 //----------------------------------------------------------------------------
@@ -2556,9 +2565,12 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
     VARSET_TP liveLargeVectors(VarSetOps::UninitVal());
     bool      doLargeVectorRestore = false;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
+    // Call this even when killMask is RBM_NONE, as we have to check for some special cases
+    buildKillPositionsForNode(tree, currentLoc + 1, killMask);
+
     if (killMask != RBM_NONE)
     {
-        buildKillPositionsForNode(tree, currentLoc + 1, killMask);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         if (enregisterLocalVars && ((killMask & RBM_FLT_CALLEE_TRASH) != RBM_NONE))
         {
