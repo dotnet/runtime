@@ -167,6 +167,7 @@ jobs:
         enableMicrobuild: ${{ parameters.isOfficialBuild }}
 
         variables:
+          - _outerloop: false
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             - allConfigurationsQueues: Windows.10.Amd64.ClientRS4.Open
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:

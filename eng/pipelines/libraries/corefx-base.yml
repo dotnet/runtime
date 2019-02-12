@@ -82,7 +82,7 @@ jobs:
         # Windows variables
         - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
           - _buildScript: build.cmd
-          - _commonArguments: -ci -includetests
+          - _commonArguments: -ci -includetests -configuration $(_BuildConfig)
           - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
 
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -104,11 +104,10 @@ jobs:
         # Non-Windows variables
         - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
           - _buildScript: ${{ job.buildScriptPrefix }}./build.sh
-
+          - _args: --ci -includetests --configuration $(_BuildConfig)
+          - _commonArguments: $(_args)
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _commonArguments: --ci -includetests -stripSymbols
-          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            - _commonArguments: --ci -includetests
+            - _commonArguments: $(_args) -stripSymbols
 
           - _msbuildCommand: ${{ job.buildScriptPrefix }}./eng/common/msbuild.sh --warnaserror false --ci
           - _windowsOfficialBuildArguments: ''
@@ -129,6 +128,9 @@ jobs:
         name: ${{ job.job }}
         workspace:
           clean: all
+
+        # enabling publish build artifacts, will publish all build logs under /artifacts/log/
+        enablePublishBuildArtifacts: true
 
         ${{ if ne(job.enableMicrobuild, '') }}:
           enableMicrobuild: ${{ job.enableMicrobuild }}
