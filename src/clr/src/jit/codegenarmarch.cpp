@@ -71,6 +71,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             getEmitter()->emitDisableGC();
             break;
 
+        case GT_START_PREEMPTGC:
+            // Kill callee saves GC registers, and create a label
+            // so that information gets propagated to the emitter.
+            gcInfo.gcMarkRegSetNpt(RBM_INT_CALLEE_SAVED);
+            genDefineTempLabel(genCreateTempLabel());
+            break;
+
         case GT_PROF_HOOK:
             // We should be seeing this only if profiler hook is needed
             noway_assert(compiler->compIsProfilerHookNeeded());
