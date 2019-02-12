@@ -1639,15 +1639,9 @@ namespace System.StubHelpers
             {
                 pHandle.DangerousRelease();
             }
-#if MDA_SUPPORTED
-            catch (Exception ex)
+            catch
             {
-                Mda.ReportErrorSafeHandleRelease(ex);
             }
-#else // MDA_SUPPORTED
-            catch (Exception)
-            { }
-#endif // MDA_SUPPORTED
         }
 
 #if FEATURE_COMINTEROP

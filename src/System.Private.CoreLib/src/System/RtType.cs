@@ -231,9 +231,6 @@ namespace System
 
                 internal MemberInfoCache(RuntimeTypeCache runtimeTypeCache)
                 {
-#if MDA_SUPPORTED
-                    Mda.MemberInfoCacheCreation();
-#endif
                     m_runtimeTypeCache = runtimeTypeCache;
                 }
 

@@ -242,11 +242,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"from unmanaged to managed where an LCID was used to specify the culture for the call. This will "     \
     L"cause the thread's culture to remain set to the one associated with the LCID. The cause of the failure was: %1$s"  
 
-#define MDARC_MARSHALCLEANUPERROR_SAFEHANDLERELEASE_MSG                                                     \
-    L"The CLR marshaler encountered an error while attempting to release the reference to a SafeHandle "    \
-    L"it acquired in order to marshal the SafeHandle to an unmanaged pointer during a call from managed to unmanaged. " \
-    L"This may cause the unmanaged resource the SafeHandle represents to be leaked. The cause of the failure was: %1$s"  
-
 #define MDARC_MARSHALCLEANUPERROR_SAFEHANDLEPROP_MSG                                                        \
     L"The CLR marshaler encountered an error while attempting to associate a SafeHandle with an unmanaged resource. " \
     L"This may cause the unmanaged resource to be leaked. The cause of the failure was: %1$s"  
@@ -265,9 +260,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"Function DllMain, called with reason DLL_PROCESS_ATTACH, returned FALSE. DLL initialization failed. " \
     L"To ignore the DllMain return, set Registry value "                                                    \
     L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\.NETFramework\\IgnoreDllMainReturn to 1"
-
-#define MDARC_REFLECTION_PERFORMANCE_MEMBERINFOCACHECREATION_MSG                                            \
-    L"Reflection has created a memberInfo cache."
     
 #define MDARC_INVALID_MEMBER_DECLARATION_MSG                                                                \
     L"The following error occurred while determining how to marshal the parameters of member '%1$s' of type '%2$s': " \
@@ -288,16 +280,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define MDARC_DANGEROUS_THREADINGAPI_MSG                                                                    \
     L"User code has attempted to call the following API: '%1$s'. This may result in a deadlock in the process."
 
-#define MDARC_DATETIME_INVALID_LOCAL_FORMAT_MSG                                                             \
-    L"A UTC DateTime is being converted to text in a format that is only correct for local times. "         \
-    L"This can happen when calling DateTime.ToString using the 'z' format specifier, which will "     \
-    L"include a local time zone offset in the output. In that case, either use the 'Z' format specifier, "  \
-    L"which designates a UTC time, or use the 'o' format string, which is the recommended way to persist "  \
-    L"a DateTime in text. This can also occur when passing a DateTime to be serialized by "                 \
-    L"XmlConvert or DataSet. If using XmlConvert.ToString, pass in "                                        \
-    L"XmlDateTimeSerializationMode.RoundtripKind to serialize correctly. If using DataSet, set the "        \
-    L"DateTimeMode on the DataColumn object to DataSetDateTime.Utc. "                                  
-
 #define MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF_MSG                                                        \
     L"A QueryInterface call was made requesting the class interface of COM visible managed class '%1$s'. "  \
     L"However since this class derives from non COM visible class '%2$s', the QueryInterface call will fail. " \
@@ -309,16 +291,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
     L"class '%1$s'. However since this class does not have an explicit default interface and derives from non "\
     L"COM visible class '%2$s', the QueryInterface call will fail. This is done to prevent the non COM "    \
     L"visible base class from being constrained by the COM versioning rules."    
-
-#define MDARC_INVALID_GCHANDLE_COOKIE_MSG                                                                   \
-    L"An attempt was made to retrieve a GCHandle from an invalid IntPtr cookie (0x%1$x). "                  \
-    L"The cookie was most likely invalid because the cookie does not represent a GCHandle, "                \
-    L"the GCHandle has already been freed, "                                                                \
-    L"the retrieval was attempted in the wrong AppDomain, "                                                 \
-    L"or the GCHandle was marshaled to native code as a GCHandle but passed back into "                     \
-    L"managed code as an IntPtr where a cast was attempted. " \
-    L"Attempting to use an invalid pointer to reclaim a GC handle can cause unexpected exceptions, crashes, " \
-    L"corruption or data loss. "
 
 #define MDARC_FATAL_EXECUTION_ENGINE_ERROR_MSG \
     L"The runtime has encountered a fatal error. The address of the error was at 0x%1$08x, on thread 0x%2$x. "\
@@ -366,7 +338,6 @@ BEGIN
     MDARC_DISCONNECTED_CONTEXT_2                MDARC_DISCONNECTED_CONTEXT_2_MSG
     MDARC_NOTMARSHALABLE                        MDARC_NOTMARSHALABLE_MSG
     MDARC_MARSHALCLEANUPERROR_THREADCULTURE     MDARC_MARSHALCLEANUPERROR_THREADCULTURE_MSG
-    MDARC_MARSHALCLEANUPERROR_SAFEHANDLERELEASE MDARC_MARSHALCLEANUPERROR_SAFEHANDLERELEASE_MSG
     MDARC_MARSHALCLEANUPERROR_SAFEHANDLEPROP    MDARC_MARSHALCLEANUPERROR_SAFEHANDLEPROP_MSG
     MDARC_MARSHALCLEANUPERROR_CUSTOMCLEANUP     MDARC_MARSHALCLEANUPERROR_CUSTOMCLEANUP_MSG
     MDARC_INVALID_IUNKNOWN                      MDARC_INVALID_IUNKNOWN_MSG
@@ -380,14 +351,11 @@ BEGIN
     MDARC_OPENGENERIC_CER_CALL                  MDARC_OPENGENERIC_CER_CALL_MSG
     MDARC_ILLEGAL_PCR                           MDARC_ILLEGAL_PCR_MSG
     MDARC_SAFEHANDLE_CRITICAL_FAILURE           MDARC_SAFEHANDLE_CRITICAL_FAILURE_MSG
-    MDARC_REFLECTION_PERFORMANCE_MEMBERINFOCACHECREATION            MDARC_REFLECTION_PERFORMANCE_MEMBERINFOCACHECREATION_MSG
-    MDARC_DATETIME_INVALID_LOCAL_FORMAT         MDARC_DATETIME_INVALID_LOCAL_FORMAT_MSG
     MDARC_DLLMAIN_RETURNS_FALSE                 MDARC_DLLMAIN_RETURNS_FALSE_MSG
     MDARC_INVALID_MEMBER_DECLARATION            MDARC_INVALID_MEMBER_DECLARATION_MSG
     MDARC_EXCEPTION_SWALLOWED_COM_TO_CLR        MDARC_EXCEPTION_SWALLOWED_COM_TO_CLR_MSG
     MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF    MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF_MSG  
     MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH   MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH_MSG  
-    MDARC_INVALID_GCHANDLE_COOKIE               MDARC_INVALID_GCHANDLE_COOKIE_MSG
     MDARC_PINVOKE_LOG                           MDARC_PINVOKE_LOG_MSG
     MDARC_FATAL_EXECUTION_ENGINE_ERROR          MDARC_FATAL_EXECUTION_ENGINE_ERROR_MSG
     MDARC_INVALID_OVERLAPPED_TO_PINVOKE         MDARC_INVALID_OVERLAPPED_TO_PINVOKE_MSG

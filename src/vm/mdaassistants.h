@@ -47,20 +47,6 @@ See the other report functions for an example (eg, MdaLoaderLock::ReportViolatio
 
 #ifdef MDA_SUPPORTED 
 
-// Until Mda offers first class support for managed code we'll just make targetd ecalls.
-class MdaManagedSupport
-{
-public:
-    static FCDECL0(void, MemberInfoCacheCreation);
-    static FCDECL0(void, DateTimeInvalidLocalFormat);
-    static FCDECL1(void, ReportStreamWriterBufferedDataLost, StringObject * pString);
-    static FCDECL0(FC_BOOL_RET, IsStreamWriterBufferedDataLostEnabled);
-    static FCDECL0(FC_BOOL_RET, IsStreamWriterBufferedDataLostCaptureAllocatedCallStack);
-    static FCDECL0(FC_BOOL_RET, IsInvalidGCHandleCookieProbeEnabled);
-    static FCDECL1(void, FireInvalidGCHandleCookieProbe, LPVOID cookie);
-    static FCDECL1(void, ReportErrorSafeHandleRelease, ExceptionObject * pException);
-};
-
 // MDA classes do not derive from MdaAssistant in the type system, but, rather, use this macro to
 // ensure that their layout is identical to what it would be had they derived from MdaAssistant.  
 // This allows them to be "aggregates", which C++ will allow to be initialized at compile time. 
@@ -139,19 +125,6 @@ class MdaBindingFailure
 public:
     void Initialize(MdaXmlElement* pXmlInput) { LIMITED_METHOD_CONTRACT; }
     void BindFailed(AssemblySpec *pSpec, OBJECTREF *pExceptionObj);
-
-    MDA_ASSISTANT_BASE_MEMBERS;
-};
-
-
-//
-// MdaReflection
-// 
-class MdaMemberInfoCacheCreation
-{
-public:
-    void Initialize(MdaXmlElement* pXmlInput) { WRAPPER_NO_CONTRACT; }
-    void MemberInfoCacheCreation();
 
     MDA_ASSISTANT_BASE_MEMBERS;
 };
@@ -582,9 +555,6 @@ class MdaMarshalCleanupError
 {
 public:
     void Initialize(MdaXmlElement* pXmlInput) { LIMITED_METHOD_CONTRACT; }
-    void ReportErrorThreadCulture(OBJECTREF *pExceptionObj);
-    void ReportErrorSafeHandleRelease(OBJECTREF *pExceptionObj);
-    void ReportErrorSafeHandleProp(OBJECTREF *pExceptionObj);
     void ReportErrorCustomMarshalerCleanup(TypeHandle typeCustomMarshaler, OBJECTREF *pExceptionObj);
 
     MDA_ASSISTANT_BASE_MEMBERS;
@@ -761,19 +731,6 @@ public:
 
     MDA_ASSISTANT_BASE_MEMBERS;
 };
-
-
-//
-// InvalidGCHandleCookie
-//
-class MdaInvalidGCHandleCookie
-{
-public:
-    void Initialize(MdaXmlElement* pXmlInput) { LIMITED_METHOD_CONTRACT; }
-    void ReportError(LPVOID cookie);
-
-    MDA_ASSISTANT_BASE_MEMBERS;
-};
     
 //
 // MdaXmlValidator
@@ -816,44 +773,6 @@ public:
     void ReportError(MdaElemDeclDef configFile);
 
     MDA_ASSISTANT_BASE_MEMBERS;
-};
-
-//
-// MdaDateTimeInvalidLocalFormat
-//
-class MdaDateTimeInvalidLocalFormat
-{
-public:
-    void Initialize(MdaXmlElement* pXmlInput) { LIMITED_METHOD_CONTRACT; }
-    void ReportError();
-
-    MDA_ASSISTANT_BASE_MEMBERS;
-};
-
-//
-// MdaStreamWriterBufferedDataLost
-//
-class MdaStreamWriterBufferedDataLost
-{
-public:
-    void Initialize(MdaXmlElement* pXmlInput) 
-    { 
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-        m_captureAllocatedCallStack = pXmlInput->GetAttribute(MdaAttrDecl(CaptureAllocatedCallStack))->GetValueAsBool();
-    }
-    
-    BOOL CaptureAllocatedCallStack() { LIMITED_METHOD_CONTRACT; return m_captureAllocatedCallStack; }
-
-    void ReportError(SString text);
-
-    MDA_ASSISTANT_BASE_MEMBERS;
-    BOOL m_captureAllocatedCallStack;
 };
 
 class ValidateMdaAssistantLayout
