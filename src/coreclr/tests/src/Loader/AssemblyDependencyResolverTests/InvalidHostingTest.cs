@@ -4,7 +4,10 @@
 using System;
 using System.IO;
 using System.Runtime.Loader;
+using TestLibrary;
 using Xunit;
+
+using Assert = Xunit.Assert;
 
 namespace AssemblyDependencyResolverTests
 {
