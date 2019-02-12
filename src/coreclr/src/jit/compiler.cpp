@@ -10156,6 +10156,7 @@ int cLeafIR(Compiler* comp, GenTree* tree)
 
         case GT_NO_OP:
         case GT_START_NONGC:
+        case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
         case GT_CATCH_ARG:
         case GT_MEMORYBARRIER:
@@ -11083,5 +11084,10 @@ bool Compiler::killGCRefs(GenTree* tree)
             return true;
         }
     }
+    else if (tree->OperIs(GT_START_PREEMPTGC))
+    {
+        return true;
+    }
+
     return false;
 }
