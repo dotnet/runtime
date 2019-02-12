@@ -65,8 +65,12 @@ namespace System.Net.Http.Functional.Tests
             return field?.GetValue(handler);
         }
 
+#if netcoreapp
         protected LoopbackServerFactory LoopbackServerFactory => UseHttp2LoopbackServer ? 
                                                                 (LoopbackServerFactory)Http2LoopbackServerFactory.Singleton : 
                                                                 (LoopbackServerFactory)Http11LoopbackServerFactory.Singleton;
+#else
+        protected LoopbackServerFactory LoopbackServerFactory => Http11LoopbackServerFactory.Singleton;
+#endif
     }
 }
