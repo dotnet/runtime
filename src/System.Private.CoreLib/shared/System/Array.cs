@@ -1022,6 +1022,8 @@ namespace System
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
+            // Hits a code generation bug on ProjectN
+#if !PROJECTN
             if (typeof(T) == typeof(byte))
             {
                 int result = SpanHelpers.IndexOf(
@@ -1041,6 +1043,7 @@ namespace System
 
                 return (result >= 0 ? startIndex : 0) + result;
             }
+#endif
 
 #if CORECLR
             return EqualityComparer<T>.Default.IndexOf(array, value, startIndex, count);
@@ -1207,6 +1210,8 @@ namespace System
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
+            // Hits a code generation bug on ProjectN
+#if !PROJECTN
             if (typeof(T) == typeof(byte))
             {
                 int endIndex = startIndex - count + 1;
@@ -1228,6 +1233,7 @@ namespace System
 
                 return (result >= 0 ? endIndex : 0) + result;
             }
+#endif
 
 #if CORECLR
             return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);
