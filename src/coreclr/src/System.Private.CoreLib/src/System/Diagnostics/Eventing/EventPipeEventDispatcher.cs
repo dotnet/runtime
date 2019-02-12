@@ -39,7 +39,7 @@ namespace System.Diagnostics.Tracing
         private EventPipeEventDispatcher()
         {
             // Get the ID of the runtime provider so that it can be used as a filter when processing events.
-            m_RuntimeProviderID = EventPipeInternal.GetProvider(RuntimeEventSource.EventSourceName);
+            m_RuntimeProviderID = EventPipeInternal.GetProvider(NativeRuntimeEventSource.EventSourceName);
         }
 
         internal void SendCommand(EventListener eventListener, EventCommand command, bool enable, EventLevel level, EventKeywords matchAnyKeywords)
@@ -107,7 +107,7 @@ namespace System.Diagnostics.Tracing
             // Enable the EventPipe session.
             EventPipeProviderConfiguration[] providerConfiguration = new EventPipeProviderConfiguration[]
             {
-                new EventPipeProviderConfiguration(RuntimeEventSource.EventSourceName, (ulong) aggregatedKeywords, (uint) highestLevel, null)
+                new EventPipeProviderConfiguration(NativeRuntimeEventSource.EventSourceName, (ulong) aggregatedKeywords, (uint) highestLevel, null)
             };
 
             m_sessionID = EventPipeInternal.Enable(null, 1024, 1, providerConfiguration, 1, 0);
@@ -170,7 +170,7 @@ namespace System.Diagnostics.Tracing
                         // Dispatch the event.
                         ReadOnlySpan<Byte> payload = new ReadOnlySpan<byte>((void*)instanceData.Payload, (int)instanceData.PayloadLength);
                         DateTime dateTimeStamp = TimeStampToDateTime(instanceData.TimeStamp);
-                        RuntimeEventSource.Log.ProcessEvent(instanceData.EventID, instanceData.ThreadID, dateTimeStamp, instanceData.ActivityId, instanceData.ChildActivityId, payload);
+                        NativeRuntimeEventSource.Log.ProcessEvent(instanceData.EventID, instanceData.ThreadID, dateTimeStamp, instanceData.ActivityId, instanceData.ChildActivityId, payload);
                     }
                 }
 
