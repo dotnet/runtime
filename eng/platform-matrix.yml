@@ -79,6 +79,27 @@ jobs:
         - Alpine.38.Amd64
     ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux musl arm64
+
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: arm64
+    osGroup: Linux
+    osIdentifier: Linux_musl
+    containerName: musl_arm64_build_image
+    helixQueues:
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        # TODO: there are no Alpine arm64 queues https://github.com/dotnet/core-eng/issues/5206
+        asString: ''
+        asArray: []
+      ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        # TODO: there are no Alpine arm64 queues https://github.com/dotnet/core-eng/issues/5206
+        asString: ''
+        asArray: []
+    crossrootfsDir: '/crossrootfs/arm64'
+    ${{ insert }}: ${{ parameters.jobParameters }}
+
 # RHEL 6
 
 - template: ${{ parameters.jobTemplate }}
