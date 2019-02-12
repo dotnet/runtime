@@ -591,7 +591,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Third response: Send headers, partial body
                 await server.SendDefaultResponseHeadersAsync(streamId3);
-                await server.SendResponseBodyAsync(streamId3, new byte[5], endStream: false);
+                await server.SendResponseDataAsync(streamId3, new byte[5], endStream: false);
 
                 // Send a GOAWAY frame that indicates that we will process all three streams
                 GoAwayFrame goAwayFrame = new GoAwayFrame(streamId3, 0, new byte[0], 0);
@@ -599,9 +599,9 @@ namespace System.Net.Http.Functional.Tests
 
                 // Finish sending responses
                 await server.SendDefaultResponseHeadersAsync(streamId1);
-                await server.SendResponseBodyAsync(streamId1, new byte[10], endStream: true);
-                await server.SendResponseBodyAsync(streamId2, new byte[10], endStream: true);
-                await server.SendResponseBodyAsync(streamId3, new byte[5], endStream: true);
+                await server.SendResponseDataAsync(streamId1, new byte[10], endStream: true);
+                await server.SendResponseDataAsync(streamId2, new byte[10], endStream: true);
+                await server.SendResponseDataAsync(streamId3, new byte[5], endStream: true);
 
                 // We will not send any more frames, so send EOF now, and ensure the client handles this properly.
                 server.ShutdownSend();

@@ -11,12 +11,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    using Configuration = System.Net.Test.Common.Configuration;
-
-    public abstract class HttpCookieProtocolTests : HttpClientHandlerTestBase
+    public abstract class HttpClientHandlerTest_Cookies : HttpClientHandlerTestBase
     {
-        public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
-
         private const string s_cookieName = "ABC";
         private const string s_cookieValue = "123";
         private const string s_expectedCookieHeaderValue = "ABC=123";
@@ -40,54 +36,52 @@ namespace System.Net.Http.Functional.Tests
 
         private static string GetCookieHeaderValue(string cookieName, string cookieValue) => $"{cookieName}={cookieValue}";
 
-
         [Fact]
         public async Task GetAsync_DefaultCoookieContainer_NoCookieSent()
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
-                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-
-                    List<string> requestLines = await serverTask;
-
-                    Assert.Equal(0, requestLines.Count(s => s.StartsWith("Cookie:")));
-                }
-            });
+                    using (HttpClient client = CreateHttpClient())
+                    {
+                        await client.GetAsync(uri);
+                    }
+                },
+                async server =>
+                {
+                    HttpRequestData requestData = await server.HandleRequestAsync();
+                    Assert.Equal(0, requestData.GetHeaderValueCount("Cookie"));
+                });
         }
 
         [Theory]
         [MemberData(nameof(CookieNamesValuesAndUseCookies))]
         public async Task GetAsync_SetCookieContainer_CookieSent(string cookieName, string cookieValue, bool useCookies)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                HttpClientHandler handler = CreateHttpClientHandler();
-                handler.CookieContainer = CreateSingleCookieContainer(url, cookieName, cookieValue);
-                handler.UseCookies = useCookies;
-
-                using (HttpClient client = new HttpClient(handler))
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
-                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+                    HttpClientHandler handler = CreateHttpClientHandler();
+                    handler.CookieContainer = CreateSingleCookieContainer(uri, cookieName, cookieValue);
+                    handler.UseCookies = useCookies;
 
-                    List<string> requestLines = await serverTask;
-
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        await client.GetAsync(uri);
+                    }
+                },
+                async server =>
+                {
+                    HttpRequestData requestData = await server.HandleRequestAsync();
                     if (useCookies)
                     {
-                        Assert.Contains($"Cookie: {GetCookieHeaderValue(cookieName, cookieValue)}", requestLines);
-                        Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie:")));
+                        Assert.Equal(GetCookieHeaderValue(cookieName, cookieValue), requestData.GetSingleHeaderValue("Cookie"));
                     }
                     else
                     {
-                        Assert.Equal(0, requestLines.Count(s => s.StartsWith("Cookie:")));
+                        Assert.Equal(0, requestData.GetHeaderValueCount("Cookie"));
                     }
-                }
-            });
+                });
         }
 
         [Fact]
@@ -100,31 +94,28 @@ namespace System.Net.Http.Functional.Tests
                 new Cookie("ABC", "123")
             };
 
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                HttpClientHandler handler = CreateHttpClientHandler();
-
-                var cookieContainer = new CookieContainer();
-                foreach (Cookie c in cookies)
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    cookieContainer.Add(url, c);
-                }
+                    HttpClientHandler handler = CreateHttpClientHandler();
+                    var cookieContainer = new CookieContainer();
+                    foreach (Cookie c in cookies)
+                    {
+                        cookieContainer.Add(uri, c);
+                    }
+                    handler.CookieContainer = cookieContainer;
 
-                handler.CookieContainer = cookieContainer;
-
-                using (HttpClient client = new HttpClient(handler))
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        await client.GetAsync(uri);
+                    }
+                },
+                async server =>
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
-                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-
-                    List<string> requestLines = await serverTask;
-
-                    string expectedHeader = "Cookie: " + string.Join("; ", cookies.Select(c => $"{c.Name}={c.Value}").ToArray());
-                    Assert.Contains(expectedHeader, requestLines);
-                    Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie:")));
-                }
-            });
+                    HttpRequestData requestData = await server.HandleRequestAsync();
+                    string expectedHeaderValue = string.Join("; ", cookies.Select(c => $"{c.Name}={c.Value}").ToArray());
+                    Assert.Equal(expectedHeaderValue, requestData.GetSingleHeaderValue("Cookie"));
+                });
         }
 
         [Fact]
@@ -136,91 +127,23 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                HttpClientHandler handler = CreateHttpClientHandler();
-                using (HttpClient client = new HttpClient(handler))
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
-                    requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
+                    HttpClientHandler handler = CreateHttpClientHandler();
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+                        requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
-
-                    List<string> requestLines = await serverTask;
-
-                    Assert.Contains($"Cookie: {s_customCookieHeaderValue}", requestLines);
-                    Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie:")));
-                }
-            });
-        }
-
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "HTTP/2 is not supported on NetFX, and manually added Cookie header will be ignored if sent with container cookies")]
-        [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task SendAsync_RemoteServersWithCookies_Success(Uri remoteServer)
-        {
-            // CurlHandler: cookies from container are not sent if a Cookie header is manually added #26983.
-            if (IsCurlHandler) return;
-
-            var expectedVersion = new Version(1,1);
-            HttpClientHandler handler = CreateHttpClientHandler();
-
-            if (remoteServer.Host == Configuration.Http.Http2Host && BackendSupportsAlpn)
-            {
-                // Windows 10 Anniversary release a.k.a Windows 10 Version 1607 added support to native WinHTTP for HTTP/2 protocol support.
-                if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1607OrGreater) return;
-
-                expectedVersion = new Version(2,0);
-            }
-
-            using (HttpClient client = new HttpClient(handler))
-            {
-                var request = new HttpRequestMessage(HttpMethod.Get, remoteServer)
+                        await client.SendAsync(requestMessage);
+                    }
+                },
+                async server =>
                 {
-                    Version = expectedVersion,
-                };
-
-                // Make remote server send SetCookie header.
-                request.Headers.Add("X-SetCookie", "name=value");
-                request.Headers.Add("X-SetCookie", "name1=value1");
-                request.Headers.Add("X-SetCookie", "name2=value2");
-
-                using (HttpResponseMessage response = await client.SendAsync(request))
-                {
-                    Assert.Equal(expectedVersion, response.Version);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                    // Verify server sends back SetCookie header.
-                    Assert.Contains("Set-Cookie: name=value, name1=value1, name2=value2", response.Headers.ToString());
-
-                    // Server does not have any cookies yet.
-                    Assert.Contains("\"Cookies\": {}", await response.Content.ReadAsStringAsync());
-                }
-
-                // Send next request to see if the cookie has been wrote to the header.
-                var newRequest = new HttpRequestMessage(HttpMethod.Get, remoteServer)
-                {
-                    Version = expectedVersion,
-                };
-
-                // Send additional cookie (along with the ones from CookieContainer).
-                newRequest.Headers.Add("Cookie", "cookie=c1");
-
-                using (HttpResponseMessage response = await client.SendAsync(newRequest))
-                {
-                    Assert.Equal(expectedVersion, response.Version);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                    // Verify server received all cookies.
-                    string body = await response.Content.ReadAsStringAsync();
-                    Assert.Contains("\"Cookies\": ", body);
-                    Assert.Contains("\"name\": \"value\"", body);
-                    Assert.Contains("\"name1\": \"value1\"", body);
-                    Assert.Contains("\"name2\": \"value2\"", body);
-                    Assert.Contains("\"cookie\": \"c1\"", body);
-                }
-            }
+                    HttpRequestData requestData = await server.HandleRequestAsync();
+                    Assert.Equal(s_customCookieHeaderValue, requestData.GetSingleHeaderValue("Cookie"));
+                });
         }
 
         [ActiveIssue(30051, TargetFrameworkMonikers.Uap)]
@@ -233,33 +156,41 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            if (LoopbackServerFactory.IsHttp2 && UseSocketsHttpHandler)
             {
-                HttpClientHandler handler = CreateHttpClientHandler();
-                using (HttpClient client = new HttpClient(handler))
+                // ISSUE #34377: We are not handling multi-valued headers correctly
+                return;
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
-                    requestMessage.Headers.Add("Cookie", "A=1");
-                    requestMessage.Headers.Add("Cookie", "B=2");
-                    requestMessage.Headers.Add("Cookie", "C=3");
+                    HttpClientHandler handler = CreateHttpClientHandler();
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+                        requestMessage.Headers.Add("Cookie", "A=1");
+                        requestMessage.Headers.Add("Cookie", "B=2");
+                        requestMessage.Headers.Add("Cookie", "C=3");
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
-
-                    List<string> requestLines = await serverTask;
-
-                    Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie: ")));
+                        await client.SendAsync(requestMessage);
+                    }
+                },
+                async server =>
+                {
+                    HttpRequestData requestData = await server.HandleRequestAsync();
 
                     // Multiple Cookie header values are treated as any other header values and are 
                     // concatenated using ", " as the separator.
 
-                    var cookieValues = requestLines.Single(s => s.StartsWith("Cookie: ")).Substring(8).Split(new string[] { ", " }, StringSplitOptions.None);
+                    string cookieHeaderValue = requestData.GetSingleHeaderValue("Cookie");
+
+                    var cookieValues = cookieHeaderValue.Split(new string[] { ", " }, StringSplitOptions.None);
                     Assert.Contains("A=1", cookieValues);
                     Assert.Contains("B=2", cookieValues);
                     Assert.Contains("C=3", cookieValues);
                     Assert.Equal(3, cookieValues.Count());
-                }
-            });
+                });
         }
 
         [Fact]
@@ -278,7 +209,13 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            if (LoopbackServerFactory.IsHttp2 && UseSocketsHttpHandler)
+            {
+                // ISSUE #34377: We are not handling multi-valued headers correctly
+                return;
+            }
+
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = CreateSingleCookieContainer(url);
@@ -289,14 +226,13 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                    List<string> requestLines = await serverTask;
+                    HttpRequestData requestData = await serverTask;
+                    string cookieHeaderValue = requestData.GetSingleHeaderValue("Cookie");
 
-                    Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie: ")));
-
-                    var cookies = requestLines.Single(s => s.StartsWith("Cookie: ")).Substring(8).Split(new string[] { "; " }, StringSplitOptions.None);
+                    var cookies = cookieHeaderValue.Split(new string[] { "; " }, StringSplitOptions.None);
                     Assert.Contains(s_expectedCookieHeaderValue, cookies);
                     Assert.Contains(s_customCookieHeaderValue, cookies);
                     Assert.Equal(2, cookies.Count());
@@ -321,7 +257,13 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            if (LoopbackServerFactory.IsHttp2 && UseSocketsHttpHandler)
+            {
+                // ISSUE #34377: We are not handling multi-valued headers correctly
+                return;
+            }
+
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = CreateSingleCookieContainer(url);
@@ -333,18 +275,17 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Headers.Add("Cookie", "B=2");
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
-                    List<string> requestLines = await serverTask;
-
-                    Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie: ")));
+                    HttpRequestData requestData = await serverTask;
+                    string cookieHeaderValue = requestData.GetSingleHeaderValue("Cookie");
 
                     // Multiple Cookie header values are treated as any other header values and are 
                     // concatenated using ", " as the separator.  The container cookie is concatenated to
                     // one of these values using the "; " cookie separator.
 
-                    var cookieValues = requestLines.Single(s => s.StartsWith("Cookie: ")).Substring(8).Split(new string[] { ", " }, StringSplitOptions.None);
+                    var cookieValues = cookieHeaderValue.Split(new string[] { ", " }, StringSplitOptions.None);
                     Assert.Equal(2, cookieValues.Count());
 
                     // Find container cookie and remove it so we can validate the rest of the cookie header values
@@ -376,7 +317,7 @@ namespace System.Net.Http.Functional.Tests
             const string path1 = "/foo";
             const string path2 = "/bar";
 
-            await LoopbackServer.CreateClientAndServerAsync(async url =>
+            await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 Uri url1 = new Uri(url, path1);
                 Uri url2 = new Uri(url, path2);
@@ -396,15 +337,11 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                List<string> request1Lines = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found, $"Location: {path2}\r\n");
+                HttpRequestData requestData1 = await server.HandleRequestAsync(HttpStatusCode.Found, new HttpHeaderData[] { new HttpHeaderData("Location", path2) });
+                Assert.Equal("cookie1=value1", requestData1.GetSingleHeaderValue("Cookie"));
 
-                Assert.Contains($"Cookie: cookie1=value1", request1Lines);
-                Assert.Equal(1, request1Lines.Count(s => s.StartsWith("Cookie:")));
-
-                List<string> request2Lines = await server.AcceptConnectionSendResponseAndCloseAsync(content: s_simpleContent);
-
-                Assert.Contains($"Cookie: cookie2=value2", request2Lines);
-                Assert.Equal(1, request2Lines.Count(s => s.StartsWith("Cookie:")));
+                HttpRequestData requestData2 = await server.HandleRequestAsync(content: s_simpleContent);
+                Assert.Equal("cookie2=value2", requestData2.GetSingleHeaderValue("Cookie"));
             });
         }
 
@@ -416,7 +353,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(CookieNamesValuesAndUseCookies))]
         public async Task GetAsync_ReceiveSetCookieHeader_CookieAdded(string cookieName, string cookieValue, bool useCookies)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.UseCookies = useCookies;
@@ -424,8 +361,8 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                        HttpStatusCode.OK, $"Set-Cookie: {GetCookieHeaderValue(cookieName, cookieValue)}\r\n", s_simpleContent);
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync(
+                        HttpStatusCode.OK, new HttpHeaderData[] { new HttpHeaderData("Set-Cookie", GetCookieHeaderValue(cookieName, cookieValue)) }, s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
@@ -447,18 +384,21 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ReceiveMultipleSetCookieHeaders_CookieAdded()
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
 
                 using (HttpClient client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync(
                         HttpStatusCode.OK,
-                        $"Set-Cookie: A=1; Path=/\r\n" +
-                        $"Set-Cookie   : B=2; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
-                        $"Set-Cookie:    C=3; Path=/\r\n",
+                        new HttpHeaderData[]
+                        {
+                            new HttpHeaderData("Set-Cookie", "A=1; Path=/"),
+                            new HttpHeaderData("Set-Cookie", "B=2; Path=/"),
+                            new HttpHeaderData("Set-Cookie", "C=3; Path=/")
+                        },
                         s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -481,7 +421,7 @@ namespace System.Net.Http.Functional.Tests
         {
             const string newCookieValue = "789";
 
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = CreateSingleCookieContainer(url);
@@ -489,8 +429,10 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                        HttpStatusCode.OK, $"Set-Cookie: {s_cookieName}={newCookieValue}\r\n", s_simpleContent);
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync(
+                        HttpStatusCode.OK,
+                        new HttpHeaderData[] { new HttpHeaderData("Set-Cookie", $"{s_cookieName}={newCookieValue}") },
+                        s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
@@ -505,7 +447,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ReceiveSetCookieHeader_CookieRemoved()
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = CreateSingleCookieContainer(url);
@@ -513,8 +455,10 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                        HttpStatusCode.OK, $"Set-Cookie: {s_cookieName}=; Expires=Sun, 06 Nov 1994 08:49:37 GMT\r\n", s_simpleContent);
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync(
+                        HttpStatusCode.OK,
+                        new HttpHeaderData[] { new HttpHeaderData("Set-Cookie", $"{s_cookieName}=; Expires=Sun, 06 Nov 1994 08:49:37 GMT") },
+                        s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
@@ -533,18 +477,21 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
 
                 using (HttpClient client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
+                    Task<HttpRequestData> serverTask = server.HandleRequestAsync(
                         HttpStatusCode.OK,
-                        $"Set-Cookie: A=1; Path=/;Expires=asdfsadgads\r\n" +    // invalid Expires
-                        $"Set-Cookie: B=2; Path=/\r\n" + 
-                        $"Set-Cookie: C=3; Path=/\r\n",
+                        new HttpHeaderData[]
+                        {
+                            new HttpHeaderData("Set-Cookie", "A=1; Path=/;Expires=asdfsadgads"), // invalid Expires
+                            new HttpHeaderData("Set-Cookie", "B=2; Path=/"),
+                            new HttpHeaderData("Set-Cookie", "C=3; Path=/")
+                        },
                         s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -567,7 +514,7 @@ namespace System.Net.Http.Functional.Tests
             const string path1 = "/foo";
             const string path2 = "/bar";
 
-            await LoopbackServer.CreateClientAndServerAsync(async url =>
+            await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 Uri url1 = new Uri(url, path1);
 
@@ -592,16 +539,25 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                List<string> request1Lines = await server.AcceptConnectionSendResponseAndCloseAsync(
-                    HttpStatusCode.Found, $"Location: {path2}\r\nSet-Cookie: A=1; Path=/\r\n");
+                HttpRequestData requestData1 = await server.HandleRequestAsync(
+                    HttpStatusCode.Found,
+                    new HttpHeaderData[]
+                    {
+                        new HttpHeaderData("Location", $"{path2}"),
+                        new HttpHeaderData("Set-Cookie", "A=1; Path=/")
+                    });
 
-                Assert.Equal(0, request1Lines.Count(s => s.StartsWith("Cookie:")));
+                Assert.Equal(0, requestData1.GetHeaderValueCount("Cookie"));
 
-                List<string> request2Lines = await server.AcceptConnectionSendResponseAndCloseAsync(
-                    HttpStatusCode.OK, $"Set-Cookie: B=2; Path=/\r\n", s_simpleContent);
+                HttpRequestData requestData2 = await server.HandleRequestAsync(
+                    HttpStatusCode.OK,
+                    new HttpHeaderData[]
+                    {
+                        new HttpHeaderData("Set-Cookie", "B=2; Path=/")
+                    },
+                    s_simpleContent);
 
-                Assert.Contains($"Cookie: A=1", request2Lines);
-                Assert.Equal(1, request2Lines.Count(s => s.StartsWith("Cookie:")));
+                Assert.Equal("A=1", requestData2.GetSingleHeaderValue("Cookie"));
             });
         }
 
@@ -616,7 +572,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServer.CreateClientAndServerAsync(async url =>
+            await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.Credentials = new NetworkCredential("user", "pass");
@@ -639,22 +595,25 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                await server.AcceptConnectionAsync(async connection =>
-                {
-                    List<string> request1Lines = await connection.ReadRequestHeaderAndSendResponseAsync(
-                        HttpStatusCode.Unauthorized,
-                        $"WWW-Authenticate: Basic realm=\"WallyWorld\"\r\nSet-Cookie: A=1; Path=/\r\n");
+                HttpRequestData requestData1 = await server.HandleRequestAsync(
+                    HttpStatusCode.Unauthorized,
+                    new HttpHeaderData[]
+                    {
+                        new HttpHeaderData("WWW-Authenticate", "Basic realm=\"WallyWorld\""),
+                        new HttpHeaderData("Set-Cookie", "A=1; Path=/")
+                    });
 
-                    Assert.Equal(0, request1Lines.Count(s => s.StartsWith("Cookie:")));
+                Assert.Equal(0, requestData1.GetHeaderValueCount("Cookie"));
 
-                    List<string> request2Lines = await connection.ReadRequestHeaderAndSendResponseAsync(
-                        HttpStatusCode.OK,
-                        $"Set-Cookie: B=2; Path=/\r\n",
-                        s_simpleContent);
+                HttpRequestData requestData2 = await server.HandleRequestAsync(
+                    HttpStatusCode.OK,
+                    new HttpHeaderData[]
+                    {
+                        new HttpHeaderData("Set-Cookie", "B=2; Path=/")
+                    },
+                    s_simpleContent);
 
-                    Assert.Contains($"Cookie: A=1", request2Lines);
-                    Assert.Equal(1, request2Lines.Count(s => s.StartsWith("Cookie:")));
-                });
+                Assert.Equal("A=1", requestData2.GetSingleHeaderValue("Cookie"));
             });
         }
 
@@ -713,6 +672,41 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 256), useCookies };
                 yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 257), useCookies };
             }
+        }
+    }
+
+    public abstract class HttpClientHandlerTest_Cookies_Http11 : HttpClientHandlerTestBase
+    {
+        [Fact]
+        public async Task GetAsync_ReceiveMultipleSetCookieHeaders_CookieAdded()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
+                        HttpStatusCode.OK,
+                        $"Set-Cookie: A=1; Path=/\r\n" +
+                        $"Set-Cookie   : B=2; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
+                        $"Set-Cookie:    C=3; Path=/\r\n",
+                        "Hello world!");
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    CookieCollection collection = handler.CookieContainer.GetCookies(url);
+                    Assert.Equal(3, collection.Count);
+
+                    // Convert to array so we can more easily process contents, since CookieCollection does not implement IEnumerable<Cookie>
+                    Cookie[] cookies = new Cookie[3];
+                    collection.CopyTo(cookies, 0);
+
+                    Assert.Contains(cookies, c => c.Name == "A" && c.Value == "1");
+                    Assert.Contains(cookies, c => c.Name == "B" && c.Value == "2");
+                    Assert.Contains(cookies, c => c.Name == "C" && c.Value == "3");
+                }
+            });
         }
     }
 }
