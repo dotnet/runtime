@@ -139,7 +139,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Delegate.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\DotNETRuntimeEventSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'"/>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeController.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventDispatcher.cs" />
@@ -280,7 +280,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
-    <Compile Include="$(IntermediateOutputPath)..\eventing\DotNETRuntimeEventSource.cs" />
+    <Compile Include="$(IntermediateOutputPath)..\Eventing\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'"/>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
