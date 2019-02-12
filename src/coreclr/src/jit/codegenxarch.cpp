@@ -1560,6 +1560,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // !defined(JIT32_GCENCODER)
 
+        case GT_START_PREEMPTGC:
+            // Kill callee saves GC registers, and create a label
+            // so that information gets propagated to the emitter.
+            gcInfo.gcMarkRegSetNpt(RBM_INT_CALLEE_SAVED);
+            genDefineTempLabel(genCreateTempLabel());
+            break;
+
         case GT_PROF_HOOK:
 #ifdef PROFILING_SUPPORTED
             // We should be seeing this only if profiler hook is needed

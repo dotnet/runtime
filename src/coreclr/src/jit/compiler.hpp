@@ -4196,6 +4196,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_SETCC:
         case GT_NO_OP:
         case GT_START_NONGC:
+        case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
 #if !FEATURE_EH_FUNCLETS
         case GT_END_LFIN:
