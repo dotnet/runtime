@@ -11,20 +11,15 @@
     <!-- The test fails if ran twice in the same process. In one of the test cases, it expects a hostpolicy to not to be found, but it actually is found in the second pass -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
-  <PropertyGroup>
-    <DefineConstants Condition="$(OSGroup) == 'Windows_NT'">WINDOWS</DefineConstants>
-    <DefineConstants Condition="$(OSGroup) == 'OSX'">OSX</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyDependencyResolverTests.cs" />
-    <Compile Include="HostPolicyMock.cs" />
     <Compile Include="InvalidHostingTest.cs" />
     <Compile Include="NativeDependencyTests.cs" />
     <Compile Include="TestBase.cs" />
-    <Compile Include="XPlatformUtils.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="../../Common/hostpolicymock/CMakeLists.txt" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

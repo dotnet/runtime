@@ -14,7 +14,17 @@
 typedef wchar_t char_t;
 typedef std::wstring string_t;
 
-#else //!_Win32
+// Only create undecorated exports on Windows x86
+#if defined _X86_
+
+// Define undecorated exports to ease test set up from native code
+#pragma comment(linker, "/export:Set_corehost_resolve_component_dependencies_Callback=_Set_corehost_resolve_component_dependencies_Callback@4")
+#pragma comment(linker, "/export:Set_corehost_resolve_component_dependencies_Values=_Set_corehost_resolve_component_dependencies_Values@16")
+#pragma comment(linker, "/export:Set_corehost_set_error_writer_returnValue=_Set_corehost_set_error_writer_returnValue@4")
+
+#endif
+
+#else //!_WIN32
 
 #if __GNUC__ >= 4
 #define SHARED_API extern "C" __attribute__ ((visibility ("default")))

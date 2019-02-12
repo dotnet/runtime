@@ -412,7 +412,7 @@ void Run_StringTests()
 {
     HRESULT hr;
 
-    CoreShimComActivation csact{ W("NETServer.dll"), W("StringTesting") };
+    CoreShimComActivation csact{ W("NETServer"), W("StringTesting") };
 
     ComSmartPtr<IStringTesting> stringTesting;
     THROW_IF_FAILED(::CoCreateInstance(CLSID_StringTesting, nullptr, CLSCTX_INPROC, IID_IStringTesting, (void**)&stringTesting));

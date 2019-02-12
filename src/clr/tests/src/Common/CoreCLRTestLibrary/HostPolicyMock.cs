@@ -6,15 +6,15 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
-namespace AssemblyDependencyResolverTests
+namespace TestLibrary
 {
-    class HostPolicyMock
+    public class HostPolicyMock
     {
-#if WINDOWS
+    #if PLATFORM_WINDOWS
         private const CharSet HostpolicyCharSet = CharSet.Unicode;
-#else
+    #else
         private const CharSet HostpolicyCharSet = CharSet.Ansi;
-#endif
+    #endif
 
         [DllImport("hostpolicy", CharSet = HostpolicyCharSet)]
         private static extern int Set_corehost_resolve_component_dependencies_Values(
@@ -45,24 +45,32 @@ namespace AssemblyDependencyResolverTests
 
         public static string DeleteExistingHostpolicy(string coreRoot)
         {
+#if REFERENCING_SYSTEMPRIVATECORELIB
+            throw new Exception("This API is not supported when compiled referencing SPCL");
+
+#else
             string hostPolicyFileName = XPlatformUtils.GetStandardNativeLibraryFileName("hostpolicy");
             string destinationPath = Path.Combine(coreRoot, hostPolicyFileName);
+
             if (File.Exists(destinationPath))
             {
                 File.Delete(destinationPath);
             }
 
             return destinationPath;
+#endif
         }
 
         public static void Initialize(string testBasePath, string coreRoot)
         {
+#if !REFERENCING_SYSTEMPRIVATECORELIB
             string hostPolicyFileName = XPlatformUtils.GetStandardNativeLibraryFileName("hostpolicy");
             string destinationPath = DeleteExistingHostpolicy(coreRoot);
 
             File.Copy(
                 Path.Combine(testBasePath, hostPolicyFileName),
                 destinationPath);
+#endif
 
             _assemblyDependencyResolverType = typeof(AssemblyDependencyResolver);
 
@@ -72,7 +80,7 @@ namespace AssemblyDependencyResolverTests
             _corehost_error_writer_fnType = _assemblyDependencyResolverType.GetNestedType("corehost_error_writer_fn", System.Reflection.BindingFlags.NonPublic);
         }
 
-        public static MockValues_corehost_resolve_componet_dependencies Mock_corehost_resolve_componet_dependencies(
+        public static MockValues_corehost_resolve_component_dependencies Mock_corehost_resolve_component_dependencies(
             int returnValue,
             string assemblyPaths,
             string nativeSearchPaths,
@@ -84,10 +92,10 @@ namespace AssemblyDependencyResolverTests
                 nativeSearchPaths,
                 resourceSearchPaths);
 
-            return new MockValues_corehost_resolve_componet_dependencies();
+            return new MockValues_corehost_resolve_component_dependencies();
         }
 
-        internal class MockValues_corehost_resolve_componet_dependencies : IDisposable
+        public class MockValues_corehost_resolve_component_dependencies : IDisposable
         {
             private Callback_corehost_resolve_component_dependencies callback;
 
@@ -133,7 +141,7 @@ namespace AssemblyDependencyResolverTests
             return new MockValues_corehost_set_error_writer();
         }
 
-        internal class MockValues_corehost_set_error_writer : IDisposable
+        public class MockValues_corehost_set_error_writer : IDisposable
         {
             public IntPtr LastSetErrorWriterPtr
             {

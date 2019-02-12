@@ -23,13 +23,12 @@ namespace
             "TRUSTED_PLATFORM_ASSEMBLIES",
         };
 
-        // [TODO] Support UNICODE app path
-        char wd[MAX_PATH];
-        (void)::GetCurrentDirectoryA(ARRAYSIZE(wd), wd);
+        std::string assemblyPath;
+        RETURN_IF_FAILED(Utility::GetCoreShimDirectory(assemblyPath));
 
         const char *values[] =
         {
-            wd,
+            assemblyPath.c_str(),
             tpaList.c_str(),
         };
 
@@ -56,15 +55,21 @@ STDAPI DllGetClassObject(
     GetClassFactoryForTypeInternal_ptr GetClassFactoryForTypeInternal;
     RETURN_IF_FAILED(inst->CreateDelegate(
         "System.Private.CoreLib",
-        "System.Runtime.InteropServices.ComActivator",
+        "Internal.Runtime.InteropServices.ComActivator",
         "GetClassFactoryForTypeInternal", (void**)&GetClassFactoryForTypeInternal));
 
     // Get assembly and type for activation
-    std::string assemblyName;
+    std::wstring assemblyName;
     RETURN_IF_FAILED(Utility::TryGetEnvVar(COMACT_ASSEMBLYNAME_ENVVAR, assemblyName));
 
-    std::string typeName;
+    std::wstring typeName;
     RETURN_IF_FAILED(Utility::TryGetEnvVar(COMACT_TYPENAME_ENVVAR, typeName));
+
+    // Compute the path to the assembly. This should be adjacent to CoreShim (i.e. this library).
+    std::wstring assemblyPath;
+    RETURN_IF_FAILED(Utility::GetCoreShimDirectory(assemblyPath));
+    assemblyPath.append(assemblyName);
+    assemblyPath.append(W(".dll"));
 
     IUnknown *ccw = nullptr;
 
@@ -72,10 +77,11 @@ STDAPI DllGetClassObject(
     {
         GUID ClassId;
         GUID InterfaceId;
-        const void *AssemblyName;
-        const void *TypeName;
+        const WCHAR *AssemblyPath;
+        const WCHAR *AssemblyName;
+        const WCHAR *TypeName;
         void **ClassFactoryDest;
-    } comCxt{ rclsid, riid, assemblyName.data(), typeName.data(), (void**)&ccw };
+    } comCxt{ rclsid, riid, assemblyPath.data(), assemblyName.data(), typeName.data(), (void**)&ccw };
 
     RETURN_IF_FAILED(GetClassFactoryForTypeInternal(&comCxt));
     assert(ccw != nullptr);

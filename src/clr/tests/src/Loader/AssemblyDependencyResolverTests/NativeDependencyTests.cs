@@ -5,7 +5,10 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using TestLibrary;
 using Xunit;
+
+using Assert = Xunit.Assert;
 
 namespace AssemblyDependencyResolverTests
 {
@@ -258,7 +261,7 @@ namespace AssemblyDependencyResolverTests
             string lookupName,
             OS resolvesOnOSes)
         {
-            using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                 0,
                 "",
                 $"{nativeLibraryPaths}",

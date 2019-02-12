@@ -3,17 +3,24 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
-namespace System.Runtime.InteropServices
+//
+// Types in this file marked as 'public' are done so only to aid in
+// testing of functionality and should not be considered publicly consumable.
+//
+namespace Internal.Runtime.InteropServices
 {
     [ComImport]
     [ComVisible(false)]
     [Guid("00000001-0000-0000-C000-000000000046")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IClassFactory
+    public interface IClassFactory
     {
         void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object pUnkOuter,
@@ -67,22 +74,29 @@ namespace System.Runtime.InteropServices
     {
         public Guid ClassId;
         public Guid InterfaceId;
+        public string AssemblyPath;
         public string AssemblyName;
         public string TypeName;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct ComActivationContextInternal
+    [CLSCompliant(false)]
+    public unsafe struct ComActivationContextInternal
     {
         public Guid ClassId;
         public Guid InterfaceId;
-        public IntPtr AssemblyNameBuffer;
-        public IntPtr TypeNameBuffer;
+        public char* AssemblyPathBuffer;
+        public char* AssemblyNameBuffer;
+        public char* TypeNameBuffer;
         public IntPtr ClassFactoryDest;
     }
 
     public static class ComActivator
     {
+        // Collection of all ALCs used for COM activation. In the event we want to support
+        // unloadable COM server ALCs, this will need to be changed.
+        private static Dictionary<string, AssemblyLoadContext> s_AssemblyLoadContexts = new Dictionary<string, AssemblyLoadContext>(StringComparer.InvariantCultureIgnoreCase);
+
         /// <summary>
         /// Entry point for unmanaged COM activation API from managed code
         /// </summary>
@@ -95,7 +109,12 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException();
             }
 
-            Type classType = FindClassType(cxt.ClassId, cxt.AssemblyName, cxt.TypeName);
+            if (!Path.IsPathRooted(cxt.AssemblyPath))
+            {
+                throw new ArgumentException();
+            }
+
+            Type classType = FindClassType(cxt.ClassId, cxt.AssemblyPath, cxt.AssemblyName, cxt.TypeName);
             return new BasicClassFactory(cxt.ClassId, classType);
         }
 
@@ -103,7 +122,8 @@ namespace System.Runtime.InteropServices
         /// Internal entry point for unmanaged COM activation API from native code
         /// </summary>
         /// <param name="cxtInt">Reference to a <see cref="ComActivationContextInternal"/> instance</param>
-        public static int GetClassFactoryForTypeInternal(ref ComActivationContextInternal cxtInt)
+        [CLSCompliant(false)]
+        public unsafe static int GetClassFactoryForTypeInternal(ref ComActivationContextInternal cxtInt)
         {
             if (IsLoggingEnabled())
             {
@@ -111,8 +131,9 @@ namespace System.Runtime.InteropServices
 $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
     {cxtInt.ClassId}
     {cxtInt.InterfaceId}
-    0x{cxtInt.AssemblyNameBuffer.ToInt64():x}
-    0x{cxtInt.TypeNameBuffer.ToInt64():x}
+    0x{(ulong)cxtInt.AssemblyPathBuffer:x}
+    0x{(ulong)cxtInt.AssemblyNameBuffer:x}
+    0x{(ulong)cxtInt.TypeNameBuffer:x}
     0x{cxtInt.ClassFactoryDest.ToInt64():x}");
             }
 
@@ -122,8 +143,9 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
                 {
                     ClassId = cxtInt.ClassId,
                     InterfaceId = cxtInt.InterfaceId,
-                    AssemblyName = Marshal.PtrToStringUTF8(cxtInt.AssemblyNameBuffer),
-                    TypeName = Marshal.PtrToStringUTF8(cxtInt.TypeNameBuffer)
+                    AssemblyPath = Marshal.PtrToStringUni(new IntPtr(cxtInt.AssemblyPathBuffer)),
+                    AssemblyName = Marshal.PtrToStringUni(new IntPtr(cxtInt.AssemblyNameBuffer)),
+                    TypeName = Marshal.PtrToStringUni(new IntPtr(cxtInt.TypeNameBuffer))
                 };
 
                 object cf = GetClassFactoryForType(cxt);
@@ -154,11 +176,13 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
             Debug.WriteLine(fmt, args);
          }
 
-        private static Type FindClassType(Guid clsid, string assemblyName, string typeName)
+        private static Type FindClassType(Guid clsid, string assemblyPath, string assemblyName, string typeName)
         {
             try
             {
-                Assembly assem = Assembly.LoadFrom(assemblyName);
+                AssemblyLoadContext alc = GetALC(assemblyPath);
+                var assemblyNameLocal = new AssemblyName(assemblyName);
+                Assembly assem = alc.LoadFromAssemblyName(assemblyNameLocal);
                 Type t = assem.GetType(typeName);
                 if (t != null)
                 {
@@ -175,6 +199,54 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
 
             const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
             throw new COMException(string.Empty, CLASS_E_CLASSNOTAVAILABLE);
+        }
+
+        private static AssemblyLoadContext GetALC(string assemblyPath)
+        {
+            AssemblyLoadContext alc;
+
+            lock (s_AssemblyLoadContexts)
+            {
+                if (!s_AssemblyLoadContexts.TryGetValue(assemblyPath, out alc))
+                {
+                    alc = new ComServerLoadContext(assemblyPath);
+                    s_AssemblyLoadContexts.Add(assemblyPath, alc);
+                }
+            }
+
+            return alc;
+        }
+
+        private class ComServerLoadContext : AssemblyLoadContext
+        {
+            private readonly AssemblyDependencyResolver _resolver;
+
+            public ComServerLoadContext(string comServerAssemblyPath)
+            {
+                _resolver = new AssemblyDependencyResolver(comServerAssemblyPath);
+            }
+
+            protected override Assembly Load(AssemblyName assemblyName)
+            {
+                string assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
+                if (assemblyPath != null)
+                {
+                    return LoadFromAssemblyPath(assemblyPath);
+                }
+
+                return null;
+            }
+
+            protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+            {
+                string libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+                if (libraryPath != null)
+                {
+                    return LoadUnmanagedDllFromPath(libraryPath);
+                }
+
+                return IntPtr.Zero;
+            }
         }
 
         [ComVisible(true)]

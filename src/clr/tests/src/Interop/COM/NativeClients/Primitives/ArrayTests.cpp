@@ -299,7 +299,7 @@ void Run_ArrayTests()
 {
     HRESULT hr;
 
-    CoreShimComActivation csact{ W("NETServer.dll"), W("ArrayTesting") };
+    CoreShimComActivation csact{ W("NETServer"), W("ArrayTesting") };
 
     ComSmartPtr<IArrayTesting> arrayTesting;
     THROW_IF_FAILED(::CoCreateInstance(CLSID_ArrayTesting, nullptr, CLSCTX_INPROC, IID_IArrayTesting, (void**)&arrayTesting));
