@@ -4,7 +4,10 @@
 
 namespace Activator
 {
+    using Internal.Runtime.InteropServices;
+
     using System;
+    using System.IO;
     using System.Runtime.InteropServices;
 
     using TestLibrary;
@@ -15,6 +18,8 @@ namespace Activator
     {
         static void InvalidInterfaceRequest()
         {
+            Console.WriteLine($"Running {nameof(InvalidInterfaceRequest)}...");
+
             Assert.Throws<NotSupportedException>(
                 () =>
                 {
@@ -28,17 +33,36 @@ namespace Activator
                 "Non-IClassFactory request should fail");
         }
 
+        static void NonrootedAssemblyPath()
+        {
+            Console.WriteLine($"Running {nameof(NonrootedAssemblyPath)}...");
+
+            ArgumentException e = Assert.Throws<ArgumentException>(
+                () =>
+                {
+                    var cxt = new ComActivationContext()
+                    {
+                        InterfaceId = typeof(IClassFactory).GUID,
+                        AssemblyPath = "foo.dll"
+                    };
+                    ComActivator.GetClassFactoryForType(cxt);
+                },
+                "Non-root assembly path should not be valid");
+        }
+
         static void ClassNotRegistered()
         {
+            Console.WriteLine($"Running {nameof(ClassNotRegistered)}...");
+
             COMException e = Assert.Throws<COMException>(
                 () =>
                 {
                     var CLSID_NotRegistered = new Guid("328FF83E-3F6C-4BE9-A742-752562032925"); // Random GUID
-                    var IID_IClassFactory = new Guid("00000001-0000-0000-C000-000000000046");
                     var cxt = new ComActivationContext()
                     {
                         ClassId = CLSID_NotRegistered,
-                        InterfaceId = IID_IClassFactory
+                        InterfaceId = typeof(IClassFactory).GUID,
+                        AssemblyPath = @"C:\foo.dll"
                     };
                     ComActivator.GetClassFactoryForType(cxt);
                 },
@@ -48,12 +72,78 @@ namespace Activator
             Assert.AreEqual(CLASS_E_CLASSNOTAVAILABLE, e.HResult, "Unexpected HRESULT");
         }
 
+        static void ValidateAssemblyIsolation()
+        {
+            Console.WriteLine($"Running {nameof(ValidateAssemblyIsolation)}...");
+
+            string assemblySubPath = Path.Combine(Environment.CurrentDirectory, "Servers");
+            string assemblyAPath = Path.Combine(assemblySubPath, "AssemblyA.dll");
+            string assemblyBPath = Path.Combine(assemblySubPath, "AssemblyB.dll");
+            string assemblyCPath = Path.Combine(assemblySubPath, "AssemblyC.dll");
+            string assemblyPaths = $"{assemblyAPath}{Path.PathSeparator}{assemblyBPath}{Path.PathSeparator}{assemblyCPath}";
+
+            HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
+
+            var CLSID_NotUsed = Guid.Empty; // During this phase of activation the GUID is not used.
+            Guid iid = typeof(IGetTypeFromC).GUID;
+            Type typeCFromAssemblyA;
+            Type typeCFromAssemblyB;
+
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
+                0,
+                assemblyPaths,
+                string.Empty,
+                string.Empty))
+            {
+                var cxt = new ComActivationContext()
+                {
+                    ClassId = CLSID_NotUsed,
+                    InterfaceId = typeof(IClassFactory).GUID,
+                    AssemblyPath = assemblyAPath,
+                    AssemblyName = "AssemblyA",
+                    TypeName = "ClassFromA"
+                };
+
+                var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+
+                object svr;
+                factory.CreateInstance(null, ref iid, out svr);
+                typeCFromAssemblyA = (Type)((IGetTypeFromC)svr).GetTypeFromC();
+            }
+
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
+                0,
+                assemblyPaths,
+                string.Empty,
+                string.Empty))
+            {
+                var cxt = new ComActivationContext()
+                {
+                    ClassId = CLSID_NotUsed,
+                    InterfaceId = typeof(IClassFactory).GUID,
+                    AssemblyPath = assemblyBPath,
+                    AssemblyName = "AssemblyB",
+                    TypeName = "ClassFromB"
+                };
+
+                var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+
+                object svr;
+                factory.CreateInstance(null, ref iid, out svr);
+                typeCFromAssemblyB = (Type)((IGetTypeFromC)svr).GetTypeFromC();
+            }
+
+            Assert.AreNotEqual(typeCFromAssemblyA, typeCFromAssemblyB, "Types should be from different AssemblyLoadContexts");
+        }
+
         static int Main(string[] doNotUse)
         {
             try
             {
                 InvalidInterfaceRequest();
                 ClassNotRegistered();
+                NonrootedAssemblyPath();
+                ValidateAssemblyIsolation();
             }
             catch (Exception e)
             {

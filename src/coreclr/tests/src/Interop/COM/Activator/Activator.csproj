@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Interop.settings.targets))\Interop.settings.targets" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -14,6 +13,8 @@
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsWindows)' != 'true'">true</DisableProjectBuild>
   </PropertyGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Interop.settings.targets))\Interop.settings.targets" />
+
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
   </PropertyGroup>
@@ -24,6 +25,30 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NetServer\NetServer.csproj" />
+    <ProjectReference Include="Servers\AssemblyA.csproj" />
+    <ProjectReference Include="Servers\AssemblyB.csproj" />
+    <ProjectReference Include="Servers\AssemblyC.csproj" />
+    <ProjectReference Include="Servers\AssemblyContracts.csproj" />
+    <ProjectReference Include="../../../Common/hostpolicymock/CMakeLists.txt" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Set up an isolated directory for the server assemblies -->
+  <Target Name="SetUpIsolatedDirectory"
+          AfterTargets="CopyFilesToOutputDirectory">
+
+    <PropertyGroup>
+      <ServerAssemblyDest>$(OutDir)/Servers</ServerAssemblyDest>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ServerAssembly Include="$(OutDir)/AssemblyA.*" />
+      <ServerAssembly Include="$(OutDir)/AssemblyB.*" />
+      <ServerAssembly Include="$(OutDir)/AssemblyC.*" />
+    </ItemGroup>
+
+    <Move SourceFiles="@(ServerAssembly)"
+          DestinationFolder="$(ServerAssemblyDest)" />
+  </Target>
+
 </Project>
