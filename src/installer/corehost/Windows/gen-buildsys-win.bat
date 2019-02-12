@@ -25,7 +25,7 @@ if /i "%3" == "arm64"   (set cm_BaseRid=win10&&set cm_Arch=ARM64&&set __ExtraCma
 set __LatestCommit=%4
 set __HostVersion=%5
 set __AppHostVersion=%6
-set __HostResolverVersion=%7
+set __HostFxrVersion=%7
 set __HostPolicyVersion=%8
 
 :: Form the base RID to be used if we are doing a portable build
@@ -41,8 +41,8 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& .\Win
 popd
 
 :DoGen
-echo "%CMakePath%" %__sourceDir% %__SDKVersion% "-DCLI_CMAKE_RUNTIME_ID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_HOST_VER:STRING=%__HostVersion%" "-DCLI_CMAKE_APPHOST_VER:STRING=%__AppHostVersion%" "-DCLI_CMAKE_HOST_FXR_VER:STRING=%__HostResolverVersion%" "-DCLI_CMAKE_HOST_POLICY_VER:STRING=%__HostPolicyVersion%" "-DCLI_CMAKE_PKG_RID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_COMMIT_HASH:STRING=%__LatestCommit%" "-DCLI_CMAKE_PLATFORM_ARCH_%cm_Arch%=1" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLI_CMAKE_RESOURCE_DIR:STRING=%__ResourcesDir%" -G "Visual Studio %__VSString%" %__ExtraCmakeParams%
-"%CMakePath%" %__sourceDir% %__SDKVersion% "-DCLI_CMAKE_RUNTIME_ID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_HOST_VER:STRING=%__HostVersion%" "-DCLI_CMAKE_APPHOST_VER:STRING=%__AppHostVersion%" "-DCLI_CMAKE_HOST_FXR_VER:STRING=%__HostResolverVersion%" "-DCLI_CMAKE_HOST_POLICY_VER:STRING=%__HostPolicyVersion%" "-DCLI_CMAKE_PKG_RID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_COMMIT_HASH:STRING=%__LatestCommit%" "-DCLI_CMAKE_PLATFORM_ARCH_%cm_Arch%=1" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLI_CMAKE_RESOURCE_DIR:STRING=%__ResourcesDir%" -G "Visual Studio %__VSString%" %__ExtraCmakeParams%
+echo "%CMakePath%" %__sourceDir% %__SDKVersion% "-DCLI_CMAKE_RUNTIME_ID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_HOST_VER:STRING=%__HostVersion%" "-DCLI_CMAKE_APPHOST_VER:STRING=%__AppHostVersion%" "-DCLI_CMAKE_COMHOST_VER:STRING=%__AppHostVersion%" "-DCLI_CMAKE_HOST_FXR_VER:STRING=%__HostFxrVersion%" "-DCLI_CMAKE_HOST_POLICY_VER:STRING=%__HostPolicyVersion%" "-DCLI_CMAKE_PKG_RID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_COMMIT_HASH:STRING=%__LatestCommit%" "-DCLI_CMAKE_PLATFORM_ARCH_%cm_Arch%=1" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLI_CMAKE_RESOURCE_DIR:STRING=%__ResourcesDir%" -G "Visual Studio %__VSString%" %__ExtraCmakeParams%
+"%CMakePath%" %__sourceDir% %__SDKVersion% "-DCLI_CMAKE_RUNTIME_ID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_HOST_VER:STRING=%__HostVersion%" "-DCLI_CMAKE_APPHOST_VER:STRING=%__AppHostVersion%" "-DCLI_CMAKE_COMHOST_VER:STRING=%__AppHostVersion%" "-DCLI_CMAKE_HOST_FXR_VER:STRING=%__HostFxrVersion%" "-DCLI_CMAKE_HOST_POLICY_VER:STRING=%__HostPolicyVersion%" "-DCLI_CMAKE_PKG_RID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_COMMIT_HASH:STRING=%__LatestCommit%" "-DCLI_CMAKE_PLATFORM_ARCH_%cm_Arch%=1" "-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLI_CMAKE_RESOURCE_DIR:STRING=%__ResourcesDir%" -G "Visual Studio %__VSString%" %__ExtraCmakeParams%
 endlocal
 GOTO :DONE
 

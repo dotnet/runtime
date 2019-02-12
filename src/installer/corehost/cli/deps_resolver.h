@@ -51,6 +51,7 @@ public:
         , m_managed_app(args.managed_application)
         , m_is_framework_dependent(is_framework_dependent)
         , m_core_servicing(args.core_servicing)
+        , m_host_mode(args.host_mode)
     {
         int lowest_framework = m_fx_definitions.size() - 1;
         int root_framework = -1;
@@ -159,6 +160,8 @@ public:
         return get_app(m_fx_definitions).get_deps_file();
     }
 
+    void get_app_fx_definition_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const;
+
     const fx_definition_vector_t& get_fx_definitions() const
     {
         return m_fx_definitions;
@@ -172,6 +175,17 @@ public:
     bool is_framework_dependent() const
     {
         return m_is_framework_dependent;
+    }
+
+    const pal::string_t &get_app_dir() const
+    {
+        if (m_host_mode == host_mode_t::libhost)
+        {
+            static const pal::string_t s_empty;
+            return s_empty;
+        }
+
+        return m_app_dir;
     }
 
 private:
@@ -216,6 +230,9 @@ private:
     void add_tpa_asset(
         const deps_resolved_asset_t& asset,
         name_to_resolved_asset_map_t* items);
+
+    // Mode in which the host is being run. This can dictate how dependencies should be discovered.
+    const host_mode_t m_host_mode;
 
     // The managed application the dependencies are being resolved for.
     pal::string_t m_managed_app;

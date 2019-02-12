@@ -210,6 +210,8 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public CommandResult WaitForExit(bool fExpectedToFail)
         {
+            ReportExecWaitOnExit();
+
             _process.WaitForExit();
 
             var exitCode = _process.ExitCode;
@@ -358,6 +360,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             if (!_quietBuildReporter)
             {
                 BuildReporter.BeginSection("EXEC", FormatProcessInfo(_process.StartInfo, includeWorkingDirectory: false));
+            }
+        }
+
+        private void ReportExecWaitOnExit()
+        {
+            if (!_quietBuildReporter)
+            {
+                BuildReporter.SectionComment("EXEC", $"Waiting for process {_process.Id} to exit...");
             }
         }
 

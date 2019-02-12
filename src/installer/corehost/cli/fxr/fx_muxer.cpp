@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include <cassert>
+#include <mutex>
 #include "args.h"
 #include "cpprest/json.h"
 #include "deps_format.h"
@@ -19,6 +20,192 @@
 #include "sdk_resolver.h"
 #include "trace.h"
 #include "utils.h"
+
+using corehost_load_fn = int(*) (const host_interface_t* init);
+using corehost_main_fn = int(*) (const int argc, const pal::char_t* argv[]);
+using corehost_get_com_activation_delegate_fn = int(*) (void **delegate);
+using corehost_main_with_output_buffer_fn = int(*) (const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size);
+using corehost_unload_fn = int(*) ();
+using corehost_error_writer_fn = void(*) (const pal::char_t* message);
+using corehost_set_error_writer_fn = corehost_error_writer_fn(*) (corehost_error_writer_fn error_writer);
+
+struct hostpolicy_contract
+{
+    // Required API contracts
+    corehost_load_fn load;
+    corehost_unload_fn unload;
+
+    // 3.0+ contracts
+    corehost_set_error_writer_fn set_error_writer;
+};
+
+namespace
+{
+    std::mutex g_hostpolicy_lock;
+    pal::dll_t g_hostpolicy;
+    hostpolicy_contract g_hostpolicy_contract;
+}
+
+int load_hostpolicy_common(
+    const pal::string_t& lib_dir,
+    pal::string_t& host_path,
+    pal::dll_t* h_host,
+    hostpolicy_contract &host_contract)
+{
+    std::lock_guard<std::mutex> lock{ g_hostpolicy_lock };
+    if (g_hostpolicy == nullptr)
+    {
+        if (!library_exists_in_dir(lib_dir, LIBHOSTPOLICY_NAME, &host_path))
+        {
+            return StatusCode::CoreHostLibMissingFailure;
+        }
+
+        // Load library
+        if (!pal::load_library(&host_path, &g_hostpolicy))
+        {
+            trace::info(_X("Load library of %s failed"), host_path.c_str());
+            return StatusCode::CoreHostLibLoadFailure;
+        }
+
+        // Obtain entrypoint symbols
+        g_hostpolicy_contract.load = (corehost_load_fn)pal::get_symbol(g_hostpolicy, "corehost_load");
+        g_hostpolicy_contract.unload = (corehost_unload_fn)pal::get_symbol(g_hostpolicy, "corehost_unload");
+        if ((g_hostpolicy_contract.load == nullptr) || (g_hostpolicy_contract.unload == nullptr))
+            return StatusCode::CoreHostEntryPointFailure;
+
+        g_hostpolicy_contract.set_error_writer = (corehost_set_error_writer_fn)pal::get_symbol(g_hostpolicy, "corehost_set_error_writer");
+
+        // It's possible to not have corehost_set_error_writer, since this was only introduced in 3.0
+        // so 2.0 hostpolicy would not have the export. In this case we will not propagate the error writer
+        // and errors will still be reported to stderr.
+    }
+
+    // Return global values
+    *h_host = g_hostpolicy;
+    host_contract = g_hostpolicy_contract;
+
+    return StatusCode::Success;
+}
+
+template<typename T>
+int load_hostpolicy(
+    const pal::string_t& lib_dir,
+    pal::dll_t* h_host,
+    hostpolicy_contract &host_contract,
+    const char *main_entry_symbol,
+    T* main_fn)
+{
+    assert(main_entry_symbol != nullptr && main_fn != nullptr);
+
+    pal::string_t host_path;
+    int rc = load_hostpolicy_common(lib_dir, host_path, h_host, host_contract);
+    if (rc != StatusCode::Success)
+    {
+        trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, lib_dir.c_str());
+        return rc;
+    }
+
+    // Obtain entrypoint symbol
+    *main_fn = (T)pal::get_symbol(*h_host, main_entry_symbol);
+    if (*main_fn == nullptr)
+        return StatusCode::CoreHostEntryPointFailure;
+
+    return StatusCode::Success;
+}
+
+static int execute_app(
+    const pal::string_t& impl_dll_dir,
+    corehost_init_t* init,
+    const int argc,
+    const pal::char_t* argv[])
+{
+    pal::dll_t corehost;
+    hostpolicy_contract host_contract{};
+    corehost_main_fn host_main = nullptr;
+
+    int code = load_hostpolicy(impl_dll_dir, &corehost, host_contract, "corehost_main", &host_main);
+    if (code != StatusCode::Success)
+        return code;
+
+    // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
+    trace::flush();
+
+    {
+        propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
+
+        const host_interface_t& intf = init->get_host_init_data();
+        if ((code = host_contract.load(&intf)) == StatusCode::Success)
+        {
+            code = host_main(argc, argv);
+            (void)host_contract.unload();
+        }
+    }
+
+    return code;
+}
+
+static int execute_host_command(
+    const pal::string_t& impl_dll_dir,
+    corehost_init_t* init,
+    const int argc,
+    const pal::char_t* argv[],
+    pal::char_t result_buffer[],
+    int32_t buffer_size,
+    int32_t* required_buffer_size)
+{
+    pal::dll_t corehost;
+    hostpolicy_contract host_contract{};
+    corehost_main_with_output_buffer_fn host_main = nullptr;
+
+    int code = load_hostpolicy(impl_dll_dir, &corehost, host_contract, "corehost_main_with_output_buffer", &host_main);
+    if (code != StatusCode::Success)
+        return code;
+
+    // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
+    trace::flush();
+
+    {
+        propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
+
+        const host_interface_t& intf = init->get_host_init_data();
+        if ((code = host_contract.load(&intf)) == StatusCode::Success)
+        {
+            code = host_main(argc, argv, result_buffer, buffer_size, required_buffer_size);
+            (void)host_contract.unload();
+        }
+    }
+
+    return code;
+}
+
+static int get_com_activation_delegate_internal(
+    const pal::string_t& impl_dll_dir,
+    corehost_init_t* init,
+    void **delegate)
+{
+    pal::dll_t corehost;
+    hostpolicy_contract host_contract{};
+    corehost_get_com_activation_delegate_fn host_entry = nullptr;
+
+    int code = load_hostpolicy(impl_dll_dir, &corehost, host_contract, "corehost_get_com_activation_delegate", &host_entry);
+    if (code != StatusCode::Success)
+        return code;
+
+    // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
+    trace::flush();
+
+    {
+        propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
+
+        const host_interface_t& intf = init->get_host_init_data();
+        if ((code = host_contract.load(&intf)) == StatusCode::Success)
+        {
+            code = host_entry(delegate);
+        }
+    }
+
+    return code;
+}
 
 /**
 * When the framework is not found, display detailed error message
@@ -293,9 +480,17 @@ bool fx_muxer_t::resolve_hostpolicy_dir(
         //    app dir.
         // 2. When activated with native exe, the standalone host, check own directory.
         assert(mode != host_mode_t::invalid);
-        expected = (mode == host_mode_t::apphost)
-            ? dotnet_root
-            : get_directory(specified_deps_file.empty() ? app_candidate : specified_deps_file);
+        switch (mode)
+        {
+        case host_mode_t::apphost:
+        case host_mode_t::libhost:
+            expected = dotnet_root;
+            break;
+
+        default:
+            expected = get_directory(specified_deps_file.empty() ? app_candidate : specified_deps_file);
+            break;
+        }
     }
 
     // Check if hostpolicy exists in "expected" directory.
@@ -722,7 +917,7 @@ int fx_muxer_t::parse_args(
         {
             trace::error(_X("  %-37s  %s"), (arg.option + _X(" ") + arg.argument).c_str(), arg.description.c_str());
         }
-        return InvalidArgFailure;
+        return StatusCode::InvalidArgFailure;
     }
 
     app_candidate = host_info.app_path;
@@ -750,7 +945,7 @@ int fx_muxer_t::parse_args(
             if (!exec_mode)
             {
                 // Route to CLI.
-                return AppArgNotRunnable;
+                return StatusCode::AppArgNotRunnable;
             }
         }
 
@@ -761,7 +956,7 @@ int fx_muxer_t::parse_args(
             if (!exec_mode)
             {
                 // Route to CLI.
-                return AppArgNotRunnable;
+                return StatusCode::AppArgNotRunnable;
             }
         }
 
@@ -769,7 +964,7 @@ int fx_muxer_t::parse_args(
         {
             assert(exec_mode == true);
             trace::error(_X("dotnet exec needs a managed .dll or .exe extension. The application specified was '%s'"), app_candidate.c_str());
-            return InvalidArgFailure;
+            return StatusCode::InvalidArgFailure;
         }
     }
 
@@ -777,10 +972,10 @@ int fx_muxer_t::parse_args(
     if (!doesAppExist)
     {
         trace::error(_X("The application to execute does not exist: '%s'"), app_candidate.c_str());
-        return InvalidArgFailure;
+        return StatusCode::InvalidArgFailure;
     }
 
-    return 0;
+    return StatusCode::Success;
 }
 
 int read_config(
@@ -816,7 +1011,7 @@ int read_config(
         return StatusCode::InvalidConfigFile;
     }
 
-    return 0;
+    return StatusCode::Success;
 }
 
 int fx_muxer_t::soft_roll_forward_helper(
@@ -833,7 +1028,7 @@ int fx_muxer_t::soft_roll_forward_helper(
     {
         updated_newest.merge_roll_forward_settings_from(older);
         newest_references[fx_name] = updated_newest;
-        return 0;
+        return StatusCode::Success;
     }
 
     if (older.is_roll_forward_compatible(newer.get_fx_version_number()))
@@ -850,16 +1045,16 @@ int fx_muxer_t::soft_roll_forward_helper(
         if (older_is_hard_roll_forward)
         {
             display_retry_framework_trace(older, newer);
-            return FrameworkCompatRetry;
+            return StatusCode::FrameworkCompatRetry;
         }
 
         display_compatible_framework_trace(newer.get_fx_version(), older);
-        return 0;
+        return StatusCode::Success;
     }
 
     // Error condition - not compatible with the other reference
     display_incompatible_framework_error(newer.get_fx_version(), older);
-    return FrameworkCompatFailure;
+    return StatusCode::FrameworkCompatFailure;
 }
 
 // Peform a "soft" roll-forward meaning we don't read any physical framework folders
@@ -904,7 +1099,7 @@ int fx_muxer_t::read_framework(
         }
     }
 
-    int rc = 0;
+    int rc = StatusCode::Success;
 
     // Loop through each reference and resolve the framework
     for (const fx_reference_t& fx_ref : config.get_frameworks())
@@ -1037,7 +1232,7 @@ int fx_muxer_t::read_config_and_execute(
         return rc;
     }
 
-    auto app_config = app->get_runtime_config();
+    runtime_config_t app_config = app->get_runtime_config();
     bool is_framework_dependent = app_config.get_is_framework_dependent();
 
     // Apply the --fx-version option to the first framework
@@ -1075,13 +1270,13 @@ int fx_muxer_t::read_config_and_execute(
             fx_name_to_fx_reference_map_t oldest_references;
 
             // Read the shared frameworks; retry is necessary when a framework is already resolved, but then a newer compatible version is processed.
-            int rc = 0;
+            int rc = StatusCode::Success;
             int retry_count = 0;
             do
             {
                 fx_definitions.resize(1); // Erase any existing frameworks for re-try
                 rc = read_framework(host_info, override_settings, app_config, newest_references, oldest_references, fx_definitions);
-            } while (rc == FrameworkCompatRetry && retry_count++ < Max_Framework_Resolve_Retries);
+            } while (rc == StatusCode::FrameworkCompatRetry && retry_count++ < Max_Framework_Resolve_Retries);
 
             assert(retry_count < Max_Framework_Resolve_Retries);
 
@@ -1215,6 +1410,84 @@ int fx_muxer_t::execute(
     }
 
     return result;
+}
+
+int fx_muxer_t::get_com_activation_delegate(
+    const host_startup_info_t &host_info,
+    void **delegate)
+{
+    assert(host_info.is_valid());
+
+    const host_mode_t mode = host_mode_t::libhost;
+
+    // Read config
+    fx_definition_vector_t fx_definitions;
+    auto app = new fx_definition_t();
+    fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
+
+    pal::string_t runtime_config = _X("");
+    fx_reference_t override_settings;
+    int rc = read_config(*app, host_info.app_path, runtime_config, override_settings);
+    if (rc != StatusCode::Success)
+        return rc;
+
+    runtime_config_t app_config = app->get_runtime_config();
+    bool is_framework_dependent = app_config.get_is_framework_dependent();
+    if (is_framework_dependent)
+    {
+        fx_name_to_fx_reference_map_t newest_references;
+        fx_name_to_fx_reference_map_t oldest_references;
+
+        // Read the shared frameworks; retry is necessary when a framework is already resolved, but then a newer compatible version is processed.
+        rc = StatusCode::Success;
+        int retry_count = 0;
+        do
+        {
+            fx_definitions.resize(1); // Erase any existing frameworks for re-try
+            rc = read_framework(host_info, override_settings, app_config, newest_references, oldest_references, fx_definitions);
+        } while (rc == StatusCode::FrameworkCompatRetry && retry_count++ < Max_Framework_Resolve_Retries);
+
+        assert(retry_count < Max_Framework_Resolve_Retries);
+
+        if (rc != StatusCode::Success)
+        {
+            return rc;
+        }
+
+        display_summary_of_frameworks(fx_definitions, newest_references);
+    }
+
+    // Append specified probe paths first and then config file probe paths into realpaths.
+    std::vector<pal::string_t> probe_realpaths;
+
+    // The tfm is taken from the app.
+    pal::string_t tfm = get_app(fx_definitions).get_runtime_config().get_tfm();
+
+    // Each framework can add probe paths
+    for (const auto& fx : fx_definitions)
+    {
+        for (const auto& path : fx->get_runtime_config().get_probe_paths())
+        {
+            append_probe_realpath(path, &probe_realpaths, tfm);
+        }
+    }
+
+    trace::verbose(_X("Libhost loading occurring as a %s app as per config file [%s]"),
+        (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
+
+    pal::string_t deps_file;
+    pal::string_t impl_dir;
+    if (!resolve_hostpolicy_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_realpaths, &impl_dir))
+    {
+        return StatusCode::CoreHostLibMissingFailure;
+    }
+
+    pal::string_t additional_deps_serialized;
+    corehost_init_t init(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions);
+
+    rc = get_com_activation_delegate_internal(impl_dir, &init, delegate);
+
+    return rc;
 }
 
 int fx_muxer_t::handle_exec(

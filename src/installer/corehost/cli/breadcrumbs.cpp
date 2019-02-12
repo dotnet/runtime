@@ -7,7 +7,7 @@
 #include "trace.h"
 #include "breadcrumbs.h"
 
-breadcrumb_writer_t::breadcrumb_writer_t(bool enabled, const std::unordered_set<pal::string_t>* files)
+breadcrumb_writer_t::breadcrumb_writer_t(bool enabled, const std::unordered_set<pal::string_t> &files)
     : m_status(false)
     , m_enabled(enabled)
     , m_files(files)
@@ -40,8 +40,8 @@ void breadcrumb_writer_t::begin_write()
             return;
         }
 
-        trace::verbose(_X("Number of breadcrumb files to write is %d"), m_files->size());
-        if (m_files->empty())
+        trace::verbose(_X("Number of breadcrumb files to write is %d"), m_files.size());
+        if (m_files.empty())
         {
             m_status = true;
             return;
@@ -56,7 +56,7 @@ void breadcrumb_writer_t::begin_write()
 void breadcrumb_writer_t::write_callback()
 {
     bool successful = true;
-    for (const auto& file : *m_files)
+    for (const auto& file : m_files)
     {
         pal::string_t file_path = m_breadcrumb_store;
         pal::string_t file_name = _X("netcore,") + file;

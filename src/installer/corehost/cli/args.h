@@ -90,6 +90,7 @@ struct probe_config_t
 
 struct arguments_t
 {
+    host_mode_t host_mode;
     pal::string_t host_path;
     pal::string_t app_root;
     pal::string_t deps_path;

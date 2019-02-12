@@ -499,30 +499,38 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     };
 
-    // First add managed assembly to the TPA.
-    // TODO: Remove: the deps should contain the managed DLL.
-    // Workaround for: csc.deps.json doesn't have the csc.dll
-    deps_asset_t asset(get_filename_without_ext(m_managed_app), get_filename(m_managed_app), version_t(), version_t());
-    deps_resolved_asset_t resolved_asset(asset, m_managed_app);
-    add_tpa_asset(resolved_asset, &items);
-
-    // Add the app's entries
-    const auto& deps_entries = get_deps().get_entries(deps_entry_t::asset_types::runtime);
-    for (const auto& entry : deps_entries)
+    if (m_host_mode != host_mode_t::libhost)
     {
-        if (!process_entry(m_app_dir, entry, 0))
+        // First add managed assembly to the TPA.
+        // TODO: Remove: the deps should contain the managed DLL.
+        // Workaround for: csc.deps.json doesn't have the csc.dll
+        deps_asset_t asset(get_filename_without_ext(m_managed_app), get_filename(m_managed_app), version_t(), version_t());
+        deps_resolved_asset_t resolved_asset(asset, m_managed_app);
+        add_tpa_asset(resolved_asset, &items);
+
+        // Add the app's entries
+        const auto& deps_entries = get_deps().get_entries(deps_entry_t::asset_types::runtime);
+        for (const auto& entry : deps_entries)
         {
-            return false;
+            if (!process_entry(m_app_dir, entry, 0))
+            {
+                return false;
+            }
+        }
+
+        // If the deps file wasn't present or has missing entries, then
+        // add the app local assemblies to the TPA. This is only valid
+        // in non-libhost scenarios (e.g. comhost).
+        if (!get_deps().exists())
+        {
+            // Obtain the local assemblies in the app dir.
+            get_dir_assemblies(m_app_dir, _X("local"), &items);
         }
     }
 
-    // If the deps file wasn't present or has missing entries, then
-    // add the app local assemblies to the TPA.
-    if (!get_deps().exists())
-    {
-        // Obtain the local assemblies in the app dir.
-        get_dir_assemblies(m_app_dir, _X("local"), &items);
-    }
+    // There should be no additional deps files in a libhost scenario.
+    // See comments during additional deps.json resolution.
+    assert(m_additional_deps.empty() || m_host_mode != host_mode_t::libhost);
 
     // If additional deps files were specified that need to be treated as part of the
     // application, then add them to the mix as well.
@@ -590,13 +598,19 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
 
 void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const deps_json_t::rid_fallback_graph_t& rid_fallback_graph)
 {
-    if (!m_is_framework_dependent)
+    if (!m_is_framework_dependent
+        || m_host_mode == host_mode_t::libhost)
     {
         // Additional deps.json support is only available for framework-dependent apps due to the following constraints:
         //
         // 1) Unlike framework-dependent Apps, self-contained apps do not have details of the SharedFX and Version they target.
         // 2) Unlike framework-dependent Apps, self-contained apps do not have RID fallback graph that is required for looking up
         //    the correct native assets from nuget packages.
+        //
+        // Additional deps.json support is not available for libhost scenarios. For example, if CoreCLR is instantiated from a
+        // library context (i.e. comhost) the activation of classes are assumed to be performed in an AssemblyLoadContext. This
+        // assumption is made because it is possible an existing CoreCLR was already activated and it may not satisfy the current
+        // needs of the new class.
 
         return;
     }
@@ -693,6 +707,26 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
         m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
             new deps_json_t(true, json_file, rid_fallback_graph)));
     }
+}
+
+void deps_resolver_t::get_app_fx_definition_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const
+{
+    assert(begin != nullptr && end != nullptr);
+
+    auto begin_iter = m_fx_definitions.begin();
+    auto end_iter = m_fx_definitions.end();
+
+    if (m_host_mode == host_mode_t::libhost
+        && begin_iter != end_iter)
+    {
+        // In a libhost scenario the app definition shouldn't be
+        // included in the creation of the application.
+        assert(begin_iter->get() == &get_app(m_fx_definitions));
+        ++begin_iter;
+    }
+
+    *begin = begin_iter;
+    *end = end_iter;
 }
 
 /**

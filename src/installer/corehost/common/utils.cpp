@@ -253,7 +253,7 @@ bool parse_known_args(
 }
 
 // Try to match 0xEF 0xBB 0xBF byte sequence (no endianness here.)
-bool skip_utf8_bom(pal::ifstream_t* stream)
+bool skip_utf8_bom(pal::istream_t* stream)
 {
     if (stream->eof() || !stream->good())
     {
