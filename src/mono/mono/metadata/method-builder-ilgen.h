@@ -140,4 +140,7 @@ mono_mb_set_clauses (MonoMethodBuilder *mb, int num_clauses, MonoExceptionClause
 void
 mono_mb_set_param_names (MonoMethodBuilder *mb, const char **param_names);
 
+char*
+mono_mb_strdup (MonoMethodBuilder *mb, const char *s);
+
 #endif

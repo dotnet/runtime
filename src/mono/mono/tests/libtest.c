@@ -9,6 +9,7 @@
 #include <math.h>
 #include <setjmp.h>
 #include "../utils/mono-errno.h"
+#include "../utils/mono-compiler.h"
 
 #ifndef HOST_WIN32
 #include <dlfcn.h>
@@ -1769,6 +1770,21 @@ mono_test_last_error (int err)
 {
 #ifdef WIN32
 	SetLastError (err);
+
+	/*
+	* Make sure argument register used calling SetLastError
+	* get's cleaned before returning back to caller. This is done to ensure
+	* we don't get a undetected failure if error is preserved in register
+	* on return since we read back value directly when doing p/invoke with SetLastError = true
+	* into first argument register and then pass it to Mono function setting value in TLS.
+	* If there is a codegen bug reading last error or the code has been incorrectly eliminated
+	* this test could still succeed since expected error code could be left in argument register.
+	* Below code just do something that shouldn't touch last error and won't be optimized away
+	* but will change the argument registers to something different than err.
+	*/
+	char buffer[256] = { 0 };
+	char value[] = "Dummy";
+	strncpy (buffer, value, G_N_ELEMENTS (value) - 1);
 #else
 	mono_set_errno (err);
 #endif
@@ -7705,10 +7721,11 @@ mono_test_MerpCrashDladdr (void)
 LIBTEST_API void STDCALL
 mono_test_MerpCrashMalloc (void)
 {
-	void *mem = malloc (sizeof (char) * 10);
-	memset (mem, sizeof (mem) * 10, 'A');
-	int x = 100;
-	g_free (&x);
+	gpointer x = g_malloc (sizeof(gpointer));
+	g_free (x);
+
+	// Double free
+	g_free (x);
 }
 
 LIBTEST_API void STDCALL
