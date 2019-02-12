@@ -45,14 +45,15 @@ Note that instructions on building the crossrootfs location can be found at http
 Docker Images
 =============
 
-| OS             | Target Arch | Image location | crossrootfs location |
-| -------------- | ----------- | -------------- | -------------------- |
-| Ubuntu 16.04   | x64         | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544` | - |
-| Alpine         | x64         | `microsoft/dotnet-buildtools-prereqs:alpine-3.6-e2521f8-20180716231200` | - |
-| CentOS 6 (build for RHEL 6) | x64 | `microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331` | - |
-| CentOS 7 (build for RHEL 7) | x64 | `microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424` | - | 
-| Ubuntu 14.04   | arm32(armhf) | `microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420` | `/crossrootfs/arm` |
-| Ubuntu 16.04   | arm64 (aarch64) | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921` | `/crossrootfs/arm64` |
+| OS             | Target Arch | Image location | crossrootfs location | Clang Version |
+| -------------- | ----------- | -------------- | -------------------- | ------------- |
+| Ubuntu 16.04   | x64         | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544` | - | - |
+| Alpine         | x64         | `microsoft/dotnet-buildtools-prereqs:alpine-3.6-e2521f8-20180716231200` | - | - |
+| CentOS 6 (build for RHEL 6) | x64 | `microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331` | - | - |
+| CentOS 7 (build for RHEL 7) | x64 | `microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424` | - | - |
+| Ubuntu 14.04   | arm32(armhf) | `microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420` | `/crossrootfs/arm` | - |
+| Ubuntu 16.04   | arm64 (arm64v8) | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921` | `/crossrootfs/arm64` | - |
+| Alpine | arm64 (arm64v8) | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917` | `/crossrootfs/arm64` | -clang5.0 |
 
 Environment
 ===========

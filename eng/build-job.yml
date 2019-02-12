@@ -56,6 +56,9 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
       - name: clangArg
         value: '-clang6.0'
+    - ${{ if and(eq(parameters.osIdentifier, 'Linux_musl'), eq(parameters.archType, 'arm64')) }}:
+      - name: clangArg
+        value: '-clang5.0'
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
       - name: dotnetfeedUrl
