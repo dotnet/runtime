@@ -16,10 +16,10 @@ if /I "%PROCESSOR_ARCHITEW6432%"=="arm64" goto :skip_vs_setup
 call "%__ThisScriptDir%"\..\setup_vs_tools.cmd
 if NOT '%ERRORLEVEL%' == '0' exit /b 1
 
-if defined VS150COMNTOOLS (
+if defined VS160COMNTOOLS (
+    set __VSVersion=vs2019
+) else if defined VS150COMNTOOLS (
     set __VSVersion=vs2017
-) else (
-    set __VSVersion=vs2015
 )
 :skip_vs_setup
 
@@ -73,8 +73,8 @@ if /i "%1" == "debug"                                   (set __BuildType=Debug&s
 if /i "%1" == "release"                                 (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "checked"                                 (set __BuildType=Checked&shift&goto Arg_Loop)
             
-if /i "%1" == "vs2015"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "vs2017"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
+if /i "%1" == "vs2019"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
             
 if /i "%1" == "TestEnv"                                 (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "AgainstPackages"                         (set __AgainstPackages=1&shift&goto Arg_Loop)
@@ -242,17 +242,16 @@ exit /b %ERRORLEVEL%
 :: Set up msbuild and tools environment. Check if msbuild and VS exist.
 
 set _msbuildexe=
-if /i "%__VSVersion%" == "vs2017" (
+if /i "%__VSVersion%" == "vs2019" (
+    set "__VSToolsRoot=%VS160COMNTOOLS%"
+    set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
+
+    set _msbuildexe="%VS160COMNTOOLS%\..\..\MSBuild\Current\Bin\MSBuild.exe"
+) else if /i "%__VSVersion%" == "vs2017" (
     set "__VSToolsRoot=%VS150COMNTOOLS%"
     set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
 
     set _msbuildexe="%VS150COMNTOOLS%\..\..\MSBuild\15.0\Bin\MSBuild.exe"
-) else if /i "%__VSVersion%" == "vs2015" (
-    set "__VSToolsRoot=%VS140COMNTOOLS%"
-    set "__VCToolsRoot=%VS140COMNTOOLS%\..\..\VC"
-
-    set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-    if not exist !_msbuildexe! set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 )
 
 :: Does VS really exist?
@@ -723,7 +722,7 @@ echo.
 echo./? -? /h -h /help -help   - View this message.
 echo ^<build_architecture^>      - Specifies build architecture: x64, x86, arm, or arm64 ^(default: x64^).
 echo ^<build_type^>              - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
-echo VSVersion ^<vs_version^>    - VS2015 or VS2017 ^(default: VS2017^).
+echo VSVersion ^<vs_version^>    - VS2017 or VS2019 ^(default: VS2019^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
 echo AgainstPackages           - This indicates that we are running tests that were built against packages.
 echo GenerateLayoutOnly        - If specified will not run the tests and will only create the Runtime Dependency Layout
@@ -769,6 +768,6 @@ echo   %0 x64 release
 exit /b 1
 
 :NoVS
-echo Visual Studio 2015 or 2017 ^(Community is free^) is a prerequisite to build this repository.
+echo Visual Studio 2017 or 2019 ^(Community is free^) is a prerequisite to build this repository.
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
