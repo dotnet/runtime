@@ -223,7 +223,7 @@ generate_event_logging_sources()
     __ConsumingBuildSystem=$2
 
     __OutputIncDir="$__OutputDir/src/inc"
-    __OutputEventingDir="$__OutputDir/eventing"
+    __OutputEventingDir="$__OutputDir/Eventing"
     __OutputEventProviderDir="$__OutputEventingDir/eventprovider"
 
     echo "Laying out dynamically generated files consumed by $__ConsumingBuildSystem"
