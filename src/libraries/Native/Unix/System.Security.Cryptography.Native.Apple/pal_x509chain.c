@@ -193,8 +193,8 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
     }
     else
     {
-#ifdef DEBUGGING_UNKNOWN_VALUE
-        printf("%s\n", CFStringGetCStringPtr(keyString, CFStringGetSystemEncoding()));
+#if defined DEBUG || defined DEBUGGING_UNKNOWN_VALUE
+        printf("Unknown Chain Status: %s\n", CFStringGetCStringPtr(keyString, CFStringGetSystemEncoding()));
 #endif
         *pStatus |= PAL_X509ChainErrorUnknownValue;
     }
