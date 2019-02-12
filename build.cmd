@@ -414,7 +414,7 @@ REM ===
 REM =========================================================================================
 
 set __IntermediatesIncDir=%__IntermediatesDir%\src\inc
-set __IntermediatesEventingDir=%__IntermediatesDir%\eventing
+set __IntermediatesEventingDir=%__IntermediatesDir%\Eventing
 
 REM Find python and set it to the variable PYTHON
 echo import sys; sys.stdout.write(sys.executable) | (py -3 || py -2 || python3 || python2 || python) > %TEMP%\pythonlocation.txt 2> NUL
