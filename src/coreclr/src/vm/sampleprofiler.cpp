@@ -15,7 +15,7 @@
 #include <mmsystem.h>
 #endif //FEATURE_PAL
 
-#define NUM_NANOSECONDS_IN_1_MS (1000000)
+const unsigned long NUM_NANOSECONDS_IN_1_MS = 1000000;
 
 Volatile<BOOL> SampleProfiler::s_profilingEnabled = false;
 Thread* SampleProfiler::s_pSamplingThread = NULL;
@@ -48,7 +48,7 @@ void SampleProfiler::Enable()
         PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
-    
+
     LoadDependencies();
 
     if(s_pEventPipeProvider == NULL)
@@ -121,7 +121,8 @@ void SampleProfiler::Disable()
     s_profilingEnabled = false;
 
     // Wait for the sampling thread to clean itself up.
-    s_threadShutdownEvent.Wait(0, FALSE /* bAlertable */);
+    s_threadShutdownEvent.Wait(INFINITE, FALSE /* bAlertable */);
+    s_threadShutdownEvent.CloseEvent();
 
     if(s_timePeriodIsSet)
     {
