@@ -545,19 +545,6 @@ FCFuncStart(gAssemblyBuilderFuncs)
     FCFuncElement("GetInMemoryAssemblyModule", AssemblyNative::GetInMemoryAssemblyModule)
 FCFuncEnd()
 
-#ifdef MDA_SUPPORTED
-FCFuncStart(gMda)
-    FCFuncElement("MemberInfoCacheCreation", MdaManagedSupport::MemberInfoCacheCreation)
-    FCFuncElement("DateTimeInvalidLocalFormat", MdaManagedSupport::DateTimeInvalidLocalFormat)
-    FCFuncElement("IsStreamWriterBufferedDataLostEnabled", MdaManagedSupport::IsStreamWriterBufferedDataLostEnabled)
-    FCFuncElement("IsStreamWriterBufferedDataLostCaptureAllocatedCallStack", MdaManagedSupport::IsStreamWriterBufferedDataLostCaptureAllocatedCallStack)
-    FCFuncElement("ReportStreamWriterBufferedDataLost", MdaManagedSupport::ReportStreamWriterBufferedDataLost)
-    FCFuncElement("IsInvalidGCHandleCookieProbeEnabled", MdaManagedSupport::IsInvalidGCHandleCookieProbeEnabled)
-    FCFuncElement("FireInvalidGCHandleCookieProbe", MdaManagedSupport::FireInvalidGCHandleCookieProbe)
-    FCFuncElement("ReportErrorSafeHandleRelease", MdaManagedSupport::ReportErrorSafeHandleRelease)
-FCFuncEnd()
-#endif // MDA_SUPPORTED
-
 FCFuncStart(gDelegateFuncs)
     FCFuncElement("BindToMethodName", COMDelegate::BindToMethodName)
     FCFuncElement("BindToMethodInfo", COMDelegate::BindToMethodInfo)
