@@ -286,7 +286,10 @@ namespace System.Runtime.CompilerServices
                 _currentIndex = -1;
             }
 
-            ~Enumerator() => Dispose();
+            ~Enumerator()
+            {
+                Dispose();
+            }
 
             public void Dispose()
             {
