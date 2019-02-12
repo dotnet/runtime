@@ -17,6 +17,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.DotNet.XUnitExtensions;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -2555,23 +2557,16 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
-        [ActiveIssue(23037, TestPlatforms.AnyUnix)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Specifying Version(2,0) throws exception on netfx")]
         [OuterLoop("Uses external server")]
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(Http2Servers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
         {
-            if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10Version1703OrGreater)
+            if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1703OrGreater)
             {
                 // Skip this test if running on Windows but on a release prior to Windows 10 Creators Update.
-                _output.WriteLine("Skipping test due to Windows 10 version prior to Version 1703.");
-                return;
-            }
-            if (UseSocketsHttpHandler)
-            {
-                // TODO #23134: SocketsHttpHandler doesn't yet support HTTP/2.
-                return;
+                throw new SkipTestException("Skipping test due to Windows 10 version prior to Version 1703.");
             }
 
             // We don't currently have a good way to test whether HTTP/2 is supported without
@@ -2584,25 +2579,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 // It is generally expected that the test hosts will be trusted, so we don't register a validation
                 // callback in the usual case.
-                // 
-                // However, on our Debian 8 test machines, a combination of a server side TLS chain,
-                // the client chain processor, and the distribution's CA bundle results in an incomplete/untrusted
-                // certificate chain. See https://github.com/dotnet/corefx/issues/9244 for more details.
-                if (PlatformDetection.IsDebian8)
-                {
-                    // Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool>
-                    handler.ServerCertificateCustomValidationCallback = (msg, cert, chain, errors) =>
-                    {
-                        Assert.InRange(chain.ChainStatus.Length, 0, 1);
-
-                        if (chain.ChainStatus.Length > 0)
-                        {
-                            Assert.Equal(X509ChainStatusFlags.PartialChain, chain.ChainStatus[0].Status);
-                        }
-
-                        return true;
-                    };
-                }
 
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
