@@ -363,5 +363,18 @@ namespace System.Resources.Tests
                 }
             }
         }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "UwpAot currently allows custom assembly in ResourceManager constructor")]
+        public static void ConstructorNonRuntimeAssembly()
+        {
+            MockAssembly assembly = new MockAssembly();
+            Assert.Throws<ArgumentException>(() => new ResourceManager("name", assembly));
+            Assert.Throws<ArgumentException>(() => new ResourceManager("name", assembly, null));
+        }
+
+        private class MockAssembly : Assembly
+        {
+        }
     }
 }
