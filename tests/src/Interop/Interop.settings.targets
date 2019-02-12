@@ -6,16 +6,22 @@
 
   <!-- Environment properties -->
   <PropertyGroup>
+    <DefineConstants Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true'">$(DefineConstants);REFERENCING_SYSTEMPRIVATECORELIB</DefineConstants>
   </PropertyGroup>
 
-  <!-- Required source files -->
-  <ItemGroup>
-    <ProjectReference 
-      Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' != 'true')" 
+  <!-- Add the CoreCLRTestLibrary dependency -->
+  <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' != 'true')">
+    <ProjectReference
       Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
-    <Compile
-      Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' == 'true')"
-      Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\Assertion.cs" />
+  </ItemGroup>
+
+  <!-- Add the CoreCLRTestLibrary dependency
+       If a target project references System.Private.Corelib, we are unable to reference CoreCLRTestLibrary.
+       Compile in relevant files used for testing interop. -->
+  <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' == 'true')">
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\Assertion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\HostPolicyMock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\XPlatformUtils.cs" />
   </ItemGroup>
 
   <!-- Required debug vcruntime and UCRT dlls -->

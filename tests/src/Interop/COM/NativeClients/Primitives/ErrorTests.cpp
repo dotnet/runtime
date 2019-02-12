@@ -58,7 +58,7 @@ void Run_ErrorTests()
 {
     HRESULT hr;
 
-    CoreShimComActivation csact{ W("NETServer.dll"), W("ErrorMarshalTesting") };
+    CoreShimComActivation csact{ W("NETServer"), W("ErrorMarshalTesting") };
 
     ComSmartPtr<IErrorMarshalTesting> errorMarshal;
     THROW_IF_FAILED(::CoCreateInstance(CLSID_ErrorMarshalTesting, nullptr, CLSCTX_INPROC, IID_IErrorMarshalTesting, (void**)&errorMarshal));

@@ -5,7 +5,10 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
+using TestLibrary;
 using Xunit;
+
+using Assert = Xunit.Assert;
 
 namespace AssemblyDependencyResolverTests
 {
@@ -38,8 +41,8 @@ namespace AssemblyDependencyResolverTests
             using (HostPolicyMock.MockValues_corehost_set_error_writer errorWriterMock = 
                 HostPolicyMock.Mock_corehost_set_error_writer())
             {
-                using (HostPolicyMock.MockValues_corehost_resolve_componet_dependencies resolverMock = 
-                    HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+                using (HostPolicyMock.MockValues_corehost_resolve_component_dependencies resolverMock = 
+                    HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                         134,
                         "",
                         "",
@@ -79,8 +82,8 @@ namespace AssemblyDependencyResolverTests
             using (HostPolicyMock.MockValues_corehost_set_error_writer errorWriterMock =
                 HostPolicyMock.Mock_corehost_set_error_writer(previousWriter))
             {
-                using (HostPolicyMock.MockValues_corehost_resolve_componet_dependencies resolverMock =
-                    HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+                using (HostPolicyMock.MockValues_corehost_resolve_component_dependencies resolverMock =
+                    HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                         134,
                         "",
                         "",
@@ -108,7 +111,7 @@ namespace AssemblyDependencyResolverTests
             using (HostPolicyMock.MockValues_corehost_set_error_writer errorWriterMock =
                 HostPolicyMock.Mock_corehost_set_error_writer(previousWriter))
             {
-                using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+                using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                     0,
                     assemblyDependencyPath,
                     "",
@@ -131,7 +134,7 @@ namespace AssemblyDependencyResolverTests
         {
             // If the reqest is for assembly which is not listed in .deps.json
             // the resolver should return null.
-            using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                 0,
                 "",
                 "",
@@ -148,7 +151,7 @@ namespace AssemblyDependencyResolverTests
         {
             // Even if the .deps.json can resolve the request, if the file is not present
             // the resolution should still return null.
-            using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                 0,
                 Path.Combine(_componentDirectory, "NonExistingAssembly.dll"),
                 "",
@@ -164,7 +167,7 @@ namespace AssemblyDependencyResolverTests
         public void TestSingleResource()
         {
             string enResourcePath = CreateMockAssembly($"en{Path.DirectorySeparatorChar}TestComponent.resources.dll");
-            using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                 0,
                 "",
                 "",
@@ -183,7 +186,7 @@ namespace AssemblyDependencyResolverTests
         {
             string enResourcePath = CreateMockAssembly($"en{Path.DirectorySeparatorChar}TestComponent.resources.dll");
             string csResourcePath = CreateMockAssembly($"cs{Path.DirectorySeparatorChar}TestComponent.resources.dll");
-            using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                 0,
                 "",
                 "",
@@ -205,7 +208,7 @@ namespace AssemblyDependencyResolverTests
         {
             string enResourcePath = CreateMockAssembly($"en{Path.DirectorySeparatorChar}TestComponent.resources.dll");
             string frResourcePath = CreateMockAssembly($"SubComponent{Path.DirectorySeparatorChar}fr{Path.DirectorySeparatorChar}TestComponent.resources.dll");
-            using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                 0,
                 "",
                 "",
@@ -226,7 +229,7 @@ namespace AssemblyDependencyResolverTests
         public void TestAssemblyWithNeutralCulture()
         {
             string neutralAssemblyPath = CreateMockAssembly("NeutralAssembly.dll");
-            using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                 0,
                 neutralAssemblyPath,
                 "",
@@ -245,7 +248,7 @@ namespace AssemblyDependencyResolverTests
         {
             string nativeLibraryPath = CreateMockStandardNativeLibrary("native", "Single");
 
-            using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                 0,
                 "",
                 Path.GetDirectoryName(nativeLibraryPath),
@@ -265,7 +268,7 @@ namespace AssemblyDependencyResolverTests
             string oneNativeLibraryPath = CreateMockStandardNativeLibrary($"native{Path.DirectorySeparatorChar}one", "One");
             string twoNativeLibraryPath = CreateMockStandardNativeLibrary($"native{Path.DirectorySeparatorChar}two", "Two");
 
-            using (HostPolicyMock.Mock_corehost_resolve_componet_dependencies(
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                 0,
                 "",
                 $"{Path.GetDirectoryName(oneNativeLibraryPath)}{Path.PathSeparator}{Path.GetDirectoryName(twoNativeLibraryPath)}",

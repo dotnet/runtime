@@ -34,7 +34,7 @@ void Run_ColorTests()
 {
     HRESULT hr;
 
-    CoreShimComActivation csact{ W("NETServer.dll"), W("ColorTesting") };
+    CoreShimComActivation csact{ W("NETServer"), W("ColorTesting") };
 
     ComSmartPtr<IColorTesting> color;
     THROW_IF_FAILED(::CoCreateInstance(CLSID_ColorTesting, nullptr, CLSCTX_INPROC, IID_IColorTesting, (void**)&color));
