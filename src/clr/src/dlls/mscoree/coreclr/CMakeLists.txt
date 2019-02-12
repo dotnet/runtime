@@ -168,11 +168,6 @@ if(WIN32)
     endif()
 
     set(DACTABLEGEN_EXE ${CMAKE_BINARY_DIR}/src/ToolBox/SOS/DacTableGen/dactablegen.exe)
-    # The DactTableGen executable that we build needs an msdia140.dll supplied by Visual Studio.
-    # however VS2015 may not have this, so fall back to the DactTableGen in the tools package (which is old)
-    if($ENV{__VSVersion} STREQUAL "vs2015")
-        set(DACTABLEGEN_EXE ${BuildToolsDir}/dactablegen.exe)
-    endif()
 
     add_custom_command(
         DEPENDS coreclr mscordaccore mscordbi ${CLR_DIR}/src/debug/daccess/daccess.cpp
