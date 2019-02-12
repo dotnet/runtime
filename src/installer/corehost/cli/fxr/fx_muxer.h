@@ -106,13 +106,11 @@ private:
         const fx_reference_t& newer,
         const fx_reference_t& older,
         bool older_is_hard_roll_forward,
-        fx_name_to_fx_reference_map_t& newest_references,
-        fx_name_to_fx_reference_map_t& oldest_references);
+        fx_name_to_fx_reference_map_t& newest_references);
     static int soft_roll_forward(
         const fx_reference_t existing_ref,
         bool current_is_hard_roll_forward,
-        fx_name_to_fx_reference_map_t& newest_references,
-        fx_name_to_fx_reference_map_t& oldest_references);
+        fx_name_to_fx_reference_map_t& newest_references);
     static void display_missing_framework_error(
         const pal::string_t& fx_name,
         const pal::string_t& fx_version,
