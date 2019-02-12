@@ -17,6 +17,9 @@ resources:
   - container: musl_x64_build_image
     image: microsoft/dotnet-buildtools-prereqs:alpine-3.6-WithNode-f4d3fe3-20181220200247
 
+  - container: musl_arm64_build_image
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917
+
   - container: centos7_x64_build_image
     image: microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424
 
@@ -271,6 +274,7 @@ jobs:
       - build_Linux_arm_release
       - build_Linux_arm64_release
       - build_Linux_musl_x64_release
+      - build_Linux_musl_arm64_release
       - build_Linux_rhel6_x64_release
       - build_Linux_x64_release
       - build_OSX_x64_release
