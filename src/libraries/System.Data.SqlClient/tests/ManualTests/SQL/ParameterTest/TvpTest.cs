@@ -69,7 +69,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 ),
                 Task.Delay(TimeSpan.FromSeconds(5))
             );
-            //Assert.Equal(0, returned);
             Assert.True(enumerator.MaxCount==enumerator.Count);
         }
 
