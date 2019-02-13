@@ -82,7 +82,7 @@ jobs:
           - _outerloop: true
 
         - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-          - linuxDefaultQueues: Centos.7.Amd64.Open+RedHat.7.Amd64.Open+Debian.8.Amd64.Open+Ubuntu.1604.Amd64.Open+Ubuntu.1804.Amd64.Open+OpenSuse.42.Amd64.Open #+Fedora.27.Amd64.Open
+          - linuxDefaultQueues: Centos.7.Amd64.Open+RedHat.7.Amd64.Open+Debian.8.Amd64.Open+Ubuntu.1604.Amd64.Open+Ubuntu.1804.Amd64.Open+OpenSuse.42.Amd64.Open+Fedora.27.Amd64.Open
           - linuxArm64Queues: Ubuntu.1604.Arm64.Open
       
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
