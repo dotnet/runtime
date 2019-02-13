@@ -1768,8 +1768,11 @@ namespace System
     }
     public enum MidpointRounding
     {
-        AwayFromZero = 1,
         ToEven = 0,
+        AwayFromZero = 1,
+        ToZero = 2,
+        ToNegativeInfinity = 3,
+        ToPositiveInfinity = 4
     }
     public partial class MissingFieldException : System.MissingMemberException, System.Runtime.Serialization.ISerializable
     {

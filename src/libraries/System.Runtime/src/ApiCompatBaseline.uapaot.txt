@@ -26,3 +26,6 @@ MembersMustExist : Member 'System.Index.End.get()' does not exist in the impleme
 MembersMustExist : Member 'System.Index.FromEnd(System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Index.FromStart(System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Index.Start.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MidpointRounding System.MidpointRounding.ToNegativeInfinity' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MidpointRounding System.MidpointRounding.ToPositiveInfinity' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MidpointRounding System.MidpointRounding.ToZero' does not exist in the implementation but it does exist in the contract.
