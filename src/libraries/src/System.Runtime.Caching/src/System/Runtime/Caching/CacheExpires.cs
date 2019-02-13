@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -150,8 +151,6 @@ namespace System.Runtime.Caching
             _counts = new int[COUNTS_LENGTH];
             ResetCounts(utcNow);
             InitZeroPages();
-
-            Dbg.Validate("CacheValidateExpires", this);
         }
 
         private void InitZeroPages()
@@ -539,8 +538,6 @@ namespace System.Runtime.Caching
                 }
 
                 RemovePage(_freeEntryList._tail);
-
-                Dbg.Validate("CacheValidateExpires", this);
             }
         }
 
@@ -607,15 +604,12 @@ namespace System.Runtime.Caching
 
             Reduce();
 
-            Dbg.Trace("CacheExpiresRemove",
+            Debug.WriteLine("CacheExpiresRemove",
                         "Removed item=" + cacheEntry.Key +
                         ",_bucket=" + _bucket +
                         ",ref=" + entryRef +
-                        ",now=" + Dbg.FormatLocalDate(DateTime.Now) +
+                        ",now=" + DateTime.Now.ToString("o", CultureInfo.InvariantCulture) +
                         ",expires=" + cacheEntry.UtcAbsExp.ToLocalTime());
-
-            Dbg.Validate("CacheValidateExpires", this);
-            Dbg.Dump("CacheExpiresRemove", this);
         }
 
         internal void RemoveCacheEntry(MemoryCacheEntry cacheEntry)
@@ -646,9 +640,6 @@ namespace System.Runtime.Caching
                 entries[entryIndex]._utcExpires = utcExpires;
 
                 cacheEntry.UtcAbsExp = utcExpires;
-
-                Dbg.Validate("CacheValidateExpires", this);
-                Dbg.Trace("CacheExpiresUpdate", "Updated item " + cacheEntry.Key + " in bucket " + _bucket);
             }
         }
 
@@ -726,7 +717,7 @@ namespace System.Runtime.Caching
                     if (flushed == 0)
                     {
                         Dbg.Trace("CacheExpiresFlushTotal", "FlushExpiredItems flushed " + flushed +
-                                    " expired items, bucket=" + _bucket + "; Time=" + Dbg.FormatLocalDate(DateTime.Now));
+                                    " expired items, bucket=" + _bucket + "; Time=" + DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
 
                         return 0;
                     }
@@ -790,10 +781,7 @@ namespace System.Runtime.Caching
                     Reduce();
 
                     Dbg.Trace("CacheExpiresFlushTotal", "FlushExpiredItems flushed " + flushed +
-                                " expired items, bucket=" + _bucket + "; Time=" + Dbg.FormatLocalDate(DateTime.Now));
-
-                    Dbg.Validate("CacheValidateExpires", this);
-                    Dbg.Dump("CacheExpiresFlush", this);
+                                " expired items, bucket=" + _bucket + "; Time=" + DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
                 }
             }
             finally
@@ -866,8 +854,7 @@ namespace System.Runtime.Caching
                             flushed += bucket.FlushExpiredItems(utcNow, useInsertBlock);
                         }
 
-                        Dbg.Trace("CacheExpiresFlushTotal", "FlushExpiredItems flushed a total of " + flushed + " items; Time=" + Dbg.FormatLocalDate(DateTime.Now));
-                        Dbg.Dump("CacheExpiresFlush", this);
+                        Dbg.Trace("CacheExpiresFlushTotal", "FlushExpiredItems flushed a total of " + flushed + " items; Time=" + DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
                     }
                 }
                 finally
