@@ -12,18 +12,14 @@
 **
 =============================================================================*/
 
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Threading
 {
-    using System.Threading;
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using Microsoft.Win32.SafeHandles;
-    using System.Runtime.Versioning;
-    using System.Runtime.ConstrainedExecution;
-    using System.Diagnostics.CodeAnalysis;
-    using Win32Native = Microsoft.Win32.Win32Native;
-
     public abstract class WaitHandle : MarshalByRefObject, IDisposable
     {
         public const int WaitTimeout = 0x102;
@@ -38,11 +34,7 @@ namespace System.Threading
 
         internal bool hasThreadAffinity;
 
-        private static IntPtr GetInvalidHandle()
-        {
-            return Win32Native.INVALID_HANDLE_VALUE;
-        }
-        protected static readonly IntPtr InvalidHandle = GetInvalidHandle();
+        protected static readonly IntPtr InvalidHandle = new IntPtr(-1);
         private const int WAIT_OBJECT_0 = 0;
         private const int WAIT_ABANDONED = 0x80;
         private const int WAIT_FAILED = 0x7FFFFFFF;

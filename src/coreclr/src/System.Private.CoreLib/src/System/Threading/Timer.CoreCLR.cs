@@ -30,7 +30,7 @@ namespace System.Threading
                 {
                     ulong time100ns;
 
-                    bool result = Win32Native.QueryUnbiasedInterruptTime(out time100ns);
+                    bool result = Interop.Kernel32.QueryUnbiasedInterruptTime(out time100ns);
                     if (!result)
                         throw Marshal.GetExceptionForHR(Marshal.GetLastWin32Error());
 

@@ -328,7 +328,7 @@ void ILWSTRMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
 
     EmitLoadNativeValue(pslILEmit);
     // static void CoTaskMemFree(IntPtr ptr)
-    pslILEmit->EmitCALL(METHOD__WIN32NATIVE__COTASKMEMFREE, 1, 0);
+    pslILEmit->EmitCALL(METHOD__MARSHAL__FREE_CO_TASK_MEM, 1, 0);
 }
 
 void ILWSTRMarshaler::EmitClearNativeTemp(ILCodeStream* pslILEmit)
@@ -1710,7 +1710,7 @@ void ILVBByValStrWMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
     pslILEmit->EmitLDLOC(m_dwLocalBuffer);
     pslILEmit->EmitBRFALSE(pExitLabel);
     pslILEmit->EmitLDLOC(m_dwLocalBuffer);
-    pslILEmit->EmitCALL(METHOD__WIN32NATIVE__COTASKMEMFREE, 1, 0);
+    pslILEmit->EmitCALL(METHOD__MARSHAL__FREE_CO_TASK_MEM, 1, 0);
     pslILEmit->EmitLabel(pExitLabel);
 }
 
@@ -2361,7 +2361,7 @@ void ILLayoutClassPtrMarshalerBase::EmitClearNative(ILCodeStream* pslILEmit)
 
     EmitClearNativeContents(pslILEmit);
     EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__WIN32NATIVE__COTASKMEMFREE, 1, 0);
+    pslILEmit->EmitCALL(METHOD__MARSHAL__FREE_CO_TASK_MEM, 1, 0);
 
     pslILEmit->EmitLabel(pNullRefLabel);
 }
@@ -3554,7 +3554,7 @@ void ILArrayWithOffsetMarshaler::EmitClearNativeTemp(ILCodeStream* pslILEmit)
 
     // CoTaskMemFree
     EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__WIN32NATIVE__COTASKMEMFREE, 1, 0);
+    pslILEmit->EmitCALL(METHOD__MARSHAL__FREE_CO_TASK_MEM, 1, 0);
 
     pslILEmit->EmitLabel(pDoneLabel);
 }

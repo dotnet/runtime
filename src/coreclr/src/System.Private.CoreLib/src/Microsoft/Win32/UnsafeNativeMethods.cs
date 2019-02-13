@@ -56,7 +56,7 @@ namespace Microsoft.Win32
             //
             // Registration APIs
             //
-            [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventRegister", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+            [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, EntryPoint = "EventRegister", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             internal static extern unsafe uint EventRegister(
                         [In] ref Guid providerId,
                         [In]EtwEnableCallback enableCallback,
@@ -65,10 +65,10 @@ namespace Microsoft.Win32
                         );
 
             // 
-            [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventUnregister", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+            [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, EntryPoint = "EventUnregister", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             internal static extern uint EventUnregister([In] long registrationHandle);
 
-            [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventWriteString", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+            [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, EntryPoint = "EventWriteString", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             internal static extern int EventWriteString(
                     [In] long registrationHandle,
                     [In] byte level,
@@ -106,7 +106,7 @@ namespace Microsoft.Win32
                 return HResult;
             }
 
-            [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventWriteTransfer", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+            [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, EntryPoint = "EventWriteTransfer", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             private static extern int EventWriteTransfer(
                     [In] long registrationHandle,
                     [In] ref EventDescriptor eventDescriptor,
@@ -125,7 +125,7 @@ namespace Microsoft.Win32
                 EVENT_ACTIVITY_CTRL_CREATE_SET_ID = 5
             };
 
-            [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventActivityIdControl", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+            [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, EntryPoint = "EventActivityIdControl", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             internal static extern int EventActivityIdControl([In] ActivityControl ControlCode, [In][Out] ref Guid ActivityId);
 
             internal enum EVENT_INFO_CLASS
@@ -135,7 +135,7 @@ namespace Microsoft.Win32
                 SetTraits,
             }
 
-            [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventSetInformation", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+            [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, EntryPoint = "EventSetInformation", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             internal static extern int EventSetInformation(
                 [In] long registrationHandle,
                 [In] EVENT_INFO_CLASS informationClass,
@@ -178,7 +178,7 @@ namespace Microsoft.Win32
                 public long MatchAllKeyword;
             };
 
-            [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EnumerateTraceGuidsEx", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+            [DllImport(Interop.Libraries.Advapi32, ExactSpelling = true, EntryPoint = "EnumerateTraceGuidsEx", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             internal static extern int EnumerateTraceGuidsEx(
                 TRACE_QUERY_INFO_CLASS TraceQueryInfoClass,
                 void* InBuffer,
