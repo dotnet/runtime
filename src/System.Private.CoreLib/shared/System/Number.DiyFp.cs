@@ -111,7 +111,7 @@ namespace System
                 // and subtract once.
 
                 Debug.Assert(f != 0);
-                int lzcnt = (int)(BigInteger.LeadingZeroCount(f));
+                int lzcnt = BitOps.LeadingZeroCount(f);
                 return new DiyFp((f << lzcnt), (e - lzcnt));
             }
 
