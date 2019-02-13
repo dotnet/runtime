@@ -1284,7 +1284,7 @@ elif test x$with_runtime_preset = xfullaotinterp; then
    AOT_RUN_FLAGS="--full-aot-interp"
 elif test x$with_runtime_preset = xfullaotinterp_llvm; then
    with_testing_aot_full_interp_default=yes
-   TEST_PROFILE=testing_aot_full_interp_llvm
+   TEST_PROFILE=testing_aot_full_interp
 
    # mscorlib.dll aot compilation crashes
    mono_feature_disable_com='yes'
@@ -1447,7 +1447,6 @@ AM_CONDITIONAL(INSTALL_NETCORE, [test "x$with_core" != "xno"])
 AM_CONDITIONAL(FULL_AOT_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full"] || [test "x$TEST_PROFILE" = "xwinaot"] || [test "x$TEST_PROFILE" = "xorbis"] || [test "x$TEST_PROFILE" = "xwasm"])
 AM_CONDITIONAL(HYBRID_AOT_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_hybrid"] || [test "x$TEST_PROFILE" = "xunreal"])
 AM_CONDITIONAL(AOT_FULL_INTERP_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full_interp"])
-AM_CONDITIONAL(AOT_FULL_INTERP_LLVM_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full_interp_llvm"])
 AM_CONDITIONAL(DEFAULT_TESTS, [test "x$TEST_PROFILE" = "xnet_4_x"])
 
 default_profile=net_4_x

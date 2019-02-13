@@ -210,10 +210,6 @@ if AOT_FULL_INTERP_TESTS
 PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY
 endif
 
-if AOT_FULL_INTERP_LLVM_TESTS
-PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY
-endif
-
 MCS_NO_UNSAFE = $(TOOLS_RUNTIME) $(CSC) -debug:portable \
 	-noconfig -nologo \
 	-nowarn:0162 -nowarn:0168 -nowarn:0219 -nowarn:0414 -nowarn:0618 \
@@ -1595,66 +1591,6 @@ PROFILE_DISABLED_TESTS += \
 	transparentproxy.exe
 endif
 
-if AOT_FULL_INTERP_LLVM_TESTS
-# AppDomain tests
-PROFILE_DISABLED_TESTS += \
-	appdomain1.exe \
-	appdomain2.exe \
-	appdomain-async-invoke.exe \
-	appdomain.exe \
-	appdomain-exit.exe \
-	appdomain-loader.exe \
-	appdomain-marshalbyref-assemblyload.exe \
-	appdomain-serialize-exception.exe \
-	appdomain-thread-abort.exe \
-	appdomain-threadpool-unload.exe \
-	appdomain-unload-asmload.exe \
-	appdomain-unload-callback.exe \
-	appdomain-unload-doesnot-raise-pending-events.exe \
-	appdomain-unload.exe \
-	assemblyresolve_event6.exe \
-	bug-335131.2.exe \
-	bug-415577.exe \
-	cross-domain.exe \
-	dataslot.exe \
-	delegate9.exe \
-	domain-stress.exe \
-	generic-marshalbyref.2.exe \
-	generic-unloading.2.exe \
-	generic-xdomain.2.exe \
-	hostname.exe \
-	marshal-valuetypes.exe \
-	monitor.exe \
-	pinvoke3.exe \
-	remoting4.exe \
-	stackframes-async.2.exe \
-	suspend-stress-test.exe \
-	thread6.exe \
-	threadpool-exceptions7.exe \
-	unhandled-exception-7.exe \
-	unhandled-exception-test-case.2.exe \
-	unload-appdomain-on-shutdown.exe \
-	xdomain-threads.exe
-
-# Tests which load assemblies which are not in the profile
-PROFILE_DISABLED_TESTS += \
-	assembly-load-remap.exe
-
-# Tests which needs named Mutex support
-PROFILE_DISABLED_TESTS += \
-	namedmutex-destroy-race.exe
-
-# Test which needs System.Web support
-PROFILE_DISABLED_TESTS += \
-	bug-80307.exe
-
-PROFILE_DISABLED_TESTS += \
-	bug-70561.exe \
-	transparentproxy.exe \
-	finalizer-exception.exe
-
-endif
-
 AOT_DISABLED_TESTS= \
 	constraints-load.exe \
 	calli_sig_check.exe
@@ -2049,9 +1985,7 @@ tailcall/coreclr/JIT/opt/Tailcall/TailcallVerifyWithPrefix.exe: \
 if !FULL_AOT_TESTS
 if !HYBRID_AOT_TESTS
 if !AOT_FULL_INTERP_TESTS
-if !AOT_FULL_INTERP_LLVM_TESTS
 TEST_DRIVER_HARD_KILL_FEATURE=-r:$(CLASS)/Mono.Posix.dll
-endif
 endif
 endif
 endif
