@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -46,7 +47,7 @@ namespace System.Net
         /// Completes "request" with 0 if 0 bytes was requested or legitimate EOF received.
         /// Otherwise, reads as directed or completes "request" with an Exception.
         /// </summary>
-        public static async void ReadPacketAsync(Stream transport, AsyncProtocolRequest request) // "async Task" might result in additional, unnecessary allocation
+        public static async Task ReadPacketAsync(Stream transport, AsyncProtocolRequest request)
         {
             try
             {

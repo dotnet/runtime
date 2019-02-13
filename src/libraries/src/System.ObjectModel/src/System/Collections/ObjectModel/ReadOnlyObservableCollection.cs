@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -18,17 +16,9 @@ namespace System.Collections.ObjectModel
     [Serializable]
     [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("WindowsBase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
+    [TypeForwardedFrom("WindowsBase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class ReadOnlyObservableCollection<T> : ReadOnlyCollection<T>, INotifyCollectionChanged, INotifyPropertyChanged
     {
-        #region Constructors
-
-        //------------------------------------------------------
-        //
-        //  Constructors
-        //
-        //------------------------------------------------------
-
         /// <summary>
         /// Initializes a new instance of ReadOnlyObservableCollection that
         /// wraps the given ObservableCollection.
@@ -39,25 +29,13 @@ namespace System.Collections.ObjectModel
             ((INotifyPropertyChanged)Items).PropertyChanged += new PropertyChangedEventHandler(HandlePropertyChanged);
         }
 
-        #endregion Constructors
-
-        #region Interfaces
-
-        //------------------------------------------------------
-        //
-        //  Interfaces
-        //
-        //------------------------------------------------------
-
-        #region INotifyCollectionChanged
-
         /// <summary>
         /// CollectionChanged event (per <see cref="INotifyCollectionChanged" />).
         /// </summary>
         event NotifyCollectionChangedEventHandler INotifyCollectionChanged.CollectionChanged
         {
-            add { CollectionChanged += value; }
-            remove { CollectionChanged -= value; }
+            add => CollectionChanged += value;
+            remove => CollectionChanged -= value;
         }
 
         /// <summary>
@@ -74,23 +52,16 @@ namespace System.Collections.ObjectModel
         /// </summary>
         protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs args)
         {
-            if (CollectionChanged != null)
-            {
-                CollectionChanged(this, args);
-            }
+            CollectionChanged?.Invoke(this, args);
         }
-
-        #endregion INotifyCollectionChanged
-
-        #region INotifyPropertyChanged
 
         /// <summary>
         /// PropertyChanged event (per <see cref="INotifyPropertyChanged" />).
         /// </summary>
         event PropertyChangedEventHandler INotifyPropertyChanged.PropertyChanged
         {
-            add { PropertyChanged += value; }
-            remove { PropertyChanged -= value; }
+            add => PropertyChanged += value;
+            remove => PropertyChanged -= value;
         }
 
         /// <summary>
@@ -107,37 +78,17 @@ namespace System.Collections.ObjectModel
         /// </summary>
         protected virtual void OnPropertyChanged(PropertyChangedEventArgs args)
         {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, args);
-            }
+            PropertyChanged?.Invoke(this, args);
         }
 
-        #endregion INotifyPropertyChanged
-
-        #endregion Interfaces
-
-        #region Private Methods
-
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
-
-        // forward CollectionChanged events from the base list to our listeners
         private void HandleCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             OnCollectionChanged(e);
         }
 
-        // forward PropertyChanged events from the base list to our listeners
         private void HandlePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             OnPropertyChanged(e);
         }
-        #endregion Private Methods
     }
 }
-
-

@@ -124,23 +124,44 @@ namespace System.ComponentModel.DataAnnotations.Tests
             attribute.Validate("Valid 2-Args Value", s_testValidationContext);
         }
 
-        // FormatErrorMessage_throws_InvalidOperationException_if_ErrorMessage_and_ErrorMessageResourceName_are_both_null_or_empty
-        [Fact]
-        public static void TestThrowIfNullOrEmptyErrorMessage()
+        [Theory]
+        [InlineData("SomeErrorMessage", "SomeErrorMessage")]
+        [InlineData("SomeErrorMessage with name <{0}>", "SomeErrorMessage with name <name>")]
+        public void FormatErrorMessage_HasErrorMessage_ReturnsExpected(string errorMessage, string expected)
         {
             var attribute = new ValidationAttributeOverrideBothIsValids();
-            attribute.ErrorMessage = null;
+            attribute.ErrorMessage = errorMessage;
             attribute.ErrorMessageResourceName = null;
-            Assert.Throws<InvalidOperationException>(() => attribute.FormatErrorMessage("Name to put in error message does not matter"));
-
+            attribute.ErrorMessageResourceType = null;
+            Assert.Equal(expected, attribute.FormatErrorMessage("name"));
+        }
+        
+        [Theory]
+        [InlineData(nameof(ValidationAttributeOverrideBothIsValids.PublicErrorMessageTestProperty), typeof(ValidationAttributeOverrideBothIsValids), "Error Message from PublicErrorMessageTestProperty")]
+        [InlineData(nameof(ValidationAttributeOverrideBothIsValids.PublicErrorMessageTestPropertyWithName), typeof(ValidationAttributeOverrideBothIsValids), "Error Message from PublicErrorMessageTestProperty With Name <name>")]
+        [InlineData(nameof(ValidationAttributeOverrideBothIsValids.StaticInternalProperty), typeof(ValidationAttributeOverrideBothIsValids), "ErrorMessage")]
+        public void FormatErrorMessage_HasResourceProperty_ReturnsExpected(string resourceName, Type resourceType, string expected)
+        {
+            var attribute = new ValidationAttributeOverrideBothIsValids();
             attribute.ErrorMessage = string.Empty;
-            attribute.ErrorMessageResourceName = string.Empty;
-            Assert.Throws<InvalidOperationException>(() => attribute.FormatErrorMessage("Name to put in error message does not matter"));
+            attribute.ErrorMessageResourceName = resourceName;
+            attribute.ErrorMessageResourceType = resourceType;
+            Assert.Equal(expected, attribute.FormatErrorMessage("name"));
         }
 
-        // FormatErrorMessage_throws_InvalidOperationException_if_ErrorMessage_and_ErrorMessageResourceName_are_both_set
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void FormatErrorMessage_NullOrEmptyErrorMessageAndName_ThrowsInvalidOperationException(string value)
+        {
+            var attribute = new ValidationAttributeOverrideBothIsValids();
+            attribute.ErrorMessage = value;
+            attribute.ErrorMessageResourceName = value;
+            Assert.Throws<InvalidOperationException>(() => attribute.FormatErrorMessage("name"));
+        }
+
         [Fact]
-        public static void TestThrowIfErrorMessageAndNameBothSet()
+        public void FormatErrorMessage_BothErrorMessageAndResourceName_ThrowsInvalidOperationException()
         {
             var attribute = new ValidationAttributeOverrideBothIsValids();
             attribute.ErrorMessage = "SomeErrorMessage";
@@ -148,85 +169,34 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Throws<InvalidOperationException>(() => attribute.FormatErrorMessage("Name to put in error message does not matter"));
         }
 
-        // FormatErrorMessage_throws_InvalidOperationException_if_ErrorMessageResourceName_set_but_ErrorMessageResourceType_is_not
         [Fact]
-        public static void TestFormatErrorMessageThrow()
-        {
-            var attribute = new ValidationAttributeOverrideBothIsValids();
-            attribute.ErrorMessageResourceName = "SomeErrorMessageResourceName";
-            attribute.ErrorMessageResourceType = null;
-            Assert.Throws<InvalidOperationException>(() => attribute.FormatErrorMessage("Name to put in error message does not matter"));
-        }
-
-        // FormatErrorMessage_throws_InvalidOperationException_if_ErrorMessageResourceType_set_but_ErrorMessageResourceName_is_not(
-        [Fact]
-        public static void TestFormatErrorMessageThrow01()
-        {
-            var attribute = new ValidationAttributeOverrideBothIsValids();
-            attribute.ErrorMessageResourceName = string.Empty;
-            attribute.ErrorMessageResourceType = typeof(string);
-            Assert.Throws<InvalidOperationException>(() => attribute.FormatErrorMessage("Name to put in error message does not matter"));
-        }
-
-        // FormatErrorMessage_returns_ErrorMessage_if_only_ErrorMessage_is_set
-        [Fact]
-        public static void TestFormatErrorMessage()
+        public void FormatErrorMessage_BothErrorMessageAndResourceType_ThrowsInvalidOperationException()
         {
             var attribute = new ValidationAttributeOverrideBothIsValids();
             attribute.ErrorMessage = "SomeErrorMessage";
-            attribute.ErrorMessageResourceName = null;
-            attribute.ErrorMessageResourceType = null;
-            Assert.Equal("SomeErrorMessage", attribute.FormatErrorMessage("Name to put in error message does not matter - no placeholder"));
-        }
-
-        // FormatErrorMessage_returns_ErrorMessage_with_name_if_only_ErrorMessage_is_set
-        [Fact]
-        public static void TestFormatErrorMessage01()
-        {
-            var attribute = new ValidationAttributeOverrideBothIsValids();
-            attribute.ErrorMessage = "SomeErrorMessage with name <{0}> here";
-            attribute.ErrorMessageResourceName = null;
-            attribute.ErrorMessageResourceType = null;
-            Assert.Equal(
-                string.Format("SomeErrorMessage with name <{0}> here", "Error Message Name"),
-                attribute.FormatErrorMessage("Error Message Name"));
-        }
-
-        // FormatErrorMessage_throws_InvalidOperationException_if_ErrorMessageResourceType_and_ErrorMessageResourceName_point_to_non_existent_resource
-        [Fact]
-        public static void TestFormatErrorMessage02()
-        {
-            var attribute = new ValidationAttributeOverrideBothIsValids();
-            attribute.ErrorMessageResourceName = "NonExistentErrorMessageTestProperty";
-            attribute.ErrorMessageResourceType = typeof(ValidationAttributeOverrideBothIsValids);
+            attribute.ErrorMessageResourceType = typeof(int);
             Assert.Throws<InvalidOperationException>(() => attribute.FormatErrorMessage("Name to put in error message does not matter"));
         }
 
-        // FormatErrorMessage_returns_ErrorMessage_from_resource_if_only_ErrorMessageResourceName_and_ErrorMessageResourceType_are_set
-        [Fact]
-        public static void TestFormatErrorMessage03()
+        [Theory]
+        [InlineData("ResourceName", null)]
+        [InlineData(null, typeof(int))]
+        [InlineData("", typeof(int))]
+        [InlineData("NoSuchProperty", typeof(int))]
+        [InlineData(nameof(ValidationAttributeOverrideBothIsValids.GetSetProperty), typeof(ValidationAttributeOverrideBothIsValids))]
+        [InlineData(nameof(ValidationAttributeOverrideBothIsValids.GetOnlyProperty), typeof(ValidationAttributeOverrideBothIsValids))]
+        [InlineData(nameof(ValidationAttributeOverrideBothIsValids.SetOnlyProperty), typeof(ValidationAttributeOverrideBothIsValids))]
+        [InlineData(nameof(ValidationAttributeOverrideBothIsValids.StaticSetOnlyProperty), typeof(ValidationAttributeOverrideBothIsValids))]
+        [InlineData(nameof(ValidationAttributeOverrideBothIsValids.StaticIntProperty), typeof(ValidationAttributeOverrideBothIsValids))]
+        [InlineData("StaticPrivateProperty", typeof(ValidationAttributeOverrideBothIsValids))]
+        [InlineData("StaticProtectedProperty", typeof(ValidationAttributeOverrideBothIsValids))]
+        [InlineData(nameof(ValidationAttributeOverrideBothIsValids.StaticProtectedInternalProperty), typeof(ValidationAttributeOverrideBothIsValids))]
+        public void FormatErrorMessage_InvalidResourceNameAndResourceType_ThrowsInvalidOperationException(string resourceName, Type resourceType)
         {
             var attribute = new ValidationAttributeOverrideBothIsValids();
-            attribute.ErrorMessage = string.Empty;
-            attribute.ErrorMessageResourceName = "PublicErrorMessageTestProperty";
-            attribute.ErrorMessageResourceType = typeof(ValidationAttributeOverrideBothIsValids);
-            Assert.Equal(ValidationAttributeOverrideBothIsValids.PublicErrorMessageTestProperty,
-                attribute.FormatErrorMessage("Name to put in error message does not matter - no placeholder"));
-        }
-
-        // FormatErrorMessage_returns_ErrorMessage_from_resource_with_name_if_only_ErrorMessageResourceName_and_ErrorMessageResourceType_are_set
-        [Fact]
-        public static void TestFormatErrorMessage04()
-        {
-            var attribute = new ValidationAttributeOverrideBothIsValids();
-            attribute.ErrorMessage = string.Empty;
-            attribute.ErrorMessageResourceName = "PublicErrorMessageTestPropertyWithName";
-            attribute.ErrorMessageResourceType = typeof(ValidationAttributeOverrideBothIsValids);
-            Assert.Equal(
-                string.Format(
-                    ValidationAttributeOverrideBothIsValids.PublicErrorMessageTestPropertyWithName,
-                    "Error Message Name"),
-                attribute.FormatErrorMessage("Error Message Name"));
+            attribute.ErrorMessageResourceName = resourceName;
+            attribute.ErrorMessageResourceType = resourceType;
+            Assert.Throws<InvalidOperationException>(() => attribute.FormatErrorMessage("Name to put in error message does not matter"));
         }
 
         // Validate_object_string_throws_exception_with_ValidationResult_ErrorMessage_matching_ErrorMessage_passed_in
@@ -386,6 +356,18 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 get { return "Error Message from PublicErrorMessageTestProperty With Name <{0}>"; }
             }
+
+            public string GetSetProperty { get; set; }
+            public string GetOnlyProperty { get; }
+            public string SetOnlyProperty { set { } }
+
+            public static string StaticSetOnlyProperty { set { } }
+            public static int StaticIntProperty { get; set; }
+
+            private static string StaticPrivateProperty { get; set; } = "ErrorMessage";
+            private static string StaticProtectedProperty { get; set; } = "ErrorMessage";
+            internal static string StaticInternalProperty { get; set; } = "ErrorMessage";
+            protected internal static string StaticProtectedInternalProperty { get; set; } = "ErrorMessage";
 
             public override bool IsValid(object value)
             {

@@ -6,6 +6,9 @@ using System;
 using System.Collections.Generic;
 
 #if ES_BUILD_STANDALONE
+using System.Runtime.InteropServices;
+using System.Security;
+
 namespace Microsoft.Diagnostics.Tracing.Internal
 #else
 namespace System.Diagnostics.Tracing.Internal
@@ -325,13 +328,10 @@ namespace Microsoft.Reflection
 }
 
 #if ES_BUILD_STANDALONE
-namespace Microsoft.Win32
+internal static partial class Interop
 {
-    using System.Runtime.InteropServices;
-    using System.Security;
-
     [SuppressUnmanagedCodeSecurityAttribute()]
-    internal static class Win32Native
+    internal static partial class Kernel32
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         public static extern int GetCurrentThreadId();

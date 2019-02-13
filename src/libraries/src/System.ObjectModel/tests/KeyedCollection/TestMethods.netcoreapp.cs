@@ -39,8 +39,7 @@ namespace System.Collections.ObjectModel.Tests
             if (keyNotIn == null)
             {
                 IKeyedItem<TKey, TValue> item;
-                Assert.Throws<ArgumentNullException>(
-                    () => collection.TryGetValue(keyNotIn, out item));
+                AssertExtensions.Throws<ArgumentNullException>("key", () => collection.TryGetValue(keyNotIn, out item));
             }
             else
             {
@@ -53,8 +52,7 @@ namespace System.Collections.ObjectModel.Tests
                 TKey key = k;
                 if (key == null)
                 {
-                    Assert.Throws<ArgumentNullException>(
-                        () => collection.TryGetValue(key, out item));
+                    AssertExtensions.Throws<ArgumentNullException>("key", () => collection.TryGetValue(key, out item));
                     continue;
                 }
                 Assert.True(collection.TryGetValue(key, out item));

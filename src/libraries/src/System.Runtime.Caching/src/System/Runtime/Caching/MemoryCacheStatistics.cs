@@ -267,9 +267,8 @@ namespace System.Runtime.Caching
                 {
                     return 0;
                 }
-#if DEBUG
                 Dbg.Trace("MemoryCacheStats", "**BEG** CacheManagerThread " + DateTime.Now.ToString("T", CultureInfo.InvariantCulture));
-#endif
+      
                 // The timer thread must always call Update so that the CacheManager
                 // knows the size of the cache.
                 Update();
@@ -287,13 +286,11 @@ namespace System.Runtime.Caching
                     SetTrimStats(sw.Elapsed.Ticks, beginTotalCount, trimmedOrExpired);
                 }
 
-#if DEBUG
                 Dbg.Trace("MemoryCacheStats", "**END** CacheManagerThread: "
                             + ", percent=" + percent
                             + ", beginTotalCount=" + beginTotalCount
                             + ", trimmed=" + trimmedOrExpired
                             + ", Milliseconds=" + sw.ElapsedMilliseconds);
-#endif
 
 #if PERF
                 Debug.WriteLine("CacheCommon.CacheManagerThread:"
@@ -301,7 +298,7 @@ namespace System.Runtime.Caching
                                                     + ", percent= " + percent
                                                     + ", beginTotalCount=" + beginTotalCount
                                                     + ", trimmed=" + trimmedOrExpired
-                                                    + ", Milliseconds=" + sw.ElapsedMilliseconds + "\n");
+                                                    + ", Milliseconds=" + sw.ElapsedMilliseconds + Environment.NewLine);
 #endif
                 return trimmedOrExpired;
             }

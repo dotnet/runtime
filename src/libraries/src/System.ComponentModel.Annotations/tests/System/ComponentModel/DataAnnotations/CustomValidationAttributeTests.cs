@@ -35,11 +35,14 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         protected override IEnumerable<TestCase> InvalidValues()
         {
+            yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArg)), null);
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArg)), new TestClass("AnyString"));
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodTwoArgs)), "AnyString");
 
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgStronglyTyped)), new TestClass("AnyString"));
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodTwoArgsStronglyTyped)), "AnyString");
+
+            yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgGenericStruct)), null);
 
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgNullable)), new TestStruct());
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodTwoArgsWithFirstNullable)), new TestStruct() { Value = "Invalid Value" });
@@ -47,6 +50,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodIntegerArg)), null);
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodIntegerArg)), new TestClass("NotInt"));
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodIntegerArg)), new DateTime(2014, 3, 19));
+            yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgDateTime)), null);
             yield return new TestCase(GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArgDateTime)), "abcdef");
 
             // Implements IConvertible (throws NotSupportedException - is caught)
@@ -62,7 +66,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [InlineData(null, null)]
         [InlineData(typeof(string), "")]
         [InlineData(typeof(int), " \t\r\n")]
-        public static void Constructor(Type validatorType, string method)
+        public static void Ctor_Type_String(Type validatorType, string method)
         {
             CustomValidationAttribute attribute = new CustomValidationAttribute(validatorType, method);
             Assert.Equal(validatorType, attribute.ValidatorType);
@@ -123,6 +127,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new object[] { typeof(CustomValidator), nameof(CustomValidator.ValidationMethodWithNoArgs) };
             yield return new object[] { typeof(CustomValidator), nameof(CustomValidator.ValidationMethodWithByRefArg) };
             yield return new object[] { typeof(CustomValidator), nameof(CustomValidator.ValidationMethodTwoArgsButSecondIsNotValidationContext) };
+            yield return new object[] { typeof(CustomValidator), nameof(CustomValidator.ValidationMethodThreeArgs) };
         }
 
         [Theory]
@@ -234,6 +239,11 @@ namespace System.ComponentModel.DataAnnotations.Tests
                 return new ValidationResult("Validation failed - neither null nor Value=\"Valid Value\"");
             }
 
+            public static ValidationResult CorrectValidationMethodOneArgGenericStruct(GenericStruct<int> testStruct)
+            {
+                return ValidationResult.Success;
+            }
+
             public static ValidationResult CorrectValidationMethodTwoArgsWithFirstNullable(TestStruct? testStruct, ValidationContext context)
             {
                 if (testStruct == null) { return ValidationResult.Success; }
@@ -260,5 +270,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         {
             public string Value { get; set; }
         }
+
+        public struct GenericStruct<T> { }
     }
 }

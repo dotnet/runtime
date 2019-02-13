@@ -49,14 +49,23 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         [Theory]
         [InlineData(typeof(FakeResourceType), "Resource3")]
+        [InlineData(typeof(FakeResourceType), nameof(FakeResourceType.IntProperty))]
         [InlineData(typeof(FakeResourceType), nameof(FakeResourceType.InstanceProperty))]
+        [InlineData(typeof(FakeResourceType), "PrivateInstanceProperty")]
+        [InlineData(typeof(FakeResourceType), "ProtectedInstanceProperty")]
+        [InlineData(typeof(FakeResourceType), nameof(FakeResourceType.InternalInstanceProperty))]
+        [InlineData(typeof(FakeResourceType), nameof(FakeResourceType.ProtectedInternalInstanceProperty))]
         [InlineData(typeof(FakeResourceType), nameof(FakeResourceType.SetOnlyProperty))]
+        [InlineData(typeof(FakeResourceType), nameof(FakeResourceType.PrivateGetProperty))]
         [InlineData(typeof(FakeResourceType), "NonPublicGetProperty")]
         [InlineData(typeof(string), "foo")]
         public void GetNullDisplayText_InvalidResourceType_ThrowsInvalidOperationException(Type nullDisplayTextResourceType, string nullDisplayText)
         {
-            var attribute = new DisplayFormatAttribute { NullDisplayTextResourceType = nullDisplayTextResourceType };
-            attribute.NullDisplayText = nullDisplayText;
+            var attribute = new DisplayFormatAttribute
+            {
+                NullDisplayTextResourceType = nullDisplayTextResourceType,
+                NullDisplayText = nullDisplayText
+            };
             Assert.Throws<InvalidOperationException>(() => attribute.GetNullDisplayText());
         }
 
@@ -75,8 +84,16 @@ namespace System.ComponentModel.DataAnnotations.Tests
             public static string Resource2 => "Resource2Text";
 
             public string InstanceProperty => "InstanceProperty";
+            private string PrivateInstanceProperty => "InstanceProperty";
+            protected string ProtectedInstanceProperty => "InstanceProperty";
+            protected internal string ProtectedInternalInstanceProperty => "InstanceProperty";
+            internal string InternalInstanceProperty => "InstanceProperty";
+
             public static string SetOnlyProperty { set => Assert.NotNull(value); }
+            public string PrivateGetProperty { private get; set; }
             private static string NonPublicGetProperty => "NonPublicGetProperty";
+
+            public static int IntProperty { get; set; }
         }
     }
 }

@@ -24,12 +24,14 @@
     <Compile Include="System\IO\Pipelines\PipeWriter.cs" />
     <Compile Include="System\IO\Pipelines\ReadResult.cs" />
     <Compile Include="System\IO\Pipelines\ResultFlags.cs" />
+    <Compile Include="System\IO\Pipelines\StreamPipeExtensions.cs" />
     <Compile Include="System\IO\Pipelines\ThrowHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+    <Compile Include="System\IO\Pipelines\StreamExtensions.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
   </ItemGroup>
@@ -43,6 +45,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks.Extensions" />
+    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 </Project>

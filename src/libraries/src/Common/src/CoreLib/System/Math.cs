@@ -892,7 +892,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
             }
 
-            if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
+            if (mode < MidpointRounding.ToEven || mode > MidpointRounding.ToPositiveInfinity)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
             }
@@ -903,20 +903,52 @@ namespace System
 
                 value *= power10;
 
-                if (mode == MidpointRounding.AwayFromZero)
+                switch (mode)
                 {
-                    var fraction = ModF(value, &value);
-
-                    if (Abs(fraction) >= 0.5)
+                    // Rounds to the nearest value; if the number falls midway,
+                    // it is rounded to the nearest value with an even least significant digit
+                    case MidpointRounding.ToEven:
                     {
-                        value += Sign(fraction);
+                        value = Round(value);
+                        break;
+                    }
+                    // Rounds to the nearest value; if the number falls midway,
+                    // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
+                    case MidpointRounding.AwayFromZero:
+                    {
+                        double fraction = ModF(value, &value);
+
+                        if (Abs(fraction) >= 0.5)
+                        {
+                            value += Sign(fraction);
+                        }
+
+                        break;
+                    }
+                    // Directed rounding: Round to the nearest value, toward to zero
+                    case MidpointRounding.ToZero:
+                    {
+                        value = Truncate(value);
+                        break;
+                    }
+                    // Directed Rounding: Round down to the next value, toward negative infinity
+                    case MidpointRounding.ToNegativeInfinity:
+                    {
+                        value = Floor(value);
+                        break;
+                    }
+                    // Directed rounding: Round up to the next value, toward positive infinity
+                    case MidpointRounding.ToPositiveInfinity:
+                    {  
+                        value = Ceiling(value);
+                        break;
+                    }
+                    default:
+                    {
+                        throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
                     }
                 }
-                else
-                {
-                    value = Round(value);
-                }
-
+                
                 value /= power10;
             }
 

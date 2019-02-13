@@ -1,2 +1,5 @@
 MembersMustExist : Member 'System.String System.Runtime.CompilerServices.RuntimeFeature.DefaultImplementationsOfInterfaces' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MidpointRounding System.MidpointRounding.ToNegativeInfinity' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MidpointRounding System.MidpointRounding.ToPositiveInfinity' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MidpointRounding System.MidpointRounding.ToZero' does not exist in the implementation but it does exist in the contract.

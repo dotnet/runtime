@@ -14,6 +14,10 @@
     -->
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
 
+    <!-- We use the compiler toolset that comes from NuGet Packages rather than the SDK built-in.
+    This one sets UseSharedCompilation to false by default. -->
+    <UseSharedCompilation>true</UseSharedCompilation>
+
     <ToolSetCommonDirectory>$(MSBuildThisFileDirectory)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))">true</IsSourceProject>
   </PropertyGroup>
@@ -166,16 +170,6 @@
     </RestoreSources>
   </PropertyGroup>
 
-  <!--
-    Add all the RestoreSources to the OptionalRestoreSource items as well so any
-    common package references can correctly be resolved as well.
-  -->
-  <ItemGroup>
-    <OptionalRestoreSource Include="$(RestoreSources)">
-      <Uri>%(Identity)</Uri>
-    </OptionalRestoreSource>
-  </ItemGroup>
-
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
@@ -307,7 +301,9 @@
 
   <!-- Language configuration -->
   <PropertyGroup>
-    <LangVersion>latest</LangVersion> <!-- default to allowing all language features -->
+    <!-- default to allowing all language features -->
+    <LangVersion>latest</LangVersion>
+    <LangVersion Condition="'$(Language)' == 'C#'">8.0</LangVersion>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict</Features>
     <WarningLevel>4</WarningLevel>
@@ -433,10 +429,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <OptionalToolingProjectPath>$(ProjectDir)\external\test-runtime\optional.csproj</OptionalToolingProjectPath>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
     <SkipTests Condition="'$(SkipTests)' == '' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
 
@@ -477,4 +469,9 @@
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' AND '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
+
+  <!-- Import the Roslyn Compiler Toolset props -->
+  <Import Project="$(PkgMicrosoft_Net_Compilers)/build/Microsoft.Net.Compilers.props" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <Import Project="$(PkgMicrosoft_NETCore_Compilers)/build/Microsoft.NETCore.Compilers.props" Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+
 </Project>

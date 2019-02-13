@@ -38,7 +38,9 @@ namespace System.IO.Pipelines.Tests
 
             ReadResult result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
             SequencePosition consumed = result.Buffer.GetPosition(31);
-            Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(consumed, result.Buffer.End));
+
+            var exception = Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(consumed, result.Buffer.End));
+            Assert.Contains("32", exception.Message);
 
             _pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
         }
@@ -55,7 +57,9 @@ namespace System.IO.Pipelines.Tests
 
             // Examine to the end without releasing backpressure
             var result = await _pipe.Reader.ReadAsync();
-            Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.End));
+
+            var exception = Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.End));
+            Assert.Contains("32", exception.Message);
         }
 
         [Fact]

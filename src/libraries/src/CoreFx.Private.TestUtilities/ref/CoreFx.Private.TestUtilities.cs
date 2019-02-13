@@ -163,6 +163,7 @@ namespace System.Diagnostics
         public static System.Diagnostics.RemoteExecutorTestBase.RemoteInvokeHandle RemoteInvoke(System.Func<System.Threading.Tasks.Task<int>> method, System.Diagnostics.RemoteInvokeOptions options = null) { throw null; }
         public static System.Diagnostics.RemoteExecutorTestBase.RemoteInvokeHandle RemoteInvoke(System.Func<string, System.Threading.Tasks.Task<int>> method, string arg, System.Diagnostics.RemoteInvokeOptions options = null) { throw null; }
         public static System.Diagnostics.RemoteExecutorTestBase.RemoteInvokeHandle RemoteInvoke(System.Func<string, string, System.Threading.Tasks.Task<int>> method, string arg1, string arg2, System.Diagnostics.RemoteInvokeOptions options = null) { throw null; }
+        public static System.Diagnostics.RemoteExecutorTestBase.RemoteInvokeHandle RemoteInvoke(System.Func<string, string, string, System.Threading.Tasks.Task<int>> method, string arg1, string arg2, string arg3, System.Diagnostics.RemoteInvokeOptions options = null) { throw null; }
         public static System.Diagnostics.RemoteExecutorTestBase.RemoteInvokeHandle RemoteInvokeRaw(System.Delegate method, string unparsedArg, System.Diagnostics.RemoteInvokeOptions options = null) { throw null; }
         public sealed partial class RemoteInvokeHandle : System.IDisposable
         {

@@ -11,6 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BackpressureTests.cs" />
+    <Compile Include="PipeReaderCopyToAsyncTests.cs" />
     <Compile Include="FlushAsyncCancellationTests.cs" />
     <Compile Include="FlushAsyncCompletionTests.cs" />
     <Compile Include="FlushAsyncTests.cs" />
@@ -21,6 +22,7 @@
     <Compile Include="PipePoolTests.cs" />
     <Compile Include="PipeResetTests.cs" />
     <Compile Include="PipeTest.cs" />
+    <Compile Include="PipeWriterCopyToAsyncTests.cs" />
     <Compile Include="PipeWriterTests.cs" />
     <Compile Include="ReadAsyncCancellationTests.cs" />
     <Compile Include="ReadAsyncCompletionTests.cs" />
@@ -32,5 +34,6 @@
     <Compile Include="PipeLengthTests.cs" />
     <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />
     <Compile Include="PipeResetTests.nonnetstandard.cs" />
+    <Compile Include="PipePoolTests.nonnetstandard.cs" />
   </ItemGroup>
 </Project>
