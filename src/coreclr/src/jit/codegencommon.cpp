@@ -10610,21 +10610,9 @@ void CodeGen::genSetScopeInfo()
             endOffs++;
         }
 
-        Compiler::siVarLoc varLoc;
+        siVarLoc varLoc = scopeP->getSiVarLoc();
 
-        if (scopeP->scRegister)
-        {
-            varLoc.vlType       = Compiler::VLT_REG;
-            varLoc.vlReg.vlrReg = (regNumber)scopeP->u1.scRegNum;
-        }
-        else
-        {
-            varLoc.vlType           = Compiler::VLT_STK;
-            varLoc.vlStk.vlsBaseReg = (regNumber)scopeP->u2.scBaseReg;
-            varLoc.vlStk.vlsOffset  = scopeP->u2.scOffset;
-        }
-
-        genSetScopeInfo(i, startOffs, endOffs - startOffs, varNum, scopeP->scLVnum, true, varLoc);
+        genSetScopeInfo(i, startOffs, endOffs - startOffs, varNum, scopeP->scLVnum, true, &varLoc);
     }
 
     // Record the scopes for the rest of the method.
@@ -10646,186 +10634,11 @@ void CodeGen::genSetScopeInfo()
 
         noway_assert(scopeL->scStartLoc != scopeL->scEndLoc);
 
-        // For stack vars, find the base register, and offset
-
-        regNumber baseReg;
-        signed    offset = compiler->lvaTable[scopeL->scVarNum].lvStkOffs;
-
-        if (!compiler->lvaTable[scopeL->scVarNum].lvFramePointerBased)
-        {
-            baseReg = REG_SPBASE;
-            offset += scopeL->scStackLevel;
-        }
-        else
-        {
-            baseReg = REG_FPBASE;
-        }
-
-        // Now fill in the varLoc
-
-        Compiler::siVarLoc varLoc;
-
-        // TODO-Review: This only works for always-enregistered variables. With LSRA, a variable might be in a register
-        // for part of its lifetime, or in different registers for different parts of its lifetime.
-        // This should only matter for non-debug code, where we do variable enregistration.
-        // We should store the ranges of variable enregistration in the scope table.
-        if (compiler->lvaTable[scopeL->scVarNum].lvIsInReg())
-        {
-            var_types type = genActualType(compiler->lvaTable[scopeL->scVarNum].TypeGet());
-            switch (type)
-            {
-                case TYP_INT:
-                case TYP_REF:
-                case TYP_BYREF:
-#ifdef _TARGET_64BIT_
-                case TYP_LONG:
-#endif // _TARGET_64BIT_
-
-                    varLoc.vlType       = Compiler::VLT_REG;
-                    varLoc.vlReg.vlrReg = compiler->lvaTable[scopeL->scVarNum].lvRegNum;
-                    break;
-
-#ifndef _TARGET_64BIT_
-                case TYP_LONG:
-#if !CPU_HAS_FP_SUPPORT
-                case TYP_DOUBLE:
-#endif
-
-                    if (compiler->lvaTable[scopeL->scVarNum].lvOtherReg != REG_STK)
-                    {
-                        varLoc.vlType            = Compiler::VLT_REG_REG;
-                        varLoc.vlRegReg.vlrrReg1 = compiler->lvaTable[scopeL->scVarNum].lvRegNum;
-                        varLoc.vlRegReg.vlrrReg2 = compiler->lvaTable[scopeL->scVarNum].lvOtherReg;
-                    }
-                    else
-                    {
-                        varLoc.vlType                        = Compiler::VLT_REG_STK;
-                        varLoc.vlRegStk.vlrsReg              = compiler->lvaTable[scopeL->scVarNum].lvRegNum;
-                        varLoc.vlRegStk.vlrsStk.vlrssBaseReg = baseReg;
-                        if (!isFramePointerUsed() && varLoc.vlRegStk.vlrsStk.vlrssBaseReg == REG_SPBASE)
-                        {
-                            varLoc.vlRegStk.vlrsStk.vlrssBaseReg = (regNumber)ICorDebugInfo::REGNUM_AMBIENT_SP;
-                        }
-                        varLoc.vlRegStk.vlrsStk.vlrssOffset = offset + sizeof(int);
-                    }
-                    break;
-#endif // !_TARGET_64BIT_
-
-#ifdef _TARGET_64BIT_
-
-                case TYP_FLOAT:
-                case TYP_DOUBLE:
-                    // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-                    // so no XMM registers can get debug information.
-                    varLoc.vlType       = Compiler::VLT_REG_FP;
-                    varLoc.vlReg.vlrReg = compiler->lvaTable[scopeL->scVarNum].lvRegNum;
-                    break;
-
-#else // !_TARGET_64BIT_
-
-#if CPU_HAS_FP_SUPPORT
-                case TYP_FLOAT:
-                case TYP_DOUBLE:
-                    if (isFloatRegType(type))
-                    {
-                        varLoc.vlType         = Compiler::VLT_FPSTK;
-                        varLoc.vlFPstk.vlfReg = compiler->lvaTable[scopeL->scVarNum].lvRegNum;
-                    }
-                    break;
-#endif // CPU_HAS_FP_SUPPORT
-
-#endif // !_TARGET_64BIT_
-
-#ifdef FEATURE_SIMD
-                case TYP_SIMD8:
-                case TYP_SIMD12:
-                case TYP_SIMD16:
-                case TYP_SIMD32:
-                    varLoc.vlType = Compiler::VLT_REG_FP;
-
-                    // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-                    // so no XMM registers can get debug information.
-                    //
-                    // Note: Need to initialize vlrReg field, otherwise during jit dump hitting an assert
-                    // in eeDispVar() --> getRegName() that regNumber is valid.
-                    varLoc.vlReg.vlrReg = compiler->lvaTable[scopeL->scVarNum].lvRegNum;
-                    break;
-#endif // FEATURE_SIMD
-
-                default:
-                    noway_assert(!"Invalid type");
-            }
-        }
-        else
-        {
-            assert(offset != BAD_STK_OFFS);
-            LclVarDsc* varDsc = compiler->lvaTable + scopeL->scVarNum;
-            switch (genActualType(varDsc->TypeGet()))
-            {
-                case TYP_INT:
-                case TYP_REF:
-                case TYP_BYREF:
-                case TYP_FLOAT:
-                case TYP_STRUCT:
-                case TYP_BLK: // Needed because of the TYP_BLK stress mode
-#ifdef FEATURE_SIMD
-                case TYP_SIMD8:
-                case TYP_SIMD12:
-                case TYP_SIMD16:
-                case TYP_SIMD32:
-#endif
-#ifdef _TARGET_64BIT_
-                case TYP_LONG:
-                case TYP_DOUBLE:
-#endif // _TARGET_64BIT_
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
-                    // In the AMD64 ABI we are supposed to pass a struct by reference when its
-                    // size is not 1, 2, 4 or 8 bytes in size. During fgMorph, the compiler modifies
-                    // the IR to comply with the ABI and therefore changes the type of the lclVar
-                    // that holds the struct from TYP_STRUCT to TYP_BYREF but it gives us a hint that
-                    // this is still a struct by setting the lvIsTemp flag.
-                    // The same is true for ARM64 and structs > 16 bytes.
-                    // (See Compiler::fgMarkImplicitByRefArgs in Morph.cpp for further detail)
-                    // Now, the VM expects a special enum for these type of local vars: VLT_STK_BYREF
-                    // to accomodate for this situation.
-                    if (varDsc->lvType == TYP_BYREF && varDsc->lvIsTemp)
-                    {
-                        assert(varDsc->lvIsParam);
-                        varLoc.vlType = Compiler::VLT_STK_BYREF;
-                    }
-                    else
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
-                    {
-                        varLoc.vlType = Compiler::VLT_STK;
-                    }
-                    varLoc.vlStk.vlsBaseReg = baseReg;
-                    varLoc.vlStk.vlsOffset  = offset;
-                    if (!isFramePointerUsed() && varLoc.vlStk.vlsBaseReg == REG_SPBASE)
-                    {
-                        varLoc.vlStk.vlsBaseReg = (regNumber)ICorDebugInfo::REGNUM_AMBIENT_SP;
-                    }
-                    break;
-
-#ifndef _TARGET_64BIT_
-                case TYP_LONG:
-                case TYP_DOUBLE:
-                    varLoc.vlType             = Compiler::VLT_STK2;
-                    varLoc.vlStk2.vls2BaseReg = baseReg;
-                    varLoc.vlStk2.vls2Offset  = offset;
-                    if (!isFramePointerUsed() && varLoc.vlStk2.vls2BaseReg == REG_SPBASE)
-                    {
-                        varLoc.vlStk2.vls2BaseReg = (regNumber)ICorDebugInfo::REGNUM_AMBIENT_SP;
-                    }
-                    break;
-#endif // !_TARGET_64BIT_
-
-                default:
-                    noway_assert(!"Invalid type");
-            }
-        }
+        LclVarDsc* varDsc = compiler->lvaGetDesc(scopeL->scVarNum);
+        siVarLoc   varLoc = getSiVarLoc(varDsc, scopeL);
 
         genSetScopeInfo(psiScopeCnt + i, startOffs, endOffs - startOffs, scopeL->scVarNum, scopeL->scLVnum,
-                        scopeL->scAvailable, varLoc);
+                        scopeL->scAvailable, &varLoc);
     }
 
     compiler->eeSetLVdone();
@@ -10840,19 +10653,19 @@ void CodeGen::genSetScopeInfo()
 //    length    - the length of this scope
 //    varNum    - the lclVar for this scope info
 //    LVnum
-//    avail
-//    varLoc
+//    avail     - a bool indicating if it has a home
+//    varLoc    - the position (reg or stack) of the variable
 //
 // Notes:
 //    Called for every scope info piece to record by the main genSetScopeInfo()
 
-void CodeGen::genSetScopeInfo(unsigned            which,
-                              UNATIVE_OFFSET      startOffs,
-                              UNATIVE_OFFSET      length,
-                              unsigned            varNum,
-                              unsigned            LVnum,
-                              bool                avail,
-                              Compiler::siVarLoc& varLoc)
+void CodeGen::genSetScopeInfo(unsigned       which,
+                              UNATIVE_OFFSET startOffs,
+                              UNATIVE_OFFSET length,
+                              unsigned       varNum,
+                              unsigned       LVnum,
+                              bool           avail,
+                              siVarLoc*      varLoc)
 {
     // We need to do some mapping while reporting back these variables.
 
@@ -10868,7 +10681,7 @@ void CodeGen::genSetScopeInfo(unsigned            which,
     if (compiler->info.compIsVarArgs && varNum != compiler->lvaVarargsHandleArg &&
         varNum < compiler->info.compArgsCount && !compiler->lvaTable[varNum].lvIsRegArg)
     {
-        noway_assert(varLoc.vlType == Compiler::VLT_STK || varLoc.vlType == Compiler::VLT_STK2);
+        noway_assert(varLoc->vlType == VLT_STK || varLoc->vlType == VLT_STK2);
 
         // All stack arguments (except the varargs handle) have to be
         // accessed via the varargs cookie. Discard generated info,
@@ -10893,8 +10706,8 @@ void CodeGen::genSetScopeInfo(unsigned            which,
         noway_assert(offset < stkArgSize);
         offset = stkArgSize - offset;
 
-        varLoc.vlType                   = Compiler::VLT_FIXED_VA;
-        varLoc.vlFixedVarArg.vlfvOffset = offset;
+        varLoc->vlType                   = VLT_FIXED_VA;
+        varLoc->vlFixedVarArg.vlfvOffset = offset;
     }
 
 #endif // _TARGET_X86_
@@ -10921,7 +10734,7 @@ void CodeGen::genSetScopeInfo(unsigned            which,
     tlvi.tlviStartPC   = startOffs;
     tlvi.tlviLength    = length;
     tlvi.tlviAvailable = avail;
-    tlvi.tlviVarLoc    = varLoc;
+    tlvi.tlviVarLoc    = *varLoc;
 
 #endif // DEBUG
 
