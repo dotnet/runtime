@@ -10,5 +10,6 @@ internal static partial class Interop
         internal const string User32   = "libcoreclr";
         internal const string Ole32    = "libcoreclr";
         internal const string OleAut32 = "libcoreclr";
+        internal const string Advapi32 = "libcoreclr";
     }
 }

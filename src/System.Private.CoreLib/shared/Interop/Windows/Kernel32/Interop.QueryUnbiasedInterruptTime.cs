@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool GetVersionExW(ref OSVERSIONINFOEX osvi);
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static extern bool QueryUnbiasedInterruptTime(out ulong UnbiasedTime);
     }
 }

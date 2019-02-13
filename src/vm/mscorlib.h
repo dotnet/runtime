@@ -491,6 +491,7 @@ DEFINE_METHOD(MARSHAL,              GET_HR_FOR_EXCEPTION_WINRT,        GetHRForE
 DEFINE_METHOD(MARSHAL,              GET_FUNCTION_POINTER_FOR_DELEGATE, GetFunctionPointerForDelegate, SM_Delegate_RetIntPtr)
 DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER, GetDelegateForFunctionPointer, SM_IntPtr_Type_RetDelegate)
 DEFINE_METHOD(MARSHAL,              ALLOC_CO_TASK_MEM,                 AllocCoTaskMem,                SM_Int_RetIntPtr)
+DEFINE_METHOD(MARSHAL,              FREE_CO_TASK_MEM,                  FreeCoTaskMem,                 SM_IntPtr_RetVoid)
 DEFINE_FIELD(MARSHAL,               SYSTEM_MAX_DBCS_CHAR_SIZE,         SystemMaxDBCSCharSize)
 
 DEFINE_CLASS(NATIVELIBRARY, Interop, NativeLibrary)
@@ -1147,10 +1148,6 @@ DEFINE_METHOD(ASANY_MARSHALER,           CONVERT_TO_MANAGED,          ConvertToM
 DEFINE_METHOD(ASANY_MARSHALER,           CLEAR_NATIVE,                ClearNative,                IM_IntPtr_RetVoid)
 
 DEFINE_CLASS(NATIVEVARIANT,         StubHelpers,            NativeVariant)
-
-DEFINE_CLASS(WIN32NATIVE,           Win32,                  Win32Native)
-DEFINE_METHOD(WIN32NATIVE,          COTASKMEMALLOC,         CoTaskMemAlloc,         SM_UIntPtr_RetIntPtr)
-DEFINE_METHOD(WIN32NATIVE,          COTASKMEMFREE,          CoTaskMemFree,          SM_IntPtr_RetVoid)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(IITERABLE,              WinRT,                 IIterable`1)
