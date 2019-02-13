@@ -13,33 +13,33 @@ namespace System.Net.NetworkInformation
     /// </summary>
     internal struct Icmpv4StatisticsTable
     {
-        public int InMsgs;
-        public int InErrors;
-        public int InCsumErrors;
-        public int InDestUnreachs;
-        public int InTimeExcds;
-        public int InParmProbs;
-        public int InSrcQuenchs;
-        public int InRedirects;
-        public int InEchos;
-        public int InEchoReps;
-        public int InTimestamps;
-        public int InTimeStampReps;
-        public int InAddrMasks;
-        public int InAddrMaskReps;
-        public int OutMsgs;
-        public int OutErrors;
-        public int OutDestUnreachs;
-        public int OutTimeExcds;
-        public int OutParmProbs;
-        public int OutSrcQuenchs;
-        public int OutRedirects;
-        public int OutEchos;
-        public int OutEchoReps;
-        public int OutTimestamps;
-        public int OutTimestampReps;
-        public int OutAddrMasks;
-        public int OutAddrMaskReps;
+        public long InMsgs;
+        public long InErrors;
+        public long InCsumErrors;
+        public long InDestUnreachs;
+        public long InTimeExcds;
+        public long InParmProbs;
+        public long InSrcQuenchs;
+        public long InRedirects;
+        public long InEchos;
+        public long InEchoReps;
+        public long InTimestamps;
+        public long InTimeStampReps;
+        public long InAddrMasks;
+        public long InAddrMaskReps;
+        public long OutMsgs;
+        public long OutErrors;
+        public long OutDestUnreachs;
+        public long OutTimeExcds;
+        public long OutParmProbs;
+        public long OutSrcQuenchs;
+        public long OutRedirects;
+        public long OutEchos;
+        public long OutEchoReps;
+        public long OutTimestamps;
+        public long OutTimestampReps;
+        public long OutAddrMasks;
+        public long OutAddrMaskReps;
     }
 
     /// <summary>
@@ -48,68 +48,68 @@ namespace System.Net.NetworkInformation
     /// </summary>
     internal struct Icmpv6StatisticsTable
     {
-        public int InDestUnreachs;
-        public int OutDestUnreachs;
-        public int InEchoReplies;
-        public int InEchos;
-        public int OutEchoReplies;
-        public int OutEchos;
-        public int InErrors;
-        public int OutErrors;
-        public int InGroupMembQueries;
-        public int OutInGroupMembQueries;
-        public int InGroupMembReductions;
-        public int OutGroupMembReductions;
-        public int InGroupMembResponses;
-        public int OutGroupMembResponses;
-        public int InMsgs;
-        public int OutMsgs;
-        public int InNeighborAdvertisements;
-        public int OutNeighborAdvertisements;
-        public int InNeighborSolicits;
-        public int OutNeighborSolicits;
-        public int InPktTooBigs;
-        public int OutPktTooBigs;
-        public int InParmProblems;
-        public int OutParmProblems;
-        public int InRedirects;
-        public int OutRedirects;
-        public int InRouterSolicits;
-        public int OutRouterSolicits;
-        public int InRouterAdvertisements;
-        public int OutRouterAdvertisements;
-        public int InTimeExcds;
-        public int OutTimeExcds;
+        public long InDestUnreachs;
+        public long OutDestUnreachs;
+        public long InEchoReplies;
+        public long InEchos;
+        public long OutEchoReplies;
+        public long OutEchos;
+        public long InErrors;
+        public long OutErrors;
+        public long InGroupMembQueries;
+        public long OutInGroupMembQueries;
+        public long InGroupMembReductions;
+        public long OutGroupMembReductions;
+        public long InGroupMembResponses;
+        public long OutGroupMembResponses;
+        public long InMsgs;
+        public long OutMsgs;
+        public long InNeighborAdvertisements;
+        public long OutNeighborAdvertisements;
+        public long InNeighborSolicits;
+        public long OutNeighborSolicits;
+        public long InPktTooBigs;
+        public long OutPktTooBigs;
+        public long InParmProblems;
+        public long OutParmProblems;
+        public long InRedirects;
+        public long OutRedirects;
+        public long InRouterSolicits;
+        public long OutRouterSolicits;
+        public long InRouterAdvertisements;
+        public long OutRouterAdvertisements;
+        public long InTimeExcds;
+        public long OutTimeExcds;
     }
 
     internal struct TcpGlobalStatisticsTable
     {
-        public int RtoAlgorithm;
-        public int RtoMin;
-        public int RtoMax;
-        public int MaxConn;
-        public int ActiveOpens;
-        public int PassiveOpens;
-        public int AttemptFails;
-        public int EstabResets;
-        public int CurrEstab;
-        public int InSegs;
-        public int OutSegs;
-        public int RetransSegs;
-        public int InErrs;
-        public int OutRsts;
-        public int InCsumErrors;
+        public long RtoAlgorithm;
+        public long RtoMin;
+        public long RtoMax;
+        public long MaxConn;
+        public long ActiveOpens;
+        public long PassiveOpens;
+        public long AttemptFails;
+        public long EstabResets;
+        public long CurrEstab;
+        public long InSegs;
+        public long OutSegs;
+        public long RetransSegs;
+        public long InErrs;
+        public long OutRsts;
+        public long InCsumErrors;
     }
 
     internal struct UdpGlobalStatisticsTable
     {
-        public int InDatagrams;
-        public int NoPorts;
-        public int InErrors;
-        public int OutDatagrams;
-        public int RcvbufErrors;
-        public int SndbufErrors;
-        public int InCsumErrors;
+        public long InDatagrams;
+        public long NoPorts;
+        public long InErrors;
+        public long OutDatagrams;
+        public long RcvbufErrors;
+        public long SndbufErrors;
+        public long InCsumErrors;
     }
 
     /// <summary>
@@ -126,26 +126,26 @@ namespace System.Net.NetworkInformation
         public bool Forwarding; // Forwarding
         public int DefaultTtl; // DefaultTTL
 
-        public int InReceives; // InReceives
-        public int InHeaderErrors; // InHdrErrors
-        public int InAddressErrors; // InAddrErrors
-        public int ForwardedDatagrams; // ForwDatagrams (IP6OutForwDatagrams)
-        public int InUnknownProtocols; // InUnknownProtos
-        public int InDiscards; // InDiscards
-        public int InDelivers; // InDelivers
+        public long InReceives; // InReceives
+        public long InHeaderErrors; // InHdrErrors
+        public long InAddressErrors; // InAddrErrors
+        public long ForwardedDatagrams; // ForwDatagrams (IP6OutForwDatagrams)
+        public long InUnknownProtocols; // InUnknownProtos
+        public long InDiscards; // InDiscards
+        public long InDelivers; // InDelivers
 
-        public int OutRequests; // OutRequestscat 
-        public int OutDiscards; // OutDiscards
-        public int OutNoRoutes; // OutNoRoutes
+        public long OutRequests; // OutRequestscat
+        public long OutDiscards; // OutDiscards
+        public long OutNoRoutes; // OutNoRoutes
 
-        public int ReassemblyTimeout; // ReasmTimeout
-        public int ReassemblyRequireds; // ReasmReqds
-        public int ReassemblyOKs; // ReasmOKs
-        public int ReassemblyFails; // ReasmFails
+        public long ReassemblyTimeout; // ReasmTimeout
+        public long ReassemblyRequireds; // ReasmReqds
+        public long ReassemblyOKs; // ReasmOKs
+        public long ReassemblyFails; // ReasmFails
 
-        public int FragmentOKs; // FragOKs
-        public int FragmentFails; // FragFails
-        public int FragmentCreates; // FragCreates
+        public long FragmentOKs; // FragOKs
+        public long FragmentFails; // FragFails
+        public long FragmentCreates; // FragCreates
     }
 
     internal struct IPInterfaceStatisticsTable
@@ -188,33 +188,33 @@ namespace System.Net.NetworkInformation
 
             return new Icmpv4StatisticsTable()
             {
-                InMsgs = parser.ParseNextInt32(),
-                InErrors = parser.ParseNextInt32(),
-                InCsumErrors = inCsumErrorsIdx == -1 ? 0 : parser.ParseNextInt32(),
-                InDestUnreachs = parser.ParseNextInt32(),
-                InTimeExcds = parser.ParseNextInt32(),
-                InParmProbs = parser.ParseNextInt32(),
-                InSrcQuenchs = parser.ParseNextInt32(),
-                InRedirects = parser.ParseNextInt32(),
-                InEchos = parser.ParseNextInt32(),
-                InEchoReps = parser.ParseNextInt32(),
-                InTimestamps = parser.ParseNextInt32(),
-                InTimeStampReps = parser.ParseNextInt32(),
-                InAddrMasks = parser.ParseNextInt32(),
-                InAddrMaskReps = parser.ParseNextInt32(),
-                OutMsgs = parser.ParseNextInt32(),
-                OutErrors = parser.ParseNextInt32(),
-                OutDestUnreachs = parser.ParseNextInt32(),
-                OutTimeExcds = parser.ParseNextInt32(),
-                OutParmProbs = parser.ParseNextInt32(),
-                OutSrcQuenchs = parser.ParseNextInt32(),
-                OutRedirects = parser.ParseNextInt32(),
-                OutEchos = parser.ParseNextInt32(),
-                OutEchoReps = parser.ParseNextInt32(),
-                OutTimestamps = parser.ParseNextInt32(),
-                OutTimestampReps = parser.ParseNextInt32(),
-                OutAddrMasks = parser.ParseNextInt32(),
-                OutAddrMaskReps = parser.ParseNextInt32()
+                InMsgs = parser.ParseNextInt64(),
+                InErrors = parser.ParseNextInt64(),
+                InCsumErrors = inCsumErrorsIdx == -1 ? 0 : parser.ParseNextInt64(),
+                InDestUnreachs = parser.ParseNextInt64(),
+                InTimeExcds = parser.ParseNextInt64(),
+                InParmProbs = parser.ParseNextInt64(),
+                InSrcQuenchs = parser.ParseNextInt64(),
+                InRedirects = parser.ParseNextInt64(),
+                InEchos = parser.ParseNextInt64(),
+                InEchoReps = parser.ParseNextInt64(),
+                InTimestamps = parser.ParseNextInt64(),
+                InTimeStampReps = parser.ParseNextInt64(),
+                InAddrMasks = parser.ParseNextInt64(),
+                InAddrMaskReps = parser.ParseNextInt64(),
+                OutMsgs = parser.ParseNextInt64(),
+                OutErrors = parser.ParseNextInt64(),
+                OutDestUnreachs = parser.ParseNextInt64(),
+                OutTimeExcds = parser.ParseNextInt64(),
+                OutParmProbs = parser.ParseNextInt64(),
+                OutSrcQuenchs = parser.ParseNextInt64(),
+                OutRedirects = parser.ParseNextInt64(),
+                OutEchos = parser.ParseNextInt64(),
+                OutEchoReps = parser.ParseNextInt64(),
+                OutTimestamps = parser.ParseNextInt64(),
+                OutTimestampReps = parser.ParseNextInt64(),
+                OutAddrMasks = parser.ParseNextInt64(),
+                OutAddrMaskReps = parser.ParseNextInt64()
             };
         }
 
@@ -226,38 +226,38 @@ namespace System.Net.NetworkInformation
 
             return new Icmpv6StatisticsTable()
             {
-                InMsgs = reader.GetNextValueAsInt32("Icmp6InMsgs"),
-                InErrors = reader.GetNextValueAsInt32("Icmp6InErrors"),
-                OutMsgs = reader.GetNextValueAsInt32("Icmp6OutMsgs"),
-                OutErrors = Icmp6OutErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt32("Icmp6OutErrors"),
-                InDestUnreachs = reader.GetNextValueAsInt32("Icmp6InDestUnreachs"),
-                InPktTooBigs = reader.GetNextValueAsInt32("Icmp6InPktTooBigs"),
-                InTimeExcds = reader.GetNextValueAsInt32("Icmp6InTimeExcds"),
-                InParmProblems = reader.GetNextValueAsInt32("Icmp6InParmProblems"),
-                InEchos = reader.GetNextValueAsInt32("Icmp6InEchos"),
-                InEchoReplies = reader.GetNextValueAsInt32("Icmp6InEchoReplies"),
-                InGroupMembQueries = reader.GetNextValueAsInt32("Icmp6InGroupMembQueries"),
-                InGroupMembResponses = reader.GetNextValueAsInt32("Icmp6InGroupMembResponses"),
-                InGroupMembReductions = reader.GetNextValueAsInt32("Icmp6InGroupMembReductions"),
-                InRouterSolicits = reader.GetNextValueAsInt32("Icmp6InRouterSolicits"),
-                InRouterAdvertisements = reader.GetNextValueAsInt32("Icmp6InRouterAdvertisements"),
-                InNeighborSolicits = reader.GetNextValueAsInt32("Icmp6InNeighborSolicits"),
-                InNeighborAdvertisements = reader.GetNextValueAsInt32("Icmp6InNeighborAdvertisements"),
-                InRedirects = reader.GetNextValueAsInt32("Icmp6InRedirects"),
-                OutDestUnreachs = reader.GetNextValueAsInt32("Icmp6OutDestUnreachs"),
-                OutPktTooBigs = reader.GetNextValueAsInt32("Icmp6OutPktTooBigs"),
-                OutTimeExcds = reader.GetNextValueAsInt32("Icmp6OutTimeExcds"),
-                OutParmProblems = reader.GetNextValueAsInt32("Icmp6OutParmProblems"),
-                OutEchos = reader.GetNextValueAsInt32("Icmp6OutEchos"),
-                OutEchoReplies = reader.GetNextValueAsInt32("Icmp6OutEchoReplies"),
-                OutInGroupMembQueries = reader.GetNextValueAsInt32("Icmp6OutGroupMembQueries"),
-                OutGroupMembResponses = reader.GetNextValueAsInt32("Icmp6OutGroupMembResponses"),
-                OutGroupMembReductions = reader.GetNextValueAsInt32("Icmp6OutGroupMembReductions"),
-                OutRouterSolicits = reader.GetNextValueAsInt32("Icmp6OutRouterSolicits"),
-                OutRouterAdvertisements = reader.GetNextValueAsInt32("Icmp6OutRouterAdvertisements"),
-                OutNeighborSolicits = reader.GetNextValueAsInt32("Icmp6OutNeighborSolicits"),
-                OutNeighborAdvertisements = reader.GetNextValueAsInt32("Icmp6OutNeighborAdvertisements"),
-                OutRedirects = reader.GetNextValueAsInt32("Icmp6OutRedirects")
+                InMsgs = reader.GetNextValueAsInt64("Icmp6InMsgs"),
+                InErrors = reader.GetNextValueAsInt64("Icmp6InErrors"),
+                OutMsgs = reader.GetNextValueAsInt64("Icmp6OutMsgs"),
+                OutErrors = Icmp6OutErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt64("Icmp6OutErrors"),
+                InDestUnreachs = reader.GetNextValueAsInt64("Icmp6InDestUnreachs"),
+                InPktTooBigs = reader.GetNextValueAsInt64("Icmp6InPktTooBigs"),
+                InTimeExcds = reader.GetNextValueAsInt64("Icmp6InTimeExcds"),
+                InParmProblems = reader.GetNextValueAsInt64("Icmp6InParmProblems"),
+                InEchos = reader.GetNextValueAsInt64("Icmp6InEchos"),
+                InEchoReplies = reader.GetNextValueAsInt64("Icmp6InEchoReplies"),
+                InGroupMembQueries = reader.GetNextValueAsInt64("Icmp6InGroupMembQueries"),
+                InGroupMembResponses = reader.GetNextValueAsInt64("Icmp6InGroupMembResponses"),
+                InGroupMembReductions = reader.GetNextValueAsInt64("Icmp6InGroupMembReductions"),
+                InRouterSolicits = reader.GetNextValueAsInt64("Icmp6InRouterSolicits"),
+                InRouterAdvertisements = reader.GetNextValueAsInt64("Icmp6InRouterAdvertisements"),
+                InNeighborSolicits = reader.GetNextValueAsInt64("Icmp6InNeighborSolicits"),
+                InNeighborAdvertisements = reader.GetNextValueAsInt64("Icmp6InNeighborAdvertisements"),
+                InRedirects = reader.GetNextValueAsInt64("Icmp6InRedirects"),
+                OutDestUnreachs = reader.GetNextValueAsInt64("Icmp6OutDestUnreachs"),
+                OutPktTooBigs = reader.GetNextValueAsInt64("Icmp6OutPktTooBigs"),
+                OutTimeExcds = reader.GetNextValueAsInt64("Icmp6OutTimeExcds"),
+                OutParmProblems = reader.GetNextValueAsInt64("Icmp6OutParmProblems"),
+                OutEchos = reader.GetNextValueAsInt64("Icmp6OutEchos"),
+                OutEchoReplies = reader.GetNextValueAsInt64("Icmp6OutEchoReplies"),
+                OutInGroupMembQueries = reader.GetNextValueAsInt64("Icmp6OutGroupMembQueries"),
+                OutGroupMembResponses = reader.GetNextValueAsInt64("Icmp6OutGroupMembResponses"),
+                OutGroupMembReductions = reader.GetNextValueAsInt64("Icmp6OutGroupMembReductions"),
+                OutRouterSolicits = reader.GetNextValueAsInt64("Icmp6OutRouterSolicits"),
+                OutRouterAdvertisements = reader.GetNextValueAsInt64("Icmp6OutRouterAdvertisements"),
+                OutNeighborSolicits = reader.GetNextValueAsInt64("Icmp6OutNeighborSolicits"),
+                OutNeighborAdvertisements = reader.GetNextValueAsInt64("Icmp6OutNeighborAdvertisements"),
+                OutRedirects = reader.GetNextValueAsInt64("Icmp6OutRedirects")
             };
         }
 
@@ -278,23 +278,23 @@ namespace System.Net.NetworkInformation
             {
                 Forwarding = parser.MoveAndExtractNext() == "1",
                 DefaultTtl = parser.ParseNextInt32(),
-                InReceives = parser.ParseNextInt32(),
-                InHeaderErrors = parser.ParseNextInt32(),
-                InAddressErrors = parser.ParseNextInt32(),
-                ForwardedDatagrams = parser.ParseNextInt32(),
-                InUnknownProtocols = parser.ParseNextInt32(),
-                InDiscards = parser.ParseNextInt32(),
-                InDelivers = parser.ParseNextInt32(),
-                OutRequests = parser.ParseNextInt32(),
-                OutDiscards = parser.ParseNextInt32(),
-                OutNoRoutes = parser.ParseNextInt32(),
-                ReassemblyTimeout = parser.ParseNextInt32(),
-                ReassemblyRequireds = parser.ParseNextInt32(),
-                ReassemblyOKs = parser.ParseNextInt32(),
-                ReassemblyFails = parser.ParseNextInt32(),
-                FragmentOKs = parser.ParseNextInt32(),
-                FragmentFails = parser.ParseNextInt32(),
-                FragmentCreates = parser.ParseNextInt32(),
+                InReceives = parser.ParseNextInt64(),
+                InHeaderErrors = parser.ParseNextInt64(),
+                InAddressErrors = parser.ParseNextInt64(),
+                ForwardedDatagrams = parser.ParseNextInt64(),
+                InUnknownProtocols = parser.ParseNextInt64(),
+                InDiscards = parser.ParseNextInt64(),
+                InDelivers = parser.ParseNextInt64(),
+                OutRequests = parser.ParseNextInt64(),
+                OutDiscards = parser.ParseNextInt64(),
+                OutNoRoutes = parser.ParseNextInt64(),
+                ReassemblyTimeout = parser.ParseNextInt64(),
+                ReassemblyRequireds = parser.ParseNextInt64(),
+                ReassemblyOKs = parser.ParseNextInt64(),
+                ReassemblyFails = parser.ParseNextInt64(),
+                FragmentOKs = parser.ParseNextInt64(),
+                FragmentFails = parser.ParseNextInt64(),
+                FragmentCreates = parser.ParseNextInt64(),
             };
         }
 
@@ -306,23 +306,23 @@ namespace System.Net.NetworkInformation
 
             return new IPGlobalStatisticsTable()
             {
-                InReceives = reader.GetNextValueAsInt32("Ip6InReceives"),
-                InHeaderErrors = reader.GetNextValueAsInt32("Ip6InHdrErrors"),
-                InAddressErrors = reader.GetNextValueAsInt32("Ip6InAddrErrors"),
-                InUnknownProtocols = reader.GetNextValueAsInt32("Ip6InUnknownProtos"),
-                InDiscards = reader.GetNextValueAsInt32("Ip6InDiscards"),
-                InDelivers = reader.GetNextValueAsInt32("Ip6InDelivers"),
-                ForwardedDatagrams = reader.GetNextValueAsInt32("Ip6OutForwDatagrams"),
-                OutRequests = reader.GetNextValueAsInt32("Ip6OutRequests"),
-                OutDiscards = reader.GetNextValueAsInt32("Ip6OutDiscards"),
-                OutNoRoutes = reader.GetNextValueAsInt32("Ip6OutNoRoutes"),
-                ReassemblyTimeout = reader.GetNextValueAsInt32("Ip6ReasmTimeout"),
-                ReassemblyRequireds = reader.GetNextValueAsInt32("Ip6ReasmReqds"),
-                ReassemblyOKs = reader.GetNextValueAsInt32("Ip6ReasmOKs"),
-                ReassemblyFails = reader.GetNextValueAsInt32("Ip6ReasmFails"),
-                FragmentOKs = reader.GetNextValueAsInt32("Ip6FragOKs"),
-                FragmentFails = reader.GetNextValueAsInt32("Ip6FragFails"),
-                FragmentCreates = reader.GetNextValueAsInt32("Ip6FragCreates"),
+                InReceives = reader.GetNextValueAsInt64("Ip6InReceives"),
+                InHeaderErrors = reader.GetNextValueAsInt64("Ip6InHdrErrors"),
+                InAddressErrors = reader.GetNextValueAsInt64("Ip6InAddrErrors"),
+                InUnknownProtocols = reader.GetNextValueAsInt64("Ip6InUnknownProtos"),
+                InDiscards = reader.GetNextValueAsInt64("Ip6InDiscards"),
+                InDelivers = reader.GetNextValueAsInt64("Ip6InDelivers"),
+                ForwardedDatagrams = reader.GetNextValueAsInt64("Ip6OutForwDatagrams"),
+                OutRequests = reader.GetNextValueAsInt64("Ip6OutRequests"),
+                OutDiscards = reader.GetNextValueAsInt64("Ip6OutDiscards"),
+                OutNoRoutes = reader.GetNextValueAsInt64("Ip6OutNoRoutes"),
+                ReassemblyTimeout = reader.GetNextValueAsInt64("Ip6ReasmTimeout"),
+                ReassemblyRequireds = reader.GetNextValueAsInt64("Ip6ReasmReqds"),
+                ReassemblyOKs = reader.GetNextValueAsInt64("Ip6ReasmOKs"),
+                ReassemblyFails = reader.GetNextValueAsInt64("Ip6ReasmFails"),
+                FragmentOKs = reader.GetNextValueAsInt64("Ip6FragOKs"),
+                FragmentFails = reader.GetNextValueAsInt64("Ip6FragFails"),
+                FragmentCreates = reader.GetNextValueAsInt64("Ip6FragCreates"),
             };
         }
 
@@ -342,21 +342,21 @@ namespace System.Net.NetworkInformation
 
             return new TcpGlobalStatisticsTable()
             {
-                RtoAlgorithm = parser.ParseNextInt32(),
-                RtoMin = parser.ParseNextInt32(),
-                RtoMax = parser.ParseNextInt32(),
-                MaxConn = parser.ParseNextInt32(),
-                ActiveOpens = parser.ParseNextInt32(),
-                PassiveOpens = parser.ParseNextInt32(),
-                AttemptFails = parser.ParseNextInt32(),
-                EstabResets = parser.ParseNextInt32(),
-                CurrEstab = parser.ParseNextInt32(),
-                InSegs = parser.ParseNextInt32(),
-                OutSegs = parser.ParseNextInt32(),
-                RetransSegs = parser.ParseNextInt32(),
-                InErrs = parser.ParseNextInt32(),
-                OutRsts = parser.ParseNextInt32(),
-                InCsumErrors = inCsumErrorsIdx == -1 ? 0 : parser.ParseNextInt32()
+                RtoAlgorithm = parser.ParseNextInt64(),
+                RtoMin = parser.ParseNextInt64(),
+                RtoMax = parser.ParseNextInt64(),
+                MaxConn = parser.ParseNextInt64(),
+                ActiveOpens = parser.ParseNextInt64(),
+                PassiveOpens = parser.ParseNextInt64(),
+                AttemptFails = parser.ParseNextInt64(),
+                EstabResets = parser.ParseNextInt64(),
+                CurrEstab = parser.ParseNextInt64(),
+                InSegs = parser.ParseNextInt64(),
+                OutSegs = parser.ParseNextInt64(),
+                RetransSegs = parser.ParseNextInt64(),
+                InErrs = parser.ParseNextInt64(),
+                OutRsts = parser.ParseNextInt64(),
+                InCsumErrors = inCsumErrorsIdx == -1 ? 0 : parser.ParseNextInt64()
             };
         }
 
@@ -374,13 +374,13 @@ namespace System.Net.NetworkInformation
 
             return new UdpGlobalStatisticsTable()
             {
-                InDatagrams = parser.ParseNextInt32(),
-                NoPorts = parser.ParseNextInt32(),
-                InErrors = parser.ParseNextInt32(),
-                OutDatagrams = parser.ParseNextInt32(),
-                RcvbufErrors = parser.ParseNextInt32(),
-                SndbufErrors = parser.ParseNextInt32(),
-                InCsumErrors = inCsumErrorsIdx == -1 ? 0 : parser.ParseNextInt32()
+                InDatagrams = parser.ParseNextInt64(),
+                NoPorts = parser.ParseNextInt64(),
+                InErrors = parser.ParseNextInt64(),
+                OutDatagrams = parser.ParseNextInt64(),
+                RcvbufErrors = parser.ParseNextInt64(),
+                SndbufErrors = parser.ParseNextInt64(),
+                InCsumErrors = inCsumErrorsIdx == -1 ? 0 : parser.ParseNextInt64()
             };
         }
 
@@ -392,13 +392,13 @@ namespace System.Net.NetworkInformation
 
             return new UdpGlobalStatisticsTable()
             {
-                InDatagrams = reader.GetNextValueAsInt32("Udp6InDatagrams"),
-                NoPorts = reader.GetNextValueAsInt32("Udp6NoPorts"),
-                InErrors = reader.GetNextValueAsInt32("Udp6InErrors"),
-                OutDatagrams = reader.GetNextValueAsInt32("Udp6OutDatagrams"),
-                RcvbufErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt32("Udp6RcvbufErrors"),
-                SndbufErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt32("Udp6SndbufErrors"),
-                InCsumErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt32("Udp6InCsumErrors"),
+                InDatagrams = reader.GetNextValueAsInt64("Udp6InDatagrams"),
+                NoPorts = reader.GetNextValueAsInt64("Udp6NoPorts"),
+                InErrors = reader.GetNextValueAsInt64("Udp6InErrors"),
+                OutDatagrams = reader.GetNextValueAsInt64("Udp6OutDatagrams"),
+                RcvbufErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt64("Udp6RcvbufErrors"),
+                SndbufErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt64("Udp6SndbufErrors"),
+                InCsumErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt64("Udp6InCsumErrors"),
             };
         }
 

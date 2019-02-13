@@ -46,7 +46,7 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.RegCloseKey.cs">
       <Link>Common\CoreLib\Interop\Windows\Interop.RegCloseKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegConnectRegistry.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegConnectRegistry.cs">
       <Link>Common\Interop\Windows\Interop.RegConnectRegistry.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.RegCreateKeyEx.cs">

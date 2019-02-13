@@ -68,11 +68,15 @@
 
 
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
-    <!-- For windows we need to use call, since the command is going to be called from a bat script created by Helix
-    and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
-    if we don't use call, then we cause the parent script to exit, and anything after will not be executed. -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh $HELIX_CORRELATION_PAYLOAD</HelixCommand>
+    <!--
+      For windows we need to use call, since the command is going to be called from a bat script created by Helix
+      and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
+      if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
+      The arguments passed in to the run script in order are the runtime directory, the dotnet root directory (for
+      helix submissions same as the runtime directory) and the global tools directory.
+    -->
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd %HELIX_CORRELATION_PAYLOAD% %HELIX_CORRELATION_PAYLOAD% %HELIX_CORRELATION_PAYLOAD%\tools</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh $HELIX_CORRELATION_PAYLOAD $HELIX_CORRELATION_PAYLOAD $HELIX_CORRELATION_PAYLOAD/tools</HelixCommand>
   </PropertyGroup>
 
   <!-- We need to include all dlls in the runtime path as inputs to make it really incremental
@@ -81,23 +85,38 @@
     <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
   </ItemGroup>
 
+  <!-- Define which workloads require global tools. -->
+  <PropertyGroup>
+    <UseGlobalTools Condition="'$(UseGlobalTools)' == '' AND '$(Coverage)' == 'true'">true</UseGlobalTools>
+  </PropertyGroup>
+
   <!-- Add global tools to runtime -->
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <TestArchiveRuntimeDependencies Include="$(GlobalToolsDir)**\*.*" />
+  <ItemGroup Condition="'$(UseGlobalTools)' == 'true'">
+    <TestArchiveRuntimeDependency Include="$(DotNetRoot)shared\Microsoft.NETCore.App\**\*.*" DestinationDir="shared\Microsoft.NETCore.App" />
+    <TestArchiveRuntimeDependency Include="$(DotNetRoot)host\**\*.*" DestinationDir="host" />
+    <TestArchiveRuntimeDependency Include="$(GlobalToolsDir)**\*.*" DestinationDir="tools" />
   </ItemGroup>
 
   <Target Name="CompressRuntimeDirectory"
-          Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependencies)"
+          Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
           Condition="'$(TargetGroup)' != 'AllConfigurations'">
 
     <!-- Copy additional test dependencies. -->
-    <Copy SourceFiles="@(TestArchiveRuntimeDependencies)"
-          DestinationFolder="$(TestHostRootPath)\%(RecursiveDir)"
+    <ItemGroup>
+      <_TestArchiveRuntimeDependency Include="@(TestArchiveRuntimeDependency)">
+        <DestinationDir>%(TestArchiveRuntimeDependency.DestinationDir)\%(RecursiveDir)</DestinationDir>
+      </_TestArchiveRuntimeDependency>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_TestArchiveRuntimeDependency)"
+          DestinationFiles="@(_TestArchiveRuntimeDependency -> '$([MSBuild]::NormalizePath('$(TestHostRootPath)', '%(DestinationDir)', '%(Filename)%(Extension)'))')"
           SkipUnchangedFiles="true"
           OverwriteReadOnlyFiles="true"
           Retries="3"
-          RetryDelayMilliseconds="300" />
+          RetryDelayMilliseconds="300">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
 
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
     <ZipDirectory

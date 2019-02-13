@@ -39,6 +39,7 @@ jobs:
               _architecture: x86
               _framework: netfx
               _helixQueues: $(uapNetfxQueues)
+              _skipPublishPackages: true # In NETFX leg we don't produce packages
 
             UWP_CoreCLR_x64_Debug:
               _BuildConfig: Debug
@@ -97,12 +98,14 @@ jobs:
               _architecture: x86
               _framework: uapaot
               _helixQueues: $(uapNetfxQueues)
+              _restoreInternalTools: true
 
             UAPAOT_x64_Release:
               _BuildConfig: Release
               _architecture: x64
               _framework: uapaot
               _helixQueues: $(uapNetfxQueues)
+              _restoreInternalTools: true
 
       pool:
         ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -166,6 +169,7 @@ jobs:
         enableMicrobuild: ${{ parameters.isOfficialBuild }}
 
         variables:
+          - _outerloop: false
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             - allConfigurationsQueues: Windows.10.Amd64.ClientRS4.Open
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -210,6 +214,7 @@ jobs:
                 _BuildConfig: Release
                 _architecture: x86
                 _framework: uapaot
+                _restoreInternalTools: true
 
             ${{ if eq(parameters.isOfficialBuild, 'true') }}:
               arm_Release:
@@ -226,11 +231,13 @@ jobs:
                 _BuildConfig: Release
                 _architecture: arm
                 _framework: uapaot
+                _restoreInternalTools: true
 
               UAPAOT_arm64_Release:
                 _BuildConfig: Release
                 _architecture: arm64
                 _framework: uapaot
+                _restoreInternalTools: true
 
         pool:
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:

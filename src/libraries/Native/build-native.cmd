@@ -73,7 +73,7 @@ exit /b 1
 :VS2019
 :: Setup vars for VS2019
 set __VSVersion=vs2019
-set __PlatformToolset=v141
+set __PlatformToolset=v142
 :: Set the environment for the native build
 call "%VS160COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 goto :SetupDirs
@@ -120,7 +120,7 @@ echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 Make sure you selected the correct dependencies when installing Visual Studio.
 :: DIA SDK not included in Express editions
 echo Visual Studio Express does not include the DIA SDK. ^
-You need Visual Studio 2015 or 2017 (Community is free).
+You need Visual Studio 2017 or 2019 (Community is free).
 echo See: https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md#required-software
 exit /b 1
 

@@ -83,10 +83,10 @@
     <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
     <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />
     <Compile Include="System\ComponentModel\Design\ITypeDescriptorFilterService.cs" />
-    <Compile Include="$(CommonPath)/System/Drawing/ColorConverterCommon.cs">
+    <Compile Include="$(CommonPath)\System\Drawing\ColorConverterCommon.cs">
       <Link>System\Drawing\ColorConverterCommon.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)/System/Drawing/ColorTable.cs">
+    <Compile Include="$(CommonPath)\System\Drawing\ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
     </Compile>
     <Compile Include="System\Drawing\ColorConverter.cs" />

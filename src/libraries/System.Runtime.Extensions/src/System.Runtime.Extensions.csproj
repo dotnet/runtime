@@ -10,9 +10,6 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
-      <Link>Common\CoreLib\System\PasteArguments.cs</Link>
-    </Compile>
     <Compile Include="System\AppDomain.cs" />
     <Compile Include="System\AppDomainSetup.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
@@ -29,6 +26,7 @@
     <Compile Include="System\IO\InvalidDataException.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Reflection\AssemblyNameProxy.cs" />
+    <Compile Include="System\Runtime\CompilerServices\SwitchExpressionException.cs" />
     <Compile Include="System\Runtime\ProfileOptimization.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
@@ -63,41 +61,8 @@
       <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAOT)' == 'true'">
-    <Compile Include="System\Environment.cs" />
-    <Compile Include="System\Environment.SpecialFolder.cs" />
-    <Compile Include="System\Environment.SpecialFolderOption.cs" />
-    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="System\Environment.Windows.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\OperatingSystem.cs">
-      <Link>Common\CoreLib\System\OperatingSystem.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\PlatformID.cs">
-      <Link>Common\CoreLib\System\PlatformID.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreappaot'">
-    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="System\Environment.Win32.cs" />
-    <Compile Condition="'$(TargetsUnix)' == 'true'" Include="System\Environment.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <Compile Include="System\Environment.WinRT.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\WinRTFolderPaths.cs">
-      <Link>Common\CoreLib\System\WinRTFolderPaths.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uapaot' and '$(TargetGroup)' != 'uap'">
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\secur32\Interop.GetUserNameExW.cs">
-      <Link>Common\Interop\Windows\secur32\Interop.GetUserNameExW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\shell32\Interop.SHGetKnownFolderPath.cs">
-      <Link>Common\Interop\Windows\shell32\Interop.SHGetKnownFolderPath.cs</Link>
-    </Compile>
-  </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Windows.cs">
-      <Link>Common\CoreLib\System\PasteArguments.Windows.cs</Link>
-    </Compile>
     <Compile Include="System\Runtime\Versioning\VersioningHelper.Windows.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\Win32Marshal.cs">
@@ -112,59 +77,29 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.BOOLEAN.cs">
       <Link>Common\Interop\Windows\Interop.BOOLEAN.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\advapi32\Interop.LookupAccountNameW.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.LookupAccountNameW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetComputerName.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetComputerNameW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcess_IntPtr.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetLogicalDrives.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
       <Link>Common\Interop\Windows\Interop.GetLogicalDrives.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetSystemDirectoryW.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetSystemDirectoryW.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.QueryPerformanceCounter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetVersionExW.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetVersionExW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.QueryPerformanceFrequency.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.IsWow64Process_IntPtr.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.IsWow64Process_IntPtr.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MaxLengths.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.MaxLengths.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.QueryPerformanceCounter.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.QueryPerformanceCounter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.QueryPerformanceFrequency.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.QueryPerformanceFrequency.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.SetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.SetCurrentDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\IO\DriveInfoInternal.Windows.cs">
-      <Link>Common\System\IO\DriveInfoInternal.Windows.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathHelper.Windows.cs">
       <Link>CoreLib\System\IO\PathHelper.Windows.cs</Link>
@@ -200,9 +135,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Access.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.ChDir.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ChDir.cs</Link>
@@ -251,9 +183,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Windows.cs">
-      <Link>Common\CoreLib\System\PasteArguments.Windows.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

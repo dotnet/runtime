@@ -249,12 +249,10 @@ namespace System.Resources
             _resourceSets = new Dictionary<string, ResourceSet>();
             _lastUsedResourceCache = new CultureNameResourceSetPair();
 
-            _fallbackLoc = UltimateResourceFallbackLocation.MainAssembly;
-
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
             _resourceGroveler = new ManifestBasedResourceGroveler(mediator);
 
-            _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, ref _fallbackLoc);
+            _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, out _fallbackLoc);
         }
 
         // Gets the base name for the ResourceManager.
@@ -556,9 +554,7 @@ namespace System.Resources
         {
             // This method should be obsolete - replace it with the one below.
             // Unfortunately, we made it protected.
-            UltimateResourceFallbackLocation ignoringUsefulData = UltimateResourceFallbackLocation.MainAssembly;
-            CultureInfo culture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(a, ref ignoringUsefulData);
-            return culture;
+            return ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(a, out _);
         }
 
         // IGNORES VERSION

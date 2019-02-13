@@ -121,5 +121,17 @@ namespace System.Runtime.Loader.Tests
 
             Assert.NotNull(context);
         }
+
+        [Fact]
+        public static void GetLoadContextTest_SystemPrivateCorelibAssembly()
+        {
+            // System.Private.Corelib is a special case
+            // `int` is defined in S.P.C
+            var asm = typeof(int).Assembly;
+            var context = AssemblyLoadContext.GetLoadContext(asm);
+
+            Assert.NotNull(context);
+            Assert.Same(AssemblyLoadContext.Default, context);
+        }
     }
 }

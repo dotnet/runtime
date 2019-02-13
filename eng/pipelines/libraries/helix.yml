@@ -30,6 +30,7 @@ steps:
             /p:Creator=${{ parameters.creator }}
             /p:OfficialBuildId=${{ parameters.officialBuildId }}
             /p:EnableAzurePipelinesReporter=${{ parameters.enableAzurePipelinesReporter }}
+            /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: Send to Helix
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops

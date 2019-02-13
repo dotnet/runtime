@@ -27,6 +27,7 @@ namespace System.Text.Json
             _buffer = jsonData.First.Span;
 
             _isFinalBlock = isFinalBlock;
+            _isInputSequence = true;
 
             // Note: We do not retain _bytesConsumed or _sequencePosition as they reset with the new input data
             _lineNumber = state._lineNumber;

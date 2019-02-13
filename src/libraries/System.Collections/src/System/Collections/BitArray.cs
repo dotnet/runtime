@@ -449,7 +449,7 @@ namespace System.Collections
                         // is greater than or equal to the width in bits of the promoted left operand,
                         // https://docs.microsoft.com/en-us/cpp/c-language/bitwise-shift-operators?view=vs-2017
                         // However, the compiler protects us from undefined behaviour by constraining the
-                        // right operand to between 0 and width - 1 (inclusive), i.e. righ_operand = (right_operand % width).
+                        // right operand to between 0 and width - 1 (inclusive), i.e. right_operand = (right_operand % width).
                         uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
                         m_array[ints - 1] &= (int)mask;
                     }

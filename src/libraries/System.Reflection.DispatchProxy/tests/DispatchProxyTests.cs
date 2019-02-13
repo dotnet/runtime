@@ -412,12 +412,12 @@ namespace DispatchProxyTests
             TypeBuilder tb = modb.DefineType("TestType_IEventService", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
             EventBuilder eb = tb.DefineEvent("AddRemoveRaise", EventAttributes.None, typeof(EventHandler));
             eb.SetAddOnMethod(tb.DefineMethod("add_AddRemoveRaise", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(void), new Type[] { typeof(EventHandler) }));
-            eb.SetRemoveOnMethod( tb.DefineMethod("remove_AddRemoveRaise", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(void), new Type[] { typeof(EventHandler) }));
+            eb.SetRemoveOnMethod(tb.DefineMethod("remove_AddRemoveRaise", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(void), new Type[] { typeof(EventHandler) }));
             eb.SetRaiseMethod(tb.DefineMethod("raise_AddRemoveRaise", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(void), new Type[] { typeof(EventArgs) }));
             TypeInfo ieventServiceTypeInfo = tb.CreateTypeInfo();
 
             List<MethodInfo> invokedMethods = new List<MethodInfo>();
-            object proxy = 
+            object proxy =
                 typeof(DispatchProxy)
                 .GetRuntimeMethod("Create", Array.Empty<Type>()).MakeGenericMethod(ieventServiceTypeInfo.AsType(), typeof(TestDispatchProxy))
                 .Invoke(null, null);
@@ -427,7 +427,7 @@ namespace DispatchProxyTests
                 return null;
             };
 
-            EventHandler handler = new EventHandler((sender, e) => {});
+            EventHandler handler = new EventHandler((sender, e) => { });
 
             proxy.GetType().GetRuntimeMethods().Single(m => m.Name == "add_AddRemoveRaise").Invoke(proxy, new object[] { handler });
             proxy.GetType().GetRuntimeMethods().Single(m => m.Name == "raise_AddRemoveRaise").Invoke(proxy, new object[] { EventArgs.Empty });
@@ -529,6 +529,36 @@ namespace DispatchProxyTests
             testGenericMethodRoundTrip(42);
             //enum type
             testGenericMethodRoundTrip(DayOfWeek.Monday);
+        }
+
+        [Fact]
+        public static void Invoke_Ref_Out_In_Method()
+        {
+            string value = "Hello";
+
+            testRefOutInInvocation(p => p.InAttribute(value), "Hello");
+            testRefOutInInvocation(p => p.InAttribute_OutAttribute(value), "Hello");
+            testRefOutInInvocation(p => p.InAttribute_Ref(ref value), "Hello");
+            testRefOutInInvocation(p => p.Out(out _), null);
+            testRefOutInInvocation(p => p.OutAttribute(value), "Hello");
+            testRefOutInInvocation(p => p.Ref(ref value), "Hello");
+        }
+
+        private static void testRefOutInInvocation(Action<TestType_IOut_Ref> invocation, string expected)
+        {
+            var proxy = DispatchProxy.Create<TestType_IOut_Ref, TestDispatchProxy>();
+
+            string result = "Failed";
+
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                result = args[0] as string;
+                return null;
+            };
+
+            invocation(proxy);
+
+            Assert.Equal(expected, result);
         }
     }
 }

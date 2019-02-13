@@ -45,7 +45,7 @@ The following are the properties associated with each build pivot
 - `$(OSGroup) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(ConfigurationGroup) -> Release | [defaults to Debug when empty]`
 - `$(ArchGroup) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
-- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to runnning OS when empty]` See [RIDs](https://github.com/dotnet/corefx/tree/master/pkg/Microsoft.NETCore.Platforms) for more info.
+- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/corefx/tree/master/pkg/Microsoft.NETCore.Platforms) for more info.
 
 For more information on various targets see also [.NET Standard](https://github.com/dotnet/standard/blob/master/docs/versions.md)
 
@@ -118,7 +118,7 @@ On top of the `BuildConfiguration` we also have `RuntimeOS` which can be passed 
 Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using our run tool or any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
 
 ## Selecting the correct build configuration
-When building an individual project the `BuildConfiguation` will be used to select the closest matching configuration listed in the projects `BuildConfigurations` property. The rules used to select the configuration will consider compatible target frameworks and OS fallbacks.
+When building an individual project the `BuildConfiguration` will be used to select the closest matching configuration listed in the projects `BuildConfigurations` property. The rules used to select the configuration will consider compatible target frameworks and OS fallbacks.
 
 TODO: Link to the target framework and OS fallbacks when they are available.
 Temporary versions are at https://github.com/dotnet/corefx/blob/dev/eng/src/Tools/GenerateProps/osgroups.props and https://github.com/dotnet/corefx/blob/dev/eng/src/Tools/GenerateProps/targetgroups.props

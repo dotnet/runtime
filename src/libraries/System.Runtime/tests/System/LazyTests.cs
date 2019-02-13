@@ -387,7 +387,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void EnsureInitalized_SimpleRefTypes()
+        public static void EnsureInitialized_SimpleRefTypes()
         {
             var hdcTemplate = new HasDefaultCtor();
             string strTemplate = "foo";
@@ -418,7 +418,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void EnsureInitalized_SimpleRefTypes_Invalid()
+        public static void EnsureInitialized_SimpleRefTypes_Invalid()
         {
             // Func based initialization (nulls not permitted).
             string e = null;
@@ -486,7 +486,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void EnsureInitalized_ComplexRefTypes_Invalid()
+        public static void EnsureInitialized_ComplexRefTypes_Invalid()
         {
             // Activator.CreateInstance (for a type without a default ctor).
             NoDefaultCtor ndc = null;
