@@ -19,7 +19,6 @@
 #include "codeman.h"
 #include "class.h"
 #include "siginfo.hpp"
-#include "declsec.h"
 #include "methodimpl.h"
 #include "typedesc.h"
 #include <stddef.h>
