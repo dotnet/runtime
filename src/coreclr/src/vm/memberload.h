@@ -25,7 +25,6 @@
 #include "clrex.h"
 #include "hash.h"
 #include "crst.h"
-#include "declsec.h"
 #include "slist.h"
 #include "typehandle.h"
 #include "methodtable.h"
