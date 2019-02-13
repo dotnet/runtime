@@ -547,7 +547,7 @@ PosRem:
                 if (hiRes > 2)
                 {
                     newScale = (int)hiRes * 32 - 64 - 1;
-                    newScale -= X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(result[hiRes]) : LeadingZeroCount(result[hiRes]);
+                    newScale -= BitOps.LeadingZeroCount(result[hiRes]);
 
                     // Multiply bit position by log10(2) to figure it's power of 10.
                     // We scale the log by 256.  log(2) = .30103, * 256 = 77.  Doing this
@@ -722,34 +722,6 @@ ThrowOverflow:
 #endif
                 }
                 return power;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static int LeadingZeroCount(uint value)
-            {
-                Debug.Assert(value > 0);
-                int c = 1;
-                if ((value & 0xFFFF0000) == 0)
-                {
-                    value <<= 16;
-                    c += 16;
-                }
-                if ((value & 0xFF000000) == 0)
-                {
-                    value <<= 8;
-                    c += 8;
-                }
-                if ((value & 0xF0000000) == 0)
-                {
-                    value <<= 4;
-                    c += 4;
-                }
-                if ((value & 0xC0000000) == 0)
-                {
-                    value <<= 2;
-                    c += 2;
-                }
-                return c + ((int)value >> 31);
             }
 
             /// <summary>
@@ -2047,7 +2019,7 @@ ReturnZero:
                     if (tmp == 0)
                         tmp = d2.Mid;
 
-                    curScale = X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(tmp) : LeadingZeroCount(tmp);
+                    curScale = BitOps.LeadingZeroCount(tmp);
 
                     // Shift both dividend and divisor left by curScale.
                     //
@@ -2328,7 +2300,7 @@ ThrowOverflow:
                 uint tmp = d2.High;
                 if (tmp == 0)
                     tmp = d2.Mid;
-                int shift = X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(tmp) : LeadingZeroCount(tmp);
+                int shift = BitOps.LeadingZeroCount(tmp);
 
                 Buf28 b;
                 _ = &b; // workaround for CS0165
