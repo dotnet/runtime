@@ -989,9 +989,7 @@ private:
     void buildRefPositionsForNode(GenTree* tree, BasicBlock* block, LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    VARSET_VALRET_TP buildUpperVectorSaveRefPositions(GenTree*     tree,
-                                                      LsraLocation currentLoc,
-                                                      regMaskTP    fpCalleeKillSet);
+    void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, VARSET_VALARG_TP liveLargeVectors);
     void buildUpperVectorRestoreRefPositions(GenTree* tree, LsraLocation currentLoc, VARSET_VALARG_TP liveLargeVectors);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 

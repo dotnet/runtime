@@ -1315,34 +1315,26 @@ void LinearScan::buildInternalRegisterUses()
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 //------------------------------------------------------------------------
 // buildUpperVectorSaveRefPositions - Create special RefPositions for saving
-//                                    the upper half of a set of large vector.
+//                                    the upper half of a set of large vectors.
 //
 // Arguments:
-//    tree       - The current node being handled
-//    currentLoc - The location of the current node
-//    fpCalleeKillSet - The set of registers killed by this node.
+//    tree             - The current node being handled.
+//    currentLoc       - The location of the current node.
+//    liveLargeVectors - The set of large vector lclVars live across 'tree'.
 //
-// Return Value: Returns the set of lclVars that are killed by this node, and therefore
-//               required RefTypeUpperVectorSaveDef RefPositions.
+// Notes:
+//    At this time we create these RefPositions for any large vectors that are live across this node,
+//    though we don't yet know which, if any, will be in a callee-save register at this point.
+//    (If they're in a caller-save register, they will simply be fully spilled.)
+//    This method is called after all the use and kill RefPositions are created for 'tree' but before
+//    any definitions.
 //
-// Notes: The returned set contains any lclVars that were partially spilled, and is
-//        used by buildUpperVectorRestoreRefPositions.
-//        This is called by BuildDefsWithKills for any node that kills registers in the
-//        RBM_FLT_CALLEE_TRASH set. We actually need to find any calls that kill the upper-half
-//        of the callee-save vector registers.
-//        But we will use as a proxy any node that kills floating point registers.
-//        (Note that some calls are masquerading as other nodes at this point so we can't just check for calls.)
-//
-VARSET_VALRET_TP
-LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet)
+void LinearScan::buildUpperVectorSaveRefPositions(GenTree*         tree,
+                                                  LsraLocation     currentLoc,
+                                                  VARSET_VALARG_TP liveLargeVectors)
 {
-    assert(enregisterLocalVars);
-    VARSET_TP liveLargeVectors(VarSetOps::MakeEmpty(compiler));
-    if (!VarSetOps::IsEmpty(compiler, largeVectorVars))
+    if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
     {
-        assert((fpCalleeKillSet & RBM_FLT_CALLEE_TRASH) != RBM_NONE);
-        VarSetOps::AssignNoCopy(compiler, liveLargeVectors,
-                                VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
         VarSetOps::Iter iter(compiler, liveLargeVectors);
         unsigned        varIndex = 0;
         while (iter.NextElem(&varIndex))
@@ -1359,31 +1351,34 @@ LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation current
             tempInterval->relatedInterval = varInterval->relatedInterval;
             varInterval->relatedInterval  = tempInterval;
         }
-        // For any non-lclVar intervals that are live at this point (i.e. in the DefList), we will also create
-        // a RefTypeUpperVectorSaveDef. For now these will all be spilled at this point, as we don't currently
-        // have a mechanism to communicate any non-lclVar intervals that need to be restored.
-        // TODO-CQ: Consider reworking this as part of addressing GitHub Issues #18144 and #17481.
-        for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
-             listNode = listNode->Next())
+    }
+    // For any non-lclVar large vector intervals that are live at this point (i.e. tree temps in the DefList),
+    // we will also create a RefTypeUpperVectorSaveDef. For now these will all be spilled at this point,
+    // as we don't currently have a mechanism to communicate any non-lclVar intervals that need to be restored.
+    // TODO-CQ: Consider reworking this as part of addressing GitHub Issues #18144 and #17481.
+    for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
+         listNode = listNode->Next())
+    {
+        var_types treeType = listNode->treeNode->TypeGet();
+        if (varTypeIsSIMD(treeType) && varTypeNeedsPartialCalleeSave(treeType))
         {
-            var_types treeType = listNode->treeNode->TypeGet();
-            if (varTypeIsSIMD(treeType) && varTypeNeedsPartialCalleeSave(treeType))
-            {
-                RefPosition* pos = newRefPosition(listNode->ref->getInterval(), currentLoc, RefTypeUpperVectorSaveDef,
-                                                  tree, RBM_FLT_CALLEE_SAVED);
-            }
+            RefPosition* pos = newRefPosition(listNode->ref->getInterval(), currentLoc, RefTypeUpperVectorSaveDef, tree,
+                                              RBM_FLT_CALLEE_SAVED);
         }
     }
-    return liveLargeVectors;
 }
 
 // buildUpperVectorRestoreRefPositions - Create special RefPositions for restoring
 //                                       the upper half of a set of large vectors.
 //
 // Arguments:
-//    tree       - The current node being handled
-//    currentLoc - The location of the current node
-//    liveLargeVectors - The set of lclVars needing restores (returned by buildUpperVectorSaveRefPositions)
+//    tree             - The current node being handled.
+//    currentLoc       - The location of the current node.
+//    liveLargeVectors - The set of large vector lclVars live across 'tree'.
+//
+// Notes:
+//    This is called after all the RefPositions for 'tree' have been created, since the restore,
+//    if needed, will be inserted after the call.
 //
 void LinearScan::buildUpperVectorRestoreRefPositions(GenTree*         tree,
                                                      LsraLocation     currentLoc,
@@ -2562,7 +2557,7 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
     // Generate Kill RefPositions
     assert(killMask == getKillSetForNode(tree));
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    VARSET_TP liveLargeVectors(VarSetOps::UninitVal());
+    VARSET_TP liveLargeVectorVars(VarSetOps::UninitVal());
     bool      doLargeVectorRestore = false;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
@@ -2572,13 +2567,25 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
     if (killMask != RBM_NONE)
     {
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        if (enregisterLocalVars && ((killMask & RBM_FLT_CALLEE_TRASH) != RBM_NONE))
+        // Build RefPositions to account for the fact that, even in a callee-save register, the upper half of any large
+        // vector will be killed by a call.
+        // We actually need to find any calls that kill the upper-half of the callee-save vector registers.
+        // But we will use as a proxy any node that kills floating point registers.
+        // (Note that some calls are masquerading as other nodes at this point so we can't just check for calls.)
+        // We call this unconditionally for such nodes, as we will create RefPositions for any large vector tree temps
+        // even if 'enregisterLocalVars' is false, or 'liveLargeVectors' is empty, though currently the allocation
+        // phase will fully (rather than partially) spill those, so we don't need to build the UpperVectorRestore
+        // RefPositions in that case.
+        //
+        if ((killMask & RBM_FLT_CALLEE_TRASH) != RBM_NONE)
         {
-            // Build RefPositions for saving any live large vectors.
-            // This must be done after the kills, so that we know which large vectors are still live.
-            VarSetOps::AssignNoCopy(compiler, liveLargeVectors,
-                                    buildUpperVectorSaveRefPositions(tree, currentLoc + 1, killMask));
-            doLargeVectorRestore = true;
+            if (enregisterLocalVars)
+            {
+                VarSetOps::AssignNoCopy(compiler, liveLargeVectorVars,
+                                        VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
+            }
+            buildUpperVectorSaveRefPositions(tree, currentLoc, liveLargeVectorVars);
+            doLargeVectorRestore = (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, liveLargeVectorVars));
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
@@ -2590,7 +2597,7 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
     // Finally, generate the UpperVectorRestores
     if (doLargeVectorRestore)
     {
-        buildUpperVectorRestoreRefPositions(tree, currentLoc, liveLargeVectors);
+        buildUpperVectorRestoreRefPositions(tree, currentLoc, liveLargeVectorVars);
     }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 }
