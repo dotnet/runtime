@@ -6,7 +6,7 @@
     <MinorVersion>7</MinorVersion>
     <!-- Always use shipping version instead of dummy version -->
     <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
-    <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
+    <PreReleaseVersionLabel>preview4</PreReleaseVersionLabel>
     <!-- Opt-in repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <!-- Opt-out repo features -->
