@@ -3091,6 +3091,9 @@
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
   </data>
+  <data name="ObjectDisposed_SafeHandleClosed" xml:space="preserve">
+    <value>Safe handle has been closed.</value>
+  </data>
   <data name="OperationCanceled" xml:space="preserve">
     <value>The operation was canceled.</value>
   </data>
