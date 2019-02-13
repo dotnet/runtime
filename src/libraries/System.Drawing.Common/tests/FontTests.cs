@@ -830,7 +830,7 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(image);
                 graphics.Dispose();
 
-                AssertExtensions.Throws<ArgumentException>(null, () => font.ToLogFont(new LOGFONT(), graphics));
+                Assert.Throws<ArgumentException>(() => font.ToLogFont(new LOGFONT(), graphics));
             }
         }
 

@@ -18,7 +18,6 @@ namespace System.Reflection.Tests
     }
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "AssemblyLoadContext not available in NetFx")]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() is not supported on UapAot")]
     public class IsCollectibleTests : RemoteExecutorTestBase
     {
         static public string asmNameString = "TestCollectibleAssembly";

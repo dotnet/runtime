@@ -237,7 +237,6 @@
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\System.Reflection.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Shims\Environment.cs" />
     <Compile Include="Shims\Marshal.cs" />
     <Compile Include="Shims\MiniLinq.cs" />
     <Compile Include="Shims\RuntimeReflectionExtensions.cs" />

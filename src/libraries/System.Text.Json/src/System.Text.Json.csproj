@@ -89,14 +89,19 @@
   <Target Name="GetSourcesToPackage" Returns="@(_sourceToPackage)" DependsOnTargets="Compile">
 
       <PropertyGroup>
+        <_sourcePackageName>Microsoft.Bcl.Json.Sources</_sourcePackageName>
         <_sourcePackageTargetLines><![CDATA[<?xml version="1.0" encoding="utf-8"?>
 <Project>
   <ItemGroup Condition="'%24(ExcludeEmbeddedResourceFromPackage)' != 'true'">@(EmbeddedResource->'
-    <EmbeddedResource Include="%24(MSBuildThisFileDirectory)%(FileName)%(Extension)" Link="System/Text/Json/%(FileName)%(Extension)" ManifestResourceName="%(ManifestResourceName)" />', '')
+    <EmbeddedResource Include="%24(MSBuildThisFileDirectory)%(FileName)%(Extension)" Link="$(_sourcePackageName)/%(FileName)%(Extension)" ManifestResourceName="%(ManifestResourceName)" />', '')
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="%24(MSBuildThisFileDirectory)README.md" Link="$(_sourcePackageName)/README.md" Visible="true" />
   </ItemGroup>
 </Project>]]>
         </_sourcePackageTargetLines>
-        <_targetsFileName>Microsoft.Bcl.Json.Sources.targets</_targetsFileName>
+        <_targetsFileName>$(_sourcePackageName).targets</_targetsFileName>
         <_generatedSourcePackageTargetPath>$(IntermediateOutputPath)/$(_targetsFileName)</_generatedSourcePackageTargetPath>
       </PropertyGroup>
 
@@ -104,9 +109,10 @@
 
       <ItemGroup>
         <_sourceToExclude Include="@(Compile)" Condition="$([System.String]::Copy('%(Compile.Identity)').ToLower().EndsWith('assemblyinfo.cs'))" />
-        <_sourceToPackage Include="@(Compile->'%(FullPath)')" PackagePath="contentFiles/cs/netstandard2.0/System/Text/Json/%(FileName)%(Extension)" Exclude="@(_sourceToExclude)"/>
+        <_sourceToPackage Include="@(Compile->'%(FullPath)')" PackagePath="contentFiles/cs/netstandard2.0/$(_sourcePackageName)/%(FileName)%(Extension)" Exclude="@(_sourceToExclude)"/>
         <_sourceToPackage Condition="'%(Extension)' == '.resx'" Include="@(EmbeddedResource->'%(FullPath)')"  PackagePath="build/netstandard2.0/%(FileName)%(Extension)" />
         <_sourceToPackage Include="$(_generatedSourcePackageTargetPath)" PackagePath="build/netstandard2.0/$(_targetsFileName)" />
+        <_sourceToPackage Include="$(MSBuildThisFileDirectory)../source_package/README.md" PackagePath="build/netstandard2.0/README.md" />
       </ItemGroup>
   </Target>
 </Project>

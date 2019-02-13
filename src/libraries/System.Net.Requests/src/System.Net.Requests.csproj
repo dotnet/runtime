@@ -91,8 +91,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\wininet\Interop.wininet_errors.cs">
-      <Link>Common\Interop\Windows\wininet\Interop.wininet_errors.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinInet\Interop.wininet_errors.cs">
+      <Link>Common\Interop\Windows\WinInet\Interop.wininet_errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
       <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>

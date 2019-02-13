@@ -173,6 +173,7 @@
     <Compile Include="Memory\Equality.cs" />
     <Compile Include="Memory\GetHashCode.cs" />
     <Compile Include="Memory\ImplicitConversion.cs" />
+    <Compile Include="Memory\IndexAndRange.cs" />
     <Compile Include="Memory\MemoryManager.cs" />
     <Compile Include="Memory\Pin.cs" />
     <Compile Include="Memory\Slice.cs" />

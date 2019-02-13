@@ -9,7 +9,6 @@
     <NoWarn>$(NoWarn);1698;0436</NoWarn>
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.2-Debug;netstandard1.2-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);SYSTEM_RUNTIME_WINDOWSRUNTIME_ASSEMBLY</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
     <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
@@ -66,8 +65,8 @@
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreCLR.cs" />
     <Compile Include="System\Threading\WindowsRuntimeSynchronizationContext.cs" />
     <Compile Include="System\WindowsRuntimeSystemExtensions.CoreCLR.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetActivationFactory.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RoGetActivationFactory.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.RoGetActivationFactory.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
       <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
@@ -92,8 +91,8 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.RoGetBufferMarshaler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>

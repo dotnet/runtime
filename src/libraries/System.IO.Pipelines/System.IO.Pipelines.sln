@@ -20,7 +20,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Pipelines.Performance.Tests", "tests\Performance\System.IO.Pipelines.Performance.Tests.csproj", "{66AE57BA-B56C-4A1E-ACA6-7C18431D416B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Pipelines.PerformanceTests", "tests\Performance\System.IO.Pipelines.PerformanceTests.csproj", "{66AE57BA-B56C-4A1E-ACA6-7C18431D416B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1032D5F6-5AE7-4002-A0E4-FEBEADFEA977} = {1032D5F6-5AE7-4002-A0E4-FEBEADFEA977}
 	EndProjectSection

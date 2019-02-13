@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.IO
 {
@@ -165,13 +166,37 @@ namespace System.IO
             // PERF: We don't need to allocate a new string here, we can parse an Int32 "in-place" in the existing string.
             string value = GetNextValue(key);
             int result;
-            if (int.TryParse(value, out result))
+            if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
             {
                 return result;
             }
             else
             {
                 throw new InvalidOperationException("Unable to parse value " + value + " of key " + key + " as an Int32.");
+            }
+        }
+
+        /// <summary>
+        /// Gets the next occurrence of the key in the string, and parses it as an Int64.
+        /// Throws if the key is not found in the remainder of the string, or if the key
+        /// cannot be successfully parsed into an Int64.
+        /// </summary>
+        /// <remarks>
+        /// This is mainly provided as a helper because most Linux config/info files
+        /// store integral data.
+        /// </remarks>
+        public long GetNextValueAsInt64(string key)
+        {
+            // PERF: We don't need to allocate a new string here, we can parse an Int64 "in-place" in the existing string.
+            string value = GetNextValue(key);
+            long result;
+            if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
+            {
+                return result;
+            }
+            else
+            {
+                throw new InvalidOperationException("Unable to parse value " + value + " of key " + key + " as an Int64.");
             }
         }
 

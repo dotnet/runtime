@@ -5057,7 +5057,7 @@ namespace CoreXml.Test.XLinq
                     w.WriteEndElement();
                     w.Dispose();
 
-                    if (!CompareReader(doc, "<Root>3.40282347E+38</Root>")) throw new TestException(TestResult.Failed, "");
+                    if (!CompareReader(doc, $"<Root>{float.MaxValue}</Root>")) throw new TestException(TestResult.Failed, "");
                 }
 
                 //[Variation(Id = 8, Desc = "WriteValue(string)", Priority = 1)]

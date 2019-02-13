@@ -64,7 +64,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // These tests fail with named pipes, since they try to do DNS lookups on named pipe paths.
             if (!usingNamePipes)
             {
-                TimeoutDuringReadAsyncWithClosedReaderTest(connectionString);
+                //if (DataTestUtility.IsUsingNativeSNI()) /* [ActiveIssue(33930)] */
+                //{
+                //    TimeoutDuringReadAsyncWithClosedReaderTest(connectionString);
+                //}
                 NonFatalTimeoutDuringRead(connectionString);
             }
         }

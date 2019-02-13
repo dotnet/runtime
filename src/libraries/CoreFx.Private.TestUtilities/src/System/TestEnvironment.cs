@@ -3,11 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using Xunit;
 
 namespace System
 {
-    public static partial class TestEnvironment
+    public static class TestEnvironment
     {
         /// <summary>
         /// Check if the stress mode is enabled.

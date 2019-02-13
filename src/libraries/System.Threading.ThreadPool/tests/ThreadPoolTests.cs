@@ -187,6 +187,7 @@ namespace System.Threading.ThreadPools.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Triggers an assertion failure.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ThreadPool.SetMinThreads and SetMaxThreads are not supported on UapAot.")]
         private static void SetMinThreadsTo0Test()
         {
             int minw, minc, maxw, maxc;
@@ -345,14 +346,40 @@ namespace System.Threading.ThreadPools.Tests
             WaitOrTimerCallback callback = (state, timedOut) => { };
             Assert.Throws<ArgumentNullException>(() => ThreadPool.RegisterWaitForSingleObject(null, callback, null, 0, true));
             Assert.Throws<ArgumentNullException>(() => ThreadPool.RegisterWaitForSingleObject(waitHandle, null, null, 0, true));
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
                 ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, -2, true));
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
                 ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, (long)-2, true));
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            if (!PlatformDetection.IsFullFramework) // netfx silently overflows the timeout
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, (long)int.MaxValue + 1, true));
+            }
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () =>
                 ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, TimeSpan.FromMilliseconds(-2), true));
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () =>
                 ThreadPool.RegisterWaitForSingleObject(
+                    waitHandle,
+                    callback,
+                    null,
+                    TimeSpan.FromMilliseconds((double)int.MaxValue + 1),
+                    true));
+
+            Assert.Throws<ArgumentNullException>(() => ThreadPool.UnsafeRegisterWaitForSingleObject(null, callback, null, 0, true));
+            Assert.Throws<ArgumentNullException>(() => ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, null, null, 0, true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, -2, true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, (long)-2, true));
+            if (!PlatformDetection.IsFullFramework) // netfx silently overflows the timeout
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
+                    ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, (long)int.MaxValue + 1, true));
+            }
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () =>
+                ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, TimeSpan.FromMilliseconds(-2), true));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () =>
+                ThreadPool.UnsafeRegisterWaitForSingleObject(
                     waitHandle,
                     callback,
                     null,

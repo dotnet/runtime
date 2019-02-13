@@ -130,23 +130,23 @@
     <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.NetworkInformation.cs">
       <Link>Interop\Windows\IpHlpApi\Interop.NetworkInformation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalAlloc.cs">
-      <Link>Interop\Windows\kernel32\Interop.LocalAlloc.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
+      <Link>Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalAlloc.Constants.cs">
-      <Link>Interop\Windows\kernel32\Interop.LocalAlloc.Constants.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
+      <Link>Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalFree.cs">
-      <Link>Interop\Windows\kernel32\Interop.LocalFree.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalFree.cs">
+      <Link>Interop\Windows\Kernel32\Interop.LocalFree.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WinsockBSD.cs">
-      <Link>Interop\Windows\Winsock\Interop.WinsockBSD.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WinsockBSD.cs">
+      <Link>Interop\Windows\WinSock\Interop.WinsockBSD.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAEventSelect.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSAEventSelect.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSAEventSelect.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSAEventSelect.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAIoctl.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSAIoctl.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSAIoctl.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSAIoctl.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->

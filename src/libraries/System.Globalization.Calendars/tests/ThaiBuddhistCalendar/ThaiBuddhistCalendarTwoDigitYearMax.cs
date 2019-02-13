@@ -12,7 +12,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void TwoDigitYearMax_Get()
         {
-            Assert.Equal(2029 + 543, new ThaiBuddhistCalendar().TwoDigitYearMax);
+            var calendar = new ThaiBuddhistCalendar();
+            Assert.True(calendar.TwoDigitYearMax == 2029 + 543 || calendar.TwoDigitYearMax == 2049 + 543, $"Unexpected calendar.TwoDigitYearMax {calendar.TwoDigitYearMax}");
         }
 
         public static IEnumerable<object[]> TwoDigitYearMax_Set_TestData()
