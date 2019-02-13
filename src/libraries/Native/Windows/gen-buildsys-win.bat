@@ -20,8 +20,8 @@ if "%__VSVersion%" == "vs2019" (
   set __VSString=15 2017
 )
 
-:: x86 is the default arch selected by cmake.
 if /i "%3" == "x64"     (set __ExtraCmakeParams=%__ExtraCmakeParams% -A x64)
+if /i "%3" == "x86"     (set __ExtraCmakeParams=%__ExtraCmakeParams% -A Win32)
 if /i "%3" == "arm"     (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM)
 if /i "%3" == "arm64"   (set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM64)
 if /i "%3" == "wasm"    (set __sourceDir=%~dp0..\Unix && goto DoGen)
