@@ -600,30 +600,6 @@ public:
 };
 
 //
-// MdaMarshaling
-//
-class MdaMarshaling
-{
-public:
-    void Initialize(MdaXmlElement* pXmlInput);
-    void ReportFieldMarshal(FieldMarshaler* pFM);
-  
-private:
-    void GetManagedSideForMethod(SString& strManagedMarshalType, Module* pModule, SigPointer sig, CorElementType elemType);
-    void GetUnmanagedSideForMethod(SString& strNativeMarshalType, MarshalInfo* mi, BOOL fSizeIsSpecified);
-    void GetManagedSideForField(SString& strManagedMarshalType, FieldDesc* pFD);
-    void GetUnmanagedSideForField(SString& strUnmanagedMarshalType, FieldMarshaler* pFM);
-    BOOL CheckForPrimitiveType(CorElementType elemType, SString& strPrimitiveType);
-
-public:
-    MDA_ASSISTANT_BASE_MEMBERS;
-    MdaQuery::CompiledQueries* m_pMethodFilter;
-    MdaQuery::CompiledQueries* m_pFieldFilter;
-};
-
-
-
-//
 // InvalidFunctionPointerInDelegate
 //
 class MdaInvalidFunctionPointerInDelegate

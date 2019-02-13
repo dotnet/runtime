@@ -2073,22 +2073,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         GetCl(),
         GetHalfBakedMethodTable());
 
-#ifdef MDA_SUPPORTED
-    MdaMarshaling* mda = MDA_GET_ASSISTANT(Marshaling);
-    if (mda && HasLayout())
-    {
-        FieldMarshaler *pFieldMarshaler = (FieldMarshaler*)GetLayoutInfo()->GetFieldMarshalers();
-        UINT  numReferenceFields        = GetLayoutInfo()->GetNumCTMFields();
-
-        while (numReferenceFields--)
-        {
-            mda->ReportFieldMarshal(pFieldMarshaler);
-
-            ((BYTE*&)pFieldMarshaler) += MAXFIELDMARSHALERSIZE;
-        }
-    }
-#endif // MDA_SUPPORTED
-
 #ifdef FEATURE_PREJIT
     _ASSERTE(pComputedPZM == Module::GetPreferredZapModuleForMethodTable(pMT));
 #endif // FEATURE_PREJIT
