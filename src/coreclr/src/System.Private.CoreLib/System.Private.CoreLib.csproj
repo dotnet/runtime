@@ -118,7 +118,6 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
-    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\Win32Native.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Activator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext.CoreCLR.cs" />
@@ -276,6 +275,15 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReferenceOfT.cs" />
+    <Compile Include="shared\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />
+    <Compile Include="shared\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs" />
+    <Compile Include="shared\Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
+    <Compile Include="shared\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="shared\Interop\Windows\Kernel32\Interop.QueryUnbiasedInterruptTime.cs" />
+    <Compile Include="shared\Interop\Windows\Kernel32\Interop.VerifyVersionExW.cs" />
+    <Compile Include="shared\Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs" />
+    <Compile Include="shared\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
+    <Compile Include="shared\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />

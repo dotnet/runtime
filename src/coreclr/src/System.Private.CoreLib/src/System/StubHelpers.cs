@@ -113,7 +113,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            Win32Native.CoTaskMemFree(pNative);
+            Interop.Ole32.CoTaskMemFree(pNative);
         }
     }  // class CSTRMarshaler
 
@@ -169,7 +169,7 @@ namespace System.StubHelpers
         {
             if (pNative != IntPtr.Zero)
             {
-                Win32Native.CoTaskMemFree(pNative);
+                Interop.Ole32.CoTaskMemFree(pNative);
             }
         }
     }
@@ -236,20 +236,20 @@ namespace System.StubHelpers
                     // If caller provided a buffer, construct the BSTR manually. The size
                     // of the buffer must be at least (lengthInBytes + 6) bytes.
 #if DEBUG
-                    uint length = *((uint*)pNativeBuffer.ToPointer());
+                    uint length = *((uint*)pNativeBuffer);
                     Debug.Assert(length >= lengthInBytes + 6, "BSTR localloc'ed buffer is too small");
 #endif
 
                     // set length
-                    *((uint*)pNativeBuffer.ToPointer()) = lengthInBytes;
+                    *((uint*)pNativeBuffer) = lengthInBytes;
 
-                    ptrToFirstChar = (byte*)pNativeBuffer.ToPointer() + 4;
+                    ptrToFirstChar = (byte*)pNativeBuffer + 4;
                 }
                 else
                 {
                     // If not provided, allocate the buffer using SysAllocStringByteLen so
                     // that odd-sized strings will be handled as well.
-                    ptrToFirstChar = (byte*)Win32Native.SysAllocStringByteLen(null, lengthInBytes).ToPointer();
+                    ptrToFirstChar = (byte*)Interop.OleAut32.SysAllocStringByteLen(null, lengthInBytes);
 
                     if (ptrToFirstChar == null)
                     {
@@ -314,7 +314,7 @@ namespace System.StubHelpers
                 if ((length & 1) == 1)
                 {
                     // odd-sized strings need to have the trailing byte saved in their sync block
-                    ret.SetTrailByte(((byte*)bstr.ToPointer())[length - 1]);
+                    ret.SetTrailByte(((byte*)bstr)[length - 1]);
                 }
 
                 return ret;
@@ -325,7 +325,7 @@ namespace System.StubHelpers
         {
             if (IntPtr.Zero != pNative)
             {
-                Win32Native.SysFreeString(pNative);
+                Interop.OleAut32.SysFreeString(pNative);
             }
         }
     }  // class BSTRMarshaler
@@ -385,7 +385,7 @@ namespace System.StubHelpers
         {
             if (IntPtr.Zero != pNative)
             {
-                Win32Native.CoTaskMemFree((IntPtr)(((long)pNative) - sizeof(uint)));
+                Interop.Ole32.CoTaskMemFree((IntPtr)(((long)pNative) - sizeof(uint)));
             }
         }
     }  // class VBByValStrMarshaler
@@ -407,7 +407,7 @@ namespace System.StubHelpers
                 bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, 0 != (flags & 0xFF), 0 != (flags >> 8), out nb);
             }
 
-            return Win32Native.SysAllocStringByteLen(bytes, (uint)nb);
+            return Interop.OleAut32.SysAllocStringByteLen(bytes, (uint)nb);
         }
 
         internal static unsafe string ConvertToManaged(IntPtr bstr)
@@ -429,7 +429,7 @@ namespace System.StubHelpers
         {
             if (IntPtr.Zero != pNative)
             {
-                Win32Native.SysFreeString(pNative);
+                Interop.OleAut32.SysFreeString(pNative);
             }
         }
     }  // class AnsiBSTRMarshaler
@@ -1099,7 +1099,7 @@ namespace System.StubHelpers
             // marshal the object as class with layout (UnmanagedType.LPStruct)
             if (IsIn(dwFlags))
             {
-                StubHelpers.FmtClassUpdateNativeInternal(pManagedHome, (byte*)pNativeHome.ToPointer(), ref cleanupWorkList);
+                StubHelpers.FmtClassUpdateNativeInternal(pManagedHome, (byte*)pNativeHome, ref cleanupWorkList);
             }
             if (IsOut(dwFlags))
             {
@@ -1172,7 +1172,7 @@ namespace System.StubHelpers
 
                 case BackPropAction.Layout:
                     {
-                        StubHelpers.FmtClassUpdateCLRInternal(pManagedHome, (byte*)pNativeHome.ToPointer());
+                        StubHelpers.FmtClassUpdateCLRInternal(pManagedHome, (byte*)pNativeHome);
                         break;
                     }
 
@@ -1221,7 +1221,7 @@ namespace System.StubHelpers
                     // this must happen regardless of BackPropAction
                     Marshal.DestroyStructure(pNativeHome, layoutType);
                 }
-                Win32Native.CoTaskMemFree(pNativeHome);
+                Interop.Ole32.CoTaskMemFree(pNativeHome);
             }
             StubHelpers.DestroyCleanupList(ref cleanupWorkList);
         }

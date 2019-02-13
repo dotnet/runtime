@@ -14,7 +14,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-using Microsoft.Win32;
 
 namespace System.Threading
 {
@@ -31,7 +30,7 @@ namespace System.Threading
 
     internal sealed class RegisteredWaitHandleSafe : CriticalFinalizerObject
     {
-        private static IntPtr InvalidHandle => Win32Native.INVALID_HANDLE_VALUE;
+        private static IntPtr InvalidHandle => new IntPtr(-1);
         private IntPtr registeredWaitHandle = InvalidHandle;
         private WaitHandle m_internalWaitObject;
         private bool bReleaseNeeded = false;

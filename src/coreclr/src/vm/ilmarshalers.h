@@ -2032,7 +2032,7 @@ public:
 	};
 
 	ILUTF8BufferMarshaler() :
-		ILOptimizedAllocMarshaler(METHOD__WIN32NATIVE__COTASKMEMFREE)
+		ILOptimizedAllocMarshaler(METHOD__MARSHAL__FREE_CO_TASK_MEM)
 	{
 		LIMITED_METHOD_CONTRACT;
 	}
@@ -2061,7 +2061,7 @@ public:
     };
 
     ILWSTRBufferMarshaler() :
-        ILOptimizedAllocMarshaler(METHOD__WIN32NATIVE__COTASKMEMFREE)
+        ILOptimizedAllocMarshaler(METHOD__MARSHAL__FREE_CO_TASK_MEM)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -2090,7 +2090,7 @@ public:
     };
 
     ILCSTRBufferMarshaler() :
-        ILOptimizedAllocMarshaler(METHOD__WIN32NATIVE__COTASKMEMFREE)
+        ILOptimizedAllocMarshaler(METHOD__MARSHAL__FREE_CO_TASK_MEM)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -2391,7 +2391,7 @@ protected:
 
         EmitLoadNativeValue(pslILEmit);
         // static void CoTaskMemFree(IntPtr ptr)
-        pslILEmit->EmitCALL(METHOD__WIN32NATIVE__COTASKMEMFREE, 1, 0);
+        pslILEmit->EmitCALL(METHOD__MARSHAL__FREE_CO_TASK_MEM, 1, 0);
     }
 
     virtual void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
@@ -2403,7 +2403,7 @@ protected:
             pslILEmit->EmitLDC(sizeof(ELEMENT));
             pslILEmit->EmitCONV_U();
             // static IntPtr CoTaskMemAlloc(UIntPtr cb)
-            pslILEmit->EmitCALL(METHOD__WIN32NATIVE__COTASKMEMALLOC, 1, 1);
+            pslILEmit->EmitCALL(METHOD__MARSHAL__ALLOC_CO_TASK_MEM, 1, 1);
             EmitStoreNativeValue(pslILEmit);
         }
     }
@@ -3138,7 +3138,7 @@ public:
                         METHOD__MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_MANAGED,
                         METHOD__MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER__CONVERT_SPACE_TO_NATIVE,
                         METHOD__MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_NATIVE,
-                        METHOD__WIN32NATIVE__COTASKMEMFREE,
+                        METHOD__MARSHAL__FREE_CO_TASK_MEM,
                         METHOD__MNGD_HIDDEN_LENGTH_ARRAY_MARSHALER__CLEAR_NATIVE_CONTENTS,
                         METHOD__NIL)
     {

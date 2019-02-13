@@ -4,8 +4,6 @@
 
 using System;
 using System.Text;
-using System.Security;
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal
@@ -18,27 +16,21 @@ namespace Internal
     public static class Console
     {
         private static readonly SafeFileHandle _outputHandle =
-            new SafeFileHandle(Win32Native.GetStdHandle(Win32Native.STD_OUTPUT_HANDLE), false);
+            new SafeFileHandle(Interop.Kernel32.GetStdHandle(Interop.Kernel32.STD_OUTPUT_HANDLE), ownsHandle: false);
 
         public static unsafe void Write(string s)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(s);
-
             fixed (byte* pBytes = bytes)
             {
-                int bytesWritten;
-                Win32Native.WriteFile(_outputHandle, pBytes, bytes.Length, out bytesWritten, IntPtr.Zero);
+                Interop.Kernel32.WriteFile(_outputHandle, pBytes, bytes.Length, out _, IntPtr.Zero);
             }
         }
 
-        public static void WriteLine(string s)
-        {
+        public static void WriteLine(string s) =>
             Write(s + Environment.NewLine);
-        }
 
-        public static void WriteLine()
-        {
+        public static void WriteLine() =>
             Write(Environment.NewLine);
-        }
     }
 }
