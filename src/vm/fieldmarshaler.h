@@ -67,8 +67,6 @@ class FieldMarshaler_Exception;
 class FieldMarshaler_Nullable;
 #endif // FEATURE_COMINTEROP
 
-VOID NStructFieldTypeToString(FieldMarshaler* pFM, SString& strNStructFieldType);
-
 //=======================================================================
 // Each possible COM+/Native pairing of data type has a
 // NLF_* id. This is used to select the marshaling code.
