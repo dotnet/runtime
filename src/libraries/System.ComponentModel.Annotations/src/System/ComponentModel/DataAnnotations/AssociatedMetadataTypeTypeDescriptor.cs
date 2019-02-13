@@ -12,17 +12,9 @@ namespace System.ComponentModel.DataAnnotations
 {
     internal class AssociatedMetadataTypeTypeDescriptor : CustomTypeDescriptor
     {
-        private Type AssociatedMetadataType
-        {
-            get;
-            set;
-        }
+        private Type AssociatedMetadataType { get; set; }
 
-        private bool IsSelfAssociated
-        {
-            get;
-            set;
-        }
+        private bool IsSelfAssociated { get; set; }
 
         public AssociatedMetadataTypeTypeDescriptor(ICustomTypeDescriptor parent, Type type, Type associatedMetadataType)
             : base(parent)
@@ -96,28 +88,28 @@ namespace System.ComponentModel.DataAnnotations
         private static class TypeDescriptorCache
         {
             // Stores the associated metadata type for a type
-            private static readonly ConcurrentDictionary<Type, Type> _metadataTypeCache = new ConcurrentDictionary<Type, Type>();
+            private static readonly ConcurrentDictionary<Type, Type> s_metadataTypeCache = new ConcurrentDictionary<Type, Type>();
 
             // Stores the attributes for a member info
-            private static readonly ConcurrentDictionary<Tuple<Type, string>, Attribute[]> _typeMemberCache = new ConcurrentDictionary<Tuple<Type, string>, Attribute[]>();
+            private static readonly ConcurrentDictionary<ValueTuple<Type, string>, Attribute[]> s_typeMemberCache = new ConcurrentDictionary<ValueTuple<Type, string>, Attribute[]>();
 
             // Stores whether or not a type and associated metadata type has been checked for validity
-            private static readonly ConcurrentDictionary<Tuple<Type, Type>, bool> _validatedMetadataTypeCache = new ConcurrentDictionary<Tuple<Type, Type>, bool>();
+            private static readonly ConcurrentDictionary<ValueTuple<Type, Type>, bool> s_validatedMetadataTypeCache = new ConcurrentDictionary<ValueTuple<Type, Type>, bool>();
 
             public static void ValidateMetadataType(Type type, Type associatedType)
             {
-                Tuple<Type, Type> typeTuple = new Tuple<Type, Type>(type, associatedType);
-                if (!_validatedMetadataTypeCache.ContainsKey(typeTuple))
+                var typeTuple = new ValueTuple<Type, Type>(type, associatedType);
+                if (!s_validatedMetadataTypeCache.ContainsKey(typeTuple))
                 {
                     CheckAssociatedMetadataType(type, associatedType);
-                    _validatedMetadataTypeCache.TryAdd(typeTuple, true);
+                    s_validatedMetadataTypeCache.TryAdd(typeTuple, true);
                 }
             }
 
             public static Type GetAssociatedMetadataType(Type type)
             {
                 Type associatedMetadataType = null;
-                if (_metadataTypeCache.TryGetValue(type, out associatedMetadataType))
+                if (s_metadataTypeCache.TryGetValue(type, out associatedMetadataType))
                 {
                     return associatedMetadataType;
                 }
@@ -128,7 +120,7 @@ namespace System.ComponentModel.DataAnnotations
                 {
                     associatedMetadataType = attribute.MetadataClassType;
                 }
-                _metadataTypeCache.TryAdd(type, associatedMetadataType);
+                s_metadataTypeCache.TryAdd(type, associatedMetadataType);
                 return associatedMetadataType;
             }
 
@@ -150,15 +142,15 @@ namespace System.ComponentModel.DataAnnotations
 
                     throw new InvalidOperationException(SR.Format(SR.AssociatedMetadataTypeTypeDescriptor_MetadataTypeContainsUnknownProperties,
                         mainType.FullName,
-                        String.Join(", ", buddyTypeMembers.ToArray())));
+                        string.Join(", ", buddyTypeMembers.ToArray())));
                 }
             }
 
             public static Attribute[] GetAssociatedMetadata(Type type, string memberName)
             {
-                var memberTuple = new Tuple<Type, string>(type, memberName);
+                var memberTuple = new ValueTuple<Type, string>(type, memberName);
                 Attribute[] attributes;
-                if (_typeMemberCache.TryGetValue(memberTuple, out attributes))
+                if (s_typeMemberCache.TryGetValue(memberTuple, out attributes))
                 {
                     return attributes;
                 }
@@ -178,7 +170,7 @@ namespace System.ComponentModel.DataAnnotations
                     attributes = Array.Empty<Attribute>();
                 }
 
-                _typeMemberCache.TryAdd(memberTuple, attributes);
+                s_typeMemberCache.TryAdd(memberTuple, attributes);
                 return attributes;
             }
         }
