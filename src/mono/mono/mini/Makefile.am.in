@@ -40,17 +40,16 @@ sgen_libs = \
 	$(glib_libs)
 
 if ENABLE_LLVM
--include $(mono_build_root)/llvm/llvm_config.mk
+
+include $(mono_build_root)/llvm/llvm_config.mk
 LLVM_CFLAGS=$(LLVM_CFLAGS_INTERNAL) $(LLVM_CFLAGS_EXTERNAL)
 LLVM_CXXFLAGS=$(LLVM_CXXFLAGS_INTERNAL) $(LLVM_CXXFLAGS_EXTERNAL)
 LLVM_LDFLAGS=$(LLVM_LDFLAGS_INTERNAL) $(LLVM_LDFLAGS_EXTERNAL)
 LLVM_LIBS=$(LLVM_LIBS_INTERNAL) $(LLVM_LIBS_EXTERNAL)
 
-print-llvm-info:
-	echo "cflags: $(LLVM_CFLAGS)"
-	echo "cxxflags: $(LLVM_CXXFLAGS)"
-	echo "ldflags: $(LLVM_LDFLAGS)"
-	echo "libs: $(LLVM_LIBS)"
+$(mono_build_root)/llvm/llvm_config.mk:
+	$(MAKE) -C $(top_builddir)/llvm $(mono_build_root)/llvm/llvm_config.mk
+
 endif
 
 

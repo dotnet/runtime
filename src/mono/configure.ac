@@ -1111,7 +1111,7 @@ AC_ARG_WITH(unreal,              [  --with-unreal=yes,no                If you w
 AC_ARG_WITH(wasm,                [  --with-wasm=yes,no                  If you want to build the WebAssembly (defaults to no)], [], [with_wasm=default])
 
 
-AC_ARG_WITH(runtime-preset, [  --with-runtime-preset=net_4_x,all,aot,aot_llvm,hybridaot,hybridaot_llvm,fullaot,fullaot_llvm,winaot,winaot_llvm,bitcode,unreal,fullaotinterp,fullaotinterp_llvm  Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+AC_ARG_WITH(runtime-preset, [  --with-runtime-preset=net_4_x,all,aot,aot_llvm,hybridaot,hybridaot_llvm,fullaot,fullaot_llvm,winaot,winaot_llvm,bitcode,bitcodeinterp,unreal,fullaotinterp,fullaotinterp_llvm  Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
 AC_ARG_WITH(spectre-mitigation,             [  --with-spectre-mitigation=yes,no   If you want to build the runtime with compiler flags that enable Spectre mitigation (defaults to no)], [], [with_spectre_mitigation=default])
 AC_ARG_WITH(spectre-indirect-branch-choice,   [  --with-spectre-indirect-branch-choice=keep,thunk,inline,extern   Convert indirect branches to the specified kind of thunk (defaults to inline)], [], [with_spectre_indirect_branch_choice=inline])
 AC_ARG_WITH(spectre-function-return-choice, [  --with-spectre-function-return-choice=keep,thunk,inline,extern   Convert function return instructions to the specified kind of thunk (defaults to inline)], [], [with_spectre_function_return_choice=inline])
@@ -1219,7 +1219,8 @@ elif test x$with_runtime_preset = xbitcode; then
    with_testing_aot_full_default=yes
    with_bitcode_default=yes
    enable_cooperative_suspend_default=yes
-   TEST_PROFILE=testing_aot_full
+   # FIXME: use TEST_PROFILE=testing_aot_full
+   TEST_PROFILE=testing_aot_bitcode
    enable_llvm_default=yes
 
    mono_feature_disable_com='yes'
@@ -1228,9 +1229,24 @@ elif test x$with_runtime_preset = xbitcode; then
    mono_feature_disable_reflection_emit='yes'
    mono_feature_disable_appdomains='yes'
 
-   AOT_BUILD_FLAGS="--runtime=mobile --aot=llvmonly,$INVARIANT_AOT_OPTIONS"
+   # We need at least clang++-6.0 to read the LLVM IR produced by the runtime
+   AOT_BUILD_FLAGS="--runtime=mobile --aot=llvmonly,clangxx=clang++-6.0,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--runtime=mobile --llvmonly"
    AOT_MODE="llvmonly"
+elif test x$with_runtime_preset = xbitcodeinterp; then
+   with_testing_aot_full_interp_default=yes
+   with_bitcode_default=yes
+   enable_cooperative_suspend_default=yes
+   # FIXME: use TEST_PROFILE=testing_aot_full_interp
+   TEST_PROFILE=testing_aot_bitcode_interp
+   enable_llvm_default=yes
+
+   # mscorlib.dll aot compilation crashes
+   mono_feature_disable_com='yes'
+
+   # We need at least clang++-6.0 to read the LLVM IR produced by the runtime
+   AOT_BUILD_FLAGS="--aot=llvmonly,interp,clangxx=clang++-6.0,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--llvmonly-interp"
 elif test x$with_runtime_preset = xfullaot; then
    DISABLE_MCS_DOCS_default=yes
    with_testing_aot_full_default=yes
