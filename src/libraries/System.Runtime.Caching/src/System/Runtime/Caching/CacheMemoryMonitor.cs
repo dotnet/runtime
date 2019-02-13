@@ -181,9 +181,7 @@ namespace System.Runtime.Caching
                 _cacheSizeSampleTimes[_idx] = DateTime.UtcNow;
                 // remember the sample value
                 _cacheSizeSamples[_idx] = sref.ApproximateSize;
-#if DEBUG
                 Dbg.Trace("MemoryCacheStats", "SizedRef.ApproximateSize=" + _cacheSizeSamples[_idx]);
-#endif
                 IMemoryCacheManager memoryCacheManager = s_memoryCacheManager;
                 if (memoryCacheManager != null)
                 {
@@ -227,7 +225,7 @@ namespace System.Runtime.Caching
                 }
 
 #if PERF
-                Debug.WriteLine(String.Format("CacheMemoryMonitor.GetPercentToTrim: percent={0:N}, lastTrimPercent={1:N}\n",
+                Debug.WriteLine(String.Format("CacheMemoryMonitor.GetPercentToTrim: percent={0:N}, lastTrimPercent={1:N}{Environment.NewLine}",
                                                     percent,
                                                     lastTrimPercent));
 #endif

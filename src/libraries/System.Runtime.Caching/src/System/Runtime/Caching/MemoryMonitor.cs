@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Specialized;
-using System.Security;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Runtime.Caching
 {
@@ -84,12 +81,10 @@ namespace System.Runtime.Caching
             _pressureTotal += pressure;
             _pressureHist[_i0] = pressure;
 
-#if DEBUG
             Dbg.Trace("MemoryCacheStats", this.GetType().Name + ".Update: last=" + pressure
                         + ",high=" + PressureHigh
                         + ",low=" + PressureLow
-                        + " " + Dbg.FormatLocalDate(DateTime.Now));
-#endif
+                        + " " + DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
         }
     }
 }

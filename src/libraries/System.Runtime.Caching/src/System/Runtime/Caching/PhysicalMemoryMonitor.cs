@@ -92,10 +92,11 @@ namespace System.Runtime.Caching
                 }
 
 #if PERF
-                Debug.WriteLine(String.Format("PhysicalMemoryMonitor.GetPercentToTrim: percent={0:N}, lastTrimPercent={1:N}, secondsSinceTrim={2:N}\n",
+                Debug.WriteLine(String.Format("PhysicalMemoryMonitor.GetPercentToTrim: percent={0:N}, lastTrimPercent={1:N}, secondsSinceTrim={2:N}{3}",
                                                     percent,
                                                     lastTrimPercent,
-                                                    ticksSinceTrim/TimeSpan.TicksPerSecond));
+                                                    ticksSinceTrim/TimeSpan.TicksPerSecond,
+                                                    Environment.NewLine));
 #endif
             }
 
@@ -111,10 +112,8 @@ namespace System.Runtime.Caching
             }
             _pressureHigh = Math.Max(3, physicalMemoryLimitPercentage);
             _pressureLow = Math.Max(1, _pressureHigh - 9);
-#if DEBUG
             Dbg.Trace("MemoryCacheStats", "PhysicalMemoryMonitor.SetLimit: _pressureHigh=" + _pressureHigh +
                         ", _pressureLow=" + _pressureLow);
-#endif
         }
     }
 }
