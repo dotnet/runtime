@@ -125,7 +125,7 @@ namespace System
         }
 
         /// <summary>
-        /// Removes all leading and trailing occurrences of a set of characters specified 
+        /// Removes all leading and trailing occurrences of a set of characters specified
         /// in a readonly span from the span.
         /// </summary>
         /// <param name="span">The source span from which the characters are removed.</param>
@@ -137,7 +137,7 @@ namespace System
         }
 
         /// <summary>
-        /// Removes all leading occurrences of a set of characters specified 
+        /// Removes all leading occurrences of a set of characters specified
         /// in a readonly span from the span.
         /// </summary>
         /// <param name="span">The source span from which the characters are removed.</param>
@@ -166,7 +166,7 @@ namespace System
         }
 
         /// <summary>
-        /// Removes all trailing occurrences of a set of characters specified 
+        /// Removes all trailing occurrences of a set of characters specified
         /// in a readonly span from the span.
         /// </summary>
         /// <param name="span">The source span from which the characters are removed.</param>
@@ -258,7 +258,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
+        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T).
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
@@ -282,7 +282,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
+        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T).
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
@@ -307,7 +307,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified value and returns the index of its last occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
+        /// Searches for the specified value and returns the index of its last occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T).
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
@@ -331,7 +331,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified sequence and returns the index of its last occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
+        /// Searches for the specified sequence and returns the index of its last occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T).
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
@@ -350,7 +350,7 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T). 
+        /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other)
@@ -369,7 +369,7 @@ namespace System
         }
 
         /// <summary>
-        /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T). 
+        /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T).
         /// </summary>
         public static int SequenceCompareTo<T>(this Span<T> span, ReadOnlySpan<T> other)
             where T : IComparable<T>
@@ -392,7 +392,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
+        /// Searches for the specified value and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T).
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
@@ -416,7 +416,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
+        /// Searches for the specified sequence and returns the index of its first occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T).
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
@@ -441,7 +441,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified value and returns the index of its last occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
+        /// Searches for the specified value and returns the index of its last occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T).
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
@@ -465,7 +465,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the specified sequence and returns the index of its last occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T). 
+        /// Searches for the specified sequence and returns the index of its last occurrence. If not found, returns -1. Values are compared using IEquatable{T}.Equals(T).
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to search for.</param>
@@ -539,7 +539,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
@@ -661,7 +661,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value0">One of the values to search for.</param>
@@ -690,7 +690,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
@@ -829,7 +829,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
@@ -868,7 +868,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value0">One of the values to search for.</param>
@@ -890,7 +890,7 @@ namespace System
         }
 
         /// <summary>
-        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1. 
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
@@ -909,7 +909,7 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T). 
+        /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
@@ -927,7 +927,7 @@ namespace System
         }
 
         /// <summary>
-        /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T). 
+        /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
@@ -1134,6 +1134,19 @@ namespace System
 
         /// <summary>
         /// Creates a new Span over the portion of the target array beginning
+        /// at 'startIndex' and ending at the end of the segment.
+        /// </summary>
+        /// <param name="segment">The target array.</param>
+        /// <param name="startIndex">The index at which to begin the Span.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<T> AsSpan<T>(this ArraySegment<T> segment, Index startIndex)
+        {
+            int actualIndex = startIndex.GetOffset(segment.Count);
+            return AsSpan(segment, actualIndex);
+        }
+
+        /// <summary>
+        /// Creates a new Span over the portion of the target array beginning
         /// at 'start' index and ending at 'end' index (exclusive).
         /// </summary>
         /// <param name="segment">The target array.</param>
@@ -1156,6 +1169,18 @@ namespace System
         }
 
         /// <summary>
+        /// Creates a new Span over the portion of the target array using the range start and end indexes
+        /// </summary>
+        /// <param name="segment">The target array.</param>
+        /// <param name="range">The range which has start and end indexes to use for slicing the array.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<T> AsSpan<T>(this ArraySegment<T> segment, Range range)
+        {
+            (int start, int length) = range.GetOffsetAndLength(segment.Count);
+            return new Span<T>(segment.Array, segment.Offset + start, length);
+        }
+
+        /// <summary>
         /// Creates a new memory over the target array.
         /// </summary>
         public static Memory<T> AsMemory<T>(this T[] array) => new Memory<T>(array);
@@ -1174,6 +1199,24 @@ namespace System
         public static Memory<T> AsMemory<T>(this T[] array, int start) => new Memory<T>(array, start);
 
         /// <summary>
+        /// Creates a new memory over the portion of the target array starting from
+        /// 'startIndex' to the end of the array.
+        /// </summary>
+        public static Memory<T> AsMemory<T>(this T[] array, Index startIndex)
+        {
+            if (array == null)
+            {
+                if (!startIndex.Equals(Index.Start))
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+                return default;
+            }
+
+            int actualIndex = startIndex.GetOffset(array.Length);
+            return new Memory<T>(array, actualIndex);
+        }
+
+        /// <summary>
         /// Creates a new memory over the portion of the target array beginning
         /// at 'start' index and ending at 'end' index (exclusive).
         /// </summary>
@@ -1186,6 +1229,26 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
         public static Memory<T> AsMemory<T>(this T[] array, int start, int length) => new Memory<T>(array, start, length);
+
+        /// <summary>
+        /// Creates a new memory over the portion of the target array beginning at inclusive start index of the range
+        /// and ending at the exclusive end index of the range.
+        /// </summary>
+        public static Memory<T> AsMemory<T>(this T[] array, Range range)
+        {
+            if (array == null)
+            {
+                Index startIndex = range.Start;
+                Index endIndex = range.End;
+                if (!startIndex.Equals(Index.Start) || !endIndex.Equals(Index.Start))
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+                return default;
+            }
+
+            (int start, int length) = range.GetOffsetAndLength(array.Length);
+            return new Memory<T>(array, start, length);
+        }
 
         /// <summary>
         /// Creates a new memory over the portion of the target array.
@@ -1237,7 +1300,7 @@ namespace System
         /// Copies the contents of the array into the span. If the source
         /// and destinations overlap, this method behaves as if the original values in
         /// a temporary location before the destination is overwritten.
-        /// 
+        ///
         ///<param name="source">The array to copy items from.</param>
         /// <param name="destination">The span to copy items into.</param>
         /// <exception cref="System.ArgumentException">
@@ -1254,7 +1317,7 @@ namespace System
         /// Copies the contents of the array into the memory. If the source
         /// and destinations overlap, this method behaves as if the original values are in
         /// a temporary location before the destination is overwritten.
-        /// 
+        ///
         ///<param name="source">The array to copy items from.</param>
         /// <param name="destination">The memory to copy items into.</param>
         /// <exception cref="System.ArgumentException">
@@ -1353,16 +1416,16 @@ namespace System
         //      nuint x2 = xLength
         //      nuint y1 = (nuint)Unsafe.ByteOffset(xRef, yRef)
         //      nuint y2 = y1 + yLength
-        //  
+        //
         //  xRef relative to xRef is 0.
-        //  
+        //
         //  x2 is simply x1 + xLength. This cannot overflow.
-        //  
+        //
         //  yRef relative to xRef is (yRef - xRef). If (yRef - xRef) is
         //  negative, casting it to an unsigned 32-bit integer turns it into
         //  (yRef - xRef + 2³²). So, in the example above, y1 moves to the right
         //  of x2.
-        //  
+        //
         //  y2 is simply y1 + yLength. Note that this can overflow, as in the
         //  example above, which must be avoided.
         //
@@ -1389,11 +1452,11 @@ namespace System
         //  integers:
         //
         //      == (y1 < xLength) || (y1 > -yLength)
-        //  
+        //
         //  Due to modulo arithmetic, this gives exactly same result *except* if
         //  yLength is zero, since 2³² - 0 is 0 and not 2³². So the case
         //  y.IsEmpty must be handled separately first.
-        //  
+        //
 
         /// <summary>
         /// Determines whether two sequences overlap in memory.

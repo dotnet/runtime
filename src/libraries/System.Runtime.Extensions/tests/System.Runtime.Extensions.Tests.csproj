@@ -30,6 +30,7 @@
     <Compile Include="System\IO\PathTests_Unix.cs" />
     <Compile Include="System\IO\PathTests_Join.netcoreapp.cs" />
     <Compile Include="System\Runtime\ProfileOptimization.netcoreapp.cs" />
+    <Compile Include="System\Runtime\CompilerServices\SwitchExpressionExceptionTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netstandard'">
     <Compile Include="System\BitConverterSpan.cs" />

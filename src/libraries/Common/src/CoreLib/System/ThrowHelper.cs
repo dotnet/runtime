@@ -117,12 +117,6 @@ namespace System
                                                     ExceptionResource.ArgumentOutOfRange_Count);
         }
 
-        internal static void ThrowArgumentOutOfRangeException_ArgumentOutOfRange_Enum()
-        {
-            throw GetArgumentOutOfRangeException(ExceptionArgument.type, 
-                                                    ExceptionResource.ArgumentOutOfRange_Enum);
-        }
-
         internal static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType)
         {
             // Generic key to move the boxing to the right hand side of throw
@@ -305,6 +299,11 @@ namespace System
         internal static void ThrowInvalidOperationException_HandleIsNotInitialized()
         {
             throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotInitialized);
+        }
+
+        internal static void ThrowInvalidOperationException_HandleIsNotPinned()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotPinned);
         }
 
         internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count)

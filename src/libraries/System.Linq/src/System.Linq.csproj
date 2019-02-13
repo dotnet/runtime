@@ -71,7 +71,6 @@
     <Compile Include="System\Linq\Distinct.cs" />
     <Compile Include="System\Linq\ElementAt.cs" />
     <Compile Include="System\Linq\Enumerable.cs" />
-    <Compile Include="System\Linq\Errors.cs" />
     <Compile Include="System\Linq\Except.cs" />
     <Compile Include="System\Linq\First.cs" />
     <Compile Include="System\Linq\Grouping.cs" />
@@ -99,6 +98,7 @@
     <Compile Include="System\Linq\Skip.cs" />
     <Compile Include="System\Linq\Sum.cs" />
     <Compile Include="System\Linq\Take.cs" />
+    <Compile Include="System\Linq\ThrowHelper.cs" />
     <Compile Include="System\Linq\ToCollection.cs" />
     <Compile Include="System\Linq\Union.cs" />
     <Compile Include="System\Linq\Utilities.cs" />

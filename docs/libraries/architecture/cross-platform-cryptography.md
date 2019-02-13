@@ -75,7 +75,7 @@ Windows CAPI is capable of PKCS1 signature with a SHA-2 algorithm, but the indiv
  * Windows CAPI is used on Windows whenever `new RSACryptoServiceProvider()` is used.
  * The object returned by `RSA.Create()` is internally powered by Windows CNG, but this is an implementation detail subject to change.
  * The `GetRSAPublicKey()` extension method for X509Certificate2 will currently always return an RSACng instance, but this could change as the platform evolves.
- * The `GetRSAPrivateKey()` extension method for X509Certiicate2 will currently prefer an RSACng instance, but if RSACng cannot open the key RSACryptoServiceProvider will be attempted.
+ * The `GetRSAPrivateKey()` extension method for X509Certificate2 will currently prefer an RSACng instance, but if RSACng cannot open the key RSACryptoServiceProvider will be attempted.
    * In the future other providers could be preferred over RSACng.
 
 #### Native Interop
@@ -235,7 +235,7 @@ On Linux stores are created on first-write, and no user stores exist by default,
 On Linux the Disallowed store is not used in chain building, and attempting to add contents to it will result in a `CryptographicException` being thrown.
 A `CryptographicException` will be thrown when opening the Disallowed store on Linux if it has already acquired contents.
 
-The LocalMachnie\Root store on Linux is an interpretation of the CA bundle in the default path for OpenSSL.
+The LocalMachine\Root store on Linux is an interpretation of the CA bundle in the default path for OpenSSL.
 The LocalMachine\Intermediate store on Linux is an interpretation of the CA bundle in the default path for OpenSSL.
 The CurrentUser\Intermediate store on Linux is used as a cache when downloading intermediate CAs by their Authority Information Access records on successful X509Chain builds.
 

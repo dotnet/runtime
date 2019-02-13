@@ -427,3 +427,36 @@ uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
     return NetSecurityNative_AcquireCredWithPassword(
         minorStatus, isNtlm, desiredName, password, passwdLen, GSS_C_INITIATE, outputCredHandle);
 }
+
+uint32_t NetSecurityNative_IsNtlmInstalled()
+{
+#if HAVE_GSS_SPNEGO_MECHANISM
+    gss_OID ntlmOid = GSS_NTLM_MECHANISM;
+#else
+    gss_OID ntlmOid = &gss_mech_ntlm_OID_desc;
+#endif
+
+    uint32_t majorStatus;
+    uint32_t minorStatus;
+    gss_OID_set mechSet;
+    gss_OID_desc oid;
+    uint32_t foundNtlm = 0;
+
+    majorStatus = gss_indicate_mechs(&minorStatus, &mechSet);
+    if (majorStatus == GSS_S_COMPLETE)
+    {
+        for (size_t i = 0; i < mechSet->count; i++)
+        {
+            oid = mechSet->elements[i];
+            if ((oid.length == ntlmOid->length) && (memcmp(oid.elements, ntlmOid->elements, oid.length) == 0))
+            {
+                foundNtlm = 1;
+                break;
+            }
+        }
+
+        gss_release_oid_set(&minorStatus, &mechSet);
+    }
+
+    return foundNtlm;
+}

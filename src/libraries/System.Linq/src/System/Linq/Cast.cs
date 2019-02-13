@@ -13,7 +13,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             return OfTypeIterator<TResult>(source);
@@ -23,9 +23,9 @@ namespace System.Linq
         {
             foreach (object obj in source)
             {
-                if (obj is TResult)
+                if (obj is TResult result)
                 {
-                    yield return (TResult)obj;
+                    yield return result;
                 }
             }
         }
@@ -40,7 +40,7 @@ namespace System.Linq
             
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
             
             return CastIterator<TResult>(source);

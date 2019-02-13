@@ -10,21 +10,5 @@ internal partial class Interop
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool GetVersionExW(ref OSVERSIONINFOEX osvi);
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal unsafe struct OSVERSIONINFOEX
-        {
-            public int dwOSVersionInfoSize;
-            public int dwMajorVersion;
-            public int dwMinorVersion;
-            public int dwBuildNumber;
-            public int dwPlatformId;
-            public fixed char szCSDVersion[128];
-            public ushort wServicePackMajor;
-            public ushort wServicePackMinor;
-            public ushort wSuiteMask;
-            public byte wProductType;
-            public byte wReserved;
-        }
     }
 }

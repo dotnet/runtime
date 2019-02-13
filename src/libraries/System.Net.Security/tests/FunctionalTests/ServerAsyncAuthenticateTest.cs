@@ -115,11 +115,21 @@ namespace System.Net.Security.Tests
                     TestConfiguration.PassingTestTimeoutMilliseconds);
 
                 using (TcpClient serverConnection = await serverAccept)
-                using (SslStream sslClientStream = new SslStream(clientConnection.GetStream()))
                 using (SslStream sslServerStream = new SslStream(
+                    clientConnection.GetStream(),
+                    false,
+                    AllowEmptyClientCertificate))
+                using (SslStream sslClientStream = new SslStream(
                     serverConnection.GetStream(),
                     false,
-                    AllowAnyServerCertificate))
+                    delegate {
+                        // Allow any certificate from the server.
+                        // Note that simply ignoring exceptions from AuthenticateAsClientAsync() is not enough
+                        // because in Mono, certificate validation is performed during the handshake and a failure
+                        // would result in the connection being terminated before the handshake completed, thus
+                        // making the server-side AuthenticateAsServerAsync() fail as well.
+                        return true;
+                    }))
                 {
                     string serverName = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
 
@@ -167,7 +177,7 @@ namespace System.Net.Security.Tests
         }
 
         // The following method is invoked by the RemoteCertificateValidationDelegate.
-        private bool AllowAnyServerCertificate(
+        private bool AllowEmptyClientCertificate(
               object sender,
               X509Certificate certificate,
               X509Chain chain,

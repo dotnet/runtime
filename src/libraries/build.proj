@@ -26,7 +26,7 @@
 
   <Import Project="Directory.Build.targets" />
 
-  <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps;RestoreOptionalToolingPackages;RestoreOptimizationDataPackage">
+  <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps;RestoreOptimizationDataPackage">
     <ItemGroup>
       <_RestoreProjects Include="external\dir.proj" />
     </ItemGroup>
