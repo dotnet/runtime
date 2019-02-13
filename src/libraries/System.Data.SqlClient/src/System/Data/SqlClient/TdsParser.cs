@@ -975,6 +975,12 @@ namespace System.Data.SqlClient
                     _pMarsPhysicalConObj = null;
                 }
             }
+
+            _resetConnectionEvent?.Dispose();
+            _resetConnectionEvent = null;
+
+            _defaultEncoding = null;
+            _defaultCollation = null;
         }
 
         // Fires a single InfoMessageEvent
