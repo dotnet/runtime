@@ -78,7 +78,6 @@ namespace System.Threading
                 if (Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
 
-                // this is for passed through Win32Native Errors
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
             }
 
