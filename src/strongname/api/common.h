@@ -295,7 +295,6 @@ namespace Loader
 
 #include "spinlock.h"
 #include "cgensys.h"
-#include "declsec.h"
 
 #ifdef FEATURE_COMINTEROP 
 #include "stdinterfaces.h"

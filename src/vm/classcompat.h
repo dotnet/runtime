@@ -20,7 +20,6 @@
 #include "hash.h"
 #include "crst.h"
 #include "cgensys.h"
-#include "declsec.h"
 #include "stdinterfaces.h"
 #include "slist.h"
 #include "spinlock.h"

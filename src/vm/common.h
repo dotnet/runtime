@@ -313,7 +313,6 @@ namespace Loader
 #include "eeconfig.h"
 
 #include "spinlock.h"
-#include "declsec.h"
 
 #ifdef FEATURE_COMINTEROP 
 #include "stdinterfaces.h"
