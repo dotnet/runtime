@@ -8,6 +8,7 @@ using System.Composition.Hosting.Providers.CurrentScope;
 using System.Composition.Hosting.Providers.ExportFactory;
 using System.Composition.Hosting.Providers.ImportMany;
 using System.Composition.Hosting.Providers.Lazy;
+using System.Diagnostics;
 using System.Linq;
 
 namespace System.Composition.Hosting
@@ -24,11 +25,7 @@ namespace System.Composition.Hosting
 
         private CompositionHost(LifetimeContext rootLifetimeContext)
         {
-            if(rootLifetimeContext == null)
-            {
-                throw new ArgumentNullException(nameof(rootLifetimeContext));
-            }
-
+            Debug.Assert(rootLifetimeContext != null);
             _rootLifetimeContext = rootLifetimeContext;
         }
 

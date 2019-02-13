@@ -33,5 +33,61 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             return rsa;
         }
+
+        internal static DSA MakeExportable(this DSA dsa)
+        {
+            if (dsa is DSACng dsaCng)
+            {
+                const CngExportPolicies Exportability =
+                    CngExportPolicies.AllowExport |
+                    CngExportPolicies.AllowPlaintextExport;
+
+                if ((dsaCng.Key.ExportPolicy & Exportability) == CngExportPolicies.AllowExport)
+                {
+                    DSA copy = DSA.Create();
+
+                    copy.ImportEncryptedPkcs8PrivateKey(
+                        nameof(MakeExportable),
+                        dsa.ExportEncryptedPkcs8PrivateKey(
+                            nameof(MakeExportable),
+                            new PbeParameters(
+                                PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
+                                HashAlgorithmName.SHA1,
+                                2048)),
+                        out _);
+                    return copy;
+                }
+            }
+
+            return dsa;
+        }
+
+        internal static ECDsa MakeExportable(this ECDsa ecdsa)
+        {
+            if (ecdsa is ECDsaCng dsaCng)
+            {
+                const CngExportPolicies Exportability =
+                    CngExportPolicies.AllowExport |
+                    CngExportPolicies.AllowPlaintextExport;
+
+                if ((dsaCng.Key.ExportPolicy & Exportability) == CngExportPolicies.AllowExport)
+                {
+                    ECDsa copy = ECDsa.Create();
+
+                    copy.ImportEncryptedPkcs8PrivateKey(
+                        nameof(MakeExportable),
+                        ecdsa.ExportEncryptedPkcs8PrivateKey(
+                            nameof(MakeExportable),
+                            new PbeParameters(
+                                PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
+                                HashAlgorithmName.SHA1,
+                                2048)),
+                        out _);
+                    return copy;
+                }
+            }
+
+            return ecdsa;
+        }
     }
 }

@@ -51,7 +51,7 @@ namespace System.ComponentModel.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and throws NRE")]
         public void Ctor_NullTypeNetCore_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("type", () => new TypeConverterAttribute((Type)null));
+            AssertExtensions.Throws<ArgumentNullException>("type", () => new TypeConverterAttribute((Type)null));
         }
 
         [Fact]

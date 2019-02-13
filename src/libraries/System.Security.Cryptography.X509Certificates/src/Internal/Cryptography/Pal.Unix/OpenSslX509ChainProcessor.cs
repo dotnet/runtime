@@ -418,15 +418,30 @@ namespace Internal.Cryptography.Pal
                     }
                 }
 
-                X509Certificate2Collection[] storesToCheck =
+                X509Certificate2Collection[] storesToCheck;
+                if (extraStore != null && extraStore.Count > 0)
                 {
-                    extraStore,
-                    userMyCerts,
-                    userIntermediateCerts,
-                    systemIntermediateCerts,
-                    userRootCerts,
-                    systemRootCerts,
-                };
+                    storesToCheck = new[]
+                    {
+                        extraStore,
+                        userMyCerts,
+                        userIntermediateCerts,
+                        systemIntermediateCerts,
+                        userRootCerts,
+                        systemRootCerts,
+                    };
+                }
+                else
+                {
+                    storesToCheck = new[]
+                    {
+                        userMyCerts,
+                        userIntermediateCerts,
+                        systemIntermediateCerts,
+                        userRootCerts,
+                        systemRootCerts,
+                    };
+                }
 
                 while (toProcess.Count > 0)
                 {

@@ -107,7 +107,7 @@ namespace System.Collections.ObjectModel.Tests
         public static void ItemTestSet_Negative_InvalidIndex(int size, int index)
         {
             var col = new ObservableCollection<int>(new int[size]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => col[index]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => col[index]);
         }
 
         // ICollection<T>.IsReadOnly

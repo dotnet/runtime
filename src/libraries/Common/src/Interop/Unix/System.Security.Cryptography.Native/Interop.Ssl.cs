@@ -47,7 +47,7 @@ internal static partial class Interop
         internal static extern void SslSetAcceptState(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
-        private static extern IntPtr SslGetVersion(SafeSslHandle ssl);
+        internal static extern IntPtr SslGetVersion(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetTlsExtHostName")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -68,11 +68,6 @@ internal static partial class Interop
             byte[] result = new byte[len];
             Marshal.Copy(protocol, result, 0, len);
             return result;
-        }
-
-        internal static string GetProtocolVersion(SafeSslHandle ssl)
-        {
-            return Marshal.PtrToStringAnsi(SslGetVersion(ssl));
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetSslConnectionInfo")]

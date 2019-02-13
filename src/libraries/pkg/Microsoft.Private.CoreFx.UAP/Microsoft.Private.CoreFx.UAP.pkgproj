@@ -12,6 +12,9 @@
     <IsFrameworkPackage>true</IsFrameworkPackage>
     <!-- Private packages need symbols -->
     <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
+
+    <!-- Uap assets are stripped out of other packages, but we don't want to do that for the framework package -->
+    <KeepUAPContent>true</KeepUAPContent>
   </PropertyGroup>
   <ItemGroup>
     <IgnoredReference Include="System.Private.CoreLib" />

@@ -49,9 +49,9 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_AdvancingPastBufferSize() => new InvalidOperationException(SR.CannotAdvancePastCurrentBufferSize);
 
-        public static void ThrowInvalidOperationException_BackpressureDeadlock() => throw CreateInvalidOperationException_BackpressureDeadlock();
+        public static void ThrowInvalidOperationException_BackpressureDeadlock(long sizeLimit) => throw CreateInvalidOperationException_BackpressureDeadlock(sizeLimit);
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static Exception CreateInvalidOperationException_BackpressureDeadlock() => new InvalidOperationException(SR.BackpressureDeadlock);
+        public static Exception CreateInvalidOperationException_BackpressureDeadlock(long sizeLimit) => new InvalidOperationException(SR.Format(SR.BackpressureDeadlock, sizeLimit));
 
         public static void ThrowInvalidOperationException_AdvanceToInvalidCursor() => throw CreateInvalidOperationException_AdvanceToInvalidCursor();
         [MethodImpl(MethodImplOptions.NoInlining)]
