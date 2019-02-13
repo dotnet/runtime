@@ -7,8 +7,12 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class PersianCalendarTests
+    public class PersianCalendarTests : CalendarTestBase
     {
+        public override Calendar Calendar => new PersianCalendar();
+
+        public override DateTime MinSupportedDateTime => new DateTime(0622, 03, 22);
+
         [Fact]
         public void CalendarConversion()
         {
@@ -138,12 +142,6 @@ namespace System.Globalization.Tests
             PersianCalendar calendar = new PersianCalendar();
             calendar.TwoDigitYearMax = 1410; // Set to the default
             Assert.Equal(expected, calendar.ToFourDigitYear(year));
-        }
-
-        [Fact]
-        public void Eras()
-        {
-            Assert.Equal(new int[] { 1 }, new PersianCalendar().Eras);
         }
 
         private static int[] s_dates = new int[]

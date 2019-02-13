@@ -6,12 +6,8 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class KoreanCalendarEras
+    public class KoreanCalendarTests : CalendarTestBase
     {
-        [Fact]
-        public void Eras()
-        {
-            Assert.Equal(new int[] { 1 }, new KoreanCalendar().Eras);
-        }
+        public override Calendar Calendar => new KoreanCalendar();
     }
 }
