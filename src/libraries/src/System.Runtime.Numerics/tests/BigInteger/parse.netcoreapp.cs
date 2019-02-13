@@ -13,6 +13,11 @@ namespace System.Numerics.Tests
         [InlineData("123456789", 0, 9, "123456789")]
         [InlineData("123456789", 0, 1, "1")]
         [InlineData("123456789", 1, 3, "234")]
+        [InlineData("123456789", 8, 1, "9")]
+        [InlineData("123456789abc", 8, 1, "9")]
+        [InlineData("1\03456789", 0, 1, "1")]
+        [InlineData("1\03456789", 0, 2, "1")]
+        [InlineData("123456789\0", 0, 10, "123456789")]
         public void Parse_Subspan_Success(string input, int offset, int length, string expected)
         {
             Eval(BigInteger.Parse(input.AsSpan(offset, length)), expected);
