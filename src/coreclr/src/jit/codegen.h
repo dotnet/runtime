@@ -206,6 +206,10 @@ protected:
     static const char* genSizeStr(emitAttr size);
 #endif // DEBUG
 
+    void genInitialize();
+
+    void genInitializeRegisterState();
+
     void genCodeForBBlist();
 
 public:
