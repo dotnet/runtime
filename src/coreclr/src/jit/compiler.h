@@ -6739,138 +6739,6 @@ private:
     */
 
 public:
-    /* These are the different addressing modes used to access a local var.
-     * The JIT has to report the location of the locals back to the EE
-     * for debugging purposes.
-     */
-
-    enum siVarLocType
-    {
-        VLT_REG,
-        VLT_REG_BYREF, // this type is currently only used for value types on X64
-        VLT_REG_FP,
-        VLT_STK,
-        VLT_STK_BYREF, // this type is currently only used for value types on X64
-        VLT_REG_REG,
-        VLT_REG_STK,
-        VLT_STK_REG,
-        VLT_STK2,
-        VLT_FPSTK,
-        VLT_FIXED_VA,
-
-        VLT_COUNT,
-        VLT_INVALID
-    };
-
-    struct siVarLoc
-    {
-        siVarLocType vlType;
-
-        union {
-            // VLT_REG/VLT_REG_FP -- Any pointer-sized enregistered value (TYP_INT, TYP_REF, etc)
-            // eg. EAX
-            // VLT_REG_BYREF -- the specified register contains the address of the variable
-            // eg. [EAX]
-
-            struct
-            {
-                regNumber vlrReg;
-            } vlReg;
-
-            // VLT_STK       -- Any 32 bit value which is on the stack
-            // eg. [ESP+0x20], or [EBP-0x28]
-            // VLT_STK_BYREF -- the specified stack location contains the address of the variable
-            // eg. mov EAX, [ESP+0x20]; [EAX]
-
-            struct
-            {
-                regNumber     vlsBaseReg;
-                NATIVE_OFFSET vlsOffset;
-            } vlStk;
-
-            // VLT_REG_REG -- TYP_LONG/TYP_DOUBLE with both DWords enregistered
-            // eg. RBM_EAXEDX
-
-            struct
-            {
-                regNumber vlrrReg1;
-                regNumber vlrrReg2;
-            } vlRegReg;
-
-            // VLT_REG_STK -- Partly enregistered TYP_LONG/TYP_DOUBLE
-            // eg { LowerDWord=EAX UpperDWord=[ESP+0x8] }
-
-            struct
-            {
-                regNumber vlrsReg;
-
-                struct
-                {
-                    regNumber     vlrssBaseReg;
-                    NATIVE_OFFSET vlrssOffset;
-                } vlrsStk;
-            } vlRegStk;
-
-            // VLT_STK_REG -- Partly enregistered TYP_LONG/TYP_DOUBLE
-            // eg { LowerDWord=[ESP+0x8] UpperDWord=EAX }
-
-            struct
-            {
-                struct
-                {
-                    regNumber     vlsrsBaseReg;
-                    NATIVE_OFFSET vlsrsOffset;
-                } vlsrStk;
-
-                regNumber vlsrReg;
-            } vlStkReg;
-
-            // VLT_STK2 -- Any 64 bit value which is on the stack, in 2 successsive DWords
-            // eg 2 DWords at [ESP+0x10]
-
-            struct
-            {
-                regNumber     vls2BaseReg;
-                NATIVE_OFFSET vls2Offset;
-            } vlStk2;
-
-            // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
-            // eg. ST(3). Actually it is ST("FPstkHeight - vpFpStk")
-
-            struct
-            {
-                unsigned vlfReg;
-            } vlFPstk;
-
-            // VLT_FIXED_VA -- fixed argument of a varargs function.
-            // The argument location depends on the size of the variable
-            // arguments (...). Inspecting the VARARGS_HANDLE indicates the
-            // location of the first arg. This argument can then be accessed
-            // relative to the position of the first arg
-
-            struct
-            {
-                unsigned vlfvOffset;
-            } vlFixedVarArg;
-
-            // VLT_MEMORY
-
-            struct
-            {
-                void* rpValue; // pointer to the in-process
-                               // location of the value.
-            } vlMemory;
-        };
-
-        // Helper functions
-
-        bool vlIsInReg(regNumber reg);
-        bool vlIsOnStk(regNumber reg, signed offset);
-    };
-
-    /*************************************************************************/
-
-public:
     // Get handles
 
     void eeGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -7082,20 +6950,20 @@ public:
 
     struct VarResultInfo
     {
-        UNATIVE_OFFSET startOffset;
-        UNATIVE_OFFSET endOffset;
-        DWORD          varNumber;
-        siVarLoc       loc;
+        UNATIVE_OFFSET             startOffset;
+        UNATIVE_OFFSET             endOffset;
+        DWORD                      varNumber;
+        CodeGenInterface::siVarLoc loc;
     } * eeVars;
     void eeSetLVcount(unsigned count);
-    void eeSetLVinfo(unsigned        which,
-                     UNATIVE_OFFSET  startOffs,
-                     UNATIVE_OFFSET  length,
-                     unsigned        varNum,
-                     unsigned        LVnum,
-                     VarName         namex,
-                     bool            avail,
-                     const siVarLoc& loc);
+    void eeSetLVinfo(unsigned                          which,
+                     UNATIVE_OFFSET                    startOffs,
+                     UNATIVE_OFFSET                    length,
+                     unsigned                          varNum,
+                     unsigned                          LVnum,
+                     VarName                           namex,
+                     bool                              avail,
+                     const CodeGenInterface::siVarLoc* loc);
     void eeSetLVdone();
 
 #ifdef DEBUG
@@ -7224,7 +7092,7 @@ public:
         return codeGen->getEmitter();
     }
 
-    bool isFramePointerUsed()
+    bool isFramePointerUsed() const
     {
         return codeGen->isFramePointerUsed();
     }
