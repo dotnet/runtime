@@ -2083,27 +2083,10 @@ class SafeHandle : public Object
         return m_handle;
     }
 
-    BOOL OwnsHandle() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ownsHandle;
-    }
-
-    static size_t GetHandleOffset() { LIMITED_METHOD_CONTRACT; return offsetof(SafeHandle, m_handle); }
-
     void AddRef();
     void Release(bool fDispose = false);
-    void Dispose();
     void SetHandle(LPVOID handle);
-
-    static FCDECL1(void, DisposeNative, SafeHandle* refThisUNSAFE);
-    static FCDECL1(void, Finalize, SafeHandle* refThisUNSAFE);
-    static FCDECL1(void, SetHandleAsInvalid, SafeHandle* refThisUNSAFE);
-    static FCDECL2(void, DangerousAddRef, SafeHandle* refThisUNSAFE, CLR_BOOL *pfSuccess);
-    static FCDECL1(void, DangerousRelease, SafeHandle* refThisUNSAFE);
 };
-
-// SAFEHANDLEREF defined above because CompressedStackObject needs it
 
 void AcquireSafeHandle(SAFEHANDLEREF* s);
 void ReleaseSafeHandle(SAFEHANDLEREF* s);
