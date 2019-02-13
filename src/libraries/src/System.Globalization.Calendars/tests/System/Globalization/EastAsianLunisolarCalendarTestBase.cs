@@ -6,12 +6,8 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class ThaiBuddhistCalendarMaxSupportedDateTime
+    public abstract class EastAsianLunisolarCalendarTestBase : CalendarTestBase
     {
-        [Fact]
-        public void MaxSupportedDateTime()
-        {
-            Assert.Equal(DateTime.MaxValue, new ThaiBuddhistCalendar().MaxSupportedDateTime);
-        }
+        public override CalendarAlgorithmType AlgorithmType => CalendarAlgorithmType.LunisolarCalendar;
     }
 }
