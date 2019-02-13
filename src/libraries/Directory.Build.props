@@ -170,16 +170,6 @@
     </RestoreSources>
   </PropertyGroup>
 
-  <!--
-    Add all the RestoreSources to the OptionalRestoreSource items as well so any
-    common package references can correctly be resolved as well.
-  -->
-  <ItemGroup>
-    <OptionalRestoreSource Include="$(RestoreSources)">
-      <Uri>%(Identity)</Uri>
-    </OptionalRestoreSource>
-  </ItemGroup>
-
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
@@ -436,10 +426,6 @@
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard'">$(DefineConstants),netstandard</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants),netcoreapp</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp2.0'">$(DefineConstants),netcoreapp20</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <OptionalToolingProjectPath>$(ProjectDir)\external\test-runtime\optional.csproj</OptionalToolingProjectPath>
   </PropertyGroup>
 
   <PropertyGroup>
