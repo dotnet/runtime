@@ -306,7 +306,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 removeMethod(token);
 
-                Log("[WinRT_Eventing] Event unsubscribed for managed instance = " + instance + ", handler = " + handler + ", token = " + token.m_value + "\n");
+                Log("[WinRT_Eventing] Event unsubscribed for managed instance = " + instance + ", handler = " + handler + ", token = " + token.Value + "\n");
             }
 
             internal static void RemoveAllEventHandlers(Action<EventRegistrationToken> removeMethod)
@@ -741,7 +741,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                             registrationTokens.Remove(key);
                         }
 
-                        Log("[WinRT_Eventing] Event unsubscribed for managed instance = " + instanceKey + ", handler = " + handler + ", token = " + token.m_value + "\n");
+                        Log("[WinRT_Eventing] Event unsubscribed for managed instance = " + instanceKey + ", handler = " + handler + ", token = " + token.Value + "\n");
                     }
                 }
                 finally
@@ -1029,7 +1029,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     exceptions.Add(ex);
                 }
 
-                Log("[WinRT_Eventing] Event unsubscribed for token = " + token.m_value + "\n");
+                Log("[WinRT_Eventing] Event unsubscribed for token = " + token.Value + "\n");
             }
 
             if (exceptions.Count > 0)
