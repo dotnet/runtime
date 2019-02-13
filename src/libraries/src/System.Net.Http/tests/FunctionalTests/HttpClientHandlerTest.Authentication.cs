@@ -7,6 +7,8 @@ using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
 
+using Microsoft.DotNet.XUnitExtensions;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -545,6 +547,40 @@ namespace System.Net.Http.Functional.Tests
                     _output.WriteLine(body);
                 }
             }
+        }
+
+        [ConditionalTheory(nameof(IsNtlmInstalled))]
+        [InlineData("NTLM")]
+        [InlineData("Negotiate")]
+        public async Task Credentials_ServerChallengesWithWindowsAuth_ClientSendsWindowsAuthHeader(string authScheme)
+        {
+            if (authScheme == "Negotiate" && !PlatformDetection.IsWindows)
+            {
+                throw new SkipTestException("Issue #34878");
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using (HttpClientHandler handler = CreateHttpClientHandler())
+                    using (var client = new HttpClient(handler))
+                    {
+                        handler.Credentials = new NetworkCredential("username", "password");
+                        await client.GetAsync(uri);
+                    }
+                },
+                async server =>
+                {
+                    var responseHeader = new HttpHeaderData[] { new HttpHeaderData("Www-authenticate", authScheme) };
+                    HttpRequestData requestData = await server.HandleRequestAsync(
+                        HttpStatusCode.Unauthorized, responseHeader);
+                    Assert.Equal(0, requestData.GetHeaderValueCount("Authorization"));
+
+                    requestData = await server.HandleRequestAsync();
+                    string authHeaderValue = requestData.GetSingleHeaderValue("Authorization");
+                    Assert.Contains(authScheme, authHeaderValue);
+                    _output.WriteLine(authHeaderValue);
+               });
         }
     }
 }
