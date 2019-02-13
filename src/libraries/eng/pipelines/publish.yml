@@ -61,7 +61,8 @@ jobs:
           artifactName: BuildAssetsManifest
           artifactType: container
 
-      - script: eng\common\publishbuildassets.cmd
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\sdk-task.ps1
+                -task PublishBuildAssets -restore -msbuildEngine dotnet
                 /p:ManifestsPath='$(_manifestsDir)'
                 /p:BuildAssetRegistryToken=$(MaestroAccessToken)
                 /p:MaestroApiEndpoint=https://maestro-prod.westus2.cloudapp.azure.com

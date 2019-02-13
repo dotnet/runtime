@@ -9,12 +9,12 @@
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs" />
     <CompileItem Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
-    <CompileItem Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetModuleHandle.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.IntPtr.cs" />
-    <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs" />
-    <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs" />
-    <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp.cs" />
     <CompileItem Include="$(CommonPath)\System\CharArrayHelpers.cs" />
     <CompileItem Include="$(CommonPath)\System\StringExtensions.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" />

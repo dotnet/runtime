@@ -116,12 +116,6 @@
   <data name="Formatter_ListSeparatorWithSpace" xml:space="preserve">
     <value>, </value>
   </data>
-  <data name="Dependency_Not_In_Error_State" xml:space="preserve">
-    <value>Dependency is not in an error state.</value>
-  </data>
-  <data name="Sharing_Lock_Required" xml:space="preserve">
-    <value>Sharing lock is required</value>
-  </data>
   <data name="Sharing_Lock_Taken" xml:space="preserve">
     <value>Sharing lock already taken in this operation.</value>
   </data>

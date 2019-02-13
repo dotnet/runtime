@@ -29,56 +29,56 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Ports\SerialStream.Windows.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DCB.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.DCB.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DCB.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.DCB.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COMMPROP.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.COMMPROP.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.COMMPROP.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.COMMPROP.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COMMTIMEOUTS.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.COMMTIMEOUTS.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.COMMTIMEOUTS.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.COMMTIMEOUTS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COMSTAT.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.COMSTAT.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.COMSTAT.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.COMSTAT.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCommState.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.SetCommState.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetCommState.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCommState.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCommBreak.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.SetCommBreak.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetCommBreak.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCommBreak.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ClearCommBreak.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.ClearCommBreak.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ClearCommBreak.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.ClearCommBreak.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EscapeCommFunction.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.EscapeCommFunction.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.EscapeCommFunction.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.EscapeCommFunction.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCommTimeouts.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.SetCommTimeouts.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetCommTimeouts.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCommTimeouts.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCommModemStatus.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCommModemStatus.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCommModemStatus.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCommModemStatus.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ClearCommError.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.ClearCommError.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ClearCommError.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.ClearCommError.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCommProperties.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCommProperties.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCommProperties.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCommProperties.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCommMask.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.SetCommMask.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetCommMask.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetCommMask.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.PurgeComm.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.PurgeComm.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.PurgeComm.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.PurgeComm.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetupComm.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.SetupComm.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetupComm.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetupComm.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCommState.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCommState.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCommState.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCommState.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WaitCommEvent.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.WaitCommEvent.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.WaitCommEvent.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.WaitCommEvent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs">
       <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs</Link>
@@ -92,14 +92,14 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
       <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetOverlappedResult.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetOverlappedResult.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs">
       <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GenericOperations.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GenericOperations.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GenericOperations.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GenericOperations.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\CoreLib\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
@@ -133,16 +133,16 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uap' and '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.CreateFile.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenCommPort.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.OpenCommPort.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.OpenCommPort.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.OpenCommPort.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCommPorts.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetCommPorts.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Mincore\Interop.GetCommPorts.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.GetCommPorts.cs</Link>
     </Compile>
     <Compile Include="System\IO\Ports\SerialPort.Uap.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Uap.cs" />

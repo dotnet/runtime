@@ -12,6 +12,12 @@ namespace System.Buffers.Text.Tests
         [MemberData(nameof(TestData.TypesThatCanBeFormatted), MemberType = typeof(TestData))]
         public static void TestBadFormat(Type integerType)
         {
+            if ((integerType == typeof(double)) || (integerType == typeof(float)))
+            {
+                // double and float support all the same formats as the UTF16 formatter
+                return;
+            }
+
             object value = Activator.CreateInstance(integerType);
             Assert.Throws<FormatException>(() => TryFormatUtf8(value, Array.Empty<byte>(), out int bytesWritten, new StandardFormat('$', 1)));
         }
@@ -19,8 +25,6 @@ namespace System.Buffers.Text.Tests
         [Theory]
         [MemberData(nameof(TestData.IntegerTypesTheoryData), MemberType = typeof(TestData))]
         [InlineData(typeof(decimal))]
-        [InlineData(typeof(double))]
-        [InlineData(typeof(float))]
         public static void TestGFormatWithPrecisionNotSupported(Type type)
         {
             object value = Activator.CreateInstance(type);

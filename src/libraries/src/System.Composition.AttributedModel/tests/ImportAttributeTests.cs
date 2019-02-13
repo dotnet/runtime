@@ -13,6 +13,7 @@ namespace System.Composition.AttributeModel.Tests
         {
             var attribute = new ImportAttribute();
             Assert.Null(attribute.ContractName);
+            Assert.False(attribute.AllowDefault);
         }
 
         [Theory]
@@ -22,6 +23,7 @@ namespace System.Composition.AttributeModel.Tests
         {
             var attribute = new ImportAttribute(contractName);
             Assert.Equal(contractName, attribute.ContractName);
+            Assert.False(attribute.AllowDefault);
         }
     }
 }

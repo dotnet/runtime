@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
@@ -258,7 +259,7 @@ namespace System.Runtime.Caching
                     // set to null so RemoveDependent does not attempt to access it, since we're not
                     // using a copy of the KeyCollection.
                     _fields._dependents = null;
-                    Dbg.Assert(_fields._dependents == null, "_fields._dependents == null");
+                    Debug.Assert(_fields._dependents == null, "_fields._dependents == null");
                 }
             }
             if (deps != null)

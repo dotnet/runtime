@@ -82,17 +82,12 @@ jobs:
         # Windows variables
         - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
           - _buildScript: build.cmd
-          - _commonArguments: -ci -includetests
+          - _commonArguments: -ci -includetests -configuration $(_BuildConfig)
           - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
 
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _optionalToolsArguments: /p:OptionalToolSourceUser=dn-bot
-                                       /p:OptionalToolSource=$(OptionalToolSourceUri)
-                                       /p:OptionalToolSourcePassword=$(dn-bot-devdiv-nuget-feed-read)
             - _windowsOfficialBuildArguments: -sign
                                               /p:DotNetSignType=$(_SignType)
-                                              /p:EnableProfileGuidedOptimization=true
-                                              $(_optionalToolsArguments)
 
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             - _windowsOfficialBuildArguments: ''
@@ -104,11 +99,10 @@ jobs:
         # Non-Windows variables
         - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
           - _buildScript: ${{ job.buildScriptPrefix }}./build.sh
-
+          - _args: --ci -includetests --configuration $(_BuildConfig)
+          - _commonArguments: $(_args)
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _commonArguments: --ci -includetests -stripSymbols
-          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            - _commonArguments: --ci -includetests
+            - _commonArguments: $(_args) -stripSymbols
 
           - _msbuildCommand: ${{ job.buildScriptPrefix }}./eng/common/msbuild.sh --warnaserror false --ci
           - _windowsOfficialBuildArguments: ''
@@ -130,6 +124,9 @@ jobs:
         workspace:
           clean: all
 
+        # enabling publish build artifacts, will publish all build logs under /artifacts/log/
+        enablePublishBuildArtifacts: true
+
         ${{ if ne(job.enableMicrobuild, '') }}:
           enableMicrobuild: ${{ job.enableMicrobuild }}
 
@@ -141,6 +138,24 @@ jobs:
             - ${{ job.preBuildSteps }}
 
           - ${{ if eq(job.customBuildSteps[0], '') }}:
+            
+            - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+              - task: NuGetToolInstaller@0
+                inputs:
+                  versionSpec: '4.9.2'
+                condition: eq(variables['_restoreInternalTools'], 'true')
+              - task: NuGetCommand@2
+                displayName: Restore internal tools
+                inputs:
+                  command: restore
+                  feedsToUse: config
+                  restoreSolution: 'eng\common\internal\Tools.csproj'
+                  nugetConfigPath: 'NuGet.config'
+                  restoreDirectory: '$(Build.SourcesDirectory)\.packages'
+                condition: eq(variables['_restoreInternalTools'], 'true')
+                env:
+                  VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials": [{"endpoint":"https://devdiv.pkgs.visualstudio.com/_packaging/8f470c7e-ac49-4afe-a6ee-cf784e438b93/nuget/v3/index.json", "username":"dn-bot","password":"$(dn-bot-devdiv-nuget-feed-read)"}]}'
+
             - script: $(_buildScript)
                     $(_commonArguments)
                     -framework $(_framework)
@@ -187,11 +202,10 @@ jobs:
                   # TODO: Enable azure pipelines reporter for PRs once retry feature is available.
                   enableAzurePipelinesReporter: false
 
-          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - task: PublishBuildArtifacts@1
-              displayName: Publish packages to artifacts container
-              inputs:
-                pathToPublish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)
-                artifactName: packages
-                artifactType: container
-              condition: and(succeeded(), ne(variables['_skipPublishPackages'], 'true'))
+          - task: PublishBuildArtifacts@1
+            displayName: Publish packages to artifacts container
+            inputs:
+              pathToPublish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)
+              artifactName: packages
+              artifactType: container
+            condition: and(succeeded(), ne(variables['_skipPublishPackages'], 'true'))

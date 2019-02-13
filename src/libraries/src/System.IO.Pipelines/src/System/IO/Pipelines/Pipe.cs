@@ -70,6 +70,8 @@ namespace System.IO.Pipelines
 
         // The write head which is the extent of the IPipelineWriter's written bytes
         private BufferSegment _writingHead;
+        private Memory<byte> _writingMemory;
+        private int _buffered;
 
         private PipeOperationState _operationState;
 
@@ -100,7 +102,9 @@ namespace System.IO.Pipelines
             _readerCompletion = default;
             _writerCompletion = default;
 
-            _pool = options.Pool;
+            // If we're using the default pool then mark it as null since we're just going to use the 
+            // array pool under the covers
+            _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
             _minimumSegmentSize = options.MinimumSegmentSize;
             _pauseWriterThreshold = options.PauseWriterThreshold;
             _resumeWriterThreshold = options.ResumeWriterThreshold;
@@ -142,11 +146,7 @@ namespace System.IO.Pipelines
                 AllocateWriteHeadUnsynchronized(sizeHint);
             }
 
-            // Slice the AvailableMemory to the WritableBytes size
-            int end = _writingHead.End;
-            Memory<byte> availableMemory = _writingHead.AvailableMemory;
-            availableMemory = availableMemory.Slice(end);
-            return availableMemory;
+            return _writingMemory;
         }
 
         internal Span<byte> GetSpan(int sizeHint)
@@ -166,33 +166,35 @@ namespace System.IO.Pipelines
                 AllocateWriteHeadUnsynchronized(sizeHint);
             }
 
-            // Slice the AvailableMemory to the WritableBytes size
-            int end = _writingHead.End;
-            Span<byte> availableSpan = _writingHead.AvailableMemory.Span;
-            availableSpan = availableSpan.Slice(end);
-            return availableSpan;
+            return _writingMemory.Span;
         }
 
         private void AllocateWriteHeadUnsynchronized(int sizeHint)
         {
             _operationState.BeginWrite();
+
             if (_writingHead == null)
             {
                 // We need to allocate memory to write since nobody has written before
-                BufferSegment newSegment = CreateSegmentUnsynchronized();
-                newSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
+                BufferSegment newSegment = AllocateSegment(sizeHint);
 
                 // Set all the pointers
                 _writingHead = _readHead = _readTail = newSegment;
             }
             else
             {
-                int bytesLeftInBuffer = _writingHead.WritableBytes;
+                int bytesLeftInBuffer = _writingMemory.Length;
 
                 if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
                 {
-                    BufferSegment newSegment = CreateSegmentUnsynchronized();
-                    newSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
+                    if (_buffered > 0)
+                    {
+                        // Flush buffered data to the segment
+                        _writingHead.End += _buffered;
+                        _buffered = 0;
+                    }
+
+                    BufferSegment newSegment = AllocateSegment(sizeHint);
 
                     _writingHead.SetNext(newSegment);
                     _writingHead = newSegment;
@@ -200,12 +202,37 @@ namespace System.IO.Pipelines
             }
         }
 
-        private int GetSegmentSize(int sizeHint)
+        private BufferSegment AllocateSegment(int sizeHint)
+        {
+            BufferSegment newSegment = CreateSegmentUnsynchronized();
+
+            if (_pool is null)
+            {
+                // Use the array pool
+                newSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(GetSegmentSize(sizeHint)));
+            }
+            else if (sizeHint <= _pool.MaxBufferSize)
+            {
+                // Use the specified pool if it fits
+                newSegment.SetOwnedMemory(_pool.Rent(GetSegmentSize(sizeHint, _pool.MaxBufferSize)));
+            }
+            else
+            {
+                // We can't use the pool so allocate an array
+                newSegment.SetUnownedMemory(new byte[sizeHint]);
+            }
+
+            _writingMemory = newSegment.AvailableMemory;
+
+            return newSegment;
+        }
+
+        private int GetSegmentSize(int sizeHint, int maxBufferSize = int.MaxValue)
         {
             // First we need to handle case where hint is smaller than minimum segment size
             sizeHint = Math.Max(_minimumSegmentSize, sizeHint);
             // After that adjust it to fit into pools max buffer size
-            var adjustedToMaximumSize = Math.Min(_pool.MaxBufferSize, sizeHint);
+            var adjustedToMaximumSize = Math.Min(maxBufferSize, sizeHint);
             return adjustedToMaximumSize;
         }
 
@@ -239,6 +266,9 @@ namespace System.IO.Pipelines
                 return true;
             }
 
+            // Update the writing head
+            _writingHead.End += _buffered;
+
             // Always move the read tail to the write head
             _readTail = _writingHead;
             _readTailIndex = _writingHead.End;
@@ -256,6 +286,7 @@ namespace System.IO.Pipelines
             }
 
             _currentWriteLength = 0;
+            _buffered = 0;
 
             return false;
         }
@@ -272,16 +303,14 @@ namespace System.IO.Pipelines
             {
                 Debug.Assert(_writingHead.Next == null);
 
-                Memory<byte> buffer = _writingHead.AvailableMemory;
-
-                if (_writingHead.End > buffer.Length - bytesWritten)
+                if (bytesWritten > _writingMemory.Length)
                 {
                     ThrowHelper.ThrowInvalidOperationException_AdvancingPastBufferSize();
                 }
 
-                // if bytesWritten is zero, these do nothing
-                _writingHead.End += bytesWritten;
                 _currentWriteLength += bytesWritten;
+                _buffered += bytesWritten;
+                _writingMemory = _writingMemory.Slice(bytesWritten);
             }
             else
             {
@@ -460,16 +489,17 @@ namespace System.IO.Pipelines
                     // Prevent deadlock where reader awaits new data and writer await backpressure
                     if (!_writerAwaitable.IsCompleted)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_BackpressureDeadlock();
+                        ThrowHelper.ThrowInvalidOperationException_BackpressureDeadlock(_resumeWriterThreshold);
                     }
                     _readerAwaitable.SetUncompleted();
                 }
 
                 while (returnStart != null && returnStart != returnEnd)
                 {
+                    BufferSegment next = returnStart.NextSegment;
                     returnStart.ResetMemory();
                     ReturnSegmentUnsynchronized(returnStart);
-                    returnStart = returnStart.NextSegment;
+                    returnStart = next;
                 }
 
                 _operationState.EndRead();

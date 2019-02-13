@@ -494,7 +494,7 @@ namespace System.Diagnostics.Tracing
 
             var providerInfos = (UnsafeNativeMethods.ManifestEtw.TRACE_GUID_INFO*)buffer;
             var providerInstance = (UnsafeNativeMethods.ManifestEtw.TRACE_PROVIDER_INSTANCE_INFO*)&providerInfos[1];
-            int processId = unchecked((int)Win32Native.GetCurrentProcessId());
+            int processId = unchecked((int)Interop.Kernel32.GetCurrentProcessId());
             // iterate over the instances of the EventProvider in all processes
             for (int i = 0; i < providerInfos->InstanceCount; i++)
             {

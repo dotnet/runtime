@@ -623,6 +623,12 @@ namespace System.Security.Cryptography.X509Certificates
                 //  UrlRetrievalTimeout = new TimeSpan(0, 0, 0)
 
                 bool verified = chain.Build(this, throwOnException: false);
+
+                for (int i = 0; i < chain.ChainElements.Count; i++)
+                {
+                    chain.ChainElements[i].Certificate.Dispose();
+                }
+
                 return verified;
             }
         }

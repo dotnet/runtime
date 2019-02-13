@@ -10,11 +10,15 @@ namespace System.Net.Test.Common
         {
             private static readonly string DefaultAzureServer = "corefx-net.cloudapp.net";
 
+            // Domain server environment.
             public static string ActiveDirectoryName => GetValue("COREFX_NET_AD_DOMAINNAME");
-
             public static string ActiveDirectoryUserName => GetValue("COREFX_NET_AD_USERNAME");
-
             public static string ActiveDirectoryUserPassword => GetValue("COREFX_NET_AD_PASSWORD");
+
+            // Standalone server environment.
+            public static string WindowsServerRealmName => GetValue("COREFX_NET_SERVER_REALMNAME");
+            public static string WindowsServerUserName => GetValue("COREFX_NET_SERVER_USERNAME");
+            public static string WindowsServerUserPassword => GetValue("COREFX_NET_SERVER_PASSWORD");
 
             public static Uri TlsServer => GetUriValue("COREFX_NET_SECURITY_TLSSERVERURI", new Uri("https://" + DefaultAzureServer));
 

@@ -36,7 +36,7 @@ namespace System.Runtime.CompilerServices.Tests
             else if (depth < 2048)
             {
                 FillStack(depth + 1);
-            } 
+            }
         }
 
         [Fact]
@@ -78,6 +78,20 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<Guid>());
             Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithoutReferences>());
             Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithReferences>());
+        }
+
+        [Fact]
+        public static void ArrayRangeHelperTest()
+        {
+            int[] a = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            Range range = Range.All;
+            Assert.Equal(a, RuntimeHelpers.GetSubArray(a, range));
+
+            range = new Range(Index.FromStart(1), Index.FromEnd(5));
+            Assert.Equal(new int [] { 2, 3, 4, 5}, RuntimeHelpers.GetSubArray(a, range));
+
+            range = new Range(Index.FromStart(0), Index.FromStart(a.Length + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => { int [] array = RuntimeHelpers.GetSubArray(a, range); });
         }
 
         [StructLayoutAttribute(LayoutKind.Sequential)]

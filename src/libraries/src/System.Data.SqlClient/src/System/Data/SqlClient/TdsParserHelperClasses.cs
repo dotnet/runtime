@@ -445,20 +445,32 @@ namespace System.Data.SqlClient
 
     sealed internal class _SqlMetaData : SqlMetaDataPriv
     {
+        [Flags]
+        private enum _SqlMetadataFlags : int
+        {
+            None = 0,
+
+            Updatable = 1 << 0,
+            UpdateableUnknown = 1 << 1,
+            IsDifferentName = 1 << 2,
+            IsKey = 1 << 3,
+            IsHidden = 1 << 4,
+            IsExpression = 1 << 5,
+            IsIdentity = 1 << 6,
+            IsColumnSet = 1 << 7,
+
+            IsReadOnlyMask = (Updatable | UpdateableUnknown) // two bit field (0 is read only, 1 is updatable, 2 is updatability unknown)
+        }
+
         internal string column;
         internal string baseColumn;
         internal MultiPartTableName multiPartTableName;
         internal readonly int ordinal;
-        internal byte updatability;     // two bit field (0 is read only, 1 is updatable, 2 is updatability unknown)
         internal byte tableNum;
-        internal bool isDifferentName;
-        internal bool isKey;
-        internal bool isHidden;
-        internal bool isExpression;
-        internal bool isIdentity;
-        internal bool isColumnSet;
         internal byte op;        // for altrow-columns only
         internal ushort operand; // for altrow-columns only
+        private _SqlMetadataFlags flags;
+
 
         internal _SqlMetaData(int ordinal) : base()
         {
@@ -494,6 +506,59 @@ namespace System.Data.SqlClient
             }
         }
 
+
+        public byte Updatability
+        {
+            get => (byte)(flags & _SqlMetadataFlags.IsReadOnlyMask);
+            set => flags = (_SqlMetadataFlags)((value & 0x3) | ((int)flags & ~0x03));
+        }
+
+        public bool IsReadOnly
+        {
+            get => flags.HasFlag(_SqlMetadataFlags.IsReadOnlyMask);
+        }
+
+        public bool IsDifferentName
+        {
+            get => flags.HasFlag(_SqlMetadataFlags.IsDifferentName);
+            set => Set(_SqlMetadataFlags.IsDifferentName, value);
+        }
+
+        public bool IsKey
+        {
+            get => flags.HasFlag(_SqlMetadataFlags.IsKey);
+            set => Set(_SqlMetadataFlags.IsKey, value);
+        }
+
+        public bool IsHidden
+        {
+            get => flags.HasFlag(_SqlMetadataFlags.IsHidden);
+            set => Set(_SqlMetadataFlags.IsHidden, value);
+        }
+
+        public bool IsExpression
+        {
+            get => flags.HasFlag(_SqlMetadataFlags.IsExpression);
+            set => Set(_SqlMetadataFlags.IsExpression, value);
+        }
+
+        public bool IsIdentity
+        {
+            get => flags.HasFlag(_SqlMetadataFlags.IsIdentity);
+            set => Set(_SqlMetadataFlags.IsIdentity, value);
+        }
+
+        public bool IsColumnSet
+        {
+            get => flags.HasFlag(_SqlMetadataFlags.IsColumnSet);
+            set => Set(_SqlMetadataFlags.IsColumnSet, value);
+        }
+
+        private void Set(_SqlMetadataFlags flag, bool value)
+        {
+            flags = value ? flags | flag : flags & ~flag;
+        }
+
         internal bool IsNewKatmaiDateTimeType
         {
             get
@@ -517,14 +582,8 @@ namespace System.Data.SqlClient
             result.column = column;
             result.baseColumn = baseColumn;
             result.multiPartTableName = multiPartTableName;
-            result.updatability = updatability;
             result.tableNum = tableNum;
-            result.isDifferentName = isDifferentName;
-            result.isKey = isKey;
-            result.isHidden = isHidden;
-            result.isExpression = isExpression;
-            result.isIdentity = isIdentity;
-            result.isColumnSet = isColumnSet;
+            result.flags = flags;
             result.op = op;
             result.operand = operand;
             return result;
@@ -652,42 +711,46 @@ namespace System.Data.SqlClient
 
     internal class SqlMetaDataPriv
     {
+        [Flags]
+        private enum SqlMetaDataPrivFlags : byte
+        {
+            None = 0,
+            IsNullable = 1 << 1,
+            IsMultiValued = 1 << 2
+        }
+
         internal SqlDbType type;    // SqlDbType enum value
         internal byte tdsType; // underlying tds type
         internal byte precision = TdsEnums.UNKNOWN_PRECISION_SCALE; // give default of unknown (-1)
         internal byte scale = TdsEnums.UNKNOWN_PRECISION_SCALE; // give default of unknown (-1)
+        private SqlMetaDataPrivFlags flags;
         internal int length;
         internal SqlCollation collation;
         internal int codePage;
         internal Encoding encoding;
-        internal bool isNullable;
-        internal bool isMultiValued = false;
-
-        // UDT specific metadata
-        // server metadata info
-        // additional temporary UDT meta data
-        internal string udtDatabaseName;
-        internal string udtSchemaName;
-        internal string udtTypeName;
-        internal string udtAssemblyQualifiedName;
-
-        // on demand
-        internal Type udtType;
-
-        // Xml specific metadata
-        internal string xmlSchemaCollectionDatabase;
-        internal string xmlSchemaCollectionOwningSchema;
-        internal string xmlSchemaCollectionName;
         internal MetaType metaType; // cached metaType
-
-        // Structured type-specific metadata
-        internal string structuredTypeDatabaseName;
-        internal string structuredTypeSchemaName;
-        internal string structuredTypeName;
-        internal IList<SmiMetaData> structuredFields;
+        public SqlMetaDataUdt udt;
+        public SqlMetaDataXmlSchemaCollection xmlSchemaCollection;
 
         internal SqlMetaDataPriv()
         {
+        }
+
+        public bool IsNullable
+        {
+            get => flags.HasFlag(SqlMetaDataPrivFlags.IsNullable);
+            set => Set(SqlMetaDataPrivFlags.IsNullable, value);
+        }
+
+        public bool IsMultiValued
+        {
+            get => flags.HasFlag(SqlMetaDataPrivFlags.IsMultiValued);
+            set => Set(SqlMetaDataPrivFlags.IsMultiValued, value);
+        }
+
+        private void Set(SqlMetaDataPrivFlags flag, bool value)
+        {
+            flags = value ? flags | flag : flags & ~flag;
         }
 
         internal virtual void CopyFrom(SqlMetaDataPriv original)
@@ -700,22 +763,58 @@ namespace System.Data.SqlClient
             this.collation = original.collation;
             this.codePage = original.codePage;
             this.encoding = original.encoding;
-            this.isNullable = original.isNullable;
-            this.isMultiValued = original.isMultiValued;
-            this.udtDatabaseName = original.udtDatabaseName;
-            this.udtSchemaName = original.udtSchemaName;
-            this.udtTypeName = original.udtTypeName;
-            this.udtAssemblyQualifiedName = original.udtAssemblyQualifiedName;
-            this.udtType = original.udtType;
-            this.xmlSchemaCollectionDatabase = original.xmlSchemaCollectionDatabase;
-            this.xmlSchemaCollectionOwningSchema = original.xmlSchemaCollectionOwningSchema;
-            this.xmlSchemaCollectionName = original.xmlSchemaCollectionName;
             this.metaType = original.metaType;
+            this.flags = original.flags;
 
-            this.structuredTypeDatabaseName = original.structuredTypeDatabaseName;
-            this.structuredTypeSchemaName = original.structuredTypeSchemaName;
-            this.structuredTypeName = original.structuredTypeName;
-            this.structuredFields = original.structuredFields;
+            if (original.udt != null)
+            {
+                udt = new SqlMetaDataUdt();
+                udt.CopyFrom(original.udt);
+            }
+
+            if (original.xmlSchemaCollection != null)
+            {
+                xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
+                xmlSchemaCollection.CopyFrom(original.xmlSchemaCollection);
+            }
+        }
+    }
+
+    sealed internal class SqlMetaDataXmlSchemaCollection
+    {
+        internal string Database;
+        internal string OwningSchema;
+        internal string Name;
+
+        public void CopyFrom(SqlMetaDataXmlSchemaCollection original)
+        {
+            if (original != null)
+            {
+                Database = original.Database;
+                OwningSchema = original.OwningSchema;
+                Name = original.Name;
+            }
+        }
+    }
+
+    sealed internal class SqlMetaDataUdt
+    {
+        internal Type Type;
+        internal string DatabaseName;
+        internal string SchemaName;
+        internal string TypeName;
+        internal string AssemblyQualifiedName;
+
+        public void CopyFrom(SqlMetaDataUdt original)
+        {
+            if (original != null)
+            {
+                Type = original.Type;
+                DatabaseName = original.DatabaseName;
+                SchemaName = original.SchemaName;
+                TypeName = original.TypeName;
+                AssemblyQualifiedName = original.AssemblyQualifiedName;
+            }
         }
     }
 

@@ -455,7 +455,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                int threadID = Win32Native.GetCurrentThreadId();
+                int threadID = Interop.Kernel32.GetCurrentThreadId();
 
                 // Managed thread IDs are more aggressively re-used than native thread IDs,
                 // so we'll use the latter...
@@ -2742,7 +2742,7 @@ namespace System.Diagnostics.Tracing
                 // for non-BCL EventSource we must assert SecurityPermission
                 new SecurityPermission(PermissionState.Unrestricted).Assert();
 #endif
-                s_currentPid = Win32Native.GetCurrentProcessId();
+                s_currentPid = Interop.Kernel32.GetCurrentProcessId();
             }
         }
 
@@ -3874,10 +3874,10 @@ namespace System.Diagnostics.Tracing
         static EventListener()
         {
 #if FEATURE_PERFTRACING
-            // Ensure that RuntimeEventSource is initialized so that EventListeners get an opportunity to subscribe to its events.
-            // This is required because RuntimeEventSource never emit events on its own, and thus will never be initialized
+            // Ensure that NativeRuntimeEventSource is initialized so that EventListeners get an opportunity to subscribe to its events.
+            // This is required because NativeRuntimeEventSource never emit events on its own, and thus will never be initialized
             // in the normal way that EventSources are initialized.
-            GC.KeepAlive(RuntimeEventSource.Log);
+            GC.KeepAlive(NativeRuntimeEventSource.Log);
 #endif // FEATURE_PERFTRACING
         }
 
@@ -3989,7 +3989,7 @@ namespace System.Diagnostics.Tracing
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
 #if FEATURE_PERFTRACING
-            if (eventSource.GetType() == typeof(RuntimeEventSource))
+            if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
             {
                 EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, true, level, matchAnyKeyword);
             }
@@ -4010,7 +4010,7 @@ namespace System.Diagnostics.Tracing
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
 
 #if FEATURE_PERFTRACING
-            if (eventSource.GetType() == typeof(RuntimeEventSource))
+            if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
             {
                 EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None);
             }

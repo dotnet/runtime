@@ -30,8 +30,7 @@ namespace System.Collections.ObjectModel.Tests
         [Fact]
         public static void Ctor_Tests_Negative()
         {
-            ReadOnlyObservableCollection<string> collection;
-            Assert.Throws<ArgumentNullException>(() => collection = new ReadOnlyObservableCollection<string>(null));
+            AssertExtensions.Throws<ArgumentNullException>("list", () => new ReadOnlyObservableCollection<string>(null));
         }
 
         [Fact]
@@ -127,7 +126,7 @@ namespace System.Collections.ObjectModel.Tests
             foreach (var index in iArrInvalidValues)
             {
                 string[] aCopy = new string[anArray.Length];
-                Assert.Throws<ArgumentOutOfRangeException>(() => readOnlyCol.CopyTo(aCopy, index));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => readOnlyCol.CopyTo(aCopy, index));
             }
 
             int[] iArrLargeValues = new int[] { anArray.Length, int.MaxValue, int.MaxValue / 2, int.MaxValue / 10 };
@@ -137,7 +136,7 @@ namespace System.Collections.ObjectModel.Tests
                 AssertExtensions.Throws<ArgumentException>("destinationArray", null, () => readOnlyCol.CopyTo(aCopy, index));
             }
 
-            Assert.Throws<ArgumentNullException>(() => readOnlyCol.CopyTo(null, 1));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => readOnlyCol.CopyTo(null, 1));
 
             string[] copy = new string[anArray.Length - 1];
             AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => readOnlyCol.CopyTo(copy, 0));
@@ -268,13 +267,13 @@ namespace System.Collections.ObjectModel.Tests
         public void Item_get_Tests_Negative()
         {
             // Verify get_Item with index=Int32.MinValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => { T item = _collection[int.MinValue]; });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => _collection[int.MinValue]);
 
             // Verify that the collection was not mutated 
             VerifyReadOnlyCollection(_collection, _expectedItems);
 
             // Verify get_Item with index=-1
-            Assert.Throws<ArgumentOutOfRangeException>(() => { T item = _collection[-1]; });
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => _collection[-1]);
 
             // Verify that the collection was not mutated 
             VerifyReadOnlyCollection(_collection, _expectedItems);
@@ -282,7 +281,7 @@ namespace System.Collections.ObjectModel.Tests
             if (_expectedItems.Length == 0)
             {
                 // Verify get_Item with index=0 on Empty collection
-                Assert.Throws<ArgumentOutOfRangeException>(() => { T item = _collection[0]; });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => _collection[0]);
 
                 // Verify that the collection was not mutated 
                 VerifyReadOnlyCollection(_collection, _expectedItems);
@@ -290,7 +289,7 @@ namespace System.Collections.ObjectModel.Tests
             else
             {
                 // Verify get_Item with index=Count on Empty collection
-                Assert.Throws<ArgumentOutOfRangeException>(() => { T item = _collection[_expectedItems.Length]; });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => _collection[_expectedItems.Length]);
 
                 // Verify that the collection was not mutated 
                 VerifyReadOnlyCollection(_collection, _expectedItems);

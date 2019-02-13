@@ -145,9 +145,18 @@ namespace System.Linq
 
         internal OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, OrderedEnumerable<TElement> parent)
         {
-            _source = source ?? throw Error.ArgumentNull(nameof(source));
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+            if (keySelector is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+            }
+
+            _source = source;
             _parent = parent;
-            _keySelector = keySelector ?? throw Error.ArgumentNull(nameof(keySelector));
+            _keySelector = keySelector;
             _comparer = comparer ?? Comparer<TKey>.Default;
             _descending = descending;
         }
