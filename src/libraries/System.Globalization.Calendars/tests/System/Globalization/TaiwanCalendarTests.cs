@@ -6,12 +6,10 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class JapaneseCalendarMaxSupportedDateTime
+    public class TaiwanCalendarTests : CalendarTestBase
     {
-        [Fact]
-        public void MaxSupportedDateTime()
-        {
-            Assert.Equal(DateTime.MaxValue, new JapaneseCalendar().MaxSupportedDateTime);
-        }
+        public override Calendar Calendar => new TaiwanCalendar();
+
+        public override DateTime MinSupportedDateTime => new DateTime(1912, 01, 01);
     }
 }

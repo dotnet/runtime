@@ -6,12 +6,8 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class KoreanCalendarMinSupportedDateTime
+    public class JulianCalendarTests : CalendarTestBase
     {
-        [Fact]
-        public void MinSupportedDateTime()
-        {
-            Assert.Equal(DateTime.MinValue, new KoreanCalendar().MinSupportedDateTime);
-        }
+        public override Calendar Calendar => new JulianCalendar();
     }
 }
