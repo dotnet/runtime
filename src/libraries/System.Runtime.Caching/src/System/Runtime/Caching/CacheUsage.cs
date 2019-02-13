@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -554,7 +555,6 @@ namespace System.Runtime.Caching
                 }
 
                 RemovePage(_freeEntryList._tail);
-                Dbg.Validate("CacheValidateUsage", this);
             }
         }
 
@@ -616,9 +616,6 @@ namespace System.Runtime.Caching
                             "Added item=" + cacheEntry.Key +
                             ",_bucket=" + _bucket +
                             ",ref=" + freeRef1);
-
-                Dbg.Validate("CacheValidateUsage", this);
-                Dbg.Dump("CacheUsageAdd", this);
             }
         }
 
@@ -672,9 +669,6 @@ namespace System.Runtime.Caching
                             "Removed item=" + cacheEntry.Key +
                             ",_bucket=" + _bucket +
                             ",ref=" + entryRef);
-
-                Dbg.Validate("CacheValidateUsage", this);
-                Dbg.Dump("CacheUsageRemove", this);
             }
         }
 
@@ -718,9 +712,6 @@ namespace System.Runtime.Caching
                             "Updated item=" + cacheEntry.Key +
                             ",_bucket=" + _bucket +
                             ",ref=" + entryRef);
-
-                Dbg.Validate("CacheValidateUsage", this);
-                Dbg.Dump("CacheUsageUpdate", this);
             }
         }
 
@@ -795,7 +786,7 @@ namespace System.Runtime.Caching
                     if (flushed == 0)
                     {
                         Dbg.Trace("CacheUsageFlushTotal", "Flush(" + maxFlush + "," + force + ") removed " + flushed +
-                                    " underused items; Time=" + Dbg.FormatLocalDate(DateTime.Now));
+                                    " underused items; Time=" + DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
 
                         return 0;
                     }
@@ -854,10 +845,7 @@ namespace System.Runtime.Caching
                     Reduce();
 
                     Dbg.Trace("CacheUsageFlushTotal", "Flush(" + maxFlush + "," + force + ") removed " + flushed +
-                                " underused items; Time=" + Dbg.FormatLocalDate(DateTime.Now));
-
-                    Dbg.Validate("CacheValidateUsage", this);
-                    Dbg.Dump("CacheUsageFlush", this);
+                                " underused items; Time=" + DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
                 }
             }
             finally

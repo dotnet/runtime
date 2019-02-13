@@ -56,12 +56,6 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Runtime\Caching\MemoryMonitor.Windows.cs" />
     <Compile Include="System\Runtime\Caching\PhysicalMemoryMonitor.Windows.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs</Link>
     </Compile>
