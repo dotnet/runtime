@@ -874,22 +874,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int LocateLastFoundChar(ulong match)
         {
-            // TODO: Arm variants
-            if (Lzcnt.X64.IsSupported)
-            {
-                return 3 - (int)(Lzcnt.X64.LeadingZeroCount(match) >> 4);
-            }
-            else
-            {
-                // Find the most significant char that has its highest bit set
-                int index = 3;
-                while ((long)match > 0)
-                {
-                    match = match << 16;
-                    index--;
-                }
-                return index;
-            }
+            return 3 - (BitOps.LeadingZeroCount(match) >> 4);
         }
     }
 }
