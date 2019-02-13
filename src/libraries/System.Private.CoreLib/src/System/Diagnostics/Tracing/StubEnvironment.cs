@@ -6,6 +6,9 @@ using System;
 using System.Collections.Generic;
 
 #if ES_BUILD_STANDALONE
+using System.Runtime.InteropServices;
+using System.Security;
+
 namespace Microsoft.Diagnostics.Tracing.Internal
 #else
 namespace System.Diagnostics.Tracing.Internal
@@ -327,9 +330,6 @@ namespace Microsoft.Reflection
 #if ES_BUILD_STANDALONE
 internal static partial class Interop
 {
-    using System.Runtime.InteropServices;
-    using System.Security;
-
     [SuppressUnmanagedCodeSecurityAttribute()]
     internal static partial class Kernel32
     {
