@@ -41,7 +41,7 @@ Any file with the suffix `.dll` in the same folder as the managed application be
 
 Only assemblies listed in the dependencies file can be resolved from a package cache. To resolve those assemblies, two environment variables are used:
 
-* `DOTNET_PACKAGES` - The primary package cache. If not set, defaults to `$HOME/.nuget/packages` on Unix or `%LOCALAPPDATA%\NuGet\Packages` (TBD) on Windows. **NOTE**: Currently the host uses different folders as we are still coordinating with NuGet to get the directories right (there are compatability considerations). Currently we always use `$HOME/.dnx/packages`(Unix)/`%USERPROFILE%\.dnx\packages`(Win).
+* `DOTNET_PACKAGES` - The primary package cache. If not set, defaults to `$HOME/.nuget/packages` on Unix or `%LOCALAPPDATA%\NuGet\Packages` (TBD) on Windows. **NOTE**: Currently the host uses different folders as we are still coordinating with NuGet to get the directories right (there are compatibility considerations). Currently we always use `$HOME/.dnx/packages`(Unix)/`%USERPROFILE%\.dnx\packages`(Win).
 * `DOTNET_PACKAGES_CACHE` - The secondary cache. This is used by shared hosts (such as Azure) to provide a cache of pre-downloaded common packages on a faster disk. If not set, it is not used.
 
 Given the Package ID, Package Version, Package Hash and Asset Relative Path provided in the runtime configuration file, **and the assembly is not serviced** (see the full resolution algorithm below) resolution proceeds as follows (Unix-style paths will be used for convenience but these variables and paths all apply to Windows as well):
@@ -82,20 +82,16 @@ Runtime resolution is controlled by these environment variables:
 * `DOTNET_PACKAGES_CACHE` -> Secondary cache
 * `DOTNET_PACKAGES` -> Package restore location
 
-The runtime is located by searching the following paths in order, where `APP_BASE` refers to the directory containing the managed application assembly and `LIBCORECLR` refers to the platform-specific name for the CoreCLR library (`libcoreclr.so` on Unix, `libcoreclr.dylib` on Mac OS X, `coreclr.dll` on Windows). The first path that matches is used as the path to load the CoreCLR from.
+The runtime is located by searching the following paths in order, where `APP_BASE` refers to the directory containing the managed application assembly and `LIBCORECLR_NAME` refers to the platform-specific name for the CoreCLR library (`libcoreclr.so` on Unix, `libcoreclr.dylib` on Mac OS X, `coreclr.dll` on Windows). The first path that matches is used as the path to load the CoreCLR from.
 
-* `$DOTNET_RUNTIME_SERVICING/runtime/coreclr/LIBCORECLR`
-* `$DOTNET_PACKAGES_CACHE/<Package Id>/<Package Version>/runtimes/<RID>/native/LICORECLR`
-* `APP_BASE/LIBCORECLR`
-* `$DOTNET_PACKAGES/<Package Id>/<Package Version>/runtimes/<RID>/native/LIBCORECLR`
-* On Unix:
-    * `/usr/local/share/dotnet/runtime/coreclr/LIBCORECLR` [1]
-    * `/usr/share/dotnet/runtime/coreclr/LIBCORECLR`
+* `$DOTNET_RUNTIME_SERVICING/runtime/coreclr/LIBCORECLR_NAME`
+* `$DOTNET_PACKAGES_CACHE/<Package Id>/<Package Version>/runtimes/<RID>/native/LIBCORECLR_NAME`
+* `APP_BASE/LIBCORECLR_NAME`
+* `$DOTNET_PACKAGES/<Package Id>/<Package Version>/runtimes/<RID>/native/LIBCORECLR_NAME`
 * On Windows:
-    * `%LocalAppData%\dotnet\runtime\coreclr\LIBCORECLR`
-    * `%ProgramFiles%\dotnet\runtime\coreclr\LIBCORECLR` [2]
-
-Notes:
-
-1. The Unix paths should be this way but are reversed in the actual code. Generally `/usr/local` is considered to have higher precedence than `/usr`
-2. Not yet implemented.
+    * WoW64: `%ProgramFiles(x86)%\dotnet\shared\<Package Name>\<Package Version>\LIBCORECLR_NAME`    
+    * Otherwise: `%ProgramFiles%\dotnet\shared\<Package Name>\<Package Version>\LIBCORECLR_NAME`
+* On Mac OS X:
+    * `/usr/local/share/dotnet/shared/<Package Name>/<Package Version>/LIBCORECLR_NAME`
+* On Unix:
+    * `/usr/share/dotnet/shared/<Package Name>/<Package Version>/LIBCORECLR_NAME`
