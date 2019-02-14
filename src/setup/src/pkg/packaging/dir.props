@@ -8,10 +8,12 @@
     <!-- Package prebuilt binaries -->
     <UsePrebuiltPortableBinariesForInstallers>false</UsePrebuiltPortableBinariesForInstallers>
     
+    <!-- Use trailing '/'. Heat.exe doesn't accept a trailing '\'.-->
     <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
     <SharedHostPublishRoot>$(IntermediateOutputRootPath)sharedHost/</SharedHostPublishRoot>
     <HostFxrPublishRoot>$(IntermediateOutputRootPath)hostFxr/</HostFxrPublishRoot>
     <SharedFrameworkPublishRoot>$(IntermediateOutputRootPath)sharedFx/</SharedFrameworkPublishRoot>
+    <TargetingPackPublishRoot>$(IntermediateOutputRootPath)Microsoft.NETCore.App.Ref/layout/</TargetingPackPublishRoot>
     <CombinedPublishRoot>$(IntermediateOutputRootPath)combined-framework-host/</CombinedPublishRoot>
   </PropertyGroup>
 
@@ -28,6 +30,7 @@
     <ProductBrandSuffix Condition="'$(ReleaseBrandSuffix)'!=''">$(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandSuffix>
     <SharedHostBrandName>$(ProductBrandPrefix) Host - $(ProductBrandSuffix)</SharedHostBrandName>
     <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
+    <TargetingPackBrandName>$(ProductBrandPrefix) Targeting Pack - $(ProductBrandSuffix)</TargetingPackBrandName>
     <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
   </PropertyGroup>
 </Project>
