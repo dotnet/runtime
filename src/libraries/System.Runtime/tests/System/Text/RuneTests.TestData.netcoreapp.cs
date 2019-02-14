@@ -190,6 +190,24 @@ namespace System.Text.Tests
             yield return new object[] { int.MaxValue }; // too large
         }
 
+        public static IEnumerable<object[]> SurrogatePairTestData_InvalidOnly()
+        {
+            yield return new object[] { '\ud800', '\ud800' }; // two high surrogates
+            yield return new object[] { '\udfff', '\udfff' }; // two low surrogates
+            yield return new object[] { '\ude00', '\udb00' }; // low surrogate before high surrogate
+            yield return new object[] { '\ud900', '\u1234' }; // high surrogate followed by non-surrogate
+            yield return new object[] { '\ud900', '\ue000' }; // high surrogate followed by value just beyond low surrogate range
+            yield return new object[] { '\u1234', '\ude00' }; // low surrogate preceded by non-surrogate
+            yield return new object[] { '\udc00', '\ude00' }; // low surrogate preceded by value just beyond high surrogate range
+        }
+
+        public static IEnumerable<object[]> SurrogatePairTestData_ValidOnly()
+        {
+            yield return new object[] { '\ud800', '\udc00', 0x00010000 }; // lower bound for high & low surrogate
+            yield return new object[] { '\udbff', '\udfff', 0x0010FFFF }; // upper bound for high & low surrogate
+            yield return new object[] { '\ud83c', '\udfa8', 0x0001F3A8 }; // U+1F3A8 ARTIST PALETTE
+        }
+
         public class GeneralTestData
         {
             public int ScalarValue;
