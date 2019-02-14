@@ -12,7 +12,6 @@ namespace System.Runtime.InteropServices.Tests
         public static IEnumerable<object[]> Ctor_Array_Offset_TestData()
         {
             yield return new object[] { null, 0, 0 };
-            yield return new object[] { new int[2], -1, 8 };
             yield return new object[] { new int[2], 2, 8 };
             yield return new object[] { new int[2], 3, 8 };
             yield return new object[] { new byte[4], 1, 4 };
@@ -44,6 +43,8 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(null, -1)]
         [InlineData(null, 1)]
         [InlineData(new int[] { 1 }, 5)]
+        [InlineData(new int[] { 2 }, -1)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix was made in coreclr that is not in netfx. See https://github.com/dotnet/corefx/issues/34699")]
         public void Ctor_InvalidOffset_ThrowsIndexOutOfRangeException(object array, int offset)
         {
             Assert.Throws<IndexOutOfRangeException>(() => new ArrayWithOffset(array, offset));

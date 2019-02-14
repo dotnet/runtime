@@ -34,7 +34,7 @@ namespace Internal.Cryptography.Pal
                 {
                     Debug.Assert(index < chainStatus.Length);
 
-                    chainStatus[index].StatusInformation = Interop.Kernel32.GetMessage(mapping.Win32ErrorCode);
+                    chainStatus[index].StatusInformation = mapping.Message;
                     chainStatus[index].Status = mapping.ChainStatusFlag;
                     index++;
                     dwStatus &= ~mapping.Win32Flag;
@@ -65,12 +65,14 @@ namespace Internal.Cryptography.Pal
             public readonly CertTrustErrorStatus Win32Flag;
             public readonly int Win32ErrorCode;
             public readonly X509ChainStatusFlags ChainStatusFlag;
+            public readonly string Message;
 
             public X509ChainErrorMapping(CertTrustErrorStatus win32Flag, int win32ErrorCode, X509ChainStatusFlags chainStatusFlag)
             {
                 Win32Flag = win32Flag;
                 Win32ErrorCode = win32ErrorCode;
                 ChainStatusFlag = chainStatusFlag;
+                Message = Interop.Kernel32.GetMessage(win32ErrorCode);
             }
         }
 

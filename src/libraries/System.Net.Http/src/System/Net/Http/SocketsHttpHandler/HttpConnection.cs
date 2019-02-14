@@ -199,8 +199,6 @@ namespace System.Net.Http
             return null;
         }
 
-        public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
-
         public TransportContext TransportContext => _transportContext;
 
         public HttpConnectionKind Kind => _pool.Kind;
@@ -342,7 +340,6 @@ namespace System.Net.Http
 
             _currentRequest = request;
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-            bool hasExpectContinueHeader = request.HasHeaders && request.Headers.ExpectContinue == true;
 
             Debug.Assert(!_canRetry);
             _canRetry = true;
@@ -451,6 +448,7 @@ namespace System.Net.Http
                 }
                 else
                 {
+                    bool hasExpectContinueHeader = request.HasHeaders && request.Headers.ExpectContinue == true;
                     if (NetEventSource.IsEnabled) Trace($"Request content is not null, start processing it. hasExpectContinueHeader = {hasExpectContinueHeader}");
 
                     // Send the body if there is one.  We prefer to serialize the sending of the content before
@@ -512,9 +510,45 @@ namespace System.Net.Http
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
                 ParseStatusLine(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false), response);
 
-                // If we sent an Expect: 100-continue header, handle the response accordingly. Note that the developer
-                // may have added an Expect: 100-continue header even if there is no Content.
-                if (hasExpectContinueHeader)
+                // Multiple 1xx responses handling.
+                // RFC 7231: A client MUST be able to parse one or more 1xx responses received prior to a final response,
+                // even if the client does not expect one. A user agent MAY ignore unexpected 1xx responses.
+                // In .NET Core, apart from 100 Continue, and 101 Switching Protocols, we will treat all other 1xx responses
+                // as unknown, and will discard them.
+                while ((uint)(response.StatusCode - 100) <= 199 - 100)
+                {
+                    // If other 1xx responses come before an expected 100 continue, we will wait for the 100 response before
+                    // sending request body (if any).
+                    if (allowExpect100ToContinue != null && response.StatusCode == HttpStatusCode.Continue)
+                    {
+                        allowExpect100ToContinue.TrySetResult(true);
+                        allowExpect100ToContinue = null;
+                    }
+                    else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
+                    {
+                        // 101 Upgrade is a final response as it's used to switch protocols with WebSockets handshake.
+                        // Will return a response object with status 101 and a raw connection stream later.
+                        // RFC 7230: If a server receives both an Upgrade and an Expect header field with the "100-continue" expectation,
+                        // the server MUST send a 100 (Continue) response before sending a 101 (Switching Protocols) response.
+                        // If server doesn't follow RFC, we treat 101 as a final response and stop waiting for 100 continue - as if server
+                        // never sends a 100-continue. The request body will be sent after expect100Timer expires.
+                        break;
+                    }
+
+                    // In case read hangs which eventually leads to connection timeout.
+                    if (NetEventSource.IsEnabled) Trace($"Current {response.StatusCode} response is an interim response or not expected, need to read for a final response.");
+
+                    // Discard headers that come with the interim 1xx responses.
+                    // RFC7231: 1xx responses are terminated by the first empty line after the status-line.
+                    while (!IsLineEmpty(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false)));
+
+                    // Parse the status line for next response.
+                    ParseStatusLine(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false), response);
+                }
+
+                // If we sent an Expect: 100-continue header, and didn't receive a 100-continue. Handle the final response accordingly.
+                // Note that the developer may have added an Expect: 100-continue header even if there is no Content.
+                if (allowExpect100ToContinue != null)
                 {
                     if ((int)response.StatusCode >= 300 &&
                         request.Content != null &&
@@ -533,22 +567,9 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        // For any success or informational status codes (including 100 continue), or for errors when the request content
-                        // length is known to be small, send the payload (if there is one... if there isn't, Content is null and thus
-                        // allowExpect100ToContinue is also null).
-                        allowExpect100ToContinue?.TrySetResult(true);
-
-                        // And if this was 100 continue, deal with the extra headers.
-                        if (response.StatusCode == HttpStatusCode.Continue)
-                        {
-                            // We got our continue header.  Read the subsequent empty line and parse the additional status line.
-                            if (!LineIsEmpty(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false)))
-                            {
-                                ThrowInvalidHttpResponse();
-                            }
-
-                            ParseStatusLine(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false), response);
-                        }
+                        // For any success status codes or for errors when the request content length is known to be small, send the payload
+                        // (if there is one... if there isn't, Content is null and thus allowExpect100ToContinue is also null, we won't get here).
+                        allowExpect100ToContinue.TrySetResult(true);
                     }
                 }
 
@@ -568,7 +589,7 @@ namespace System.Net.Http
                 while (true)
                 {
                     ArraySegment<byte> line = await ReadNextResponseHeaderLineAsync(foldedHeadersAllowed: true).ConfigureAwait(false);
-                    if (LineIsEmpty(line))
+                    if (IsLineEmpty(line))
                     {
                         break;
                     }
@@ -723,7 +744,7 @@ namespace System.Net.Http
             }, _weakThisRef);
         }
 
-        private static bool LineIsEmpty(ArraySegment<byte> line) => line.Count == 0;
+        private static bool IsLineEmpty(ArraySegment<byte> line) => line.Count == 0;
 
         private async Task SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, CancellationToken cancellationToken)
         {
@@ -1636,7 +1657,7 @@ namespace System.Net.Http
 
         private static void ThrowInvalidHttpResponse(Exception innerException) => throw new HttpRequestException(SR.net_http_invalid_response, innerException);
 
-        internal void Trace(string message, [CallerMemberName] string memberName = null) =>
+        internal override void Trace(string message, [CallerMemberName] string memberName = null) =>
             NetEventSource.Log.HandlerMessage(
                 _pool?.GetHashCode() ?? 0,    // pool ID
                 GetHashCode(),                // connection ID

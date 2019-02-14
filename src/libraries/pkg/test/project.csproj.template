@@ -5,11 +5,13 @@
     <RuntimeIdentifiers>{RIDs}</RuntimeIdentifiers>
     <TestPackageId>{PackageId}</TestPackageId>
     <TestPackageVersion>{PackageVersion}</TestPackageVersion>
+
+    <SupportFilesDir Condition="'$(SupportFilesDir)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\support</SupportFilesDir>
   </PropertyGroup>
   
   <ItemGroup>
     <PackageReference Include="{PackageId}" Version="{PackageVersion}" />
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), packageTest.targets))\packageTest.targets" />
+  <Import Project="$(SupportFilesDir)\packageTest.targets" />
 </Project>

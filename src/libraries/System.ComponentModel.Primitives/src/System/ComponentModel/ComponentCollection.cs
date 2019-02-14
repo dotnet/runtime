@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Placeholder stub without functionality, here only to support existence of 
-//  TypeConverter.
-// Dependency chain: TypeConverter -> ITypeDescriptorContext -> IContainer -> ComponentCollection
-
 using System.Collections;
  
 namespace System.ComponentModel
@@ -15,9 +11,8 @@ namespace System.ComponentModel
         public ComponentCollection(IComponent[] components) => InnerList.AddRange(components);
 
         /// <summary>
-        ///    <para>
-        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.Container'/>.
-        ///    </para>
+        /// Gets a specific <see cref='System.ComponentModel.Component'/> in the
+        /// <see cref='System.ComponentModel.IContainer'/>.
         /// </summary>
         public virtual IComponent this[string name]
         {
@@ -39,13 +34,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.Container'/>.
-        ///    </para>
+        /// Gets a specific <see cref='System.ComponentModel.Component'/> in the
+        /// <see cref='System.ComponentModel.IContainer'/>.
         /// </summary>
         public virtual IComponent this[int index] => (IComponent)InnerList[index];
 
         public void CopyTo(IComponent[] array, int index) => InnerList.CopyTo(array, index);
     }
 }
-

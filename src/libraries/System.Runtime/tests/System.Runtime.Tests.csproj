@@ -207,6 +207,9 @@
       <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+    <Compile Include="System\ExitCodeTests.Unix.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx' And '$(TargetGroup)' != 'netstandard'">
     <Compile Include="System\HashCodeTests.netcoreapp.cs" />
     <Compile Include="Helpers.netcoreapp.cs" />
@@ -244,7 +247,7 @@
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\BindingFlagsDoNotWrap.netcoreapp.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.netcoreapp.cs" />
-    <Compile Include="System\Reflection\IsCollectibleTests.cs" />
+    <Compile Include="System\Reflection\IsCollectibleTests.cs" Condition="'$(TargetGroup)' != 'uapaot'"/><!-- missing method 'AssemblyLoadContext..ctor(bool) -->
     <Compile Include="System\Reflection\MethodBaseTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\SignatureTypes.netcoreapp.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.netcoreapp.cs" />

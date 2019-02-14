@@ -1311,7 +1311,7 @@ namespace System.IO
         [System.CLSCompliantAttribute(false)]
         public virtual ulong ReadUInt64() { throw null; }
     }
-    public partial class BinaryWriter : System.IDisposable
+    public partial class BinaryWriter : System.IDisposable, System.IAsyncDisposable
     {
         public static readonly System.IO.BinaryWriter Null;
         protected System.IO.Stream OutStream;
@@ -1573,7 +1573,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
         public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
-    public abstract partial class TextWriter : System.MarshalByRefObject, System.IDisposable
+    public abstract partial class TextWriter : System.MarshalByRefObject, System.IDisposable, System.IAsyncDisposable
     {
         protected char[] CoreNewLine;
         public static readonly System.IO.TextWriter Null;
@@ -1840,6 +1840,19 @@ namespace System.Runtime
     {
         public static void SetProfileRoot(string directoryPath) { throw null; }
         public static void StartProfile(string profile) { throw null; }
+    }
+}
+namespace System.Runtime.CompilerServices
+{
+    public sealed class SwitchExpressionException : System.InvalidOperationException
+    {
+        public SwitchExpressionException() { }
+        public SwitchExpressionException(Exception innerException) { }
+        public SwitchExpressionException(object unmatchedValue) { }
+        public SwitchExpressionException(string message) { }
+        public SwitchExpressionException(string message, Exception innerException) { }
+        public object UnmatchedValue { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }
 namespace System.Runtime.Versioning

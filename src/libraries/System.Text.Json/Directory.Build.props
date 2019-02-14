@@ -6,5 +6,9 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
+
+    <!-- Properties for source package -->
+    <_sourcePackageName>Microsoft.Bcl.Json.Sources</_sourcePackageName>
+    <_packagePathToSources>contentFiles/cs/netstandard2.0/$(_sourcePackageName)</_packagePathToSources>
   </PropertyGroup>
 </Project>

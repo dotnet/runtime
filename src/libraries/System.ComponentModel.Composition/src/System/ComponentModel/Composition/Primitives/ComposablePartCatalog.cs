@@ -60,10 +60,7 @@ namespace System.ComponentModel.Composition.Primitives
                 {
                     // Guarantee one time only set _queryableParts
                     var p = this.AsQueryable();
-                    // NOTE : According to https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-messages/cs0420, the warning is bogus when used with Interlocked API.
-#pragma warning disable 420
                     Interlocked.CompareExchange(ref _queryableParts, p, null);
-#pragma warning restore 420
                     if (_queryableParts == null)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
@@ -126,19 +123,14 @@ namespace System.ComponentModel.Composition.Primitives
             return exports ?? _EmptyExportsList;
         }
 
-internal virtual IEnumerable<ComposablePartDefinition> GetCandidateParts(ImportDefinition definition)
+        internal virtual IEnumerable<ComposablePartDefinition> GetCandidateParts(ImportDefinition definition)
         {
             return this;
         }
 
-/// <summary>
-        ///     Releases the unmanaged resources used by the <see cref="ComposablePartCatalog"/> and 
-        ///     optionally releases the managed resources.
+        /// <summary>
+        ///     Releases the unmanaged and managed resources used by the <see cref="ComposablePartCatalog"/>. 
         /// </summary>
-        /// <param name="disposing">
-        ///     <see langword="true"/> to release both managed and unmanaged resources; 
-        ///     <see langword="false"/> to release only unmanaged resources.
-        /// </param>
         public void Dispose()
         {
             Dispose(true);

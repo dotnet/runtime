@@ -24,7 +24,7 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
 {
     assert(buffer != NULL);
 
-#if HAVE_ARC4RANDOM
+#if HAVE_ARC4RANDOM_BUF
     arc4random_buf(buffer, (size_t)bufferLength);
 #else
     static volatile int rand_des = -1;
@@ -105,5 +105,5 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
         *(buffer + i) ^= num;
         num >>= 8;
     }
-#endif // HAVE_ARC4RANDOM
+#endif // HAVE_ARC4RANDOM_BUF
 }

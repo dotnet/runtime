@@ -33,8 +33,6 @@ namespace System.Collections
         private object[] _items; // Do not rename (binary serialization)
         private int _size; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
-        [NonSerialized]
-        private object _syncRoot;
 
         private const int _defaultCapacity = 4;
 
@@ -156,17 +154,7 @@ namespace System.Collections
         }
 
         // Synchronization root for this object.
-        public virtual object SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        public virtual object SyncRoot => this;
 
         // Sets or Gets the element at the given index.
         // 

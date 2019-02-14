@@ -31,8 +31,6 @@ namespace System.Collections.Generic
         private int _tail;       // The index at which to enqueue if the queue isn't full.
         private int _size;       // Number of elements.
         private int _version;
-        [NonSerialized]
-        private object _syncRoot;
 
         private const int MinimumGrow = 4;
         private const int GrowFactor = 200;  // double each time
@@ -74,17 +72,7 @@ namespace System.Collections.Generic
             get { return false; }
         }
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
         // Removes all Objects from the queue.
         public void Clear()

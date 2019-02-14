@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1572;CS1574;CS1587;CS1589;CS1591;CS1723;CS1734;CS3016</NoWarn>
+    <NoWarn>$(NoWarn);CS3016</NoWarn>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1\AsnXml.targets"/>
@@ -302,6 +302,9 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PrintF.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.PrintF.cs</Link>
+    </Compile>
     <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml</DependentUpon>
@@ -390,10 +393,10 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FChMod.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FChMod.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEUid.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPwUid.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Stat.cs">
@@ -432,10 +435,10 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\ReferenceEqualityComparer.cs">
       <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Unix.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PersistedFiles.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
     </Compile>
   </ItemGroup>
@@ -701,6 +704,7 @@
     <Reference Include="System.Security.Cryptography.Csp" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true'">
+    <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography.OpenSsl" />
   </ItemGroup>
   <ItemGroup>

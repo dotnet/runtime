@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <!-- Target that builds all the native binaries in the Native folder -->
   <Target Name="Build" DependsOnTargets="GenerateNativeVersionFile;BuildNativeUnix;BuildNativeWindows" />
@@ -9,8 +10,8 @@
   </PropertyGroup>
 
   <Target Name="BuildNativeUnix"
-          Condition="'$(OS)' != 'Windows_NT'"
-  >
+          Condition="'$(OS)' != 'Windows_NT'">
+
     <PropertyGroup>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
@@ -34,18 +35,19 @@
 
   </Target>
 
+  <!-- We don't have any native components when building for netfx. -->
   <Target Name="BuildNativeWindows"
-          Condition="'$(OS)' == 'Windows_NT'"
-  >
+          Condition="'$(OS)' == 'Windows_NT' AND '$(TargetsNetFx)' != 'true'">
+
     <PropertyGroup>
       <_BuildNativeWindowsArgs>$(_BuildNativeArgs)</_BuildNativeWindowsArgs>
     </PropertyGroup>
 
     <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
-    <Message Text="$(MSBuildProjectDirectory)\build-native.cmd $(_BuildNativeArgs)" Importance="High"/>
+    <Message Text="&quot;$(MSBuildProjectDirectory)\build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
     <Exec Command="&quot;$(MSBuildProjectDirectory)\build-native.cmd&quot; $(_BuildNativeArgs)" />
 
   </Target>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

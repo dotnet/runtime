@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Xunit;
+
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public class UdtBulkCopyTest
     {
         private string _connStr;
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.IsUdtTestDatabasePresent), nameof(DataTestUtility.AreConnStringsSetup))]
         public void RunCopyTest()
         {
-            _connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { InitialCatalog = "UdtTestDb" }).ConnectionString;
+            _connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { InitialCatalog = DataTestUtility.UdtTestDbName }).ConnectionString;
             SqlConnection conn = new SqlConnection(_connStr);
 
             string cities = DataTestUtility.GetUniqueNameForSqlServer("UdtBulkCopy_cities");
@@ -34,13 +36,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     "FieldType[1] = Point" + Environment.NewLine +
                     "   redmond, p.X =   3, p.Y =   3, p.Distance() = 5" + Environment.NewLine +
                     "  bellevue, p.X =   6, p.Y =   6, p.Distance() = 10" + Environment.NewLine +
-                    "   seattle, p.X =  10, p.Y =  10, p.Distance() = 14.8660687473185" + Environment.NewLine +
+                    "   seattle, p.X =  10, p.Y =  10, p.Distance() = 14.866068747318506" + Environment.NewLine +
                     "  portland, p.X =  20, p.Y =  20, p.Distance() = 25" + Environment.NewLine +
                     "        LA, p.X =   3, p.Y =   3, p.Distance() = 5" + Environment.NewLine +
                     "       SFO, p.X =   6, p.Y =   6, p.Distance() = 10" + Environment.NewLine +
-                    " beaverton, p.X =  10, p.Y =  10, p.Distance() = 14.8660687473185" + Environment.NewLine +
+                    " beaverton, p.X =  10, p.Y =  10, p.Distance() = 14.866068747318506" + Environment.NewLine +
                     "  new york, p.X =  20, p.Y =  20, p.Distance() = 25" + Environment.NewLine +
-                    "     yukon, p.X =  20, p.Y =  20, p.Distance() = 32.0156211871642" + Environment.NewLine;
+                    "     yukon, p.X =  20, p.Y =  20, p.Distance() = 32.01562118716424" + Environment.NewLine;
 
                 CopyTableTest(_connStr, "cities", cities, expectedResults);
 

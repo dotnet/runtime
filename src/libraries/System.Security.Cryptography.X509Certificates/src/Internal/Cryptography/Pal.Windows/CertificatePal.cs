@@ -248,9 +248,7 @@ namespace Internal.Cryptography.Pal
                 unsafe
                 {
                     CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    int count = pCertContext->cbCertEncoded;
-                    byte[] rawData = new byte[count];
-                    Marshal.Copy((IntPtr)(pCertContext->pbCertEncoded), rawData, 0, count);
+                    byte[] rawData = new Span<byte>(pCertContext->pbCertEncoded, pCertContext->cbCertEncoded).ToArray();
                     GC.KeepAlive(this);
                     return rawData;
                 }

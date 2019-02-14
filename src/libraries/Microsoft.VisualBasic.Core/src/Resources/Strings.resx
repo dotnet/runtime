@@ -1,0 +1,1056 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ID3" xml:space="preserve">
+    <value>This Error number is obsolete and no longer used.</value>
+  </data>
+  <data name="ID5" xml:space="preserve">
+    <value>Procedure call or argument is not valid.</value>
+  </data>
+  <data name="ID6" xml:space="preserve">
+    <value>Overflow.</value>
+  </data>
+  <data name="ID7" xml:space="preserve">
+    <value>Out of memory.</value>
+  </data>
+  <data name="ID9" xml:space="preserve">
+    <value>Subscript out of range.</value>
+  </data>
+  <data name="ID10" xml:space="preserve">
+    <value>This array is fixed or temporarily locked.</value>
+  </data>
+  <data name="ID11" xml:space="preserve">
+    <value>Division by zero.</value>
+  </data>
+  <data name="ID13" xml:space="preserve">
+    <value>Type mismatch.</value>
+  </data>
+  <data name="ID14" xml:space="preserve">
+    <value>Out of string space.</value>
+  </data>
+  <data name="ID16" xml:space="preserve">
+    <value>Expression too complex.</value>
+  </data>
+  <data name="ID17" xml:space="preserve">
+    <value>Can't perform requested operation.</value>
+  </data>
+  <data name="ID18" xml:space="preserve">
+    <value>User interrupt occurred.</value>
+  </data>
+  <data name="ID20" xml:space="preserve">
+    <value>Resume without error.</value>
+  </data>
+  <data name="ID28" xml:space="preserve">
+    <value>Out of stack space.</value>
+  </data>
+  <data name="ID35" xml:space="preserve">
+    <value>Sub or Function not defined.</value>
+  </data>
+  <data name="ID47" xml:space="preserve">
+    <value>Too many DLL application clients.</value>
+  </data>
+  <data name="ID48" xml:space="preserve">
+    <value>Error in loading DLL.</value>
+  </data>
+  <data name="ID49" xml:space="preserve">
+    <value>Bad DLL calling convention.</value>
+  </data>
+  <data name="ID51" xml:space="preserve">
+    <value>Internal error.</value>
+  </data>
+  <data name="ID52" xml:space="preserve">
+    <value>Bad file name or number.</value>
+  </data>
+  <data name="ID53" xml:space="preserve">
+    <value>File not found.</value>
+  </data>
+  <data name="ID54" xml:space="preserve">
+    <value>Bad file mode.</value>
+  </data>
+  <data name="ID55" xml:space="preserve">
+    <value>File already open.</value>
+  </data>
+  <data name="ID57" xml:space="preserve">
+    <value>Device I/O error.</value>
+  </data>
+  <data name="ID58" xml:space="preserve">
+    <value>File already exists.</value>
+  </data>
+  <data name="ID59" xml:space="preserve">
+    <value>Bad record length.</value>
+  </data>
+  <data name="ID61" xml:space="preserve">
+    <value>Disk full.</value>
+  </data>
+  <data name="ID62" xml:space="preserve">
+    <value>Input past end of file.</value>
+  </data>
+  <data name="ID63" xml:space="preserve">
+    <value>Bad record number.</value>
+  </data>
+  <data name="ID67" xml:space="preserve">
+    <value>Too many files.</value>
+  </data>
+  <data name="ID68" xml:space="preserve">
+    <value>Device unavailable.</value>
+  </data>
+  <data name="ID70" xml:space="preserve">
+    <value>Permission denied.</value>
+  </data>
+  <data name="ID71" xml:space="preserve">
+    <value>Disk not ready.</value>
+  </data>
+  <data name="ID74" xml:space="preserve">
+    <value>Cannot rename with different drive.</value>
+  </data>
+  <data name="ID75" xml:space="preserve">
+    <value>Path/File access error.</value>
+  </data>
+  <data name="ID76" xml:space="preserve">
+    <value>Path not found.</value>
+  </data>
+  <data name="ID91" xml:space="preserve">
+    <value>Object variable or With block variable not set.</value>
+  </data>
+  <data name="ID92" xml:space="preserve">
+    <value>For loop not initialized.</value>
+  </data>
+  <data name="ID93" xml:space="preserve">
+    <value>Pattern string is not valid.</value>
+  </data>
+  <data name="ID94" xml:space="preserve">
+    <value>This Error number is obsolete and no longer used.</value>
+  </data>
+  <data name="ID95" xml:space="preserve">
+    <value>Application-defined or object-defined error.</value>
+  </data>
+  <data name="ID96" xml:space="preserve">
+    <value>Unable to sink events of object because the object is already firing events to the maximum number of event receivers that it supports.</value>
+  </data>
+  <data name="ID97" xml:space="preserve">
+    <value>Cannot call friend function on object that is not an instance of defining class.</value>
+  </data>
+  <data name="ID98" xml:space="preserve">
+    <value>A property or method call cannot include a reference to a private object, either as an argument or as a return value.</value>
+  </data>
+  <data name="ID100" xml:space="preserve">
+    <value>Class '{0}' does not implement the System.Collections.ICollection interface.</value>
+  </data>
+  <data name="ID321" xml:space="preserve">
+    <value>File format is not valid.</value>
+  </data>
+  <data name="ID322" xml:space="preserve">
+    <value>Cannot create necessary temporary file.</value>
+  </data>
+  <data name="ID325" xml:space="preserve">
+    <value>Format in resource file is not valid.</value>
+  </data>
+  <data name="ID380" xml:space="preserve">
+    <value>Property value is not valid.</value>
+  </data>
+  <data name="ID381" xml:space="preserve">
+    <value>Property array index is not valid.</value>
+  </data>
+  <data name="ID382" xml:space="preserve">
+    <value>Set not supported at runtime.</value>
+  </data>
+  <data name="ID383" xml:space="preserve">
+    <value>Set not supported (read-only property).</value>
+  </data>
+  <data name="ID385" xml:space="preserve">
+    <value>Need property array index.</value>
+  </data>
+  <data name="ID387" xml:space="preserve">
+    <value>Set not permitted.</value>
+  </data>
+  <data name="ID393" xml:space="preserve">
+    <value>Get not supported at runtime.</value>
+  </data>
+  <data name="ID394" xml:space="preserve">
+    <value>Get not supported (write-only property).</value>
+  </data>
+  <data name="ID422" xml:space="preserve">
+    <value>Property not found.</value>
+  </data>
+  <data name="ID423" xml:space="preserve">
+    <value>Property or method not found.</value>
+  </data>
+  <data name="ID424" xml:space="preserve">
+    <value>Object required.</value>
+  </data>
+  <data name="ID429" xml:space="preserve">
+    <value>Cannot create ActiveX component.</value>
+  </data>
+  <data name="ID430" xml:space="preserve">
+    <value>Class does not support Automation or does not support expected interface.</value>
+  </data>
+  <data name="ID432" xml:space="preserve">
+    <value>File name or class name not found during Automation operation.</value>
+  </data>
+  <data name="ID438" xml:space="preserve">
+    <value>Object does not support this property or method.</value>
+  </data>
+  <data name="ID440" xml:space="preserve">
+    <value>Automation error.</value>
+  </data>
+  <data name="ID442" xml:space="preserve">
+    <value>Connection to type library or object library for remote process has been lost. Press OK for dialog to remove reference.</value>
+  </data>
+  <data name="ID443" xml:space="preserve">
+    <value>Automation object does not have a default value.</value>
+  </data>
+  <data name="ID445" xml:space="preserve">
+    <value>Object does not support this action.</value>
+  </data>
+  <data name="ID446" xml:space="preserve">
+    <value>Object does not support named arguments.</value>
+  </data>
+  <data name="ID447" xml:space="preserve">
+    <value>Object does not support current locale setting.</value>
+  </data>
+  <data name="ID448" xml:space="preserve">
+    <value>Named argument not found.</value>
+  </data>
+  <data name="ID449" xml:space="preserve">
+    <value>Argument not optional.</value>
+  </data>
+  <data name="ID450" xml:space="preserve">
+    <value>Wrong number of arguments or property assignment was not valid.</value>
+  </data>
+  <data name="ID451" xml:space="preserve">
+    <value>Property let procedure not defined and property get procedure did not return an object.</value>
+  </data>
+  <data name="ID452" xml:space="preserve">
+    <value>Ordinal is not valid.</value>
+  </data>
+  <data name="ID453" xml:space="preserve">
+    <value>Specified DLL function not found.</value>
+  </data>
+  <data name="ID454" xml:space="preserve">
+    <value>Code resource not found.</value>
+  </data>
+  <data name="ID455" xml:space="preserve">
+    <value>Code resource lock error.</value>
+  </data>
+  <data name="ID457" xml:space="preserve">
+    <value>This key is already associated with an element of this collection.</value>
+  </data>
+  <data name="ID458" xml:space="preserve">
+    <value>Variable uses an Automation type not supported in Visual Basic.</value>
+  </data>
+  <data name="ID459" xml:space="preserve">
+    <value>Object or class does not support the set of events.</value>
+  </data>
+  <data name="ID460" xml:space="preserve">
+    <value>Clipboard format is not valid.</value>
+  </data>
+  <data name="ID461" xml:space="preserve">
+    <value>Method or data member not found.</value>
+  </data>
+  <data name="ID462" xml:space="preserve">
+    <value>The remote server machine does not exist or is unavailable.</value>
+  </data>
+  <data name="ID463" xml:space="preserve">
+    <value>Class not registered on local machine.</value>
+  </data>
+  <data name="ID481" xml:space="preserve">
+    <value>Picture is not valid.</value>
+  </data>
+  <data name="ID482" xml:space="preserve">
+    <value>Printer error.</value>
+  </data>
+  <data name="ID735" xml:space="preserve">
+    <value>Cannot save file to TEMP.</value>
+  </data>
+  <data name="ID744" xml:space="preserve">
+    <value>Search text not found.</value>
+  </data>
+  <data name="ID746" xml:space="preserve">
+    <value>Replacements too long.</value>
+  </data>
+  <data name="ID999" xml:space="preserve">
+    <value>Stop statement encountered.</value>
+  </data>
+  <data name="ID32768" xml:space="preserve">
+    <value>Feature not yet implemented.</value>
+  </data>
+  <data name="StringFalse" xml:space="preserve">
+    <value>False</value>
+  </data>
+  <data name="StringTrue" xml:space="preserve">
+    <value>True</value>
+  </data>
+  <data name="Argument_GEZero1" xml:space="preserve">
+    <value>Argument '{0}' must be greater or equal to zero.</value>
+  </data>
+  <data name="Argument_GTZero1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than zero.</value>
+  </data>
+  <data name="Argument_InvalidVbStrConv" xml:space="preserve">
+    <value>Argument 'Conversion' is not valid.</value>
+  </data>
+  <data name="Argument_StrConvSCandTC" xml:space="preserve">
+    <value>VbStrConv.SimplifiedChinese and VbStrConv.TraditionalChinese cannot be combined.</value>
+  </data>
+  <data name="Argument_SCNotSupported" xml:space="preserve">
+    <value>This system does not contain support for the Simplified Chinese locale.</value>
+  </data>
+  <data name="Argument_TCNotSupported" xml:space="preserve">
+    <value>This system does not contain support for the Traditional Chinese locale.</value>
+  </data>
+  <data name="Argument_JPNNotSupported" xml:space="preserve">
+    <value>This system does not contain support for the Japanese locale.</value>
+  </data>
+  <data name="Argument_IllegalWideNarrow" xml:space="preserve">
+    <value>VbStrConv.Wide and VbStrConv.Narrow cannot be combined.</value>
+  </data>
+  <data name="Argument_LocalNotSupported" xml:space="preserve">
+    <value>This system does not contain support for the Locale specified.</value>
+  </data>
+  <data name="Argument_WideNarrowNotApplicable" xml:space="preserve">
+    <value>VbStrConv.Wide and VbStrConv.Narrow are not applicable to the locale specified.</value>
+  </data>
+  <data name="Argument_IllegalKataHira" xml:space="preserve">
+    <value>VbStrConv.Katakana and VbStrConv.Hiragana cannot be combined.</value>
+  </data>
+  <data name="Argument_LengthGTZero1" xml:space="preserve">
+    <value>Length of argument '{0}' must be greater than zero.</value>
+  </data>
+  <data name="Argument_RangeTwoBytes1" xml:space="preserve">
+    <value>Argument '{0}' must be within the range of -32768 to 65535.</value>
+  </data>
+  <data name="Argument_MinusOneOrGTZero1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than 0 or equal to -1.</value>
+  </data>
+  <data name="Argument_GEMinusOne1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than or equal to -1.</value>
+  </data>
+  <data name="Argument_GEOne1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than or equal to 1.</value>
+  </data>
+  <data name="Argument_RankEQOne1" xml:space="preserve">
+    <value>Argument '{0}' cannot be a multi-dimensional array.</value>
+  </data>
+  <data name="Argument_IComparable2" xml:space="preserve">
+    <value>Loop control variable of type '{1}' does not implement the 'System.IComparable' interface.</value>
+  </data>
+  <data name="Argument_NotNumericType2" xml:space="preserve">
+    <value>Type of argument '{0}' is '{1}', which is not numeric.</value>
+  </data>
+  <data name="Argument_InvalidValue1" xml:space="preserve">
+    <value>Argument '{0}' is not a valid value.</value>
+  </data>
+  <data name="Argument_InvalidValueType2" xml:space="preserve">
+    <value>Argument '{0}' cannot be converted to type '{1}'.</value>
+  </data>
+  <data name="Argument_PathNullOrEmpty" xml:space="preserve">
+    <value>Argument 'Path' is Nothing or empty.</value>
+  </data>
+  <data name="Argument_PathNullOrEmpty1" xml:space="preserve">
+    <value>Argument '{0}' is Nothing or empty.</value>
+  </data>
+  <data name="Argument_InvalidPathChars1" xml:space="preserve">
+    <value>Argument value '{0}' contains characters that are not valid in a path name.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Arguments are not valid.</value>
+  </data>
+  <data name="Collection_BeforeAfterExclusive" xml:space="preserve">
+    <value>'Before' and 'After' arguments cannot be combined.</value>
+  </data>
+  <data name="Collection_DuplicateKey" xml:space="preserve">
+    <value>Add failed. Duplicate key value supplied.</value>
+  </data>
+  <data name="FileSystem_IllegalInputAccess" xml:space="preserve">
+    <value>Argument 'Access' is not valid. Valid values for Input mode are 'OpenAccess.Read' and 'OpenAccess.Default'.</value>
+  </data>
+  <data name="FileSystem_IllegalOutputAccess" xml:space="preserve">
+    <value>Argument 'Access' is not valid. Valid values for Output mode are 'OpenAccess.Write' and 'OpenAccess.Default'.</value>
+  </data>
+  <data name="FileSystem_IllegalAppendAccess" xml:space="preserve">
+    <value>Argument 'Access' is not valid. Valid values for Append mode are 'OpenAccess.Write' and 'OpenAccess.Default'.</value>
+  </data>
+  <data name="FileSystem_FileAlreadyOpen1" xml:space="preserve">
+    <value>File '{0}' cannot be deleted because it is open.</value>
+  </data>
+  <data name="ForLoop_CommonType2" xml:space="preserve">
+    <value>Cannot convert start value of type '{0}' and step value of type '{1}' to a common numeric type.</value>
+  </data>
+  <data name="ForLoop_CommonType3" xml:space="preserve">
+    <value>Cannot convert start value of type '{0}', limit value of type '{1}', and step value of type '{2}' to a common numeric type.</value>
+  </data>
+  <data name="ForLoop_ConvertToType3" xml:space="preserve">
+    <value>Cannot convert argument '{0}' of type '{1}' to type '{2}'.</value>
+  </data>
+  <data name="ForLoop_OperatorRequired2" xml:space="preserve">
+    <value>Type '{0}' must define an operator '{1}', with parameters of type '{0}', to be used in a 'For' statement.</value>
+  </data>
+  <data name="ForLoop_UnacceptableOperator2" xml:space="preserve">
+    <value>Return and parameter types of '{0}' must be of type '{1}' to be used in a 'For' statement.</value>
+  </data>
+  <data name="ForLoop_UnacceptableRelOperator2" xml:space="preserve">
+    <value>Parameter types of '{0}' must be of type '{1}' to be used in a 'For' statement.</value>
+  </data>
+  <data name="InternalError_VisualBasicRuntime" xml:space="preserve">
+    <value>Internal error in the Microsoft Visual Basic runtime.</value>
+  </data>
+  <data name="DIR_IllegalCall" xml:space="preserve">
+    <value>'Dir' function must first be called with a 'PathName' argument.</value>
+  </data>
+  <data name="KILL_NoFilesFound1" xml:space="preserve">
+    <value>No files found matching '{0}'.</value>
+  </data>
+  <data name="MaxErrNumber" xml:space="preserve">
+    <value>Error number must be within the range 0 to 65535.</value>
+  </data>
+  <data name="FileSystem_DriveNotFound1" xml:space="preserve">
+    <value>Drive '{0}' not found.</value>
+  </data>
+  <data name="FileSystem_FileNotFound1" xml:space="preserve">
+    <value>File '{0}' not found.</value>
+  </data>
+  <data name="FileSystem_PathNotFound1" xml:space="preserve">
+    <value>Path '{0}' not found.</value>
+  </data>
+  <data name="Financial_CalcDivByZero" xml:space="preserve">
+    <value>Division by zero.</value>
+  </data>
+  <data name="Financial_CannotCalculateNPer" xml:space="preserve">
+    <value>Cannot calculate number of periods using the arguments provided.</value>
+  </data>
+  <data name="Financial_CannotCalculateRate" xml:space="preserve">
+    <value>Cannot calculate rate using the arguments provided.</value>
+  </data>
+  <data name="Argument_InvalidNullValue1" xml:space="preserve">
+    <value>Argument '{0}' is Nothing.</value>
+  </data>
+  <data name="Rate_NPerMustBeGTZero" xml:space="preserve">
+    <value>Argument 'NPer' must be greater than zero.</value>
+  </data>
+  <data name="PPMT_PerGT0AndLTNPer" xml:space="preserve">
+    <value>Argument 'Per' is not valid.</value>
+  </data>
+  <data name="Financial_LifeNEZero" xml:space="preserve">
+    <value>Argument 'Life' cannot be zero.</value>
+  </data>
+  <data name="Financial_ArgGEZero1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than or equal to zero.</value>
+  </data>
+  <data name="Financial_ArgGTZero1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than zero.</value>
+  </data>
+  <data name="Financial_PeriodLELife" xml:space="preserve">
+    <value>Argument 'Period' must be less than or equal to argument 'Life'.</value>
+  </data>
+  <data name="Argument_InvalidRank1" xml:space="preserve">
+    <value>Argument '{0}' is not valid for the array.</value>
+  </data>
+  <data name="Argument_Range1toFF1" xml:space="preserve">
+    <value>Argument '{0}' must be within the range 1 to 255.</value>
+  </data>
+  <data name="Argument_Range0to99_1" xml:space="preserve">
+    <value>Argument '{0}' must be within the range 0 to 99.</value>
+  </data>
+  <data name="Interaction_ResKeyNotCreated1" xml:space="preserve">
+    <value>Registry key '{0}' could not be created.</value>
+  </data>
+  <data name="Argument_LCIDNotSupported1" xml:space="preserve">
+    <value>Locale id '{0}' is not supported on this system.</value>
+  </data>
+  <data name="ProcessNotFound" xml:space="preserve">
+    <value>Process '{0}' was not found.</value>
+  </data>
+  <data name="Array_RankMismatch" xml:space="preserve">
+    <value>'ReDim' cannot change the number of dimensions.</value>
+  </data>
+  <data name="Array_TypeMismatch" xml:space="preserve">
+    <value>'ReDim' can only change the rightmost dimension.</value>
+  </data>
+  <data name="InvalidCast_FromTo" xml:space="preserve">
+    <value>Conversion from type '{0}' to type '{1}' is not valid.</value>
+  </data>
+  <data name="InvalidCast_FromStringTo" xml:space="preserve">
+    <value>Conversion from string "{0}" to type '{1}' is not valid.</value>
+  </data>
+  <data name="SetLocalDateFailure" xml:space="preserve">
+    <value>Insufficient security permissions to set the system date.</value>
+  </data>
+  <data name="SetLocalTimeFailure" xml:space="preserve">
+    <value>Insufficient security permissions to set the system time.</value>
+  </data>
+  <data name="Argument_UnsupportedFieldType2" xml:space="preserve">
+    <value>File I/O of a structure with field '{0}' of type '{1}' is not valid.</value>
+  </data>
+  <data name="Argument_UnsupportedIOType1" xml:space="preserve">
+    <value>File I/O with type '{0}' is not valid.</value>
+  </data>
+  <data name="Argument_InvalidDateValue1" xml:space="preserve">
+    <value>Argument '{0}' cannot be converted to type 'Date'.</value>
+  </data>
+  <data name="UseFilePutObject" xml:space="preserve">
+    <value>Use 'FilePutObject' instead of 'FilePut' when using argument of type 'Object'.</value>
+  </data>
+  <data name="ArgumentNotNumeric1" xml:space="preserve">
+    <value>Argument '{0}' cannot be converted to a numeric value.</value>
+  </data>
+  <data name="FileIO_StringLengthExceeded" xml:space="preserve">
+    <value>String length exceeds maximum length of 32767 characters for 'FileSystem' APIs.</value>
+  </data>
+  <data name="Argument_IndexLELength2" xml:space="preserve">
+    <value>Argument '{0}' must be less than or equal to the length of argument '{1}'.</value>
+  </data>
+  <data name="MissingMember_NoDefaultMemberFound1" xml:space="preserve">
+    <value>No default member found for type '{0}'.</value>
+  </data>
+  <data name="MissingMember_MemberNotFoundOnType2" xml:space="preserve">
+    <value>Public member '{0}' on type '{1}' not found.</value>
+  </data>
+  <data name="MissingMember_MemberSetNotFoundOnType2" xml:space="preserve">
+    <value>Public Set '{0}' on type '{1}' not found.  Use 'CallByName' function with 'CallType.Let'.</value>
+  </data>
+  <data name="MissingMember_MemberLetNotFoundOnType2" xml:space="preserve">
+    <value>Public Let '{0}' on type '{1}' not found.  Use 'CallByName' function with 'CallType.Set'.</value>
+  </data>
+  <data name="IntermediateLateBoundNothingResult1" xml:space="preserve">
+    <value>Invocation of '{0}' on type '{1}' returned Nothing.</value>
+  </data>
+  <data name="YesNoFormatStyle" xml:space="preserve">
+    <value>Yes;Yes;No</value>
+  </data>
+  <data name="OnOffFormatStyle" xml:space="preserve">
+    <value>On;On;Off</value>
+  </data>
+  <data name="TrueFalseFormatStyle" xml:space="preserve">
+    <value>True;True;False</value>
+  </data>
+  <data name="Argument_CollectionIndex" xml:space="preserve">
+    <value>Collection index must be in the range 1 to the size of the collection.</value>
+  </data>
+  <data name="Argument_InvalidNamedArg2" xml:space="preserve">
+    <value>Method '{1}' has no parameter named '{0}'.</value>
+  </data>
+  <data name="NoMethodTakingXArguments2" xml:space="preserve">
+    <value>Method '{0}' cannot be called with {1} argument(s).</value>
+  </data>
+  <data name="NamedArgumentAlreadyUsed1" xml:space="preserve">
+    <value>Named argument '{0}' specified multiple times.</value>
+  </data>
+  <data name="NamedArgumentOnParamArray" xml:space="preserve">
+    <value>Named arguments cannot match ParamArray parameters.</value>
+  </data>
+  <data name="LinguisticRequirements" xml:space="preserve">
+    <value>'StrConv.LinguisticCasing' requires 'StrConv.Lowercase' or 'StrConv.Uppercase'.</value>
+  </data>
+  <data name="Argument_ArrayNotInitialized" xml:space="preserve">
+    <value>Cannot determine array type because it is Nothing.</value>
+  </data>
+  <data name="RValueBaseForValueType" xml:space="preserve">
+    <value>Late-bound assignment to a field of value type '{0}' is not valid when '{1}' is the result of a late-bound expression.</value>
+  </data>
+  <data name="InvalidCast_FromToArg4" xml:space="preserve">
+    <value>Argument {1} to method '{0}' has type '{2}' and cannot be converted to '{3}'.</value>
+  </data>
+  <data name="Argument_ArrayDimensionsDontMatch" xml:space="preserve">
+    <value>Array dimensions do not match those specified by the 'VBFixedArray' attribute.</value>
+  </data>
+  <data name="ExpressionNotProcedure" xml:space="preserve">
+    <value>Expression '{0}' is not a procedure, but occurs as the target of a procedure call.</value>
+  </data>
+  <data name="AmbiguousCall_ExactMatch2" xml:space="preserve">
+    <value>No accessible overloaded '{0}' is most specific for these arguments: {1}</value>
+  </data>
+  <data name="AmbiguousCall2" xml:space="preserve">
+    <value>No accessible overloaded '{0}' can be called with these arguments without a narrowing conversion: {1}</value>
+  </data>
+  <data name="AmbiguousCall_WideningConversion2" xml:space="preserve">
+    <value>No accessible overloaded '{0}' can be called with these arguments without a widening conversion: {1}</value>
+  </data>
+  <data name="AmbiguousMatch_NarrowingConversion1" xml:space="preserve">
+    <value>No accessible overloaded '{0}' can be called without a narrowing conversion.</value>
+  </data>
+  <data name="LateboundCallToInheritedComClass" xml:space="preserve">
+    <value>Managed classes derived from a COM class cannot be called late bound.</value>
+  </data>
+  <data name="MissingMember_ReadOnlyField2" xml:space="preserve">
+    <value>Field '{0}' of type '{1}' is 'ReadOnly'.</value>
+  </data>
+  <data name="Invalid_VBFixedArray" xml:space="preserve">
+    <value>Arguments to 'VBFixedArrayAttribute' are not valid.</value>
+  </data>
+  <data name="Invalid_VBFixedString" xml:space="preserve">
+    <value>Arguments to 'VBFixedStringAttribute' are not valid.</value>
+  </data>
+  <data name="Argument_UnsupportedArrayDimensions" xml:space="preserve">
+    <value>Array argument cannot have more than 2 dimensions.</value>
+  </data>
+  <data name="Argument_InvalidFixedLengthString" xml:space="preserve">
+    <value>Length of fixed length string cannot be zero.</value>
+  </data>
+  <data name="Argument_InvalidNamedArgs" xml:space="preserve">
+    <value>Named arguments are not valid as array subscripts.</value>
+  </data>
+  <data name="Argument_IllegalNestedType2" xml:space="preserve">
+    <value>'{0}' is a type in '{1}' and cannot be used as an expression.</value>
+  </data>
+  <data name="Argument_PutObjectOfValueType1" xml:space="preserve">
+    <value>'FilePutObject' of structure '{0}' is not valid.</value>
+  </data>
+  <data name="SyncLockRequiresReferenceType1" xml:space="preserve">
+    <value>'SyncLock' operand cannot be of type '{0}' because '{0}' is not a reference type.</value>
+  </data>
+  <data name="FileOpenedNoRead" xml:space="preserve">
+    <value>File is not opened for read access.</value>
+  </data>
+  <data name="FileOpenedNoWrite" xml:space="preserve">
+    <value>File is not opened for write access.</value>
+  </data>
+  <data name="NullReference_InstanceReqToAccessMember1" xml:space="preserve">
+    <value>Reference to non-shared member '{0}' requires an object reference.</value>
+  </data>
+  <data name="Security_LateBoundCallsNotPermitted" xml:space="preserve">
+    <value>Late bound calls to file system methods in the Visual Basic runtime are not permitted.</value>
+  </data>
+  <data name="Serialization_MissingCultureInfo" xml:space="preserve">
+    <value>Deserialization data is corrupt.  The CultureInfo for this Collection is missing.</value>
+  </data>
+  <data name="Serialization_MissingKeys" xml:space="preserve">
+    <value>Deserialization data is corrupt.  The keys for this Collection are missing.</value>
+  </data>
+  <data name="Serialization_MissingValues" xml:space="preserve">
+    <value>Deserialization data is corrupt.  The values for this Collection are missing.</value>
+  </data>
+  <data name="Serialization_KeyValueDifferentSizes" xml:space="preserve">
+    <value>Deserialization data is corrupt.  The keys and values arrays have different sizes.</value>
+  </data>
+  <data name="MatchArgumentFailure2" xml:space="preserve">
+    <value>Method invocation failed because '{0}' cannot be called with these arguments:{1}</value>
+  </data>
+  <data name="NoGetProperty1" xml:space="preserve">
+    <value>Property '{0}' is WriteOnly.</value>
+  </data>
+  <data name="NoSetProperty1" xml:space="preserve">
+    <value>Property '{0}' is ReadOnly.</value>
+  </data>
+  <data name="MethodAssignment1" xml:space="preserve">
+    <value>Method '{0}' cannot be the target of an assignment.</value>
+  </data>
+  <data name="NoViableOverloadCandidates1" xml:space="preserve">
+    <value>Overload resolution failed because no '{0}' is Public.</value>
+  </data>
+  <data name="NoArgumentCountOverloadCandidates1" xml:space="preserve">
+    <value>Overload resolution failed because no accessible '{0}' accepts this number of arguments.</value>
+  </data>
+  <data name="NoTypeArgumentCountOverloadCandidates1" xml:space="preserve">
+    <value>Overload resolution failed because no accessible '{0}' accepts this number of type arguments.</value>
+  </data>
+  <data name="NoCallableOverloadCandidates2" xml:space="preserve">
+    <value>Overload resolution failed because no Public '{0}' can be called with these arguments:{1}</value>
+  </data>
+  <data name="NoNonNarrowingOverloadCandidates2" xml:space="preserve">
+    <value>Overload resolution failed because no Public '{0}' can be called without a narrowing conversion:{1}</value>
+  </data>
+  <data name="NoMostSpecificOverload2" xml:space="preserve">
+    <value>Overload resolution failed because no Public '{0}' is most specific for these arguments:{1}</value>
+  </data>
+  <data name="AmbiguousCast2" xml:space="preserve">
+    <value>Conversion from type '{0}' to type '{1}' is ambiguous.</value>
+  </data>
+  <data name="NotMostSpecificOverload" xml:space="preserve">
+    <value>Not most specific.</value>
+  </data>
+  <data name="NamedParamNotFound2" xml:space="preserve">
+    <value>Named argument '{0}' matches no parameter of '{1}'.</value>
+  </data>
+  <data name="NamedParamArrayArgument1" xml:space="preserve">
+    <value>Named argument '{0}' cannot match a ParamArray parameter.</value>
+  </data>
+  <data name="NamedArgUsedTwice2" xml:space="preserve">
+    <value>Parameter '{0}' of '{1}' already has a matching argument.</value>
+  </data>
+  <data name="OmittedArgument1" xml:space="preserve">
+    <value>Argument not specified for parameter '{0}'.</value>
+  </data>
+  <data name="OmittedParamArrayArgument" xml:space="preserve">
+    <value>Omitted argument cannot match a ParamArray parameter.</value>
+  </data>
+  <data name="ArgumentMismatch3" xml:space="preserve">
+    <value>Argument matching parameter '{0}' cannot convert from '{1}' to '{2}'.</value>
+  </data>
+  <data name="ArgumentMismatchAmbiguous3" xml:space="preserve">
+    <value>Argument matching parameter '{0}' cannot convert from '{1}' to '{2}' because the conversion is ambiguous.</value>
+  </data>
+  <data name="ArgumentNarrowing3" xml:space="preserve">
+    <value>Argument matching parameter '{0}' narrows from '{1}' to '{2}'.</value>
+  </data>
+  <data name="ArgumentMismatchCopyBack3" xml:space="preserve">
+    <value>ByRef parameter '{0}' cannot convert from '{1}' to '{2}' when assigning back to the matching argument.</value>
+  </data>
+  <data name="ArgumentMismatchAmbiguousCopyBack3" xml:space="preserve">
+    <value>ByRef parameter '{0}' cannot convert from '{1}' to '{2}' when assigning back to the matching argument because the conversion is ambiguous.</value>
+  </data>
+  <data name="ArgumentNarrowingCopyBack3" xml:space="preserve">
+    <value>ByRef parameter '{0}' narrows from '{1}' to '{2}' when assigning back to the matching argument.</value>
+  </data>
+  <data name="UnboundTypeParam1" xml:space="preserve">
+    <value>Type parameter '{0}' cannot be determined.</value>
+  </data>
+  <data name="TypeInferenceFails1" xml:space="preserve">
+    <value>Type argument inference fails for argument matching parameter '{0}'.</value>
+  </data>
+  <data name="FailedTypeArgumentBinding" xml:space="preserve">
+    <value>Substitution of type arguments failed.</value>
+  </data>
+  <data name="NoValidOperator_OneOperand" xml:space="preserve">
+    <value>Operator is not defined for type '{0}'.</value>
+  </data>
+  <data name="NoValidOperator_TwoOperands" xml:space="preserve">
+    <value>Operator is not defined for {0} and {1}.</value>
+  </data>
+  <data name="UnaryOperand2" xml:space="preserve">
+    <value>Operator '{0}' is not defined for type '{1}'.</value>
+  </data>
+  <data name="BinaryOperands3" xml:space="preserve">
+    <value>Operator '{0}' is not defined for {1} and {2}.</value>
+  </data>
+  <data name="NoValidOperator_StringType1" xml:space="preserve">
+    <value>string "{0}"</value>
+  </data>
+  <data name="NoValidOperator_NonStringType1" xml:space="preserve">
+    <value>type '{0}'</value>
+  </data>
+  <data name="PropertySetMissingArgument1" xml:space="preserve">
+    <value>Call to set property '{0}' requires at least one argument.</value>
+  </data>
+  <data name="EmptyPlaceHolderMessage" xml:space="preserve">
+    <value>Empty placeholder to adjust for 1-based array.</value>
+  </data>
+  <data name="Mouse_NoMouseIsPresent" xml:space="preserve">
+    <value>No mouse is present.</value>
+  </data>
+  <data name="Mouse_NoWheelIsPresent" xml:space="preserve">
+    <value>No mouse wheel is present.</value>
+  </data>
+  <data name="IO_SpecialDirectoryNotExist" xml:space="preserve">
+    <value>Could not find special directory '{0}'.</value>
+  </data>
+  <data name="IO_SpecialDirectory_MyDocuments" xml:space="preserve">
+    <value>My Documents</value>
+  </data>
+  <data name="IO_SpecialDirectory_MyMusic" xml:space="preserve">
+    <value>My Music</value>
+  </data>
+  <data name="IO_SpecialDirectory_MyPictures" xml:space="preserve">
+    <value>My Pictures</value>
+  </data>
+  <data name="IO_SpecialDirectory_Desktop" xml:space="preserve">
+    <value>Desktop</value>
+  </data>
+  <data name="IO_SpecialDirectory_Programs" xml:space="preserve">
+    <value>Programs</value>
+  </data>
+  <data name="IO_SpecialDirectory_ProgramFiles" xml:space="preserve">
+    <value>Program Files</value>
+  </data>
+  <data name="IO_SpecialDirectory_Temp" xml:space="preserve">
+    <value>Temporary directory</value>
+  </data>
+  <data name="IO_SpecialDirectory_AllUserAppData" xml:space="preserve">
+    <value>All users' application data</value>
+  </data>
+  <data name="IO_SpecialDirectory_UserAppData" xml:space="preserve">
+    <value>Current user's application data</value>
+  </data>
+  <data name="IO_FileExists_Path" xml:space="preserve">
+    <value>Could not complete operation since a file already exists in this path '{0}'.</value>
+  </data>
+  <data name="IO_FileNotFound_Path" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_DirectoryExists_Path" xml:space="preserve">
+    <value>Could not complete operation since a directory already exists in this path '{0}'.</value>
+  </data>
+  <data name="IO_DirectoryIsRoot_Path" xml:space="preserve">
+    <value>Could not complete operation since directory is a root directory: '{0}'.</value>
+  </data>
+  <data name="IO_DirectoryNotFound_Path" xml:space="preserve">
+    <value>Could not find directory '{0}'.</value>
+  </data>
+  <data name="IO_GetParentPathIsRoot_Path" xml:space="preserve">
+    <value>Could not get parent path since the given path is a root directory: '{0}'.</value>
+  </data>
+  <data name="IO_ArgumentIsPath_Name_Path" xml:space="preserve">
+    <value>Argument '{0}' must be a name, and not a relative or absolute path: '{1}'.</value>
+  </data>
+  <data name="IO_CopyMoveRecursive" xml:space="preserve">
+    <value>Could not complete operation on some files and directories. See the Data property of the exception for more details.</value>
+  </data>
+  <data name="IO_CyclicOperation" xml:space="preserve">
+    <value>Could not complete operation since target directory is under source directory.</value>
+  </data>
+  <data name="IO_SourceEqualsTargetDirectory" xml:space="preserve">
+    <value>Could not complete operation since source directory and target directory are the same.</value>
+  </data>
+  <data name="IO_GetFiles_NullPattern" xml:space="preserve">
+    <value>One of the wildcards is Nothing or empty string.</value>
+  </data>
+  <data name="IO_DevicePath" xml:space="preserve">
+    <value>The given path is a Win32 device path. Don't use paths starting with '\\.\'.</value>
+  </data>
+  <data name="IO_FilePathException" xml:space="preserve">
+    <value>The given file path ends with a directory separator character.</value>
+  </data>
+  <data name="General_ArgumentNullException" xml:space="preserve">
+    <value>Argument cannot be Nothing.</value>
+  </data>
+  <data name="General_ArgumentEmptyOrNothing_Name" xml:space="preserve">
+    <value>Argument '{0}' cannot be an empty string or Nothing.</value>
+  </data>
+  <data name="General_PropertyNothing" xml:space="preserve">
+    <value>Property {0} cannot be set to Nothing.</value>
+  </data>
+  <data name="ApplicationLog_FreeSpaceError" xml:space="preserve">
+    <value>Cannot determine the amount of available disk space.</value>
+  </data>
+  <data name="ApplicationLog_FileExceedsMaximumSize" xml:space="preserve">
+    <value>Unable to write to log file because writing to it would cause it to exceed the MaxFileSize value.</value>
+  </data>
+  <data name="ApplicationLog_ReservedSpaceEncroached" xml:space="preserve">
+    <value>Unable to write to log file because writing to it would reduce free disk space below ReservedSpace value.</value>
+  </data>
+  <data name="ApplicationLog_NegativeNumber" xml:space="preserve">
+    <value>The value of {0} must be a positive number.</value>
+  </data>
+  <data name="ApplicationLogBaseNameNull" xml:space="preserve">
+    <value>BaseFileName cannot be Nothing or an empty String.</value>
+  </data>
+  <data name="ApplicationLogNumberTooSmall" xml:space="preserve">
+    <value>The value of {0} must be greater than or equal to 1000.</value>
+  </data>
+  <data name="ApplicationLog_ExhaustedPossibleStreamNames" xml:space="preserve">
+    <value>Unable to obtain a stream for the log.  Potential file names based on {0} are already in use.</value>
+  </data>
+  <data name="Network_InvalidUriString" xml:space="preserve">
+    <value>'{0}' is not a valid remote file address. A valid address should include a protocol, a path and a file name.</value>
+  </data>
+  <data name="Network_BadConnectionTimeout" xml:space="preserve">
+    <value>The ConnectionTimeout must be greater than 0.</value>
+  </data>
+  <data name="Network_NetworkNotAvailable" xml:space="preserve">
+    <value>Unable to ping because a network connection is not available.</value>
+  </data>
+  <data name="Network_UploadAddressNeedsFilename" xml:space="preserve">
+    <value>The address for UploadFile needs to include a file name.</value>
+  </data>
+  <data name="Network_DownloadNeedsFilename" xml:space="preserve">
+    <value>destinationFileName needs to include a file name.</value>
+  </data>
+  <data name="ProgressDialogDownloadingTitle" xml:space="preserve">
+    <value>Downloading {0}</value>
+  </data>
+  <data name="ProgressDialogUploadingTitle" xml:space="preserve">
+    <value>Uploading {0}</value>
+  </data>
+  <data name="ProgressDialogDownloadingLabel" xml:space="preserve">
+    <value>Downloading {0} to {1}</value>
+  </data>
+  <data name="ProgressDialogUploadingLabel" xml:space="preserve">
+    <value>Uploading {0} to {1}</value>
+  </data>
+  <data name="DiagnosticInfo_Memory" xml:space="preserve">
+    <value>Could not obtain memory information due to internal error.</value>
+  </data>
+  <data name="DiagnosticInfo_FullOSName" xml:space="preserve">
+    <value>Could not obtain full operation system name due to internal error. This might be caused by WMI not existing on the current machine.</value>
+  </data>
+  <data name="AppModel_CantGetMemoryMappedFile" xml:space="preserve">
+    <value>An unexpected error has occurred because an operating system resource required for single instance startup cannot be acquired.</value>
+  </data>
+  <data name="AppModel_NoStartupForm" xml:space="preserve">
+    <value>A startup form has not been specified.</value>
+  </data>
+  <data name="AppModel_SingleInstanceCantConnect" xml:space="preserve">
+    <value>This single-instance application could not connect to the original instance.</value>
+  </data>
+  <data name="AppModel_SplashAndMainFormTheSame" xml:space="preserve">
+    <value>Splash screen and main form cannot be the same form.</value>
+  </data>
+  <data name="TextFieldParser_NumberOfCharsMustBePositive" xml:space="preserve">
+    <value>NumberOfChars must be greater than zero.</value>
+  </data>
+  <data name="TextFieldParser_StreamNotReadable" xml:space="preserve">
+    <value>The stream passed to TextFieldParser cannot be read.</value>
+  </data>
+  <data name="TextFieldParser_BufferExceededMaxSize" xml:space="preserve">
+    <value>TextFieldParser is unable to complete the read operation because maximum buffer size has been exceeded.</value>
+  </data>
+  <data name="TextFieldParser_MalFormedDelimitedLine" xml:space="preserve">
+    <value>Line {0} cannot be parsed using the current Delimiters.</value>
+  </data>
+  <data name="TextFieldParser_MalFormedFixedWidthLine" xml:space="preserve">
+    <value>Line {0} cannot be parsed using the current FieldWidths.</value>
+  </data>
+  <data name="TextFieldParser_MaxLineSizeExceeded" xml:space="preserve">
+    <value>Line {0} cannot be read because it exceeds the maximum line size.</value>
+  </data>
+  <data name="TextFieldParser_FieldWidthsNothing" xml:space="preserve">
+    <value>Unable to read fixed width fields because FieldWidths is Nothing or empty.</value>
+  </data>
+  <data name="TextFieldParser_DelimitersNothing" xml:space="preserve">
+    <value>Unable to read delimited fields because Delimiters is Nothing or empty.</value>
+  </data>
+  <data name="TextFieldParser_FieldWidthsMustPositive" xml:space="preserve">
+    <value>All field widths, except the last element, must be greater than zero. A field width less than or equal to zero in the last element indicates the last field is of variable length.</value>
+  </data>
+  <data name="TextFieldParser_IllegalDelimiter" xml:space="preserve">
+    <value>Unable to read delimited fields because a double quote is not a legal delimiter when HasFieldsEnclosedInQuotes is set to True.</value>
+  </data>
+  <data name="TextFieldParser_DelimiterNothing" xml:space="preserve">
+    <value>A delimiter cannot be Nothing or an empty String.</value>
+  </data>
+  <data name="TextFieldParser_InvalidComment" xml:space="preserve">
+    <value>A double quote is not a valid comment token for delimited fields where HasFieldsEnclosedInQuotes is set to True.</value>
+  </data>
+  <data name="TextFieldParser_MalformedExtraData" xml:space="preserve">
+    <value>Line Number:{0}</value>
+  </data>
+  <data name="TextFieldParser_WhitespaceInToken" xml:space="preserve">
+    <value>TextFieldParser does not support comment tokens that contain white space.</value>
+  </data>
+  <data name="TextFieldParser_EndCharsInDelimiter" xml:space="preserve">
+    <value>TextFieldParser does not support delimiters that contain end-of-line characters.</value>
+  </data>
+  <data name="EnvVarNotFound_Name" xml:space="preserve">
+    <value>Environment variable is not defined: '{0}'.</value>
+  </data>
+  <data name="WinForms_RecursiveFormCreate" xml:space="preserve">
+    <value>The form referred to itself during construction from a default instance, which led to infinite recursion.  Within the Form's constructor refer to the form using 'Me.'</value>
+  </data>
+  <data name="WinForms_SeeInnerException" xml:space="preserve">
+    <value>An error occurred creating the form. See Exception.InnerException for details.  The error is: {0}</value>
+  </data>
+  <data name="WebNotSupportedOnThisSKU" xml:space="preserve">
+    <value>Current target framework does not support web operations.</value>
+  </data>
+  <data name="NoShellCopyOrMove" xml:space="preserve">
+    <value>UI not available for copy or move</value>
+  </data>
+  <data name="NoShellDelete" xml:space="preserve">
+    <value>UI not available for delete</value>
+  </data>
+</root>

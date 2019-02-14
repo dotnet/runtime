@@ -83,7 +83,7 @@ namespace System.Collections.ObjectModel.Tests
             Assert.Equal(0, col.Count);
             Assert.Empty(col);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => col[1]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => col[1]);
 
             //tests that the collectionChanged events are fired.
             CollectionAndPropertyChangedTester helper = new CollectionAndPropertyChangedTester();
@@ -140,14 +140,14 @@ namespace System.Collections.ObjectModel.Tests
             int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue };
             foreach (var index in iArrInvalidValues)
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(index));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(index));
                 Assert.Equal(anArray.Length, collection.Count);
             }
 
             int[] iArrLargeValues = new int[] { collection.Count, int.MaxValue, int.MaxValue / 2, int.MaxValue / 10 };
             foreach (var index in iArrLargeValues)
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => collection.RemoveAt(index));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.RemoveAt(index));
                 Assert.Equal(anArray.Length, collection.Count);
             }
         }
@@ -213,11 +213,11 @@ namespace System.Collections.ObjectModel.Tests
                 collection.CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
                 // invalid startIndex, valid destination index.
-                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Move(index, validIndex));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.Move(index, validIndex));
                 Assert.Equal(anArray.Length, collection.Count);
 
                 // valid startIndex, invalid destIndex.
-                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Move(validIndex, index));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.Move(validIndex, index));
                 //NOTE: It actually moves the item right out of the collection.So the count is one less.
                 //Assert.Equal(anArray.Length, collection.Count, "Collection should not have changed. index: " + index);
             }
@@ -228,11 +228,11 @@ namespace System.Collections.ObjectModel.Tests
                 collection.CollectionChanged += (o, e) => { throw new ShouldNotBeInvokedException(); };
 
                 // invalid startIndex, valid destination index.
-                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Move(index, validIndex));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.Move(index, validIndex));
                 Assert.Equal(anArray.Length, collection.Count);
 
                 // valid startIndex, invalid destIndex.
-                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Move(validIndex, index));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.Move(validIndex, index));
                 //NOTE: It actually moves the item right out of the collection. So the count is one less.
                 //Assert.Equal(anArray.Length, collection.Count, "Collection should not have changed.");
             }
@@ -288,14 +288,14 @@ namespace System.Collections.ObjectModel.Tests
             int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue };
             foreach (var index in iArrInvalidValues)
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(index, itemToInsert));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, itemToInsert));
                 Assert.Equal(anArray.Length, collection.Count);
             }
 
             int[] iArrLargeValues = new int[] { collection.Count + 1, int.MaxValue, int.MaxValue / 2, int.MaxValue / 10 };
             foreach (var index in iArrLargeValues)
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => collection.Insert(index, itemToInsert));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection.Insert(index, itemToInsert));
                 Assert.Equal(anArray.Length, collection.Count);
             }
         }
@@ -416,7 +416,7 @@ namespace System.Collections.ObjectModel.Tests
             foreach (var index in iArrInvalidValues)
             {
                 string[] aCopy = new string[collection.Count];
-                Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(aCopy, index));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => collection.CopyTo(aCopy, index));
             }
 
             int[] iArrLargeValues = new int[] { collection.Count, int.MaxValue, int.MaxValue / 2, int.MaxValue / 10 };
@@ -426,7 +426,7 @@ namespace System.Collections.ObjectModel.Tests
                 AssertExtensions.Throws<ArgumentException>("destinationArray", null, () => collection.CopyTo(aCopy, index));
             }
 
-            Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 1));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => collection.CopyTo(null, 1));
 
             string[] copy = new string[collection.Count - 1];
             AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => collection.CopyTo(copy, 0));

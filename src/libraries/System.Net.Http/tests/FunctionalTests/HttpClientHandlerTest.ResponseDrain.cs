@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-   public abstract class HttpClientHandler_ResponseDrain_Test : HttpClientTestBase
+   public abstract class HttpClientHandler_ResponseDrain_Test : HttpClientHandlerTestBase
     {
         protected virtual void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time) { }
 

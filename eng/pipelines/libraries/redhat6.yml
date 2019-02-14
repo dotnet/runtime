@@ -1,0 +1,31 @@
+# RedHat 6 leg. Only for used in Official Builds
+
+jobs:
+- template: corefx-base.yml
+  parameters:
+    isOfficialBuild: true
+    targetOS: Linux
+    jobs:
+
+    - job: RedHat6
+      strategy:
+        matrix:
+          x64_Release:
+            _BuildConfig: Release
+            _architecture: x64
+            _framework: netcoreapp
+            _buildExtraArguments: /p:RuntimeOS=rhel.6 /p:PortableBuild=false
+            _dockerContainer: rhel6_container
+            _helixQueues: $(redhatHelixQueue)
+
+      pool:
+        name: Hosted Ubuntu 1604
+
+      container: $[ variables['_dockerContainer'] ]
+      buildExtraArguments: $(_buildExtraArguments)
+      submitToHelix: true
+
+      variables:
+        - _skipTests: true
+        - _outerloop: true # Only runs in official builds
+        - redhatHelixQueue: RedHat.6.Amd64

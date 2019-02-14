@@ -148,7 +148,7 @@ namespace System.Tests
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-                foreach (var testdata in ToString_TestData())
+                foreach (var testdata in ToString_TestData_NotNetFramework())
                 {
                     double localI = (double)testdata[0];
                     string localFormat = (string)testdata[1];
@@ -188,6 +188,41 @@ namespace System.Tests
 
                 return SuccessExitCode;
             }).Dispose();
+        }
+
+        public static IEnumerable<object[]> ToStringRoundtrip_TestData()
+        {
+            yield return new object[] { double.NegativeInfinity };
+            yield return new object[] { double.MinValue };
+            yield return new object[] { -Math.PI };
+            yield return new object[] { -Math.E };
+            yield return new object[] { -double.Epsilon };
+            yield return new object[] { -0.84551240822557006 };
+            yield return new object[] { -0.0 };
+            yield return new object[] { double.NaN };
+            yield return new object[] { 0.0 };
+            yield return new object[] { 0.84551240822557006 };
+            yield return new object[] { double.Epsilon };
+            yield return new object[] { Math.E };
+            yield return new object[] { Math.PI };
+            yield return new object[] { double.MaxValue };
+            yield return new object[] { double.PositiveInfinity };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToStringRoundtrip_TestData))]
+        public static void ToStringRoundtrip(double value)
+        {
+            double result = double.Parse(value.ToString());
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
+        }
+
+        [Theory]
+        [MemberData(nameof(ToStringRoundtrip_TestData))]
+        public static void ToStringRoundtrip_R(double value)
+        {
+            double result = double.Parse(value.ToString("R"));
+            Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
         }
     }
 }

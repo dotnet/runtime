@@ -87,10 +87,17 @@ namespace System.Runtime.CompilerServices
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
-    public readonly struct ConfiguredAsyncEnumerable<T>
+    public readonly struct ConfiguredAsyncDisposable
     {
         private readonly object _dummy;
-        public Enumerator GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable DisposeAsync() { throw null; }
+    }
+    public readonly struct ConfiguredCancelableAsyncEnumerable<T>
+    {
+        private readonly object _dummy;
+        public Enumerator GetAsyncEnumerator() { throw null; }
+        public ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait(bool continueOnCapturedContext) { throw null; }
+        public ConfiguredCancelableAsyncEnumerable<T> WithCancellation(System.Threading.CancellationToken cancellationToken) { throw null; }
         public readonly struct Enumerator
         {
             private readonly object _dummy;
@@ -161,7 +168,9 @@ namespace System.Threading.Tasks
     }
     public static partial class TaskExtensions
     {
-        public static System.Runtime.CompilerServices.ConfiguredAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredAsyncDisposable ConfigureAwait(this System.IAsyncDisposable source, bool continueOnCapturedContext) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, CancellationToken cancellationToken) { throw null; }
         public static System.Threading.Tasks.Task Unwrap(this System.Threading.Tasks.Task<System.Threading.Tasks.Task> task) { throw null; }
         public static System.Threading.Tasks.Task<TResult> Unwrap<TResult>(this System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> task) { throw null; }
     }

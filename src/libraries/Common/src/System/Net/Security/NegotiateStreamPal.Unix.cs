@@ -98,6 +98,7 @@ namespace System.Net.Security
             ref SafeGssContextHandle context,
             SafeGssCredHandle credential,
             bool isNtlm,
+            ChannelBinding channelBinding,
             SafeGssNameHandle targetName,
             Interop.NetSecurityNative.GssFlags inFlags,
             byte[] buffer,
@@ -105,6 +106,18 @@ namespace System.Net.Security
             out uint outFlags,
             out int isNtlmUsed)
         {
+            // If a TLS channel binding token (cbt) is available then get the pointer
+            // to the application specific data.
+            IntPtr cbtAppData = IntPtr.Zero;
+            int cbtAppDataSize = 0;
+            if (channelBinding != null)
+            {
+                int appDataOffset = Marshal.SizeOf<SecChannelBindings>();
+                Debug.Assert(appDataOffset < channelBinding.Size);
+                cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
+                cbtAppDataSize = channelBinding.Size - appDataOffset;
+            }
+
             outputBuffer = null;
             outFlags = 0;
 
@@ -126,6 +139,8 @@ namespace System.Net.Security
                                                           credential,
                                                           ref context,
                                                           isNtlm,
+                                                          cbtAppData,
+                                                          cbtAppDataSize,
                                                           targetName,
                                                           (uint)inFlags,
                                                           buffer,
@@ -152,10 +167,11 @@ namespace System.Net.Security
         private static SecurityStatusPal EstablishSecurityContext(
           SafeFreeNegoCredentials credential,
           ref SafeDeleteContext context,
+          ChannelBinding channelBinding,
           string targetName,
           ContextFlagsPal inFlags,
-          SecurityBuffer inputBuffer,
-          SecurityBuffer outputBuffer,
+          byte[] incomingBlob,
+          ref byte[] resultBuffer,
           ref ContextFlagsPal outFlags)
         {
             bool isNtlmOnly = credential.IsNtlmOnly;
@@ -177,16 +193,15 @@ namespace System.Net.Security
                    ref contextHandle,
                    credential.GssCredential,
                    isNtlmOnly,
+                   channelBinding,
                    negoContext.TargetName,
                    inputFlags,
-                   inputBuffer?.token,
-                   out outputBuffer.token,
+                   incomingBlob,
+                   out resultBuffer,
                    out outputFlags,
                    out isNtlmUsed);
 
-                Debug.Assert(outputBuffer.token != null, "Unexpected null buffer returned by GssApi");
-                outputBuffer.size = outputBuffer.token.Length;
-                outputBuffer.offset = 0;
+                Debug.Assert(resultBuffer != null, "Unexpected null buffer returned by GssApi");
                 outFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop((Interop.NetSecurityNative.GssFlags)outputFlags, isServer: false);
                 Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
 
@@ -204,7 +219,7 @@ namespace System.Net.Security
                 }
 
                 SecurityStatusPalErrorCode errorCode = done ?
-                    (negoContext.IsNtlmUsed && outputBuffer.size > 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.CompleteNeeded) :
+                    (negoContext.IsNtlmUsed && resultBuffer.Length > 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.CompleteNeeded) :
                     SecurityStatusPalErrorCode.ContinueNeeded;
                 return new SecurityStatusPal(errorCode);
             }
@@ -216,20 +231,15 @@ namespace System.Net.Security
         }
 
         internal static SecurityStatusPal InitializeSecurityContext(
-            SafeFreeCredentials credentialsHandle,
+            ref SafeFreeCredentials credentialsHandle,
             ref SafeDeleteContext securityContext,
             string spn,
             ContextFlagsPal requestedContextFlags,
-            SecurityBuffer[] inSecurityBufferArray,
-            SecurityBuffer outSecurityBuffer,
+            byte[] incomingBlob,
+            ChannelBinding channelBinding,
+            ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {
-            // TODO (Issue #3718): The second buffer can contain a channel binding which is not supported
-            if ((null != inSecurityBufferArray) && (inSecurityBufferArray.Length > 1))
-            {
-                throw new PlatformNotSupportedException(SR.net_nego_channel_binding_not_supported);
-            }
-
             SafeFreeNegoCredentials negoCredentialsHandle = (SafeFreeNegoCredentials)credentialsHandle;
 
             if (negoCredentialsHandle.IsDefault && string.IsNullOrEmpty(spn))
@@ -240,10 +250,11 @@ namespace System.Net.Security
             SecurityStatusPal status = EstablishSecurityContext(
                 negoCredentialsHandle,
                 ref securityContext,
+                channelBinding,
                 spn,
                 requestedContextFlags,
-                ((inSecurityBufferArray != null && inSecurityBufferArray.Length != 0) ? inSecurityBufferArray[0] : null),
-                outSecurityBuffer,
+                incomingBlob,
+                ref resultBlob,
                 ref contextFlags);
 
             // Confidentiality flag should not be set if not requested
@@ -263,8 +274,9 @@ namespace System.Net.Security
             SafeFreeCredentials credentialsHandle,
             ref SafeDeleteContext securityContext,
             ContextFlagsPal requestedContextFlags,
-            SecurityBuffer[] inSecurityBufferArray,
-            SecurityBuffer outSecurityBuffer,
+            byte[] incomingBlob,
+            ChannelBinding channelBinding,
+            ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
@@ -316,7 +328,7 @@ namespace System.Net.Security
 
         internal static SecurityStatusPal CompleteAuthToken(
             ref SafeDeleteContext securityContext,
-            SecurityBuffer[] inSecurityBufferArray)
+            byte[] incomingBlob)
         {
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }

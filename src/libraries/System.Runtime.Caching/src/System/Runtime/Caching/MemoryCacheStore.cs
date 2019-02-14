@@ -8,7 +8,6 @@ using System.Collections.Specialized;
 using System.Threading;
 using System.Diagnostics;
 using System.Security;
-using System.Security.Permissions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Caching
@@ -103,7 +102,7 @@ namespace System.Runtime.Caching
                     _usage.Remove(entry);
                 }
 
-                Dbg.Assert(entry.State == EntryState.RemovingFromCache, "entry.State = EntryState.RemovingFromCache");
+                Debug.Assert(entry.State == EntryState.RemovingFromCache, "entry.State = EntryState.RemovingFromCache");
 
                 entry.State = EntryState.RemovedFromCache;
                 if (!delayRelease)
@@ -276,7 +275,7 @@ namespace System.Runtime.Caching
 
                 // MemoryCacheStatistics has been disposed, and therefore nobody should be using
                 // _insertBlock except for potential threads in WaitInsertBlock (which won't care if we call Close).
-                Dbg.Assert(_useInsertBlock == false, "_useInsertBlock == false");
+                Debug.Assert(_useInsertBlock == false, "_useInsertBlock == false");
                 _insertBlock.Close();
 
                 // Don't need to call GC.SuppressFinalize(this) for sealed types without finalizers.
@@ -373,7 +372,7 @@ namespace System.Runtime.Caching
 
         internal long TrimInternal(int percent)
         {
-            Dbg.Assert(percent <= 100, "percent <= 100");
+            Debug.Assert(percent <= 100, "percent <= 100");
 
             int count = Count;
             int toTrim = 0;

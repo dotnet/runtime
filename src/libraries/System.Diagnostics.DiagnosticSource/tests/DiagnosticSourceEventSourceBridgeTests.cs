@@ -6,16 +6,12 @@ using System.Collections.Generic;
 using Xunit;
 using System.Diagnostics.Tracing;
 using System.Text;
-
-// Turn off parallel execution of tests.   
-// TODO in theory can run the tests in parallel, however there has been some failures when we do this.   
-// Needs investigation.  traced by https://github.com/dotnet/corefx/issues/6872
-[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true, MaxParallelThreads = 1)]
+using System.Threading;
 
 namespace System.Diagnostics.Tests
 {
     //Complex types are not supported on EventSource for .NET 4.5
-    public class DiagnosticSourceEventSourceBridgeTests
+    public class DiagnosticSourceEventSourceBridgeTests : RemoteExecutorTestBase
     {
         /// <summary>
         /// Tests the basic functionality of turning on specific EventSources and specifying 
@@ -24,79 +20,82 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestSpecificEvents()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener = new DiagnosticListener("TestSpecificEventsSource"))
+            RemoteInvoke(() =>
             {
-                Assert.Equal(0, eventSourceListener.EventCount);
-
-                // Turn on events with both implicit and explicit types You can have whitespace 
-                // before and after each spec.  
-                eventSourceListener.Enable(
-                    "  TestSpecificEventsSource/TestEvent1:cls_Point_X=cls.Point.X;cls_Point_Y=cls.Point.Y\r\n" +
-                    "  TestSpecificEventsSource/TestEvent2:cls_Url=cls.Url\r\n"
-                    );
-
-                /***************************************************************************************/
-                // Emit an event that matches the first pattern. 
-                MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
-
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestSpecificEventsSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(5, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
-                Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
-                Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
-                Assert.Equal("3", eventSourceListener.LastEvent.Arguments["cls_Point_X"]);
-                Assert.Equal("5", eventSourceListener.LastEvent.Arguments["cls_Point_Y"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-
-                /***************************************************************************************/
-                // Emit an event that matches the second pattern. 
-                if (diagnosticSourceListener.IsEnabled("TestEvent2"))
-                    diagnosticSourceListener.Write("TestEvent2", new { prop2Str = "hello", prop2Int = 8, cls = val });
-
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.  
-                Assert.Equal("TestSpecificEventsSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(4, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
-                Assert.Equal("hello", eventSourceListener.LastEvent.Arguments["prop2Str"]);
-                Assert.Equal("8", eventSourceListener.LastEvent.Arguments["prop2Int"]);
-                Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["cls_Url"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-
-                // Emit an event that does not match either pattern.  (thus will be filtered out)
-                if (diagnosticSourceListener.IsEnabled("TestEvent3"))
-                    diagnosticSourceListener.Write("TestEvent3", new { propStr = "prop3", });
-                Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
-
-                /***************************************************************************************/
-                // Emit an event from another diagnostic source with the same event name.  
-                // It will be filtered out.  
-                using (var diagnosticSourceListener2 = new DiagnosticListener("TestSpecificEventsSource2"))
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestSpecificEventsSource"))
                 {
-                    if (diagnosticSourceListener2.IsEnabled("TestEvent1"))
-                        diagnosticSourceListener2.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
+                    Assert.Equal(0, eventSourceListener.EventCount);
+
+                    // Turn on events with both implicit and explicit types You can have whitespace 
+                    // before and after each spec.  
+                    eventSourceListener.Enable(
+                        "  TestSpecificEventsSource/TestEvent1:cls_Point_X=cls.Point.X;cls_Point_Y=cls.Point.Y\r\n" +
+                        "  TestSpecificEventsSource/TestEvent2:cls_Url=cls.Url\r\n"
+                        );
+
+                    /***************************************************************************************/
+                    // Emit an event that matches the first pattern. 
+                    MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestSpecificEventsSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(5, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
+                    Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
+                    Assert.Equal("3", eventSourceListener.LastEvent.Arguments["cls_Point_X"]);
+                    Assert.Equal("5", eventSourceListener.LastEvent.Arguments["cls_Point_Y"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+
+                    /***************************************************************************************/
+                    // Emit an event that matches the second pattern. 
+                    if (diagnosticSourceListener.IsEnabled("TestEvent2"))
+                        diagnosticSourceListener.Write("TestEvent2", new { prop2Str = "hello", prop2Int = 8, cls = val });
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.  
+                    Assert.Equal("TestSpecificEventsSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(4, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
+                    Assert.Equal("hello", eventSourceListener.LastEvent.Arguments["prop2Str"]);
+                    Assert.Equal("8", eventSourceListener.LastEvent.Arguments["prop2Int"]);
+                    Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["cls_Url"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+
+                    // Emit an event that does not match either pattern.  (thus will be filtered out)
+                    if (diagnosticSourceListener.IsEnabled("TestEvent3"))
+                        diagnosticSourceListener.Write("TestEvent3", new { propStr = "prop3", });
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
+
+                    /***************************************************************************************/
+                    // Emit an event from another diagnostic source with the same event name.  
+                    // It will be filtered out.  
+                    using (var diagnosticSourceListener2 = new DiagnosticListener("TestSpecificEventsSource2"))
+                    {
+                        if (diagnosticSourceListener2.IsEnabled("TestEvent1"))
+                            diagnosticSourceListener2.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
+                    }
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
+
+                    // Disable all the listener and insure that no more events come through.  
+                    eventSourceListener.Disable();
+
+                    diagnosticSourceListener.Write("TestEvent1", null);
+                    diagnosticSourceListener.Write("TestEvent2", null);
+
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be received.  
                 }
-                Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
 
-                // Disable all the listener and insure that no more events come through.  
-                eventSourceListener.Disable();
-
-                diagnosticSourceListener.Write("TestEvent1", null);
-                diagnosticSourceListener.Write("TestEvent2", null);
-
-                Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be received.  
-            }
-
-            // Make sure that there are no Diagnostic Listeners left over.  
-            DiagnosticListener.AllListeners.Subscribe(DiagnosticSourceTest.MakeObserver(delegate (DiagnosticListener listen)
-            {
-                Assert.True(!listen.Name.StartsWith("BuildTestSource"));
-            }));
+                // Make sure that there are no Diagnostic Listeners left over.  
+                DiagnosticListener.AllListeners.Subscribe(DiagnosticSourceTest.MakeObserver(delegate (DiagnosticListener listen)
+                {
+                    Assert.True(!listen.Name.StartsWith("BuildTestSource"));
+                }));
+            }).Dispose();
         }
 
         /// <summary>
@@ -106,54 +105,57 @@ namespace System.Diagnostics.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot,"This is linux specific test")]
         public void LinuxNewLineConventions()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener = new DiagnosticListener("LinuxNewLineConventionsSource"))
+            RemoteInvoke(() =>
             {
-                Assert.Equal(0, eventSourceListener.EventCount);
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("LinuxNewLineConventionsSource"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
 
-                // Turn on events with both implicit and explicit types You can have whitespace 
-                // before and after each spec.   Use \n rather than \r\n 
-                eventSourceListener.Enable(
-                    "  LinuxNewLineConventionsSource/TestEvent1:-cls_Point_X=cls.Point.X\n" +
-                    "  LinuxNewLineConventionsSource/TestEvent2:-cls_Url=cls.Url\n"
-                    );
+                    // Turn on events with both implicit and explicit types You can have whitespace 
+                    // before and after each spec.   Use \n rather than \r\n 
+                    eventSourceListener.Enable(
+                        "  LinuxNewLineConventionsSource/TestEvent1:-cls_Point_X=cls.Point.X\n" +
+                        "  LinuxNewLineConventionsSource/TestEvent2:-cls_Url=cls.Url\n"
+                        );
 
-                /***************************************************************************************/
-                // Emit an event that matches the first pattern. 
-                MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
+                    /***************************************************************************************/
+                    // Emit an event that matches the first pattern. 
+                    MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
 
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("LinuxNewLineConventionsSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("3", eventSourceListener.LastEvent.Arguments["cls_Point_X"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("LinuxNewLineConventionsSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("3", eventSourceListener.LastEvent.Arguments["cls_Point_X"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                /***************************************************************************************/
-                // Emit an event that matches the second pattern. 
-                if (diagnosticSourceListener.IsEnabled("TestEvent2"))
-                    diagnosticSourceListener.Write("TestEvent2", new { prop2Str = "hello", prop2Int = 8, cls = val });
+                    /***************************************************************************************/
+                    // Emit an event that matches the second pattern. 
+                    if (diagnosticSourceListener.IsEnabled("TestEvent2"))
+                        diagnosticSourceListener.Write("TestEvent2", new { prop2Str = "hello", prop2Int = 8, cls = val });
 
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.  
-                Assert.Equal("LinuxNewLineConventionsSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["cls_Url"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.  
+                    Assert.Equal("LinuxNewLineConventionsSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["cls_Url"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                // Emit an event that does not match either pattern.  (thus will be filtered out)
-                if (diagnosticSourceListener.IsEnabled("TestEvent3"))
-                    diagnosticSourceListener.Write("TestEvent3", new { propStr = "prop3", });
-                Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
-            }
+                    // Emit an event that does not match either pattern.  (thus will be filtered out)
+                    if (diagnosticSourceListener.IsEnabled("TestEvent3"))
+                        diagnosticSourceListener.Write("TestEvent3", new { propStr = "prop3", });
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
+                }
 
-            // Make sure that there are no Diagnostic Listeners left over.  
-            DiagnosticListener.AllListeners.Subscribe(DiagnosticSourceTest.MakeObserver(delegate (DiagnosticListener listen)
-            {
-                Assert.True(!listen.Name.StartsWith("BuildTestSource"));
-            }));
+                // Make sure that there are no Diagnostic Listeners left over.  
+                DiagnosticListener.AllListeners.Subscribe(DiagnosticSourceTest.MakeObserver(delegate (DiagnosticListener listen)
+                {
+                    Assert.True(!listen.Name.StartsWith("BuildTestSource"));
+                }));
+            }).Dispose();
         }
 
         /// <summary>
@@ -162,59 +164,62 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestWildCardSourceName()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener1 = new DiagnosticListener("TestWildCardSourceName1"))
-            using (var diagnosticSourceListener2 = new DiagnosticListener("TestWildCardSourceName2"))
+            RemoteInvoke(() =>
             {
-                eventSourceListener.Filter = (DiagnosticSourceEvent evnt) => evnt.SourceName.StartsWith("TestWildCardSourceName");
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener1 = new DiagnosticListener("TestWildCardSourceName1"))
+                using (var diagnosticSourceListener2 = new DiagnosticListener("TestWildCardSourceName2"))
+                {
+                    eventSourceListener.Filter = (DiagnosticSourceEvent evnt) => evnt.SourceName.StartsWith("TestWildCardSourceName");
 
-                // Turn On Everything.  Note that because of concurrent testing, we may get other sources as well.
-                // but we filter them out because we set eventSourceListener.Filter.   
-                eventSourceListener.Enable("");
+                    // Turn On Everything.  Note that because of concurrent testing, we may get other sources as well.
+                    // but we filter them out because we set eventSourceListener.Filter.   
+                    eventSourceListener.Enable("");
 
-                Assert.True(diagnosticSourceListener1.IsEnabled("TestEvent1"));
-                Assert.True(diagnosticSourceListener1.IsEnabled("TestEvent2"));
-                Assert.True(diagnosticSourceListener2.IsEnabled("TestEvent1"));
-                Assert.True(diagnosticSourceListener2.IsEnabled("TestEvent2"));
+                    Assert.True(diagnosticSourceListener1.IsEnabled("TestEvent1"));
+                    Assert.True(diagnosticSourceListener1.IsEnabled("TestEvent2"));
+                    Assert.True(diagnosticSourceListener2.IsEnabled("TestEvent1"));
+                    Assert.True(diagnosticSourceListener2.IsEnabled("TestEvent2"));
 
-                Assert.Equal(0, eventSourceListener.EventCount);
+                    Assert.Equal(0, eventSourceListener.EventCount);
 
-                diagnosticSourceListener1.Write("TestEvent1", new { prop111 = "prop111Val", prop112 = 112 });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestWildCardSourceName1", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("prop111Val", eventSourceListener.LastEvent.Arguments["prop111"]);
-                Assert.Equal("112", eventSourceListener.LastEvent.Arguments["prop112"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    diagnosticSourceListener1.Write("TestEvent1", new { prop111 = "prop111Val", prop112 = 112 });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestWildCardSourceName1", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("prop111Val", eventSourceListener.LastEvent.Arguments["prop111"]);
+                    Assert.Equal("112", eventSourceListener.LastEvent.Arguments["prop112"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                diagnosticSourceListener1.Write("TestEvent2", new { prop121 = "prop121Val", prop122 = 122 });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestWildCardSourceName1", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("prop121Val", eventSourceListener.LastEvent.Arguments["prop121"]);
-                Assert.Equal("122", eventSourceListener.LastEvent.Arguments["prop122"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    diagnosticSourceListener1.Write("TestEvent2", new { prop121 = "prop121Val", prop122 = 122 });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestWildCardSourceName1", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("prop121Val", eventSourceListener.LastEvent.Arguments["prop121"]);
+                    Assert.Equal("122", eventSourceListener.LastEvent.Arguments["prop122"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                diagnosticSourceListener2.Write("TestEvent1", new { prop211 = "prop211Val", prop212 = 212 });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestWildCardSourceName2", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("prop211Val", eventSourceListener.LastEvent.Arguments["prop211"]);
-                Assert.Equal("212", eventSourceListener.LastEvent.Arguments["prop212"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    diagnosticSourceListener2.Write("TestEvent1", new { prop211 = "prop211Val", prop212 = 212 });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestWildCardSourceName2", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("prop211Val", eventSourceListener.LastEvent.Arguments["prop211"]);
+                    Assert.Equal("212", eventSourceListener.LastEvent.Arguments["prop212"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                diagnosticSourceListener2.Write("TestEvent2", new { prop221 = "prop221Val", prop222 = 122 });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestWildCardSourceName2", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("prop221Val", eventSourceListener.LastEvent.Arguments["prop221"]);
-                Assert.Equal("122", eventSourceListener.LastEvent.Arguments["prop222"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-            }
+                    diagnosticSourceListener2.Write("TestEvent2", new { prop221 = "prop221Val", prop222 = 122 });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestWildCardSourceName2", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent2", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("prop221Val", eventSourceListener.LastEvent.Arguments["prop221"]);
+                    Assert.Equal("122", eventSourceListener.LastEvent.Arguments["prop222"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
         }
 
         /// <summary>
@@ -223,52 +228,55 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestWildCardEventName()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener = new DiagnosticListener("TestWildCardEventNameSource"))
+            RemoteInvoke(() =>
             {
-                Assert.Equal(0, eventSourceListener.EventCount);
-
-                // Turn on events with both implicit and explicit types 
-                eventSourceListener.Enable("TestWildCardEventNameSource");
-
-                /***************************************************************************************/
-                // Emit an event, check that all implicit properties are generated
-                MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
-
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestWildCardEventNameSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
-                Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
-                Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-
-                /***************************************************************************************/
-                // Emit the same event, with a different set of implicit properties 
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", new { propStr2 = "hi2", cls = val });
-
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestWildCardEventNameSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
-                Assert.Equal("hi2", eventSourceListener.LastEvent.Arguments["propStr2"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-
-                /***************************************************************************************/
-                // Emit an event from another diagnostic source with the same event name.  
-                // It will be filtered out.  
-                using (var diagnosticSourceListener2 = new DiagnosticListener("TestWildCardEventNameSource2"))
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestWildCardEventNameSource"))
                 {
-                    if (diagnosticSourceListener2.IsEnabled("TestEvent1"))
-                        diagnosticSourceListener2.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
+                    Assert.Equal(0, eventSourceListener.EventCount);
+
+                    // Turn on events with both implicit and explicit types 
+                    eventSourceListener.Enable("TestWildCardEventNameSource");
+
+                    /***************************************************************************************/
+                    // Emit an event, check that all implicit properties are generated
+                    MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestWildCardEventNameSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
+                    Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+
+                    /***************************************************************************************/
+                    // Emit the same event, with a different set of implicit properties 
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new { propStr2 = "hi2", cls = val });
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestWildCardEventNameSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
+                    Assert.Equal("hi2", eventSourceListener.LastEvent.Arguments["propStr2"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+
+                    /***************************************************************************************/
+                    // Emit an event from another diagnostic source with the same event name.  
+                    // It will be filtered out.  
+                    using (var diagnosticSourceListener2 = new DiagnosticListener("TestWildCardEventNameSource2"))
+                    {
+                        if (diagnosticSourceListener2.IsEnabled("TestEvent1"))
+                            diagnosticSourceListener2.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
+                    }
+                    Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
                 }
-                Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.  
-            }
+            }).Dispose();
         }
 
         /// <summary>
@@ -279,75 +287,78 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestNulls()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener = new DiagnosticListener("TestNullsTestSource"))
+            RemoteInvoke(() =>
             {
-                Assert.Equal(0, eventSourceListener.EventCount);
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestNullsTestSource"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
 
-                // Turn on events with both implicit and explicit types 
-                eventSourceListener.Enable("TestNullsTestSource/TestEvent1:cls.Url;cls_Point_X=cls.Point.X");
+                    // Turn on events with both implicit and explicit types 
+                    eventSourceListener.Enable("TestNullsTestSource/TestEvent1:cls.Url;cls_Point_X=cls.Point.X");
 
-                /***************************************************************************************/
-                // Emit a null arguments object. 
+                    /***************************************************************************************/
+                    // Emit a null arguments object. 
 
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", null);
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", null);
 
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(0, eventSourceListener.LastEvent.Arguments.Count);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(0, eventSourceListener.LastEvent.Arguments.Count);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                /***************************************************************************************/
-                // Emit an arguments object with nulls in it.   
+                    /***************************************************************************************/
+                    // Emit an arguments object with nulls in it.   
 
-                MyClass val = null;
-                string strVal = null;
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", new { cls = val, propStr = "propVal1", propStrNull = strVal });
+                    MyClass val = null;
+                    string strVal = null;
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new { cls = val, propStr = "propVal1", propStrNull = strVal });
 
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("", eventSourceListener.LastEvent.Arguments["cls"]);           // Tostring() on a null end up as an empty string. 
-                Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
-                Assert.Equal("", eventSourceListener.LastEvent.Arguments["propStrNull"]);   // null strings get turned into empty strings
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("", eventSourceListener.LastEvent.Arguments["cls"]);           // Tostring() on a null end up as an empty string. 
+                    Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    Assert.Equal("", eventSourceListener.LastEvent.Arguments["propStrNull"]);   // null strings get turned into empty strings
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                /***************************************************************************************/
-                // Emit an arguments object that points at null things
+                    /***************************************************************************************/
+                    // Emit an arguments object that points at null things
 
-                MyClass val1 = new MyClass() { Url = "myUrlVal", Point = null };
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", new { cls = val1, propStr = "propVal1" });
+                    MyClass val1 = new MyClass() { Url = "myUrlVal", Point = null };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new { cls = val1, propStr = "propVal1" });
 
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal(val1.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
-                Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
-                Assert.Equal("myUrlVal", eventSourceListener.LastEvent.Arguments["Url"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal(val1.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
+                    Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    Assert.Equal("myUrlVal", eventSourceListener.LastEvent.Arguments["Url"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                /***************************************************************************************/
-                // Emit an arguments object that points at null things (variation 2)
+                    /***************************************************************************************/
+                    // Emit an arguments object that points at null things (variation 2)
 
-                MyClass val2 = new MyClass() { Url = null, Point = new MyPoint() { X = 8, Y = 9 } };
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", new { cls = val2, propStr = "propVal1" });
+                    MyClass val2 = new MyClass() { Url = null, Point = new MyPoint() { X = 8, Y = 9 } };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new { cls = val2, propStr = "propVal1" });
 
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal(val2.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
-                Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
-                Assert.Equal("8", eventSourceListener.LastEvent.Arguments["cls_Point_X"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-            }
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestNullsTestSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal(val2.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
+                    Assert.Equal("propVal1", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    Assert.Equal("8", eventSourceListener.LastEvent.Arguments["cls_Point_X"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
         }
 
         /// <summary>
@@ -357,28 +368,31 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestNoImplicitTransforms()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener = new DiagnosticListener("TestNoImplicitTransformsSource"))
+            RemoteInvoke(() =>
             {
-                Assert.Equal(0, eventSourceListener.EventCount);
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestNoImplicitTransformsSource"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
 
-                // use the - prefix to suppress the implicit properties.  Thus you should only get propStr and Url.  
-                eventSourceListener.Enable("TestNoImplicitTransformsSource/TestEvent1:-propStr;cls.Url");
+                    // use the - prefix to suppress the implicit properties.  Thus you should only get propStr and Url.  
+                    eventSourceListener.Enable("TestNoImplicitTransformsSource/TestEvent1:-propStr;cls.Url");
 
-                /***************************************************************************************/
-                // Emit an event that matches the first pattern. 
-                MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val, propStr2 = "there" });
+                    /***************************************************************************************/
+                    // Emit an event that matches the first pattern. 
+                    MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val, propStr2 = "there" });
 
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestNoImplicitTransformsSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
-                Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["Url"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-            }
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestNoImplicitTransformsSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["Url"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
         }
 
         /// <summary>
@@ -387,57 +401,63 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestBadProperties()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener = new DiagnosticListener("TestBadPropertiesSource"))
+            RemoteInvoke(() =>
             {
-                Assert.Equal(0, eventSourceListener.EventCount);
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestBadPropertiesSource"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
 
-                // This has a syntax error in the Url case, so it should be ignored.  
-                eventSourceListener.Enable("TestBadPropertiesSource/TestEvent1:cls.Ur-+l");
+                    // This has a syntax error in the Url case, so it should be ignored.  
+                    eventSourceListener.Enable("TestBadPropertiesSource/TestEvent1:cls.Ur-+l");
 
-                /***************************************************************************************/
-                // Emit an event that matches the first pattern. 
-                MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
-                if (diagnosticSourceListener.IsEnabled("TestEvent1"))
-                    diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
+                    /***************************************************************************************/
+                    // Emit an event that matches the first pattern. 
+                    MyClass val = new MyClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 } };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
 
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestBadPropertiesSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
-                Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
-                Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-            }
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestBadPropertiesSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal(val.GetType().FullName, eventSourceListener.LastEvent.Arguments["cls"]);  // ToString on cls is the class name
+                    Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
         }
 
         // Tests that messages about DiagnosticSourceEventSource make it out.  
         [Fact]
         public void TestMessages()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener = new DiagnosticListener("TestMessagesSource"))
+            RemoteInvoke(() =>
             {
-                Assert.Equal(0, eventSourceListener.EventCount);
-
-                // This is just to make debugging easier.  
-                var messages = new List<string>();
-
-                eventSourceListener.OtherEventWritten += delegate (EventWrittenEventArgs evnt)
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestMessagesSource"))
                 {
-                    if (evnt.EventName == "Message")
-                    {
-                        var message = (string)evnt.Payload[0];
-                        messages.Add(message);
-                    }
-                };
+                    Assert.Equal(0, eventSourceListener.EventCount);
 
-                // This has a syntax error in the Url case, so it should be ignored.  
-                eventSourceListener.Enable("TestMessagesSource/TestEvent1:-cls.Url");
-                Assert.Equal(0, eventSourceListener.EventCount);
-                Assert.True(3 <= messages.Count);
-            }
+                    // This is just to make debugging easier.  
+                    var messages = new List<string>();
+
+                    eventSourceListener.OtherEventWritten += delegate (EventWrittenEventArgs evnt)
+                    {
+                        if (evnt.EventName == "Message")
+                        {
+                            var message = (string)evnt.Payload[0];
+                            messages.Add(message);
+                        }
+                    };
+
+                    // This has a syntax error in the Url case, so it should be ignored.  
+                    eventSourceListener.Enable("TestMessagesSource/TestEvent1:-cls.Url");
+                    Assert.Equal(0, eventSourceListener.EventCount);
+                    Assert.True(3 <= messages.Count);
+                }
+            }).Dispose();
         }
 
         /// <summary>
@@ -446,68 +466,71 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestActivities()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener = new DiagnosticListener("TestActivitiesSource"))
+            RemoteInvoke(() =>
             {
-                Assert.Equal(0, eventSourceListener.EventCount);
-                eventSourceListener.Enable(
-                    "TestActivitiesSource/TestActivity1Start@Activity1Start\r\n" +
-                    "TestActivitiesSource/TestActivity1Stop@Activity1Stop\r\n" +
-                    "TestActivitiesSource/TestActivity2Start@Activity2Start\r\n" +
-                    "TestActivitiesSource/TestActivity2Stop@Activity2Stop\r\n" +
-                    "TestActivitiesSource/TestEvent\r\n"
-                    );
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestActivitiesSource"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
+                    eventSourceListener.Enable(
+                        "TestActivitiesSource/TestActivity1Start@Activity1Start\r\n" +
+                        "TestActivitiesSource/TestActivity1Stop@Activity1Stop\r\n" +
+                        "TestActivitiesSource/TestActivity2Start@Activity2Start\r\n" +
+                        "TestActivitiesSource/TestActivity2Stop@Activity2Stop\r\n" +
+                        "TestActivitiesSource/TestEvent\r\n"
+                        );
 
-                // Start activity 1
-                diagnosticSourceListener.Write("TestActivity1Start", new { propStr = "start" });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("Activity1Start", eventSourceListener.LastEvent.EventSourceEventName);
-                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestActivity1Start", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("start", eventSourceListener.LastEvent.Arguments["propStr"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    // Start activity 1
+                    diagnosticSourceListener.Write("TestActivity1Start", new { propStr = "start" });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("Activity1Start", eventSourceListener.LastEvent.EventSourceEventName);
+                    Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestActivity1Start", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("start", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                // Start nested activity 2
-                diagnosticSourceListener.Write("TestActivity2Start", new { propStr = "start" });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("Activity2Start", eventSourceListener.LastEvent.EventSourceEventName);
-                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestActivity2Start", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("start", eventSourceListener.LastEvent.Arguments["propStr"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    // Start nested activity 2
+                    diagnosticSourceListener.Write("TestActivity2Start", new { propStr = "start" });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("Activity2Start", eventSourceListener.LastEvent.EventSourceEventName);
+                    Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestActivity2Start", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("start", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                // Send a normal event 
-                diagnosticSourceListener.Write("TestEvent", new { propStr = "event" });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("Event", eventSourceListener.LastEvent.EventSourceEventName);
-                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestEvent", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("event", eventSourceListener.LastEvent.Arguments["propStr"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    // Send a normal event 
+                    diagnosticSourceListener.Write("TestEvent", new { propStr = "event" });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("Event", eventSourceListener.LastEvent.EventSourceEventName);
+                    Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("event", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                // Stop nested activity 2
-                diagnosticSourceListener.Write("TestActivity2Stop", new { propStr = "stop" });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("Activity2Stop", eventSourceListener.LastEvent.EventSourceEventName);
-                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestActivity2Stop", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("stop", eventSourceListener.LastEvent.Arguments["propStr"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    // Stop nested activity 2
+                    diagnosticSourceListener.Write("TestActivity2Stop", new { propStr = "stop" });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("Activity2Stop", eventSourceListener.LastEvent.EventSourceEventName);
+                    Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestActivity2Stop", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("stop", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                // Stop activity 1
-                diagnosticSourceListener.Write("TestActivity1Stop", new { propStr = "stop" });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("Activity1Stop", eventSourceListener.LastEvent.EventSourceEventName);
-                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("TestActivity1Stop", eventSourceListener.LastEvent.EventName);
-                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("stop", eventSourceListener.LastEvent.Arguments["propStr"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-            }
+                    // Stop activity 1
+                    diagnosticSourceListener.Write("TestActivity1Stop", new { propStr = "stop" });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("Activity1Stop", eventSourceListener.LastEvent.EventSourceEventName);
+                    Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestActivity1Stop", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("stop", eventSourceListener.LastEvent.Arguments["propStr"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
         }
 
         /// <summary>
@@ -516,105 +539,141 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestShortcutKeywords()
         {
-            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            // These are look-alikes for the real ones.  
-            using (var aspNetCoreSource = new DiagnosticListener("Microsoft.AspNetCore"))
-            using (var entityFrameworkCoreSource = new DiagnosticListener("Microsoft.EntityFrameworkCore"))
+            RemoteInvoke(() =>
             {
-                // These are from DiagnosticSourceEventListener.  
-                var Messages = (EventKeywords)0x1;
-                var Events = (EventKeywords)0x2;
-                var AspNetCoreHosting = (EventKeywords)0x1000;
-                var EntityFrameworkCoreCommands = (EventKeywords)0x2000;
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                // These are look-alikes for the real ones.  
+                using (var aspNetCoreSource = new DiagnosticListener("Microsoft.AspNetCore"))
+                using (var entityFrameworkCoreSource = new DiagnosticListener("Microsoft.EntityFrameworkCore"))
+                {
+                    // These are from DiagnosticSourceEventListener.  
+                    var Messages = (EventKeywords)0x1;
+                    var Events = (EventKeywords)0x2;
+                    var AspNetCoreHosting = (EventKeywords)0x1000;
+                    var EntityFrameworkCoreCommands = (EventKeywords)0x2000;
 
-                // Turn on listener using just the keywords 
-                eventSourceListener.Enable(null, Messages | Events | AspNetCoreHosting | EntityFrameworkCoreCommands);
+                    // Turn on listener using just the keywords 
+                    eventSourceListener.Enable(null, Messages | Events | AspNetCoreHosting | EntityFrameworkCoreCommands);
 
-                Assert.Equal(0, eventSourceListener.EventCount);
+                    Assert.Equal(0, eventSourceListener.EventCount);
 
-                // Start a ASP.NET Request
-                aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.BeginRequest",
-                    new
-                    {
-                        httpContext = new
+                    // Start a ASP.NET Request
+                    aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.BeginRequest",
+                        new
                         {
-                            Request = new
+                            httpContext = new
                             {
-                                Method = "Get",
-                                Host = "MyHost",
-                                Path = "MyPath",
-                                QueryString = "MyQuery"
+                                Request = new
+                                {
+                                    Method = "Get",
+                                    Host = "MyHost",
+                                    Path = "MyPath",
+                                    QueryString = "MyQuery"
+                                }
                             }
-                        }
-                    });
-                // Check that the morphs work as expected.  
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("Activity1Start", eventSourceListener.LastEvent.EventSourceEventName);
-                Assert.Equal("Microsoft.AspNetCore", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("Microsoft.AspNetCore.Hosting.BeginRequest", eventSourceListener.LastEvent.EventName);
-                Assert.True(4 <= eventSourceListener.LastEvent.Arguments.Count);
-                Debug.WriteLine("Arg Keys = " + string.Join(" ", eventSourceListener.LastEvent.Arguments.Keys));
-                Debug.WriteLine("Arg Values = " + string.Join(" ", eventSourceListener.LastEvent.Arguments.Values));
-                Assert.Equal("Get", eventSourceListener.LastEvent.Arguments["Method"]);
-                Assert.Equal("MyHost", eventSourceListener.LastEvent.Arguments["Host"]);
-                Assert.Equal("MyPath", eventSourceListener.LastEvent.Arguments["Path"]);
-                Assert.Equal("MyQuery", eventSourceListener.LastEvent.Arguments["QueryString"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                        });
+                    // Check that the morphs work as expected.  
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("Activity1Start", eventSourceListener.LastEvent.EventSourceEventName);
+                    Assert.Equal("Microsoft.AspNetCore", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("Microsoft.AspNetCore.Hosting.BeginRequest", eventSourceListener.LastEvent.EventName);
+                    Assert.True(4 <= eventSourceListener.LastEvent.Arguments.Count);
+                    Debug.WriteLine("Arg Keys = " + string.Join(" ", eventSourceListener.LastEvent.Arguments.Keys));
+                    Debug.WriteLine("Arg Values = " + string.Join(" ", eventSourceListener.LastEvent.Arguments.Values));
+                    Assert.Equal("Get", eventSourceListener.LastEvent.Arguments["Method"]);
+                    Assert.Equal("MyHost", eventSourceListener.LastEvent.Arguments["Host"]);
+                    Assert.Equal("MyPath", eventSourceListener.LastEvent.Arguments["Path"]);
+                    Assert.Equal("MyQuery", eventSourceListener.LastEvent.Arguments["QueryString"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                // Start a SQL command 
-                entityFrameworkCoreSource.Write("Microsoft.EntityFrameworkCore.BeforeExecuteCommand",
-                    new
-                    {
-                        Command = new
+                    // Start a SQL command 
+                    entityFrameworkCoreSource.Write("Microsoft.EntityFrameworkCore.BeforeExecuteCommand",
+                        new
                         {
-                            Connection = new
+                            Command = new
                             {
-                                DataSource = "MyDataSource",
-                                Database = "MyDatabase",
-                            },
-                            CommandText = "MyCommand"
-                        }
-                    });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("Activity2Start", eventSourceListener.LastEvent.EventSourceEventName);
-                Assert.Equal("Microsoft.EntityFrameworkCore", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("Microsoft.EntityFrameworkCore.BeforeExecuteCommand", eventSourceListener.LastEvent.EventName);
-                Assert.True(3 <= eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("MyDataSource", eventSourceListener.LastEvent.Arguments["DataSource"]);
-                Assert.Equal("MyDatabase", eventSourceListener.LastEvent.Arguments["Database"]);
-                Assert.Equal("MyCommand", eventSourceListener.LastEvent.Arguments["CommandText"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                                Connection = new
+                                {
+                                    DataSource = "MyDataSource",
+                                    Database = "MyDatabase",
+                                },
+                                CommandText = "MyCommand"
+                            }
+                        });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("Activity2Start", eventSourceListener.LastEvent.EventSourceEventName);
+                    Assert.Equal("Microsoft.EntityFrameworkCore", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("Microsoft.EntityFrameworkCore.BeforeExecuteCommand", eventSourceListener.LastEvent.EventName);
+                    Assert.True(3 <= eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("MyDataSource", eventSourceListener.LastEvent.Arguments["DataSource"]);
+                    Assert.Equal("MyDatabase", eventSourceListener.LastEvent.Arguments["Database"]);
+                    Assert.Equal("MyCommand", eventSourceListener.LastEvent.Arguments["CommandText"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                // Stop the SQL command 
-                entityFrameworkCoreSource.Write("Microsoft.EntityFrameworkCore.AfterExecuteCommand", null);
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("Activity2Stop", eventSourceListener.LastEvent.EventSourceEventName);
-                Assert.Equal("Microsoft.EntityFrameworkCore", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("Microsoft.EntityFrameworkCore.AfterExecuteCommand", eventSourceListener.LastEvent.EventName);
-                eventSourceListener.ResetEventCountAndLastEvent();
+                    // Stop the SQL command 
+                    entityFrameworkCoreSource.Write("Microsoft.EntityFrameworkCore.AfterExecuteCommand", null);
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("Activity2Stop", eventSourceListener.LastEvent.EventSourceEventName);
+                    Assert.Equal("Microsoft.EntityFrameworkCore", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("Microsoft.EntityFrameworkCore.AfterExecuteCommand", eventSourceListener.LastEvent.EventName);
+                    eventSourceListener.ResetEventCountAndLastEvent();
 
-                // Stop the ASP.NET request.  
-                aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.EndRequest", 
-                    new
-                    {
-                        httpContext = new
+                    // Stop the ASP.NET request.  
+                    aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.EndRequest",
+                        new
                         {
-                            Response = new
+                            httpContext = new
                             {
-                                StatusCode = "200"
-                            },
-                            TraceIdentifier = "MyTraceId"
-                        }
-                    });
-                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("Activity1Stop", eventSourceListener.LastEvent.EventSourceEventName);
-                Assert.Equal("Microsoft.AspNetCore", eventSourceListener.LastEvent.SourceName);
-                Assert.Equal("Microsoft.AspNetCore.Hosting.EndRequest", eventSourceListener.LastEvent.EventName);
-                Assert.True(2 <= eventSourceListener.LastEvent.Arguments.Count);
-                Assert.Equal("MyTraceId", eventSourceListener.LastEvent.Arguments["TraceIdentifier"]);
-                Assert.Equal("200", eventSourceListener.LastEvent.Arguments["StatusCode"]);
-                eventSourceListener.ResetEventCountAndLastEvent();
-            }
+                                Response = new
+                                {
+                                    StatusCode = "200"
+                                },
+                                TraceIdentifier = "MyTraceId"
+                            }
+                        });
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("Activity1Stop", eventSourceListener.LastEvent.EventSourceEventName);
+                    Assert.Equal("Microsoft.AspNetCore", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("Microsoft.AspNetCore.Hosting.EndRequest", eventSourceListener.LastEvent.EventName);
+                    Assert.True(2 <= eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("MyTraceId", eventSourceListener.LastEvent.Arguments["TraceIdentifier"]);
+                    Assert.Equal("200", eventSourceListener.LastEvent.Arguments["StatusCode"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
+        }
+
+        [OuterLoop("Runs for several seconds")]
+        [Fact]
+        public void Stress_WriteConcurrently_DoesntCrash()
+        {
+            const int StressTimeSeconds = 4;
+            RemoteInvoke(() =>
+            {
+                using (new TurnOnAllEventListener())
+                using (var source = new DiagnosticListener("testlistener"))
+                {
+                    var ce = new CountdownEvent(Environment.ProcessorCount * 2);
+                    for (int i = 0; i < ce.InitialCount; i++)
+                    {
+                        new Thread(() =>
+                        {
+                            DateTime end = DateTime.UtcNow.Add(TimeSpan.FromSeconds(StressTimeSeconds));
+                            while (DateTime.UtcNow < end)
+                            {
+                                source.Write("event1", Tuple.Create(1));
+                                source.Write("event2", Tuple.Create(1, 2));
+                                source.Write("event3", Tuple.Create(1, 2, 3));
+                                source.Write("event4", Tuple.Create(1, 2, 3, 4));
+                                source.Write("event5", Tuple.Create(1, 2, 3, 4, 5));
+                            }
+                            ce.Signal();
+                        })
+                        {  IsBackground = true }.Start();
+                    }
+                    ce.Wait();
+                }
+            }).Dispose();
         }
     }
 
@@ -644,7 +703,7 @@ namespace System.Diagnostics.Tests
     /// <summary>
     /// TestDiagnosticSourceEventListener installs a EventWritten callback that updates EventCount and LastEvent.  
     /// </summary>
-    class TestDiagnosticSourceEventListener : DiagnosticSourceEventListener
+    internal sealed class TestDiagnosticSourceEventListener : DiagnosticSourceEventListener
     {
         public TestDiagnosticSourceEventListener()
         {
@@ -697,7 +756,7 @@ namespace System.Diagnostics.Tests
     /// <summary>
     /// Represents a single DiagnosticSource event.  
     /// </summary>
-    class DiagnosticSourceEvent
+    internal sealed class DiagnosticSourceEvent
     {
         public string SourceName;
         public string EventName;
@@ -732,7 +791,7 @@ namespace System.Diagnostics.Tests
     /// callback.   Standard use is to create the class set up the events of interested and
     /// use 'Enable'.  .   
     /// </summary>
-    class DiagnosticSourceEventListener : EventListener
+    internal class DiagnosticSourceEventListener : EventListener
     {
         public DiagnosticSourceEventListener() { }
 
@@ -825,5 +884,11 @@ namespace System.Diagnostics.Tests
 
         EventSource _diagnosticSourceEventSource;
         #endregion
+    }
+
+    internal sealed class TurnOnAllEventListener : EventListener
+    {
+        protected override void OnEventSourceCreated(EventSource eventSource) => EnableEvents(eventSource, EventLevel.LogAlways);
+        protected override void OnEventWritten(EventWrittenEventArgs eventData) { }
     }
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
@@ -332,11 +333,17 @@ namespace System.Net
                         return; // Cannot age: reject new cookie
                     }
 
-                    // About to change the collection
+                    // About to change the collection.
                     lock (cookies)
                     {
                         m_count += cookies.InternalAdd(cookie, true);
                     }
+                }
+
+                // We don't want to cleanup m_domaintable/m_list too often. Add check to avoid overhead.
+                if (m_domainTable.Count > m_count || pathList.Count > m_maxCookiesPerDomain)
+                {
+                    DomainTableCleanup();
                 }
             }
             catch (OutOfMemoryException)
@@ -503,6 +510,52 @@ namespace System.Net
                 }
             }
             return true;
+        }
+
+        private void DomainTableCleanup()
+        {
+            var removePathList = new List<object>();
+            var removeDomainList = new List<string>();
+
+            string currentDomain;
+            PathList pathList;
+
+            lock (m_domainTable.SyncRoot)
+            {
+                // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                IDictionaryEnumerator enumerator = m_domainTable.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    currentDomain = (string)enumerator.Key;
+                    pathList = (PathList)enumerator.Value;
+
+                    lock (pathList.SyncRoot)
+                    {
+                        IDictionaryEnumerator e = pathList.GetEnumerator();
+                        while (e.MoveNext())
+                        {
+                            CookieCollection cc = (CookieCollection)e.Value;
+                            if (cc.Count == 0)
+                            {
+                                removePathList.Add(e.Key);
+                            }
+                        }
+
+                        foreach (var key in removePathList)
+                        {
+                            pathList.Remove(key);
+                        }
+
+                        removePathList.Clear();
+                        if (pathList.Count == 0) removeDomainList.Add(currentDomain);
+                    }
+                }
+
+                foreach (var key in removeDomainList)
+                {
+                    m_domainTable.Remove(key);
+                }
+            }
         }
 
         // Return number of cookies removed from the collection.
@@ -841,8 +894,7 @@ namespace System.Net
                     }
                 }
 
-                // Remove unused domain
-                // (This is the only place that does domain removal)
+                // Remove unused domain.
                 if (pathList.Count == 0)
                 {
                     lock (m_domainTable.SyncRoot)
@@ -1029,6 +1081,14 @@ namespace System.Net
             lock (SyncRoot)
             {
                 return m_list.GetEnumerator();
+            }
+        }
+
+        internal void Remove(object key)
+        {
+            lock (SyncRoot)
+            {
+                m_list.Remove(key);
             }
         }
 

@@ -4,27 +4,26 @@
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="InvalidAsynchronousStateExceptionTests.cs" />
-    <Compile Include="InvalidEnumArgumentExceptionTests.cs" />
-    <Compile Include="BrowsableAttributeTests.cs" />
-    <Compile Include="ComponentCollectionTests.cs" />
-    <Compile Include="ComponentTests.cs" />
-    <Compile Include="CategoryAttributeTests.cs" />
-    <Compile Include="ComponentModelPrimitivesBasicTests.cs" />
-    <Compile Include="DescriptionAttributeTests.cs" />
-    <Compile Include="DesignerCategoryAttributeTests.cs" />
-    <Compile Include="DesignerSerializationVisibilityAttributeTests.cs" />
-    <Compile Include="DesignOnlyAttributeTests.cs" />
-    <Compile Include="DisplayNameAttributeTests.cs" />
-    <Compile Include="ImmutableObjectAttributeTests.cs" />
-    <Compile Include="InitializationEventAttributeTests.cs" />
-    <Compile Include="LocalizableAttributeTests.cs" />
-    <Compile Include="MergablePropertyAttributeTests.cs" />
-    <Compile Include="MockISite.cs" />
-    <Compile Include="NotifyParentPropertyAttributeTests.cs" />
-    <Compile Include="ParenthesizePropertyNameAttributeTests.cs" />
-    <Compile Include="ReadOnlyAttributeTests.cs" />
-    <Compile Include="RefreshPropertiesAttributeTests.cs" />
-    <Compile Include="EventHandlerListTests.cs" />
+    <Compile Include="System\ComponentModel\BrowsableAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\CategoryAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\ComponentCollectionTests.cs" />
+    <Compile Include="System\ComponentModel\ComponentTests.cs" />
+    <Compile Include="System\ComponentModel\DescriptionAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DesignerCategoryAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DesignOnlyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DisplayNameAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\EventHandlerListTests.cs" />
+    <Compile Include="System\ComponentModel\ImmutableObjectAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\InitializationEventAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\InvalidAsynchronousStateExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\InvalidEnumArgumentExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\LocalizableAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\MergablePropertyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\MockISite.cs" />
+    <Compile Include="System\ComponentModel\NotifyParentPropertyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\ParenthesizePropertyNameAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\ReadOnlyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\RefreshPropertiesAttributeTests.cs" />
   </ItemGroup>
 </Project>

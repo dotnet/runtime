@@ -13,9 +13,7 @@ using System.Globalization;
 
 
 namespace System.Xml.Schema
-
 {
-    /// <include file='doc\Infer.uex' path='docs/doc[@for="Infer"]/*' />
     /// <summary>
     /// Infer class serves for infering XML Schema from given XML instance document.
     /// </summary>
@@ -131,16 +129,12 @@ namespace System.Xml.Schema
               }
           }*/
 
-        /// <include file='doc\Infer.uex' path='docs/doc[@for="InferenceOption"]/*' />
         public enum InferenceOption
         {
-            /// <include file='doc\Infer.uex' path='docs/doc[@for="InferenceOption.Restricted"]/*' />
             Restricted,
-            /// <include file='doc\Infer.uex' path='docs/doc[@for="InferenceOption.Relaxed"]/*' />
             Relaxed
         };
 
-        /// <include file='doc\Infer.uex' path='docs/doc[@for="Infer.Occurrence"]/*' />
         public InferenceOption Occurrence
         {
             set
@@ -153,7 +147,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\Infer.uex' path='docs/doc[@for="Infer.TypeInference"]/*' />
         public InferenceOption TypeInference
         {
             set
@@ -166,7 +159,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\Infer.uex' path='docs/doc[@for="Infer.Infer"]/*' />
         public XmlSchemaInference()
         {
             _nametable = new NameTable();
@@ -175,13 +167,11 @@ namespace System.Xml.Schema
             _schemaList = new ArrayList();
         }
 
-        /// <include file='doc\Infer.uex' path='docs/doc[@for="Infer.InferSchema"]/*' />
         public XmlSchemaSet InferSchema(XmlReader instanceDocument)
         {
             return InferSchema1(instanceDocument, new XmlSchemaSet(_nametable));
         }
 
-        /// <include file='doc\Infer.uex' path='docs/doc[@for="Infer.InferSchema1"]/*' />
         public XmlSchemaSet InferSchema(XmlReader instanceDocument, XmlSchemaSet schemas)
         {
             if (schemas == null)
@@ -190,6 +180,7 @@ namespace System.Xml.Schema
             }
             return InferSchema1(instanceDocument, schemas);
         }
+
         internal XmlSchemaSet InferSchema1(XmlReader instanceDocument, XmlSchemaSet schemas)
         {
             if (instanceDocument == null)
@@ -643,7 +634,7 @@ namespace System.Xml.Schema
         /// </summary>
         /// <param name="xse">XmlSchemaElement corresponding to the element just read by the xtr XmlTextReader</param>
         /// <param name="bCreatingNewType">true if the type is newly created, false if the type already existed and matches the current element name</param>
-        /// <param name="nsContext">namespaceURI of the parent element. Used to distinguish if ref= should be used when parent is in different ns than child.</param>
+        /// <param name="parentSchema">namespaceURI of the parent element. Used to distinguish if ref= should be used when parent is in different ns than child.</param>
         internal void InferElement(XmlSchemaElement xse, bool bCreatingNewType, XmlSchema parentSchema)
         {
             bool bEmptyElement = _xtr.IsEmptyElement;
@@ -1045,7 +1036,6 @@ namespace System.Xml.Schema
         /// <param name="xtr">text reader positioned to the current element</param>
         /// <param name="ct">complex type with Sequence or Choice Particle</param>
         /// <param name="lastUsedSeqItem">ordinal number in the sequence to indicate current sequence position</param>
-        /// <param name="itemsMadeOptional">hashtable of elements with minOccurs changed to 0 in order to satisfy sequence requirements. These elements will be rolled back if Sequence becomes Sequence of Choice.</param>
         /// <param name="bParticleChanged">This indicates to the caller if Sequence was changed to Choice</param>
         internal XmlSchemaElement FindMatchingElement(bool bCreatingNewType, XmlReader xtr, XmlSchemaComplexType ct, ref int lastUsedSeqItem, ref bool bParticleChanged, XmlSchema parentSchema, bool setMaxoccurs)
         {

@@ -89,7 +89,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LookupAccountSid.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs</Link>
     </Compile>
   </ItemGroup>
@@ -100,7 +100,6 @@
     <Reference Include="System.IO.FileSystem.AccessControl" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Security.AccessControl" />
-    <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">

@@ -21,9 +21,26 @@ namespace System.IO.Pipes
 
             SafePipeHandle serverHandle, clientHandle;
             if (direction == PipeDirection.In)
-                CreateAnonymousPipe(inheritability, reader: out serverHandle, writer: out clientHandle);
+            {
+                CreateAnonymousPipe(reader: out serverHandle, writer: out clientHandle);
+            }
             else
-                CreateAnonymousPipe(inheritability, reader: out clientHandle, writer: out serverHandle);
+            {
+                CreateAnonymousPipe(reader: out clientHandle, writer: out serverHandle);
+            }
+
+            // We always create pipes with both file descriptors being O_CLOEXEC.
+            // If inheritability is requested, we clear the O_CLOEXEC flag
+            // from the child descriptor so that it can be passed to a child process.
+            // We assume that the HandleInheritability only applies to the child fd,
+            // as if we allowed the server fd to be inherited, then when this process
+            // closes its end of the pipe, the client won't receive an EOF or broken
+            // pipe notification, as the child will still have open its dup of the fd.
+            if (inheritability == HandleInheritability.Inheritable &&
+                Interop.Sys.Fcntl.SetFD(clientHandle, 0) == -1)
+            {
+                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+            }
 
             // Configure the pipe.  For buffer size, the size applies to the pipe, rather than to 
             // just one end's file descriptor, so we only need to do this with one of the handles.

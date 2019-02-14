@@ -5,23 +5,23 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>
-    ///       Specifies identifiers that indicate the nature of
-    ///       the refresh, for use in refreshing the design time view.
-    ///    </para>
+    /// Specifies identifiers that indicate the nature of the refresh, for use
+    /// in refreshing the design time view.
     /// </summary>
     public enum RefreshProperties
     {
         /// <summary>
-        ///    <para>Indicates to use the no refresh mode.</para>
+        /// Indicates to use the no refresh mode.
         /// </summary>
         None,
+
         /// <summary>
-        ///    <para>Indicates to use the refresh all refresh mode.</para>
+        /// Indicates to use the refresh all refresh mode.
         /// </summary>
         All,
+
         /// <summary>
-        ///    <para>Indicates to use the repaint refresh mode.</para>
+        /// Indicates to use the repaint refresh mode.
         /// </summary>
         Repaint,
     }

@@ -7,9 +7,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
     </Compile>
-    <Compile Include="DataCommon\CheckConnStrSetupFactAttribute.cs" />
     <Compile Include="SQL\AdapterTest\AdapterTest.cs" />
     <Compile Include="SQL\AsyncTest\BeginExecAsyncTest.cs" />
+    <Compile Include="SQL\AsyncTest\BeginExecReaderAsyncTest.cs" />
     <Compile Include="SQL\AsyncTest\XmlReaderAsyncTest.cs" />
     <Compile Include="SQL\Common\AsyncDebugScope.cs" />
     <Compile Include="SQL\Common\ConnectionPoolWrapper.cs" />

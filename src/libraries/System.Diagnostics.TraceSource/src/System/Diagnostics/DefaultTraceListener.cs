@@ -116,7 +116,7 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>
-        ///       Writes the output using <see cref="System.Diagnostics.Debug.Write"/>.
+        ///       Writes the output using <see cref="System.Diagnostics.Debug.Write(string)"/>.
         ///    </para>
         /// </devdoc>
         public override void Write(string message)
@@ -126,7 +126,7 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>
-        ///       Writes the output followed by a line terminator using <see cref="System.Diagnostics.Debug.Write"/>.
+        ///       Writes the output followed by a line terminator using <see cref="System.Diagnostics.Debug.Write(string)"/>.
         ///    </para>
         /// </devdoc>
         public override void WriteLine(string message)

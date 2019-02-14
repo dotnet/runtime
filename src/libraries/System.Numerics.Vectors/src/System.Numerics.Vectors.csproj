@@ -12,7 +12,7 @@
   </PropertyGroup>
   <!-- Shared -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\IntrinsicAttribute.cs">

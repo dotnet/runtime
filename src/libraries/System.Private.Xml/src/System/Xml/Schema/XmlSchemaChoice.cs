@@ -7,18 +7,10 @@ namespace System.Xml.Schema
     using System.Collections;
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaChoice.uex' path='docs/doc[@for="XmlSchemaChoice"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaChoice : XmlSchemaGroupBase
     {
         private XmlSchemaObjectCollection _items = new XmlSchemaObjectCollection();
 
-        /// <include file='doc\XmlSchemaChoice.uex' path='docs/doc[@for="XmlSchemaChoice.Items"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("element", typeof(XmlSchemaElement)),
          XmlElement("group", typeof(XmlSchemaGroupRef)),
          XmlElement("choice", typeof(XmlSchemaChoice)),

@@ -23,8 +23,6 @@ namespace System.Collections.Specialized.Tests
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
 
-        protected override Type ICollection_NonGeneric_SyncRootType => typeof(HybridDictionary);
-
         protected override object CreateTKey(int seed)
         {
             int stringLength = seed % 10 + 5;

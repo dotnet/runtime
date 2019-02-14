@@ -118,7 +118,9 @@ namespace System.Numerics
                 if (coreLength < AllocationThreshold)
                 {
                     uint* fold = stackalloc uint[foldLength];
+                    new Span<uint>(fold, foldLength).Clear();
                     uint* core = stackalloc uint[coreLength];
+                    new Span<uint>(core, coreLength).Clear();
 
                     // ... compute z_a = a_1 + a_0 (call it fold...)
                     Add(valueHigh, valueHighLength,
@@ -299,8 +301,11 @@ namespace System.Numerics
                 if (coreLength < AllocationThreshold)
                 {
                     uint* leftFold = stackalloc uint[leftFoldLength];
+                    new Span<uint>(leftFold, leftFoldLength).Clear();
                     uint* rightFold = stackalloc uint[rightFoldLength];
+                    new Span<uint>(rightFold, rightFoldLength).Clear();
                     uint* core = stackalloc uint[coreLength];
+                    new Span<uint>(core, coreLength).Clear();
 
                     // ... compute z_a = a_1 + a_0 (call it fold...)
                     Add(leftHigh, leftHighLength,

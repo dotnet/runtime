@@ -225,7 +225,7 @@ internal static partial class Interop
                     throw new Win32Exception(SR.CantGetAllPids);
                 }
 
-                Span<kinfo_proc>  list = new Span<kinfo_proc>(entries, numProcesses);
+                var list = new ReadOnlySpan<kinfo_proc>(entries, numProcesses);
                 pids = new int[numProcesses];
                 idx = 0;
                 // walk through process list and skip kernel threads
@@ -357,7 +357,7 @@ internal static partial class Interop
                     throw new ArgumentOutOfRangeException(nameof(pid));
                 }
 
-                Span<kinfo_proc> process = new Span<kinfo_proc>(kinfo, count);
+                var process = new ReadOnlySpan<kinfo_proc>(kinfo, count);
 
                 // Get the process information for the specified pid
                 info = new ProcessInfo();
@@ -391,7 +391,6 @@ internal static partial class Interop
         /// <summary>
         /// Gets the process information for a given process
         /// </summary>
-        // 
         /// <param name="pid">The PID (process ID) of the process</param>
         /// <param name="tid">The TID (thread ID) of the process</param>
         /// <returns>
@@ -418,7 +417,7 @@ internal static partial class Interop
                     }
                     else
                     {
-                        Span<kinfo_proc> list = new Span<kinfo_proc>(info, count);
+                        var list = new ReadOnlySpan<kinfo_proc>(info, count);
                         for(int i = 0; i < list.Length; i++)
                         {
                             if (list[i].ki_tid == tid)

@@ -13,7 +13,6 @@ namespace System.Threading.Tasks
 {
     /// <summary>Provides a bridge between IAsyncOperation* and Task.</summary>
     /// <typeparam name="TResult">Specifies the type of the result of the asynchronous operation.</typeparam>
-    /// <typeparam name="TProgress">Specifies the type of progress notification data.</typeparam>
     internal sealed class AsyncInfoToTaskBridge<TResult> : TaskCompletionSource<TResult>
     {
         /// <summary>The CancellationToken associated with this operation.</summary>
@@ -42,7 +41,6 @@ namespace System.Threading.Tasks
 
         /// <summary>Registers the async operation for cancellation.</summary>
         /// <param name="asyncInfo">The asynchronous operation.</param>
-        /// <param name="cancellationToken">The token used to request cancellation of the asynchronous operation.</param>
         internal void RegisterForCancellation(IAsyncInfo asyncInfo)
         {
             Debug.Assert(asyncInfo != null);
@@ -89,6 +87,7 @@ namespace System.Threading.Tasks
 
 
         /// <summary>Bridge to Completed handler on IAsyncActionWithProgress{TProgress}.</summary>
+        /// <typeparam name="TProgress">Specifies the type of progress notification data.</typeparam>
         internal void CompleteFromAsyncActionWithProgress<TProgress>(IAsyncActionWithProgress<TProgress> asyncInfo, AsyncStatus asyncStatus)
         {
             Complete(asyncInfo, null, asyncStatus);
@@ -103,6 +102,7 @@ namespace System.Threading.Tasks
 
 
         /// <summary>Bridge to Completed handler on IAsyncOperationWithProgress{TResult,TProgress}.</summary>
+        /// <typeparam name="TProgress">Specifies the type of progress notification data.</typeparam>
         internal void CompleteFromAsyncOperationWithProgress<TProgress>(IAsyncOperationWithProgress<TResult, TProgress> asyncInfo, AsyncStatus asyncStatus)
         {
             // delegate cached by compiler:

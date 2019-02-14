@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Buffers;
 using System.Data.Common;
 using System.Data.Sql;
 using System.Data.SqlTypes;
@@ -434,7 +435,8 @@ namespace System.Data.SqlClient
                 // Cache physical stateObj and connection.
                 _pMarsPhysicalConObj = _physicalStateObj;
 
-                if (TdsParserStateObjectFactory.UseManagedSNI) _pMarsPhysicalConObj.IncrementPendingCallbacks();
+                if (TdsParserStateObjectFactory.UseManagedSNI)
+                    _pMarsPhysicalConObj.IncrementPendingCallbacks();
 
                 uint info = 0;
                 uint error = _pMarsPhysicalConObj.EnableMars(ref info);
@@ -612,16 +614,13 @@ namespace System.Data.SqlClient
                         break;
 
                     case (int)PreLoginOptions.TRACEID:
-                        byte[] connectionIdBytes = _connHandler._clientConnectionId.ToByteArray();
-                        Debug.Assert(GUID_SIZE == connectionIdBytes.Length);
-                        Buffer.BlockCopy(connectionIdBytes, 0, payload, payloadLength, GUID_SIZE);
+                        FillGuidBytes(_connHandler._clientConnectionId, payload.AsSpan(payloadLength, GUID_SIZE));
                         payloadLength += GUID_SIZE;
                         offset += GUID_SIZE;
                         optionDataSize = GUID_SIZE;
 
                         ActivityCorrelator.ActivityId actId = ActivityCorrelator.Next();
-                        connectionIdBytes = actId.Id.ToByteArray();
-                        Buffer.BlockCopy(connectionIdBytes, 0, payload, payloadLength, GUID_SIZE);
+                        FillGuidBytes(actId.Id, payload.AsSpan(payloadLength, GUID_SIZE));
                         payloadLength += GUID_SIZE;
                         payload[payloadLength++] = (byte)(0x000000ff & actId.Sequence);
                         payload[payloadLength++] = (byte)((0x0000ff00 & actId.Sequence) >> 8);
@@ -665,7 +664,8 @@ namespace System.Data.SqlClient
             bool isYukonOrLater = false;
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
             bool result = _physicalStateObj.TryReadNetworkPacket();
-            if (!result) { throw SQL.SynchronousCallMayNotPend(); }
+            if (!result)
+            { throw SQL.SynchronousCallMayNotPend(); }
 
             if (_physicalStateObj._inBytesRead == 0)
             {
@@ -675,7 +675,8 @@ namespace System.Data.SqlClient
                 ThrowExceptionAndWarning(_physicalStateObj);
             }
 
-            if (!_physicalStateObj.TryProcessHeader()) { throw SQL.SynchronousCallMayNotPend(); }
+            if (!_physicalStateObj.TryProcessHeader())
+            { throw SQL.SynchronousCallMayNotPend(); }
 
             if (_physicalStateObj._inBytesPacket > TdsEnums.MAX_PACKET_SIZE || _physicalStateObj._inBytesPacket <= 0)
             {
@@ -685,7 +686,8 @@ namespace System.Data.SqlClient
 
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
             result = _physicalStateObj.TryReadByteArray(payload, payload.Length);
-            if (!result) { throw SQL.SynchronousCallMayNotPend(); }
+            if (!result)
+            { throw SQL.SynchronousCallMayNotPend(); }
 
             if (payload[0] == 0xaa)
             {
@@ -973,6 +975,12 @@ namespace System.Data.SqlClient
                     _pMarsPhysicalConObj = null;
                 }
             }
+
+            _resetConnectionEvent?.Dispose();
+            _resetConnectionEvent = null;
+
+            _defaultEncoding = null;
+            _defaultCollation = null;
         }
 
         // Fires a single InfoMessageEvent
@@ -1419,9 +1427,9 @@ namespace System.Data.SqlClient
         //
         internal void WriteFloat(float v, TdsParserStateObject stateObj)
         {
-            byte[] bytes = BitConverter.GetBytes(v);
-
-            stateObj.WriteByteArray(bytes, bytes.Length, 0);
+            Span<byte> bytes = stackalloc byte[sizeof(float)];
+            FillFloatBytes(v, bytes);
+            stateObj.WriteByteSpan(bytes);
         }
 
         //
@@ -1493,9 +1501,10 @@ namespace System.Data.SqlClient
         //
         internal void WriteDouble(double v, TdsParserStateObject stateObj)
         {
-            byte[] bytes = BitConverter.GetBytes(v);
+            Span<byte> bytes = stackalloc byte[sizeof(double)];
+            FillDoubleBytes(v, bytes);
+            stateObj.WriteByteSpan(bytes);
 
-            stateObj.WriteByteArray(bytes, bytes.Length, 0);
         }
 
         internal void PrepareResetConnection(bool preserveTransaction)
@@ -2813,7 +2822,8 @@ namespace System.Data.SqlClient
                         sdata._deltaDirty = true;
                         if (!recoverable)
                         {
-                            checked { sdata._unrecoverableStatesCount++; }
+                            checked
+                            { sdata._unrecoverableStatesCount++; }
                         }
                     }
                     else
@@ -2832,7 +2842,8 @@ namespace System.Data.SqlClient
                                 }
                                 else
                                 {
-                                    checked { sdata._unrecoverableStatesCount++; }
+                                    checked
+                                    { sdata._unrecoverableStatesCount++; }
                                 }
                                 sv._recoverable = recoverable;
                             }
@@ -2903,15 +2914,18 @@ namespace System.Data.SqlClient
             switch (majorMinor)
             {
                 case TdsEnums.YUKON_MAJOR << 24 | TdsEnums.YUKON_RTM_MINOR:     // Yukon
-                    if (increment != TdsEnums.YUKON_INCREMENT) { throw SQL.InvalidTDSVersion(); }
+                    if (increment != TdsEnums.YUKON_INCREMENT)
+                    { throw SQL.InvalidTDSVersion(); }
                     _isYukon = true;
                     break;
                 case TdsEnums.KATMAI_MAJOR << 24 | TdsEnums.KATMAI_MINOR:
-                    if (increment != TdsEnums.KATMAI_INCREMENT) { throw SQL.InvalidTDSVersion(); }
+                    if (increment != TdsEnums.KATMAI_INCREMENT)
+                    { throw SQL.InvalidTDSVersion(); }
                     _isKatmai = true;
                     break;
                 case TdsEnums.DENALI_MAJOR << 24 | TdsEnums.DENALI_MINOR:
-                    if (increment != TdsEnums.DENALI_INCREMENT) { throw SQL.InvalidTDSVersion(); }
+                    if (increment != TdsEnums.DENALI_INCREMENT)
+                    { throw SQL.InvalidTDSVersion(); }
                     _isDenali = true;
                     break;
                 default:
@@ -3165,7 +3179,7 @@ namespace System.Data.SqlClient
             // always use the nullable type for parameters if Shiloh or later
             // Sphinx sometimes sends fixed length return values
             rec.tdsType = rec.metaType.NullableType;
-            rec.isNullable = true;
+            rec.IsNullable = true;
             if (tdsLen == TdsEnums.SQL_USHORTVARMAXLEN)
             {
                 rec.metaType = MetaType.GetMaxMetaTypeFromMetaType(rec.metaType);
@@ -3214,9 +3228,13 @@ namespace System.Data.SqlClient
                     {
                         return false;
                     }
+                    if (rec.xmlSchemaCollection is null)
+                    {
+                        rec.xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
+                    }
                     if (len != 0)
                     {
-                        if (!stateObj.TryReadString(len, out rec.xmlSchemaCollectionDatabase))
+                        if (!stateObj.TryReadString(len, out rec.xmlSchemaCollection.Database))
                         {
                             return false;
                         }
@@ -3228,7 +3246,7 @@ namespace System.Data.SqlClient
                     }
                     if (len != 0)
                     {
-                        if (!stateObj.TryReadString(len, out rec.xmlSchemaCollectionOwningSchema))
+                        if (!stateObj.TryReadString(len, out rec.xmlSchemaCollection.OwningSchema))
                         {
                             return false;
                         }
@@ -3242,7 +3260,7 @@ namespace System.Data.SqlClient
 
                     if (slen != 0)
                     {
-                        if (!stateObj.TryReadString(slen, out rec.xmlSchemaCollectionName))
+                        if (!stateObj.TryReadString(slen, out rec.xmlSchemaCollection.Name))
                         {
                             return false;
                         }
@@ -3615,9 +3633,9 @@ namespace System.Data.SqlClient
                 return false;
             }
 
-            col.updatability = (byte)((flags & TdsEnums.Updatability) >> 2);
-            col.isNullable = (TdsEnums.Nullable == (flags & TdsEnums.Nullable));
-            col.isIdentity = (TdsEnums.Identity == (flags & TdsEnums.Identity));
+            col.Updatability = (byte)((flags & TdsEnums.Updatability) >> 2);
+            col.IsNullable = (TdsEnums.Nullable == (flags & TdsEnums.Nullable));
+            col.IsIdentity = (TdsEnums.Identity == (flags & TdsEnums.Identity));
 
             // read second byte of column metadata flags
             if (!stateObj.TryReadByte(out flags))
@@ -3625,7 +3643,7 @@ namespace System.Data.SqlClient
                 return false;
             }
 
-            col.isColumnSet = (TdsEnums.IsColumnSet == (flags & TdsEnums.IsColumnSet));
+            col.IsColumnSet = (TdsEnums.IsColumnSet == (flags & TdsEnums.IsColumnSet));
 
             byte tdsType;
             if (!stateObj.TryReadByte(out tdsType))
@@ -3652,7 +3670,7 @@ namespace System.Data.SqlClient
             col.metaType = MetaType.GetSqlDataType(tdsType, userType, col.length);
             col.type = col.metaType.SqlDbType;
 
-            col.tdsType = (col.isNullable ? col.metaType.NullableType : col.metaType.TDSType);
+            col.tdsType = (col.IsNullable ? col.metaType.NullableType : col.metaType.TDSType);
 
             {
                 if (TdsEnums.SQLUDT == tdsType)
@@ -3688,9 +3706,13 @@ namespace System.Data.SqlClient
                             {
                                 return false;
                             }
+                            if (col.xmlSchemaCollection is null)
+                            {
+                                col.xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
+                            }
                             if (byteLen != 0)
                             {
-                                if (!stateObj.TryReadString(byteLen, out col.xmlSchemaCollectionDatabase))
+                                if (!stateObj.TryReadString(byteLen, out col.xmlSchemaCollection.Database))
                                 {
                                     return false;
                                 }
@@ -3702,7 +3724,7 @@ namespace System.Data.SqlClient
                             }
                             if (byteLen != 0)
                             {
-                                if (!stateObj.TryReadString(byteLen, out col.xmlSchemaCollectionOwningSchema))
+                                if (!stateObj.TryReadString(byteLen, out col.xmlSchemaCollection.OwningSchema))
                                 {
                                     return false;
                                 }
@@ -3715,7 +3737,7 @@ namespace System.Data.SqlClient
                             }
                             if (byteLen != 0)
                             {
-                                if (!stateObj.TryReadString(shortLen, out col.xmlSchemaCollectionName))
+                                if (!stateObj.TryReadString(shortLen, out col.xmlSchemaCollection.Name))
                                 {
                                     return false;
                                 }
@@ -4000,13 +4022,13 @@ namespace System.Data.SqlClient
                     return false;
                 }
 
-                col.isDifferentName = (TdsEnums.SQLDifferentName == (status & TdsEnums.SQLDifferentName));
-                col.isExpression = (TdsEnums.SQLExpression == (status & TdsEnums.SQLExpression));
-                col.isKey = (TdsEnums.SQLKey == (status & TdsEnums.SQLKey));
-                col.isHidden = (TdsEnums.SQLHidden == (status & TdsEnums.SQLHidden));
+                col.IsDifferentName = (TdsEnums.SQLDifferentName == (status & TdsEnums.SQLDifferentName));
+                col.IsExpression = (TdsEnums.SQLExpression == (status & TdsEnums.SQLExpression));
+                col.IsKey = (TdsEnums.SQLKey == (status & TdsEnums.SQLKey));
+                col.IsHidden = (TdsEnums.SQLHidden == (status & TdsEnums.SQLHidden));
 
                 // read off the base table name if it is different than the select list column name
-                if (col.isDifferentName)
+                if (col.IsDifferentName)
                 {
                     byte len;
                     if (!stateObj.TryReadByte(out len))
@@ -4028,9 +4050,9 @@ namespace System.Data.SqlClient
                 }
 
                 // Expressions are readonly
-                if (col.isExpression)
+                if (col.IsExpression)
                 {
-                    col.updatability = 0;
+                    col.Updatability = 0;
                 }
             }
 
@@ -5119,10 +5141,10 @@ namespace System.Data.SqlClient
                 case TdsEnums.SQLUNIQUEID:
                     {
                         System.Guid guid = (System.Guid)value;
-                        byte[] b = guid.ToByteArray();
-
+                        Span<byte> b = stackalloc byte[16];
+                        TdsParser.FillGuidBytes(guid, b);
                         Debug.Assert((length == b.Length) && (length == 16), "Invalid length for guid type in com+ object");
-                        stateObj.WriteByteArray(b, length, 0);
+                        stateObj.WriteByteSpan(b);
                         break;
                     }
 
@@ -5276,12 +5298,14 @@ namespace System.Data.SqlClient
                 case TdsEnums.SQLUNIQUEID:
                     {
                         System.Guid guid = (System.Guid)value;
-                        byte[] b = guid.ToByteArray();
 
+                        Span<byte> b = stackalloc byte[16];
+                        FillGuidBytes(guid, b);
                         length = b.Length;
                         Debug.Assert(length == 16, "Invalid length for guid type in com+ object");
                         WriteSqlVariantHeader(18, metatype.TDSType, metatype.PropBytes, stateObj);
-                        stateObj.WriteByteArray(b, length, 0);
+                        stateObj.WriteByteSpan(b);
+
                         break;
                     }
 
@@ -6193,6 +6217,7 @@ namespace System.Data.SqlClient
             }
 
             // allocate memory for SSPI variables
+            byte[] rentedSSPIBuff = null;
             byte[] outSSPIBuff = null;
             uint outSSPILength = 0;
 
@@ -6210,7 +6235,8 @@ namespace System.Data.SqlClient
                 if (rec.useSSPI)
                 {
                     // now allocate proper length of buffer, and set length
-                    outSSPIBuff = new byte[s_maxSSPILength];
+                    rentedSSPIBuff = ArrayPool<byte>.Shared.Rent((int)s_maxSSPILength);
+                    outSSPIBuff = rentedSSPIBuff;
                     outSSPILength = s_maxSSPILength;
 
                     // Call helper function for SSPI data and actual length.
@@ -6518,6 +6544,11 @@ namespace System.Data.SqlClient
                 throw;
             }
 
+            if (rentedSSPIBuff != null)
+            {
+                ArrayPool<byte>.Shared.Return(rentedSSPIBuff, clearArray: true);
+            }
+
             _physicalStateObj.WritePacket(TdsEnums.HARDFLUSH);
             _physicalStateObj.ResetSecurePasswordsInformation();
             _physicalStateObj._pendingData = true;
@@ -6569,10 +6600,12 @@ namespace System.Data.SqlClient
             // read SSPI data received from server
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
             bool result = _physicalStateObj.TryReadByteArray(receivedBuff, receivedLength);
-            if (!result) { throw SQL.SynchronousCallMayNotPend(); }
+            if (!result)
+            { throw SQL.SynchronousCallMayNotPend(); }
 
             // allocate send buffer and initialize length
-            byte[] sendBuff = new byte[s_maxSSPILength];
+            byte[] rentedSendBuff = ArrayPool<byte>.Shared.Rent((int)s_maxSSPILength);
+            byte[] sendBuff = rentedSendBuff;
             uint sendLength = s_maxSSPILength;
 
             // make call for SSPI data
@@ -6581,6 +6614,8 @@ namespace System.Data.SqlClient
 
             // DO NOT SEND LENGTH - TDS DOC INCORRECT!  JUST SEND SSPI DATA!
             _physicalStateObj.WriteByteArray(sendBuff, (int)sendLength, 0);
+
+            ArrayPool<byte>.Shared.Return(rentedSendBuff, clearArray: true);
 
             // set message type so server knows its a SSPI response
             _physicalStateObj._outputMessageType = TdsEnums.MT_SSPI;
@@ -7643,7 +7678,6 @@ namespace System.Data.SqlClient
                         startRpc,
                         startParam
                       ),
-                connectionToDoom: _connHandler,
                 onFailure: exc => TdsExecuteRPC_OnFailure(exc, stateObj)
             );
         }
@@ -8154,9 +8188,9 @@ namespace System.Data.SqlClient
 
                     ushort flags;
 
-                    flags = (ushort)(md.updatability << 2);
-                    flags |= (ushort)(md.isNullable ? (ushort)TdsEnums.Nullable : (ushort)0);
-                    flags |= (ushort)(md.isIdentity ? (ushort)TdsEnums.Identity : (ushort)0);
+                    flags = (ushort)(md.Updatability << 2);
+                    flags |= (ushort)(md.IsNullable ? (ushort)TdsEnums.Nullable : (ushort)0);
+                    flags |= (ushort)(md.IsIdentity ? (ushort)TdsEnums.Identity : (ushort)0);
 
                     WriteShort(flags, stateObj);      // write the flags
 
@@ -8675,9 +8709,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    return AsyncHelper.CreateContinuationTask<int, TdsParserStateObject>(unterminatedWriteTask,
-                        WriteInt, 0, stateObj,
-                        connectionToDoom: _connHandler);
+                    return AsyncHelper.CreateContinuationTask<int, TdsParserStateObject>(unterminatedWriteTask, WriteInt, 0, stateObj);
                 }
             }
             else
@@ -8738,10 +8770,18 @@ namespace System.Data.SqlClient
 
                 case TdsEnums.SQLUNIQUEID:
                     {
-                        byte[] b = ((SqlGuid)value).ToByteArray();
-
-                        Debug.Assert((actualLength == b.Length) && (actualLength == 16), "Invalid length for guid type in com+ object");
-                        stateObj.WriteByteArray(b, actualLength, 0);
+                        Debug.Assert(actualLength == 16, "Invalid length for guid type in com+ object");
+                        Span<byte> b = stackalloc byte[16];
+                        SqlGuid sqlGuid = (SqlGuid)value;
+                        if (sqlGuid.IsNull)
+                        {
+                            b.Clear(); // this is needed because initlocals may be supressed in framework assemblies meaning the memory is not automaticaly zeroed 
+                        }
+                        else
+                        {
+                            FillGuidBytes(sqlGuid.Value, b);
+                        }
+                        stateObj.WriteByteSpan(b);
                         break;
                     }
 
@@ -9366,11 +9406,11 @@ namespace System.Data.SqlClient
 
                 case TdsEnums.SQLUNIQUEID:
                     {
-                        System.Guid guid = (System.Guid)value;
-                        byte[] b = guid.ToByteArray();
+                        Debug.Assert(actualLength == 16, "Invalid length for guid type in com+ object");
+                        Span<byte> b = stackalloc byte[16];                        
+                        FillGuidBytes((System.Guid)value, b);
+                        stateObj.WriteByteSpan(b);
 
-                        Debug.Assert((actualLength == b.Length) && (actualLength == 16), "Invalid length for guid type in com+ object");
-                        stateObj.WriteByteArray(b, actualLength, 0);
                         break;
                     }
 
@@ -9659,7 +9699,8 @@ namespace System.Data.SqlClient
             int charsRead;
             Debug.Assert(stateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
             bool result = TryReadPlpUnicodeChars(ref buff, offst, len, stateObj, out charsRead);
-            if (!result) { throw SQL.SynchronousCallMayNotPend(); }
+            if (!result)
+            { throw SQL.SynchronousCallMayNotPend(); }
             return charsRead;
         }
 
@@ -9853,7 +9894,8 @@ namespace System.Data.SqlClient
             ulong skipped;
             Debug.Assert(stateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
             bool result = TrySkipPlpValue(cb, stateObj, out skipped);
-            if (!result) { throw SQL.SynchronousCallMayNotPend(); }
+            if (!result)
+            { throw SQL.SynchronousCallMayNotPend(); }
             return skipped;
         }
 
@@ -9952,9 +9994,14 @@ namespace System.Data.SqlClient
             {
                 return false;
             }
+            if (metaData.udt is null)
+            {
+                metaData.udt = new SqlMetaDataUdt();
+            }
+
             if (byteLength != 0)
             {
-                if (!stateObj.TryReadString(byteLength, out metaData.udtDatabaseName))
+                if (!stateObj.TryReadString(byteLength, out metaData.udt.DatabaseName))
                 {
                     return false;
                 }
@@ -9967,7 +10014,7 @@ namespace System.Data.SqlClient
             }
             if (byteLength != 0)
             {
-                if (!stateObj.TryReadString(byteLength, out metaData.udtSchemaName))
+                if (!stateObj.TryReadString(byteLength, out metaData.udt.SchemaName))
                 {
                     return false;
                 }
@@ -9980,7 +10027,7 @@ namespace System.Data.SqlClient
             }
             if (byteLength != 0)
             {
-                if (!stateObj.TryReadString(byteLength, out metaData.udtTypeName))
+                if (!stateObj.TryReadString(byteLength, out metaData.udt.TypeName))
                 {
                     return false;
                 }
@@ -9992,7 +10039,7 @@ namespace System.Data.SqlClient
             }
             if (shortLength != 0)
             {
-                if (!stateObj.TryReadString(shortLength, out metaData.udtAssemblyQualifiedName))
+                if (!stateObj.TryReadString(shortLength, out metaData.udt.AssemblyQualifiedName))
                 {
                     return false;
                 }

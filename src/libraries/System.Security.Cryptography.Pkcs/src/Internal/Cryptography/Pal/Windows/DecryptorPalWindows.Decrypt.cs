@@ -43,6 +43,7 @@ namespace Internal.Cryptography.Pal.Windows
                     key,
                     recipientInfo.EncryptedKey,
                     recipientInfo.KeyEncryptionAlgorithm.Oid.Value,
+                    recipientInfo.KeyEncryptionAlgorithm.Parameters,
                     out exception);
 
                 // Pin CEK to prevent it from getting copied during heap compaction.

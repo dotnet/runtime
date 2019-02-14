@@ -3,6 +3,7 @@
     <AssemblyName>System.Net.Ping</AssemblyName>
     <ProjectGuid>{85FD05E8-A4B1-4B89-ABED-33AFD200CABD}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
@@ -74,6 +75,9 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\CoreLib\Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.ReadLink.cs">
+      <Link>Common\CoreLib\Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Socket.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Socket.cs</Link>
     </Compile>
@@ -108,23 +112,23 @@
     <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.ICMP.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.ICMP.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalAlloc.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.LocalAlloc.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalAlloc.Constants.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.LocalAlloc.Constants.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalFree.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.LocalFree.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalFree.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalFree.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.closesocket.cs">
-      <Link>Common\Interop\Windows\Winsock\Interop.closesocket.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.closesocket.cs">
+      <Link>Common\Interop\Windows\WinSock\Interop.closesocket.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.cs">
-      <Link>Common\Interop\Windows\Winsock\Interop.WSASocketW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSASocketW.cs">
+      <Link>Common\Interop\Windows\WinSock\Interop.WSASocketW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs">
-      <Link>Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs">
+      <Link>Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs</Link>
     </Compile>
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
@@ -150,6 +154,7 @@
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />

@@ -4,35 +4,115 @@
     <AssemblyName>System.Text.Json</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <!-- For the inbox library (that is shipping with the product), this should always be true. -->
+    <!-- BUILDING_INBOX_LIBRARY is only false when building for netstandard to validate that the sources are netstandard compatible. -->
+    <!-- This is meant to help with producing a source package and not to ship a netstandard compatible binary. -->
+    <DefineConstants Condition="'$(TargetGroup)' != 'netstandard'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Json\BitStack.cs" />
-    <Compile Include="System\Text\Json\ConsumeNumberResult.cs" />
-    <Compile Include="System\Text\Json\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\JsonCommentHandling.cs" />
     <Compile Include="System\Text\Json\JsonConstants.cs" />
-    <Compile Include="System\Text\Json\JsonReaderException.cs" />
-    <Compile Include="System\Text\Json\JsonReaderHelper.cs" />
-    <Compile Include="System\Text\Json\JsonReaderOptions.cs" />
-    <Compile Include="System\Text\Json\JsonReaderState.cs" />
+    <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
-    <Compile Include="System\Text\Json\Utf8JsonReader.cs" />
-    <Compile Include="System\Text\Json\Utf8JsonReader.MultiSegment.cs" />
-    <Compile Include="System\Text\Json\Utf8JsonReader.TryGet.cs" />
+    <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
+    <Compile Include="System\Text\Json\Document\JsonDocument.DbRow.cs" />
+    <Compile Include="System\Text\Json\Document\JsonDocument.MetadataDb.cs" />
+    <Compile Include="System\Text\Json\Document\JsonDocument.Parse.cs" />
+    <Compile Include="System\Text\Json\Document\JsonDocument.StackRow.cs" />
+    <Compile Include="System\Text\Json\Document\JsonDocument.StackRowStack.cs" />
+    <Compile Include="System\Text\Json\Document\JsonDocument.TryGetProperty.cs" />
+    <Compile Include="System\Text\Json\Document\JsonElement.cs" />
+    <Compile Include="System\Text\Json\Document\JsonElement.ArrayEnumerator.cs" />
+    <Compile Include="System\Text\Json\Document\JsonElement.ObjectEnumerator.cs" />
+    <Compile Include="System\Text\Json\Document\JsonProperty.cs" />
+    <Compile Include="System\Text\Json\Document\JsonValueType.cs" />
+    <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
+    <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderHelper.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderHelper.Unescaping.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderOptions.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderState.cs" />
+    <Compile Include="System\Text\Json\Reader\Utf8JsonReader.cs" />
+    <Compile Include="System\Text\Json\Reader\Utf8JsonReader.MultiSegment.cs" />
+    <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterHelper.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Escaping.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Transcoding.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterOptions.cs" />
+    <Compile Include="System\Text\Json\Writer\JsonWriterState.cs" />
+    <Compile Include="System\Text\Json\Writer\SequenceValidity.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.DateTime.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.DateTimeOffset.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Decimal.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Double.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Float.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Guid.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Helpers.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Literal.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.SignedNumber.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.String.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.UnsignedNumber.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Comment.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.DateTime.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.DateTimeOffset.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Decimal.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Double.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Float.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Guid.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Helpers.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Literal.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.SignedNumber.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <ProjectReference Include="..\..\System.Memory\src\System.Memory.csproj" />
-    <ProjectReference Include="..\..\System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+
+  <!-- The Source Package will call into this target in order to retrieve the compiled resources file as
+       it will need to be part of the source package contents. -->
+  <Target Name="GetSourcesToPackage" Returns="@(_sourceToPackage)" DependsOnTargets="Compile">
+
+      <PropertyGroup>
+        <_sourcePackageName>Microsoft.Bcl.Json.Sources</_sourcePackageName>
+        <_sourcePackageTargetLines><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ItemGroup Condition="'%24(ExcludeEmbeddedResourceFromPackage)' != 'true'">@(EmbeddedResource->'
+    <EmbeddedResource Include="%24(MSBuildThisFileDirectory)%(FileName)%(Extension)" Link="$(_sourcePackageName)/%(FileName)%(Extension)" ManifestResourceName="%(ManifestResourceName)" />', '')
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="%24(MSBuildThisFileDirectory)README.md" Link="$(_sourcePackageName)/README.md" Visible="true" />
+  </ItemGroup>
+</Project>]]>
+        </_sourcePackageTargetLines>
+        <_targetsFileName>$(_sourcePackageName).targets</_targetsFileName>
+        <_generatedSourcePackageTargetPath>$(IntermediateOutputPath)/$(_targetsFileName)</_generatedSourcePackageTargetPath>
+      </PropertyGroup>
+
+      <WriteLinesToFile Lines="$(_sourcePackageTargetLines)" File="$(_generatedSourcePackageTargetPath)" Overwrite="True" />
+
+      <ItemGroup>
+        <_sourceToExclude Include="@(Compile)" Condition="$([System.String]::Copy('%(Compile.Identity)').ToLower().EndsWith('assemblyinfo.cs'))" />
+        <_sourceToPackage Include="@(Compile->'%(FullPath)')" PackagePath="contentFiles/cs/netstandard2.0/$(_sourcePackageName)/%(FileName)%(Extension)" Exclude="@(_sourceToExclude)"/>
+        <_sourceToPackage Condition="'%(Extension)' == '.resx'" Include="@(EmbeddedResource->'%(FullPath)')"  PackagePath="build/netstandard2.0/%(FileName)%(Extension)" />
+        <_sourceToPackage Include="$(_generatedSourcePackageTargetPath)" PackagePath="build/netstandard2.0/$(_targetsFileName)" />
+        <_sourceToPackage Include="$(MSBuildThisFileDirectory)../source_package/README.md" PackagePath="build/netstandard2.0/README.md" />
+      </ItemGroup>
+  </Target>
 </Project>

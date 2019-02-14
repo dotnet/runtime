@@ -7,7 +7,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Claims;
 using System.Security.Principal;
+using System.Threading.Tasks;
 using System.Threading.Tests;
 using Xunit;
 
@@ -187,6 +189,7 @@ namespace System.Threading.Threads.Tests
 
         [Fact]
         [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "RemoteExecutor is STA on UAP and UAPAOT.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Windows()
         {
@@ -425,6 +428,90 @@ namespace System.Threading.Threads.Tests
                 Thread.CurrentPrincipal = originalPrincipal;
                 Assert.Equal(originalPrincipal, Thread.CurrentPrincipal);
             });
+        }
+
+        [Fact]
+        public static void CurrentPrincipalContextFlowTest()
+        {
+            ThreadTestHelpers.RunTestInBackgroundThread(async () =>
+            {
+                Thread.CurrentPrincipal = new ClaimsPrincipal();
+
+                await Task.Run(async() => {
+
+                    Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+
+                    await Task.Run(async() => 
+                    {
+                        Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+
+                        Thread.CurrentPrincipal = new GenericPrincipal(new GenericIdentity("name"), new string[0]);
+
+                        await Task.Run(() =>
+                        {
+                            Assert.IsType<GenericPrincipal>(Thread.CurrentPrincipal);
+                        });
+
+                        Assert.IsType<GenericPrincipal>(Thread.CurrentPrincipal);
+                    });
+
+                    Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+                });
+
+                Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+            });
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
+        public static void CurrentPrincipalContextFlowTest_NotFlow()
+        {
+            ThreadTestHelpers.RunTestInBackgroundThread(async () =>
+            {
+                Thread.CurrentPrincipal = new ClaimsPrincipal();
+
+                Task task;
+                using(ExecutionContext.SuppressFlow())
+                {
+                    Assert.True(ExecutionContext.IsFlowSuppressed());
+
+                    task = Task.Run(() => 
+                    {
+                        Assert.Null(Thread.CurrentPrincipal);
+                        Assert.False(ExecutionContext.IsFlowSuppressed());
+                    });
+                }
+
+                Assert.False(ExecutionContext.IsFlowSuppressed());
+
+                await task;
+            });
+        }
+
+        [Fact]
+        public static void CurrentPrincipal_SetNull()
+        {
+            // We run test on remote process because we need to set same principal policy
+            // On netfx default principal policy is PrincipalPolicy.UnauthenticatedPrincipal
+            DummyClass.RemoteInvoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
+
+                Assert.Null(Thread.CurrentPrincipal);
+
+                Thread.CurrentPrincipal = null;
+                Assert.Null(Thread.CurrentPrincipal);
+
+                Thread.CurrentPrincipal = new ClaimsPrincipal();
+                Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+
+                Thread.CurrentPrincipal = null;
+                Assert.Null(Thread.CurrentPrincipal);
+
+                Thread.CurrentPrincipal = new ClaimsPrincipal();
+                Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
+            }).Dispose();
         }
 
         [Fact]
@@ -1047,7 +1134,7 @@ namespace System.Threading.Threads.Tests
                 AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
                 Assert.Equal(Environment.UserDomainName + @"\" + Environment.UserName, Thread.CurrentPrincipal.Identity.Name);
             }).Dispose();
-                }
+        }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]

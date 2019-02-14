@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -13,6 +14,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         public static readonly string NpConnStr = null;
         public static readonly string TcpConnStr = null;
+
+        public const string UdtTestDbName = "UdtTestDb";
+
         private static readonly Assembly s_systemDotData = typeof(System.Data.SqlClient.SqlConnection).GetTypeInfo().Assembly;
         private static readonly Type s_tdsParserStateObjectFactory = s_systemDotData?.GetType("System.Data.SqlClient.TdsParserStateObjectFactory");
         private static readonly PropertyInfo s_useManagedSNI = s_tdsParserStateObjectFactory?.GetProperty("UseManagedSNI", BindingFlags.Static | BindingFlags.Public);
@@ -21,6 +25,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                                                      ".database.cloudapi.de",
                                                                      ".database.usgovcloudapi.net",
                                                                      ".database.chinacloudapi.cn"};
+
+        private static Dictionary<string, bool> databasesAvailable;
+
         static DataTestUtility()
         {
             NpConnStr = Environment.GetEnvironmentVariable("TEST_NP_CONN_STR");
@@ -32,7 +39,56 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return !string.IsNullOrEmpty(NpConnStr) && !string.IsNullOrEmpty(TcpConnStr);
         }
 
+        public static bool IsDatabasePresent(string name)
+        {
+            databasesAvailable = databasesAvailable ?? new Dictionary<string, bool>();
+            bool present = false;
+            if (AreConnStringsSetup() && !string.IsNullOrEmpty(name) && !databasesAvailable.TryGetValue(name, out present))
+            {
+                var builder = new SqlConnectionStringBuilder(TcpConnStr);
+                builder.ConnectTimeout = 2;
+                using (var connection = new SqlConnection(builder.ToString()))
+                using (var command = new SqlCommand("SELECT COUNT(*) FROM sys.databases WHERE name=@name", connection))
+                {
+                    connection.Open();
+                    command.Parameters.AddWithValue("name", name);
+                    present = Convert.ToInt32(command.ExecuteScalar()) == 1;
+                }
+                databasesAvailable[name] = present;
+            }
+            return present;
+        }
+
+        public static bool IsUdtTestDatabasePresent() => IsDatabasePresent(UdtTestDbName);
+
         public static bool IsUsingManagedSNI() => (bool)(s_useManagedSNI?.GetValue(null) ?? false);
+
+        public static bool IsUsingNativeSNI() => !IsUsingManagedSNI();
+
+        public static bool IsUTF8Supported()
+        {
+            bool retval = false;
+            if (AreConnStringsSetup())
+            {
+                using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
+                using (SqlCommand command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = "SELECT CONNECTIONPROPERTY('SUPPORT_UTF8')";
+                    connection.Open();
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            // CONNECTIONPROPERTY('SUPPORT_UTF8') returns NULL in SQLServer versions that don't support UTF-8.
+                            retval = !reader.IsDBNull(0);
+                        }
+                    }
+                }
+            }
+            return retval;
+        }
 
         // the name length will be no more then (16 + prefix.Length + escapeLeft.Length + escapeRight.Length)
         // some providers does not support names (Oracle supports up to 30)

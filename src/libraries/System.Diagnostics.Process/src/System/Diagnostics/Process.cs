@@ -544,8 +544,7 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>
-        ///       Gets or sets the properties to pass into the <see cref='System.Diagnostics.Process.Start'/> method for the <see cref='System.Diagnostics.Process'/>
-        ///       .
+        ///       Gets or sets the properties to pass into the <see cref='System.Diagnostics.Process.Start(System.Diagnostics.ProcessStartInfo)'/> method for the <see cref='System.Diagnostics.Process'/>.
         ///    </para>
         /// </devdoc>
         public ProcessStartInfo StartInfo
@@ -856,13 +855,13 @@ namespace System.Diagnostics
 
                 // Only call close on the streams if the user cannot have a reference on them.
                 // If they are referenced it is the user's responsibility to dispose of them.
-                try 
+                try
                 {
                     if (_standardOutput != null && (_outputStreamReadMode == StreamReadMode.AsyncMode || _outputStreamReadMode == StreamReadMode.Undefined))
                     {
                         if (_outputStreamReadMode == StreamReadMode.AsyncMode)
                         {
-                            _output.CancelOperation();
+                            _output?.CancelOperation();
                         }
                         _standardOutput.Close();
                     }
@@ -871,7 +870,7 @@ namespace System.Diagnostics
                     {
                         if (_errorStreamReadMode == StreamReadMode.AsyncMode)
                         {
-                            _error.CancelOperation();
+                            _error?.CancelOperation();
                         }
                         _standardError.Close();
                     }
@@ -881,7 +880,7 @@ namespace System.Diagnostics
                         _standardInput.Close();
                     }
                 }
-                finally 
+                finally
                 {
                     _standardOutput = null;
                     _standardInput = null;

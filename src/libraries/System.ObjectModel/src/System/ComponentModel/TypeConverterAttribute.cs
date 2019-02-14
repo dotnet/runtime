@@ -5,26 +5,21 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>
-    ///        Specifies what type to use as a converter for the object this
-    ///        attribute is bound to. This class cannot be inherited.
-    ///    </para>
+    /// Specifies what type to use as a converter for the object this attribute is
+    /// bound to. This class cannot be inherited.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class TypeConverterAttribute : Attribute
     {
         /// <summary>
-        ///    <para>
-        ///        Specifies the type to use as a converter for the object this attribute is bound to. This
-        ///        <see langword='static '/>field is read-only. </para>
+        /// Specifies the type to use as a converter for the object this attribute is
+        /// bound to. This <see langword='static '/>field is read-only.
         /// </summary>
         public static readonly TypeConverterAttribute Default = new TypeConverterAttribute();
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class with the
-        ///       default type converter, which is an empty string ("").
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/>
+        /// class with the default type converter, which is an empty string ("").
         /// </summary>
         public TypeConverterAttribute()
         {
@@ -32,44 +27,48 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     <para>
-        ///         Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class,
-        ///         using the specified type as the data converter for the object this attribute is bound to.
-        ///     </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/>
+        /// class, using the specified type as the data converter for the object this attribute
+        /// is bound to.
         /// </summary>
         public TypeConverterAttribute(Type type)
         {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             ConverterTypeName = type.AssemblyQualifiedName;
         }
 
         /// <summary>
-        ///     <para>
-        ///         Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class,
-        ///         using the specified type name as the data converter for the object this attribute is bound to.
-        ///     </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/>
+        /// class, using the specified type name as the data converter for the object this attribute
+        /// is bound to.
         /// </summary>
         public TypeConverterAttribute(string typeName)
         {
+            if (typeName == null)
+            {
+                throw new ArgumentNullException(nameof(typeName));
+            }
+
             ConverterTypeName = typeName;
         }
 
         /// <summary>
-        ///     <para>
-        ///         Gets the fully qualified type name of the <see cref='System.Type'/> to use as a converter for
-        ///         the object this attribute is bound to.
-        ///     </para>
+        /// Gets the fully qualified type name of the <see cref='System.Type'/> to use as a
+        /// converter for the object this attribute is bound to.
         /// </summary>
         public string ConverterTypeName { get; }
 
         public override bool Equals(object obj)
         {
-            TypeConverterAttribute other = obj as TypeConverterAttribute;
-            return (other != null) && other.ConverterTypeName == ConverterTypeName;
+            return
+                obj is TypeConverterAttribute other &&
+                other.ConverterTypeName == ConverterTypeName;
         }
 
-        public override int GetHashCode()
-        {
-            return ConverterTypeName.GetHashCode();
-        }
+        public override int GetHashCode() => ConverterTypeName.GetHashCode();
     }
 }

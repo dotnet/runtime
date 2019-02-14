@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
@@ -17,11 +18,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     public sealed class PlatformHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
-    {
-        protected override bool UseSocketsHttpHandler => false;
-    }
-
-    public sealed class PlatformHandler_HttpClientTest : HttpClientTest
     {
         protected override bool UseSocketsHttpHandler => false;
     }
@@ -115,6 +111,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
+    public sealed class PlatformHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
+    {
+        public PlatformHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
     public sealed class PlatformHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public PlatformHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
@@ -133,7 +135,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
-    public sealed class PlatformHandler_HttpCookieProtocolTests : HttpCookieProtocolTests
+    public sealed class PlatformHandlerTest_Cookies : HttpClientHandlerTest_Cookies
+    {
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
+    public sealed class PlatformHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
         protected override bool UseSocketsHttpHandler => false;
     }
@@ -150,6 +157,22 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class PlatformHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
+        public PlatformHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
         protected override bool UseSocketsHttpHandler => false;
     }
+
+    // Enable this to run HTTP2 tests on platform handler
+#if PLATFORM_HANDLER_HTTP2_TESTS
+    public sealed class PlatformHandlerTest_Http2 : HttpClientHandlerTest_Http2
+    {
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class PlatformHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
+    {
+        protected override bool UseSocketsHttpHandler => false;
+        protected override bool UseHttp2LoopbackServer => true;
+    }
+#endif
 }

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <UsingTask TaskName="GenerateSourceWithPublicTypesAsInternal" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll" />
+
+  <PropertyGroup>
+    <!-- We need to make sure that all of the surface area on the sources gets rewritten as internal. -->
+    <GenerateInternalTypesSource>true</GenerateInternalTypesSource>
+    <!-- We need to disable package file check as the sdk targets will flag README.md file as it is not a known extension. -->
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+  </PropertyGroup>
+
+  <!-- Given that System.Text.Json has Resources, we need to make sure we include them (and the SR.cs from Common) 
+       on the sources of the package. This target will retrieve the compiled resources file and will also add
+       the Common SR.cs into SourcePackageFiles. -->
+  <Target Name="GetSourcesToPackage" BeforeTargets="ExpandProjectReferences">
+    <ItemGroup>
+      <_ProjectsToBuild Include="../src/System.Text.Json.csproj" UndefineProperties="Configuration" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_ProjectsToBuild)"
+             Targets="GetSourcesToPackage">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="SourcePackageFiles" />
+    </MSBuild>
+  </Target>
+  
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>

@@ -3,8 +3,6 @@
     <AssemblyName>System.Net.NameResolution</AssemblyName>
     <ProjectGuid>{1714448C-211E-48C1-8B7E-4EE667D336A1}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
-    <NoWarn>$(NoWarn);CS1572;CS1574;CS1587;CS1589;CS1591;CS1723;CS1734</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -74,50 +72,50 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\AddressInfo.cs">
-      <Link>Interop\Windows\Winsock\AddressInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\AddressInfo.cs">
+      <Link>Interop\Windows\WinSock\AddressInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\AddressInfoHints.cs">
-      <Link>Interop\Windows\Winsock\AddressInfoHints.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\AddressInfoHints.cs">
+      <Link>Interop\Windows\WinSock\AddressInfoHints.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\hostent.cs">
-      <Link>Interop\Windows\Winsock\hostent.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\hostent.cs">
+      <Link>Interop\Windows\WinSock\hostent.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.closesocket.cs">
-      <Link>Interop\Windows\Winsock\Interop.closesocket.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.closesocket.cs">
+      <Link>Interop\Windows\WinSock\Interop.closesocket.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostname.cs">
-      <Link>Interop\Windows\Winsock\Interop.gethostname.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.gethostname.cs">
+      <Link>Interop\Windows\WinSock\Interop.gethostname.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetNameInfoW.cs">
-      <Link>Interop\Windows\Winsock\Interop.GetNameInfoW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.GetNameInfoW.cs">
+      <Link>Interop\Windows\WinSock\Interop.GetNameInfoW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetAddrInfoW.cs">
-      <Link>Interop\Windows\Winsock\Interop.GetAddrInfoW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.GetAddrInfoW.cs">
+      <Link>Interop\Windows\WinSock\Interop.GetAddrInfoW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.freeaddrinfo.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.freeaddrinfo.cs">
       <Link>Interop\Windows\Winsock\Interop.freeaddinfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAStartup.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSAStartup.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSAStartup.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSAStartup.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSASocketW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSASocketW.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSASocketW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs">
-      <Link>Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs">
+      <Link>Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolFamily.cs">
       <Link>Common\System\Net\Sockets\ProtocolFamily.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeFreeAddrInfo.cs">
-      <Link>Interop\Windows\Winsock\SafeFreeAddrInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\SafeFreeAddrInfo.cs">
+      <Link>Interop\Windows\WinSock\SafeFreeAddrInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\AddressInfoEx.cs">
-      <Link>Interop\Windows\Winsock\AddressInfoEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\AddressInfoEx.cs">
+      <Link>Interop\Windows\WinSock\AddressInfoEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetAddrInfoExW.cs">
-      <Link>Interop\Windows\Winsock\Interop.GetAddrInfoExW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs">
+      <Link>Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" Condition="'$(TargetGroup)' != 'uap'">
       <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
@@ -164,7 +162,7 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs">

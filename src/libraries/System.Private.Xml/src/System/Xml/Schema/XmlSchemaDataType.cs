@@ -12,41 +12,17 @@ using System.Text;
 
 namespace System.Xml.Schema
 {
-    /// <include file='doc\XmlSchemaDatatype.uex' path='docs/doc[@for="XmlSchemaDatatype"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public abstract class XmlSchemaDatatype
     {
-        /// <include file='doc\XmlSchemaDatatype.uex' path='docs/doc[@for="XmlSchemaDatatype.ValueType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public abstract Type ValueType { get; }
 
-        /// <include file='doc\XmlSchemaDatatype.uex' path='docs/doc[@for="XmlSchemaDatatype.TokenizedType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public abstract XmlTokenizedType TokenizedType { get; }
 
-        /// <include file='doc\XmlSchemaDatatype.uex' path='docs/doc[@for="XmlSchemaDatatype.ParseValue"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public abstract object ParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr);
 
-        /// <include file='doc\XmlSchemaDatatype.uex' path='docs/doc[@for="XmlSchemaDatatype.Variety"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public virtual XmlSchemaDatatypeVariety Variety { get { return XmlSchemaDatatypeVariety.Atomic; } }
 
 
-        /// <include file='doc\XmlSchemaDatatype.uex' path='docs/doc[@for="XmlSchemaDatatype.ChangeType1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public virtual object ChangeType(object value, Type targetType)
         {
             if (value == null)
@@ -60,10 +36,6 @@ namespace System.Xml.Schema
             return ValueConverter.ChangeType(value, targetType);
         }
 
-        /// <include file='doc\XmlSchemaDatatype.uex' path='docs/doc[@for="XmlSchemaDatatype.ChangeType2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public virtual object ChangeType(object value, Type targetType, IXmlNamespaceResolver namespaceResolver)
         {
             if (value == null)
@@ -81,16 +53,8 @@ namespace System.Xml.Schema
             return ValueConverter.ChangeType(value, targetType, namespaceResolver);
         }
 
-        /// <include file='doc\XmlSchemaDatatype.uex' path='docs/doc[@for="XmlSchemaDatatype.TypeCode"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public virtual XmlTypeCode TypeCode { get { return XmlTypeCode.None; } }
 
-        /// <include file='doc\XmlSchemaDatatype.uex' path='docs/doc[@for="XmlSchemaDatatype.IsDerivedFrom"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public virtual bool IsDerivedFrom(XmlSchemaDatatype datatype)
         {
             return false;
@@ -349,7 +313,7 @@ namespace System.Xml.Schema
 
             if (convert)
             {
-                canonicalUri = nameTable.Add(uri.Substring(0, offset) + CultureInfo.InvariantCulture.TextInfo.ToUpper(uri.Substring(offset, uri.Length - offset)));
+                canonicalUri = nameTable.Add(string.Concat(uri.AsSpan(0, offset), CultureInfo.InvariantCulture.TextInfo.ToUpper(uri.Substring(offset, uri.Length - offset))));
             }
             else
             {
