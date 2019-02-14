@@ -20,7 +20,6 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionPool _pool;
         private readonly SslStream _stream;
-        private readonly object _syncObject;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -61,7 +60,6 @@ namespace System.Net.Http
         {
             _pool = pool;
             _stream = stream;
-            _syncObject = new object();
             _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _headerBuffer = new ArrayBuffer(InitialConnectionBufferSize);
@@ -78,6 +76,8 @@ namespace System.Net.Http
             _initialWindowSize = DefaultInitialWindowSize;
             _maxConcurrentStreams = int.MaxValue;
         }
+
+        private object SyncObject => _httpStreams;
 
         public async Task SetupAsync()
         {
@@ -247,7 +247,7 @@ namespace System.Net.Http
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
             }
 
-            lock (_syncObject)
+            lock (SyncObject)
             {
                 if (!_httpStreams.TryGetValue(streamId, out Http2Stream http2Stream))
                 {
@@ -461,7 +461,7 @@ namespace System.Net.Http
         {
             Debug.Assert(newSize >= 0);
 
-            lock (_syncObject)
+            lock (SyncObject)
             {
                 int delta = newSize - _initialWindowSize;
                 _initialWindowSize = newSize;
@@ -981,7 +981,7 @@ namespace System.Net.Http
 
         private void AbortStreams(int lastValidStream)
         {
-            lock (_syncObject)
+            lock (SyncObject)
             {
                 if (!_disposed)
                 {
@@ -1010,7 +1010,7 @@ namespace System.Net.Http
         private void CheckForShutdown()
         {
             Debug.Assert(_disposed);
-            Debug.Assert(Monitor.IsEntered(_syncObject));
+            Debug.Assert(Monitor.IsEntered(SyncObject));
 
             // Check if dictionary has become empty
             if (_httpStreams.Count != 0)
@@ -1028,7 +1028,7 @@ namespace System.Net.Http
 
         public void Dispose()
         {
-            lock (_syncObject)
+            lock (SyncObject)
             {
                 if (!_disposed)
                 {
@@ -1192,7 +1192,7 @@ namespace System.Net.Http
 
         private Http2Stream AddStream(HttpRequestMessage request)
         {
-            lock (_syncObject)
+            lock (SyncObject)
             {
                 if (_disposed || _nextStream == MaxStreamId)
                 {
@@ -1216,7 +1216,7 @@ namespace System.Net.Http
 
         private void RemoveStream(Http2Stream http2Stream)
         {
-            lock (_syncObject)
+            lock (SyncObject)
             {
                 if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream removed))
                 {
