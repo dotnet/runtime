@@ -18,6 +18,9 @@
     <!-- Remove package dependencies. -->
     <ExcludeLineupReference>true</ExcludeLineupReference>
     <PackProjectDependencies>false</PackProjectDependencies>
+
+    <!-- Location to lay out data/ dir. Used later to create installers. -->
+    <DataLayoutDir>$(IntermediateOutputPath)layout/</DataLayoutDir>
   </PropertyGroup>
 
   <!-- Redistribute package content from other nuget packages. -->
@@ -37,6 +40,37 @@
         Condition="$([System.String]::new('%(File.TargetPath)').StartsWith('ref'))"
         TargetPath="data/" />
     </ItemGroup>
+  </Target>
+
+  <!--
+    Copy the files in the package's data/ dir to a layout directory. This is what the targeting pack
+    installer will place in the dotnet install dir.
+
+    This extracts from the nupkg (zip) directly. An alternative would be using the PackageFile
+    items, but there's some risk of handling TargetPath metadata differently than NuGet does. Using
+    the nupkg directly ensures results are identical.
+  -->
+  <Target Name="CreateTargetingPackLayout"
+          AfterTargets="CreatePackage">
+    <PropertyGroup>
+      <TargetingPackNupkgFile>$(PackageOutputPath)$(Id).$(PackageVersion).nupkg</TargetingPackNupkgFile>
+    </PropertyGroup>
+
+    <ZipFileGetEntries TargetArchive="$(TargetingPackNupkgFile)">
+      <Output TaskParameter="Entries" ItemName="TargetingPackNupkgEntries" />
+    </ZipFileGetEntries>
+
+    <ItemGroup>
+      <TargetingPackDataEntries
+        Include="@(TargetingPackNupkgEntries)"
+        Condition="$([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('data/'))" />
+    </ItemGroup>
+
+    <ZipFileExtractToDirectory
+      SourceArchive="$(TargetingPackNupkgFile)"
+      DestinationDirectory="$(DataLayoutDir)packs/$(Id)/$(Version)/"
+      OverwriteDestination="true"
+      Include="@(TargetingPackDataEntries)" />
   </Target>
 
 </Project>
