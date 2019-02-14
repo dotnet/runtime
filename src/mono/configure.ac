@@ -1221,6 +1221,7 @@ elif test x$with_runtime_preset = xbitcode; then
    enable_cooperative_suspend_default=yes
    # FIXME: use TEST_PROFILE=testing_aot_full
    TEST_PROFILE=testing_aot_bitcode
+   PLATFORM_TEST_HARNESS_EXCLUDES=BitcodeNotSupported
    enable_llvm_default=yes
 
    mono_feature_disable_com='yes'
@@ -1239,6 +1240,7 @@ elif test x$with_runtime_preset = xbitcodeinterp; then
    enable_cooperative_suspend_default=yes
    # FIXME: use TEST_PROFILE=testing_aot_full_interp
    TEST_PROFILE=testing_aot_bitcode_interp
+   PLATFORM_TEST_HARNESS_EXCLUDES=BitcodeNotSupported
    enable_llvm_default=yes
 
    # mscorlib.dll aot compilation crashes
