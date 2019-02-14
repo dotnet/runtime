@@ -258,6 +258,9 @@ namespace System.Net.Http
             }
         }
 
+        private static readonly HPackDecoder.HeaderCallback s_http2StreamOnResponseHeader =
+            (state, name, value) => ((Http2Stream)state).OnResponseHeader(name, value);
+
         private async Task ProcessHeadersFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.Headers);
@@ -273,11 +276,10 @@ namespace System.Net.Http
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.StreamClosed);
             }
 
-            // TODO: Figure out how to cache this delegate.
-            // Probably want to pass a state object to Decode.
-            HPackDecoder.HeaderCallback headerCallback = http2Stream.OnResponseHeader;
-
-            _hpackDecoder.Decode(GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag), headerCallback);
+            _hpackDecoder.Decode(
+                GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
+                s_http2StreamOnResponseHeader,
+                http2Stream);
             _incomingBuffer.Discard(frameHeader.Length);
 
             while (!frameHeader.EndHeadersFlag)
@@ -289,7 +291,10 @@ namespace System.Net.Http
                     throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
                 }
 
-                _hpackDecoder.Decode(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), headerCallback);
+                _hpackDecoder.Decode(
+                    _incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length),
+                    s_http2StreamOnResponseHeader,
+                    http2Stream);
                 _incomingBuffer.Discard(frameHeader.Length);
             }
 
