@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
-    <ExcludePackages Include="CoreFx.Private.TestUtilities" />
+    <ExcludePackages Include="CoreFx.Private.TestUtilities;System.IO.Ports;runtime.native.System.IO.Ports" />
     <ExcludePackages Include="$(ExcludePackages)" />
 
     <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
