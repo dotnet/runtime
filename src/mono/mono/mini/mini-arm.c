@@ -2367,17 +2367,22 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		case RegTypeFP:
 			lainfo->storage = LLVMArgNormal;
 			break;
-		case RegTypeStructByVal:
+		case RegTypeStructByVal: {
 			lainfo->storage = LLVMArgAsIArgs;
-			if (eabi_supported && ainfo->align == 8) {
-				/* LLVM models this by passing an int64 array */
-				lainfo->nslots = ALIGN_TO (ainfo->struct_size, 8) / 8;
-				lainfo->esize = 8;
-			} else {
-				lainfo->nslots = ainfo->struct_size / sizeof (target_mgreg_t);
-				lainfo->esize = 4;
-			}
+			int slotsize;
+#ifdef TARGET_WATCHOS
+			/* slotsize=4 would work for armv7k, however arm64_32 allows
+			 * passing structs with sizes up to 8 bytes in a single register.
+			 * On armv7k slotsize=8 boils down to the same generated native
+			 * code by LLVM, so it's okay. */
+			slotsize = 8;
+#else
+			slotsize = eabi_supported && ainfo->align == 8 ? 8 : 4;
+#endif
+			lainfo->nslots = ALIGN_TO (ainfo->struct_size, slotsize) / slotsize;
+			lainfo->esize = slotsize;
 			break;
+		}
 		case RegTypeStructByAddr:
 		case RegTypeStructByAddrOnStack:
 			lainfo->storage = LLVMArgVtypeByRef;
