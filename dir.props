@@ -33,8 +33,11 @@
 
   <PropertyGroup>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
-    <NETCoreAppFrameworkMoniker>.NETCoreApp,Version=v$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkMoniker>
-    <NETCoreAppFramework>netcoreapp$(MajorVersion).$(MinorVersion)</NETCoreAppFramework>
+    <NETCoreAppFrameworkIdentifier>.NETCoreApp</NETCoreAppFrameworkIdentifier>
+    <NETCoreAppFrameworkVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkVersion>
+    <NETCoreAppFrameworkMoniker>$(NETCoreAppFrameworkIdentifier),Version=v$(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkMoniker>
+    <NETCoreAppFramework>netcoreapp$(NETCoreAppFrameworkVersion)</NETCoreAppFramework>
+    <NETCoreAppFrameworkBrandName>.NET Core $(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkBrandName>
   </PropertyGroup>
 
   <!--

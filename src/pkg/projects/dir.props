@@ -20,6 +20,13 @@
     <PackProjectDependencies>true</PackProjectDependencies>
   </PropertyGroup>
 
+  <ItemGroup>
+    <FrameworkListRootAttributes Include="Name" Value="$(NETCoreAppFrameworkBrandName)" />
+    <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(NETCoreAppFrameworkIdentifier)" />
+    <FrameworkListRootAttributes Include="TargetFrameworkVersion" Value="$(NETCoreAppFrameworkVersion)" />
+    <FrameworkListRootAttributes Include="FrameworkName" Value="$(SharedFrameworkName)" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <SkipValidatePackage>true</SkipValidatePackage>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
