@@ -13,7 +13,7 @@
     <ProjectNTfsTestILCCurrentRef>666bb3b6a410b2e2243af9363fb31b7ceed30941</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>7a2a68a6eb545ce740d67af01c53d9ee454e1a6c</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>ddac89c354d95953988a80da7087d798913b0460</BuildToolsCurrentRef>
     <CoreFxOptimizationDataCurrentRef>8e8bcbe152e6de9275cd5dcd5e05870ddf046992</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
@@ -57,7 +57,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <BuildToolsPackage>microsoft.dotnet.buildtools</BuildToolsPackage>
-    <BuildToolsPackageVersion>3.0.0-preview1-03706-01</BuildToolsPackageVersion>
+    <BuildToolsPackageVersion>3.0.0-preview1-03713-01</BuildToolsPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
