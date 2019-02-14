@@ -1,6 +1,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.targets" />
 
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
 
   <PropertyGroup>
@@ -176,6 +177,25 @@
     <ItemGroup>
       <File Include="$(PlatformManifestFile)">
         <TargetPath>$(PlatformManifestTargetPath)</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludeFrameworkListFile"
+          BeforeTargets="GetFiles"
+          Condition="'$(PackageTargetRuntime)' == '' AND '$(FrameworkListTargetPath)' != ''">
+    <PropertyGroup>
+      <FrameworkListFile>$(IntermediateOutputPath)FrameworkList.xml</FrameworkListFile>
+    </PropertyGroup>
+
+    <CreateFrameworkListFile
+      Files="@(File)"
+      TargetFile="$(FrameworkListFile)"
+      RootAttributes="@(FrameworkListRootAttributes)" />
+
+    <ItemGroup>
+      <File Include="$(FrameworkListFile)">
+        <TargetPath>$(FrameworkListTargetPath)</TargetPath>
       </File>
     </ItemGroup>
   </Target>

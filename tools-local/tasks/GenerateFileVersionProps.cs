@@ -131,7 +131,7 @@ namespace Microsoft.DotNet.Build.Tasks
             {
                 return new FileVersionData()
                 {
-                    AssemblyVersion = FileUtilities.TryGetAssemblyVersion(filePath),
+                    AssemblyVersion = FileUtilities.GetAssemblyName(filePath)?.Version,
                     FileVersion = FileUtilities.GetFileVersion(filePath)
                 };
             }
