@@ -182,7 +182,7 @@ public:
         return NoteAccessWorker(address);
     }
 
-    __declspec(noinline) static void* NoteAccessWorker(void *address)
+    NOINLINE static void* NoteAccessWorker(void *address)
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
@@ -204,7 +204,7 @@ public:
         NoteSearchWorker(result);
     }
 
-    __declspec(noinline) static void NoteSearchWorker(void *result)
+    NOINLINE static void NoteSearchWorker(void *result)
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;

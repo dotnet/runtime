@@ -422,7 +422,7 @@ public:                                                 \
     }                                                   \
                                                         \
 private:                                                \
-    __declspec(noinline) static void Log##name##AccessStatic(const void * p) \
+    NOINLINE static void Log##name##AccessStatic(const void * p) \
     {                                                   \
         WRAPPER_NO_CONTRACT;                               \
         /* To make the logging callsite as small as */  \

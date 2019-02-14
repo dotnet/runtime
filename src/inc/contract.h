@@ -989,10 +989,10 @@ class BaseContract
     };
 
 
-    __declspec(nothrow) BaseContract() : m_pClrDebugState(NULL),  m_testmask(0)
+    NOTHROW_DECL BaseContract() : m_pClrDebugState(NULL),  m_testmask(0)
     {
     }
-    __declspec(nothrow) void Restore()
+    NOTHROW_DECL void Restore()
     {
         // m_pClrDebugState is setup in BaseContract::DoChecks. If an SO happens after the
         // BaseContract object is constructed but before DoChecks is invoked, m_pClrDebugState
@@ -1160,7 +1160,7 @@ class Contract: public BaseContract
    virtual void DestructorDefinedThatCallsRestore(){}
 
    public:
-    __declspec(nothrow) ~Contract()
+    NOTHROW_DECL ~Contract()
     {
         Restore();
     }

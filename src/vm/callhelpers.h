@@ -89,7 +89,7 @@ private:
     ArgIterator m_argIt;
 
 #ifdef _DEBUG 
-    __declspec(noinline) void LogWeakAssert()
+    NOINLINE void LogWeakAssert()
     {
         LIMITED_METHOD_CONTRACT;
         LOG((LF_ASSERT, LL_WARNING, "%s::%s\n", m_pMD->m_pszDebugClassName, m_pMD->m_pszDebugMethodName));
