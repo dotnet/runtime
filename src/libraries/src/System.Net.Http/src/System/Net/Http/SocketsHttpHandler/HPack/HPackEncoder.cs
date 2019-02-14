@@ -8,6 +8,7 @@ namespace System.Net.Http.HPack
     {
         // Things we should add:
         // * Static table encoding
+        //          This is implemented now for pseudo-headers, but not for regular headers.
         //          This should be based off some sort of "known headers/values" scheme, so we don't need
         //          to re-lookup header names each time.
         // * Huffman encoding
@@ -18,6 +19,90 @@ namespace System.Net.Http.HPack
         //          Additionally, it's not clear exactly what strings we would add to the dynamic table
         //          without some additional guidance from the user about this.
         //          So for now, don't do dynamic encoding.
+
+        public static bool EncodeIndexedField(int index, Span<byte> buffer, out int length)
+        {
+            length = 0;
+
+            if (buffer.Length == 0)
+            {
+                return false;
+            }
+
+            buffer[0] = 0x80;   // Literal field
+            if (!IntegerEncoder.Encode(index, 7, buffer, out length))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool EncodeIndexedName(int index, string value, Span<byte> buffer, out int length)
+        {
+            int i = 0;
+            length = 0;
+
+            if (buffer.Length == 0)
+            {
+                return false;
+            }
+
+            buffer[0] = 0x40;   // Literal name
+            if (!IntegerEncoder.Encode(index, 6, buffer, out int indexLength))
+            {
+                return false;
+            }
+
+            i = indexLength;
+            if (i == buffer.Length)
+            {
+                return false;
+            }
+
+            if (!EncodeString(value, buffer.Slice(i), out int nameLength, lowercase: false))
+            {
+                return false;
+            }
+
+            i += nameLength;
+
+            length = i;
+            return true;
+        }
+
+        public static bool EncodeIndexedName(int index, ReadOnlySpan<byte> value, Span<byte> buffer, out int length)
+        {
+            int i = 0;
+            length = 0;
+
+            if (buffer.Length == 0)
+            {
+                return false;
+            }
+
+            buffer[0] = 0x40;   // Literal name
+            if (!IntegerEncoder.Encode(index, 6, buffer, out int indexLength))
+            {
+                return false;
+            }
+
+            i = indexLength;
+            if (i == buffer.Length)
+            {
+                return false;
+            }
+
+            if (!EncodeAsciiString(value, buffer.Slice(i), out int nameLength))
+            {
+                return false;
+            }
+
+            i += nameLength;
+
+            length = i;
+            return true;
+        }
 
         public static bool EncodeHeader(string name, string value, Span<byte> buffer, out int length)
         {
@@ -90,6 +175,38 @@ namespace System.Net.Http.HPack
 
                 buffer[i++] = (byte)(s[j] | (lowercase ? toLowerMask : 0));
             }
+
+            length = i;
+            return true;
+        }
+
+        private static bool EncodeAsciiString(ReadOnlySpan<byte> s, Span<byte> buffer, out int length)
+        {
+            int i = 0;
+            length = 0;
+
+            if (buffer.Length == 0)
+            {
+                return false;
+            }
+
+            buffer[0] = 0;
+
+            if (!IntegerEncoder.Encode(s.Length, 7, buffer, out int nameLength))
+            {
+                return false;
+            }
+
+            i += nameLength;
+
+            if (buffer.Slice(i).Length < s.Length)
+            {
+                return false;
+            }
+
+            s.CopyTo(buffer.Slice(i));
+
+            i += s.Length;
 
             length = i;
             return true;
