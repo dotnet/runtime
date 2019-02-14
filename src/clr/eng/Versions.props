@@ -18,4 +18,9 @@
     <MicrosoftNETCorePlatformsPackage>Microsoft.NETCore.Platforms</MicrosoftNETCorePlatformsPackage>
     <MicrosoftNETCoreAppPackage>Microsoft.NETCore.App</MicrosoftNETCoreAppPackage>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- Override signing package version. Current version breaks signing SPC, remove
+         this property group once SignTool supports the scenario. -->
+    <MicrosoftDotNetSignToolVersion>1.0.0-beta.19067.6</MicrosoftDotNetSignToolVersion>
+  </PropertyGroup>
 </Project>
