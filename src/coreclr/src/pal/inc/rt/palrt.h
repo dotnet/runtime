@@ -214,6 +214,7 @@ inline void *__cdecl operator new(size_t, void *_P)
 
 #define STDAPI               EXTERN_C HRESULT STDAPICALLTYPE
 #define STDAPI_(type)        EXTERN_C type STDAPICALLTYPE
+#define STDAPI_VIS(vis,type) EXTERN_C vis type STDAPICALLTYPE
 
 #define STDAPIV              EXTERN_C HRESULT STDAPIVCALLTYPE
 #define STDAPIV_(type)       EXTERN_C type STDAPIVCALLTYPE
@@ -372,9 +373,9 @@ typedef union _ULARGE_INTEGER {
 
 /******************* OLE, BSTR, VARIANT *************************/
 
-DLLEXPORT STDAPI_(LPVOID) CoTaskMemAlloc(SIZE_T cb);
-DLLEXPORT STDAPI_(LPVOID) CoTaskMemRealloc(LPVOID pv, SIZE_T cb);
-DLLEXPORT STDAPI_(void) CoTaskMemFree(LPVOID pv);
+STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemAlloc(SIZE_T cb);
+STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemRealloc(LPVOID pv, SIZE_T cb);
+STDAPI_VIS(DLLEXPORT, void) CoTaskMemFree(LPVOID pv);
 
 typedef SHORT VARIANT_BOOL;
 #define VARIANT_TRUE ((VARIANT_BOOL)-1)
@@ -386,12 +387,12 @@ typedef const OLECHAR* LPCOLESTR;
 
 typedef WCHAR *BSTR;
 
-DLLEXPORT STDAPI_(BSTR) SysAllocString(const OLECHAR*);
-DLLEXPORT STDAPI_(BSTR) SysAllocStringLen(const OLECHAR*, UINT);
-DLLEXPORT STDAPI_(BSTR) SysAllocStringByteLen(const char *, UINT);
-DLLEXPORT STDAPI_(void) SysFreeString(BSTR);
-DLLEXPORT STDAPI_(UINT) SysStringLen(BSTR);
-DLLEXPORT STDAPI_(UINT) SysStringByteLen(BSTR);
+STDAPI_VIS(DLLEXPORT, BSTR) SysAllocString(const OLECHAR*);
+STDAPI_VIS(DLLEXPORT, BSTR) SysAllocStringLen(const OLECHAR*, UINT);
+STDAPI_VIS(DLLEXPORT, BSTR) SysAllocStringByteLen(const char *, UINT);
+STDAPI_VIS(DLLEXPORT, void) SysFreeString(BSTR);
+STDAPI_VIS(DLLEXPORT, UINT) SysStringLen(BSTR);
+STDAPI_VIS(DLLEXPORT, UINT) SysStringByteLen(BSTR);
 
 typedef double DATE;
 

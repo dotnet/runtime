@@ -20,7 +20,7 @@
 //-----------------------------------------------------------------------------
 
 //#ifndef _H_UTIL
-//#error I am a part of util.hpp Please don't include me alone !
+//#error "I am a part of util.hpp Please don't include me alone !"
 //#endif
 
 

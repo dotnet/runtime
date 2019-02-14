@@ -2363,7 +2363,7 @@ typedef struct __F_ __F_;
 
 #ifdef  __cplusplus // [
 #ifndef __nothrow // [
-# define __nothrow __declspec(nothrow)
+# define __nothrow NOTHROW_DECL
 #endif // ]
 extern "C" {
 #else // ][

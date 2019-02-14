@@ -79,7 +79,7 @@ namespace Ro { namespace detail {
     //  to see HRESULT propagation.
     // 
     #ifdef DEBUG
-    inline HRESULT __declspec(noinline) _FailedHR(HRESULT hr) { static HRESULT _hr = hr; return hr; }
+    inline HRESULT NOINLINE _FailedHR(HRESULT hr) { static HRESULT _hr = hr; return hr; }
     #else
     inline HRESULT _FailedHR(HRESULT hr) { return hr; }
     #endif
