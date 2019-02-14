@@ -58,10 +58,10 @@
       <Version>$(MicrosoftPrivateCoreFxTestUtilitiesPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.CodeDom">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Configuration.ConfigurationManager">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Composition.Hosting">
       <Version>$(SystemCompositionVersions)</Version>
@@ -79,95 +79,95 @@
       <Version>$(SystemCompositionVersions)</Version>
     </PackageReference>
     <PackageReference Include="System.ComponentModel.Composition">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Data.DataSetExtensions">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Data.Odbc">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Data.SqlClient">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Diagnostics.PerformanceCounter">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.DirectoryServices">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.DirectoryServices.AccountManagement">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.DirectoryServices.Protocols">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Drawing.Common">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Packaging">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Pipelines">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Ports">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Management">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Net.Http.WinHttpHandler">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Net.WebSockets.WebSocketProtocol">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.Caching">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.Context">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Security.Cryptography.ProtectedData">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Security.Cryptography.Pkcs">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Security.Cryptography.Xml">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.ServiceModel.Syndication">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.ServiceProcess.ServiceController">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Encoding.CodePages">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Encodings.Web">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Threading.AccessControl">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Threading.Channels">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Json">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
 
   </ItemGroup>
   <ItemGroup Condition="'$(OSGroup)' == 'Windows_NT'">
     <!-- Windows Dependencies -->
     <PackageReference Include="Microsoft.Win32.Registry.AccessControl">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Win32.SystemEvents">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
       <Version>$(MicrosoftDiagnosticsTracingTraceVentVersion)</Version>

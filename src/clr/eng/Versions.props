@@ -8,19 +8,14 @@
     <UsingToolXliff>false</UsingToolXliff>
     <UsingToolNetFrameworkReferenceAssemblies>true</UsingToolNetFrameworkReferenceAssemblies>
     <MicrosoftNetFrameworkReferenceAssembliesVersion>1.0.0-alpha-004</MicrosoftNetFrameworkReferenceAssembliesVersion>
-    <!-- Libs -->
+    <MicrosoftPrivateCoreFxNETCoreAppVersion>4.6.0-preview.19111.8</MicrosoftPrivateCoreFxNETCoreAppVersion>
+    <MicrosoftNETCorePlatformsVersion>3.0.0-preview.19111.8</MicrosoftNETCorePlatformsVersion>
+    <MicrosoftNETCoreAppVersion>3.0.0-preview-27411-7</MicrosoftNETCoreAppVersion>
   </PropertyGroup>
+  <!--Package names-->
   <PropertyGroup>
-    <!-- Override arcade package version to use most recent signing
-         package -->
-    <MicrosoftDotNetSignToolVersion>1.0.0-beta.19067.6</MicrosoftDotNetSignToolVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <RestoreSources>
-      $(RestoreSources);
-      https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
-      https://dotnet.myget.org/F/symreader-converter/api/v3/index.json;
-      https:%2F%2Fdotnet.myget.org/F/symreader/api/v3/index.json
-    </RestoreSources>
+    <MicrosoftPrivateCoreFxNETCoreAppPackage>Microsoft.Private.CoreFx.NETCoreApp</MicrosoftPrivateCoreFxNETCoreAppPackage>
+    <MicrosoftNETCorePlatformsPackage>Microsoft.NETCore.Platforms</MicrosoftNETCorePlatformsPackage>
+    <MicrosoftNETCoreAppPackage>Microsoft.NETCore.App</MicrosoftNETCoreAppPackage>
   </PropertyGroup>
 </Project>
