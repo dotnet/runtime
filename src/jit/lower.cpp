@@ -87,7 +87,8 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 
     for (GenTree* node = childNode->gtNext; node != parentNode; node = node->gtNext)
     {
-        if (m_scratchSideEffects.InterferesWith(comp, node, false))
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, node, strict))
         {
             return false;
         }
