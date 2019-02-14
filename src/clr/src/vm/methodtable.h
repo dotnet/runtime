@@ -3665,14 +3665,14 @@ private:
 
 #if defined(FEATURE_HFA)
 #if defined(UNIX_AMD64_ABI)
-#error Can't define both FEATURE_HFA and UNIX_AMD64_ABI
+#error "Can't define both FEATURE_HFA and UNIX_AMD64_ABI"
 #endif
         enum_flag_IsHFA                     = 0x00000800,   // This type is an HFA (Homogenous Floating-point Aggregate)
 #endif // FEATURE_HFA
 
 #if defined(UNIX_AMD64_ABI)
 #if defined(FEATURE_HFA)
-#error Can't define both FEATURE_HFA and UNIX_AMD64_ABI
+#error "Can't define both FEATURE_HFA and UNIX_AMD64_ABI"
 #endif
         enum_flag_IsRegStructPassed         = 0x00000800,   // This type is a System V register passed struct.
 #endif // UNIX_AMD64_ABI

@@ -43,7 +43,7 @@
 #endif // _TARGET_ARM_ || _TARGET_ARM64_ || _TARGET_X86_
 
 #ifndef FEATURE_PAL
-void __declspec(noinline)
+void NOINLINE
 ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord,
                  UINT_PTR          ReturnValue,
                  UINT_PTR          TargetIP,

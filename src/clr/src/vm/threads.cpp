@@ -6821,7 +6821,7 @@ BOOL Thread::IsSPBeyondLimit()
     return FALSE;
 }
 
-__declspec(noinline) void AllocateSomeStack(){
+NOINLINE void AllocateSomeStack(){
     LIMITED_METHOD_CONTRACT;
 #ifdef _TARGET_X86_
     const size_t size = 0x200;

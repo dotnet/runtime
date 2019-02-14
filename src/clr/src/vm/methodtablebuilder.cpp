@@ -1864,7 +1864,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif
 #ifdef UNIX_AMD64_ABI
 #ifdef FEATURE_HFA
-#error Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time.
+#error "Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time."
 #endif // FEATURE_HFA
         SystemVAmd64CheckForPassStructInRegister();
 #endif // UNIX_AMD64_ABI
@@ -1872,7 +1872,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
 #ifdef UNIX_AMD64_ABI
 #ifdef FEATURE_HFA
-#error Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time.
+#error "Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time."
 #endif // FEATURE_HFA
     if (HasLayout())
     {
