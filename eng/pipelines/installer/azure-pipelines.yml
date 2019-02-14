@@ -179,6 +179,7 @@ jobs:
 # Windows x86
 - template: /eng/jobs/windows-build.yml
   parameters:
+    buildFullPlatformManifest: true
     displayName: Build_Windows_x86
     targetArchitecture: x86
 

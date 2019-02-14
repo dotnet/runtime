@@ -40,11 +40,15 @@
                                  OverwriteDestination="false" />
 
       <GenerateGuidFromName Name="$(SharedHostInstallerFile)">
-        <Output TaskParameter="GeneratedGui" PropertyName="SharedHostUpgradeCode" />
+        <Output TaskParameter="GeneratedGuid" PropertyName="SharedHostUpgradeCode" />
       </GenerateGuidFromName>
 
       <GenerateGuidFromName Name="$(HostFxrInstallerFile)">
-        <Output TaskParameter="GeneratedGui" PropertyName="HostFxrUpgradeCode" />
+        <Output TaskParameter="GeneratedGuid" PropertyName="HostFxrUpgradeCode" />
+      </GenerateGuidFromName>
+
+      <GenerateGuidFromName Name="$(TargetingPackInstallerFile)">
+        <Output TaskParameter="GeneratedGuid" PropertyName="TargetingPackUpgradeCode" />
       </GenerateGuidFromName>
 
       <ItemGroup>
@@ -60,6 +64,12 @@
             <InstallerName>$(HostFxrInstallerFile)</InstallerName>
             <UpgradeCode>$(HostFxrUpgradeCode)</UpgradeCode>
         </WixOutputs>
+        <WixOutputs Include="$(WixObjRoot)targetingpack">
+            <InputDir>$(TargetingPackPublishRoot)</InputDir>
+            <BrandName>$(TargetingPackBrandName)</BrandName>
+            <InstallerName>$(TargetingPackInstallerFile)</InstallerName>
+            <UpgradeCode>$(TargetingPackUpgradeCode)</UpgradeCode>
+        </WixOutputs>
         <!-- shared framework has extra arguments so it needs to be in a separate group -->
         <WixOutputs2 Include="$(WixObjRoot)sharedframework">
             <InputDir>$(SharedFrameworkPublishRoot)</InputDir>
@@ -72,7 +82,7 @@
       <MakeDir Directories="$(WixObjRoot);@(WixOutputs);@(WixOutputs2)" />
 
       <GenerateGuidFromName Name="$(SharedFrameworkInstallerFile)">
-        <Output TaskParameter="GeneratedGui" PropertyName="SharedFxUpgradeCode" />
+        <Output TaskParameter="GeneratedGuid" PropertyName="SharedFxUpgradeCode" />
       </GenerateGuidFromName>
 
       <PropertyGroup>
@@ -100,7 +110,7 @@
      </PropertyGroup>
 
      <GenerateGuidFromName Name="$(SharedBundle)">
-       <Output TaskParameter="GeneratedGui" PropertyName="SharedBundleCode" />
+       <Output TaskParameter="GeneratedGuid" PropertyName="SharedBundleCode" />
      </GenerateGuidFromName>
 
      <PropertyGroup>

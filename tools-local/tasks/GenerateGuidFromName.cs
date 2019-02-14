@@ -12,8 +12,9 @@ namespace Microsoft.DotNet.Build.Tasks
     {
         [Required]
         public string Name { get; set; }
+
         [Output]
-        public string GeneratedGui { get; set; }
+        public string GeneratedGuid { get; set; }
 
         // Generate a Version 5 (SHA1 Name Based) Guid from a name.
         public override bool Execute()
@@ -44,7 +45,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 SwapGuidByteOrder(res);
 
-                GeneratedGui = (new Guid(res)).ToString();
+                GeneratedGuid = (new Guid(res)).ToString();
             }
 
             return true;

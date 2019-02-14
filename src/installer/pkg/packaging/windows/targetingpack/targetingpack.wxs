@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <?include "Variables.wxi" ?>
+    <Product Id="*" Name="$(var.ProductName)" Language="$(var.ProductLanguage)" Version="$(var.ProductVersion)" Manufacturer="$(var.Manufacturer)" UpgradeCode="$(var.UpgradeCode)">
+        <Package Compressed="yes" InstallScope="perMachine" InstallerVersion="200" />
+
+        <MajorUpgrade DowngradeErrorMessage="$(var.DowngradeErrorMessage)" Schedule="afterInstallInitialize"/>
+
+        <MediaTemplate CompressionLevel="high" EmbedCab="yes" />
+
+        <Feature Id="MainFeature" Title="Main Feature" Level="1">
+            <ComponentGroupRef Id="InstallFiles" />
+        </Feature>
+        <Feature Id="Provider" Absent="disallow" AllowAdvertise="no" Description="Used for Ref Counting" Display="hidden" Level="1" InstallDefault="local" Title="RefCounting" TypicalDefault="install">
+            <ComponentRef Id="$(var.DependencyKeyId)" />
+        </Feature>
+        <Property Id="ProductCPU" Value="$(var.Platform)" />
+        <Property Id="RTM_ProductVersion" Value="$(var.Dotnet_ProductVersion)" />
+
+        <Property Id="MSIFASTINSTALL" Value="7" />
+
+        <WixVariable Id="WixUILicenseRtf" Value="$(var.MicrosoftEula)" />
+
+        <Property Id="WIXUI_INSTALLDIR" Value="DOTNETHOME"/>
+        <UIRef Id="WixUI_InstallDir" />
+
+        <CustomActionRef Id="WixBroadcastEnvironmentChange" />
+    </Product>
+    <Fragment>
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="$(var.Program_Files)">
+                <Directory Id="DOTNETHOME" Name="dotnet"/>
+            </Directory>
+        </Directory>
+    </Fragment>
+</Wix>
