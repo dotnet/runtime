@@ -9,7 +9,6 @@ parameters:
   dependsOn: ''
   containerName: ''
   timeoutInMinutes: ''
-  helixType: ''
   crossrootfsDir: ''
   enableMicrobuild: ''
 
@@ -30,7 +29,6 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     helixRepo: 'dotnet/coreclr'
-    helixType: ${{ parameters.helixType }}
 
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
 

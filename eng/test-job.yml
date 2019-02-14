@@ -35,11 +35,6 @@ jobs:
 
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
-    ${{ if eq(parameters.readyToRun, false) }}:
-      helixType: ${{ format('test/functional/cli/pri{0}', parameters.priority) }}
-    ${{ if eq(parameters.readyToRun, true) }}:
-      helixType: ${{ format('test/functional/r2r/cli/pri{0}', parameters.priority) }}
-
     variables:
     - group: DotNet-HelixApi-Access
     # Map template parameters to command line arguments
@@ -131,9 +126,23 @@ jobs:
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
 
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          creator: 'coreclr'
+
         helixBuild: $(Build.BuildNumber)
-        helixSource: $(_HelixSource)
-        helixType: $(_HelixType)
+
+        ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+          helixSource: official/dotnet/coreclr/$(Build.SourceBranch)
+        ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+          helixSource: pr/dotnet/coreclr/$(Build.SourceBranch)
+        ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+          helixSource: ci/dotnet/coreclr/$(Build.SourceBranch)
+
+        ${{ if eq(parameters.readyToRun, false) }}:
+          helixType: ${{ format('test/functional/cli/pri{0}', parameters.priority) }}
+        ${{ if eq(parameters.readyToRun, true) }}:
+          helixType: ${{ format('test/functional/r2r/cli/pri{0}', parameters.priority) }}
+
         helixQueues: ${{ parameters.helixQueues.asString }}
 
         ${{ if eq(parameters.helixQueues.asString, '') }}:
@@ -149,8 +158,5 @@ jobs:
           # Access token variable for internal project from the
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
-
-        ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          creator: coreclr-pulls
 
         scenarios: ${{ parameters.scenarios.asString }}
