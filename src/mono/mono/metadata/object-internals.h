@@ -485,6 +485,13 @@ typedef struct {
 
 typedef struct {
 	MonoObject obj;
+	MonoArray *frames;
+	MonoArray *captured_traces;
+	MonoBoolean debug_info;
+} MonoStackTrace;
+
+typedef struct {
+	MonoObject obj;
 	gint32 il_offset;
 	gint32 native_offset;
 	gint64 method_address;
