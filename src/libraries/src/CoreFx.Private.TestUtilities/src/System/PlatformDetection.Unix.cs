@@ -61,6 +61,7 @@ namespace System
         public static bool IsNetfx472OrNewer => false;
 
         public static bool IsDrawingSupported { get; } = GetGdiplusIsAvailable();
+        public static bool IsSoundPlaySupported { get; } = false;
 
         [DllImport("libdl")]
         private static extern IntPtr dlopen(string libName, int flags);
@@ -182,7 +183,10 @@ namespace System
         /// Get whether the OS platform matches the given Linux distro and optional version.
         /// </summary>
         /// <param name="distroId">The distribution id.</param>
-        /// <param name="versionId">The distro version.  If omitted, compares the distro only.</param>
+        /// <param name="major">The distro major version. If omitted, this portion of the version is not included in the comparison.</param>
+        /// <param name="minor">The distro minor version. If omitted, this portion of the version is not included in the comparison.</param>
+        /// <param name="build">The distro build version. If omitted, this portion of the version is not included in the comparison.</param>
+        /// <param name="revision">The distro revision version. If omitted, this portion of the version is not included in the comparison.</param>
         /// <returns>Whether the OS platform matches the given Linux distro and optional version.</returns>
         private static bool IsDistroAndVersion(string distroId, int major = -1, int minor = -1, int build = -1, int revision = -1)
         {
@@ -193,7 +197,10 @@ namespace System
         /// Get whether the OS platform matches the given Linux distro and optional version is same or higher.
         /// </summary>
         /// <param name="distroId">The distribution id.</param>
-        /// <param name="versionId">The distro version.  If omitted, compares the distro only.</param>
+        /// <param name="major">The distro major version. If omitted, this portion of the version is not included in the comparison.</param>
+        /// <param name="minor">The distro minor version. If omitted, this portion of the version is not included in the comparison.</param>
+        /// <param name="build">The distro build version. If omitted, this portion of the version is not included in the comparison.</param>
+        /// <param name="revision">The distro revision version.  If omitted, this portion of the version is not included in the comparison.</param>
         /// <returns>Whether the OS platform matches the given Linux distro and optional version is same or higher.</returns>
         private static bool IsDistroAndVersionOrHigher(string distroId, int major = -1, int minor = -1, int build = -1, int revision = -1)
         {

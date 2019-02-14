@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. See the LICENSE file in the project root for more information. -->
+<Project>
   <PropertyGroup>
     <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
       https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json;
@@ -12,20 +13,22 @@
     <!-- Need to keep in sync with CodeAnalysis.targets file. -->
     <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
 
-    <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(RepoRoot).dotnet\</DotNetRoot>
+    <DotNetRoot Condition="'$(DotNetRoot)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', '.dotnet'))</DotNetRoot>
     <DotNetCmd>$(DotNetRoot)dotnet</DotNetCmd>
     <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
-    <GlobalToolsDir>$(ArtifactsDir)tools/</GlobalToolsDir>
+    <DotNetCmd>"$(DotNetCmd)"</DotNetCmd>
   </PropertyGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <ItemGroup>
     <PackageReference Include="$(BuildToolsPackage)" Version="$(BuildToolsPackageVersion)" />
-    <PackageReference Include="$(FeedTasksPackage)" Version="$(FeedTasksPackageVersion)" />
     <PackageReference Include="$(PublishSymbolsPackage)" Version="$(PublishSymbolsPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.SourceRewriter" Version="$(MicrosoftDotNetSourceRewriterPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.CoreFxTesting" Version="$(MicrosoftDotNetCoreFxTestingPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Configuration" Version="$(MicrosoftDotNetBuildTasksConfigurationPackageVersion)" />
@@ -42,6 +45,10 @@
     <PackageReference Include="System.Runtime.Analyzers" Version="1.1.0" />
     <PackageReference Include="System.Runtime.InteropServices.Analyzers" Version="1.1.0" />
     <PackageReference Include="System.Security.Cryptography.Hashing.Algorithms.Analyzers" Version="1.1.0" />
+
+    <!-- Include the Roslyn Compilers -->
+    <PackageReference Include="Microsoft.Net.Compilers" Version="$(MicrosoftNetCompilersVersion)" PrivateAssets="all" ExcludeAssets="Build" GeneratePathProperty="true" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.NETCore.Compilers" Version="$(MicrosoftNETCoreCompilersVersion)" PrivateAssets="all" ExcludeAssets="Build" GeneratePathProperty="true" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,31 +56,49 @@
     <RepoTool Include="dotnet-reportgenerator-globaltool" Version="$(DotNetReportGeneratorGlobalToolPackageVersion)" />
   </ItemGroup>
 
+  <Target Name="InitOptionalTools"
+          Condition="'$(OptionalToolSource)' != ''"
+          AfterTargets="Restore">
+
+    <PropertyGroup>
+      <OptionalToolDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common', 'internal'))</OptionalToolDir>
+      <OptionalToolProjectPath>$(OptionalToolDir)Tools.csproj</OptionalToolProjectPath>
+    </PropertyGroup>
+
+    <Exec Command="$(DotNetCmd) restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources"
+          WorkingDirectory="$(RepoRoot)" />
+
+  </Target>
+
   <Target Name="InitTools" AfterTargets="Restore">
 
     <PropertyGroup>
       <ToolsDir Condition="'$(ToolsDir)' == ''">$(RepoRoot)Tools</ToolsDir>
-      <BuildToolsSemaphore>$(ToolsDir)/$(BuildToolsPackageVersion).init-tools.completed</BuildToolsSemaphore>
-      <PackagesDir>$(NuGetPackageRoot)/</PackagesDir>
-      <BuildToolsPackageDir Condition="'$(BuildToolsPackageDir)' == ''">$(PackagesDir)$(BuildToolsPackage)/$(BuildToolsPackageVersion)/lib/</BuildToolsPackageDir>
+      <BuildToolsSemaphore>$([MSBuild]::NormalizePath('$(ToolsDir)', '$(BuildToolsPackageVersion).init-tools.completed'))</BuildToolsSemaphore>
+      <PackagesDir>$(NuGetPackageRoot)</PackagesDir>
+      <BuildToolsPackageDir Condition="'$(BuildToolsPackageDir)' == ''">$([MSBuild]::NormalizeDirectory('$(PackagesDir)', '$(BuildToolsPackage)', '$(BuildToolsPackageVersion)', 'lib'))</BuildToolsPackageDir>
       <CmdExt>cmd</CmdExt>
       <CmdExt Condition="'$(OS)' != 'Windows_NT'">sh</CmdExt>
-      <InitToolsCmdLine>$(BuildToolsPackageDir)init-tools.$(CmdExt) $(RepoRoot) $(DotNETCmd) $(ToolsDir) $(PackagesDir)</InitToolsCmdLine>
+      <InitToolsCmdLine>"$(BuildToolsPackageDir)init-tools.$(CmdExt)" "$(RepoRoot)" $(DotNetCmd) "$(ToolsDir)" "$(PackagesDir.TrimEnd('\'))"</InitToolsCmdLine>
     </PropertyGroup>
 
-    <Exec
-        Condition="!Exists('$(BuildToolsSemaphore)')"
-        Command="$(InitToolsCmdLine) &gt; $(RepoRoot)init-tools.log" />
-
-    <Touch Files="$(BuildToolsSemaphore)" AlwaysCreate="true" />
+    <Exec Condition="!Exists('$(BuildToolsSemaphore)')"
+          Command="$(InitToolsCmdLine) &gt; &quot;$(RepoRoot)init-tools.log&quot;" />
+    <Touch Files="$(BuildToolsSemaphore)"
+           AlwaysCreate="true" />
     <OnError ExecuteTargets="DumpInitToolsLog" />
+
   </Target>
 
   <Target Name="InitGlobalTools" AfterTargets="Restore">
 
+    <PropertyGroup>
+      <GlobalToolsDir>$(ArtifactsDir)tools</GlobalToolsDir>
+    </PropertyGroup>
+
     <!-- List all global tools and save the output. -->
-    <Exec Condition="Exists($(GlobalToolsDir))"
-          Command="$(DotNetCmd) tool list --tool-path $(GlobalToolsDir)"
+    <Exec Condition="Exists('$(GlobalToolsDir)')"
+          Command="$(DotNetCmd) tool list --tool-path &quot;$(GlobalToolsDir)&quot;"
           WorkingDirectory="$(RepoRoot)"
           ConsoleToMsBuild="true"
           ContinueOnError="WarnAndContinue">
@@ -81,8 +106,8 @@
     </Exec>
 
     <!-- Uninstall the global tool if it exists with a different version. -->
-    <Exec Condition="Exists($(GlobalToolsDir)) AND $(DotNetListToolsOutput.Contains('%(RepoTool.Identity)')) AND !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
-          Command="$(DotNetCmd) tool uninstall --tool-path $(GlobalToolsDir) %(RepoTool.Identity)"
+    <Exec Condition="Exists('$(GlobalToolsDir)') AND $(DotNetListToolsOutput.Contains('%(RepoTool.Identity)')) AND !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
+          Command="$(DotNetCmd) tool uninstall --tool-path &quot;$(GlobalToolsDir)&quot; %(RepoTool.Identity)"
           WorkingDirectory="$(RepoRoot)"
           ContinueOnError="WarnAndContinue" />
 
@@ -90,16 +115,19 @@
       Installs the global tool if it doesn't exist with the right version.
       Creates the global tools folder automatically if it doesn't exist.
     -->
-    <Exec Condition="!Exists($(GlobalToolsDir)) OR !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
-          Command="$(DotNetCmd) tool install --tool-path $(GlobalToolsDir) %(RepoTool.Identity) --version %(RepoTool.Version) --add-source https:%2F%2Fapi.nuget.org/v3/index.json"
+    <Exec Condition="!Exists('$(GlobalToolsDir)') OR !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
+          Command="$(DotNetCmd) tool install --tool-path &quot;$(GlobalToolsDir)&quot; %(RepoTool.Identity) --version %(RepoTool.Version) --add-source https:%2F%2Fapi.nuget.org/v3/index.json"
           WorkingDirectory="$(RepoRoot)"
           ContinueOnError="WarnAndContinue" />
-    
+
   </Target>
 
   <Target Name="DumpInitToolsLog">
+
     <Message Text="Init-tools failed dumping log file $(RepoRoot)init-tools.log" />
-    <Message Condition="Exists('$(RepoRoot)init-tools.log')" Text="$([System.IO.File]::ReadAllText('$(RepoRoot)init-tools.log'))" />
+    <Message Condition="Exists('$(RepoRoot)init-tools.log')"
+             Text="$([System.IO.File]::ReadAllText('$(RepoRoot)init-tools.log'))" />
+
   </Target>
 
   <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
@@ -107,9 +135,12 @@
   <Target Name="GenerateAnalyzersPropsFile"
           AfterTargets="Restore"
           DependsOnTargets="ResolveLockFileAnalyzers">
+
     <SaveItems Condition="'@(Analyzer)' != ''"
                ItemName="ResolvedAnalyzer"
                Items="@(Analyzer)"
                File="$(AnalyzerPropsFile)" />
+
   </Target>
+
 </Project>

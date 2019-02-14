@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using Internal.Cryptography;
 using Internal.NativeCrypto;
+using Microsoft.Win32.SafeHandles;
 using static Internal.NativeCrypto.CapiHelper;
 
 namespace System.Security.Cryptography
@@ -701,7 +702,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (_parameters.KeyNumber == (int) KeySpec.AT_KEYEXCHANGE)
+                if (_parameters.KeyNumber == (int)Interop.Advapi32.KeySpec.AT_KEYEXCHANGE)
                 {
                     return "RSA-PKCS1-KeyEx";
                 }

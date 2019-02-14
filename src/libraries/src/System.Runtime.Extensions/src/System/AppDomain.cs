@@ -67,13 +67,7 @@ namespace System
 
         public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException
         {
-            add
-            {
-#if uapaot
-                AppContext.SetAppDomain(this);
-#endif
-                AppContext.FirstChanceException += value;
-            }
+            add { AppContext.FirstChanceException += value; }
             remove { AppContext.FirstChanceException -= value; }
         }
 
@@ -401,7 +395,10 @@ namespace System
                         if (s_getUnauthenticatedPrincipal == null)
                         {
                             Type type = Type.GetType("System.Security.Principal.GenericPrincipal, System.Security.Claims", throwOnError: true);
-                            Volatile.Write(ref s_getUnauthenticatedPrincipal, (Func<IPrincipal>)Delegate.CreateDelegate(typeof(Func<IPrincipal>), type, "GetDefaultInstance"));
+                            // Don't throw PNSE if null like for WindowsPrincipal as UnauthenticatedPrincipal should
+                            // be available on all platforms.
+                            Volatile.Write(ref s_getUnauthenticatedPrincipal,
+                                (Func<IPrincipal>)Delegate.CreateDelegate(typeof(Func<IPrincipal>), type, "GetDefaultInstance"));
                         }
 
                         principal = s_getUnauthenticatedPrincipal();

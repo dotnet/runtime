@@ -5,12 +5,6 @@
 using System.Threading;
 using System.Collections.Generic;
 
-// TODO when we upgrade to C# V6 you can remove this.  
-// warning CS0420: 'P.x': a reference to a volatile field will not be treated as volatile
-// This happens when you pass a _subcribers (a volatile field) to interlocked operations (which are byref). 
-// This was fixed in C# V6.  
-#pragma warning disable 0420
-
 namespace System.Diagnostics
 {
     /// <summary>

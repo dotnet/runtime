@@ -3,8 +3,8 @@
     <ProjectGuid>{29EF8D53-8E84-4E49-B90F-5950A2FE7D54}</ProjectGuid>
     <AssemblyName>System.Data.Common</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <NoWarn>$(NoWarn);CS1574</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -306,6 +306,7 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

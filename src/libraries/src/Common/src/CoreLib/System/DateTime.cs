@@ -455,10 +455,12 @@ namespace System
         // time units to this DateTime.
         private DateTime Add(double value, int scale)
         {
-            long millis = (long)(value * scale + (value >= 0 ? 0.5 : -0.5));
-            if (millis <= -MaxMillis || millis >= MaxMillis)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
-            return AddTicks(millis * TicksPerMillisecond);
+            double millis_double = value * (double)scale + (value >= 0 ? 0.5 : -0.5);
+
+            if (millis_double <= (double)-MaxMillis || millis_double >= (double)MaxMillis)
+                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
+
+            return AddTicks((long)millis_double * TicksPerMillisecond);
         }
 
         // Returns the DateTime resulting from adding a fractional number of

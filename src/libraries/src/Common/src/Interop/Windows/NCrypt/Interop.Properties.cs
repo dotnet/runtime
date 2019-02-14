@@ -18,6 +18,33 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
         internal static extern unsafe ErrorCode NCryptSetProperty(SafeNCryptHandle hObject, string pszProperty, [In] void* pbInput, int cbInput, CngPropertyOptions dwFlags);
 
+        internal static ErrorCode NCryptGetByteProperty(SafeNCryptHandle hObject, string pszProperty, ref byte result, CngPropertyOptions options = CngPropertyOptions.None)
+        {
+            int cbResult;
+            ErrorCode errorCode;
+
+            unsafe
+            {
+                fixed (byte* pResult = &result)
+                {
+                    errorCode = Interop.NCrypt.NCryptGetProperty(
+                        hObject,
+                        pszProperty,
+                        pResult,
+                        sizeof(byte),
+                        out cbResult,
+                        options);
+                }
+            }
+
+            if (errorCode == ErrorCode.ERROR_SUCCESS)
+            {
+                Debug.Assert(cbResult == sizeof(byte));
+            }
+
+            return errorCode;
+        }
+
         internal static ErrorCode NCryptGetIntProperty(SafeNCryptHandle hObject, string pszProperty, ref int result)
         {
             int cbResult;

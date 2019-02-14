@@ -268,7 +268,7 @@ namespace System.Resources.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images(string key, object expectedValue)
         {
@@ -298,7 +298,7 @@ namespace System.Resources.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetResourceSet_Images(string key, object expectedValue)
         {
@@ -362,6 +362,19 @@ namespace System.Resources.Tests
                     Assert.Equal(b, stream.ReadByte());
                 }
             }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "UwpAot currently allows custom assembly in ResourceManager constructor")]
+        public static void ConstructorNonRuntimeAssembly()
+        {
+            MockAssembly assembly = new MockAssembly();
+            Assert.Throws<ArgumentException>(() => new ResourceManager("name", assembly));
+            Assert.Throws<ArgumentException>(() => new ResourceManager("name", assembly, null));
+        }
+
+        private class MockAssembly : Assembly
+        {
         }
     }
 }

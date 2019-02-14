@@ -227,7 +227,7 @@ namespace System.Text
             _pos += length;
         }
 
-        public unsafe void Append(ReadOnlySpan<char> value)
+        public void Append(ReadOnlySpan<char> value)
         {
             int pos = _pos;
             if (pos > _chars.Length - value.Length)

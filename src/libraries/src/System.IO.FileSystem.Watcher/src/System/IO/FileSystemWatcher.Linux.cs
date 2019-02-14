@@ -749,9 +749,9 @@ namespace System.IO
                 }
             }
 
-            /// <summary>Read events from the inotify handle into the supplied array.</summary>
-            /// <param name="events">The array into which events should be read.</param>
-            /// <returns>The number of events read and stored into the array.</returns>
+            /// <summary>Read event from the inotify handle into the supplied event object.</summary>
+            /// <param name="notifyEvent">The event object to be populated.</param>
+            /// <returns><see langword="true"/> if event was read successfully, <see langword="false"/> otherwise.</returns>
             private bool TryReadEvent(out NotifyEvent notifyEvent)
             {
                 Debug.Assert(_buffer != null);

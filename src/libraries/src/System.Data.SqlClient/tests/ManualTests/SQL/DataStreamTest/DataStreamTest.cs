@@ -15,7 +15,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DataStreamTest
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void RunAllTestsForSingleServer_NP()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -28,7 +28,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void RunAllTestsForSingleServer_TCP()
         {
             RunAllTestsForSingleServer(DataTestUtility.TcpConnStr);
@@ -64,7 +64,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // These tests fail with named pipes, since they try to do DNS lookups on named pipe paths.
             if (!usingNamePipes)
             {
-                TimeoutDuringReadAsyncWithClosedReaderTest(connectionString);
+                //if (DataTestUtility.IsUsingNativeSNI()) /* [ActiveIssue(33930)] */
+                //{
+                //    TimeoutDuringReadAsyncWithClosedReaderTest(connectionString);
+                //}
                 NonFatalTimeoutDuringRead(connectionString);
             }
         }
@@ -294,6 +297,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     rdr.GetFieldValue<SqlXml>(15);
                     rdr.GetFieldValue<SqlString>(14);
                     rdr.GetFieldValue<SqlString>(15);
+                    rdr.GetFieldValue<XmlReader>(14);
+                    rdr.GetFieldValue<XmlReader>(15);
+                    rdr.GetFieldValueAsync<XmlReader>(14);
+                    rdr.GetFieldValueAsync<XmlReader>(15);
 
                     rdr.Read();
                     Assert.True(rdr.IsDBNullAsync(11).Result, "FAILED: IsDBNull was false for a null value");

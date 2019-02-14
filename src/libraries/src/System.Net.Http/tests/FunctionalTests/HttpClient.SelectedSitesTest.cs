@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpClient_SelectedSites_Test : HttpClientTestBase
+    public abstract class HttpClient_SelectedSites_Test : HttpClientHandlerTestBase
     {
         public static bool IsSelectedSitesTestEnabled() 
         {

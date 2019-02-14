@@ -39,7 +39,7 @@ namespace System.Net.NetworkInformation.Tests
             FileUtil.NormalizeLineEndings("NetworkFiles/tcp6", tcp6File);
 
             TcpConnectionInformation[] infos = StringParsingHelpers.ParseActiveTcpConnectionsFromFiles(tcpFile, tcp6File);
-            Assert.Equal(10, infos.Length);
+            Assert.Equal(11, infos.Length);
             ValidateInfo(infos[0], new IPEndPoint(0xFFFFFF01L, 0x01BD), new IPEndPoint(0L, 0), TcpState.Established);
             ValidateInfo(infos[1], new IPEndPoint(0x12345678L, 0x008B), new IPEndPoint(0L, 0), TcpState.SynSent);
             ValidateInfo(infos[2], new IPEndPoint(0x0101007FL, 0x0035), new IPEndPoint(0L, 0), TcpState.SynReceived);
@@ -48,33 +48,39 @@ namespace System.Net.NetworkInformation.Tests
 
             ValidateInfo(
                 infos[5],
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000000000000"), 0x01BD),
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000000000000"), 0x0000),
+                new IPEndPoint(IPAddress.Parse("::"), 0x01BD),
+                new IPEndPoint(IPAddress.Parse("::"), 0x0000),
                 TcpState.FinWait2);
 
             ValidateInfo(
                 infos[6],
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000000000000"), 0x008B),
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000000000000"), 0x0000),
+                new IPEndPoint(IPAddress.Parse("::"), 0x008B),
+                new IPEndPoint(IPAddress.Parse("::"), 0x0000),
                 TcpState.TimeWait);
 
             ValidateInfo(
                 infos[7],
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000001000000"), 0x0277),
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000000000000"), 0x0000),
+                new IPEndPoint(IPAddress.Parse("::1"), 0x0277),
+                new IPEndPoint(IPAddress.Parse("::"), 0x0000),
                 TcpState.Closing);
 
             ValidateInfo(
                 infos[8],
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000001000000"), 0xA696),
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000001000000"), 0x0277),
+                new IPEndPoint(IPAddress.Parse("::1"), 0xA696),
+                new IPEndPoint(IPAddress.Parse("::1"), 0x0277),
                 TcpState.CloseWait);
 
             ValidateInfo(
                 infos[9],
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000001000000"), 0xA69B),
-                new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000001000000"), 0x0277),
+                new IPEndPoint(IPAddress.Parse("::1"), 0xA69B),
+                new IPEndPoint(IPAddress.Parse("::1"), 0x0277),
                 TcpState.LastAck);
+
+            ValidateInfo(
+                infos[10],
+                new IPEndPoint(IPAddress.Parse("::1"), 124),
+                new IPEndPoint(IPAddress.Parse("fe80::215:5dff:fe00:402"), 123),
+                TcpState.Established);
         }
 
         [Fact]
@@ -87,8 +93,9 @@ namespace System.Net.NetworkInformation.Tests
 
             IPEndPoint[] listeners = StringParsingHelpers.ParseActiveTcpListenersFromFiles(tcpFile, tcp6File);
             // There is only one socket in Listening state
-            Assert.Equal(1, listeners.Length);
-            Assert.Equal(new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000001000000"), 0xA697), listeners[0]);
+            Assert.Equal(2, listeners.Length);
+            Assert.Equal(new IPEndPoint(IPAddress.Parse("::1"), 0xA697), listeners[0]);
+            Assert.Equal(new IPEndPoint(IPAddress.Parse("fec0::aa64:0:0:1"), 123), listeners[1]);
         }
 
         [Fact]
@@ -100,7 +107,7 @@ namespace System.Net.NetworkInformation.Tests
             FileUtil.NormalizeLineEndings("NetworkFiles/udp6", udp6File);
 
             IPEndPoint[] listeners = StringParsingHelpers.ParseActiveUdpListenersFromFiles(udpFile, udp6File);
-            Assert.Equal(15, listeners.Length);
+            Assert.Equal(17, listeners.Length);
 
             Assert.Equal(listeners[0], new IPEndPoint(0x00000000, 0x8E15));
             Assert.Equal(listeners[1], new IPEndPoint(0x00000000, 0x14E9));
@@ -115,9 +122,11 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(listeners[10], new IPEndPoint(0x00000000, 0x008A));
             Assert.Equal(listeners[11], new IPEndPoint(0x00000000, 0x0277));
 
-            Assert.Equal(listeners[12], new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000000000000"), 0x14E9));
-            Assert.Equal(listeners[13], new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000000000000"), 0x96D3));
-            Assert.Equal(listeners[14], new IPEndPoint(StringParsingHelpers.ParseHexIPAddress("00000000000000000000000000000000"), 0x8B58));
+            Assert.Equal(listeners[12], new IPEndPoint(IPAddress.Parse("::"), 0x14E9));
+            Assert.Equal(listeners[13], new IPEndPoint(IPAddress.Parse("::"), 0x96D3));
+            Assert.Equal(listeners[14], new IPEndPoint(IPAddress.Parse("::"), 0x8B58));
+            Assert.Equal(listeners[15], new IPEndPoint(IPAddress.Parse("fec0::aa64:0:0:1"), 123));
+            Assert.Equal(listeners[16], new IPEndPoint(IPAddress.Parse("fe80::215:5dff:fe00:402"), 123));
         }
 
         private static void ValidateInfo(TcpConnectionInformation tcpConnectionInformation, IPEndPoint localEP, IPEndPoint remoteEP, TcpState state)

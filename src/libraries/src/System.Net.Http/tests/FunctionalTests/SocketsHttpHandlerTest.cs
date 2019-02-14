@@ -104,11 +104,6 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class SocketsHttpHandler_HttpClientTest : HttpClientTest
-    {
-        protected override bool UseSocketsHttpHandler => true;
-    }
-
     public sealed class SocketsHttpHandler_DiagnosticsTest : DiagnosticsTest
     {
         protected override bool UseSocketsHttpHandler => true;
@@ -482,6 +477,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
+    public sealed class SocketsHttpHandlerTest_AutoRedirect : HttpClientHandlerTest_AutoRedirect
+    {
+        public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
+    }
+
     public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
@@ -499,7 +500,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class SocketsHttpHandler_HttpCookieProtocolTests : HttpCookieProtocolTests
+    public sealed class SocketsHttpHandlerTest_Cookies : HttpClientHandlerTest_Cookies
+    {
+        protected override bool UseSocketsHttpHandler => true;
+    }
+
+    public sealed class SocketsHttpHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
         protected override bool UseSocketsHttpHandler => true;
     }
@@ -684,6 +690,7 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class SocketsHttpHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
+        public SocketsHttpHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
         protected override bool UseSocketsHttpHandler => true;
 
         [Theory]
@@ -723,7 +730,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_ConnectionUpgrade_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_ConnectionUpgrade_Test : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
 
@@ -842,7 +849,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_Connect_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_Connect_Test : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
 
@@ -931,7 +938,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
 
@@ -1552,7 +1559,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_ExternalConfiguration_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_ExternalConfiguration_Test : HttpClientHandlerTestBase
     {
         private const string EnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER";
         private const string AppContextSettingName = "System.Net.Http.UseSocketsHttpHandler";
@@ -1630,5 +1637,17 @@ namespace System.Net.Http.Functional.Tests
                 return SuccessExitCode;
             }).Dispose();
         }
+    }
+
+    public sealed class SocketsHttpHandlerTest_Http2 : HttpClientHandlerTest_Http2
+    {
+        protected override bool UseSocketsHttpHandler => true;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class SocketsHttpHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
+    {
+        protected override bool UseSocketsHttpHandler => true;
+        protected override bool UseHttp2LoopbackServer => true;
     }
 }

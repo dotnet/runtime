@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -9,6 +10,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Security;
+using System.Runtime.InteropServices;
 
 using Internal.IO;
 
@@ -406,84 +408,116 @@ namespace System
             return id;
         }
 
+        private static string GetDirectoryEntryFullPath(ref Interop.Sys.DirectoryEntry dirent, string currentPath)
+        {
+            Span<char> nameBuffer = stackalloc char[Interop.Sys.DirectoryEntry.NameBufferSize];
+            ReadOnlySpan<char> direntName = dirent.GetName(nameBuffer);
+
+            if ((direntName.Length == 1 && direntName[0] == '.') ||
+                (direntName.Length == 2 && direntName[0] == '.' && direntName[1] == '.'))
+                return null;
+
+            return Path.Join(currentPath.AsSpan(), direntName);
+        }
+
         /// <summary>
         /// Enumerate files
         /// </summary>
-        private static IEnumerable<string> EnumerateFilesRecursively(string path)
+        private static unsafe void EnumerateFilesRecursively(string path, Predicate<string> condition)
         {
             List<string> toExplore = null; // List used as a stack
 
-            string currentPath = path;
-            for(;;)
+            int bufferSize = Interop.Sys.GetReadDirRBufferSize();
+            byte[] dirBuffer = null;
+            try
             {
-                using (Microsoft.Win32.SafeHandles.SafeDirectoryHandle dirHandle = Interop.Sys.OpenDir(currentPath))
+                dirBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                string currentPath = path;
+
+                fixed (byte* dirBufferPtr = dirBuffer)
                 {
-                    if (dirHandle.IsInvalid)
+                    for(;;)
                     {
-                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirectory: true);
-                    }
-
-                    // Read each entry from the enumerator
-                    Interop.Sys.DirectoryEntry dirent;
-                    while (Interop.Sys.ReadDir(dirHandle, out dirent) == 0)
-                    {
-                        if (dirent.InodeName == "." || dirent.InodeName == "..")
-                            continue;
-
-                        string fullPath = Path.Combine(currentPath, dirent.InodeName);
-
-                        // Get from the dir entry whether the entry is a file or directory.
-                        // We classify everything as a file unless we know it to be a directory.
-                        bool isDir;
-                        if (dirent.InodeType == Interop.Sys.NodeType.DT_DIR)
+                        IntPtr dirHandle = Interop.Sys.OpenDir(currentPath);
+                        if (dirHandle == IntPtr.Zero)
                         {
-                            // We know it's a directory.
-                            isDir = true;
+                            throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirectory: true);
                         }
-                        else if (dirent.InodeType == Interop.Sys.NodeType.DT_LNK || dirent.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                        {
-                            // It's a symlink or unknown: stat to it to see if we can resolve it to a directory.
-                            // If we can't (e.g. symlink to a file, broken symlink, etc.), we'll just treat it as a file.
 
-                            Interop.Sys.FileStatus fileinfo;
-                            if (Interop.Sys.Stat(fullPath, out fileinfo) >= 0)
+                        try
+                        {
+                            // Read each entry from the enumerator
+                            Interop.Sys.DirectoryEntry dirent;
+                            while (Interop.Sys.ReadDirR(dirHandle, dirBufferPtr, bufferSize, out dirent) == 0)
                             {
-                                isDir = (fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
-                            }
-                            else
-                            {
-                                isDir = false;
+                                string fullPath = GetDirectoryEntryFullPath(ref dirent, currentPath);
+                                if (fullPath == null)
+                                    continue;
+
+                                // Get from the dir entry whether the entry is a file or directory.
+                                // We classify everything as a file unless we know it to be a directory.
+                                bool isDir;
+                                if (dirent.InodeType == Interop.Sys.NodeType.DT_DIR)
+                                {
+                                    // We know it's a directory.
+                                    isDir = true;
+                                }
+                                else if (dirent.InodeType == Interop.Sys.NodeType.DT_LNK || dirent.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+                                {
+                                    // It's a symlink or unknown: stat to it to see if we can resolve it to a directory.
+                                    // If we can't (e.g. symlink to a file, broken symlink, etc.), we'll just treat it as a file.
+
+                                    Interop.Sys.FileStatus fileinfo;
+                                    if (Interop.Sys.Stat(fullPath, out fileinfo) >= 0)
+                                    {
+                                        isDir = (fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+                                    }
+                                    else
+                                    {
+                                        isDir = false;
+                                    }
+                                }
+                                else
+                                {
+                                    // Otherwise, treat it as a file.  This includes regular files, FIFOs, etc.
+                                    isDir = false;
+                                }
+
+                                // Yield the result if the user has asked for it.  In the case of directories,
+                                // always explore it by pushing it onto the stack, regardless of whether
+                                // we're returning directories.
+                                if (isDir)
+                                {
+                                    if (toExplore == null)
+                                    {
+                                        toExplore = new List<string>();
+                                    }
+                                    toExplore.Add(fullPath);
+                                }
+                                else if (condition(fullPath))
+                                {
+                                    return;
+                                }
                             }
                         }
-                        else
+                        finally
                         {
-                            // Otherwise, treat it as a file.  This includes regular files, FIFOs, etc.
-                            isDir = false;
+                            if (dirHandle != IntPtr.Zero)
+                                Interop.Sys.CloseDir(dirHandle);
                         }
 
-                        // Yield the result if the user has asked for it.  In the case of directories,
-                        // always explore it by pushing it onto the stack, regardless of whether
-                        // we're returning directories.
-                        if (isDir)
-                        {
-                            if (toExplore == null)
-                            {
-                                toExplore = new List<string>();
-                            }
-                            toExplore.Add(fullPath);
-                        }
-                        else
-                        {
-                            yield return fullPath;
-                        }
+                        if (toExplore == null || toExplore.Count == 0)
+                            break;
+
+                        currentPath = toExplore[toExplore.Count - 1];
+                        toExplore.RemoveAt(toExplore.Count - 1);
                     }
                 }
-
-                if (toExplore == null || toExplore.Count == 0)
-                    break;
-
-                currentPath = toExplore[toExplore.Count - 1];
-                toExplore.RemoveAt(toExplore.Count - 1);
+            }
+            finally
+            {
+                if (dirBuffer != null)
+                    ArrayPool<byte>.Shared.Return(dirBuffer);
             }
         }
 
@@ -502,8 +536,8 @@ namespace System
 
             try
             {
-                foreach (string filePath in EnumerateFilesRecursively(timeZoneDirectory))
-                {
+                EnumerateFilesRecursively(timeZoneDirectory, (string filePath) =>
+                {                
                     // skip the localtime and posixrules file, since they won't give us the correct id
                     if (!string.Equals(filePath, localtimeFilePath, StringComparison.OrdinalIgnoreCase)
                         && !string.Equals(filePath, posixrulesFilePath, StringComparison.OrdinalIgnoreCase))
@@ -518,10 +552,11 @@ namespace System
                             {
                                 id = id.Substring(timeZoneDirectory.Length);
                             }
-                            break;
+                            return true;
                         }
                     }
-                }
+                    return false;
+                });
             }
             catch (IOException) { }
             catch (SecurityException) { }
@@ -1060,7 +1095,7 @@ namespace System
                 TimeSpan? parsedBaseOffset = TZif_ParseOffsetString(standardOffset);
                 if (parsedBaseOffset.HasValue)
                 {
-                    TimeSpan baseOffset = parsedBaseOffset.Value.Negate(); // offsets are backwards in POSIX notation
+                    TimeSpan baseOffset = parsedBaseOffset.GetValueOrDefault().Negate(); // offsets are backwards in POSIX notation
                     baseOffset = TZif_CalculateTransitionOffsetFromBase(baseOffset, timeZoneBaseUtcOffset);
 
                     // having a daylightSavingsName means there is a DST rule
@@ -1075,7 +1110,7 @@ namespace System
                         }
                         else
                         {
-                            daylightSavingsTimeSpan = parsedDaylightSavings.Value.Negate(); // offsets are backwards in POSIX notation
+                            daylightSavingsTimeSpan = parsedDaylightSavings.GetValueOrDefault().Negate(); // offsets are backwards in POSIX notation
                             daylightSavingsTimeSpan = TZif_CalculateTransitionOffsetFromBase(daylightSavingsTimeSpan, timeZoneBaseUtcOffset);
                             daylightSavingsTimeSpan = TZif_CalculateTransitionOffsetFromBase(daylightSavingsTimeSpan, baseOffset);
                         }
@@ -1141,7 +1176,7 @@ namespace System
 
                 if (result.HasValue && negative)
                 {
-                    result = result.Value.Negate();
+                    result = result.GetValueOrDefault().Negate();
                 }
             }
 
@@ -1158,8 +1193,8 @@ namespace System
                 // Some time zones use time values like, "26", "144", or "-2".
                 // This allows the week to sometimes be week 4 and sometimes week 5 in the month.
                 // For now, strip off any 'days' in the offset, and just get the time of day correct
-                timeOffset = new TimeSpan(timeOffset.Value.Hours, timeOffset.Value.Minutes, timeOffset.Value.Seconds);
-                if (timeOffset.Value < TimeSpan.Zero)
+                timeOffset = new TimeSpan(timeOffset.GetValueOrDefault().Hours, timeOffset.GetValueOrDefault().Minutes, timeOffset.GetValueOrDefault().Seconds);
+                if (timeOffset.GetValueOrDefault() < TimeSpan.Zero)
                 {
                     timeOfDay = new DateTime(1, 1, 2, 0, 0, 0);
                 }
@@ -1168,7 +1203,7 @@ namespace System
                     timeOfDay = new DateTime(1, 1, 1, 0, 0, 0);
                 }
 
-                timeOfDay += timeOffset.Value;
+                timeOfDay += timeOffset.GetValueOrDefault();
             }
             else
             {

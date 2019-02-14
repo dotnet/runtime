@@ -9,7 +9,6 @@
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS;FEATURE_SYSTEM_EVENTS</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_Drawing</GeneratePlatformNotSupportedAssemblyMessage>
-    <NoWarn>$(NoWarn);CS1572;CS1574;CS1587;CS1589;CS1591;CS1723;CS1734</NoWarn>
     <Configurations>net461-Debug;net461-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Unix-Debug;netcoreapp2.0-Unix-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp'))">
@@ -247,26 +246,23 @@
     <Compile Include="$(CommonPath)\CoreLib\System\LocalAppContextSwitches.Common.cs">
       <Link>Common\CoreLib\System\LocalAppContextSwitches.Common.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
-      <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FreeLibrary.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.FreeLibrary.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcAddress.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetProcAddress.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetSysColor.cs">
-      <Link>Common\Interop\Windows\user32\Interop.GetSysColor.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.GetSysColor.cs">
+      <Link>Common\Interop\Windows\User32\Interop.GetSysColor.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.Win32SystemColors.cs">
-      <Link>Common\Interop\Windows\user32\Interop.Win32SystemColors.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.Win32SystemColors.cs">
+      <Link>Common\Interop\Windows\User32\Interop.Win32SystemColors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>

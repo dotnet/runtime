@@ -9,7 +9,7 @@ namespace System.IO.Pipelines
 {
     public partial struct FlushResult
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public FlushResult(bool isCanceled, bool isCompleted) { throw null; }
         public bool IsCanceled { get { throw null; } }
         public bool IsCompleted { get { throw null; } }
@@ -46,6 +46,7 @@ namespace System.IO.Pipelines
         public abstract void AdvanceTo(System.SequencePosition consumed, System.SequencePosition examined);
         public abstract void CancelPendingRead();
         public abstract void Complete(System.Exception exception = null);
+        public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public abstract void OnWriterCompleted(System.Action<System.Exception, object> callback, object state);
         public abstract System.Threading.Tasks.ValueTask<System.IO.Pipelines.ReadResult> ReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public abstract bool TryRead(out System.IO.Pipelines.ReadResult result);
@@ -63,6 +64,7 @@ namespace System.IO.Pipelines
         public abstract void Advance(int bytes);
         public abstract void CancelPendingFlush();
         public abstract void Complete(System.Exception exception = null);
+        protected internal virtual System.Threading.Tasks.Task CopyFromAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public abstract System.Threading.Tasks.ValueTask<System.IO.Pipelines.FlushResult> FlushAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public abstract System.Memory<byte> GetMemory(int sizeHint = 0);
         public abstract System.Span<byte> GetSpan(int sizeHint = 0);
@@ -72,9 +74,14 @@ namespace System.IO.Pipelines
     public readonly partial struct ReadResult
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ReadResult(System.Buffers.ReadOnlySequence<byte> buffer, bool isCanceled, bool isCompleted) { throw null; }
         public System.Buffers.ReadOnlySequence<byte> Buffer { get { throw null; } }
         public bool IsCanceled { get { throw null; } }
         public bool IsCompleted { get { throw null; } }
+    }
+    public static partial class StreamPipeExtensions
+    {
+        public static System.Threading.Tasks.Task CopyToAsync(this System.IO.Stream source, System.IO.Pipelines.PipeWriter destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
 }

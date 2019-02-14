@@ -11,8 +11,7 @@ namespace System.Net.Security
     {
         public SslConnectionInfo(SafeSslHandle sslContext)
         {
-            string protocolVersion = Interop.Ssl.GetProtocolVersion(sslContext);
-            Protocol = (int)MapProtocolVersion(protocolVersion);
+            Protocol = (int)MapProtocolVersion(Interop.Ssl.SslGetVersion(sslContext));
 
             int dataCipherAlg;
             int keyExchangeAlg;
@@ -43,27 +42,61 @@ namespace System.Net.Security
             KeyExchKeySize = 0;
         }
 
-        private SslProtocols MapProtocolVersion(string protocolVersion)
+        private unsafe SslProtocols MapProtocolVersion(IntPtr protocolVersion)
         {
-            switch (protocolVersion)
+            // protocolVersion points to a static ASCII string that's one of:
+            //     TLSv1
+            //     TLSv1.1
+            //     TLSv1.2
+            //     TLSv1.3
+            //     SSLv2
+            //     SSLv3
+            //     unknown
+            // Regardless, it's null terminated.
+
+            byte* b = (byte*)protocolVersion;
+            if (b[0] == 'T')
             {
-#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.                
-                case "SSLv2":
-                    return SslProtocols.Ssl2;
-                case "SSLv3":
-                    return SslProtocols.Ssl3;
-#pragma warning restore                    
-                case "TLSv1":
-                    return SslProtocols.Tls;
-                case "TLSv1.1":
-                    return SslProtocols.Tls11;
-                case "TLSv1.2":
-                    return SslProtocols.Tls12;
-                case "TLSv1.3":
-                    return SslProtocols.Tls13;
-                default:
-                    return SslProtocols.None;
+                if (b[1] == 'L' &&
+                    b[2] == 'S' &&
+                    b[3] == 'v' &&
+                    b[4] == '1')
+                {
+                    if (b[5] == '\0')
+                    {
+                        return SslProtocols.Tls;
+                    }
+                    else if (b[5] == '.' && b[6] != '\0' && b[7] == '\0')
+                    {
+                        switch (b[6])
+                        {
+                            case (byte)'1': return SslProtocols.Tls11;
+                            case (byte)'2': return SslProtocols.Tls12;
+                            case (byte)'3': return SslProtocols.Tls13;
+                        }
+                    }
+                }
             }
+            else if (b[0] == 'S')
+            {
+                if (b[1] == 'S' &&
+                    b[2] == 'L' &&
+                    b[3] == 'v')
+                {
+#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.                
+                    if (b[4] == '2' && b[5] == '\0')
+                    {
+                        return SslProtocols.Ssl2;
+                    }
+                    else if (b[4] == '3' && b[5] == '\0')
+                    {
+                        return SslProtocols.Ssl3;
+                    }
+#pragma warning restore                    
+                }
+            }
+
+            return SslProtocols.None;
         }
     }
 }

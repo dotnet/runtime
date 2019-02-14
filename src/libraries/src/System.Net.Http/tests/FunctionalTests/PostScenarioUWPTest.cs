@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class PostScenarioUWPTest : HttpClientTestBase
+    public abstract class PostScenarioUWPTest : HttpClientHandlerTestBase
     {
         private readonly ITestOutputHelper _output;
 

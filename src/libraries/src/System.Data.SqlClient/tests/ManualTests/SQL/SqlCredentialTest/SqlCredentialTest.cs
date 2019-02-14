@@ -17,7 +17,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public static class SqlCredentialTest
     {
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup), /* [ActiveIssue(33930)] */ nameof(DataTestUtility.IsUsingNativeSNI))]
         public static void CreateSqlConnectionWithCredential()
         {
             var user = "u" + Guid.NewGuid().ToString().Replace("-", "");
@@ -49,7 +49,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup), /* [ActiveIssue(33930)] */ nameof(DataTestUtility.IsUsingNativeSNI))]
         public static void SqlConnectionChangePasswordPlaintext()
         {
             var user = "u" + Guid.NewGuid().ToString().Replace("-", "");
@@ -82,7 +82,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup), /* [ActiveIssue(33930)] */ nameof(DataTestUtility.IsUsingNativeSNI))]
         public static void SqlConnectionChangePasswordSecureString()
         {
             var user = "u" + Guid.NewGuid().ToString().Replace("-", "");
@@ -114,6 +114,52 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     conn.Open();
                     Assert.Equal(1, cmd.ExecuteScalar());
+                }
+            }
+            finally
+            {
+                dropTestUser(user);
+            }
+        }
+
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup), /* [ActiveIssue(33930)] */ nameof(DataTestUtility.IsUsingNativeSNI))]
+        public static void OldCredentialsShouldFail()
+        {
+            String user = "u" + Guid.NewGuid().ToString().Replace("-", "");
+            String passStr = "Pax561O$T5K#jD";
+
+            try
+            {
+                createTestUser(user, passStr);
+
+                SqlConnectionStringBuilder sqlConnectionStringBuilder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
+                sqlConnectionStringBuilder.Remove("User ID");
+                sqlConnectionStringBuilder.Remove("Password");
+                sqlConnectionStringBuilder.IntegratedSecurity = false;
+
+                SecureString password = new SecureString();
+                passStr.ToCharArray().ToList().ForEach(x => password.AppendChar(x));
+                password.MakeReadOnly();
+                SqlCredential credential = new SqlCredential(user, password);
+
+                using (SqlConnection conn1 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, credential))
+                using (SqlConnection conn2 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, credential))
+                using (SqlConnection conn3 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, credential))
+                using (SqlConnection conn4 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, credential))
+                {
+                    conn1.Open();
+                    conn2.Open();
+                    conn3.Open();
+                    conn4.Open();
+
+                    SecureString newPassword = new SecureString();
+                    "newPassword".ToCharArray().ToList().ForEach(x => newPassword.AppendChar(x));
+                    newPassword.MakeReadOnly();
+                    SqlConnection.ChangePassword(sqlConnectionStringBuilder.ConnectionString, credential, newPassword);
+                    using (SqlConnection conn5 = new SqlConnection(sqlConnectionStringBuilder.ConnectionString, new SqlCredential(user, password)))
+                    {
+                        Assert.Throws<SqlException>(() => conn5.Open());
+                    }
                 }
             }
             finally

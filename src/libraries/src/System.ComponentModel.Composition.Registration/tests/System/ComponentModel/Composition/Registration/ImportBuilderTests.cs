@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition.Registration.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
     public class ImportBuilderTests
     {
         interface IFoo { }

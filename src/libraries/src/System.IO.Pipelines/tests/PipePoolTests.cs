@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Pipelines.Tests
 {
-    public class PipePoolTests
+    public partial class PipePoolTests
     {
         private class DisposeTrackingBufferPool : TestMemoryPool
         {

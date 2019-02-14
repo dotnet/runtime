@@ -645,7 +645,7 @@ namespace System.Numerics.Tensors
                 {
                     throw new ArgumentNullException(nameof(indices));
                 }
-                var span = new Span<int>(indices);
+                var span = new ReadOnlySpan<int>(indices);
                 return this[span];
             }
 
@@ -655,7 +655,7 @@ namespace System.Numerics.Tensors
                 {
                     throw new ArgumentNullException(nameof(indices));
                 }
-                var span = new Span<int>(indices);
+                var span = new ReadOnlySpan<int>(indices);
                 this[span] = value;
             }
         }

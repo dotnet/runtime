@@ -6,7 +6,9 @@
     <MinorVersion>7</MinorVersion>
     <!-- Always use shipping version instead of dummy version -->
     <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
-    <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
+    <PreReleaseVersionLabel>preview4</PreReleaseVersionLabel>
+    <!-- Opt-in repo features -->
+    <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <!-- Opt-out repo features -->
     <UsingToolXliff>false</UsingToolXliff>
   </PropertyGroup>
@@ -15,13 +17,29 @@
     <MicrosoftDotNetXUnitExtensionsPackage>Microsoft.DotNet.XUnitExtensions</MicrosoftDotNetXUnitExtensionsPackage>
   </PropertyGroup>
   <PropertyGroup>
-    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetApiCompatPackageVersion>
-    <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetCodeAnalysisPackageVersion>
-    <MicrosoftDotNetGenAPIPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetGenAPIPackageVersion>
-    <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetGenFacadesPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.0-beta.18613.4</MicrosoftDotNetXUnitExtensionsPackageVersion>
-    <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetBuildTasksPackagingPackageVersion>
-    <MicrosoftDotNetCoreFxTestingPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetCoreFxTestingPackageVersion>
-    <MicrosoftDotNetBuildTasksConfigurationPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetBuildTasksConfigurationPackageVersion>
+    <!-- Arcade dependencies -->
+    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.19112.3</MicrosoftDotNetApiCompatPackageVersion>
+    <MicrosoftDotNetSourceRewriterPackageVersion>1.0.0-beta.19112.3</MicrosoftDotNetSourceRewriterPackageVersion>
+    <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.19112.3</MicrosoftDotNetCodeAnalysisPackageVersion>
+    <MicrosoftDotNetGenAPIPackageVersion>1.0.0-beta.19112.3</MicrosoftDotNetGenAPIPackageVersion>
+    <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.19112.3</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.0-beta.19112.3</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19112.3</MicrosoftDotNetBuildTasksPackagingPackageVersion>
+    <MicrosoftDotNetCoreFxTestingPackageVersion>1.0.0-beta.19112.3</MicrosoftDotNetCoreFxTestingPackageVersion>
+    <MicrosoftDotNetBuildTasksConfigurationPackageVersion>1.0.0-beta.19112.3</MicrosoftDotNetBuildTasksConfigurationPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19112.3</MicrosoftDotNetBuildTasksFeedPackageVersion>
+    <MicrosoftNetCompilersVersion>3.0.0-beta2-final</MicrosoftNetCompilersVersion>
+    <MicrosoftNETCoreCompilersVersion>$(MicrosoftNetCompilersVersion)</MicrosoftNETCoreCompilersVersion>
+    <!-- Core-setup dependencies -->
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27413-1</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview-27413-1</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview-27413-1</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <!-- Coreclr dependencies -->
+    <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview4-27412-74</MicrosoftNETCoreILAsmPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview4-27412-74</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <!-- Corefx dependencies -->
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.19112.21</MicrosoftNETCorePlatformsPackageVersion>
+    <!-- Standard dependencies -->
+    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19074.3</NETStandardLibraryPackageVersion>
   </PropertyGroup>
 </Project>

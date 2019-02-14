@@ -22,6 +22,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Padding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Runtime\CompilerServices\Unsafe.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs" />
@@ -29,21 +30,26 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Action.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AccessViolationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\AppContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ApplicationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AggregateException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentNullException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentOutOfRangeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArithmeticException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Array.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Array.Enumerators.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArraySegment.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArrayTypeMismatchException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AssemblyLoadEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AssemblyLoadEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AsyncCallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Attribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AttributeTargets.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AttributeUsageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\BadImageFormatException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\BitConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\BitOps.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Boolean.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPoolEventSource.cs" />
@@ -52,6 +58,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\IPinnable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\MemoryHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\MemoryManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\OperationStatus.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\StandardFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Utilities.cs" />
@@ -111,6 +118,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.LittleG.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpanSplitter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Byte.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ByReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Char.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CharEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CLSCompliantAttribute.cs" />
@@ -121,7 +129,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\DictionaryEntry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ArraySortHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Dictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IAsyncEnumerable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IAsyncEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ICollection.cs" />
@@ -166,6 +176,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.Base64.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\CoreLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CurrentSystemTimeZone.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DataMisalignedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.cs" />
@@ -178,6 +189,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\DefaultBinder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\ConditionalAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\ContractException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\ContractFailedEventArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debug.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerBrowsableAttribute.cs" />
@@ -190,13 +204,19 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerVisualizerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\StackFrame.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\StackTrace.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\StackTraceHiddenAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\SymbolStore\ISymbolDocumentWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DivideByZeroException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DllNotFoundException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Double.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DuplicateWaitObjectException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Empty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EntryPointNotFoundException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SpecialFolder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SpecialFolderOption.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\EnvironmentVariableTarget.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ExecutionEngineException.cs" />
@@ -213,6 +233,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendricalCalculationsHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ChineseLunisolarCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.cs" />
@@ -349,15 +370,20 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberToFloatingPointBits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Hashing\HashHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NullReferenceException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Object.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ObjectDisposedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ObsoleteAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\OperatingSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\OperationCanceledException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\OutOfMemoryException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\OverflowException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ParamArrayAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ParamsArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ParseNumbers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\PlatformID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PlatformNotSupportedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Progress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Random.cs" />
@@ -468,11 +494,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\FastResourceComparer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\FileBasedResourceGroveler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\IResourceGroveler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\IResourceReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ManifestBasedResourceGroveler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\MissingManifestResourceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\MissingSatelliteAssemblyException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\NeutralResourcesLanguageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceFallbackManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceTypeCode.cs" />
@@ -482,6 +512,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncIteratorMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncMethodBuilderAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs" />
@@ -493,8 +524,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxationsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerGlobalScopeAttribute.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConfiguredAsyncEnumerable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConfiguredAsyncDisposable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConfiguredValueTaskAwaitable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ContractHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
@@ -542,35 +576,94 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\Consistency.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\ReliabilityContractAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\ExceptionNotification.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ExceptionServices\HandleProcessCorruptedStateExceptionsAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IBindCtx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IConnectionPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IConnectionPointContainer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumConnectionPoints.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumConnections.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumMoniker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumString.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IEnumVARIANT.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IMoniker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IPersistFile.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IRunningObjectTable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\IStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeComp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeInfo2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeLib.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComTypes\ITypeLib2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\AllowReversePInvokeCallsAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ArrayWithOffset.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\BStrWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CallingConvention.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\COMException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CharSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ClassInterfaceAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ClassInterfaceType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CoClassAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComDefaultInterfaceAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComEventInterfaceAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComImportAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComInterfaceType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComMemberType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComSourceInterfacesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComVisibleAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CriticalHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CurrencyWrapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CustomQueryInterfaceMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CustomQueryInterfaceResult.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DefaultCharSetAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DefaultDllImportSearchPathsAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DispatchWrapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DispIdAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\DllImportSearchPath.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ErrorWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ExternalException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\GuidAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\GCHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\HandleRef.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomAdapter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomMarshaler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ICustomQueryInterface.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InvalidComObjectException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\InterfaceTypeAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\LCIDConversionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\LayoutKind.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalAsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MarshalDirectiveException.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.Fast.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\MemoryMarshal.Fast.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OptionalAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\OutAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PreserveSigAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ProgIdAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SafeBuffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SafeHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SEHException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StructLayoutAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TypeIdentifierAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnknownWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedFunctionPointerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\VarEnum.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\VariantWrapper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64DebugView_1.cs" />
@@ -599,6 +692,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\StreamingContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\AmbiguousImplementationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\GCSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\AllowPartiallyTrustedCallersAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\CryptographicException.cs" />
@@ -636,6 +732,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilderCache.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\CodePageDataItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderNLS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderBestFitFallback.cs" />
@@ -649,9 +746,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncoderFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncoderReplacementFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Encoding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingNLS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingTable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Encoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\NormalizationForm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Rune.cs" />
@@ -674,10 +773,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AsyncLocal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AutoResetEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CancellationToken.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CancellationTokenRegistration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CancellationTokenSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventResetMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ExecutionContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\IOCompletionCallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\IThreadPoolWorkItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LazyInitializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LazyThreadSafetyMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LockRecursionException.cs" />
@@ -693,19 +796,33 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SendOrPostCallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SpinLock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SpinWait.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SynchronizationContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SynchronizationLockException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadLocal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Volatile.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\AsyncCausalityTracerConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Future.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\FutureFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ProducerConsumerQueues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCanceledException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCompletionSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskContinuation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskExceptionHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskScheduler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskSchedulerException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TplEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ValueTask.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Sources\IValueTaskSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadAbortException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInterruptedException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPriority.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadStart.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadStartException.cs" />
@@ -713,8 +830,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadStateException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timeout.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimeoutHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandleCannotBeOpenedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadStaticAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ThrowHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeoutException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZone.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.cs" />
@@ -746,6 +865,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\ActivityTracker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventActivityOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventDescriptor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventSource.cs" />
@@ -816,76 +936,103 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector_Operations.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows)">
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.LookupAccountNameW.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.NTSTATUS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.BOOLEAN.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CancelIoEx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FileAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FileTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FindClose.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FreeEnvironmentStrings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetComputerName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetCPInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetEnvironmentStrings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetCurrentDirectory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetSystemInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetTempPathW.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.Globalization.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetVersionExW.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.Globalization.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.LockFile.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFORMATION.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.OutputDebugString.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ResolveLocaleName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SecurityOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetEndOfFile.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.TimeZone.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.VirtualAlloc.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.VirtualFree.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.VirtualQuery.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Normaliz\Interop.Idna.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Normaliz\Interop.Normalization.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Normaliz\Interop.Idna.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Normaliz\Interop.Normalization.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs" Condition="'$(EnableWinRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Ole32\Interop.CoCreateGuid.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysFreeString.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysStringLen.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Secur32\Interop.GetUserNameExW.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Win32.cs" Condition="'$(EnableWinRT)' != 'true' and '$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Win32.cs" Condition="'$(EnableWinRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Win32.cs" Condition="'$(EnableWinRT)' != 'true' and '$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Win32.cs" Condition="'$(EnableWinRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamCompletionSource.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathHelper.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DisableMediaInsertionPrompt.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Security\SafeBSTRHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Windows.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureAsyncCausalityTracer)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\AsyncCausalityTracer.Noop.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCominterop)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.NoCom.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComEventsHelpers.NoCom.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows) and '$(EnableWinRT)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Win32\RegistryKey.cs" />
@@ -912,51 +1059,80 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\User32\Interop.LoadString.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\User32\Interop.SendMessageTimeout.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows) and '$(EnableWinRT)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.WinRT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.WinRT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows) or '$(FeaturePal)'=='true'">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysFreeString.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysStringLen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.Constants.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.EventWaitHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetEnvironmentStrings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FreeEnvironmentStrings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.Mutex.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.Semaphore.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.EventWaitHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Win32Marshal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\SafeBSTRHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureAppX)' == 'true' or '$(EnableWinRT)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Resources\PRIExceptionInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Resources\WindowsRuntimeResourceManagerBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Resources\ResourceManager.Uap.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix)">
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Casing.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Collation.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.ICU.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Idna.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Locale.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Utils.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.ICU.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Idna.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Locale.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Utils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Access.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.ChDir.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Close.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FLock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FSync.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.FTruncate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetCpuUtilization.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetCwd.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetEUid.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetHostName.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetPwUid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetSystemTimeAsTicks.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetTimestamp.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetUnixName.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.GetUnixRelease.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.LockFileRegion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.LSeek.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.MksTemps.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.MountPoints.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Open.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.OpenFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.PathConf.cs" />
@@ -966,30 +1142,42 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.ReadDir.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.ReadLink.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Stat.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.SysConf.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.SysLog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Unlink.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Write.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeDirectoryHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\LocaleData.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Unix.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\IdnMapping.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\LocaleData.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Normalization.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.OSX.cs" Condition="'$(TargetsOSX)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Linux.cs" Condition="'$(TargetsOSX)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Names.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Unix.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetsUnix) or '$(EnableWinRT)'=='true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.NoRegistry.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' AND ('$(Platform)' == 'x64' OR ('$(Platform)' == 'x86' AND '$(TargetsUnix)' != 'true'))">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
@@ -1026,17 +1214,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' AND '$(Platform)' == 'arm64'">
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Aes.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Base.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha1.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha256.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Simd.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Aes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Base.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Sha1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Sha256.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Simd.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' OR '$(Platform)' != 'arm64'">
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Aes.PlatformNotSupported.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Base.PlatformNotSupported.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha1.PlatformNotSupported.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha256.PlatformNotSupported.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Simd.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Aes.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Base.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Sha1.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Sha256.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Arm64\Simd.PlatformNotSupported.cs" />
   </ItemGroup>
 </Project>

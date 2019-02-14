@@ -156,9 +156,9 @@ check_symbol_exists(
     HAVE_SCHED_SETAFFINITY)
 
 check_symbol_exists(
-    arc4random
+    arc4random_buf
     "stdlib.h"
-    HAVE_ARC4RANDOM)
+    HAVE_ARC4RANDOM_BUF)
 
 check_symbol_exists(
     TIOCGWINSZ

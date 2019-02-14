@@ -4,7 +4,6 @@
     <RootNamespace>System.Net.Requests</RootNamespace>
     <AssemblyName>System.Net.Requests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -92,8 +91,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\wininet\Interop.wininet_errors.cs">
-      <Link>Common\Interop\Windows\wininet\Interop.wininet_errors.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinInet\Interop.wininet_errors.cs">
+      <Link>Common\Interop\Windows\WinInet\Interop.wininet_errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
       <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
@@ -117,6 +116,7 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />

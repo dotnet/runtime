@@ -1,13 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{275B161B-D525-48A0-B1DE-344273AB9A99}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncMethodBuilderAttributeTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="AsyncValueTaskMethodBuilderTests.cs" />
     <Compile Include="ManualResetValueTaskSourceTests.cs" />
     <Compile Include="ValueTaskTests.cs" />

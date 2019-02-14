@@ -15,7 +15,7 @@ namespace System.Linq.Expressions
     /// Represents a constructor call that has a collection initializer.
     /// </summary>
     /// <remarks>
-    /// Use the <see cref="Expression.ListInit"/> factory methods to create a ListInitExpression.
+    /// Use the <see cref="Expression.ListInit(NewExpression, Expression[])"/> factory methods to create a ListInitExpression.
     /// The value of the <see cref="NodeType" /> property of a ListInitExpression is ListInit.
     /// </remarks>
     [DebuggerTypeProxy(typeof(ListInitExpressionProxy))]

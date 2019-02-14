@@ -30,26 +30,20 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsAOT)'!='true'">
-    <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
     <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
       <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
       <!-- Following is version used in release/uwp6.0 -->
       <Version Condition="'$(TargetGroup)'=='uap10.0.16299'">2.1.0-b-uwp6-25707-02</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.NETCore.TestHost">
-      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="runtime.native.System.Data.SqlClient.sni">
-      <Version>$(RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.NETCore.DotNetHost">
-      <Version>$(MicrosoftNETCoreDotNetHostPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy">
-      <Version>$(MicrosoftNETCoreDotNetHostPolicyPackageVersion)</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.TestHost" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
+    <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeNativeSystemDataSqlClientSniPackageVersion)" />
+    <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreDotNetHostPackageVersion)" />
+    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreDotNetHostPolicyPackageVersion)" />
+    <!-- We do not need apphost.exe and the 3.0 SDK will actually remove it.
+         Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
+         This can be removed once we have a new SDK -->
+    <FileToExclude Include="apphost" />
   </ItemGroup>
 
   <ItemGroup>
@@ -91,12 +85,12 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Exec Command="chmod +x $(TestHostRootPath)dotnet" Condition="'$(RunningOnUnix)' == 'true'"/>
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OS)' != 'Windows_NT'"/>
   </Target>
 
   <PropertyGroup>
     <SymbolPackagesDir>$(PackagesDir)symbolpackages/</SymbolPackagesDir>
-    <DotNetAssetRootUrl Condition="'$(DotNetAssetRootUrl)' == ''">https://dotnetfeed.blob.core.windows.net/dotnet-core/assets/</DotNetAssetRootUrl>
+    <DotNetAssetRootUrl Condition="'$(DotNetAssetRootUrl)' == ''">https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/assets/</DotNetAssetRootUrl>
   </PropertyGroup>
 
   <Target Name="CalculateCoreCLRSymbolPackageProperties"
@@ -115,14 +109,24 @@
       <SymbolPackagesToDownload Include="@(_CoreCLRSymbolPackagesToDownload)" Condition="!Exists('%(UnzipDestinationDir)')" />
     </ItemGroup>
   </Target>
+  
+  <Target Name="DownloadAndUnzipSymbolPackage"
+          Condition="'@(SymbolPackagesToDownload)' != ''">
+      <DownloadFile SourceUrl="%(SymbolPackagesToDownload.Url)"
+                    DestinationFolder="$(SymbolPackagesDir)"
+                    DestinationFileName="%(SymbolPackagesToDownload.DestinationFile)"
+                    ContinueOnError="WarnAndContinue" />
+      <Unzip SourceFiles="$(SymbolPackagesDir)\%(SymbolPackagesToDownload.DestinationFile)"
+             DestinationFolder="%(SymbolPackagesToDownload.UnzipDestinationDir)"
+             OverwriteReadOnlyFiles="true"
+             Condition="Exists('$(SymbolPackagesDir)\%(SymbolPackagesToDownload.DestinationFile)')" />
+  </Target>
+          
 
   <Target Name="BinPlaceCoreCLRSymbols"
           AfterTargets="AfterResolveReferences"
           DependsOnTargets="CalculateCoreCLRSymbolPackageProperties;DownloadAndUnzipSymbolPackage"
           Condition="'$(CoreCLROverridePath)' == '' AND '$(DownloadCoreCLRSymbols)' != 'false'">
-
-      <Warning Text="Failed to download CoreCLR symbols" Condition="'@(SymbolPackagesDownloaded)' == '' AND '@(SymbolPackagesToDownload)' != ''" />
-
       <ItemGroup>
         <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(RuntimeIdentifier)/native/*.pdb" />
         <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(RuntimeIdentifier)/native/*.dbg" />

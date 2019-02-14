@@ -8,7 +8,6 @@ using System.Runtime.Caching.Resources;
 using System.Collections;
 using System.IO;
 using System.Security;
-using System.Security.Permissions;
 
 namespace System.Runtime.Caching
 {

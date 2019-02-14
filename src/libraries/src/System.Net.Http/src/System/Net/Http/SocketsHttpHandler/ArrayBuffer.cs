@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 
 namespace System.Net.Http
@@ -18,7 +19,7 @@ namespace System.Net.Http
 
     // TODO: ISSUE 31300: Use ArrayPool to pool buffers.
 
-    internal struct ArrayBuffer
+    internal struct ArrayBuffer : IDisposable
     {
         private byte[] _bytes;
         private int _activeStart;
@@ -29,10 +30,23 @@ namespace System.Net.Http
 
         public ArrayBuffer(int initialSize)
         {
-            _bytes = new byte[initialSize];
+            _bytes = ArrayPool<byte>.Shared.Rent(initialSize);
 
             _activeStart = 0;
             _availableStart = 0;
+        }
+
+        public void Dispose()
+        {
+            byte[] array = _bytes;
+
+            _activeStart = _availableStart = 0;
+            _bytes = null;
+
+            if (array != null)
+            {
+                ArrayPool<byte>.Shared.Return(array);
+            }
         }
 
         public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
@@ -85,16 +99,19 @@ namespace System.Net.Http
                 newSize *= 2;
             } while (newSize < desiredSize);
 
-            byte[] newBytes = new byte[newSize];
+            byte[] newBytes = ArrayPool<byte>.Shared.Rent(newSize);
+            byte[] oldBytes = _bytes;
 
             if (ActiveSpan.Length != 0)
             {
-                Buffer.BlockCopy(_bytes, _activeStart, newBytes, 0, ActiveSpan.Length);
+                Buffer.BlockCopy(oldBytes, _activeStart, newBytes, 0, ActiveSpan.Length);
             }
 
             _availableStart = ActiveSpan.Length;
             _activeStart = 0;
+
             _bytes = newBytes;
+            ArrayPool<byte>.Shared.Return(oldBytes);
 
             Debug.Assert(byteCount <= AvailableSpan.Length);
         }

@@ -327,6 +327,12 @@ namespace Internal.Cryptography.Pal.Windows
             }
 
             AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Oid.FromOidValue(oidValue, OidGroup.All), keyLength);
+            switch (oidValue)
+            {
+                case Oids.RsaOaep:
+                    algorithmIdentifier.Parameters = cryptAlgorithmIdentifer.Parameters.ToByteArray();
+                    break;
+            }
             return algorithmIdentifier;
         }
 

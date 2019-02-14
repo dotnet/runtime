@@ -105,7 +105,6 @@ namespace System.Diagnostics
         /// <param name="loadedPeSize">loaded PE image size</param>
         /// <param name="inMemoryPdbAddress">in memory PDB address or zero</param>
         /// <param name="inMemoryPdbSize">in memory PDB size</param>
-        /// <param name="reader">returns the reader</param>
         /// <returns>reader</returns>
         /// <remarks>
         /// Assumes that neither PE image nor PDB loaded into memory can be unloaded or moved around.

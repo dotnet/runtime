@@ -550,8 +550,8 @@ namespace System.Data.Tests
             Assert.Equal("60", T.Rows[60][3]);
 
             C.Expression = "stdev (Child.age)";
-            Assert.Equal((1.4142135623731).ToString(T.Locale), T.Rows[0][3]);
-            Assert.Equal((1.4142135623731).ToString(T.Locale), T.Rows[60][3]);
+            Assert.Equal((1.4142135623730951).ToString(T.Locale), T.Rows[0][3]);
+            Assert.Equal((1.4142135623730951).ToString(T.Locale), T.Rows[60][3]);
 
             C.Expression = "var (Child.age)";
             Assert.Equal("2", T.Rows[0][3]);

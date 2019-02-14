@@ -85,13 +85,13 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
-        public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, string expected)
+        public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
             var destination = new char[expected.Length];
 
-            Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format));
+            Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
 
-            Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format));
+            Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format, provider));
             Assert.Equal(destination.Length, charsWritten);
             Assert.Equal(expected, new string(destination));
         }

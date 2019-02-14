@@ -88,8 +88,10 @@ namespace System.Net.NetworkInformation
 
         private Socket GetRawSocket(SocketConfig socketConfig)
         {
+            IPEndPoint ep = (IPEndPoint)socketConfig.EndPoint;
+
             // Setting Socket.DontFragment and .Ttl is not supported on Unix, so socketConfig.Options is ignored.
-            AddressFamily addrFamily = ((IPEndPoint)socketConfig.EndPoint).Address.AddressFamily;
+            AddressFamily addrFamily = ep.Address.AddressFamily;
             Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
@@ -97,6 +99,22 @@ namespace System.Net.NetworkInformation
             {
                 socket.Ttl = (short)socketConfig.Options.Ttl;
             }
+
+            if (socketConfig.Options != null && addrFamily == AddressFamily.InterNetwork)
+            {
+                socket.DontFragment = socketConfig.Options.DontFragment;
+            }
+
+#pragma warning disable 618
+            // Disable warning about obsolete property. We could use GetAddressBytes but that allocates.
+            // IPv4 multicast address starts with 1110 bits so mask rest and test if we get correct value e.g. 0xe0.
+            if (!ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
+            {
+                // If it is not multicast, use Connect to scope responses only to the target address.
+                socket.Connect(socketConfig.EndPoint);
+            }
+#pragma warning restore 618
+
             return socket;
         }
 
@@ -129,7 +147,7 @@ namespace System.Net.NetworkInformation
             {
                 return false;
             }
-            
+
             sw.Stop();
             long roundTripTime = sw.ElapsedMilliseconds;
             int dataOffset = ipHeaderLength + IcmpHeaderLengthInBytes;
@@ -257,7 +275,13 @@ namespace System.Net.NetworkInformation
                 throw new PlatformNotSupportedException(SR.net_ping_utility_not_found);
             }
 
-            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4, options?.Ttl ?? 0);
+            UnixCommandLinePing.PingFragmentOptions fragmentOption = UnixCommandLinePing.PingFragmentOptions.Default;
+            if (options != null && address.AddressFamily == AddressFamily.InterNetwork)
+            {
+                fragmentOption = options.DontFragment ? UnixCommandLinePing.PingFragmentOptions.Do : UnixCommandLinePing.PingFragmentOptions.Dont;
+            }
+
+            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
 
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;

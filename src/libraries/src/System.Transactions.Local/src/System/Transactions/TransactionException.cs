@@ -223,7 +223,6 @@ namespace System.Transactions
         /// <summary>
         ///
         /// </summary>
-        /// <param name="message"></param>
         /// <param name="innerException"></param>
         internal TransactionAbortedException(Exception innerException) : base(SR.TransactionAborted, innerException)
         {

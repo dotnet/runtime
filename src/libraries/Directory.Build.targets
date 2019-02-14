@@ -36,9 +36,9 @@
 
   <Target Name="CheckForBuildTools">
     <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'=='true'"
-           Text="The tools directory [$(ToolsDir)] does not exist. Please run sync in your repo to ensure the tools are installed before attempting to build an individual project." />
+           Text="The tools directory [$(ToolsDir)] does not exist. Please run build -Restore in your repo to ensure the tools are installed before attempting to build an individual project." />
     <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'!='true'"
-           Text="The tools directory [$(ToolsDir)] does not exist. Please run init-tools.cmd in your repo to ensure the tools are installed before attempting to build an individual project." />
+           Text="The tools directory [$(ToolsDir)] does not exist. Please run build -InitTools in your repo to ensure the tools are installed before attempting to build an individual project." />
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)CodeAnalysis.targets" />
@@ -141,10 +141,21 @@
     <BinPlaceConfiguration Include="@(AdditionalBinPlaceConfiguration)" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)eng/depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
-  <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
+  <Import Project="$(RepositoryEngineeringDir)blockReflectionAttribute.targets" />
+  <Import Project="$(RepositoryEngineeringDir)depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="$(RepositoryEngineeringDir)Resources.targets" />
+  <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
+  
+  <!-- TODO: remove remaining functionality from buildtools -->
+  <PropertyGroup>
+     <!-- codeOptimization uses DnuRestoreCommand -->
+    <DnuRestoreCommand>$(DotnetTool) restore</DnuRestoreCommand>
+     <!-- optionalTooling uses DotnetToolCommand -->
+    <DotnetToolCommand>$(DotnetTool)</DotnetToolCommand>
+  </PropertyGroup>
+  <Import Project="$(ToolsDir)codeOptimization.targets" />
+  <Import Project="$(ToolsDir)OptionalTooling.targets" />
 
   <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets')" />
 
@@ -175,19 +186,18 @@
 
   <Target Name="GenerateReferenceSource">
     <PropertyGroup>
-      <_GenApiExePath>$(ToolsDir)GenApi.exe</_GenApiExePath>
       <_RefSourceFileOutputPath>$(MSBuildProjectDirectory)/../ref/$(AssemblyName).cs</_RefSourceFileOutputPath>
       <_ExcludeAPIList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAPIList>
       <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
     </PropertyGroup>
 
     <PropertyGroup>
-      <_GenAPICmd>$(DotnetToolCommand) $(_GenApiExePath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -assembly:@(IntermediateAssembly)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -libPath:$(RefPath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -out:$(_RefSourceFileOutputPath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -excludeAttributesList:$(_ExcludeAPIList)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -headerFile:$(_LicenseHeaderTxtPath)</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICommand)</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) "@(IntermediateAssembly)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --lib-path "$(RefPath)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --out "$(_RefSourceFileOutputPath)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAPIList)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --header-file "$(_LicenseHeaderTxtPath)"</_GenAPICmd>
     </PropertyGroup>
 
     <Exec Command="$(_GenAPICmd)" />

@@ -3,7 +3,6 @@
     <ProjectGuid>{CA488507-3B6E-4494-B7BE-7B4EEEB2C4D1}</ProjectGuid>
     <AssemblyName>System.Linq</AssemblyName>
     <RootNamespace>System.Linq</RootNamespace>
-    <NoWarn>$(NoWarn);CS1572;CS1574;CS1587;CS1589;CS1591;CS1723;CS1734</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -72,7 +71,6 @@
     <Compile Include="System\Linq\Distinct.cs" />
     <Compile Include="System\Linq\ElementAt.cs" />
     <Compile Include="System\Linq\Enumerable.cs" />
-    <Compile Include="System\Linq\Errors.cs" />
     <Compile Include="System\Linq\Except.cs" />
     <Compile Include="System\Linq\First.cs" />
     <Compile Include="System\Linq\Grouping.cs" />
@@ -100,6 +98,7 @@
     <Compile Include="System\Linq\Skip.cs" />
     <Compile Include="System\Linq\Sum.cs" />
     <Compile Include="System\Linq\Take.cs" />
+    <Compile Include="System\Linq\ThrowHelper.cs" />
     <Compile Include="System\Linq\ToCollection.cs" />
     <Compile Include="System\Linq\Union.cs" />
     <Compile Include="System\Linq\Utilities.cs" />

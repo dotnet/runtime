@@ -9,7 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DateTimeTest
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void SQLBU503165Test()
         {
             SqlParameter p = new SqlParameter();
@@ -21,7 +21,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(p.SqlValue.Equals(expectedValue), "FAILED: SqlValue did not match expected DateTime value");
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void SQLBU527900Test()
         {
             object chs = new char[] { 'a', 'b', 'c' };
@@ -35,7 +35,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(parameter.Value is char[], "FAILED: Expected parameter value to be char[]");
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void SQLBU503290Test()
         {
             using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -52,7 +52,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void ReaderParameterTest()
         {
             string tempTable = "#t_" + Guid.NewGuid().ToString().Replace('-', '_');
@@ -310,7 +310,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TypeVersionKnobTest()
         {
             string tempTable = "#t_" + Guid.NewGuid().ToString().Replace('-', '_');

@@ -863,10 +863,8 @@ namespace System.Resources
                 // Read in type name for a suitable ResourceReader
                 // Note ResourceWriter & InternalResGen use different Strings.
                 string readerType = _store.ReadString();
-                readerType = System.CoreLib.FixupCoreLibName(readerType);
-                AssemblyName mscorlib = new AssemblyName(ResourceManager.MscorlibName);
 
-                if (!ResourceManager.CompareNames(readerType, ResourceManager.ResReaderTypeName, mscorlib))
+                if (!ResourceManager.IsDefaultType(readerType, ResourceManager.ResReaderTypeName))
                     throw new NotSupportedException(SR.Format(SR.NotSupported_WrongResourceReader_Type, readerType));
 
                 // Skip over type name for a suitable ResourceSet

@@ -8,7 +8,6 @@ namespace System.Xml.Schema
     using System.ComponentModel;
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaExternal.uex' path='docs/doc[@for="XmlSchemaExternal"]/*' />
     public abstract class XmlSchemaExternal : XmlSchemaObject
     {
         private string _location;
@@ -18,7 +17,6 @@ namespace System.Xml.Schema
         private XmlAttribute[] _moreAttributes;
         private Compositor _compositor;
 
-        /// <include file='doc\XmlSchemaExternal.uex' path='docs/doc[@for="XmlSchemaExternal.SchemaLocation"]/*' />
         [XmlAttribute("schemaLocation", DataType = "anyURI")]
         public string SchemaLocation
         {
@@ -26,7 +24,6 @@ namespace System.Xml.Schema
             set { _location = value; }
         }
 
-        /// <include file='doc\XmlSchemaExternal.uex' path='docs/doc[@for="XmlSchemaExternal.Schema"]/*' />
         [XmlIgnore]
         public XmlSchema Schema
         {
@@ -34,7 +31,6 @@ namespace System.Xml.Schema
             set { _schema = value; }
         }
 
-        /// <include file='doc\XmlSchemaExternal.uex' path='docs/doc[@for="XmlSchemaExternal.Id"]/*' />
         [XmlAttribute("id", DataType = "ID")]
         public string Id
         {
@@ -42,7 +38,6 @@ namespace System.Xml.Schema
             set { _id = value; }
         }
 
-        /// <include file='doc\XmlSchemaExternal.uex' path='docs/doc[@for="XmlSchemaExternal.UnhandledAttributes"]/*' />
         [XmlAnyAttribute]
         public XmlAttribute[] UnhandledAttributes
         {

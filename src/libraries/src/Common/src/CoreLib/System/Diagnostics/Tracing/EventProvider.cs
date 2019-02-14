@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
-#if !CORECLR && !ES_BUILD_PN
+#if ES_BUILD_STANDALONE
 using System.Security.Permissions;
 #endif
 #if CORECLR && PLATFORM_WINDOWS
@@ -55,9 +55,9 @@ namespace System.Diagnostics.Tracing
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a 
     /// controller callback)
     /// </summary>
-#if !CORECLR && !ES_BUILD_PN
+#if ES_BUILD_STANDALONE
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#endif // !CORECLR && !ES_BUILD_PN
+#endif
     internal partial class EventProvider : IDisposable
     {
         // This is the windows EVENT_DATA_DESCRIPTOR structure.  We expose it because this is what
@@ -494,7 +494,7 @@ namespace System.Diagnostics.Tracing
 
             var providerInfos = (UnsafeNativeMethods.ManifestEtw.TRACE_GUID_INFO*)buffer;
             var providerInstance = (UnsafeNativeMethods.ManifestEtw.TRACE_PROVIDER_INSTANCE_INFO*)&providerInfos[1];
-            int processId = unchecked((int)Win32Native.GetCurrentProcessId());
+            int processId = unchecked((int)Interop.Kernel32.GetCurrentProcessId());
             // iterate over the instances of the EventProvider in all processes
             for (int i = 0; i < providerInfos->InstanceCount; i++)
             {
@@ -540,8 +540,10 @@ namespace System.Diagnostics.Tracing
                             int etwSessionId;
                             if (int.TryParse(strId, out etwSessionId))
                             {
+#if ES_BUILD_STANDALONE
                                 // we need to assert this permission for partial trust scenarios
                                 (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
+#endif
                                 var data = key.GetValue(valueName) as byte[];
                                 if (data != null)
                                 {
@@ -608,7 +610,7 @@ namespace System.Diagnostics.Tracing
                 string valueName = "ControllerData_Session_" + etwSessionId.ToString(CultureInfo.InvariantCulture);
 
                 // we need to assert this permission for partial trust scenarios
-#if !CORECLR
+#if ES_BUILD_STANDALONE
                 (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
 #endif
                 using (var key = Registry.LocalMachine.OpenSubKey(regKey))

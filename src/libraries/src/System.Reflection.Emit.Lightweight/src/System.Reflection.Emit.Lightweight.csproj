@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Reflection.Emit.Lightweight</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetStandard)' != 'true' AND '$(TargetsAot)' != 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' OR '$(TargetsAot)' == 'true'">SR.PlatformNotSupported_RefEmitLightweight</GeneratePlatformNotSupportedAssemblyMessage>
     <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>

@@ -1,0 +1,27 @@
+# FreeBSD leg. Only for used in Official Builds
+
+jobs:
+- template: corefx-base.yml
+  parameters:
+    isOfficialBuild: true
+    targetOS: FreeBSD
+    jobs:
+
+    - job: FreeBSD
+      strategy:
+        matrix:
+          x64_Release:
+            _BuildConfig: Release
+            _architecture: x64
+            _framework: netcoreapp
+            _buildScriptPrefix: 'DotNetCoreSdkDir=/usr/local/dotnet/ DotNetRoot=/usr/local/dotnet/ '
+            
+      pool:
+        name: dnceng-freebsd-internal
+
+      buildScriptPrefix: $(_buildScriptPrefix)
+      submitToHelix: false
+
+      variables:
+        - _skipTests: true
+        - _outerloop: true # Only runs in official builds

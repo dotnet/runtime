@@ -27,6 +27,9 @@
         "net45": "4.0.0.0"
       }
     },
+    "Microsoft.Bcl.Json.Sources": {
+      "InboxOn": {}
+    },
     "Microsoft.Build": {
       "InboxOn": {
         "net45": "4.0.0.0"
@@ -217,6 +220,12 @@
         "10.0.2.0": "10.1.0",
         "10.0.3.0": "10.2.0",
         "10.0.4.0": "10.4.0"
+      }
+    },
+    "Microsoft.VisualBasic.Core": {
+      "InboxOn": {
+          "netcoreapp3.0": "10.0.4.0",
+          "uap10.0.16300": "10.0.4.0"
       }
     },
     "Microsoft.VisualBasic.Compatibility": {
@@ -415,10 +424,11 @@
     "netstandard": {
       "InboxOn": {
         "netcoreapp2.0": "2.0.0.0",
+        "netcoreapp3.0": "2.1.0.0",
         "net461": "2.0.0.0",
         "netstandard2.0": "2.0.0.0",
         "uap10.0.16299": "2.0.0.0",
-        "uap10.0.16300": "2.0.1.0"
+        "uap10.0.16300": "2.1.0.0"
       }
     },
     "NETStandard.Library": {
@@ -4173,7 +4183,7 @@
       ],
       "BaselineVersion": "4.6.0",
       "InboxOn": {
-        "net45": "4.0.0.0", 
+        "net45": "4.0.0.0",
         "net451": "4.0.10.0",
         "portable46-win81+wp81+wpa81": "4.0.0.0",
         "portable46-win81+wp81": "4.0.0.0",

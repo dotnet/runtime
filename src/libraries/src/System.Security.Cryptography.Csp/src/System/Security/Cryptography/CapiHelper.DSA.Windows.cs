@@ -4,6 +4,7 @@
 
 using System;
 using System.Security.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.NativeCrypto
 {
@@ -35,7 +36,7 @@ namespace Internal.NativeCrypto
                     null,
                     MS_ENH_DSS_DH_PROV,
                     dwProvType,
-                    (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
+                    (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
                 {
                     wszUpgrade = MS_ENH_DSS_DH_PROV;
                 }

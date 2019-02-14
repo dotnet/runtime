@@ -35,7 +35,6 @@ namespace System.Tests
 
             // Double
             -12.2364,
-            -12.236465923406483,
             -1.7753E-83,
             +12.345e+234,
             +12e+1,
@@ -65,7 +64,6 @@ namespace System.Tests
 
             // Single
             -12.2364f,
-            -12.2364659234064826243f,
             (float)+12.345e+234,
             +12e+1f,
             float.NegativeInfinity,
@@ -118,7 +116,6 @@ namespace System.Tests
 
             // Double
             "-12.2364",
-            "-12.2364659234065",
             "-1.7753E-83",
             "1.2345E+235",
             "120",
@@ -148,7 +145,6 @@ namespace System.Tests
 
             // Single
             "-12.2364",
-            "-12.23647",
             "Infinity",
             "120",
             "-Infinity",
@@ -190,14 +186,22 @@ namespace System.Tests
         {
             object[] testValues =
             {
+                // Double
+                -12.236465923406483,
+
                 // Single
                 -1.7753e-83f,
+                -12.2364659234064826243f,
             };
 
             string[] expectedValues =
             {
+                // Double
+                "-12.236465923406483",
+
                 // Single
                 "-0",
+                "-12.236465",
             };
 
             for (int i = 0; i < testValues.Length; i++)
@@ -212,14 +216,22 @@ namespace System.Tests
         {
             object[] testValues =
             {
+                // Double
+                -12.236465923406483,
+
                 // Single
                 -1.7753e-83f,
+                -12.2364659234064826243f,
             };
 
             string[] expectedValues =
             {
+                // Double
+                "-12.2364659234065",
+
                 // Single
                 "0",
+                "-12.23647",
             };
 
             for (int i = 0; i < testValues.Length; i++)

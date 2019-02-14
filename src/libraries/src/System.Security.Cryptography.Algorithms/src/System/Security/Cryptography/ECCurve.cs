@@ -129,7 +129,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Create a curve from the given cref="Oid" value.
         /// </summary>
-        /// <param name="oidFriendlyName">The Oid value to use.</param>
+        /// <param name="oidValue">The Oid value to use.</param>
         /// <returns>An ECCurve representing a named curve.</returns>
         public static ECCurve CreateFromValue(string oidValue)
         {

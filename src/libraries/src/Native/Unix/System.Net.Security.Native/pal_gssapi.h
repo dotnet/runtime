@@ -107,6 +107,8 @@ DLLEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                     GssCredId* claimantCredHandle,
                                                     GssCtxId** contextHandle,
                                                     uint32_t isNtlm,
+                                                    void* cbt,
+                                                    int32_t cbtSize,
                                                     GssName* targetName,
                                                     uint32_t reqFlags,
                                                     uint8_t* inputBytes,
@@ -160,3 +162,8 @@ DLLEXPORT uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorSta
                                                               char* password,
                                                               uint32_t passwdLen,
                                                               GssCredId** outputCredHandle);
+
+/*
+Shims the gss_indicate_mechs method to detect if NTLM mech is installed.
+*/
+DLLEXPORT uint32_t NetSecurityNative_IsNtlmInstalled(void);

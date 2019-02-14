@@ -111,7 +111,7 @@ static uint32_t NetSecurityNative_DisplayStatus(uint32_t* minorStatus,
     assert(minorStatus != NULL);
     assert(outBuffer != NULL);
 
-    uint32_t messageContext;
+    uint32_t messageContext = 0; // Must initialize to 0 before calling gss_display_status.
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
     uint32_t majorStatus =
         gss_display_status(minorStatus, statusValue, statusType, GSS_C_NO_OID, &messageContext, &gssBuffer);
@@ -173,6 +173,8 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                           GssCredId* claimantCredHandle,
                                           GssCtxId** contextHandle,
                                           uint32_t isNtlm,
+                                          void* cbt,
+                                          int32_t cbtSize,
                                           GssName* targetName,
                                           uint32_t reqFlags,
                                           uint8_t* inputBytes,
@@ -189,7 +191,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
     assert(outBuffer != NULL);
     assert(retFlags != NULL);
     assert(isNtlmUsed != NULL);
-    assert(inputBytes != NULL || inputLength == 0);
+    assert(cbt != NULL || cbtSize == 0);
 
 // Note: claimantCredHandle can be null
 // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
@@ -226,6 +228,14 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
     gss_OID_desc* outmech;
 
+    struct gss_channel_bindings_struct gssCbt;
+    if (cbt != NULL)
+    {
+        memset(&gssCbt, 0, sizeof(struct gss_channel_bindings_struct));
+        gssCbt.application_data.length = (size_t)cbtSize;
+        gssCbt.application_data.value = cbt;
+    }
+
     uint32_t majorStatus = gss_init_sec_context(minorStatus,
                                                 claimantCredHandle,
                                                 contextHandle,
@@ -233,7 +243,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                 desiredMech,
                                                 reqFlags,
                                                 0,
-                                                GSS_C_NO_CHANNEL_BINDINGS,
+                                                (cbt != NULL) ? &gssCbt : GSS_C_NO_CHANNEL_BINDINGS,
                                                 &inputToken,
                                                 &outmech,
                                                 &gssBuffer,
@@ -416,4 +426,37 @@ uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
 {
     return NetSecurityNative_AcquireCredWithPassword(
         minorStatus, isNtlm, desiredName, password, passwdLen, GSS_C_INITIATE, outputCredHandle);
+}
+
+uint32_t NetSecurityNative_IsNtlmInstalled()
+{
+#if HAVE_GSS_SPNEGO_MECHANISM
+    gss_OID ntlmOid = GSS_NTLM_MECHANISM;
+#else
+    gss_OID ntlmOid = &gss_mech_ntlm_OID_desc;
+#endif
+
+    uint32_t majorStatus;
+    uint32_t minorStatus;
+    gss_OID_set mechSet;
+    gss_OID_desc oid;
+    uint32_t foundNtlm = 0;
+
+    majorStatus = gss_indicate_mechs(&minorStatus, &mechSet);
+    if (majorStatus == GSS_S_COMPLETE)
+    {
+        for (size_t i = 0; i < mechSet->count; i++)
+        {
+            oid = mechSet->elements[i];
+            if ((oid.length == ntlmOid->length) && (memcmp(oid.elements, ntlmOid->elements, oid.length) == 0))
+            {
+                foundNtlm = 1;
+                break;
+            }
+        }
+
+        gss_release_oid_set(&minorStatus, &mechSet);
+    }
+
+    return foundNtlm;
 }

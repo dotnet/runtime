@@ -62,7 +62,7 @@ namespace System.Collections.ObjectModel.Tests
         [Fact]
         public static void CtorTests_Negative()
         {
-            Assert.Throws<ArgumentNullException>(() => { ReadOnlyDictionary<int, string> dict = new ReadOnlyDictionary<int, string>(null); });
+            AssertExtensions.Throws<ArgumentNullException>("dictionary", () => new ReadOnlyDictionary<int, string>(null));
         }
 
         /// <summary>
