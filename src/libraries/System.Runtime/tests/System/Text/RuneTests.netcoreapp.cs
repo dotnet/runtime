@@ -129,6 +129,21 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [MemberData(nameof(SurrogatePairTestData_ValidOnly))]
+        public static void Ctor_SurrogatePair_Valid(char highSurrogate, char lowSurrogate, int expectedValue)
+        {
+            Assert.Equal(expectedValue, new Rune(highSurrogate, lowSurrogate).Value);
+        }
+
+        [Theory]
+        [MemberData(nameof(SurrogatePairTestData_InvalidOnly))]
+        public static void Ctor_SurrogatePair_Valid(char highSurrogate, char lowSurrogate)
+        {
+            string expectedParamName = !char.IsHighSurrogate(highSurrogate) ? nameof(highSurrogate) : nameof(lowSurrogate);
+            Assert.Throws<ArgumentOutOfRangeException>(expectedParamName, () => new Rune(highSurrogate, lowSurrogate));
+        }
+
+        [Theory]
         [InlineData('A', 'a', -1)]
         [InlineData('A', 'A', 0)]
         [InlineData('a', 'A', 1)]
@@ -363,6 +378,22 @@ namespace System.Text.Tests
         {
             Assert.False(Rune.TryCreate((char)scalarValue, out Rune result));
             Assert.Equal(0, result.Value);
+        }
+
+        [Theory]
+        [MemberData(nameof(SurrogatePairTestData_InvalidOnly))]
+        public static void TryCreate_SurrogateChars_Invalid(char highSurrogate, char lowSurrogate)
+        {
+            Assert.False(Rune.TryCreate(highSurrogate, lowSurrogate, out Rune result));
+            Assert.Equal(0, result.Value);
+        }
+
+        [Theory]
+        [MemberData(nameof(SurrogatePairTestData_ValidOnly))]
+        public static void TryCreate_SurrogateChars_Valid(char highSurrogate, char lowSurrogate, int expectedValue)
+        {
+            Assert.True(Rune.TryCreate(highSurrogate, lowSurrogate, out Rune result));
+            Assert.Equal(expectedValue, result.Value);
         }
 
         [Theory]

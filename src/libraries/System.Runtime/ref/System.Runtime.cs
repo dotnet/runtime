@@ -7662,6 +7662,7 @@ namespace System.Text
     {
         private readonly int _dummyPrimitive;
         public Rune(char ch) { throw null; }
+        public Rune(char highSurrogate, char lowSurrogate) { throw null; }
         public Rune(int value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public Rune(uint value) { throw null; }
@@ -7709,6 +7710,7 @@ namespace System.Text
         public static System.Text.Rune ToUpper(System.Text.Rune value, System.Globalization.CultureInfo culture) { throw null; }
         public static System.Text.Rune ToUpperInvariant(System.Text.Rune value) { throw null; }
         public static bool TryCreate(char ch, out System.Text.Rune result) { throw null; }
+        public static bool TryCreate(char highSurrogate, char lowSurrogate, out System.Text.Rune result) { throw null; }
         public static bool TryCreate(int value, out System.Text.Rune result) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryCreate(uint value, out System.Text.Rune result) { throw null; }
