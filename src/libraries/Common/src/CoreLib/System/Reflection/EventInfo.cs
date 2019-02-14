@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 #if FEATURE_COMINTEROP
 using EventRegistrationToken = System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken;
@@ -99,15 +100,24 @@ namespace System.Reflection
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(EventInfo left, EventInfo right)
         {
-            if (object.ReferenceEquals(left, right))
+            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // so it can become a simple test
+            if (right is null)
+            {
+                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                return (left is null) ? true : false;
+            }
+
+            // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
+            if ((object)left == (object)right)
+            {
                 return true;
+            }
 
-            if ((object)left == null || (object)right == null)
-                return false;
-
-            return left.Equals(right);
+            return (left is null) ? false : left.Equals(right);
         }
 
         public static bool operator !=(EventInfo left, EventInfo right) => !(left == right);

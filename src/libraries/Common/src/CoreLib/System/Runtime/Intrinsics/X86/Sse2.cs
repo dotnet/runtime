@@ -11,6 +11,7 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel SSE2 hardware instructions via intrinsics
     /// </summary>
+    [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Sse2 : Sse
     {
@@ -18,6 +19,7 @@ namespace System.Runtime.Intrinsics.X86
 
         public new static bool IsSupported { get => IsSupported; }
 
+        [Intrinsic]
         public new abstract class X64 : Sse.X64
         {
             internal X64() { }

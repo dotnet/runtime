@@ -30,6 +30,7 @@ namespace System.Net.Sockets.Tests
         };
 
         private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
+        private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(DualModeSuccessInputs))]
@@ -91,11 +92,25 @@ namespace System.Net.Sockets.Tests
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Udp)]
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.IcmpV6)]
         [ConditionalTheory(nameof(SupportsRawSockets))]
-        public void Ctor_Raw_Success(AddressFamily addressFamily, ProtocolType protocolType)
+        public void Ctor_Raw_Supported_Success(AddressFamily addressFamily, ProtocolType protocolType)
         {
             using (new Socket(addressFamily, SocketType.Raw, protocolType))
             {
             }
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(AddressFamily.InterNetwork, ProtocolType.Tcp)]
+        [InlineData(AddressFamily.InterNetwork, ProtocolType.Udp)]
+        [InlineData(AddressFamily.InterNetwork, ProtocolType.Icmp)]
+        [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Tcp)]
+        [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Udp)]
+        [InlineData(AddressFamily.InterNetworkV6, ProtocolType.IcmpV6)]
+        [ConditionalTheory(nameof(NotSupportsRawSockets))]
+        public void Ctor_Raw_NotSupported_ExpectedError(AddressFamily addressFamily, ProtocolType protocolType)
+        {
+            SocketException e = Assert.Throws<SocketException>(() => new Socket(addressFamily, SocketType.Raw, protocolType));
+            Assert.Contains(e.SocketErrorCode, new[] { SocketError.AccessDenied, SocketError.ProtocolNotSupported });
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Sockets are still inheritable on netfx: https://github.com/dotnet/corefx/pull/32903")]

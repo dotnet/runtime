@@ -360,8 +360,7 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public override bool Equals(object value)
         {
-            RegionInfo that = value as RegionInfo;
-            if (that != null)
+            if (value is RegionInfo that)
             {
                 return this.Name.Equals(that.Name);
             }

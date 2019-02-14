@@ -2555,8 +2555,7 @@ namespace System.Text
 
         public override bool Equals(object value)
         {
-            UTF8Encoding that = value as UTF8Encoding;
-            if (that != null)
+            if (value is UTF8Encoding that)
             {
                 return (_emitUTF8Identifier == that._emitUTF8Identifier) &&
                        (EncoderFallback.Equals(that.EncoderFallback)) &&

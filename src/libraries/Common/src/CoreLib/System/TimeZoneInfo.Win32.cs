@@ -38,7 +38,6 @@ namespace System
 
         private const int MaxKeyLength = 255;
 
-#pragma warning disable 0420
         private sealed partial class CachedData
         {
             private static TimeZoneInfo GetCurrentOneYearLocal()
@@ -66,7 +65,6 @@ namespace System
                 return oneYearLocFromUtc;
             }
         }
-#pragma warning restore 0420
 
         private sealed class OffsetAndRule
         {
@@ -678,8 +676,7 @@ namespace System
 
         private static unsafe bool TryGetTimeZoneEntryFromRegistry(RegistryKey key, string name, out REG_TZI_FORMAT dtzi)
         {
-            byte[] regValue = key.GetValue(name, null) as byte[];
-            if (regValue == null || regValue.Length != sizeof(REG_TZI_FORMAT))
+            if (!(key.GetValue(name, null) is byte[] regValue) || regValue.Length != sizeof(REG_TZI_FORMAT))
             {
                 dtzi = default;
                 return false;

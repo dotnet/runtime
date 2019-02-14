@@ -3,9 +3,43 @@ Building CoreFX on Windows
 
 ## Required Software
 
-1. **[Visual Studio 2017](https://www.visualstudio.com/downloads/)** (Community, Professional, Enterprise) with the latest update must be installed. The Community version is completely free.
+1. **[Visual Studio 2017](https://www.visualstudio.com/downloads/)** or **[Visual Studio 2019](https://visualstudio.microsoft.com/vs/preview/)** (Community, Professional, Enterprise) with the latest update must be installed. The Community version is completely free.
 2. **[.NET Core SDK](https://www.microsoft.com/net/download/windows)** >= v2.1.401 must be installed which will add the `dotnet` toolchain to your path.
-3. **[CMake](https://cmake.org/)** must be installed from [the CMake download page](https://cmake.org/download/#latest) and added to your path.
+3. **[CMake](https://cmake.org/)** must be installed from [the CMake download page](https://cmake.org/download/#latest) and added to your path. CMake 3.14 or later is required to build with VS 2019.
+
+### Visual Studio 2019
+
+#### Visual Studio 2019 - 'Workloads' based install
+
+The following are the minimum requirements:
+  * .NET desktop development
+    * All Required Components
+    * .NET Framework 4.7.2 Development Tools
+  * Desktop development with C++
+    * All Required Components
+    * VC++ 2019 v142 Toolset (x86, x64)
+    * Windows 8.1 SDK and UCRT SDK
+    * VC++ 2017 v141 Toolset (x86, x64)
+  * .NET Core cross-platform development
+    * All Required Components
+
+#### Visual Studio 2019 - 'Individual components' based install
+
+The following are the minimum requirements:
+  * C# and Visual Basic Roslyn Compilers
+  * Static Analysis Tools
+  * .NET Portable Library Targeting Pack
+  * Windows 10 SDK or Windows 8.1 SDK
+  * Visual Studio C++ Core Features
+  * VC++ 2019 v142 Toolset (x86, x64)
+  * VC++ 2017 v141 Toolset (x86, x64)
+  * MSBuild
+  * .NET Framework 4.7.2 Targeting Pack
+  * Windows Universal CRT SDK
+
+To build binaries for ARM, you need the following additional indivdual components:
+* Visual C++ compilers and libraries for ARM
+* Visual C++ compilers and libraries for ARM64
 
 ### Visual Studio 2017
 

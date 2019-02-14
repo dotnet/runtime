@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -326,7 +327,7 @@ namespace System
         {
             int flags = d.flags;
             if ((flags & ScaleMask) != 0)
-                DecCalc.InternalRound(ref AsMutable(ref d), (byte)(flags >> ScaleShift), DecCalc.RoundingMode.Ceiling);
+                DecCalc.InternalRound(ref AsMutable(ref d), (byte)(flags >> ScaleShift), MidpointRounding.ToPositiveInfinity);
             return d;
         }
 
@@ -406,7 +407,7 @@ namespace System
         {
             int flags = d.flags;
             if ((flags & ScaleMask) != 0)
-                DecCalc.InternalRound(ref AsMutable(ref d), (byte)(flags >> ScaleShift), DecCalc.RoundingMode.Floor);
+                DecCalc.InternalRound(ref AsMutable(ref d), (byte)(flags >> ScaleShift), MidpointRounding.ToNegativeInfinity);
             return d;
         }
 
@@ -553,13 +554,13 @@ namespace System
             buffer[15] = (byte)(d.flags >> 24);
         }
 
-        internal static decimal ToDecimal(byte[] buffer)
+        internal static decimal ToDecimal(ReadOnlySpan<byte> span)
         {
-            Debug.Assert((buffer != null && buffer.Length >= 16), "[ToDecimal]buffer != null && buffer.Length >= 16");
-            int lo = ((int)buffer[0]) | ((int)buffer[1] << 8) | ((int)buffer[2] << 16) | ((int)buffer[3] << 24);
-            int mid = ((int)buffer[4]) | ((int)buffer[5] << 8) | ((int)buffer[6] << 16) | ((int)buffer[7] << 24);
-            int hi = ((int)buffer[8]) | ((int)buffer[9] << 8) | ((int)buffer[10] << 16) | ((int)buffer[11] << 24);
-            int flags = ((int)buffer[12]) | ((int)buffer[13] << 8) | ((int)buffer[14] << 16) | ((int)buffer[15] << 24);
+            Debug.Assert((span.Length >= 16), "span.Length >= 16");
+            int lo = BinaryPrimitives.ReadInt32LittleEndian(span);
+            int mid = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(4));
+            int hi = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(8));
+            int flags = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(12));
             return new decimal(lo, mid, hi, flags);
         }
 
@@ -616,12 +617,12 @@ namespace System
         {
             if ((uint)decimals > 28)
                 throw new ArgumentOutOfRangeException(nameof(decimals), SR.ArgumentOutOfRange_DecimalRound);
-            if ((uint)mode > (uint)MidpointRounding.AwayFromZero)
+            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
 
             int scale = d.Scale - decimals;
             if (scale > 0)
-                DecCalc.InternalRound(ref AsMutable(ref d), (uint)scale, (DecCalc.RoundingMode)mode);
+                DecCalc.InternalRound(ref AsMutable(ref d), (uint)scale, mode);
             return d;
         }
 
@@ -828,7 +829,7 @@ namespace System
         {
             int flags = d.flags;
             if ((flags & ScaleMask) != 0)
-                DecCalc.InternalRound(ref AsMutable(ref d), (byte)(flags >> ScaleShift), DecCalc.RoundingMode.Truncate);
+                DecCalc.InternalRound(ref AsMutable(ref d), (byte)(flags >> ScaleShift), MidpointRounding.ToZero);
         }
 
         public static implicit operator decimal(byte value)

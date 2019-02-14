@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class HttpClientEKUTest : HttpClientTestBase
+    public abstract class HttpClientEKUTest : HttpClientHandlerTestBase
     {
         // Curl + OSX SecureTransport doesn't support the custom certificate callback.
         private static bool BackendSupportsCustomCertificateHandling =>

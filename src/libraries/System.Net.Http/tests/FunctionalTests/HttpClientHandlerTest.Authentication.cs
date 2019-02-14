@@ -7,13 +7,20 @@ using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
 
+using Microsoft.DotNet.XUnitExtensions;
+
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Tests would need to be rewritten due to behavior differences with WinRT")]
-    public abstract class HttpClientHandler_Authentication_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_Authentication_Test : HttpClientHandlerTestBase
     {
+        private readonly ITestOutputHelper _output;
+
         private const string Username = "testusername";
         private const string Password = "testpassword";
         private const string Domain = "testdomain";
@@ -31,6 +38,11 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(expectedStatusCode, response.StatusCode);
             }
         };
+
+        public HttpClientHandler_Authentication_Test(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         [Theory]
         [MemberData(nameof(Authentication_TestData))]
@@ -489,6 +501,86 @@ namespace System.Net.Http.Functional.Tests
                 headers = await server.AcceptConnectionSendResponseAndCloseAsync(content: "hello world");
                 Assert.Contains(headers, header => header.Contains("Authorization: Digest"));
             });
+        }
+
+        public static IEnumerable<object[]> ServerUsesWindowsAuthentication_MemberData()
+        {
+            string server = Configuration.Http.WindowsServerHttpHost;
+            string authEndPoint = "showidentity.ashx";
+
+            yield return new object[] { $"http://{server}/test/auth/ntlm/{authEndPoint}", false };
+            yield return new object[] { $"https://{server}/test/auth/ntlm/{authEndPoint}", false };
+
+            // Server requires TLS channel binding token (cbt) with NTLM authentication.
+            // CurlHandler (due to libcurl bug) cannot do NTLM authentication with cbt.
+            yield return new object[] { $"https://{server}/test/auth/ntlm-epa/{authEndPoint}", true };
+        }
+
+        private static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
+        private static bool IsWindowsServerAvailable => !string.IsNullOrEmpty(Configuration.Http.WindowsServerHttpHost);
+
+        [ConditionalTheory(nameof(IsNtlmInstalled), nameof(IsWindowsServerAvailable))]
+        [MemberData(nameof(ServerUsesWindowsAuthentication_MemberData))]
+        public async Task Credentials_ServerUsesWindowsAuthentication_Success(string server, bool skipOnCurlHandler)
+        {
+            if (IsCurlHandler && skipOnCurlHandler) return;
+
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (var client = new HttpClient(handler))
+            {
+                handler.Credentials = new NetworkCredential(
+                    Configuration.Security.WindowsServerUserName,
+                    Configuration.Security.WindowsServerUserPassword);
+
+                var request = new HttpRequestMessage();
+                request.RequestUri = new Uri(server);
+
+                // Force HTTP/1.1 since both CurlHandler and SocketsHttpHandler have problems with
+                // HTTP/2.0 and Windows authentication (due to HTTP/2.0 -> HTTP/1.1 downgrade handling).
+                // Issue #35195 (for SocketsHttpHandler).
+                request.Version = new Version(1,1);
+
+                using (HttpResponseMessage response = await client.SendAsync(request))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    string body = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(body);
+                }
+            }
+        }
+
+        [ConditionalTheory(nameof(IsNtlmInstalled))]
+        [InlineData("NTLM")]
+        [InlineData("Negotiate")]
+        public async Task Credentials_ServerChallengesWithWindowsAuth_ClientSendsWindowsAuthHeader(string authScheme)
+        {
+            if (authScheme == "Negotiate" && !PlatformDetection.IsWindows)
+            {
+                throw new SkipTestException("Issue #34878");
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using (HttpClientHandler handler = CreateHttpClientHandler())
+                    using (var client = new HttpClient(handler))
+                    {
+                        handler.Credentials = new NetworkCredential("username", "password");
+                        await client.GetAsync(uri);
+                    }
+                },
+                async server =>
+                {
+                    var responseHeader = new HttpHeaderData[] { new HttpHeaderData("Www-authenticate", authScheme) };
+                    HttpRequestData requestData = await server.HandleRequestAsync(
+                        HttpStatusCode.Unauthorized, responseHeader);
+                    Assert.Equal(0, requestData.GetHeaderValueCount("Authorization"));
+
+                    requestData = await server.HandleRequestAsync();
+                    string authHeaderValue = requestData.GetSingleHeaderValue("Authorization");
+                    Assert.Contains(authScheme, authHeaderValue);
+                    _output.WriteLine(authHeaderValue);
+               });
         }
     }
 }

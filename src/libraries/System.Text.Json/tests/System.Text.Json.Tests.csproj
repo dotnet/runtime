@@ -1,26 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{5F553243-042C-45C0-8E49-C739131E11C3}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
+      <Link>CommonTest\System\IO\WrappedMemoryStream.cs</Link>
+    </Compile>
+    <Compile Include="ArrayBufferWriter.cs" />
     <Compile Include="BitStackTests.cs" />
     <Compile Include="BufferFactory.cs" />
     <Compile Include="BufferSegment.cs" />
+    <Compile Include="FixedSizedBufferWriter.cs" />
+    <Compile Include="InvalidBufferWriter.cs" />
+    <Compile Include="JsonDocumentTests.cs" />
+    <Compile Include="JsonNumberTestData.cs" />
     <Compile Include="JsonReaderStateTests.cs" />
     <Compile Include="JsonTestHelper.cs" />
+    <Compile Include="JsonWriterStateTests.cs" />
+    <Compile Include="ResizableArray.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />
     <Compile Include="Utf8JsonReaderTests.TryGet.cs" />
+    <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs"/>
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Resources.ResourceManager" />
+    <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="Newtonsoft.Json" />

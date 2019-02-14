@@ -33,7 +33,7 @@ internal static partial class Interop
             internal int pid;
             internal string comm;
             internal char state;
-            //internal int ppid;
+            internal int ppid;
             //internal int pgrp;
             internal int session;
             //internal int tty_nr;
@@ -233,7 +233,7 @@ internal static partial class Interop
             results.pid = parser.ParseNextInt32();
             results.comm = parser.MoveAndExtractNextInOuterParens();
             results.state = parser.ParseNextChar();
-            parser.MoveNextOrFail(); // ppid
+            results.ppid = parser.ParseNextInt32();
             parser.MoveNextOrFail(); // pgrp
             results.session = parser.ParseNextInt32();
             parser.MoveNextOrFail(); // tty_nr

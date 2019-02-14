@@ -61,7 +61,6 @@ namespace System.Xml.XPath.DataBinding
         //
         // IXPathNavigable Implementation
         
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.CreateNavigator"]/*' />
         public XPathNavigator CreateNavigator() {
             XPathNode nd = this.rowNd;
             if (null != nd)
@@ -72,62 +71,50 @@ namespace System.Xml.XPath.DataBinding
         //
         // ICustomTypeDescriptor Implementation
         
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetAttributes"]/*' />
         public AttributeCollection GetAttributes() {
             return new AttributeCollection((Attribute[])null);
         }
         
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetClassName"]/*' />
         public String GetClassName() {
             return collection.RowShape.Name;
         }
         
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetComponentName"]/*' />
         public String GetComponentName() {
             return null;
         }
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetConverter"]/*' />
         public TypeConverter GetConverter() {
             return null;
         }
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetDefaultEvent"]/*' />
         public EventDescriptor GetDefaultEvent() {
             return null;
         }
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetDefaultProperty"]/*' />
         public PropertyDescriptor GetDefaultProperty() {
             return null;
         }
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetEditor"]/*' />
         public object GetEditor(Type editorBaseType) {
             return null;
         }
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetEvents"]/*' />
         public EventDescriptorCollection GetEvents() {
             return null;
         }
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetEvents2"]/*' />
         public EventDescriptorCollection GetEvents(Attribute[] attributes) {
             return null;
         }
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetPropertyOwner"]/*' />
         public object GetPropertyOwner(PropertyDescriptor pd) {
             return null;
         }
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetProperties"]/*' />
         public PropertyDescriptorCollection GetProperties() {
             return collection.GetItemProperties(null);
         }
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.GetProperties2"]/*' />
         public PropertyDescriptorCollection GetProperties(Attribute[] attributes) {
             return collection.GetItemProperties(null);
         }
@@ -136,7 +123,6 @@ namespace System.Xml.XPath.DataBinding
         //
         // INotifyPropertyChanged Implementation
 
-        /// <include file='doc\XPathNodeView.uex' path='docs/doc[@for="XPathNodeView.PropertyChanged"]/*' />
         public event PropertyChangedEventHandler PropertyChanged {
             add {
                 throw new NotSupportedException("INotifyPropertyChanged.PropertyChanged");

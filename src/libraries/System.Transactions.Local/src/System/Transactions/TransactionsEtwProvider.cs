@@ -420,7 +420,7 @@ namespace System.Transactions
 
         #region Enlistment
         /// <summary>Trace an event for enlistment status.</summary>
-        /// <param name="enlisment">The enlistment to report status.</param>
+        /// <param name="enlistment">The enlistment to report status.</param>
         /// <param name="notificationCall">The notification call on the enlistment.</param>
         [NonEvent]
         internal void EnlistmentStatus(InternalEnlistment enlistment, NotificationCall notificationCall)
@@ -446,7 +446,7 @@ namespace System.Transactions
 
         #region Enlistment Done
         /// <summary>Trace an event for enlistment done.</summary>
-        /// <param name="enlisment">The enlistment done.</param>
+        /// <param name="enlistment">The enlistment done.</param>
         [NonEvent]
         internal void EnlistmentDone(InternalEnlistment enlistment)
         {
@@ -471,7 +471,7 @@ namespace System.Transactions
 
         #region Enlistment Prepared
         /// <summary>Trace an event for enlistment prepared.</summary>
-        /// <param name="enlisment">The enlistment prepared.</param>
+        /// <param name="enlistment">The enlistment prepared.</param>
         [NonEvent]
         internal void EnlistmentPrepared(InternalEnlistment enlistment)
         {
@@ -778,7 +778,7 @@ namespace System.Transactions
 
         #region TransactionManager Reenlist
         /// <summary>Trace an event when reenlist transactionmanager.</summary>
-        /// <param name="resourceMangerID">The resource manger ID.</param>
+        /// <param name="resourceManagerID">The resource manager ID.</param>
         [NonEvent]
         internal void TransactionManagerReenlist(Guid resourceManagerID)
         {
@@ -798,7 +798,7 @@ namespace System.Transactions
 
         #region TransactionManager Recovery Complete
         /// <summary>Trace an event when transactionmanager recovery complete.</summary>
-        /// <param name="resourceMangerID">The resource manger ID.</param>
+        /// <param name="resourceManagerID">The resource manager ID.</param>
         [NonEvent]
         internal void TransactionManagerRecoveryComplete(Guid resourceManagerID)
         {

@@ -604,7 +604,7 @@ namespace System.Xml.Xsl.XPath
             if (LexKind.LastNonChar < t)
             {
                 Debug.Assert("()[].@,*/$}".IndexOf((char)t) >= 0);
-                return new string((char)t, 1);
+                return char.ToString((char)t);
             }
 
             switch (t)

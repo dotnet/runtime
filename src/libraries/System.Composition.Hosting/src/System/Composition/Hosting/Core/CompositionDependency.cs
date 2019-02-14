@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Composition.Hosting.Util;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -168,10 +169,7 @@ namespace System.Composition.Hosting.Core
 
         internal void DescribeError(StringBuilder message)
         {
-            if(!IsError)
-            {
-                throw new Exception(SR.Dependency_Not_In_Error_State);
-            }
+            Debug.Assert(IsError, "Should be in error state.");
 
             if (_oversuppliedTargets != null)
             {

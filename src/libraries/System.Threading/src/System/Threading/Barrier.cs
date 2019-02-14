@@ -267,9 +267,7 @@ namespace System.Threading
                 newCurrentTotal |= SENSE_MASK;
             }
 
-#pragma warning disable 0420
             return Interlocked.CompareExchange(ref _currentTotalCount, newCurrentTotal, currentTotal) == currentTotal;
-#pragma warning restore 0420
         }
 
         /// <summary>
@@ -387,7 +385,7 @@ namespace System.Threading
                     }
                     break;
                 }
-                spinner.SpinOnce();
+                spinner.SpinOnce(sleep1Threshold: -1);
             }
             return newPhase;
         }
@@ -472,7 +470,7 @@ namespace System.Threading
                         break;
                     }
                 }
-                spinner.SpinOnce();
+                spinner.SpinOnce(sleep1Threshold: -1);
             }
         }
 
@@ -674,7 +672,7 @@ namespace System.Threading
                     break;
                 }
 
-                spinner.SpinOnce();
+                spinner.SpinOnce(sleep1Threshold: -1);
             }
 
             // ** Perform the real wait **
@@ -740,7 +738,7 @@ namespace System.Threading
                         else
                             return false;
                     }
-                    spinner.SpinOnce();
+                    spinner.SpinOnce(sleep1Threshold: -1);
                 }
             }
 

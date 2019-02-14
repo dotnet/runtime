@@ -66,7 +66,7 @@ namespace System.Net.Http
             response.StatusCode = (HttpStatusCode)statusCode;
 
             // Try to use a known reason phrase instead of allocating a new string.
-            HeaderBufferSpan reasonPhraseSpan = _span.Substring(index);
+            HeaderBufferSpan reasonPhraseSpan = _span.Slice(index);
             string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
             response.ReasonPhrase = reasonPhraseSpan.EqualsOrdinal(knownReasonPhrase) ?
                 knownReasonPhrase :
@@ -95,7 +95,7 @@ namespace System.Net.Http
 
                 CheckResponseMsgFormat(index < _span.Length);
                 CheckResponseMsgFormat(_span[index] == ':');
-                HeaderBufferSpan headerNameSpan = _span.Substring(0, headerNameLength);
+                HeaderBufferSpan headerNameSpan = _span.Slice(0, headerNameLength);
                 if (!HttpKnownHeaderNames.TryGetHeaderName(headerNameSpan.Buffer, headerNameSpan.Length, out headerName))
                 {
                     headerName = headerNameSpan.ToString();
@@ -103,7 +103,7 @@ namespace System.Net.Http
                 CheckResponseMsgFormat(headerName.Length > 0);
 
                 index++;
-                headerValue = _span.Substring(index).Trim().ToString();
+                headerValue = _span.Slice(index).Trim().ToString();
                 return true;
             }
 
@@ -268,12 +268,12 @@ namespace System.Net.Http
                 return true;
             }
 
-            public HeaderBufferSpan Substring(int startIndex)
+            public HeaderBufferSpan Slice(int startIndex)
             {
-                return Substring(startIndex, Length - startIndex);
+                return Slice(startIndex, Length - startIndex);
             }
 
-            public HeaderBufferSpan Substring(int startIndex, int length)
+            public HeaderBufferSpan Slice(int startIndex, int length)
             {
                 Debug.Assert(startIndex >= 0);
                 Debug.Assert(length >= 0);

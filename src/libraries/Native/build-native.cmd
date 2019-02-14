@@ -40,19 +40,12 @@ goto :Arg_Loop
 :ToolsVersion
 :: Default to highest Visual Studio version available
 ::
-:: For VS2015 (and prior), only a single instance is allowed to be installed on a box
-:: and VS140COMNTOOLS is set as a global environment variable by the installer. This
-:: allows users to locate where the instance of VS2015 is installed.
-::
-:: For VS2017 and later, multiple instances can be installed on the same box SxS and VSxxxCOMNTOOLS
-:: is no longer set as a global environment variable and is instead only set if the user
+:: For VS2017 and later, multiple instances can be installed on the same box SxS and VSxxxCOMNTOOLS is only set if the user
 :: has launched the VS2017 or VS2019 Developer Command Prompt.
 ::
 :: Following this logic, we will default to the VS2017 or VS2019 toolset if VS150COMNTOOLS or VS160COMMONTOOLS tools is
 :: set, as this indicates the user is running from the VS2017 or VS2019 Developer Command Prompt and
-:: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
-:: toolset if it is installed. Finally, we will fail the script if no supported VS instance
-:: can be found.
+:: is already configured to use that toolset. Otherwise, we will fail the script if no supported VS instance can be found.
 
 if defined VisualStudioVersion goto :RunVCVars
 
@@ -60,7 +53,6 @@ set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %_VSWHERE% (
   for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -prerelease -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
 )
-if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
 
 call "%_VSCOMNTOOLS%\VsDevCmd.bat"
@@ -68,23 +60,20 @@ call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 :RunVCVars
 if "%VisualStudioVersion%"=="16.0" (
     goto :VS2019
-)
-else if "%VisualStudioVersion%"=="15.0" (
+) else if "%VisualStudioVersion%"=="15.0" (
     goto :VS2017
-) else if "%VisualStudioVersion%"=="14.0" (
-    goto :VS2015
 )
 
 :MissingVersion
-:: Can't find VS 2015, 2017, 2019
-echo Error: Visual Studio 2015, 2017 or 2019 required
+:: Can't find VS 2017, 2019
+echo Error: Visual Studio 2017 or 2019 required
 echo        Please see https://github.com/dotnet/corefx/tree/master/Documentation for build instructions.
 exit /b 1
 
 :VS2019
 :: Setup vars for VS2019
 set __VSVersion=vs2019
-set __PlatformToolset=v141
+set __PlatformToolset=v142
 :: Set the environment for the native build
 call "%VS160COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 goto :SetupDirs
@@ -95,14 +84,6 @@ set __VSVersion=vs2017
 set __PlatformToolset=v141
 :: Set the environment for the native build
 call "%VS150COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
-goto :SetupDirs
-
-:VS2015
-:: Setup vars for VS2015
-set __VSVersion=vs2015
-set __PlatformToolset=v140
-:: Set the environment for the native build
-call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" %__VCBuildArch%
 goto :SetupDirs
 
 :SetupDirs
@@ -139,7 +120,7 @@ echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 Make sure you selected the correct dependencies when installing Visual Studio.
 :: DIA SDK not included in Express editions
 echo Visual Studio Express does not include the DIA SDK. ^
-You need Visual Studio 2015 or 2017 (Community is free).
+You need Visual Studio 2017 or 2019 (Community is free).
 echo See: https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md#required-software
 exit /b 1
 
@@ -147,7 +128,7 @@ exit /b 1
 :: Regenerate the VS solution
 
 pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %__nativeWindowsDir% %__VSVersion% %__BuildArch%
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" "%__nativeWindowsDir%" %__VSVersion% %__BuildArch%
 popd
 
 :CheckForProj
@@ -178,7 +159,7 @@ set "__LinkArgs=%__LinkArgs% /APPCONTAINER"
 set "__appContainer=true"
 
 pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %__nativeWindowsDir% %__VSVersion% %__BuildArch%
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" "%__nativeWindowsDir%" %__VSVersion% %__BuildArch%
 popd
 
 if not exist "%__IntermediatesDir%\install.vcxproj" goto :Failure
@@ -199,8 +180,8 @@ IF ERRORLEVEL 1 (
 )
 
 :: Copy results to native_aot since packaging expects a copy there too
-mkdir %__artifactsDir%\bin\native\%__outConfig%-aot
-copy %__artifactsDir%\bin\native\%__outConfig%\* %__artifactsDir%\bin\native\%__outConfig%-aot\
+mkdir "%__artifactsDir%\bin\native\%__outConfig%-aot"
+copy "%__artifactsDir%\bin\native\%__outConfig%\*" "%__artifactsDir%\bin\native\%__outConfig%-aot"
 
 exit /B 0
 

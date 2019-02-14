@@ -19,7 +19,7 @@ namespace System.Data.SqlClient
 
         private void Populate()
         {
-            AllowDBNull = _metadata.isNullable;
+            AllowDBNull = _metadata.IsNullable;
             BaseCatalogName = _metadata.catalogName;
             BaseColumnName = _metadata.baseColumn;
             BaseSchemaName = _metadata.schemaName;
@@ -28,8 +28,8 @@ namespace System.Data.SqlClient
             ColumnName = _metadata.column;
             ColumnOrdinal = _metadata.ordinal;
             ColumnSize = (_metadata.metaType.IsSizeInCharacters && (_metadata.length != 0x7fffffff)) ? (_metadata.length / 2) : _metadata.length;
-            IsAutoIncrement = _metadata.isIdentity;
-            IsIdentity = _metadata.isIdentity;
+            IsAutoIncrement = _metadata.IsIdentity;
+            IsIdentity = _metadata.IsIdentity;
             IsLong = _metadata.metaType.IsLong;
 
             if (SqlDbType.Timestamp == _metadata.type)
@@ -50,9 +50,9 @@ namespace System.Data.SqlClient
                 NumericPrecision = _metadata.metaType.Precision;
             }
 
-            IsReadOnly = (0 == _metadata.updatability);
+            IsReadOnly = _metadata.IsReadOnly;
 
-            UdtAssemblyQualifiedName = _metadata.udtAssemblyQualifiedName;
+            UdtAssemblyQualifiedName = _metadata.udt?.AssemblyQualifiedName;
 
         }
 

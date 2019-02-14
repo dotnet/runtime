@@ -8,11 +8,14 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
     public abstract class SendReceive<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
+        public SendReceive(ITestOutputHelper output) : base(output) {}
+
         [Theory]
         [InlineData(null, 0, 0)] // null array
         [InlineData(1, -1, 0)] // offset low
@@ -567,11 +570,15 @@ namespace System.Net.Sockets.Tests
             {
                 int bytesReceived = 0;
                 var receivedChecksum = new Fletcher32();
+
+                _output?.WriteLine($"{DateTime.Now} Starting listener at {listener.LocalEndpoint}");
                 Task serverTask = Task.Run(async () =>
                 {
                     using (Socket remote = await listener.AcceptSocketAsync())
                     {
                         var recvBuffer = new byte[256];
+                        int count = 0;
+
                         while (true)
                         {
                             if (pollBeforeOperation)
@@ -579,9 +586,11 @@ namespace System.Net.Sockets.Tests
                                 Assert.True(remote.Poll(-1, SelectMode.SelectRead), "Read poll before completion should have succeeded");
                             }
                             int received = remote.Receive(recvBuffer, 0, recvBuffer.Length, SocketFlags.None);
+                            count++;
                             if (received == 0)
                             {
                                 Assert.True(remote.Poll(0, SelectMode.SelectRead), "Read poll after completion should have succeeded");
+                                _output?.WriteLine($"{DateTime.Now} Received 0 bytes. Stopping receiving loop after {count} iterations.");
                                 break;
                             }
 
@@ -627,6 +636,11 @@ namespace System.Net.Sockets.Tests
                 });
 
                 await (new[] { serverTask, clientTask }).WhenAllOrAnyFailed(TestTimeout);
+
+                if (bytesSent != bytesReceived)
+                {
+                    _output?.WriteLine($"{DateTime.Now} Test received only {bytesReceived} bytes from {bytesSent}. Client task is {clientTask.Status}, Server task is {serverTask.Status}");
+                }
 
                 Assert.Equal(bytesSent, bytesReceived);
                 Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
@@ -1057,6 +1071,8 @@ namespace System.Net.Sockets.Tests
             receiver.Connect(sender.LocalEndPoint); // only receive from sender
             EndPoint receiverEndPoint = receiver.LocalEndPoint;
 
+            Barrier b = new Barrier(2);
+
             Task receiveTask = Task.Run(() =>
             {
                 using (receiver)
@@ -1069,6 +1085,8 @@ namespace System.Net.Sockets.Tests
                     }
                     // receive data as SegmentCount (> IOV_MAX) 1-byte segments.
                     SocketError error;
+                    // Signal we are ready to receive.
+                    b.SignalAndWait();
                     int bytesReceived = receiver.Receive(receiveSegments, SocketFlags.None, out error);
 
                     if (error == SocketError.Success)
@@ -1088,12 +1106,16 @@ namespace System.Net.Sockets.Tests
             using (sender)
             {
                 sender.Connect(receiverEndPoint);
+
+                // Synchronize and wait for receiving task to be ready.
+                b.SignalAndWait();
+
                 var sendBuffer = new byte[SegmentCount];
                 for (int i = 0; i < 10; i++) // UDPRedundancy
                 {
                     int bytesSent = sender.Send(sendBuffer);
                     Assert.Equal(SegmentCount, bytesSent);
-                    await Task.WhenAny(receiveTask, Task.Delay(1));
+                    await Task.WhenAny(receiveTask, Task.Delay(3));
                     if (receiveTask.IsCompleted)
                     {
                         break;
@@ -1357,6 +1379,8 @@ namespace System.Net.Sockets.Tests
 
     public sealed class SendReceiveSync : SendReceive<SocketHelperArraySync>
     {
+        public SendReceiveSync(ITestOutputHelper output) : base(output) { }
+
         [OuterLoop]
         [Fact]
         public void BlockingRead_DoesntRequireAnotherThreadPoolThread()
@@ -1408,8 +1432,23 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendReceiveSyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking> { }
-    public sealed class SendReceiveApm : SendReceive<SocketHelperApm> { }
-    public sealed class SendReceiveTask : SendReceive<SocketHelperTask> { }
-    public sealed class SendReceiveEap : SendReceive<SocketHelperEap> { }
+    public sealed class SendReceiveSyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking>
+    {
+        public SendReceiveSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class SendReceiveApm : SendReceive<SocketHelperApm>
+    {
+        public SendReceiveApm(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class SendReceiveTask : SendReceive<SocketHelperTask>
+    {
+        public SendReceiveTask(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class SendReceiveEap : SendReceive<SocketHelperEap>
+    {
+        public SendReceiveEap(ITestOutputHelper output) : base(output) {}
+    }
 }

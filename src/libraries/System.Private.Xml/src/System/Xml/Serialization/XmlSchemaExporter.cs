@@ -12,11 +12,6 @@ namespace System.Xml.Serialization
     using System.Globalization;
     using System.Reflection;
 
-    /// <include file='doc\XmlSchemaExporter.uex' path='docs/doc[@for="XmlSchemaExporter"]/*' />
-    ///<internalonly/>
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaExporter
     {
         internal const XmlSchemaForm elementFormDefault = XmlSchemaForm.Qualified;
@@ -30,19 +25,11 @@ namespace System.Xml.Serialization
         private bool _needToExportRoot;
         private TypeScope _scope;
 
-        /// <include file='doc\XmlSchemaExporter.uex' path='docs/doc[@for="XmlSchemaExporter.XmlSchemaExporter"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchemaExporter(XmlSchemas schemas)
         {
             _schemas = schemas;
         }
 
-        /// <include file='doc\XmlSchemaExporter.uex' path='docs/doc[@for="XmlSchemaExporter.ExportTypeMapping"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void ExportTypeMapping(XmlTypeMapping xmlTypeMapping)
         {
             xmlTypeMapping.CheckShallow();
@@ -51,7 +38,6 @@ namespace System.Xml.Serialization
             ExportRootIfNecessary(xmlTypeMapping.Scope);
         }
 
-        /// <include file='doc\XmlSchemaExporter.uex' path='docs/doc[@for="XmlSchemaExporter.ExportTypeMapping1"]/*' />
         public XmlQualifiedName ExportTypeMapping(XmlMembersMapping xmlMembersMapping)
         {
             xmlMembersMapping.CheckShallow();
@@ -72,19 +58,11 @@ namespace System.Xml.Serialization
             return null;
         }
 
-        /// <include file='doc\XmlSchemaExporter.uex' path='docs/doc[@for="XmlSchemaExporter.ExportMembersMapping"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void ExportMembersMapping(XmlMembersMapping xmlMembersMapping)
         {
             ExportMembersMapping(xmlMembersMapping, true);
         }
 
-        /// <include file='doc\XmlSchemaExporter.uex' path='docs/doc[@for="XmlSchemaExporter.ExportMembersMapping1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void ExportMembersMapping(XmlMembersMapping xmlMembersMapping, bool exportEnclosingType)
         {
             xmlMembersMapping.CheckShallow();
@@ -155,7 +133,6 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        /// <include file='doc\XmlSchemaExporter.uex' path='docs/doc[@for="XmlSchemaExporter.ExportAnyType"]/*' />
         public string ExportAnyType(string ns)
         {
             string name = "any";
@@ -188,7 +165,6 @@ namespace System.Xml.Serialization
             return name;
         }
 
-        /// <include file='doc\XmlSchemaExporter.uex' path='docs/doc[@for="XmlSchemaExporter.ExportAnyType1"]/*' />
         public string ExportAnyType(XmlMembersMapping members)
         {
             if (members.Count == 1 && members[0].Any && members[0].ElementName.Length == 0)

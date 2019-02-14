@@ -341,6 +341,70 @@ namespace System
             return result;
         }
 
+        public static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1)
+        {
+            int length = checked(str0.Length + str1.Length);
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(length);
+            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
+
+            str0.CopyTo(resultSpan);
+            str1.CopyTo(resultSpan.Slice(str0.Length));
+
+            return result;
+        }
+
+        public static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2)
+        {
+            int length = checked(str0.Length + str1.Length + str2.Length);
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(length);
+            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
+
+            str0.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str0.Length);
+
+            str1.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str1.Length);
+
+            str2.CopyTo(resultSpan);
+
+            return result;
+        }
+
+        public static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2, ReadOnlySpan<char> str3)
+        {
+            int length = checked(str0.Length + str1.Length + str2.Length + str3.Length);
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(length);
+            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
+
+            str0.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str0.Length);
+
+            str1.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str1.Length);
+
+            str2.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str2.Length);
+
+            str3.CopyTo(resultSpan);
+
+            return result;
+        }
+
         public static string Concat(params string[] values)
         {
             if (values == null)
@@ -1620,6 +1684,20 @@ namespace System
             }
 
             return InternalSubString(startIndex, length);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public string Substring(Index startIndex)
+        {
+            int actualIndex = startIndex.GetOffset(Length);
+            return Substring(actualIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public string Substring(Range range)
+        {
+            (int start, int length) = range.GetOffsetAndLength(Length);
+            return Substring(start, length);
         }
 
         private unsafe string InternalSubString(int startIndex, int length)

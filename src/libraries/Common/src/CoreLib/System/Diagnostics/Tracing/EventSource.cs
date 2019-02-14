@@ -174,9 +174,9 @@ using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Security;
-#if !CORECLR && !ES_BUILD_PN
+#if ES_BUILD_STANDALONE
 using System.Security.Permissions;
-#endif // !CORECLR && !ES_BUILD_PN
+#endif
 
 using System.Text;
 using System.Threading;
@@ -403,8 +403,7 @@ namespace System.Diagnostics.Tracing
             {
                 foreach (WeakReference eventSourceRef in EventListener.s_EventSources)
                 {
-                    EventSource eventSource = eventSourceRef.Target as EventSource;
-                    if (eventSource != null && !eventSource.IsDisposed)
+                    if (eventSourceRef.Target is EventSource eventSource && !eventSource.IsDisposed)
                         ret.Add(eventSource);
                 }
             }
@@ -456,7 +455,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                int threadID = Win32Native.GetCurrentThreadId();
+                int threadID = Interop.Kernel32.GetCurrentThreadId();
 
                 // Managed thread IDs are more aggressively re-used than native thread IDs,
                 // so we'll use the latter...
@@ -2715,8 +2714,7 @@ namespace System.Diagnostics.Tracing
                 // TODO Enforce singleton pattern 
                 foreach (WeakReference eventSourceRef in EventListener.s_EventSources)
                 {
-                    EventSource eventSource = eventSourceRef.Target as EventSource;
-                    if (eventSource != null && eventSource.Guid == m_guid && !eventSource.IsDisposed)
+                    if (eventSourceRef.Target is EventSource eventSource && eventSource.Guid == m_guid && !eventSource.IsDisposed)
                     {
                         if (eventSource != this)
                         {
@@ -2740,11 +2738,11 @@ namespace System.Diagnostics.Tracing
             }
             if (s_currentPid == 0)
             {
-#if ES_BUILD_STANDALONE && !ES_BUILD_PCL && !CORECLR
+#if ES_BUILD_STANDALONE
                 // for non-BCL EventSource we must assert SecurityPermission
                 new SecurityPermission(PermissionState.Unrestricted).Assert();
 #endif
-                s_currentPid = Win32Native.GetCurrentProcessId();
+                s_currentPid = Interop.Kernel32.GetCurrentProcessId();
             }
         }
 
@@ -3508,7 +3506,7 @@ namespace System.Diagnostics.Tracing
             // RET
             // 
             // If we find this pattern we return the XXX.  Otherwise we return -1.  
-#if !CORECLR
+#if ES_BUILD_STANDALONE
             (new ReflectionPermission(ReflectionPermissionFlag.MemberAccess)).Assert();
 #endif
             byte[] instrs = method.GetMethodBody().GetILAsByteArray();
@@ -3623,7 +3621,7 @@ namespace System.Diagnostics.Tracing
         {
 #if !ES_BUILD_PCL
             msg = msg.TrimEnd('\r', '\n') +
-                    string.Format(CultureInfo.InvariantCulture, ", Thrd({0})" + Environment.NewLine, Thread.CurrentThread.ManagedThreadId);
+                    string.Format(CultureInfo.InvariantCulture, ", Thrd({0})" + Environment.NewLine, Environment.CurrentManagedThreadId);
             System.Diagnostics.Debugger.Log(0, null, msg);
 #endif
         }
@@ -3876,10 +3874,10 @@ namespace System.Diagnostics.Tracing
         static EventListener()
         {
 #if FEATURE_PERFTRACING
-            // Ensure that RuntimeEventSource is initialized so that EventListeners get an opportunity to subscribe to its events.
-            // This is required because RuntimeEventSource never emit events on its own, and thus will never be initialized
+            // Ensure that NativeRuntimeEventSource is initialized so that EventListeners get an opportunity to subscribe to its events.
+            // This is required because NativeRuntimeEventSource never emit events on its own, and thus will never be initialized
             // in the normal way that EventSources are initialized.
-            GC.KeepAlive(RuntimeEventSource.Log);
+            GC.KeepAlive(NativeRuntimeEventSource.Log);
 #endif // FEATURE_PERFTRACING
         }
 
@@ -3991,7 +3989,7 @@ namespace System.Diagnostics.Tracing
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
 #if FEATURE_PERFTRACING
-            if (eventSource.GetType() == typeof(RuntimeEventSource))
+            if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
             {
                 EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, true, level, matchAnyKeyword);
             }
@@ -4012,7 +4010,7 @@ namespace System.Diagnostics.Tracing
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
 
 #if FEATURE_PERFTRACING
-            if (eventSource.GetType() == typeof(RuntimeEventSource))
+            if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
             {
                 EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None);
             }
@@ -4090,11 +4088,11 @@ namespace System.Diagnostics.Tracing
                 if (!s_EventSourceShutdownRegistered)
                 {
                     s_EventSourceShutdownRegistered = true;
-#if CORECLR || ES_BUILD_PN
-                    AppContext.ProcessExit += DisposeOnShutdown;
-#else
+#if ES_BUILD_STANDALONE
                     AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
                     AppDomain.CurrentDomain.DomainUnload += DisposeOnShutdown;
+#else
+                    AppContext.ProcessExit += DisposeOnShutdown;
 #endif
                 }
 
@@ -4160,8 +4158,7 @@ namespace System.Diagnostics.Tracing
             {
                 foreach (var esRef in s_EventSources)
                 {
-                    EventSource es = esRef.Target as EventSource;
-                    if (es != null)
+                    if (esRef.Target is EventSource es)
                         es.Dispose();
                 }
             }
@@ -4181,8 +4178,7 @@ namespace System.Diagnostics.Tracing
             // Foreach existing EventSource in the appdomain
             foreach (WeakReference eventSourceRef in s_EventSources)
             {
-                EventSource eventSource = eventSourceRef.Target as EventSource;
-                if (eventSource != null)
+                if (eventSourceRef.Target is EventSource eventSource)
                 {
                     // Is the first output dispatcher the dispatcher we are removing?
                     if (eventSource.m_Dispatchers.m_Listener == listenerToRemove)
@@ -4246,8 +4242,7 @@ namespace System.Diagnostics.Tracing
                 foreach (WeakReference eventSourceRef in s_EventSources)
                 {
                     id++;
-                    EventSource eventSource = eventSourceRef.Target as EventSource;
-                    if (eventSource == null)
+                    if (!(eventSourceRef.Target is EventSource eventSource))
                         continue;
                     Debug.Assert(eventSource.m_id == id, "Unexpected event source ID.");
 
@@ -4328,8 +4323,7 @@ namespace System.Diagnostics.Tracing
                         for (int i = 0; i < eventSourcesSnapshot.Length; i++)
                         {
                             WeakReference eventSourceRef = eventSourcesSnapshot[i];
-                            EventSource eventSource = eventSourceRef.Target as EventSource;
-                            if (eventSource != null)
+                            if (eventSourceRef.Target is EventSource eventSource)
                             {
                                 EventSourceCreatedEventArgs args = new EventSourceCreatedEventArgs();
                                 args.EventSource = eventSource;
@@ -5183,7 +5177,7 @@ namespace System.Diagnostics.Tracing
             if (dllName != null)
                 sb.Append("\" resourceFileName=\"").Append(dllName).Append("\" messageFileName=\"").Append(dllName);
 
-            var symbolsName = providerName.Replace("-", "").Replace(".", "_");  // Period and - are illegal replace them.
+            var symbolsName = providerName.Replace("-", "").Replace('.', '_');  // Period and - are illegal replace them.
             sb.Append("\" symbol=\"").Append(symbolsName);
             sb.Append("\">").AppendLine();
         }

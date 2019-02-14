@@ -87,10 +87,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (disposing)
                 {
-                    // NOTE : According to https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-messages/cs0420, the warning is bogus when used with Interlocked API.
-#pragma warning disable 420
                     if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 0)
-#pragma warning restore 420
                     {
                         INotifyComposablePartCatalogChanged notifyCatalog = _catalog as INotifyComposablePartCatalogChanged;
                         if (notifyCatalog != null)

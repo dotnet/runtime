@@ -384,6 +384,7 @@ namespace System.Runtime.InteropServices
         public DllImportAttribute(string dllName) { }
         public string Value { get { throw null; } }
     }
+    public delegate System.IntPtr DllImportResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath);
     [System.FlagsAttribute]
     public enum DllImportSearchPath
     {
@@ -547,30 +548,24 @@ namespace System.Runtime.InteropServices
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public static System.IntPtr GetFunctionPointerForDelegate(System.Delegate d) { throw null; }
         public static System.IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) { throw null; }
-        public static System.IntPtr GetHINSTANCE(System.Reflection.Module m) { throw null; }        
+        public static System.IntPtr GetHINSTANCE(System.Reflection.Module m) { throw null; }
         public static int GetHRForException(System.Exception e) { throw null; }
         public static int GetHRForLastWin32Error() { throw null; }
         public static System.IntPtr GetIDispatchForObject(object o) { throw null; }
         public static System.IntPtr GetIUnknownForObject(object o) { throw null; }
         public static int GetLastWin32Error() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetNativeVariantForObject(Object, IntPtr) may be unavailable in future releases.")]
         public static void GetNativeVariantForObject(object obj, System.IntPtr pDstNativeVariant) { }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetNativeVariantForObject<T>(T, IntPtr) may be unavailable in future releases.")]
         public static void GetNativeVariantForObject<T>(T obj, System.IntPtr pDstNativeVariant) { }
         public static object GetObjectForIUnknown(System.IntPtr pUnk) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetObjectForNativeVariant(IntPtr) may be unavailable in future releases.")]
         public static object GetObjectForNativeVariant(System.IntPtr pSrcNativeVariant) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetObjectForNativeVariant<T>(IntPtr) may be unavailable in future releases.")]
         public static T GetObjectForNativeVariant<T>(System.IntPtr pSrcNativeVariant) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetObjectsForNativeVariants(IntPtr, Int32) may be unavailable in future releases.")]
         public static object[] GetObjectsForNativeVariants(System.IntPtr aSrcNativeVariant, int cVars) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("GetObjectsForNativeVariants<T>(IntPtr, Int32) may be unavailable in future releases.")]
         public static T[] GetObjectsForNativeVariants<T>(System.IntPtr aSrcNativeVariant, int cVars) { throw null; }
         public static int GetStartComSlot(System.Type t) { throw null; }
         public static int GetEndComSlot(System.Type t) { throw null; }
@@ -729,6 +724,17 @@ namespace System.Runtime.InteropServices
         protected MarshalDirectiveException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MarshalDirectiveException(string message) { }
         public MarshalDirectiveException(string message, System.Exception inner) { }
+    }
+    public static partial class NativeLibrary
+    {
+        public static void Free(System.IntPtr handle) { }
+        public static System.IntPtr GetExport(System.IntPtr handle, string name) { throw null; }
+        public static System.IntPtr Load(string libraryPath) { throw null; }
+        public static System.IntPtr Load(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath) { throw null; }
+        public static void SetDllImportResolver(System.Reflection.Assembly assembly, DllImportResolver resolver) { throw null; }
+        public static bool TryGetExport(IntPtr handle, string name, out IntPtr address) { throw null; }
+        public static bool TryLoad(string libraryPath, out System.IntPtr handle) { throw null; }
+        public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false)]
     public sealed partial class OptionalAttribute : System.Attribute
@@ -946,7 +952,6 @@ namespace System.Runtime.InteropServices
         I4 = 7,
         I8 = 9,
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("Marshalling as IDispatch may be unavailable in future releases.")]
         IDispatch = 26,
         IInspectable = 46,
         Interface = 28,
@@ -960,10 +965,8 @@ namespace System.Runtime.InteropServices
         R4 = 11,
         R8 = 12,
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("Marshalling as SafeArray may be unavailable in future releases.")]
         SafeArray = 29,
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("Applying UnmanagedType.Struct is unnecessary when marshalling a struct. Support for UnmanagedType.Struct when marshalling a reference type may be unavailable in future releases.")]
         Struct = 27,
         SysInt = 31,
         SysUInt = 32,
@@ -975,14 +978,12 @@ namespace System.Runtime.InteropServices
         U4 = 8,
         U8 = 10,
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("Marshalling as VariantBool may be unavailable in future releases.")]
         VariantBool = 37,
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         [System.ObsoleteAttribute("Marshalling as VBByRefString may be unavailable in future releases.")]
         VBByRefStr = 34,
     }
     [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-    [System.ObsoleteAttribute("Marshalling VARIANTs may be unavailable in future releases.")]
     public enum VarEnum
     {
         VT_ARRAY = 8192,

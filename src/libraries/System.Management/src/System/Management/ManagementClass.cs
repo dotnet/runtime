@@ -798,7 +798,7 @@ namespace System.Management
         /// </returns>
         /// <remarks>
         ///    <para>Note that the newly returned class has not been committed 
-        ///       until the <see cref='System.Management.ManagementObject.Put'/>() method is explicitly called.</para>
+        ///       until the <see cref='System.Management.ManagementObject.Put()'/> method is explicitly called.</para>
         /// </remarks>
         /// <example>
         ///    <code lang='C#'>ManagementClass existingClass = new ManagementClass("CIM_Service");
@@ -877,7 +877,7 @@ namespace System.Management
         /// </returns>
         /// <remarks>
         ///    <para>Note that the new instance is not committed until the 
-        ///    <see cref='System.Management.ManagementObject.Put'/>() method is called. Before committing it, the key properties must
+        ///    <see cref='System.Management.ManagementObject.Put()'/> method is called. Before committing it, the key properties must
         ///       be specified.</para>
         /// </remarks>
         /// <example>

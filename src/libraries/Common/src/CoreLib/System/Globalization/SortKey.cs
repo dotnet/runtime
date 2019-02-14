@@ -135,9 +135,7 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public override bool Equals(object value)
         {
-            SortKey that = value as SortKey;
-
-            if (that != null)
+            if (value is SortKey that)
             {
                 return Compare(this, that) == 0;
             }

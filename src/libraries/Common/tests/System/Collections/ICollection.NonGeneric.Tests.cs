@@ -84,13 +84,6 @@ namespace System.Collections.Tests
         protected virtual bool ICollection_NonGeneric_HasNullSyncRoot => false;
 
         /// <summary>
-        /// Used for the ICollection_NonGeneric_SyncRootType_MatchesExcepted test. Most SyncRoots are created
-        /// using System.Threading.Interlocked.CompareExchange(ref _syncRoot, new Object(), null)
-        /// so we should test that the SyncRoot is the type we expect.
-        /// </summary>
-        protected virtual Type ICollection_NonGeneric_SyncRootType => typeof(object);
-
-        /// <summary>
         /// Used for the ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowsArgumentException tests. Some
         /// implementations throw a different exception type (e.g. ArgumentOutOfRangeException).
         /// </summary>
@@ -147,22 +140,6 @@ namespace System.Collections.Tests
             {
                 Assert.Equal(ICollection_NonGeneric_HasNullSyncRoot, collection.SyncRoot == null);
                 Assert.Same(collection.SyncRoot, collection.SyncRoot);
-
-                if (!ICollection_NonGeneric_HasNullSyncRoot)
-                {
-                    Assert.IsType(ICollection_NonGeneric_SyncRootType, collection.SyncRoot);
-
-                    if (ICollection_NonGeneric_SyncRootType == collection.GetType())
-                    {
-                        // If we expect the SyncRoot to be the same type as the collection, 
-                        // the SyncRoot should be the same as the collection (e.g. HybridDictionary)
-                        Assert.Same(collection, collection.SyncRoot);
-                    }
-                    else
-                    {
-                        Assert.NotSame(collection, collection.SyncRoot);
-                    }
-                }
             }
             else
             {

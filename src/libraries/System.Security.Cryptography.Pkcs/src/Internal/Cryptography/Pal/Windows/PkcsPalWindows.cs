@@ -215,17 +215,28 @@ namespace Internal.Cryptography.Pal.Windows
                 if (keySpec == CryptKeySpec.CERT_NCRYPT_KEY_SPEC)
                 {
                     using (SafeNCryptKeyHandle keyHandle = new SafeNCryptKeyHandle(handle.DangerousGetHandle(), handle))
-                    using (CngKey cngKey = CngKey.Open(keyHandle, CngKeyHandleOpenOptions.None))
                     {
-                        if (typeof(T) == typeof(RSA))
-                            return (T)(object)new RSACng(cngKey);
-                        if (typeof(T) == typeof(ECDsa))
-                            return (T)(object)new ECDsaCng(cngKey);
-                        if (typeof(T) == typeof(DSA))
-                            return (T)(object)new DSACng(cngKey);
+                        CngKeyHandleOpenOptions options = CngKeyHandleOpenOptions.None;
+                        byte clrIsEphemeral = 0;
+                        Interop.NCrypt.ErrorCode errorCode = Interop.NCrypt.NCryptGetByteProperty(keyHandle, "CLR IsEphemeral", ref clrIsEphemeral, CngPropertyOptions.CustomProperty);
 
-                        Debug.Fail($"Unknown CNG key type request: {typeof(T).FullName}");
-                        return null;
+                        if (errorCode == Interop.NCrypt.ErrorCode.ERROR_SUCCESS && clrIsEphemeral == 1)
+                        {
+                            options |= CngKeyHandleOpenOptions.EphemeralKey;
+                        }
+
+                        using (CngKey cngKey = CngKey.Open(keyHandle, options))
+                        {
+                            if (typeof(T) == typeof(RSA))
+                                return (T)(object)new RSACng(cngKey);
+                            if (typeof(T) == typeof(ECDsa))
+                                return (T)(object)new ECDsaCng(cngKey);
+                            if (typeof(T) == typeof(DSA))
+                                return (T)(object)new DSACng(cngKey);
+
+                            Debug.Fail($"Unknown CNG key type request: {typeof(T).FullName}");
+                            return null;
+                        }
                     }
                 }
 

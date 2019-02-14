@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{AF3EBF3B-526A-4B51-9F3D-62B0113CD01F}</ProjectGuid>
-    <NoWarn>$(NoWarn);1574;1734;0419</NoWarn>
     <RootNamespace>System.ComponentModel.TypeConverter</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -84,10 +83,10 @@
     <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
     <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />
     <Compile Include="System\ComponentModel\Design\ITypeDescriptorFilterService.cs" />
-    <Compile Include="$(CommonPath)/System/Drawing/ColorConverterCommon.cs">
+    <Compile Include="$(CommonPath)\System\Drawing\ColorConverterCommon.cs">
       <Link>System\Drawing\ColorConverterCommon.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)/System/Drawing/ColorTable.cs">
+    <Compile Include="$(CommonPath)\System\Drawing\ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
     </Compile>
     <Compile Include="System\Drawing\ColorConverter.cs" />

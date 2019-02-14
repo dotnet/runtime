@@ -204,14 +204,14 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Gets a value indicating whether changing a value on this object requires a call to
-        /// <see cref='System.ComponentModel.TypeConverter.CreateInstance'/> to create a new value.
+        /// <see cref='System.ComponentModel.TypeConverter.CreateInstance(IDictionary)'/> to create a new value.
         /// </summary>
         public bool GetCreateInstanceSupported() => GetCreateInstanceSupported(null);
 
         /// <summary>
         /// 
         /// Gets a value indicating whether changing a value on this object requires a call to
-        /// <see cref='System.ComponentModel.TypeConverter.CreateInstance'/> to create a new value,
+        /// <see cref='System.ComponentModel.TypeConverter.CreateInstance(IDictionary)'/> to create a new value,
         /// using the specified context.
         /// 
         /// </summary>
@@ -266,13 +266,13 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Gets a value indicating whether the collection of standard values returned from
-        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> is an exclusive list.
+        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues()'/> is an exclusive list.
         /// </summary>
         public bool GetStandardValuesExclusive() => GetStandardValuesExclusive(null);
 
         /// <summary>
         /// Gets a value indicating whether the collection of standard values returned from
-        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> is an exclusive 
+        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues()'/> is an exclusive 
         /// list of possible values, using the specified context.
         /// </summary>
         public virtual bool GetStandardValuesExclusive(ITypeDescriptorContext context) => false;

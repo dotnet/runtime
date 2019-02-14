@@ -61,7 +61,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class 
         ///     with the specified export providers.
         /// </summary>
-        /// <param name="compositionOPtionss">
+        /// <param name="compositionOptions">
         ///     <see cref="CompositionOptions"/> enumeration with flags controlling the composition.
         /// </param>
         /// <param name="providers">
@@ -121,7 +121,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class 
         ///     with the specified catalog and export providers.
         /// </summary>
-        /// <param name="compositionSettings">
+        /// <param name="compositionOptions">
         ///     <see cref="CompositionOptions"/> enumeration with flags controlling the composition.
         /// </param>
         /// <param name="providers">

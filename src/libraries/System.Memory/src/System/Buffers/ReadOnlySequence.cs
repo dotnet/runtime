@@ -135,7 +135,7 @@ namespace System.Buffers
             }
             else if (typeof(T) == typeof(char))
             {
-                if (!MemoryMarshal.TryGetString(((ReadOnlyMemory<char>)(object)memory), out string text, out int start, out length))
+                if (!MemoryMarshal.TryGetString((ReadOnlyMemory<char>)(object)memory, out string text, out int start, out length))
                     ThrowHelper.ThrowInvalidOperationException();
 
                 _sequenceStart = new SequencePosition(text, ReadOnlySequence.StringToSequenceStart(start));

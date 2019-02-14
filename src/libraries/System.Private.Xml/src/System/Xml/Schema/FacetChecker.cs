@@ -16,7 +16,6 @@ namespace System.Xml.Schema
     using System.Threading;
     using System.Globalization;
 
-    /// <include file='doc\XmlSchemaFacet.uex' path='docs/doc[@for="XmlSchemaFacet"]/*' />
     internal abstract class FacetsChecker
     {
         private struct FacetsCompiler

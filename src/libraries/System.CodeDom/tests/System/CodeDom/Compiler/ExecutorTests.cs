@@ -11,7 +11,7 @@ namespace System.CodeDom.Compiler.Tests
 {
     public class ExecutorTests : RemoteExecutorTestBase
     {
-        private static readonly string s_cmd = PlatformDetection.IsWindows ? "ipconfig" : "ifconfig"; // arbitrary commands to validate output
+        private static readonly string s_cmd = PlatformDetection.IsWindows ? "ipconfig" : "printenv"; // arbitrary commands to validate output
 
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Not supported on .NET Core")]
         [Fact]

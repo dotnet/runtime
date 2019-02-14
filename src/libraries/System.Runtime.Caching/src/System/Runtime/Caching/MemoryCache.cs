@@ -12,8 +12,8 @@ using System.Collections.ObjectModel;
 using System.Configuration;
 using System.Diagnostics.CodeAnalysis;
 using System.Security;
-using System.Security.Permissions;
 using System.Threading;
+using System.Diagnostics;
 
 namespace System.Runtime.Caching
 {
@@ -131,7 +131,7 @@ namespace System.Runtime.Caching
                         }
                         break;
                     case CacheEntryRemovedReason.Evicted:
-                        Dbg.Fail("Reason should never be CacheEntryRemovedReason.Evicted since the entry was inserted as NotRemovable.");
+                        Debug.Fail("Reason should never be CacheEntryRemovedReason.Evicted since the entry was inserted as NotRemovable.");
                         return;
                     default:
                         // do nothing if reason is Removed or CacheSpecificEviction

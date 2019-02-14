@@ -1,19 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{97DB4782-7AB3-4F4C-B716-CF722A0E6066}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Channels.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System.Threading.Channels.netcoreapp.cs" />
+    <ProjectReference Include="../../System.Runtime/ref/System.Runtime.csproj" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Reference Include="netstandard" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading.Tasks" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Threading.Tasks.Extensions\ref\System.Threading.Tasks.Extensions.csproj" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>

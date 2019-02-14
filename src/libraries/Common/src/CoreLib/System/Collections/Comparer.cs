@@ -59,16 +59,13 @@ namespace System.Collections
             if (b == null) return 1;
 
             string sa = a as string;
-            string sb = b as string;
-            if (sa != null && sb != null)
+            if (sa != null && b is string sb)
                 return _compareInfo.Compare(sa, sb);
 
-            IComparable ia = a as IComparable;
-            if (ia != null)
+            if (a is IComparable ia)
                 return ia.CompareTo(b);
 
-            IComparable ib = b as IComparable;
-            if (ib != null)
+            if (b is IComparable ib)
                 return -ib.CompareTo(a);
 
             throw new ArgumentException(SR.Argument_ImplementIComparable);

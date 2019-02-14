@@ -13,7 +13,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         private static string s_connString = DataTestUtility.TcpConnStr;
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void CodeCoverageSqlClient()
         {
             SqlParameterCollection opc = new SqlCommand().Parameters;
@@ -22,7 +22,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.False(((IList)opc).IsReadOnly, "FAILED: Expected collection to NOT be read only.");
             Assert.False(((IList)opc).IsFixedSize, "FAILED: Expected collection to NOT be fixed size.");
             Assert.False(((IList)opc).IsSynchronized, "FAILED: Expected collection to NOT be synchronized.");
-            DataTestUtility.AssertEqualsWithDescription("Object", ((IList)opc).SyncRoot.GetType().Name, "FAILED: Incorrect SyncRoot Name");
+            DataTestUtility.AssertEqualsWithDescription("List`1", ((IList)opc).SyncRoot.GetType().Name, "FAILED: Incorrect SyncRoot Name");
 
             {
                 string failValue;
@@ -97,7 +97,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             DataTestUtility.AssertThrowsWrapper<ArgumentException>(() => new SqlCommand().Parameters.Remove(new SqlParameter()), "Attempted to remove an SqlParameter that is not contained by this SqlParameterCollection.");
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void Test_SqlParameter_Constructor()
         {
             using (var conn = new SqlConnection(s_connString))
@@ -129,7 +129,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void Test_WithEnumValue_ShouldInferToUnderlyingType()
         {
             using (var conn = new SqlConnection(s_connString))
@@ -142,7 +142,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void Test_WithOutputEnumParameter_ShouldReturnEnum()
         {
             using (var conn = new SqlConnection(s_connString))
@@ -163,7 +163,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void Test_WithDecimalValue_ShouldReturnDecimal()
         {
             using (var conn = new SqlConnection(s_connString))
@@ -176,7 +176,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void Test_WithGuidValue_ShouldReturnGuid()
         {
             using (var conn = new SqlConnection(s_connString))
@@ -190,7 +190,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TestParametersWithDatatablesTVPInsert()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);

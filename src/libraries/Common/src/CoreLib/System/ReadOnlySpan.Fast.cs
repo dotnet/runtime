@@ -157,20 +157,12 @@ namespace System
             get
             {
                 // Evaluate the actual index first because it helps performance
-                int actualIndex = index.FromEnd ? _length - index.Value : index.Value;
+                int actualIndex = index.GetOffset(_length);
                 return ref this [actualIndex];
             }
         }
 
-        public ReadOnlySpan<T> this[Range range]
-        {
-            get
-            {
-                int start = range.Start.FromEnd ? _length - range.Start.Value : range.Start.Value;
-                int end = range.End.FromEnd ? _length - range.End.Value : range.End.Value;
-                return Slice(start, end - start);
-            }
-        }
+        public ReadOnlySpan<T> this[Range range] => Slice(range);
 
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns null reference.
@@ -293,6 +285,33 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #endif
 
+            return new ReadOnlySpan<T>(ref Unsafe.Add(ref _pointer.Value, start), length);
+        }
+
+        /// <summary>
+        /// Forms a slice out of the given read-only span, beginning at 'startIndex'
+        /// </summary>
+        /// <param name="startIndex">The index at which to begin this slice.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<T> Slice(Index startIndex)
+        {
+            int actualIndex;
+            if (startIndex.IsFromEnd)
+                actualIndex = _length - startIndex.Value;
+            else
+                actualIndex = startIndex.Value;
+
+            return Slice(actualIndex);
+        }
+
+        /// <summary>
+        /// Forms a slice out of the given read-only span, beginning at range start index to the range end
+        /// </summary>
+        /// <param name="range">The range which has the start and end indexes used to slice the span.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlySpan<T> Slice(Range range)
+        {
+            (int start, int length) = range.GetOffsetAndLength(_length);
             return new ReadOnlySpan<T>(ref Unsafe.Add(ref _pointer.Value, start), length);
         }
 

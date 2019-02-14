@@ -7,10 +7,9 @@ namespace System.Xml.Serialization
 {
     using System.IO;
 
-    /// <include file='doc\IndentedWriter.uex' path='docs/doc[@for="IndentedWriter"]/*' />
-    /// <devdoc>
-    ///     This class will write to a stream and manage indentation.
-    /// </devdoc>
+    /// <summary>
+    /// This class will write to a stream and manage indentation.
+    /// </summary>
     internal class IndentedWriter
     {
         private TextWriter _writer;

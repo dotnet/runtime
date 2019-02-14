@@ -29,7 +29,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return commandText;
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void ExecuteTest()
         {
             using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -67,7 +67,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void FailureTest()
         {
             using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))

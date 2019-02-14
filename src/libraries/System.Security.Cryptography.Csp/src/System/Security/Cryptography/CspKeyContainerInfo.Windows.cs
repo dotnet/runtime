@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.NativeCrypto;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
@@ -197,7 +198,7 @@ namespace System.Security.Cryptography
         /// </summary>
         private object ReadKeyParameterSilent(int keyParam, bool throwOnNotFound=true)
         {
-            const uint SilentFlags = (uint)CapiHelper.CryptAcquireContextFlags.CRYPT_SILENT;
+            const uint SilentFlags = (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_SILENT;
 
             SafeProvHandle safeProvHandle;
             int hr = CapiHelper.OpenCSP(_parameters, SilentFlags, out safeProvHandle);
@@ -232,7 +233,7 @@ namespace System.Security.Cryptography
             // In order to ask about the device, instead of a key, we need to ensure that no key is named.
             parameters.KeyContainerName = null;
 
-            const uint OpenDeviceFlags = (uint)CapiHelper.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT;
+            const uint OpenDeviceFlags = (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT;
 
             SafeProvHandle safeProvHandle;
             int hr = CapiHelper.OpenCSP(parameters, OpenDeviceFlags, out safeProvHandle);

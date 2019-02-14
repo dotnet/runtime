@@ -7,20 +7,12 @@ namespace System.Xml.Schema
     using System.Collections;
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaSimpleTypeRestriction.uex' path='docs/doc[@for="XmlSchemaSimpleTypeRestriction"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaSimpleTypeRestriction : XmlSchemaSimpleTypeContent
     {
         private XmlQualifiedName _baseTypeName = XmlQualifiedName.Empty;
         private XmlSchemaSimpleType _baseType;
         private XmlSchemaObjectCollection _facets = new XmlSchemaObjectCollection();
 
-        /// <include file='doc\XmlSchemaSimpleTypeRestriction.uex' path='docs/doc[@for="XmlSchemaSimpleTypeRestriction.BaseTypeName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("base")]
         public XmlQualifiedName BaseTypeName
         {
@@ -28,10 +20,6 @@ namespace System.Xml.Schema
             set { _baseTypeName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
-        /// <include file='doc\XmlSchemaSimpleTypeRestriction.uex' path='docs/doc[@for="XmlSchemaSimpleTypeRestriction.BaseType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("simpleType", typeof(XmlSchemaSimpleType))]
         public XmlSchemaSimpleType BaseType
         {
@@ -39,10 +27,6 @@ namespace System.Xml.Schema
             set { _baseType = value; }
         }
 
-        /// <include file='doc\XmlSchemaSimpleTypeRestriction.uex' path='docs/doc[@for="XmlSchemaSimpleTypeRestriction.Facets"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("length", typeof(XmlSchemaLengthFacet)),
          XmlElement("minLength", typeof(XmlSchemaMinLengthFacet)),
          XmlElement("maxLength", typeof(XmlSchemaMaxLengthFacet)),

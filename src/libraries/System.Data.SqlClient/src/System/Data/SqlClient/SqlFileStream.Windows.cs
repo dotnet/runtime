@@ -10,7 +10,6 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security.Permissions;
 using Microsoft.Win32.SafeHandles;
 using System.Buffers;
 
@@ -274,7 +273,6 @@ namespace System.Data.SqlTypes
             _m_fs.Flush();
         }
 
-        [HostProtection(ExternalThreading = true)]
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             if (_m_disposed)
@@ -291,7 +289,6 @@ namespace System.Data.SqlTypes
             return _m_fs.EndRead(asyncResult);
         }
 
-        [HostProtection(ExternalThreading = true)]
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             if (_m_disposed)
@@ -546,7 +543,7 @@ namespace System.Data.SqlTypes
 
                         // We could continue to do pointer math here, chose to use Span for convenience to 
                         // make sure we get the other members in the right place.
-                        Span<byte> data = new Span<byte>(buffer).Slice(headerSize);
+                        Span<byte> data = buffer.AsSpan(headerSize);
                         s_eaNameString.AsSpan().CopyTo(data);
                         data = data.Slice(s_eaNameString.Length);
                         transactionContext.AsSpan().CopyTo(data);

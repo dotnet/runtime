@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -10,6 +11,7 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel POPCNT hardware instructions via intrinsics
     /// </summary>
+    [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Popcnt : Sse42
     {
@@ -17,6 +19,7 @@ namespace System.Runtime.Intrinsics.X86
 
         public new static bool IsSupported { get => IsSupported; }
 
+        [Intrinsic]
         public new abstract class X64 : Sse41.X64
         {
             internal X64() { }

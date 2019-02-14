@@ -89,16 +89,6 @@ namespace System.Threading
         /// </remarks>
         internal static readonly int SpinCountforSpinBeforeWait = PlatformHelper.IsSingleProcessor ? 1 : 35;
 
-        /// <summary>
-        /// Typically, Sleep(1) should not be issued for a spin-wait before a proper wait because it is usually more beneficial
-        /// to just issue the proper wait. For longer spin-waits (when the spin count is configurable), this value may be used as
-        /// a threshold for issuing Sleep(1).
-        /// </summary>
-        /// <remarks>
-        /// Should be greater than <see cref="SpinCountforSpinBeforeWait"/> so that Sleep(1) would not be used by default.
-        /// </remarks>
-        internal const int Sleep1ThresholdForLongSpinBeforeWait = 40;
-
         // The number of times we've spun already.
         private int _count;
 

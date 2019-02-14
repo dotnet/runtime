@@ -47,7 +47,7 @@ namespace System.Text
             _fallbackBuffer?.Reset();
         }
 
-        public override unsafe int GetCharCount(byte[] bytes, int index, int count)
+        public override int GetCharCount(byte[] bytes, int index, int count)
         {
             return GetCharCount(bytes, index, count, false);
         }
@@ -91,7 +91,7 @@ namespace System.Text
             return _encoding.GetCharCount(bytes, count, this);
         }
 
-        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
+        public override int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                              char[] chars, int charIndex)
         {
             return GetChars(bytes, byteIndex, byteCount, chars, charIndex, false);

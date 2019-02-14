@@ -59,53 +59,61 @@ namespace System.Buffers.Text
             return TryFormatFloatingPoint<float>(value, destination, out bytesWritten, format);
         }
 
-        //
-        // Common handler for TryFormat(Double) and TryFormat(Single). You may notice that this particular routine isn't getting into the "no allocation" spirit
-        // of things. The DoubleToNumber() code is incredibly complex and is one of the few pieces of Number formatting never C#-ized. It would be really 
-        // be preferable not to have another version of that lying around. Until we really hit a scenario where floating point formatting needs the perf, we'll
-        // make do with this.
-        //
-        private static bool TryFormatFloatingPoint<T>(T value, Span<byte> destination, out int bytesWritten, StandardFormat format) where T : IFormattable
+        private static bool TryFormatFloatingPoint<T>(T value, Span<byte> destination, out int bytesWritten, StandardFormat format) where T : IFormattable, ISpanFormattable
         {
-            if (format.IsDefault)
+            Span<char> formatText = stackalloc char[0];
+
+            if (!format.IsDefault)
             {
-                format = 'G';
+                formatText = stackalloc char[StandardFormat.FormatStringLength];
+                int formatTextLength = format.Format(formatText);
+                formatText = formatText.Slice(0, formatTextLength);
             }
 
-            switch (format.Symbol)
+            // We first try to format into a stack-allocated buffer, and if it succeeds, we can avoid
+            // all allocation.  If that fails, we fall back to allocating strings.  If it proves impactful,
+            // that allocation (as well as roundtripping from byte to char and back to byte) could be avoided by
+            // calling into a refactored Number.FormatSingle/Double directly.
+
+            const int StackBufferLength = 128; // large enough to handle the majority cases
+            Span<char> stackBuffer = stackalloc char[StackBufferLength];
+            ReadOnlySpan<char> utf16Text = stackalloc char[0];
+
+            // Try to format into the stack buffer.  If we're successful, we can avoid all allocations.
+            if (value.TryFormat(stackBuffer, out int formattedLength, formatText, CultureInfo.InvariantCulture))
             {
-                case 'g':
-                case 'G':
-                    if (format.Precision != StandardFormat.NoPrecision)
-                        throw new NotSupportedException(SR.Argument_GWithPrecisionNotSupported);
-                    break;
+                utf16Text = stackBuffer.Slice(0, formattedLength);
+            }
+            else
+            {
+                // The stack buffer wasn't large enough.  If the destination buffer isn't at least as
+                // big as the stack buffer, we know the whole operation will eventually fail, so we
+                // can just fail now.
+                if (destination.Length <= StackBufferLength)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
 
-                case 'f':
-                case 'F':
-                case 'e':
-                case 'E':
-                    break;
-
-                default:
-                    return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
+                // Fall back to using a string format and allocating a string for the resulting formatted value.
+                utf16Text = value.ToString(new string(formatText), CultureInfo.InvariantCulture);
             }
 
-            string formatString = format.ToString();
-            string utf16Text = value.ToString(formatString, CultureInfo.InvariantCulture);
-            int length = utf16Text.Length;
-            if (length > destination.Length)
+            // Copy the value to the destination, if it's large enough.
+
+            if (utf16Text.Length > destination.Length)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < utf16Text.Length; i++)
             {
                 Debug.Assert(utf16Text[i] < 128, "A culture-invariant ToString() of a floating point expected to produce ASCII characters only.");
-                destination[i] = (byte)(utf16Text[i]);
+                destination[i] = (byte)utf16Text[i];
             }
 
-            bytesWritten = length;
+            bytesWritten = utf16Text.Length;
             return true;
         }
     }

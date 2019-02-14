@@ -100,7 +100,7 @@ namespace System.Threading
             get
             {
                 // The latch is "completed" if its current count has reached 0. Note that this is NOT
-                // the same thing is checking the event's IsCompleted property. There is a tiny window
+                // the same thing is checking the event's IsSet property. There is a tiny window
                 // of time, after the final decrement of the current count to 0 and before setting the
                 // event, where the two values are out of sync.
                 return (_currentCount <= 0);
@@ -182,9 +182,8 @@ namespace System.Threading
             {
                 throw new InvalidOperationException(SR.CountdownEvent_Decrement_BelowZero);
             }
-#pragma warning disable 0420
+
             int newCount = Interlocked.Decrement(ref _currentCount);
-#pragma warning restore 0420
             if (newCount == 0)
             {
                 _event.Set();
@@ -237,17 +236,13 @@ namespace System.Threading
                     throw new InvalidOperationException(SR.CountdownEvent_Decrement_BelowZero);
                 }
 
-                // This disables the "CS0420: a reference to a volatile field will not be treated as volatile" warning
-                // for this statement.  This warning is clearly senseless for Interlocked operations.
-#pragma warning disable 0420
                 if (Interlocked.CompareExchange(ref _currentCount, observedCount - signalCount, observedCount) == observedCount)
-#pragma warning restore 0420
                 {
                     break;
                 }
 
                 // The CAS failed.  Spin briefly and try again.
-                spin.SpinOnce();
+                spin.SpinOnce(sleep1Threshold: -1);
             }
 
             // If we were the last to signal, set the event.
@@ -351,17 +346,13 @@ namespace System.Threading
                     throw new InvalidOperationException(SR.CountdownEvent_Increment_AlreadyMax);
                 }
 
-                // This disables the "CS0420: a reference to a volatile field will not be treated as volatile" warning
-                // for this statement.  This warning is clearly senseless for Interlocked operations.
-#pragma warning disable 0420
                 if (Interlocked.CompareExchange(ref _currentCount, observedCount + signalCount, observedCount) == observedCount)
-#pragma warning restore 0420
                 {
                     break;
                 }
 
                 // The CAS failed.  Spin briefly and try again.
-                spin.SpinOnce();
+                spin.SpinOnce(sleep1Threshold: -1);
             }
 
             return true;
@@ -551,7 +542,11 @@ namespace System.Threading
             ThrowIfDisposed();
             cancellationToken.ThrowIfCancellationRequested();
 
-            bool returnValue = IsSet;
+            // Check whether the event is already set.  This is checked instead of this.IsSet, as this.Signal
+            // will first decrement the count and then if it's 0 will set the event, thus it's possible
+            // we could observe this.IsSet as true while _event.IsSet is false; that could in turn lead
+            // a caller to think it's safe to use Reset, while an operation is still in flight calling _event.Set.
+            bool returnValue = _event.IsSet;
 
             // If not completed yet, wait on the event.
             if (!returnValue)

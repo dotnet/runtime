@@ -2,7 +2,6 @@
   <PropertyGroup>
     <ProjectGuid>{2BA70C31-18B0-461B-B6C9-14B11B65BE89}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1572;CS1574;CS1587;CS1589;CS1591;CS1723;CS1734</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
@@ -140,12 +139,6 @@
     <Compile Include="$(CommonPath)\System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBuffer.cs">
-      <Link>Common\System\Net\Security\SecurityBuffer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBufferType.cs">
-      <Link>Common\System\Net\Security\SecurityBufferType.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\SSPIHandleCache.cs">
       <Link>Common\System\Net\Security\SSPIHandleCache.cs</Link>
     </Compile>
@@ -173,6 +166,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs">
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs">
+      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\Unix\SafeDeleteNegoContext.cs">
       <Link>Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs</Link>
     </Compile>
@@ -191,11 +187,20 @@
     <Compile Include="$(CommonPath)\System\Net\Security\Unix\SafeFreeNegoCredentials.cs">
       <Link>Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\Unix\SecChannelBindings.cs">
+      <Link>Common\System\Net\Security\Unix\SecChannelBindings.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBuffer.Windows.cs">
+      <Link>Common\System\Net\Security\SecurityBuffer.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\SecurityBufferType.Windows.cs">
+      <Link>Common\System\Net\Security\SecurityBufferType.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\SecurityContextTokenHandle.cs">
       <Link>Common\System\Net\Security\SecurityContextTokenHandle.cs</Link>
@@ -224,8 +229,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecPkgContext_Bindings.cs">
-      <Link>Common\Interop\Windows\sspicli\SecPkgContext_Bindings.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecPkgContext_Bindings.cs">
+      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_Bindings.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs</Link>
@@ -233,50 +238,50 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecPkgContext_StreamSizes.cs">
-      <Link>Common\Interop\Windows\sspicli\SecPkgContext_StreamSizes.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
+      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecPkgContext_NegotiationInfoW.cs">
-      <Link>Common\Interop\Windows\sspicli\SecPkgContext_NegotiationInfoW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs">
+      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_NegotiationInfoW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\NegotiationInfoClass.cs">
-      <Link>Common\Interop\Windows\sspicli\NegotiationInfoClass.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\NegotiationInfoClass.cs">
+      <Link>Common\Interop\Windows\SspiCli\NegotiationInfoClass.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs">
       <Link>Common\Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SSPISecureChannelType.cs">
-      <Link>Common\Interop\Windows\sspicli\SSPISecureChannelType.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SSPISecureChannelType.cs">
+      <Link>Common\Interop\Windows\SspiCli\SSPISecureChannelType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SSPIInterface.cs">
-      <Link>Common\Interop\Windows\sspicli\SSPIInterface.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SSPIInterface.cs">
+      <Link>Common\Interop\Windows\SspiCli\SSPIInterface.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SSPIAuthType.cs">
-      <Link>Common\Interop\Windows\sspicli\SSPIAuthType.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SSPIAuthType.cs">
+      <Link>Common\Interop\Windows\SspiCli\SSPIAuthType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecurityPackageInfoClass.cs">
-      <Link>Common\Interop\Windows\sspicli\SecurityPackageInfoClass.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs">
+      <Link>Common\Interop\Windows\SspiCli\SecurityPackageInfoClass.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecurityPackageInfo.cs">
-      <Link>Common\Interop\Windows\sspicli\SecurityPackageInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecurityPackageInfo.cs">
+      <Link>Common\Interop\Windows\SspiCli\SecurityPackageInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecPkgContext_Sizes.cs">
-      <Link>Common\Interop\Windows\sspicli\SecPkgContext_Sizes.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs">
+      <Link>Common\Interop\Windows\SspiCli\SecPkgContext_Sizes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SafeDeleteContext.cs">
-      <Link>Common\Interop\Windows\sspicli\SafeDeleteContext.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SafeDeleteContext.cs">
+      <Link>Common\Interop\Windows\SspiCli\SafeDeleteContext.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\GlobalSSPI.cs">
-      <Link>Common\Interop\Windows\sspicli\GlobalSSPI.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\GlobalSSPI.cs">
+      <Link>Common\Interop\Windows\SspiCli\GlobalSSPI.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\Interop.SSPI.cs">
-      <Link>Common\Interop\Windows\sspicli\Interop.SSPI.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\Interop.SSPI.cs">
+      <Link>Common\Interop\Windows\SspiCli\Interop.SSPI.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecuritySafeHandles.cs">
-      <Link>Common\Interop\Windows\sspicli\SecuritySafeHandles.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SecuritySafeHandles.cs">
+      <Link>Common\Interop\Windows\SspiCli\SecuritySafeHandles.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SSPIWrapper.cs">
-      <Link>Common\Interop\Windows\sspicli\SSPIWrapper.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\SSPIWrapper.cs">
+      <Link>Common\Interop\Windows\SspiCli\SSPIWrapper.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -290,6 +295,7 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Globalization.Extensions" />
     <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />

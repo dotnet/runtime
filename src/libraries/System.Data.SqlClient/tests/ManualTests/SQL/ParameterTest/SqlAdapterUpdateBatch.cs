@@ -9,7 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public class SqlAdapterUpdateBatch
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void SqlAdapterTest()
         {
             string tableName = "BatchDemoTable";

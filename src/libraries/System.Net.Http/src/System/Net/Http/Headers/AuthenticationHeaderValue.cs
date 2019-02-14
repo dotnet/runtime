@@ -148,7 +148,7 @@ namespace System.Net.Http.Headers
             }
             result._scheme = targetScheme != null && string.CompareOrdinal(input, startIndex, targetScheme, 0, schemeLength) == 0 ?
                 targetScheme :
-                result._scheme = input.Substring(startIndex, schemeLength);
+                input.Substring(startIndex, schemeLength);
 
             int current = startIndex + schemeLength;
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);

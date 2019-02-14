@@ -1,17 +1,9 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Following comment might not be valid anymore as this code is fairly old and a lot happened since it was written...
-// WARNING: This file is generated and should not be modified directly.  Instead,
-// modify XmlTextWriterGenerator.cxx and run gen.bat in the same directory.
-// This batch file will execute the following commands:
-//
-//   cl.exe /C /EP /D _XML_UTF8_TEXT_WRITER HtmlTextWriterGenerator.cxx > HtmlUtf8TextWriter.cs
-//   cl.exe /C /EP /D _XML_ENCODED_TEXT_WRITER HtmlTextWriterGenerator.cxx > HtmlEncodedTextWriter.cs
-//
-// Because these two implementations of XmlTextWriter are so similar, the C++ preprocessor
-// is used to generate each implementation from one template file, using macros and ifdefs.
+// WARNING: This file is generated and should not be modified directly.
+// Instead, modify HtmlRawTextWriterGenerator.ttinclude
 
 using System;
 using System.IO;
@@ -44,7 +36,6 @@ namespace System.Xml
         {
             Init(settings);
         }
-
 
         public HtmlEncodedRawTextWriter(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
@@ -105,7 +96,7 @@ namespace System.Xml
                 bufChars[bufPos++] = (char)']';
             }
 
-            bufChars[this.bufPos++] = (char)'>';
+            bufChars[bufPos++] = (char)'>';
         }
 
         // For the HTML element, it should call this method with ns and prefix as String.Empty
@@ -120,6 +111,7 @@ namespace System.Xml
                 Debug.Assert(prefix.Length == 0);
 
                 if (trackTextContent && inTextContent != false) { ChangeTextContentMark(false); }
+
                 currentElementProperties = (ElementProperties)elementPropertySearch.FindCaseInsensitiveString(localName);
                 base.bufChars[bufPos++] = (char)'<';
                 base.RawText(localName);
@@ -140,7 +132,7 @@ namespace System.Xml
             base.bufChars[base.bufPos++] = (char)'>';
 
             // Detect whether content is output
-            this.contentPos = this.bufPos;
+            contentPos = bufPos;
 
             if ((currentElementProperties & ElementProperties.HEAD) != 0)
             {
@@ -306,6 +298,7 @@ namespace System.Xml
             if (ns.Length == 0)
             {
                 Debug.Assert(prefix.Length == 0);
+
                 if (trackTextContent && inTextContent != false) { ChangeTextContentMark(false); }
 
                 if (base.attrEndPos == bufPos)
@@ -568,7 +561,7 @@ namespace System.Xml
 
             fixed (char* pDstBegin = bufChars)
             {
-                char* pDst = pDstBegin + this.bufPos;
+                char* pDst = pDstBegin + bufPos;
 
                 char ch = (char)0;
                 for (;;)
@@ -611,7 +604,7 @@ namespace System.Xml
                             }
                             else if (pSrc[1] != '{')
                             {
-                                pDst = XmlEncodedRawTextWriter.AmpEntity(pDst);
+                                pDst = AmpEntity(pDst);
                                 break;
                             }
                             *pDst++ = (char)ch;
@@ -656,7 +649,7 @@ namespace System.Xml
 
             fixed (char* pDstBegin = bufChars)
             {
-                char* pDst = pDstBegin + this.bufPos;
+                char* pDst = pDstBegin + bufPos;
 
                 char ch = (char)0;
                 for (;;)
@@ -699,7 +692,7 @@ namespace System.Xml
                             }
                             else if (pSrc[1] != '{')
                             {
-                                pDst = XmlEncodedRawTextWriter.AmpEntity(pDst);
+                                pDst = AmpEntity(pDst);
                                 break;
                             }
                             *pDst++ = (char)ch;
@@ -723,6 +716,7 @@ namespace System.Xml
                             break;
                         default:
                             const string hexDigits = "0123456789ABCDEF";
+                            Debug.Assert(_uriEscapingBuffer?.Length > 0);
                             fixed (byte* pUriEscapingBuffer = _uriEscapingBuffer)
                             {
                                 byte* pByte = pUriEscapingBuffer;
@@ -755,7 +749,6 @@ namespace System.Xml
             base.bufChars[bufPos++] = (char)';';
         }
     }
-
 
     //
     // Indentation HtmlWriter only indent <BLOCK><BLOCK> situations
@@ -812,12 +805,10 @@ namespace System.Xml
         // Constructors
         //
 
-
         public HtmlEncodedRawTextWriterIndent(TextWriter writer, XmlWriterSettings settings) : base(writer, settings)
         {
             Init(settings);
         }
-
 
         public HtmlEncodedRawTextWriterIndent(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
@@ -984,5 +975,4 @@ namespace System.Xml
         }
     }
 }
-
 

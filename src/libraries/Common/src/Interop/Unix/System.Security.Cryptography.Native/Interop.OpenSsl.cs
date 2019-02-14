@@ -165,10 +165,27 @@ internal static partial class Interop
                             certHandle.DangerousAddRef(ref hasCertReference);
                             using (X509Certificate2 cert = new X509Certificate2(certHandle.DangerousGetHandle()))
                             {
-                                using (X509Chain chain = TLSCertificateExtensions.BuildNewChain(cert, includeClientApplicationPolicy: false))
+                                X509Chain chain = null;
+                                try
                                 {
+                                    chain = TLSCertificateExtensions.BuildNewChain(cert, includeClientApplicationPolicy: false);
                                     if (chain != null && !Ssl.AddExtraChainCertificates(context, chain))
+                                    {
                                         throw CreateSslException(SR.net_ssl_use_cert_failed);
+                                    }
+                                }
+                                finally
+                                {
+                                    if (chain != null)
+                                    {
+                                        int elementsCount = chain.ChainElements.Count;
+                                        for (int i = 0; i < elementsCount; i++)
+                                        {
+                                            chain.ChainElements[i].Certificate.Dispose();
+                                        }
+
+                                        chain.Dispose();
+                                    }
                                 }
                             }
                         }
@@ -410,7 +427,7 @@ internal static partial class Interop
             {
                 for (int i = 0; i < protocolList.Count; i++)
                 {
-                    Span<byte> clientList = new Span<byte>(inp, (int)inlen);
+                    var clientList = new Span<byte>(inp, (int)inlen);
                     while (clientList.Length > 0)
                     {
                         byte length = clientList[0];

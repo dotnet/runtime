@@ -15,33 +15,33 @@ namespace System.Net.NetworkInformation.Tests
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings("NetworkFiles/snmp", fileName);
             Icmpv4StatisticsTable table = StringParsingHelpers.ParseIcmpv4FromSnmpFile(fileName);
-            Assert.Equal(1, table.InMsgs);
-            Assert.Equal(2, table.InErrors);
-            Assert.Equal(3, table.InCsumErrors);
-            Assert.Equal(4, table.InDestUnreachs);
-            Assert.Equal(5, table.InTimeExcds);
-            Assert.Equal(6, table.InParmProbs);
-            Assert.Equal(7, table.InSrcQuenchs);
-            Assert.Equal(8, table.InRedirects);
-            Assert.Equal(9, table.InEchos);
-            Assert.Equal(10, table.InEchoReps);
-            Assert.Equal(20, table.InTimestamps);
-            Assert.Equal(30, table.InTimeStampReps);
-            Assert.Equal(40, table.InAddrMasks);
-            Assert.Equal(50, table.InAddrMaskReps);
-            Assert.Equal(60, table.OutMsgs);
-            Assert.Equal(70, table.OutErrors);
-            Assert.Equal(80, table.OutDestUnreachs);
-            Assert.Equal(90, table.OutTimeExcds);
-            Assert.Equal(100, table.OutParmProbs);
-            Assert.Equal(255, table.OutSrcQuenchs);
-            Assert.Equal(1024, table.OutRedirects);
-            Assert.Equal(256, table.OutEchos);
-            Assert.Equal(9001, table.OutEchoReps);
-            Assert.Equal(42, table.OutTimestamps);
-            Assert.Equal(4100414, table.OutTimestampReps);
-            Assert.Equal(2147483647, table.OutAddrMasks);
-            Assert.Equal(0, table.OutAddrMaskReps);
+            Assert.Equal(1L, table.InMsgs);
+            Assert.Equal(2L, table.InErrors);
+            Assert.Equal(3L, table.InCsumErrors);
+            Assert.Equal(4L, table.InDestUnreachs);
+            Assert.Equal(5L, table.InTimeExcds);
+            Assert.Equal(6L, table.InParmProbs);
+            Assert.Equal(7L, table.InSrcQuenchs);
+            Assert.Equal(8L, table.InRedirects);
+            Assert.Equal(9L, table.InEchos);
+            Assert.Equal(10L, table.InEchoReps);
+            Assert.Equal(20L, table.InTimestamps);
+            Assert.Equal(30L, table.InTimeStampReps);
+            Assert.Equal(40L, table.InAddrMasks);
+            Assert.Equal(50L, table.InAddrMaskReps);
+            Assert.Equal(60L, table.OutMsgs);
+            Assert.Equal(70L, table.OutErrors);
+            Assert.Equal(80L, table.OutDestUnreachs);
+            Assert.Equal(90L, table.OutTimeExcds);
+            Assert.Equal(100L, table.OutParmProbs);
+            Assert.Equal(255L, table.OutSrcQuenchs);
+            Assert.Equal(1024L, table.OutRedirects);
+            Assert.Equal(256L, table.OutEchos);
+            Assert.Equal(9001L, table.OutEchoReps);
+            Assert.Equal(42L, table.OutTimestamps);
+            Assert.Equal(4100414L, table.OutTimestampReps);
+            Assert.Equal(2147483647L, table.OutAddrMasks);
+            Assert.Equal(0L, table.OutAddrMaskReps);
         }
 
         [Fact]
@@ -50,38 +50,38 @@ namespace System.Net.NetworkInformation.Tests
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings("NetworkFiles/snmp6", fileName);
             Icmpv6StatisticsTable table = StringParsingHelpers.ParseIcmpv6FromSnmp6File(fileName);
-            Assert.Equal(1, table.InMsgs);
-            Assert.Equal(2, table.InErrors);
-            Assert.Equal(3, table.OutMsgs);
-            Assert.Equal(4, table.OutErrors);
-            Assert.Equal(6, table.InDestUnreachs);
-            Assert.Equal(7, table.InPktTooBigs);
-            Assert.Equal(8, table.InTimeExcds);
-            Assert.Equal(9, table.InParmProblems);
-            Assert.Equal(10, table.InEchos);
-            Assert.Equal(11, table.InEchoReplies);
-            Assert.Equal(12, table.InGroupMembQueries);
-            Assert.Equal(13, table.InGroupMembResponses);
-            Assert.Equal(14, table.InGroupMembReductions);
-            Assert.Equal(15, table.InRouterSolicits);
-            Assert.Equal(16, table.InRouterAdvertisements);
-            Assert.Equal(17, table.InNeighborSolicits);
-            Assert.Equal(18, table.InNeighborAdvertisements);
-            Assert.Equal(19, table.InRedirects);
-            Assert.Equal(21, table.OutDestUnreachs);
-            Assert.Equal(22, table.OutPktTooBigs);
-            Assert.Equal(23, table.OutTimeExcds);
-            Assert.Equal(24, table.OutParmProblems);
-            Assert.Equal(25, table.OutEchos);
-            Assert.Equal(26, table.OutEchoReplies);
-            Assert.Equal(27, table.OutInGroupMembQueries);
-            Assert.Equal(28, table.OutGroupMembResponses);
-            Assert.Equal(29, table.OutGroupMembReductions);
-            Assert.Equal(30, table.OutRouterSolicits);
-            Assert.Equal(31, table.OutRouterAdvertisements);
-            Assert.Equal(32, table.OutNeighborSolicits);
-            Assert.Equal(33, table.OutNeighborAdvertisements);
-            Assert.Equal(34, table.OutRedirects);
+            Assert.Equal(1L, table.InMsgs);
+            Assert.Equal(2L, table.InErrors);
+            Assert.Equal(3L, table.OutMsgs);
+            Assert.Equal(4L, table.OutErrors);
+            Assert.Equal(6L, table.InDestUnreachs);
+            Assert.Equal(7L, table.InPktTooBigs);
+            Assert.Equal(8L, table.InTimeExcds);
+            Assert.Equal(9L, table.InParmProblems);
+            Assert.Equal(10L, table.InEchos);
+            Assert.Equal(11L, table.InEchoReplies);
+            Assert.Equal(12L, table.InGroupMembQueries);
+            Assert.Equal(13L, table.InGroupMembResponses);
+            Assert.Equal(14L, table.InGroupMembReductions);
+            Assert.Equal(15L, table.InRouterSolicits);
+            Assert.Equal(16L, table.InRouterAdvertisements);
+            Assert.Equal(17L, table.InNeighborSolicits);
+            Assert.Equal(18L, table.InNeighborAdvertisements);
+            Assert.Equal(19L, table.InRedirects);
+            Assert.Equal(21L, table.OutDestUnreachs);
+            Assert.Equal(22L, table.OutPktTooBigs);
+            Assert.Equal(23L, table.OutTimeExcds);
+            Assert.Equal(24L, table.OutParmProblems);
+            Assert.Equal(25L, table.OutEchos);
+            Assert.Equal(26L, table.OutEchoReplies);
+            Assert.Equal(27L, table.OutInGroupMembQueries);
+            Assert.Equal(28L, table.OutGroupMembResponses);
+            Assert.Equal(29L, table.OutGroupMembReductions);
+            Assert.Equal(30L, table.OutRouterSolicits);
+            Assert.Equal(31L, table.OutRouterAdvertisements);
+            Assert.Equal(32L, table.OutNeighborSolicits);
+            Assert.Equal(33L, table.OutNeighborAdvertisements);
+            Assert.Equal(34L, table.OutRedirects);
         }
 
         [Fact]
@@ -90,21 +90,21 @@ namespace System.Net.NetworkInformation.Tests
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings("NetworkFiles/snmp", fileName);
             TcpGlobalStatisticsTable table = StringParsingHelpers.ParseTcpGlobalStatisticsFromSnmpFile(fileName);
-            Assert.Equal(1, table.RtoAlgorithm);
-            Assert.Equal(200, table.RtoMin);
-            Assert.Equal(120000, table.RtoMax);
-            Assert.Equal(-1, table.MaxConn);
-            Assert.Equal(359, table.ActiveOpens);
-            Assert.Equal(28, table.PassiveOpens);
-            Assert.Equal(2, table.AttemptFails);
-            Assert.Equal(53, table.EstabResets);
-            Assert.Equal(4, table.CurrEstab);
-            Assert.Equal(21368, table.InSegs);
-            Assert.Equal(20642, table.OutSegs);
-            Assert.Equal(19, table.RetransSegs);
-            Assert.Equal(0, table.InErrs);
-            Assert.Equal(111, table.OutRsts);
-            Assert.Equal(0, table.InCsumErrors);
+            Assert.Equal(1L, table.RtoAlgorithm);
+            Assert.Equal(200L, table.RtoMin);
+            Assert.Equal(120000L, table.RtoMax);
+            Assert.Equal(-1L, table.MaxConn);
+            Assert.Equal(359L, table.ActiveOpens);
+            Assert.Equal(28L, table.PassiveOpens);
+            Assert.Equal(2L, table.AttemptFails);
+            Assert.Equal(53L, table.EstabResets);
+            Assert.Equal(4L, table.CurrEstab);
+            Assert.Equal(2592159585L, table.InSegs);
+            Assert.Equal(2576867425L, table.OutSegs);
+            Assert.Equal(19L, table.RetransSegs);
+            Assert.Equal(0L, table.InErrs);
+            Assert.Equal(111L, table.OutRsts);
+            Assert.Equal(0L, table.InCsumErrors);
         }
 
         [Fact]
@@ -113,13 +113,13 @@ namespace System.Net.NetworkInformation.Tests
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings("NetworkFiles/snmp", fileName);
             UdpGlobalStatisticsTable table = StringParsingHelpers.ParseUdpv4GlobalStatisticsFromSnmpFile(fileName);
-            Assert.Equal(7181, table.InDatagrams);
-            Assert.Equal(150, table.NoPorts);
-            Assert.Equal(0, table.InErrors);
-            Assert.Equal(4386, table.OutDatagrams);
-            Assert.Equal(0, table.RcvbufErrors);
-            Assert.Equal(0, table.SndbufErrors);
-            Assert.Equal(1, table.InCsumErrors);
+            Assert.Equal(7181L, table.InDatagrams);
+            Assert.Equal(150L, table.NoPorts);
+            Assert.Equal(0L, table.InErrors);
+            Assert.Equal(4386L, table.OutDatagrams);
+            Assert.Equal(0L, table.RcvbufErrors);
+            Assert.Equal(0L, table.SndbufErrors);
+            Assert.Equal(1L, table.InCsumErrors);
         }
 
         [Fact]
@@ -128,13 +128,13 @@ namespace System.Net.NetworkInformation.Tests
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings("NetworkFiles/snmp6", fileName);
             UdpGlobalStatisticsTable table = StringParsingHelpers.ParseUdpv6GlobalStatisticsFromSnmp6File(fileName);
-            Assert.Equal(19, table.InDatagrams);
-            Assert.Equal(0, table.NoPorts);
-            Assert.Equal(0, table.InErrors);
-            Assert.Equal(21, table.OutDatagrams);
-            Assert.Equal(99999, table.RcvbufErrors);
-            Assert.Equal(11011011, table.SndbufErrors);
-            Assert.Equal(0, table.InCsumErrors);
+            Assert.Equal(19L, table.InDatagrams);
+            Assert.Equal(0L, table.NoPorts);
+            Assert.Equal(0L, table.InErrors);
+            Assert.Equal(21L, table.OutDatagrams);
+            Assert.Equal(99999L, table.RcvbufErrors);
+            Assert.Equal(11011011L, table.SndbufErrors);
+            Assert.Equal(0L, table.InCsumErrors);
         }
 
         [Fact]
@@ -145,24 +145,24 @@ namespace System.Net.NetworkInformation.Tests
             IPGlobalStatisticsTable table = StringParsingHelpers.ParseIPv4GlobalStatisticsFromSnmpFile(fileName);
 
             Assert.Equal(false, table.Forwarding);
-            Assert.Equal(64, table.DefaultTtl);
-            Assert.Equal(28121, table.InReceives);
-            Assert.Equal(0, table.InHeaderErrors);
-            Assert.Equal(2, table.InAddressErrors);
-            Assert.Equal(0, table.ForwardedDatagrams);
-            Assert.Equal(0, table.InUnknownProtocols);
-            Assert.Equal(0, table.InDiscards);
-            Assert.Equal(28117, table.InDelivers);
-            Assert.Equal(24616, table.OutRequests);
-            Assert.Equal(48, table.OutDiscards);
-            Assert.Equal(0, table.OutNoRoutes);
-            Assert.Equal(0, table.ReassemblyTimeout);
-            Assert.Equal(0, table.ReassemblyRequireds);
-            Assert.Equal(1, table.ReassemblyOKs);
-            Assert.Equal(2, table.ReassemblyFails);
-            Assert.Equal(14, table.FragmentOKs);
-            Assert.Equal(0, table.FragmentFails);
-            Assert.Equal(92, table.FragmentCreates);
+            Assert.Equal(64L, table.DefaultTtl);
+            Assert.Equal(28121L, table.InReceives);
+            Assert.Equal(0L, table.InHeaderErrors);
+            Assert.Equal(2L, table.InAddressErrors);
+            Assert.Equal(0L, table.ForwardedDatagrams);
+            Assert.Equal(0L, table.InUnknownProtocols);
+            Assert.Equal(0L, table.InDiscards);
+            Assert.Equal(28117L, table.InDelivers);
+            Assert.Equal(24616L, table.OutRequests);
+            Assert.Equal(48L, table.OutDiscards);
+            Assert.Equal(0L, table.OutNoRoutes);
+            Assert.Equal(0L, table.ReassemblyTimeout);
+            Assert.Equal(0L, table.ReassemblyRequireds);
+            Assert.Equal(1L, table.ReassemblyOKs);
+            Assert.Equal(2L, table.ReassemblyFails);
+            Assert.Equal(14L, table.FragmentOKs);
+            Assert.Equal(0L, table.FragmentFails);
+            Assert.Equal(92L, table.FragmentCreates);
         }
 
         [Fact]
@@ -172,23 +172,23 @@ namespace System.Net.NetworkInformation.Tests
             FileUtil.NormalizeLineEndings("NetworkFiles/snmp6", fileName);
             IPGlobalStatisticsTable table = StringParsingHelpers.ParseIPv6GlobalStatisticsFromSnmp6File(fileName);
 
-            Assert.Equal(189, table.InReceives);
-            Assert.Equal(0, table.InHeaderErrors);
-            Assert.Equal(2000, table.InAddressErrors);
-            Assert.Equal(42, table.InUnknownProtocols);
-            Assert.Equal(0, table.InDiscards);
-            Assert.Equal(189, table.InDelivers);
-            Assert.Equal(55, table.ForwardedDatagrams);
-            Assert.Equal(199, table.OutRequests);
-            Assert.Equal(0, table.OutDiscards);
-            Assert.Equal(53, table.OutNoRoutes);
-            Assert.Equal(2121, table.ReassemblyTimeout);
-            Assert.Equal(1, table.ReassemblyRequireds);
-            Assert.Equal(2, table.ReassemblyOKs);
-            Assert.Equal(4, table.ReassemblyFails);
-            Assert.Equal(8, table.FragmentOKs);
-            Assert.Equal(16, table.FragmentFails);
-            Assert.Equal(32, table.FragmentCreates);
+            Assert.Equal(189L, table.InReceives);
+            Assert.Equal(0L, table.InHeaderErrors);
+            Assert.Equal(2000L, table.InAddressErrors);
+            Assert.Equal(42L, table.InUnknownProtocols);
+            Assert.Equal(0L, table.InDiscards);
+            Assert.Equal(189L, table.InDelivers);
+            Assert.Equal(55L, table.ForwardedDatagrams);
+            Assert.Equal(199L, table.OutRequests);
+            Assert.Equal(0L, table.OutDiscards);
+            Assert.Equal(53L, table.OutNoRoutes);
+            Assert.Equal(2121L, table.ReassemblyTimeout);
+            Assert.Equal(1L, table.ReassemblyRequireds);
+            Assert.Equal(2L, table.ReassemblyOKs);
+            Assert.Equal(4L, table.ReassemblyFails);
+            Assert.Equal(8L, table.FragmentOKs);
+            Assert.Equal(16L, table.FragmentFails);
+            Assert.Equal(32L, table.FragmentCreates);
         }
 
         [Fact]
@@ -198,23 +198,23 @@ namespace System.Net.NetworkInformation.Tests
             FileUtil.NormalizeLineEndings("NetworkFiles/dev", fileName);
             IPInterfaceStatisticsTable table = StringParsingHelpers.ParseInterfaceStatisticsTableFromFile(fileName, "wlan0");
 
-            Assert.Equal(26622u, table.BytesReceived);
-            Assert.Equal(394u, table.PacketsReceived);
-            Assert.Equal(2u, table.ErrorsReceived);
-            Assert.Equal(4u, table.IncomingPacketsDropped);
-            Assert.Equal(6u, table.FifoBufferErrorsReceived);
-            Assert.Equal(8u, table.PacketFramingErrorsReceived);
-            Assert.Equal(10u, table.CompressedPacketsReceived);
-            Assert.Equal(12u, table.MulticastFramesReceived);
+            Assert.Equal(26622L, table.BytesReceived);
+            Assert.Equal(394L, table.PacketsReceived);
+            Assert.Equal(2L, table.ErrorsReceived);
+            Assert.Equal(4L, table.IncomingPacketsDropped);
+            Assert.Equal(6L, table.FifoBufferErrorsReceived);
+            Assert.Equal(8L, table.PacketFramingErrorsReceived);
+            Assert.Equal(10L, table.CompressedPacketsReceived);
+            Assert.Equal(12L, table.MulticastFramesReceived);
 
-            Assert.Equal(27465u, table.BytesTransmitted);
-            Assert.Equal(208u, table.PacketsTransmitted);
-            Assert.Equal(1u, table.ErrorsTransmitted);
-            Assert.Equal(2u, table.OutgoingPacketsDropped);
-            Assert.Equal(3u, table.FifoBufferErrorsTransmitted);
-            Assert.Equal(4u, table.CollisionsDetected);
-            Assert.Equal(5u, table.CarrierLosses);
-            Assert.Equal(6u, table.CompressedPacketsTransmitted);
+            Assert.Equal(429496730000L, table.BytesTransmitted);
+            Assert.Equal(208L, table.PacketsTransmitted);
+            Assert.Equal(1L, table.ErrorsTransmitted);
+            Assert.Equal(2L, table.OutgoingPacketsDropped);
+            Assert.Equal(3L, table.FifoBufferErrorsTransmitted);
+            Assert.Equal(4L, table.CollisionsDetected);
+            Assert.Equal(5L, table.CarrierLosses);
+            Assert.Equal(6L, table.CompressedPacketsTransmitted);
         }
 
         [Fact]
@@ -224,23 +224,23 @@ namespace System.Net.NetworkInformation.Tests
             FileUtil.NormalizeLineEndings("NetworkFiles/dev", fileName);
             IPInterfaceStatisticsTable table = StringParsingHelpers.ParseInterfaceStatisticsTableFromFile(fileName, "lo");
 
-            Assert.Equal(uint.MaxValue, table.BytesReceived);
-            Assert.Equal(302u, table.PacketsReceived);
-            Assert.Equal(0u, table.ErrorsReceived);
-            Assert.Equal(0u, table.IncomingPacketsDropped);
-            Assert.Equal(0u, table.FifoBufferErrorsReceived);
-            Assert.Equal(0u, table.PacketFramingErrorsReceived);
-            Assert.Equal(0u, table.CompressedPacketsReceived);
-            Assert.Equal(0u, table.MulticastFramesReceived);
+            Assert.Equal(long.MaxValue, table.BytesReceived);
+            Assert.Equal(302L, table.PacketsReceived);
+            Assert.Equal(0L, table.ErrorsReceived);
+            Assert.Equal(0L, table.IncomingPacketsDropped);
+            Assert.Equal(0L, table.FifoBufferErrorsReceived);
+            Assert.Equal(0L, table.PacketFramingErrorsReceived);
+            Assert.Equal(0L, table.CompressedPacketsReceived);
+            Assert.Equal(0L, table.MulticastFramesReceived);
 
-            Assert.Equal(30008u, table.BytesTransmitted);
-            Assert.Equal(302u, table.PacketsTransmitted);
-            Assert.Equal(0u, table.ErrorsTransmitted);
-            Assert.Equal(0u, table.OutgoingPacketsDropped);
-            Assert.Equal(0u, table.FifoBufferErrorsTransmitted);
-            Assert.Equal(0u, table.CollisionsDetected);
-            Assert.Equal(0u, table.CarrierLosses);
-            Assert.Equal(0u, table.CompressedPacketsTransmitted);
+            Assert.Equal(30008L, table.BytesTransmitted);
+            Assert.Equal(302L, table.PacketsTransmitted);
+            Assert.Equal(0L, table.ErrorsTransmitted);
+            Assert.Equal(0L, table.OutgoingPacketsDropped);
+            Assert.Equal(0L, table.FifoBufferErrorsTransmitted);
+            Assert.Equal(0L, table.CollisionsDetected);
+            Assert.Equal(0L, table.CarrierLosses);
+            Assert.Equal(0L, table.CompressedPacketsTransmitted);
         }
     }
 }

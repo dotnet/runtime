@@ -60,7 +60,7 @@ namespace System.Text
                 }
 
                 EncodingProvider[] providers = new EncodingProvider[s_providers.Length + 1];
-                Array.Copy(s_providers, providers, s_providers.Length);
+                Array.Copy(s_providers, 0, providers, 0, s_providers.Length);
                 providers[providers.Length - 1] = provider;
                 s_providers = providers;
             }

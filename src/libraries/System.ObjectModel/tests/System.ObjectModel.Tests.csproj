@@ -22,8 +22,13 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IDictionaryTest.cs">
       <Link>Common\System\CollectionsIDictionaryTest.cs</Link>
     </Compile>
-    <Compile Include="ComponentModel\INotifyPropertyChangingTests.cs" />
-    <Compile Include="ComponentModel\PropertyChangingEventArgsTests.cs" />
+    <Compile Include="System\Collections\ObjectModel\KeyedCollectionTests.cs" />
+    <Compile Include="System\Collections\Specialized\NotifyCollectionChangedEventArgsTests.cs" />
+    <Compile Include="System\ComponentModel\DataErrorsChangedEventArgsTests.cs" />
+    <Compile Include="System\ComponentModel\PropertyChangedEventArgsTests.cs" />
+    <Compile Include="System\ComponentModel\PropertyChangingEventArgsTests.cs" />
+    <Compile Include="System\ComponentModel\TypeConverterAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\TypeDescriptionProviderAttributeTests.cs" />
     <Compile Include="KeyedCollection\TestMethods.cs" />
     <Compile Include="KeyedCollection\ConcreteTestClasses.cs" />
     <Compile Include="KeyedCollection\Utils.cs" />
@@ -39,6 +44,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="KeyedCollection\TestMethods.netcoreapp.cs" />
+    <Compile Include="System\Collections\ObjectModel\KeyedCollectionTests.netcoreapp.cs" />
+    <Compile Include="System\Windows\Markup\ValueSerializerAttributeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="KeyedCollection\Serialization.cs" />

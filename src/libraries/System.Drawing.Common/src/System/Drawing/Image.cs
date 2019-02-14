@@ -383,16 +383,9 @@ namespace System.Drawing
                     return;
                 }
 
-                Span<Guid> guids;
-                if (dimensions < 16)
-                {
-                    Guid* g = stackalloc Guid[dimensions];
-                    guids = new Span<Guid>(g, dimensions);
-                }
-                else
-                {
-                    guids = new Span<Guid>(new Guid[dimensions]);
-                }
+                Span<Guid> guids = dimensions < 16 ?
+                    stackalloc Guid[dimensions] :
+                    new Guid[dimensions];
 
                 fixed (Guid* g = &MemoryMarshal.GetReference(guids))
                 {

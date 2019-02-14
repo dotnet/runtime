@@ -4,7 +4,6 @@
 
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 
 namespace System.Management
 {
@@ -22,7 +21,7 @@ namespace System.Management
         ///    <para> This value is returned when no more objects 
         ///       are available, the number of objects returned is less than the number requested,
         ///       or at the end of an enumeration. It is also returned when the method is called
-        ///       with a value of 0 for the <paramref name="uCount"/> parameter.</para>
+        ///       with a value of 0 for the "uCount" parameter.</para>
         /// </summary>
         False							= 1,
         /// <summary>
@@ -210,7 +209,7 @@ namespace System.Management
         /// <summary>
         ///    <para>The current object is not a valid class definition.
         ///       Either it is incomplete, or it has not been registered with WMI using
-        ///    <see cref='System.Management.ManagementObject.Put'/>().</para>
+        ///    <see cref='System.Management.ManagementObject.Put()'/>().</para>
         /// </summary>
         IncompleteClass                 = unchecked((int)0x80041020),
         /// <summary>
@@ -672,7 +671,7 @@ namespace System.Management
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementException'/> class that is serializable.</para>
         /// </summary>
         /// <param name='info'>The <see cref='System.Runtime.Serialization.SerializationInfo'/> to populate with data.</param>
-    /// <param name='context'>The destination (see <see cref='System.Runtime.Serialization.StreamingContext'/> ) for this serialization.</param>
+        /// <param name='context'>The destination (see <see cref='System.Runtime.Serialization.StreamingContext'/> ) for this serialization.</param>
         protected ManagementException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             errorCode = (ManagementStatus)info.GetValue("errorCode", typeof(ManagementStatus));

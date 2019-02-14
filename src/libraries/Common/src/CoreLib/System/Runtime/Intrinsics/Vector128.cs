@@ -19,9 +19,157 @@ namespace System.Runtime.Intrinsics
     // This ensures we get good codegen for the "fast-path" and allows the JIT to
     // determine inline profitability of the other paths as it would normally.
 
+    // Many of the instance methods were moved to be extension methods as it results
+    // in overall better codegen. This is because instance methods require the C# compiler
+    // to generate extra locals as the `this` parameter has to be passed by reference.
+    // Having them be extension methods means that the `this` parameter can be passed by
+    // value instead, thus reducing the number of locals and helping prevent us from hitting
+    // the internal inlining limits of the JIT.
+
     public static class Vector128
     {
         internal const int Size = 16;
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{U}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <typeparam name="U">The type of the vector <paramref name="vector" /> should be reinterpreted as.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{U}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) or the type of the target (<typeparamref name="U" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<U> As<T, U>(this Vector128<T> vector)
+            where T : struct
+            where U : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<U>();
+            return Unsafe.As<Vector128<T>, Vector128<U>>(ref vector);
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{Byte}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{Byte}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector128<byte> AsByte<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, byte>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{Double}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{Double}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector128<double> AsDouble<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, double>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{Int16}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{Int16}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector128<short> AsInt16<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, short>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{Int32}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{Int32}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector128<int> AsInt32<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, int>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{Int64}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{Int64}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector128<long> AsInt64<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, long>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{SByte}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{SByte}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<sbyte> AsSByte<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, sbyte>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector128<float> AsSingle<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, float>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{UInt16}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{UInt16}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<ushort> AsUInt16<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, ushort>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{UInt32}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{UInt32}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<uint> AsUInt32<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, uint>();
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{UInt64}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{UInt64}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<ulong> AsUInt64<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            return vector.As<T, ulong>();
+        }
 
         /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
@@ -1172,7 +1320,7 @@ namespace System.Runtime.Intrinsics
             Vector128<short> SoftwareFallback(short x)
             {
                 var result = Vector128<short>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<short>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<short>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1193,7 +1341,7 @@ namespace System.Runtime.Intrinsics
             Vector128<int> SoftwareFallback(int x)
             {
                 var result = Vector128<int>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<int>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<int>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1213,7 +1361,7 @@ namespace System.Runtime.Intrinsics
             Vector128<long> SoftwareFallback(long x)
             {
                 var result = Vector128<long>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<long>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<long>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1237,7 +1385,7 @@ namespace System.Runtime.Intrinsics
             Vector128<sbyte> SoftwareFallback(sbyte x)
             {
                 var result = Vector128<sbyte>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<sbyte>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<sbyte>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1258,7 +1406,7 @@ namespace System.Runtime.Intrinsics
             Vector128<float> SoftwareFallback(float x)
             {
                 var result = Vector128<float>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1282,7 +1430,7 @@ namespace System.Runtime.Intrinsics
             Vector128<ushort> SoftwareFallback(ushort x)
             {
                 var result = Vector128<ushort>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ushort>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ushort>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1304,7 +1452,7 @@ namespace System.Runtime.Intrinsics
             Vector128<uint> SoftwareFallback(uint x)
             {
                 var result = Vector128<uint>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<uint>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<uint>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1326,7 +1474,7 @@ namespace System.Runtime.Intrinsics
             Vector128<ulong> SoftwareFallback(ulong x)
             {
                 var result = Vector128<ulong>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ulong>, byte>(ref result), value);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ulong>, byte>(ref result), x);
                 return result;
             }
         }
@@ -1473,6 +1621,159 @@ namespace System.Runtime.Intrinsics
             var pResult = stackalloc ulong[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<ulong>>(pResult);
+        }
+
+        /// <summary>Gets the element at the specified index.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the element from.</param>
+        /// <param name="index">The index of the element to get.</param>
+        /// <returns>The value of the element at <paramref name="index" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        public static T GetElement<T>(this Vector128<T> vector, int index)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            if ((uint)(index) >= (uint)(Vector128<T>.Count))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            ref T e0 = ref Unsafe.As<Vector128<T>, T>(ref vector);
+            return Unsafe.Add(ref e0, index);
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{T}" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the remaining elements from.</param>
+        /// <param name="index">The index of the element to set.</param>
+        /// <param name="value">The value to set the element to.</param>
+        /// <returns>A <see cref="Vector128{T}" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in <paramref name="vector" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        public static Vector128<T> WithElement<T>(this Vector128<T> vector, int index, T value)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            if ((uint)(index) >= (uint)(Vector128<T>.Count))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            Vector128<T> result = vector;
+            ref T e0 = ref Unsafe.As<Vector128<T>, T>(ref result);
+            Unsafe.Add(ref e0, index) = value;
+            return result;
+        }
+
+        /// <summary>Gets the value of the lower 64-bits as a new <see cref="Vector64{T}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the lower 64-bits from.</param>
+        /// <returns>The value of the lower 64-bits as a new <see cref="Vector64{T}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector64<T> GetLower<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            return Unsafe.As<Vector128<T>, Vector64<T>>(ref vector);
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{T}" /> with the lower 64-bits set to the specified value and the upper 64-bits set to the same value as that in the given vector.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the upper 64-bits from.</param>
+        /// <param name="value">The value of the lower 64-bits as a <see cref="Vector64{T}" />.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> with the lower 64-bits set to the specified value and the upper 64-bits set to the same value as that in <paramref name="vector" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector128<T> WithLower<T>(this Vector128<T> vector, Vector64<T> value)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            Vector128<T> result = vector;
+            Unsafe.As<Vector128<T>, Vector64<T>>(ref result) = value;
+            return result;
+        }
+
+        /// <summary>Gets the value of the upper 64-bits as a new <see cref="Vector64{T}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the upper 64-bits from.</param>
+        /// <returns>The value of the upper 64-bits as a new <see cref="Vector64{T}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector64<T> GetUpper<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            ref Vector64<T> lower = ref Unsafe.As<Vector128<T>, Vector64<T>>(ref vector);
+            return Unsafe.Add(ref lower, 1);
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{T}" /> with the upper 64-bits set to the specified value and the upper 64-bits set to the same value as that in the given vector.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the lower 64-bits from.</param>
+        /// <param name="value">The value of the upper 64-bits as a <see cref="Vector64{T}" />.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> with the upper 64-bits set to the specified value and the upper 64-bits set to the same value as that in <paramref name="vector" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector128<T> WithUpper<T>(this Vector128<T> vector, Vector64<T> value)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            Vector128<T> result = vector;
+            ref Vector64<T> lower = ref Unsafe.As<Vector128<T>, Vector64<T>>(ref result);
+            Unsafe.Add(ref lower, 1) = value;
+            return result;
+        }
+
+        /// <summary>Converts the given vector to a scalar containing the value of the first element.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to get the first element from.</param>
+        /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static T ToScalar<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            return Unsafe.As<Vector128<T>, T>(ref vector);
+        }
+
+        /// <summary>Converts the given vector to a new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the given vector and the upper 128-bits initialized to zero.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to extend.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of <paramref name="vector" /> and the upper 128-bits initialized to zero.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector256<T> ToVector256<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            Vector256<T> result = Vector256<T>.Zero;
+            Unsafe.As<Vector256<T>, Vector128<T>>(ref result) = vector;
+            return result;
+        }
+
+        /// <summary>Converts the given vector to a new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the given vector and the upper 128-bits left uninitialized.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to extend.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of <paramref name="vector" /> and the upper 128-bits left uninitialized.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static unsafe Vector256<T> ToVector256Unsafe<T>(this Vector128<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            var pResult = stackalloc byte[Vector256.Size];
+            Unsafe.AsRef<Vector128<T>>(pResult) = vector;
+            return Unsafe.AsRef<Vector256<T>>(pResult);
         }
     }
 }

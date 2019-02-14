@@ -132,6 +132,30 @@
   <data name="PlatformNotSupported_X509Certificate2UI" xml:space="preserve">
     <value>X509Certificate2UI is not supported on this platform.</value>
   </data>
+  <data name="SoundAPIBadSoundLocation" xml:space="preserve">
+    <value>Could not determine a universal resource identifier for the sound location.</value>
+  </data>
+  <data name="SoundAPIFileDoesNotExist" xml:space="preserve">
+    <value>Please be sure a sound file exists at the specified location.</value>
+  </data>
+  <data name="SoundAPIFormatNotSupported" xml:space="preserve">
+    <value>Sound API only supports playing PCM wave files.</value>
+  </data>
+  <data name="SoundAPIInvalidWaveFile" xml:space="preserve">
+    <value>The file located at {0} is not a valid wave file.</value>
+  </data>
+  <data name="SoundAPIInvalidWaveHeader" xml:space="preserve">
+    <value>The wave header is corrupt.</value>
+  </data>
+  <data name="SoundAPILoadTimedOut" xml:space="preserve">
+    <value>The request to load the wave file in memory timed out.</value>
+  </data>
+  <data name="SoundAPILoadTimeout" xml:space="preserve">
+    <value>The LoadTimeout property of a SoundPlayer cannot be negative.</value>
+  </data>
+  <data name="SoundAPIReadError" xml:space="preserve">
+    <value>=There was an error reading the file located at {0}. Please make sure that a valid wave file exists at the specified location.</value>
+  </data>
   <data name="TextParseFailedFormat" xml:space="preserve">
     <value>Text "{0}" cannot be parsed. The expected text format is "{1}".</value>
   </data>

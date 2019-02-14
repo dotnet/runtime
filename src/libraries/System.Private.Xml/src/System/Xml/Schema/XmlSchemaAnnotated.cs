@@ -7,20 +7,12 @@ namespace System.Xml.Schema
     using System.Collections;
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaAnnotated.uex' path='docs/doc[@for="XmlSchemaAnnotated"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaAnnotated : XmlSchemaObject
     {
         private string _id;
         private XmlSchemaAnnotation _annotation;
         private XmlAttribute[] _moreAttributes;
 
-        /// <include file='doc\XmlSchemaAnnotated.uex' path='docs/doc[@for="XmlSchemaAnnotated.Id"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("id", DataType = "ID")]
         public string Id
         {
@@ -28,10 +20,6 @@ namespace System.Xml.Schema
             set { _id = value; }
         }
 
-        /// <include file='doc\XmlSchemaAnnotated.uex' path='docs/doc[@for="XmlSchemaAnnotated.Annotation"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("annotation", typeof(XmlSchemaAnnotation))]
         public XmlSchemaAnnotation Annotation
         {
@@ -39,10 +27,6 @@ namespace System.Xml.Schema
             set { _annotation = value; }
         }
 
-        /// <include file='doc\XmlSchemaAnnotated.uex' path='docs/doc[@for="XmlSchemaAnnotated.UnhandledAttributes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAnyAttribute]
         public XmlAttribute[] UnhandledAttributes
         {

@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Security.Authentication;
-using System.Security.Permissions;
 
 namespace System.DirectoryServices.ActiveDirectory
 {

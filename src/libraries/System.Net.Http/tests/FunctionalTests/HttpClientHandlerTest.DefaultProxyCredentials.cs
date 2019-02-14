@@ -14,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public abstract class HttpClientHandler_DefaultProxyCredentials_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandlerTestBase
     {
         [Fact]
         public void Default_Get_Null()

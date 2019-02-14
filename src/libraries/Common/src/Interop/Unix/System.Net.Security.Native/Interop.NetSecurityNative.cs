@@ -74,6 +74,8 @@ internal static partial class Interop
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
             bool isNtlmOnly,
+            IntPtr cbt,
+            int cbtSize,
             SafeGssNameHandle targetName,
             uint reqFlags,
             byte[] inputBytes,
@@ -148,7 +150,8 @@ internal static partial class Interop
         internal enum Status : uint
         {
             GSS_S_COMPLETE = 0,
-            GSS_S_CONTINUE_NEEDED = 1
+            GSS_S_CONTINUE_NEEDED = 1,
+            GSS_S_BAD_MECH = 65536
         }
 
         [Flags]

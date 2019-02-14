@@ -3,7 +3,7 @@
     <AssemblyName>System.IO.Compression.ZipFile</AssemblyName>
     <ProjectGuid>{ACF967ED-7FC9-435C-B2C9-306626B7B6C6}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1572</NoWarn>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
