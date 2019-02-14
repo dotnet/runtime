@@ -7941,18 +7941,13 @@ fail:
 }
 
 MonoArrayHandle
-ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionParameterHandle param, MonoBoolean optional, MonoError *error)
+ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, MonoObjectHandle member, int pos, MonoBoolean optional, MonoError *error)
 {
 	error_init (error);
-	MonoReflectionTypeHandle rt = MONO_HANDLE_NEW (MonoReflectionType, NULL);
-	MONO_HANDLE_GET (rt, param, ClassImpl);
 	MonoType *type = MONO_HANDLE_GETVAL (rt, type);
-	MonoObjectHandle member = MONO_HANDLE_NEW (MonoObject, NULL);
-	MONO_HANDLE_GET (member, param, MemberImpl);
 	MonoClass *member_class = mono_handle_class (member);
 	MonoMethod *method = NULL;
 	MonoImage *image;
-	int pos;
 	MonoMethodSignature *sig;
 
 	if (mono_class_is_reflection_method_or_constructor (member_class)) {
@@ -7970,7 +7965,6 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionParameterHandle p
 	}
 
 	image = m_class_get_image (method->klass);
-	pos = MONO_HANDLE_GETVAL (param, PositionImpl);
 	sig = mono_method_signature_internal (method);
 	if (pos == -1)
 		type = sig->ret;
