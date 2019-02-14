@@ -105,10 +105,8 @@ namespace System.Buffers.Binary
             // Testing shows that throughput increases if the AND
             // is performed before the ROL / ROR.
 
-            uint mask_xx_zz = (value & 0x00FF00FFU);
-            uint mask_ww_yy = (value & 0xFF00FF00U);
-            return ((mask_xx_zz >> 8) | (mask_xx_zz << 24))
-                + ((mask_ww_yy << 8) | (mask_ww_yy >> 24));
+            return BitOps.RotateRight(value & 0x00FF00FFu, 8) // xx zz
+                + BitOps.RotateLeft(value & 0xFF00FF00u, 8); // ww yy
         }
 
         /// <summary>

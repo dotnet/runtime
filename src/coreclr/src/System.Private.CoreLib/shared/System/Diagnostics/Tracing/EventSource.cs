@@ -1579,7 +1579,7 @@ namespace System.Diagnostics.Tracing
             {
                 for (int i = 16; i != 80; i++)
                 {
-                    this.w[i] = Rol1((this.w[i - 3] ^ this.w[i - 8] ^ this.w[i - 14] ^ this.w[i - 16]));
+                    this.w[i] = BitOps.RotateLeft((this.w[i - 3] ^ this.w[i - 8] ^ this.w[i - 14] ^ this.w[i - 16]), 1);
                 }
 
                 unchecked
@@ -1594,28 +1594,28 @@ namespace System.Diagnostics.Tracing
                     {
                         const uint k = 0x5A827999;
                         uint f = (b & c) | ((~b) & d);
-                        uint temp = Rol5(a) + f + e + k + this.w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
+                        uint temp = BitOps.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOps.RotateLeft(b, 30); b = a; a = temp;
                     }
 
                     for (int i = 20; i != 40; i++)
                     {
                         uint f = b ^ c ^ d;
                         const uint k = 0x6ED9EBA1;
-                        uint temp = Rol5(a) + f + e + k + this.w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
+                        uint temp = BitOps.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOps.RotateLeft(b, 30); b = a; a = temp;
                     }
 
                     for (int i = 40; i != 60; i++)
                     {
                         uint f = (b & c) | (b & d) | (c & d);
                         const uint k = 0x8F1BBCDC;
-                        uint temp = Rol5(a) + f + e + k + this.w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
+                        uint temp = BitOps.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOps.RotateLeft(b, 30); b = a; a = temp;
                     }
 
                     for (int i = 60; i != 80; i++)
                     {
                         uint f = b ^ c ^ d;
                         const uint k = 0xCA62C1D6;
-                        uint temp = Rol5(a) + f + e + k + this.w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
+                        uint temp = BitOps.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOps.RotateLeft(b, 30); b = a; a = temp;
                     }
 
                     this.w[80] += a;
@@ -1627,21 +1627,6 @@ namespace System.Diagnostics.Tracing
 
                 this.length += 512; // 64 bytes == 512 bits
                 this.pos = 0;
-            }
-
-            private static uint Rol1(uint input)
-            {
-                return (input << 1) | (input >> 31);
-            }
-
-            private static uint Rol5(uint input)
-            {
-                return (input << 5) | (input >> 27);
-            }
-
-            private static uint Rol30(uint input)
-            {
-                return (input << 30) | (input >> 2);
             }
         }
 

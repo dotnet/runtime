@@ -102,26 +102,19 @@ namespace System
             uint p1 = rp1;
 
             p1 ^= p0;
-            p0 = _rotl(p0, 20);
+            p0 = BitOps.RotateLeft(p0, 20);
 
             p0 += p1;
-            p1 = _rotl(p1, 9);
+            p1 = BitOps.RotateLeft(p1, 9);
 
             p1 ^= p0;
-            p0 = _rotl(p0, 27);
+            p0 = BitOps.RotateLeft(p0, 27);
 
             p0 += p1;
-            p1 = _rotl(p1, 19);
+            p1 = BitOps.RotateLeft(p1, 19);
 
             rp0 = p0;
             rp1 = p1;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint _rotl(uint value, int shift)
-        {
-            // This is expected to be optimized into a single rol (or ror with negated shift value) instruction
-            return (value << shift) | (value >> (32 - shift));
         }
 
         public static ulong DefaultSeed { get; } = GenerateSeed();
