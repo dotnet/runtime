@@ -253,10 +253,6 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint Rol(uint value, int count)
-            => (value << count) | (value >> (32 - count));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Initialize(out uint v1, out uint v2, out uint v3, out uint v4)
         {
             v1 = s_seed + Prime1 + Prime2;
@@ -268,23 +264,19 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint Round(uint hash, uint input)
         {
-            hash += input * Prime2;
-            hash = Rol(hash, 13);
-            hash *= Prime1;
-            return hash;
+            return BitOps.RotateLeft(hash + input * Prime2, 13) * Prime1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint QueueRound(uint hash, uint queuedValue)
         {
-            hash += queuedValue * Prime3;
-            return Rol(hash, 17) * Prime4;
+            return BitOps.RotateLeft(hash + queuedValue * Prime3, 17) * Prime4;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint MixState(uint v1, uint v2, uint v3, uint v4)
         {
-            return Rol(v1, 1) + Rol(v2, 7) + Rol(v3, 12) + Rol(v4, 18);
+            return BitOps.RotateLeft(v1, 1) + BitOps.RotateLeft(v2, 7) + BitOps.RotateLeft(v3, 12) + BitOps.RotateLeft(v4, 18);
         }
 
         private static uint MixEmptyState()
