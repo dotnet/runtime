@@ -13,6 +13,11 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
+    /// <summary>
+    /// Utility methods for intrinsic bit-twiddling operations.
+    /// The methods use hardware intrinsics when available on the underlying platform,
+    /// otherwise they use optimized software fallbacks.
+    /// </summary>
     internal static class BitOps
     {
         // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
@@ -53,11 +58,11 @@ namespace System
         {
             if (Bmi1.IsSupported)
             {
-                // Note that TZCNT contract specifies 0->32
+                // TZCNT contract is 0->32
                 return (int)Bmi1.TrailingZeroCount(value);
             }
 
-            // Software fallback has behavior 0->0, so special-case to match intrinsic path 0->32
+            // Unguarded fallback contract is 0->0
             if (value == 0)
             {
                 return 32;
@@ -67,8 +72,8 @@ namespace System
             return Unsafe.AddByteOffset(
                 // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_0111_1100_1011_0101_0011_0001u
                 ref MemoryMarshal.GetReference(s_TrailingZeroCountDeBruijn),
-                // long -> IntPtr cast on 32-bit platforms is expensive - it does overflow checks not needed here
-                (IntPtr)(int)(((uint)((value & -value) * 0x077CB531u)) >> 27)); // shift over long also expensive on 32-bit
+                // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
+                (IntPtr)(int)(((value & (uint)-(int)value) * 0x077CB531u) >> 27)); // Multi-cast mitigates redundant conv.u8
         }
 
         /// <summary>
@@ -90,7 +95,7 @@ namespace System
         {
             if (Bmi1.X64.IsSupported)
             {
-                // Note that TZCNT contract specifies 0->64
+                // TZCNT contract is 0->64
                 return (int)Bmi1.X64.TrailingZeroCount(value);
             }
 
@@ -114,17 +119,17 @@ namespace System
         {
             if (Lzcnt.IsSupported)
             {
-                // Note that LZCNT contract specifies 0->32
+                // LZCNT contract is 0->32
                 return (int)Lzcnt.LeadingZeroCount(value);
             }
 
-            // Software fallback has behavior 0->0, so special-case to match intrinsic path 0->32
+            // Unguarded fallback contract is 0->31
             if (value == 0)
             {
                 return 32;
             }
 
-            return 31 - Log2(value);
+            return 31 - Log2SoftwareFallback(value);
         }
 
         /// <summary>
@@ -137,7 +142,7 @@ namespace System
         {
             if (Lzcnt.X64.IsSupported)
             {
-                // Note that LZCNT contract specifies 0->64
+                // LZCNT contract is 0->64
                 return (int)Lzcnt.X64.LeadingZeroCount(value);
             }
 
@@ -168,30 +173,32 @@ namespace System
             // 1000..    0      31-0    31
             if (Lzcnt.IsSupported)
             {
-                // Enforce conventional contract 0->0 (since Log(0) is undefined)
+                // Enforce conventional contract 0->0 (Log(0) is undefined)
                 if (value == 0)
                 {
                     return 0;
                 }
 
-                // Note that LZCNT contract specifies 0->32
+                // LZCNT contract is 0->32
                 return 31 - (int)Lzcnt.LeadingZeroCount(value);
             }
 
-            // Already has contract 0->0, without branching
+            // Fallback contract is 0->0
             return Log2SoftwareFallback(value);
         }
 
         /// <summary>
         /// Returns the integer (floor) log of the specified value, base 2.
         /// Note that by convention, input value 0 returns 0 since Log(0) is undefined.
-        /// Does not incur branching.
+        /// Does not directly use any hardware intrinsics, nor does it incur branching.
         /// </summary>
         /// <param name="value">The value.</param>
         private static int Log2SoftwareFallback(uint value)
         {
             // No AggressiveInlining due to large method size
+            // Has conventional contract 0->0 (Log(0) is undefined)
 
+            // Fill trailing zeros with ones, eg 00010010 becomes 00011111
             value |= value >> 01;
             value |= value >> 02;
             value |= value >> 04;
@@ -202,7 +209,7 @@ namespace System
             return Unsafe.AddByteOffset(
                 // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_1100_0100_1010_1100_1101_1101u
                 ref MemoryMarshal.GetReference(s_Log2DeBruijn),
-                // long -> IntPtr cast on 32-bit platforms is expensive - it does overflow checks not needed here
+                // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
                 (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
         }
 
@@ -216,13 +223,13 @@ namespace System
         {
             if (Lzcnt.X64.IsSupported)
             {
-                // Enforce conventional contract 0->0 (since Log(0) is undefined)
+                // Enforce conventional contract 0->0 (Log(0) is undefined)
                 if (value == 0)
                 {
                     return 0;
                 }
 
-                // Note that LZCNT contract specifies 0->64
+                // LZCNT contract is 0->64
                 return 63 - (int)Lzcnt.X64.LeadingZeroCount(value);
             }
 
@@ -234,6 +241,119 @@ namespace System
             }
 
             return 32 + Log2(hi);
+        }
+
+        /// <summary>
+        /// Rotates the specified value left by the specified number of bits.
+        /// Similar in behavior to the x86 instruction ROL.
+        /// </summary>
+        /// <param name="value">The value to rotate.</param>
+        /// <param name="offset">The number of bits to rotate by.
+        /// Any value outside the range [0..31] is treated as congruent mod 32.</param>
+        /// <returns>The rotated value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint RotateLeft(uint value, int offset)
+            => (value << offset) | (value >> (32 - offset));
+
+        /// <summary>
+        /// Rotates the specified value left by the specified number of bits.
+        /// Similar in behavior to the x86 instruction ROL.
+        /// </summary>
+        /// <param name="value">The value to rotate.</param>
+        /// <param name="offset">The number of bits to rotate by.
+        /// Any value outside the range [0..63] is treated as congruent mod 64.</param>
+        /// <returns>The rotated value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong RotateLeft(ulong value, int offset)
+            => (value << offset) | (value >> (64 - offset));
+
+        /// <summary>
+        /// Rotates the specified value right by the specified number of bits.
+        /// Similar in behavior to the x86 instruction ROR.
+        /// </summary>
+        /// <param name="value">The value to rotate.</param>
+        /// <param name="offset">The number of bits to rotate by.
+        /// Any value outside the range [0..31] is treated as congruent mod 32.</param>
+        /// <returns>The rotated value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint RotateRight(uint value, int offset)
+            => (value >> offset) | (value << (32 - offset));
+
+        /// <summary>
+        /// Rotates the specified value right by the specified number of bits.
+        /// Similar in behavior to the x86 instruction ROR.
+        /// </summary>
+        /// <param name="value">The value to rotate.</param>
+        /// <param name="offset">The number of bits to rotate by.
+        /// Any value outside the range [0..63] is treated as congruent mod 64.</param>
+        /// <returns>The rotated value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ulong RotateRight(ulong value, int offset)
+            => (value >> offset) | (value << (64 - offset));
+
+        /// <summary>
+        /// Returns the population count (number of bits set) of a mask.
+        /// Similar in behavior to the x86 instruction POPCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int PopCount(uint value)
+        {
+            if (Popcnt.IsSupported)
+            {
+                return (int)Popcnt.PopCount(value);
+            }
+
+            return SoftwareFallback(value);
+
+            int SoftwareFallback(uint v)
+            {
+                const uint c1 = 0x_55555555u;
+                const uint c2 = 0x_33333333u;
+                const uint c3 = 0x_0F0F0F0Fu;
+                const uint c4 = 0x_01010101u;
+
+                v = v - ((v >> 1) & c1);
+                v = (v & c2) + ((v >> 2) & c2);
+                v = (((v + (v >> 4)) & c3) * c4) >> 24;
+
+                return (int)v;
+            }
+        }
+
+        /// <summary>
+        /// Returns the population count (number of bits set) of a mask.
+        /// Similar in behavior to the x86 instruction POPCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int PopCount(ulong value)
+        {
+            if (Popcnt.X64.IsSupported)
+            {
+                return (int)Popcnt.X64.PopCount(value);
+            }
+
+#if BIT32
+            return PopCount((uint)value) // lo
+                + PopCount((uint)(value >> 32)); // hi
+#else
+            return SoftwareFallback(value);
+
+            int SoftwareFallback(ulong v) 
+            {
+                const ulong c1 = 0x_55555555_55555555ul;
+                const ulong c2 = 0x_33333333_33333333ul;
+                const ulong c3 = 0x_0F0F0F0F_0F0F0F0Ful;
+                const ulong c4 = 0x_01010101_01010101ul;
+
+                v = v - ((v >> 1) & c1);
+                v = (v & c2) + ((v >> 2) & c2);
+                v = (((v + (v >> 4)) & c3) * c4) >> 56;
+
+                return (int)v;
+            }
+#endif
         }
     }
 }
