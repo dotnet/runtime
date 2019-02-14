@@ -50,7 +50,7 @@ namespace System.Net.Http
 
                 _disposed = false;
 
-                _responseBuffer = new ArrayBuffer(InitialStreamBufferSize);
+                _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
 
                 _streamWindow = new CreditManager(initialWindowSize);
 
