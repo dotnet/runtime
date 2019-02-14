@@ -169,12 +169,18 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValidUnicodeScalar(uint value)
         {
-            // By XORing the incoming value with 0xD800, surrogate code points
-            // are moved to the range [ U+0000..U+07FF ], and all valid scalar
-            // values are clustered into the single range [ U+0800..U+10FFFF ],
-            // which allows performing a single fast range check.
+            // This is an optimized check that on x86 is just three instructions: lea, xor, cmp.
+            // 
+            // After the subtraction operation, the input value is modified as such:
+            // [ 00000000..0010FFFF ] -> [ FFEF0000..FFFFFFFF ]
+            //
+            // We now want to _exclude_ the range [ FFEFD800..FFEFDFFF ] (surrogates) from being valid.
+            // After the xor, this particular exclusion range becomes [ FFEF0000..FFEF07FF ].
+            //
+            // So now the range [ FFEF0800..FFFFFFFF ] contains all valid code points,
+            // excluding surrogates. This allows us to perform a single comparison.
 
-            return IsInRangeInclusive(value ^ 0xD800U, 0x800U, 0x10FFFFU);
+            return ((value - 0x110000u) ^ 0xD800u) >= 0xFFEF0800u;
         }
     }
 }
