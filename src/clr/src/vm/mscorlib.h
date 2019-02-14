@@ -905,8 +905,6 @@ DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
 
 DEFINE_CLASS_U(Threading,              WaitHandle,             WaitHandleBase)
 DEFINE_FIELD_U(_waitHandle,         WaitHandleBase,         m_safeHandle)
-DEFINE_FIELD_U(waitHandle,             WaitHandleBase,         m_handle)
-DEFINE_FIELD_U(hasThreadAffinity,      WaitHandleBase,         m_hasThreadAffinity)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)
 DEFINE_METHOD(DEBUGGER,             BREAK_CAN_THROW,        BreakCanThrow,          SM_RetVoid)
