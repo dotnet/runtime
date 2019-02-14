@@ -59,7 +59,7 @@ BOOL FinalizerThread::HaveExtraWorkForFinalizer()
 
 // This helper is here to avoid EH goo associated with DefineFullyQualifiedNameForStack being 
 // invoked when logging is off.
-__declspec(noinline)
+NOINLINE
 void LogFinalization(Object* obj)
 {
     STATIC_CONTRACT_NOTHROW;

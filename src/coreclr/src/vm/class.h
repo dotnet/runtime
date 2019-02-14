@@ -409,7 +409,7 @@ class EEClassLayoutInfo
             e_HAS_EXPLICIT_SIZE         = 0x08,
 #ifdef UNIX_AMD64_ABI
 #ifdef FEATURE_HFA
-#error Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time.
+#error "Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time."
 #endif // FEATURE_HFA
             e_NATIVE_PASS_IN_REGISTERS  = 0x10, // Flag wheter a native struct is passed in registers.
 #endif // UNIX_AMD64_ABI

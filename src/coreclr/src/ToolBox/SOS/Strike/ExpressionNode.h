@@ -7,7 +7,7 @@
 #define _EXPRESSION_NODE_
 
 #ifdef FEATURE_PAL
-#error This file isn't designed to build in PAL
+#error "This file isn't designed to build in PAL"
 #endif
 
 #include "strike.h"

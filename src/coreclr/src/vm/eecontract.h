@@ -35,7 +35,7 @@ class EEContract : public BaseContract
     virtual void DestructorDefinedThatCallsRestore(){}
 
   public:
-    __declspec(nothrow) ~EEContract()
+    NOTHROW_DECL ~EEContract()
     {
         Restore();
     }

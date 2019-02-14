@@ -265,7 +265,7 @@ public:
     CrstBase *GetThreadsOwnedCrsts();
     void SetThreadsOwnedCrsts(CrstBase *pCrst);
 
-    __declspec(noinline) EEThreadId GetHolderThreadId()
+    NOINLINE EEThreadId GetHolderThreadId()
     {
         LIMITED_METHOD_CONTRACT;
         return m_holderthreadid;
