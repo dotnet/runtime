@@ -23,7 +23,7 @@
       <Version>$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>7.0.1</Version>

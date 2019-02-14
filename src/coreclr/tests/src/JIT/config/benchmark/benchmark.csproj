@@ -23,7 +23,7 @@
       <Version>$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
+      <Version>$(MicrosoftNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Collections.NonGeneric">
       <Version>4.4.0-beta-24913-02</Version>
@@ -44,10 +44,10 @@
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Memory">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Numerics.Vectors">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection">
       <Version>4.4.0-beta-24913-02</Version>
@@ -56,13 +56,13 @@
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.TypeExtensions">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime">
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.Extensions">
       <Version>4.4.0-beta-24913-02</Version>
