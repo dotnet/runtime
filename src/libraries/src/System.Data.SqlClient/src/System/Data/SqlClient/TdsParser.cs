@@ -7199,16 +7199,16 @@ namespace System.Data.SqlClient
                                     }
 
                                     TDSExecuteRPCParameterSetupWriteCompletion(
-                                        rpcArray, 
-                                        timeout, 
-                                        inSchema, 
-                                        notificationRequest, 
-                                        stateObj, 
-                                        isCommandProc, 
-                                        sync, 
-                                        completion, 
-                                        ii, 
-                                        i + 1, 
+                                        rpcArray,
+                                        timeout,
+                                        inSchema,
+                                        notificationRequest,
+                                        stateObj,
+                                        isCommandProc,
+                                        sync,
+                                        completion,
+                                        ii,
+                                        i + 1,
                                         writeParamTask
                                    );
 
