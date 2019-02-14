@@ -206,7 +206,7 @@ if HYBRID_AOT_TESTS
 PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY 
 endif
 
-if AOT_FULL_INTERP_TESTS
+if FULL_AOT_INTERP_TESTS
 PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY
 endif
 
@@ -1533,7 +1533,7 @@ PROFILE_DISABLED_TESTS += \
 	namedmutex-destroy-race.exe
 endif
 
-if AOT_FULL_INTERP_TESTS
+if FULL_AOT_INTERP_TESTS
 
 # AppDomain tests
 PROFILE_DISABLED_TESTS += \
@@ -1984,7 +1984,7 @@ tailcall/coreclr/JIT/opt/Tailcall/TailcallVerifyWithPrefix.exe: \
 
 if !FULL_AOT_TESTS
 if !HYBRID_AOT_TESTS
-if !AOT_FULL_INTERP_TESTS
+if !FULL_AOT_INTERP_TESTS
 TEST_DRIVER_HARD_KILL_FEATURE=-r:$(CLASS)/Mono.Posix.dll
 endif
 endif
@@ -2150,6 +2150,9 @@ testinterp: test-runner.exe compile-tests
 
 testfullaotinterp: test-runner.exe compile-tests
 	$(TOOLS_RUNTIME) --debug $(TEST_RUNNER) -j a --runtime-args "--full-aot-interp" --testsuite-name "runtime-aot-interp" --timeout 300 --disabled "$(INTERP_DISABLED_TESTS)" $(TESTS_REGULAR)
+
+testllvmonlyinterp: test-runner.exe compile-tests
+	$(TOOLS_RUNTIME) --debug $(TEST_RUNNER) -j a --runtime-args "--llvmonly-interp" --testsuite-name "runtime-aot-interp" --timeout 300 --disabled "$(INTERP_DISABLED_TESTS)" $(TESTS_REGULAR)
 
 testjitspeed: $(JITTEST_PROG) compile-tests
 	for i in $(TESTS_BENCH); do	\

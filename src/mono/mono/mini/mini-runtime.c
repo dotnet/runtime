@@ -1422,20 +1422,14 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL: {
 		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
-		if (!mi) {
-			g_warning ("unknown MONO_PATCH_INFO_JIT_ICALL %s", patch_info->data.name);
-			g_assert_not_reached ();
-		}
+		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL %s", patch_info->data.name);
 		target = mono_icall_get_wrapper (mi);
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
 		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
-		if (!mi) {
-			g_warning ("unknown MONO_PATCH_INFO_JIT_ICALL_ADDR %s", patch_info->data.name);
-			g_assert_not_reached ();
-		}
+		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL_ADDR %s", patch_info->data.name);
 		target = mi->func;
 		break;
 	}

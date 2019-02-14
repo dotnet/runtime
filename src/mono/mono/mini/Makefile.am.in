@@ -907,15 +907,20 @@ FULLAOT_LIBS_UNIVERSAL = \
 
 FULLAOT_LIBS_DISABLED =
 
-if FULL_AOT_TESTS
 # Skip aoting the tests that aren't compiled 
 # on the full aot profiles because they're skipped
 # on mobile profiles
+if FULL_AOT_TESTS
+FULLAOT_LIBS_DISABLED += \
+	Mono.Posix.dll \
+	System.Configuration.dll
+else
+if FULL_AOT_INTERP_TESTS
 FULLAOT_LIBS_DISABLED += \
 	Mono.Posix.dll \
 	System.Configuration.dll
 endif
-
+endif
 
 FULLAOT_LIBS = $(filter-out $(FULLAOT_LIBS_DISABLED),$(FULLAOT_LIBS_UNIVERSAL))
 
@@ -952,9 +957,9 @@ llvmonly_regtests = $(fullaot_regtests) gshared.exe
 llvmonlycheck: mono $(llvmonly_regtests)
 	rm -rf fullaot-tmp
 	mkdir fullaot-tmp
-	$(MAKE) fullaot-libs AOT_FLAGS="llvmonly,$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)"
+	$(MAKE) fullaot-libs AOT_FLAGS="llvmonly,clangxx=clang++-6.0,$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)"
 	cp $(llvmonly_regtests) $(fullaot_testing_deps) fullaot-tmp/
-	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper  $(MOBILE_RUNTIME_ARG) --aot=llvmonly fullaot-tmp/{$(fullaot_testing_deps_commas),*.exe} || exit 1
+	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper  $(MOBILE_RUNTIME_ARG) --aot=llvmonly,clangxx=clang++-6.0 fullaot-tmp/{$(fullaot_testing_deps_commas),*.exe} || exit 1
 	ln -s $$PWD/mono fullaot-tmp/
 	for i in $(llvmonly_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper $(MOBILE_RUNTIME_ARG) --llvmonly fullaot-tmp/$$i --exclude '!BITCODE' || exit 1; done
 
