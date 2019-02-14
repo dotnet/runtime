@@ -8,11 +8,11 @@ namespace System.Net.Http.HPack
 {
     internal static class StaticTable
     {
-        public static int Count => s_staticTable.Length;
+        public static int Count => s_staticDecoderTable.Length;
 
-        public static HeaderField Get(int index) => s_staticTable[index];
+        public static HeaderField Get(int index) => s_staticDecoderTable[index];
 
-        private static readonly HeaderField[] s_staticTable = new HeaderField[]
+        private static readonly HeaderField[] s_staticDecoderTable = new HeaderField[]
         {
             CreateHeaderField(":authority", ""),
             CreateHeaderField(":method", "GET"),
@@ -82,5 +82,17 @@ namespace System.Net.Http.HPack
 
         private static HeaderField CreateHeaderField(string name, string value)
             => new HeaderField(Encoding.ASCII.GetBytes(name), Encoding.ASCII.GetBytes(value));
+
+        // Values for encoding
+        // For brevity, this list only includes values we actually encode.
+        // So stuff like ":scheme: http" is not included.
+
+        public const int Authority = 1;
+        public const int MethodGet = 2;
+        public const int MethodPost = 3;
+        public const int PathSlash = 4;
+        public const int SchemeHttps = 7;
+        public const int ContentLength = 28;
+        public const int Cookie = 32;
     }
 }
