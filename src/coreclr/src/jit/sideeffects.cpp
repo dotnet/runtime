@@ -450,7 +450,7 @@ void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 //    Two side effect sets interfere under any of the following
 //    conditions:
 //    - If the analysis is strict, and:
-//        - Either set contains a compiler barrier, or
+//        - One set contains a compiler barrier and the other set contains a global reference, or
 //        - Both sets produce an exception
 //    - Whether or not the analysis is strict:
 //        - One set produces an exception and the other set contains a
@@ -475,8 +475,14 @@ bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
 
     if (strict)
     {
-        // If either set contains a compiler barrier, the sets interfere.
-        if (((m_sideEffectFlags | otherSideEffectFlags) & GTF_ORDER_SIDEEFF) != 0)
+        // If either set contains a compiler barrier, and the other set contains a global reference,
+        // the sets interfere.
+        if (((m_sideEffectFlags & GTF_ORDER_SIDEEFF) != 0) && ((otherSideEffectFlags & GTF_GLOB_REF) != 0))
+        {
+            return true;
+        }
+
+        if (((otherSideEffectFlags & GTF_ORDER_SIDEEFF) != 0) && ((m_sideEffectFlags & GTF_GLOB_REF) != 0))
         {
             return true;
         }
