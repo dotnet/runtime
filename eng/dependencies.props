@@ -9,11 +9,11 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <ProjectNTfsCurrentRef>991c9ce4fd0b143bb699d96ab28d5babf343d5e0</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>991c9ce4fd0b143bb699d96ab28d5babf343d5e0</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>d8379e3f82c0b3b917d76828e064bd74ba718bfd</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>d8379e3f82c0b3b917d76828e064bd74ba718bfd</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>ddac89c354d95953988a80da7087d798913b0460</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>d8379e3f82c0b3b917d76828e064bd74ba718bfd</BuildToolsCurrentRef>
     <CoreFxOptimizationDataCurrentRef>8e8bcbe152e6de9275cd5dcd5e05870ddf046992</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
@@ -27,9 +27,9 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <ProjectNTfsExpectedPrerelease>beta-27414-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-27414-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27414-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-27415-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-27415-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27415-00</ProjectNTfsTestILCPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
@@ -57,7 +57,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <BuildToolsPackage>microsoft.dotnet.buildtools</BuildToolsPackage>
-    <BuildToolsPackageVersion>3.0.0-preview1-03713-01</BuildToolsPackageVersion>
+    <BuildToolsPackageVersion>3.0.0-preview1-03715-01</BuildToolsPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
