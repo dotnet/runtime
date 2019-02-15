@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Hosting
 }
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    public partial class ApplicationLifetime : Microsoft.Extensions.Hosting.IApplicationLifetime
+    public partial class ApplicationLifetime : Microsoft.Extensions.Hosting.IApplicationLifetime, Microsoft.Extensions.Hosting.IHostApplicationLifetime
     {
         public ApplicationLifetime(Microsoft.Extensions.Logging.ILogger<Microsoft.Extensions.Hosting.Internal.ApplicationLifetime> logger) { }
         public System.Threading.CancellationToken ApplicationStarted { get { throw null; } }
@@ -61,13 +61,13 @@ namespace Microsoft.Extensions.Hosting.Internal
     }
     public partial class ConsoleLifetime : Microsoft.Extensions.Hosting.IHostLifetime, System.IDisposable
     {
-        public ConsoleLifetime(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> options, Microsoft.Extensions.Hosting.IHostingEnvironment environment, Microsoft.Extensions.Hosting.IApplicationLifetime applicationLifetime) { }
-        public ConsoleLifetime(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> options, Microsoft.Extensions.Hosting.IHostingEnvironment environment, Microsoft.Extensions.Hosting.IApplicationLifetime applicationLifetime, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory) { }
+        public ConsoleLifetime(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> options, Microsoft.Extensions.Hosting.IHostEnvironment environment, Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime) { }
+        public ConsoleLifetime(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions> options, Microsoft.Extensions.Hosting.IHostEnvironment environment, Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory) { }
         public void Dispose() { }
         public System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task WaitForStartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-    public partial class HostingEnvironment : Microsoft.Extensions.Hosting.IHostingEnvironment
+    public partial class HostingEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.IHostingEnvironment
     {
         public HostingEnvironment() { }
         public string ApplicationName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }

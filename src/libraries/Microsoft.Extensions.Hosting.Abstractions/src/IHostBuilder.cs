@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Hosting
         IDictionary<object, object> Properties { get; }
 
         /// <summary>
-        /// Set up the configuration for the builder itself. This will be used to initialize the <see cref="IHostingEnvironment"/>
+        /// Set up the configuration for the builder itself. This will be used to initialize the <see cref="IHostEnvironment"/>
         /// for use later in the build process. This can be called multiple times and the results will be additive.
         /// </summary>
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
