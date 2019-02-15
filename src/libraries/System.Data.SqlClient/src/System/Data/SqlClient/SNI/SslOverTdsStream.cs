@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.IO;
 using System.IO.Pipes;
 using System.Threading;
@@ -88,42 +89,69 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         private async Task<int> ReadInternal(byte[] buffer, int offset, int count, CancellationToken token, bool async)
         {
+            if (_encapsulate)
+            {
+                return await ReadInternalEncapsulate(buffer, offset, count, token, async);
+            }
+            else if (async)
+            {
+                return await ReadInternalAsync(buffer, offset, count, token);
+            }
+            else
+            {
+                return ReadInternalSync(buffer, offset, count);
+            }
+        }
+
+        private async Task<int> ReadInternalEncapsulate(byte[] buffer, int offset, int count, CancellationToken token, bool async)
+        {
             int readBytes = 0;
-            byte[] packetData = new byte[count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count];
+            byte[] packetData = ArrayPool<byte>.Shared.Rent(count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count);
 
-            if (_encapsulate)
+            if (_packetBytes == 0)
             {
-                if (_packetBytes == 0)
+                // Account for split packets
+                while (readBytes < TdsEnums.HEADER_LEN)
                 {
-                    // Account for split packets
-                    while (readBytes < TdsEnums.HEADER_LEN)
-                    {
-                        readBytes += async ?
-                            await _stream.ReadAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes, token).ConfigureAwait(false) :
-                            _stream.Read(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes);
-                    }
-
-                    _packetBytes = (packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET] << 8) | packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET + 1];
-                    _packetBytes -= TdsEnums.HEADER_LEN;
+                    readBytes += (async ?
+                        await ReadInternalAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes, token) :
+                        ReadInternalSync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes)
+                   );
                 }
 
-                if (count > _packetBytes)
-                {
-                    count = _packetBytes;
-                }
+                _packetBytes = (packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET] << 8) | packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET + 1];
+                _packetBytes -= TdsEnums.HEADER_LEN;
             }
 
-            readBytes = async ?
-                await _stream.ReadAsync(packetData, 0, count, token).ConfigureAwait(false) :
-                _stream.Read(packetData, 0, count);
-
-            if (_encapsulate)
+            if (count > _packetBytes)
             {
-                _packetBytes -= readBytes;
+                count = _packetBytes;
             }
+            
+            readBytes = (async ?
+                await ReadInternalAsync(packetData, 0, count, token) :
+                ReadInternalSync(packetData, 0, count)
+            );
 
+
+            _packetBytes -= readBytes;
+            
             Buffer.BlockCopy(packetData, 0, buffer, offset, readBytes);
+
+            Array.Clear(packetData, 0, readBytes);
+            ArrayPool<byte>.Shared.Return(packetData, clearArray: false);
+
             return readBytes;
+        }
+
+        private async Task<int> ReadInternalAsync(byte[] buffer, int offset, int count, CancellationToken token)
+        {
+            return await _stream.ReadAsync(buffer, 0, count, token).ConfigureAwait(false);
+        }
+
+        private int ReadInternalSync(byte[] buffer, int offset, int count)
+        {
+            return _stream.Read(buffer, 0, count);
         }
 
         /// <summary>
@@ -153,11 +181,13 @@ namespace System.Data.SqlClient.SNI
                     count -= currentCount;
 
                     // Prepend buffer data with TDS prelogin header
-                    byte[] combinedBuffer = new byte[TdsEnums.HEADER_LEN + currentCount];
+                    int combinedLength = TdsEnums.HEADER_LEN + currentCount;
+                    byte[] combinedBuffer = ArrayPool<byte>.Shared.Rent(combinedLength);
 
                     // We can only send 4088 bytes in one packet. Header[1] is set to 1 if this is a 
                     // partial packet (whether or not count != 0).
                     // 
+                    combinedBuffer[7] = 0; // touch this first for the jit bounds check
                     combinedBuffer[0] = PRELOGIN_PACKET_TYPE;
                     combinedBuffer[1] = (byte)(count > 0 ? 0 : 1);
                     combinedBuffer[2] = (byte)((currentCount + TdsEnums.HEADER_LEN) / 0x100);
@@ -165,21 +195,21 @@ namespace System.Data.SqlClient.SNI
                     combinedBuffer[4] = 0;
                     combinedBuffer[5] = 0;
                     combinedBuffer[6] = 0;
-                    combinedBuffer[7] = 0;
 
-                    for (int i = TdsEnums.HEADER_LEN; i < combinedBuffer.Length; i++)
-                    {
-                        combinedBuffer[i] = buffer[currentOffset + (i - TdsEnums.HEADER_LEN)];
-                    }
+                    Array.Copy(buffer, currentOffset, combinedBuffer, TdsEnums.HEADER_LEN, (combinedLength - TdsEnums.HEADER_LEN));
 
                     if (async)
                     {
-                        await _stream.WriteAsync(combinedBuffer, 0, combinedBuffer.Length, token).ConfigureAwait(false);
+                        await _stream.WriteAsync(combinedBuffer, 0, combinedLength, token).ConfigureAwait(false);
                     }
                     else
                     {
-                        _stream.Write(combinedBuffer, 0, combinedBuffer.Length);
+                        _stream.Write(combinedBuffer, 0, combinedLength);
                     }
+
+                    Array.Clear(combinedBuffer, 0, combinedLength);
+                    ArrayPool<byte>.Shared.Return(combinedBuffer);
+
                 }
                 else
                 {

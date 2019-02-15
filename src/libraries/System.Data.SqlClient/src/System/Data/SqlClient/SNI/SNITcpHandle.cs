@@ -19,7 +19,7 @@ namespace System.Data.SqlClient.SNI
     /// <summary>
     /// TCP connection handle
     /// </summary>
-    internal class SNITCPHandle : SNIHandle
+    internal sealed class SNITCPHandle : SNIHandle
     {
         private readonly string _targetServer;
         private readonly object _callbackObject;
