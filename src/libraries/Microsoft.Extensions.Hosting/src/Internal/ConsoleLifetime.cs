@@ -19,10 +19,10 @@ namespace Microsoft.Extensions.Hosting.Internal
         private CancellationTokenRegistration _applicationStartedRegistration;
         private CancellationTokenRegistration _applicationStoppingRegistration;
 
-        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostingEnvironment environment, IApplicationLifetime applicationLifetime)
+        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime)
             : this(options, environment, applicationLifetime, NullLoggerFactory.Instance) { }
 
-        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostingEnvironment environment, IApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory)
+        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory)
         {
             Options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             Environment = environment ?? throw new ArgumentNullException(nameof(environment));
@@ -32,9 +32,9 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         private ConsoleLifetimeOptions Options { get; }
 
-        private IHostingEnvironment Environment { get; }
+        private IHostEnvironment Environment { get; }
 
-        private IApplicationLifetime ApplicationLifetime { get; }
+        private IHostApplicationLifetime ApplicationLifetime { get; }
 
         private ILogger Logger { get; }
 

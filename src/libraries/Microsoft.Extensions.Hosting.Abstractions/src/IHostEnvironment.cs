@@ -9,8 +9,7 @@ namespace Microsoft.Extensions.Hosting
     /// <summary>
     /// Provides information about the hosting environment an application is running in.
     /// </summary>
-    [Obsolete("Use IHostEnvironment instead.", error: false)]
-    public interface IHostingEnvironment
+    public interface IHostEnvironment
     {
         /// <summary>
         /// Gets or sets the name of the environment. The host automatically sets this property to the value of the

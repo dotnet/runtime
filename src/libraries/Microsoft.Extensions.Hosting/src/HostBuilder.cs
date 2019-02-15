@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Hosting
         private IConfiguration _hostConfiguration;
         private IConfiguration _appConfiguration;
         private HostBuilderContext _hostBuilderContext;
-        private IHostingEnvironment _hostingEnvironment;
+        private HostingEnvironment _hostingEnvironment;
         private IServiceProvider _appServices;
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Hosting
         public IDictionary<object, object> Properties { get; } = new Dictionary<object, object>();
 
         /// <summary>
-        /// Set up the configuration for the builder itself. This will be used to initialize the <see cref="IHostingEnvironment"/>
+        /// Set up the configuration for the builder itself. This will be used to initialize the <see cref="IHostEnvironment"/>
         /// for use later in the build process. This can be called multiple times and the results will be additive.
         /// </summary>
         /// <param name="configureDelegate"></param>
@@ -185,10 +185,16 @@ namespace Microsoft.Extensions.Hosting
         private void CreateServiceProvider()
         {
             var services = new ServiceCollection();
-            services.AddSingleton(_hostingEnvironment);
+#pragma warning disable CS0618 // Type or member is obsolete
+            services.AddSingleton<IHostingEnvironment>(_hostingEnvironment);
+#pragma warning restore CS0618 // Type or member is obsolete
+            services.AddSingleton<IHostEnvironment>(_hostingEnvironment);
             services.AddSingleton(_hostBuilderContext);
             services.AddSingleton(_appConfiguration);
-            services.AddSingleton<IApplicationLifetime, ApplicationLifetime>();
+#pragma warning disable CS0618 // Type or member is obsolete
+            services.AddSingleton<IApplicationLifetime>(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
+#pragma warning restore CS0618 // Type or member is obsolete
+            services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
             services.AddSingleton<IHostLifetime, ConsoleLifetime>();
             services.AddSingleton<IHost, Internal.Host>();
             services.AddOptions();

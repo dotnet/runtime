@@ -85,11 +85,11 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="token">The token to trigger shutdown.</param>
         public static async Task WaitForShutdownAsync(this IHost host, CancellationToken token = default)
         {
-            var applicationLifetime = host.Services.GetService<IApplicationLifetime>();
+            var applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();
 
             token.Register(state =>
             {
-                ((IApplicationLifetime)state).StopApplication();
+                ((IHostApplicationLifetime)state).StopApplication();
             },
             applicationLifetime);
 
