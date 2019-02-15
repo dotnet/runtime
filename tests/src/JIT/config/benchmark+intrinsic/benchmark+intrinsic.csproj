@@ -13,9 +13,6 @@
     <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
-    <PackageReference Include="System.Memory">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
