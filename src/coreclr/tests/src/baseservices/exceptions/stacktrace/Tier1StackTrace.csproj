@@ -6,7 +6,6 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{8758BFAC-7D36-4244-8A36-4C464C0AFA6D}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <CLRTestPriority>1</CLRTestPriority>
