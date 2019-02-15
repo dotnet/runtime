@@ -45,7 +45,7 @@ namespace System.Data.SqlClient.SNI
                 cb(packet, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
             }
 
-            Task<int> t = stream.ReadAsync(_data, 0, _capacity, CancellationToken.None);
+            Task<int> t = stream.ReadAsync(_data, _header, _capacity, CancellationToken.None);
 
             if ((t.Status & TaskStatus.RanToCompletion) != 0)
             {
@@ -88,11 +88,11 @@ namespace System.Data.SqlClient.SNI
 
                 if (disposeAfter)
                 {
-                    packet.Dispose();
+                    packet.Release();
                 }
             }
 
-            Task t = stream.WriteAsync(_data, 0, _length, CancellationToken.None);
+            Task t = stream.WriteAsync(_data, _header, _length, CancellationToken.None);
 
             if ((t.Status & TaskStatus.RanToCompletion) != 0)
             {
@@ -103,7 +103,7 @@ namespace System.Data.SqlClient.SNI
 
                 if (disposeAfterWriteAsync)
                 {
-                    Dispose();
+					Release();
                 }
 
                 // Completed

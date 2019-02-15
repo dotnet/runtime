@@ -15,7 +15,7 @@ namespace System.Data.SqlClient.SNI
     /// <summary>
     /// Named Pipe connection handle
     /// </summary>
-    internal class SNINpHandle : SNIHandle
+    internal sealed class SNINpHandle : SNIHandle
     {
         internal const string DefaultPipePath = @"sql\query"; // e.g. \\HOSTNAME\pipe\sql\query
         private const int MAX_PIPE_INSTANCES = 255;

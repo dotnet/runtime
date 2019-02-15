@@ -105,6 +105,11 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         public uint ReceiveAsync(ref SNIPacket packet)
         {
+            if (packet != null)
+            {
+                packet.Release();
+                packet = null;
+            }
             lock (this)
             {
                 return _lowerHandle.ReceiveAsync(ref packet);
@@ -133,7 +138,7 @@ namespace System.Data.SqlClient.SNI
             {
                 handle.HandleReceiveError(packet);
             }
-            packet?.Dispose();
+            packet?.Release();
         }
 
         /// <summary>
@@ -183,8 +188,6 @@ namespace System.Data.SqlClient.SNI
 
                             if (bytesTaken == 0)
                             {
-                                packet.Dispose();
-                                packet = null;
                                 sniErrorCode = ReceiveAsync(ref packet);
 
                                 if (sniErrorCode == TdsEnums.SNI_SUCCESS_IO_PENDING)
@@ -214,8 +217,6 @@ namespace System.Data.SqlClient.SNI
 
                             if (_dataBytesLeft > 0)
                             {
-                                packet.Dispose();
-                                packet = null;
                                 sniErrorCode = ReceiveAsync(ref packet);
 
                                 if (sniErrorCode == TdsEnums.SNI_SUCCESS_IO_PENDING)
@@ -271,8 +272,6 @@ namespace System.Data.SqlClient.SNI
                 {
                     if (packet.DataLeft == 0)
                     {
-                        packet.Dispose();
-                        packet = null;
                         sniErrorCode = ReceiveAsync(ref packet);
 
                         if (sniErrorCode == TdsEnums.SNI_SUCCESS_IO_PENDING)
