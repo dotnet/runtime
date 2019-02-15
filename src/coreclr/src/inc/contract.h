@@ -239,8 +239,7 @@
 #endif
 
 // Also, we won't enable contracts if this is a DAC build.
-// @ARMTODO: Disable for ARM for now, contracts slow down the debug build far too much
-#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE) && !defined(_TARGET_ARM_)
+#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)
 #define ENABLE_CONTRACTS
 #endif
 

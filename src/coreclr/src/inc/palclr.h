@@ -503,7 +503,7 @@
 #endif
         
 
-#if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(JIT64_BUILD) && !defined(CROSS_COMPILE) && !defined(_TARGET_ARM_) // @ARMTODO: no contracts for speed
+#if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(JIT64_BUILD) && !defined(CROSS_COMPILE) && !defined(DISABLE_CONTRACTS)
 #define PAL_TRY_HANDLER_DBG_BEGIN                                               \
     BOOL ___oldOkayToThrowValue = FALSE;                                        \
     ClrDebugState *___pState = ::GetClrDebugState();                            \
