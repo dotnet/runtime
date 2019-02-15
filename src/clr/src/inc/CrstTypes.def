@@ -491,8 +491,8 @@ End
 
 // Used to synchronize all rejit information stored in a given AppDomain.
 Crst ReJITDomainTable
-    AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController MethodDescBackpatchInfoTracker
-    AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex
+    AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs
+    AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex MethodDescBackpatchInfoTracker
 End
 
 // Used to synchronize all global requests (which may span multiple AppDomains) which add
@@ -701,5 +701,5 @@ Crst COMCallWrapper
 End
 
 Crst MethodDescBackpatchInfoTracker
-    AcquiredBefore FuncPtrStubs
+    AcquiredBefore FuncPtrStubs ThreadStore SystemDomain
 End
