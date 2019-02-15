@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http.HPack;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -26,7 +27,8 @@ namespace System.Net.Http
         private readonly string _host;
         private readonly int _port;
         private readonly Uri _proxyUri;
-
+        internal readonly byte[] _encodedAuthorityHostHeader;
+        
         /// <summary>List of idle connections stored in the pool.</summary>
         private readonly List<CachedConnection> _idleConnections = new List<CachedConnection>();
         /// <summary>The maximum number of connections allowed to be associated with the pool.</summary>
@@ -125,6 +127,21 @@ namespace System.Net.Http
                     break;
             }
 
+            string hostHeader = null;
+            if (_host != null)
+            {
+                // Precalculate ASCII bytes for Host header
+                // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
+                hostHeader =
+                    (_port != (sslHostName == null ? DefaultHttpPort : DefaultHttpsPort)) ?
+                    $"{_host}:{_port}" :
+                    _host;
+
+                // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
+                _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
+                Debug.Assert(Encoding.ASCII.GetString(_hostHeaderValueBytes) == hostHeader);
+            }
+
             if (sslHostName != null)
             {
                 _sslOptionsHttp11 = ConstructSslOptions(poolManager, sslHostName);
@@ -135,21 +152,10 @@ namespace System.Net.Http
                     _sslOptionsHttp2 = ConstructSslOptions(poolManager, sslHostName);
                     _sslOptionsHttp2.ApplicationProtocols = Http2ApplicationProtocols;
                     _sslOptionsHttp2.AllowRenegotiation = false;
+
+                    Debug.Assert(hostHeader != null);
+                    _encodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(StaticTable.Authority, hostHeader);
                 }
-            }
-
-            if (_host != null)
-            {
-                // Precalculate ASCII bytes for Host header
-                // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
-                string hostHeader =
-                    (_port != (sslHostName == null ? DefaultHttpPort : DefaultHttpsPort)) ?
-                    $"{_host}:{_port}" :
-                    _host;
-
-                // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
-                _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
-                Debug.Assert(Encoding.ASCII.GetString(_hostHeaderValueBytes) == hostHeader);
             }
             
             // Set up for PreAuthenticate.  Access to this cache is guarded by a lock on the cache itself.

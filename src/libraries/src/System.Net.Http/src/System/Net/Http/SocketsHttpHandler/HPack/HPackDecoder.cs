@@ -9,7 +9,7 @@ namespace System.Net.Http.HPack
     internal class HPackDecoder
     {
         // Can't use Action<,> because of Span
-        public delegate void HeaderCallback(ReadOnlySpan<byte> headerName, ReadOnlySpan<byte> headerValue);
+        public delegate void HeaderCallback(object state, ReadOnlySpan<byte> headerName, ReadOnlySpan<byte> headerValue);
 
         private enum State
         {
@@ -113,7 +113,7 @@ namespace System.Net.Http.HPack
             _dynamicTable = dynamicTable;
         }
 
-        public void Decode(ReadOnlySpan<byte> data, HeaderCallback onHeader)
+        public void Decode(ReadOnlySpan<byte> data, HeaderCallback onHeader, object onHeaderState)
         {
             for (int i = 0; i < data.Length; i++)
             {
@@ -131,7 +131,7 @@ namespace System.Net.Http.HPack
 
                             if (_integerDecoder.StartDecode((byte)val, IndexedHeaderFieldPrefix))
                             {
-                                OnIndexedHeaderField(_integerDecoder.Value, onHeader);
+                                OnIndexedHeaderField(_integerDecoder.Value, onHeader, onHeaderState);
                             }
                             else
                             {
@@ -215,7 +215,7 @@ namespace System.Net.Http.HPack
                     case State.HeaderFieldIndex:
                         if (_integerDecoder.Decode(b))
                         {
-                            OnIndexedHeaderField(_integerDecoder.Value, onHeader);
+                            OnIndexedHeaderField(_integerDecoder.Value, onHeader, onHeaderState);
                         }
 
                         break;
@@ -285,7 +285,7 @@ namespace System.Net.Http.HPack
                             var headerNameSpan = new ReadOnlySpan<byte>(_headerName, 0, _headerNameLength);
                             var headerValueSpan = new ReadOnlySpan<byte>(_headerValueOctets, 0, _headerValueLength);
 
-                            onHeader(headerNameSpan, headerValueSpan);
+                            onHeader(onHeaderState, headerNameSpan, headerValueSpan);
 
                             if (_index)
                             {
@@ -325,10 +325,10 @@ namespace System.Net.Http.HPack
             }
         }
 
-        private void OnIndexedHeaderField(int index, HeaderCallback onHeader)
+        private void OnIndexedHeaderField(int index, HeaderCallback onHeader, object onHeaderState)
         {
             HeaderField header = GetHeader(index);
-            onHeader(new ReadOnlySpan<byte>(header.Name), new ReadOnlySpan<byte>(header.Value));
+            onHeader(onHeaderState, new ReadOnlySpan<byte>(header.Name), new ReadOnlySpan<byte>(header.Value));
             _state = State.Ready;
         }
 
