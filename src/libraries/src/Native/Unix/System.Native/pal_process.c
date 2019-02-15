@@ -23,9 +23,7 @@
 #if HAVE_PIPE2
 #include <fcntl.h>
 #endif
-#if !HAVE_PIPE2
 #include <pthread.h>
-#endif
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
 #include <sched.h>
@@ -166,7 +164,13 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 #endif
     bool success = true;
     int stdinFds[2] = {-1, -1}, stdoutFds[2] = {-1, -1}, stderrFds[2] = {-1, -1}, waitForChildToExecPipe[2] = {-1, -1};
-    int processId = -1;
+    pid_t processId = -1;
+    int thread_cancel_state;
+    sigset_t signal_set;
+    sigset_t old_signal_set;
+
+    // None of this code can be canceled without leaking handles, so just don't allow it
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
 
     // Validate arguments
     if (NULL == filename || NULL == argv || NULL == envp || NULL == stdinFd || NULL == stdoutFd ||
@@ -233,15 +237,73 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     SystemNative_Pipe(waitForChildToExecPipe, PAL_O_CLOEXEC);
 #endif
 
-    // Fork the child process
-    if ((processId = fork()) == -1)
-    {
-        success = false;
-        goto done;
-    }
+    // The fork child must not be signalled until it calls exec(): our signal handlers do not
+    // handle being raised in the child process correctly
+    sigfillset(&signal_set);
+    pthread_sigmask(SIG_SETMASK, &signal_set, &old_signal_set);
 
-    if (processId == 0) // processId == 0 if this is child process
+#if HAVE_VFORK && !(defined(__APPLE__)) // We don't trust vfork on OS X right now.
+    // This platform has vfork(). vfork() is either a synonym for fork or provides shared memory
+    // semantics. For a one gigabyte process, the expected performance gain of using shared memory
+    // vfork() rather than fork() is 99.5% merely due to avoiding page faults as the kernel does not
+    // need to set all writable pages in the parent process to copy-on-write because the child process
+    // is allowed to write to the parent process memory pages.
+
+    // The thing to remember about shared memory vfork() is the documentation is way out of date.
+    // It does the following things:
+    // * creates a new process in the memory space of the calling process.
+    // * blocks the calling thread (not process!) in an uninterruptable sleep
+    // * sets up the process records so the following happen:
+    //   + execve() replaces the memory space in the child and unblocks the parent
+    //   + process exit by any means unblocks the parent
+    //   + ptrace() makes a security demand against the parent process
+    //   + accessing the terminal with read() or write() fail in system-dependent ways
+    // Due to lack of documentation, setting signal handlers in the vfork() child is a bad idea. We don't
+    // do this, but it's worth pointing out.
+
+    // All platforms that provide shared memory vfork() check the parent process's context when
+    // ptrace() is used on the child, thus making setuid() safe to use after vfork(). The fabled vfork()
+    // security hole is the other way around; if a multithreaded host were to execute setuid()
+    // on another thread while a vfork() child is still pending, bad things are possible; however we
+    // do not do that.
+
+    if ((processId = vfork()) == 0) // processId == 0 if this is child process
+#else
+    if ((processId = fork()) == 0) // processId == 0 if this is child process
+#endif
     {
+        // It turns out that child processes depend on their sigmask being set to something sane rather than mask all.
+        // On the other hand, we have to mask all to avoid our own signal handlers running in the child process, writing
+        // to the pipe, and waking up the handling thread in the parent process. This also avoids third-party code getting
+        // equally confused.
+        // Remove all signals, then restore signal mask.
+        // Since we are in a vfork() child, the only safe signal values are SIG_DFL and SIG_IGN.  See man 3 libthr on BSD.
+        // "The implementation interposes the user-installed signal(3) handlers....to pospone signal delivery to threads
+        // which entered (libthr-internal) critical sections..."  We want to pass SIG_DFL anyway.
+        sigset_t junk_signal_set;
+        struct sigaction sa_default;
+        struct sigaction sa_old;
+        memset(&sa_default, 0, sizeof(sa_default)); // On some architectures, sa_mask is a struct so assigning zero to it doesn't compile
+        sa_default.sa_handler = SIG_DFL;
+        for (int sig = 1; sig < NSIG; ++sig)
+        {
+            if (sig == SIGKILL || sig == SIGSTOP)
+            {
+                continue;
+            }
+            if (!sigaction(sig, NULL, &sa_old))
+            {
+                void (*oldhandler)(int) = (sa_old.sa_flags & SA_SIGINFO) ? (void (*)(int))sa_old.sa_sigaction : sa_old.sa_handler;
+                if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
+                {
+                    // It has a custom handler, put the default handler back.
+                    // We check first to preserve flags on default handlers.
+                    sigaction(sig, &sa_default, NULL);
+                }
+            }
+        }
+        pthread_sigmask(SIG_SETMASK, &old_signal_set, &junk_signal_set); // Not all architectures allow NULL here
+
         // For any redirections that should happen, dup the pipe descriptors onto stdin/out/err.
         // We don't need to explicitly close out the old pipe descriptors as they will be closed on the 'execve' call.
         if ((redirectStdin && Dup2WithInterruptedRetry(stdinFds[READ_END_OF_PIPE], STDIN_FILENO) == -1) ||
@@ -273,6 +335,16 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         // Finally, execute the new process.  execve will not return if it's successful.
         execve(filename, argv, envp);
         ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno); // execve failed
+    }
+
+    // Restore signal mask in the parent process immediately after fork() or vfork() call
+    pthread_sigmask(SIG_SETMASK, &old_signal_set, &signal_set);
+
+    if (processId < 0)
+    {
+        // failed
+        success = false;
+        goto done;
     }
 
     // This is the parent process. processId == pid of the child
@@ -336,10 +408,12 @@ done:;
         *childPid = -1;
 
         errno = priorErrno;
-        return -1;
     }
 
-    return 0;
+    // Restore thread cancel state
+    pthread_setcancelstate(thread_cancel_state, &thread_cancel_state);
+
+    return success ? 0 : -1;
 }
 
 FILE* SystemNative_POpen(const char* command, const char* type)
