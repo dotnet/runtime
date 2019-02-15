@@ -204,11 +204,11 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(in this, other);
 
-            bool SoftwareFallback(in Vector128<T> x, Vector128<T> y)
+            static bool SoftwareFallback(in Vector128<T> vector, Vector128<T> other)
             {
                 for (int i = 0; i < Count; i++)
                 {
-                    if (!((IEquatable<T>)(x.GetElement(i))).Equals(y.GetElement(i)))
+                    if (!((IEquatable<T>)(vector.GetElement(i))).Equals(other.GetElement(i)))
                     {
                         return false;
                     }
