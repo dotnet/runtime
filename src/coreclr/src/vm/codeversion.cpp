@@ -2187,6 +2187,8 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(MethodDesc* pMethodD
             pCode = pMethodDesc->PrepareCode(activeVersion);
         }
 
+        MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder(pMethodDesc->MayHaveEntryPointSlotsToBackpatch());
+
         // suspend in preparation for publishing if needed
         if (fEESuspend)
         {
