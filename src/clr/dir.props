@@ -4,6 +4,11 @@
 
   <Import Project="dir.common.props" />
 
+  <PropertyGroup>
+    <LangVersion>8.0</LangVersion>
+    <UseSharedCompilation>true</UseSharedCompilation>
+  </PropertyGroup>
+  
   <!--
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
   -->
@@ -24,19 +29,13 @@
     <MinorVersion>6</MinorVersion>
   </PropertyGroup>
 
-  <!-- Build Tools Versions -->
-  <PropertyGroup>
-    <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
-    <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
-  </PropertyGroup>
-
   <!--
      Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
      as well as running the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
      -->
   <PropertyGroup>
     <RunningOnCore>false</RunningOnCore>
-    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'Core'">true</RunningOnCore>
+    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'core'">true</RunningOnCore>
     <BuildToolsTargetsDesktop>false</BuildToolsTargetsDesktop>
     <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
     <BuildToolsTargets45>$(BuildToolsTargetsDesktop)</BuildToolsTargets45>
@@ -145,10 +144,10 @@
 
     <ProjectUrl>https://dot.net</ProjectUrl>
 
-    <!-- On Windows, MSbuild still runs against Desktop FX while it runs on .NET Core on non-Windows. this requires
+    <!-- On Windows, MSbuild can still run against Desktop FX while it runs on .NET Core on non-Windows. this requires
          pulling in different packaging dependencies.
      -->
-    <PackagingTaskDir Condition="'$(TargetsWindows)' == 'true'">$(ToolsDir)net46/</PackagingTaskDir>
+    <PackagingTaskDir Condition="'$(MSBuildRuntimeType)' != 'core'">$(ToolsDir)net46/</PackagingTaskDir>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
@@ -187,6 +186,5 @@
   </ItemGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'!='true' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false' and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'=='true' and Exists('$(RoslynPropsFile)') and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
+  <Import Project="$(RoslynPropsFile)" />
 </Project>

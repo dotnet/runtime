@@ -14,7 +14,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "></PropertyGroup>
   <PropertyGroup>
-    <LangVersion>latest</LangVersion>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

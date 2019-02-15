@@ -40,7 +40,7 @@ FOR /f "tokens=1*" %%x IN ("%*") DO (
 
 :ArgsDone
 
-@call %~dp0msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false /flp:v=detailed;LogFile=sync.log %__MSBuildArgs%
+@call %~dp0dotnet.cmd msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false /flp:v=detailed;LogFile=sync.log %__MSBuildArgs%
 @exit /b %ERRORLEVEL%
 
 :Usage

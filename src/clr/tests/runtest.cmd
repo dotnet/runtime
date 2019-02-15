@@ -35,6 +35,8 @@ set "__ProjectFilesDir=%__ProjectDir%"
 set "__RootBinDir=%__ProjectDir%\..\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
+set __ToolsDir=%__ProjectDir%\..\Tools
+set "DotNetCli=%__ToolsDir%\dotnetcli\dotnet.exe"
 
 set __Sequential=
 set __msbuildExtraArgs=
@@ -241,29 +243,18 @@ exit /b %ERRORLEVEL%
 
 :: Set up msbuild and tools environment. Check if msbuild and VS exist.
 
-set _msbuildexe=
 if /i "%__VSVersion%" == "vs2019" (
     set "__VSToolsRoot=%VS160COMNTOOLS%"
     set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
-
-    set _msbuildexe="%VS160COMNTOOLS%\..\..\MSBuild\Current\Bin\MSBuild.exe"
 ) else if /i "%__VSVersion%" == "vs2017" (
     set "__VSToolsRoot=%VS150COMNTOOLS%"
     set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
-
-    set _msbuildexe="%VS150COMNTOOLS%\..\..\MSBuild\15.0\Bin\MSBuild.exe"
 )
 
 :: Does VS really exist?
 if not exist "%__VSToolsRoot%\..\IDE\devenv.exe"      goto NoVS
 if not exist "%__VCToolsRoot%\vcvarsall.bat"          goto NoVS
 if not exist "%__VSToolsRoot%\VsDevCmd.bat"           goto NoVS
-
-:: Does MSBuild really exist?
-if not exist %_msbuildexe% (
-    echo %__MsgPrefix%Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
-    exit /b 1
-)
 
 if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
@@ -426,8 +417,6 @@ REM ============================================================================
 :RunCoreFXTests
 
 set _CoreFXTestHost=%XunitTestBinBase%\testhost
-set __ToolsDir=%__ProjectDir%\..\Tools
-set "DotNetCli=%__ToolsDir%\dotnetcli\dotnet.exe"
 
 set _RootCoreFXTestPath=%__TestWorkingDir%\CoreFX
 set _CoreFXTestUtilitiesOutputPath=%_RootCoreFXTestPath%\CoreFXTestUtilities
@@ -591,10 +580,10 @@ set __msbuildLogArgs=^
 set __msbuildArgs=%* %__msbuildCommonArgs% %__msbuildLogArgs%
 
 @REM The next line will overwrite the existing log file, if any.
-echo %__MsgPrefix%%_msbuildexe% %__msbuildArgs%
-echo Invoking: %_msbuildexe% %__msbuildArgs% > "%__BuildLog%"
+echo %__MsgPrefix%"%DotNetCli%" msbuild %__msbuildArgs%
+echo Invoking: "%DotNetCli%" msbuild %__msbuildArgs% > "%__BuildLog%"
 
-%_msbuildexe% %__msbuildArgs%
+call "%DotNetCli%" msbuild %__msbuildArgs%
 if errorlevel 1 (
     echo %__MsgPrefix%Error: msbuild failed. Refer to the log files for details:
     echo     %__BuildLog%
@@ -687,14 +676,14 @@ echo %__MsgPrefix%Created the Test Host layout with all dependencies in %_CoreFX
 
 REM Publish and call the CoreFX test helper projects - should this be integrated into runtest.proj?
 REM Build Helper project
-set NEXTCMD="%DotNetCli%" msbuild /t:Restore "%_CoreFXTestSetupUtility%"
+set NEXTCMD=call :msbuild /t:Restore "%_CoreFXTestSetupUtility%"
 echo !NEXTCMD!
 !NEXTCMD!
 if errorlevel 1 (
     exit /b 1
 )
 
-set NEXTCMD=call "%DotNetCli%" msbuild "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:OutputPath=%_CoreFXTestUtilitiesOutputPath%" "%_CoreFXTestSetupUtility%"
+set NEXTCMD=call :msbuild "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:OutputPath=%_CoreFXTestUtilitiesOutputPath%" "%_CoreFXTestSetupUtility%"
 echo !NEXTCMD!
 !NEXTCMD!
 if errorlevel 1 (
