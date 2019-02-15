@@ -8,14 +8,12 @@ namespace System.Reflection.Emit
     {
         public static readonly EventToken Empty = new EventToken();
 
-        private int _token;
-
         internal EventToken(int eventToken)
         {
-            _token = eventToken;
+            Token = eventToken;
         }
 
-        public int Token => _token;
+        public int Token { get; }
 
         public override int GetHashCode() => Token;
 
