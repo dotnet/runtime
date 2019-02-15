@@ -306,18 +306,18 @@ namespace System
 
             return SoftwareFallback(value);
 
-            int SoftwareFallback(uint v)
+            static int SoftwareFallback(uint value)
             {
                 const uint c1 = 0x_55555555u;
                 const uint c2 = 0x_33333333u;
                 const uint c3 = 0x_0F0F0F0Fu;
                 const uint c4 = 0x_01010101u;
 
-                v = v - ((v >> 1) & c1);
-                v = (v & c2) + ((v >> 2) & c2);
-                v = (((v + (v >> 4)) & c3) * c4) >> 24;
+                value = value - ((value >> 1) & c1);
+                value = (value & c2) + ((value >> 2) & c2);
+                value = (((value + (value >> 4)) & c3) * c4) >> 24;
 
-                return (int)v;
+                return (int)value;
             }
         }
 
@@ -340,18 +340,18 @@ namespace System
 #else
             return SoftwareFallback(value);
 
-            int SoftwareFallback(ulong v) 
+            static int SoftwareFallback(ulong value) 
             {
                 const ulong c1 = 0x_55555555_55555555ul;
                 const ulong c2 = 0x_33333333_33333333ul;
                 const ulong c3 = 0x_0F0F0F0F_0F0F0F0Ful;
                 const ulong c4 = 0x_01010101_01010101ul;
 
-                v = v - ((v >> 1) & c1);
-                v = (v & c2) + ((v >> 2) & c2);
-                v = (((v + (v >> 4)) & c3) * c4) >> 56;
+                value = value - ((value >> 1) & c1);
+                value = (value & c2) + ((value >> 2) & c2);
+                value = (((value + (value >> 4)) & c3) * c4) >> 56;
 
-                return (int)v;
+                return (int)value;
             }
 #endif
         }
