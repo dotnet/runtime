@@ -4608,7 +4608,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GenTree* const index = node->Index();
 
     const regNumber baseReg  = genConsumeReg(base);
-    const regNumber indexReg = genConsumeReg(index);
+    regNumber       indexReg = genConsumeReg(index);
     const regNumber dstReg   = node->gtRegNum;
 
     // NOTE: `genConsumeReg` marks the consumed register as not a GC pointer, as it assumes that the input registers
@@ -4620,6 +4620,9 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     assert(varTypeIsIntegral(index->TypeGet()));
 
     regNumber tmpReg = REG_NA;
+#ifdef _TARGET_64BIT_
+    tmpReg = node->GetSingleTempReg();
+#endif
 
     // Generate the bounds check if necessary.
     if ((node->gtFlags & GTF_INX_RNGCHK) != 0)
@@ -4629,7 +4632,6 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // is a native int on a 64-bit platform, we will need to widen the array length and then compare.
         if (index->TypeGet() == TYP_I_IMPL)
         {
-            tmpReg = node->GetSingleTempReg();
             getEmitter()->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, baseReg, static_cast<int>(node->gtLenOffset));
             getEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, indexReg, tmpReg);
         }
@@ -4646,9 +4648,8 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     if (index->TypeGet() != TYP_I_IMPL)
     {
         // LEA needs 64-bit operands so we need to widen the index if it's TYP_INT.
-        // Since it's TYP_INT the upper 32 bits aren't used so we should be able
-        // to widen in place, without needing a temporary register.
-        getEmitter()->emitIns_R_R(INS_mov, EA_4BYTE, indexReg, indexReg);
+        getEmitter()->emitIns_R_R(INS_mov, EA_4BYTE, tmpReg, indexReg);
+        indexReg = tmpReg;
     }
 #endif // _TARGET_64BIT_
 
@@ -4665,22 +4666,16 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             break;
 
         default:
-            if (tmpReg == REG_NA)
-            {
-                tmpReg = node->GetSingleTempReg();
-            }
 #ifdef _TARGET_64BIT_
-            if (scale > INT32_MAX)
-            {
-                genSetRegToIcon(tmpReg, static_cast<ssize_t>(scale), TYP_INT);
-                getEmitter()->emitIns_R_R(INS_imul, EA_PTRSIZE, tmpReg, indexReg);
-            }
-            else
-#endif // _TARGET_64BIT_
-            {
-                getEmitter()->emitIns_R_I(emitter::inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,
-                                          static_cast<ssize_t>(scale));
-            }
+            // IMUL treats its immediate operand as signed so scale can't be larger than INT32_MAX.
+            // The VM doesn't allow such large array elements but let's be sure.
+            noway_assert(scale <= INT32_MAX);
+#else  // !_TARGET_64BIT_
+            tmpReg = node->GetSingleTempReg();
+#endif // !_TARGET_64BIT_
+
+            getEmitter()->emitIns_R_I(emitter::inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,
+                                      static_cast<ssize_t>(scale));
             scale = 1;
             break;
     }
