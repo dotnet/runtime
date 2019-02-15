@@ -3199,6 +3199,13 @@ CORINFO_CLASS_HANDLE ZapInfo::mergeClasses(
     return m_pEEJitInfo->mergeClasses(cls1, cls2);
 }
 
+BOOL ZapInfo::isMoreSpecificType(
+                CORINFO_CLASS_HANDLE cls1,
+                CORINFO_CLASS_HANDLE cls2)
+{
+    return m_pEEJitInfo->isMoreSpecificType(cls1, cls2);
+}
+
 BOOL ZapInfo::shouldEnforceCallvirtRestriction(
         CORINFO_MODULE_HANDLE scopeHnd)
 {

@@ -776,6 +776,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::mergeClasses(CORINFO_CLASS_HANDLE cls1, C
     return original_ICorJitInfo->mergeClasses(cls1, cls2);
 }
 
+// Returns true if cls2 is known to be a more specific type than cls1.
+BOOL interceptor_ICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+{
+    mcs->AddCall("isMoreSpecificType");
+    return original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
+}
+
 // Given a class handle, returns the Parent type.
 // For COMObjectType, it returns Class Handle of System.Object.
 // Returns 0 if System.Object is passed in.

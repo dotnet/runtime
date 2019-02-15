@@ -826,11 +826,18 @@ TypeCompareState MyICJI::compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORI
     return jitInstance->mc->repCompareTypesForEquality(cls1, cls2);
 }
 
-// returns is the intersection of cls1 and cls2.
+// returns the intersection of cls1 and cls2.
 CORINFO_CLASS_HANDLE MyICJI::mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
     jitInstance->mc->cr->AddCall("mergeClasses");
     return jitInstance->mc->repMergeClasses(cls1, cls2);
+}
+
+// Returns true if cls2 is known to be a more specific type than cls1
+BOOL MyICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+{
+    jitInstance->mc->cr->AddCall("isMoreSpecificType");
+    return jitInstance->mc->repIsMoreSpecificType(cls1, cls2);
 }
 
 // Given a class handle, returns the Parent type.

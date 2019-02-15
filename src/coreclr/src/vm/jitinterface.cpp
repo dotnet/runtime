@@ -4706,7 +4706,7 @@ TypeCompareState CEEInfo::compareTypesForEquality(
 }
 
 /*********************************************************************/
-// returns is the intersection of cls1 and cls2.
+// returns the intersection of cls1 and cls2.
 CORINFO_CLASS_HANDLE CEEInfo::mergeClasses(
         CORINFO_CLASS_HANDLE        cls1,
         CORINFO_CLASS_HANDLE        cls2)
@@ -4770,6 +4770,68 @@ CORINFO_CLASS_HANDLE CEEInfo::mergeClasses(
     }
 #endif
     result = CORINFO_CLASS_HANDLE(merged.AsPtr());
+
+    EE_TO_JIT_TRANSITION();
+    return result;
+}
+
+/*********************************************************************/
+static BOOL isMoreSpecificTypeHelper(
+       CORINFO_CLASS_HANDLE        cls1,
+       CORINFO_CLASS_HANDLE        cls2)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeHandle hnd1 = TypeHandle(cls1);
+    TypeHandle hnd2 = TypeHandle(cls2);
+
+    // We can't really reason about equivalent types. Just
+    // assume the new type is not more specific.
+    if (hnd1.HasTypeEquivalence() || hnd2.HasTypeEquivalence())
+    {
+        return FALSE;
+    }
+
+    // If we have a mixture of shared and unshared types,
+    // consider the unshared type as more specific.
+    BOOL isHnd1CanonSubtype = hnd1.IsCanonicalSubtype();
+    BOOL isHnd2CanonSubtype = hnd2.IsCanonicalSubtype();
+    if (isHnd1CanonSubtype != isHnd2CanonSubtype)
+    {
+        // Only one of hnd1 and hnd2 is shared.
+        // hdn2 is more specific if hnd1 is the shared type.
+        return isHnd1CanonSubtype;
+    }
+
+    // Otherwise both types are either shared or not shared.
+    // Look for a common parent type.
+    TypeHandle merged = TypeHandle::MergeTypeHandlesToCommonParent(hnd1, hnd2);
+
+    // If the common parent is hnd1, then hnd2 is more specific.
+    return merged == hnd1;
+}
+
+// Returns true if cls2 is known to be a more specific type
+// than cls1 (a subtype or more restrictive shared type).
+BOOL CEEInfo::isMoreSpecificType(
+        CORINFO_CLASS_HANDLE        cls1,
+        CORINFO_CLASS_HANDLE        cls2)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    BOOL result = FALSE;
+
+    JIT_TO_EE_TRANSITION();
+
+    result = isMoreSpecificTypeHelper(cls1, cls2);
 
     EE_TO_JIT_TRANSITION();
     return result;

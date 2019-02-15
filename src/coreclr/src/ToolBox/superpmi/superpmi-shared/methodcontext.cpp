@@ -5318,6 +5318,41 @@ CORINFO_CLASS_HANDLE MethodContext::repMergeClasses(CORINFO_CLASS_HANDLE cls1, C
     return (CORINFO_CLASS_HANDLE)value;
 }
 
+void MethodContext::recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, BOOL result)
+{
+    if (IsMoreSpecificType == nullptr)
+        IsMoreSpecificType = new LightWeightMap<DLDL, DWORD>();
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+
+    key.A = (DWORDLONG)cls1;
+    key.B = (DWORDLONG)cls2;
+
+    IsMoreSpecificType->Add(key, (DWORD)result);
+}
+void MethodContext::dmpIsMoreSpecificType(DLDL key, DWORD value)
+{
+    printf("IsMoreSpecificType key cls1-%016llX cls2-%016llX, value %u", key.A, key.B, value);
+}
+BOOL MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+{
+    DLDL key;
+    ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                    // out padding too
+    DWORD value;
+
+    key.A = (DWORDLONG)cls1;
+    key.B = (DWORDLONG)cls2;
+
+    AssertCodeMsg(IsMoreSpecificType->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX", (DWORDLONG)cls1,
+                  (DWORDLONG)cls2);
+
+    value = IsMoreSpecificType->Get(key);
+
+    return (BOOL)value;
+}
+
 void MethodContext::recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result)
 {
     if (GetCookieForPInvokeCalliSig == nullptr)
