@@ -6595,7 +6595,7 @@ namespace System.Data.SqlClient
             SniContext outerContext = _physicalStateObj.SniContext;
             _physicalStateObj.SniContext = SniContext.Snix_ProcessSspi;
             // allocate received buffer based on length from SSPI message
-            byte[] receivedBuff = new byte[receivedLength];
+            byte[] receivedBuff = ArrayPool<byte>.Shared.Rent(receivedLength);
 
             // read SSPI data received from server
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
@@ -6609,13 +6609,13 @@ namespace System.Data.SqlClient
             uint sendLength = s_maxSSPILength;
 
             // make call for SSPI data
-
             SSPIData(receivedBuff, (uint)receivedLength, ref sendBuff, ref sendLength);
 
             // DO NOT SEND LENGTH - TDS DOC INCORRECT!  JUST SEND SSPI DATA!
             _physicalStateObj.WriteByteArray(sendBuff, (int)sendLength, 0);
 
             ArrayPool<byte>.Shared.Return(rentedSendBuff, clearArray: true);
+            ArrayPool<byte>.Shared.Return(receivedBuff, clearArray: true);
 
             // set message type so server knows its a SSPI response
             _physicalStateObj._outputMessageType = TdsEnums.MT_SSPI;
