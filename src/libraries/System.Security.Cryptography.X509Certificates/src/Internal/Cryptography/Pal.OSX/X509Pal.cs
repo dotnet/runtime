@@ -143,12 +143,22 @@ namespace Internal.Cryptography.Pal
 
             public X509ContentType GetCertContentType(byte[] rawData)
             {
+                const int errSecUnknownFormat = -25257;
                 if (rawData == null || rawData.Length == 0)
                 {
-                    return X509ContentType.Unknown;
+                    // Throw to match Windows and Unix behavior.
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
                 }
                 
-                return Interop.AppleCrypto.X509GetContentType(rawData, rawData.Length);
+                X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData, rawData.Length);
+
+                if (contentType == X509ContentType.Unknown)
+                {
+                    // Throw to match Windows and Unix behavior.
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
+                }
+
+                return contentType;
             }
 
             public X509ContentType GetCertContentType(string fileName)
