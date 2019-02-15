@@ -2555,6 +2555,10 @@ void SystemDomain::LoadBaseSystemClasses()
         TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_U1))).AsArray()->GetMethodTable();
 
 #ifndef CROSSGEN_COMPILE
+    CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
+#endif
+
+#ifndef CROSSGEN_COMPILE
     ECall::PopulateManagedStringConstructors();
 #endif // CROSSGEN_COMPILE
 
@@ -3849,13 +3853,6 @@ void AppDomain::Terminate()
         m_pRCWRefCache = NULL;
     }
 #endif // FEATURE_COMINTEROP
-
-#ifndef CROSSGEN_COMPILE
-    // Recorded entry point slots may point into the virtual call stub manager's heaps, so clear it first
-    GetLoaderAllocator()
-        ->GetMethodDescBackpatchInfoTracker()
-        ->ClearDependencyMethodDescEntryPointSlots(GetLoaderAllocator());
-#endif
 
     if (!IsAtProcessExit())
     {

@@ -1964,6 +1964,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
             return pCode;
         }
 
+        _ASSERTE(!MayHaveEntryPointSlotsToBackpatch()); // This path doesn't lock the MethodDescBackpatchTracker as it should only
+                                                        // happen for jump-stampable or non-versionable methods
         SetCodeEntryPoint(pCode);
     }
     else

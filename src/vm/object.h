@@ -851,6 +851,7 @@ typedef Array<U2>   U2Array;
 typedef Array<WCHAR>   CHARArray;
 typedef Array<U4>   U4Array;
 typedef Array<U8>   U8Array;
+typedef Array<UPTR> UPTRArray;
 typedef PtrArray    PTRArray;  
 
 typedef DPTR(I1Array)   PTR_I1Array;
@@ -865,6 +866,7 @@ typedef DPTR(U2Array)   PTR_U2Array;
 typedef DPTR(CHARArray) PTR_CHARArray;
 typedef DPTR(U4Array)   PTR_U4Array;
 typedef DPTR(U8Array)   PTR_U8Array;
+typedef DPTR(UPTRArray) PTR_UPTRArray;
 typedef DPTR(PTRArray)  PTR_PTRArray;
 
 class StringObject;
@@ -882,6 +884,7 @@ typedef REF<BOOLArray>  BOOLARRAYREF;
 typedef REF<U2Array>    U2ARRAYREF;
 typedef REF<U4Array>    U4ARRAYREF;
 typedef REF<U8Array>    U8ARRAYREF;
+typedef REF<UPTRArray>  UPTRARRAYREF;
 typedef REF<CHARArray>  CHARARRAYREF;
 typedef REF<PTRArray>   PTRARRAYREF;  // Warning: Use PtrArray only for single dimensional arrays, not multidim arrays.
 typedef REF<StringObject> STRINGREF;
@@ -900,6 +903,7 @@ typedef PTR_BOOLArray   BOOLARRAYREF;
 typedef PTR_U2Array     U2ARRAYREF;
 typedef PTR_U4Array     U4ARRAYREF;
 typedef PTR_U8Array     U8ARRAYREF;
+typedef PTR_UPTRArray   UPTRARRAYREF;
 typedef PTR_CHARArray   CHARARRAYREF;
 typedef PTR_PTRArray    PTRARRAYREF;  // Warning: Use PtrArray only for single dimensional arrays, not multidim arrays.
 typedef PTR_StringObject STRINGREF;
@@ -2795,5 +2799,134 @@ typedef REF<ExceptionObject> EXCEPTIONREF;
 #else // USE_CHECKED_OBJECTREFS
 typedef PTR_ExceptionObject EXCEPTIONREF;
 #endif // USE_CHECKED_OBJECTREFS
+
+class GCHeapHashObject : public Object
+{
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
+    friend class GCHeap;
+    friend class JIT_TrialAlloc;
+    friend class CheckAsmOffsets;
+    friend class COMString;
+    friend class MscorlibBinder;
+
+    private:
+    BASEARRAYREF _data;
+    INT32 _count;
+    INT32 _deletedCount;
+
+    public:
+    INT32 GetCount() { LIMITED_METHOD_CONTRACT; return _count; }
+    void IncrementCount(bool replacingDeletedItem)
+    {
+        LIMITED_METHOD_CONTRACT; 
+        ++_count;
+        if (replacingDeletedItem)
+            --_deletedCount;
+    }
+
+    void DecrementCount(bool deletingItem)
+    {
+        LIMITED_METHOD_CONTRACT;
+        --_count;
+        if (deletingItem)
+            ++_deletedCount;
+    }
+    INT32 GetDeletedCount() { LIMITED_METHOD_CONTRACT; return _deletedCount; }
+    void SetDeletedCountToZero() { LIMITED_METHOD_CONTRACT; _deletedCount = 0; }
+    INT32 GetCapacity() { LIMITED_METHOD_CONTRACT; if (_data == NULL) return 0; else return (_data->GetNumComponents()); }
+    BASEARRAYREF GetData() { LIMITED_METHOD_CONTRACT; return _data; }
+
+    void SetTable(BASEARRAYREF data)
+    {
+        STATIC_CONTRACT_NOTHROW;
+        STATIC_CONTRACT_GC_NOTRIGGER;
+        STATIC_CONTRACT_MODE_COOPERATIVE;
+
+        SetObjectReference((OBJECTREF*)&_data, (OBJECTREF)data, GetAppDomain());
+    }
+
+    protected:
+    GCHeapHashObject() {LIMITED_METHOD_CONTRACT; }
+   ~GCHeapHashObject() {LIMITED_METHOD_CONTRACT; }
+};
+
+typedef DPTR(GCHeapHashObject)  PTR_GCHeapHashObject;
+
+#ifdef USE_CHECKED_OBJECTREFS
+typedef REF<GCHeapHashObject> GCHEAPHASHOBJECTREF;
+#else   // USE_CHECKED_OBJECTREFS
+typedef PTR_GCHeapHashObject GCHEAPHASHOBJECTREF;
+#endif // USE_CHECKED_OBJECTREFS
+
+class LAHashDependentHashTrackerObject : public Object
+{
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
+    friend class CheckAsmOffsets;
+    friend class MscorlibBinder;
+
+    private:
+    OBJECTHANDLE _dependentHandle;
+    LoaderAllocator* _loaderAllocator;
+
+    public:
+    bool IsLoaderAllocatorLive();
+    bool IsTrackerFor(LoaderAllocator *pLoaderAllocator)
+    {
+        if (pLoaderAllocator != _loaderAllocator)
+            return false;
+        
+        return IsLoaderAllocatorLive();
+    }
+
+    void GetDependentAndLoaderAllocator(OBJECTREF *pLoaderAllocatorRef, GCHEAPHASHOBJECTREF *pGCHeapHash);
+
+    // Be careful with this. This isn't safe to use unless something is keeping the LoaderAllocator live, or there is no intention to dereference this pointer
+    LoaderAllocator* GetLoaderAllocatorUnsafe()
+    {
+        return _loaderAllocator;
+    }
+
+    void Init(OBJECTHANDLE dependentHandle, LoaderAllocator* loaderAllocator)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _dependentHandle = dependentHandle;
+        _loaderAllocator = loaderAllocator;
+    }
+};
+
+class LAHashKeyToTrackersObject : public Object
+{
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
+    friend class CheckAsmOffsets;
+    friend class MscorlibBinder;
+
+    public:
+    // _trackerOrTrackerSet is either a reference to a LAHashDependentHashTracker, or to a GCHeapHash of LAHashDependentHashTracker objects.
+    OBJECTREF _trackerOrTrackerSet;
+    // _laLocalKeyValueStore holds an object that represents a Key value (which must always be valid for the lifetime of the 
+    // CrossLoaderAllocatorHeapHash, and the values which must also be valid for that entire lifetime. When a value might
+    // have a shorter lifetime it is accessed through the _trackerOrTrackerSet variable, which allows access to hashtables which
+    // are associated with that remote loaderallocator through a dependent handle, so that lifetime can be managed.
+    OBJECTREF _laLocalKeyValueStore;
+};
+
+typedef DPTR(LAHashDependentHashTrackerObject)  PTR_LAHashDependentHashTrackerObject;
+typedef DPTR(LAHashKeyToTrackersObject) PTR_LAHashKeyToTrackersObject;
+
+
+#ifdef USE_CHECKED_OBJECTREFS
+typedef REF<LAHashDependentHashTrackerObject> LAHASHDEPENDENTHASHTRACKERREF;
+typedef REF<LAHashKeyToTrackersObject> LAHASHKEYTOTRACKERSREF;
+#else   // USE_CHECKED_OBJECTREFS
+typedef PTR_LAHashDependentHashTrackerObject LAHASHDEPENDENTHASHTRACKERREF;
+typedef PTR_LAHashKeyToTrackersObject LAHASHKEYTOTRACKERSREF;
+#endif // USE_CHECKED_OBJECTREFS
+
 
 #endif // _OBJECT_H_

@@ -505,6 +505,7 @@ void TieredCompilationManager::ResumeCountingCalls(MethodDesc* pMethodDesc)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != nullptr);
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder(pMethodDesc->MayHaveEntryPointSlotsToBackpatch());
 
     EX_TRY
     {
@@ -718,6 +719,8 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     // code version will activate then.
     ILCodeVersion ilParent;
     HRESULT hr = S_OK;
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder;
+
     {
         // As long as we are exclusively using precode publishing for tiered compilation
         // methods this first attempt should succeed

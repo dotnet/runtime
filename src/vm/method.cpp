@@ -4864,25 +4864,8 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     // current, entry point until another entry point change, which may never happen.
     _ASSERTE(currentEntryPoint == GetEntryPointToBackpatch_Locked());
 
-    MethodDescBackpatchInfo *backpatchInfo =
-        mdLoaderAllocator->GetMethodDescBackpatchInfoTracker()->GetOrAddBackpatchInfo_Locked(this);
-    if (slotLoaderAllocator == mdLoaderAllocator)
-    {
-        // Entry point slots to backpatch are recorded in the backpatch info
-        backpatchInfo->GetSlots()->AddSlot_Locked(slot, slotType);
-    }
-    else
-    {
-        // Register the slot's loader allocator with the MethodDesc's backpatch info. Entry point slots to backpatch are
-        // recorded in the slot's LoaderAllocator.
-        backpatchInfo->AddDependentLoaderAllocator_Locked(slotLoaderAllocator);
-        slotLoaderAllocator
-            ->GetMethodDescBackpatchInfoTracker()
-            ->GetOrAddDependencyMethodDescEntryPointSlots_Locked(this)
-            ->AddSlot_Locked(slot, slotType);
-    }
-
-    EntryPointSlots::Backpatch_Locked(slot, slotType, currentEntryPoint);
+    MethodDescBackpatchInfoTracker *backpatchTracker = mdLoaderAllocator->GetMethodDescBackpatchInfoTracker();
+    backpatchTracker->AddSlotAndPatch_Locked(this, slotLoaderAllocator, slot, slotType, currentEntryPoint);
 }
 
 void MethodDesc::BackpatchEntryPointSlots(PCODE entryPoint, bool isPrestubEntryPoint)
@@ -4891,10 +4874,10 @@ void MethodDesc::BackpatchEntryPointSlots(PCODE entryPoint, bool isPrestubEntryP
     _ASSERTE(entryPoint != NULL);
     _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
     _ASSERTE(isPrestubEntryPoint == (entryPoint == GetPrestubEntryPointToBackpatch()));
+    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
 
     LoaderAllocator *mdLoaderAllocator = GetLoaderAllocator();
     MethodDescBackpatchInfoTracker *backpatchInfoTracker = mdLoaderAllocator->GetMethodDescBackpatchInfoTracker();
-    MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder;
 
     // Get the entry point to backpatch inside the lock to synchronize with backpatching in MethodDesc::DoBackpatch()
     if (GetEntryPointToBackpatch_Locked() == entryPoint)
@@ -4923,29 +4906,7 @@ void MethodDesc::BackpatchEntryPointSlots(PCODE entryPoint, bool isPrestubEntryP
         }
     }
 
-    MethodDescBackpatchInfo *backpatchInfo = backpatchInfoTracker->GetBackpatchInfo_Locked(this);
-    if (backpatchInfo != nullptr)
-    {
-        // Backpatch slots from the same loader allocator
-        backpatchInfo->GetSlots()->Backpatch_Locked(entryPoint);
-
-        // Backpatch slots from dependent loader allocators
-        backpatchInfo->ForEachDependentLoaderAllocator_Locked(
-            [&](LoaderAllocator *slotLoaderAllocator) // the loader allocator from which the slot's memory is allocated
-        {
-            _ASSERTE(slotLoaderAllocator != nullptr);
-            _ASSERTE(slotLoaderAllocator != mdLoaderAllocator);
-
-            EntryPointSlots *slotsToBackpatch =
-                slotLoaderAllocator
-                ->GetMethodDescBackpatchInfoTracker()
-                ->GetDependencyMethodDescEntryPointSlots_Locked(this);
-            if (slotsToBackpatch != nullptr)
-            {
-                slotsToBackpatch->Backpatch_Locked(entryPoint);
-            }
-        });
-    }
+    backpatchInfoTracker->Backpatch_Locked(this, entryPoint);
 
     // Set the entry point to backpatch inside the lock to synchronize with backpatching in MethodDesc::DoBackpatch(), and set
     // it last in case there are exceptions above, as setting the entry point indicates that all recorded slots have been
