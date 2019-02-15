@@ -297,6 +297,12 @@
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>ProductionCode\System\Net\Http\HttpHandlerDefaults.cs</Link>
     </Compile>
