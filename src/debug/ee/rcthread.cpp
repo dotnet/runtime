@@ -797,46 +797,6 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#ifdef _DEBUG
-// Tracking to ensure that we don't call New() for the normal (non interop-safe heap)
-// on the helper thread.  We also can't do a normal allocation when we have hard
-// suspended any other thread (since it could hold the OS heap lock).
-
-// TODO: this probably belongs in the EE itself, not here in the debugger stuff.
-
-void AssertAllocationAllowed()
-{
-#ifdef USE_INTEROPSAFE_HEAP
-    // Don't forget to preserve error status!
-    DWORD err = GetLastError();
-
-    // We can mark certain
-    if (g_DbgSuppressAllocationAsserts == 0)
-    {
-
-        // if we have hard suspended any threads.  We want to assert as it could cause deadlock
-        // since those suspended threads may hold the OS heap lock
-        if (g_fEEStarted) {
-            _ASSERTE (!EEAllocationDisallowed());
-        }
-
-        // Can't call IsDbgHelperSpecialThread() here b/c that changes program state.
-        // So we use our
-        if (DebuggerRCThread::s_DbgHelperThreadId.IsCurrentThread())
-        {
-            // In case assert allocates, bump up the 'OK' counter to avoid an infinite recursion.
-            SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-
-            _ASSERTE(false || !"New called on Helper Thread");
-
-        }
-    }
-    SetLastError(err);
-#endif
-}
-#endif
-
-
 //---------------------------------------------------------------------------------------
 //
 // Primary function of the Runtime Controller thread. First, we let

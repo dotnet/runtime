@@ -438,6 +438,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fstack-protector-strong)
   endif(CLR_CMAKE_PLATFORM_DARWIN)
 
+  # Contracts are disabled on UNIX.
   add_definitions(-DDISABLE_CONTRACTS)
 
   if (CLR_CMAKE_WARNINGS_ARE_ERRORS)
@@ -562,6 +563,11 @@ if (WIN32)
   add_compile_options($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:/MTd>)  
 
   set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /ZH:SHA_256")
+  
+  if (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
+    # Contracts work too slow on ARM/ARM64 DEBUG/CHECKED.
+    add_definitions(-DDISABLE_CONTRACTS)
+  endif (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)    
   
 endif (WIN32)
 

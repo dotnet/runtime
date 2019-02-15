@@ -906,8 +906,6 @@ private:
     // calls operator new, which may occur during shutdown paths.
     static EEThreadId               s_DbgHelperThreadId;
 
-    friend void AssertAllocationAllowed();
-
 public:
     // The OS ThreadId of the helper as determined from the CreateThread call.
     DWORD                           m_DbgHelperThreadOSTid;
