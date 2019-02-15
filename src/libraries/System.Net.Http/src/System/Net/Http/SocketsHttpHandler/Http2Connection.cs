@@ -693,34 +693,23 @@ namespace System.Net.Http
                 (buffer.Slice(0, maxSize), buffer.Slice(maxSize)) :
                 (buffer, Memory<byte>.Empty);
 
-        private void WriteIndexedHeaderField(int index)
+        private void WriteIndexedHeader(int index)
         {
             int bytesWritten;
             while (!HPackEncoder.EncodeIndexedField(index, _headerBuffer.AvailableSpan, out bytesWritten))
             {
-                _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableSpan.Length + 1);
+                _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
             }
 
             _headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteIndexedHeaderName(int index, string value)
+        private void WriteIndexedHeader(int index, string value)
         {
             int bytesWritten;
             while (!HPackEncoder.EncodeIndexedName(index, value, _headerBuffer.AvailableSpan, out bytesWritten))
             {
-                _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableSpan.Length + 1);
-            }
-
-            _headerBuffer.Commit(bytesWritten);
-        }
-
-        private void WriteIndexedHeaderName(int index, ReadOnlySpan<byte> value)
-        {
-            int bytesWritten;
-            while (!HPackEncoder.EncodeIndexedName(index, value, _headerBuffer.AvailableSpan, out bytesWritten))
-            {
-                _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableSpan.Length + 1);
+                _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
             }
 
             _headerBuffer.Commit(bytesWritten);
@@ -729,37 +718,61 @@ namespace System.Net.Http
         private void WriteLiteralHeader(string name, string value)
         {
             int bytesWritten;
-            while (!HPackEncoder.EncodeHeader(name, value, _headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeHeaderNameValue(name, value, _headerBuffer.AvailableSpan, out bytesWritten))
             {
-                _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableSpan.Length + 1);
+                _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
             }
 
             _headerBuffer.Commit(bytesWritten);
         }
 
+        private void WriteBytes(ReadOnlySpan<byte> bytes)
+        {
+            if (_headerBuffer.AvailableLength < bytes.Length)
+            {
+                _headerBuffer.EnsureAvailableSpace(bytes.Length);
+            }
+
+            bytes.CopyTo(_headerBuffer.AvailableSpan);
+            _headerBuffer.Commit(bytes.Length);
+        }
+
         private void WriteHeaderCollection(HttpHeaders headers)
         {
-            // TODO: ISSUE 31307: Use static table for known headers
-
             foreach (KeyValuePair<HeaderDescriptor, string[]> header in headers.GetHeaderDescriptorsAndValues())
             {
-                // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
-                // (see pseudo-header handling below in WriteHeaders)
-                if (header.Key.KnownHeader == KnownHeaders.Host)
-                {
-                    continue;
-                }
-
-                // The Connection header is not supported in HTTP2. Don't send it.
-                if (header.Key.KnownHeader == KnownHeaders.Connection)
-                {
-                    continue;
-                }
-
                 Debug.Assert(header.Value.Length > 0, "No values for header??");
+
+                KnownHeader knownHeader = header.Key.KnownHeader;
+                if (knownHeader != null)
+                {
+                    // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
+                    // (see pseudo-header handling below in WriteHeaders). The Connection header is also not supported
+                    // in HTTP2. Don't send it.
+                    if (knownHeader == KnownHeaders.Host || knownHeader == KnownHeaders.Connection)
+                    {
+                        continue;
+                    }
+
+                    // If there's a static table value for this known header, use that
+                    // to write out the header index and value(s).
+                    int? staticTableIndex = knownHeader.Http2StaticTableIndex;
+                    if (staticTableIndex.HasValue)
+                    {
+                        for (int i = 0; i < header.Value.Length; i++)
+                        {
+                            WriteIndexedHeader(staticTableIndex.GetValueOrDefault(), header.Value[i]);
+                        }
+
+                        continue;
+                    }
+                }
+
+                // Otherwise, fall back to just encoding the header name and value(s).
+                string name = header.Key.Name;
                 for (int i = 0; i < header.Value.Length; i++)
                 {
-                    WriteLiteralHeader(header.Key.Name, header.Value[i]);
+                    WriteLiteralHeader(name, header.Value[i]);
                 }
             }
         }
@@ -776,35 +789,36 @@ namespace System.Net.Http
             // Method is normalized so we can do reference equality here.
             if (ReferenceEquals(normalizedMethod, HttpMethod.Get))
             {
-                WriteIndexedHeaderField(StaticTable.MethodGet);
+                WriteIndexedHeader(StaticTable.MethodGet);
             }
             else if (ReferenceEquals(normalizedMethod, HttpMethod.Post))
             {
-                WriteIndexedHeaderField(StaticTable.MethodPost);
+                WriteIndexedHeader(StaticTable.MethodPost);
             }
             else
             {
-                WriteIndexedHeaderName(StaticTable.MethodGet, normalizedMethod.Method);
+                WriteIndexedHeader(StaticTable.MethodGet, normalizedMethod.Method);
             }
 
-            WriteIndexedHeaderField(StaticTable.SchemeHttps);
+            WriteIndexedHeader(StaticTable.SchemeHttps);
 
             if (request.HasHeaders && request.Headers.Host != null)
             {
-                WriteIndexedHeaderName(StaticTable.Authority, request.Headers.Host);
+                WriteIndexedHeader(StaticTable.Authority, request.Headers.Host);
             }
             else
             {
-                WriteIndexedHeaderName(StaticTable.Authority, _pool.HostHeaderValueBytes);
+                WriteBytes(_pool._encodedAuthorityHostHeader);
             }
 
-            if (request.RequestUri.PathAndQuery == "/")
+            string pathAndQuery = request.RequestUri.PathAndQuery;
+            if (pathAndQuery == "/")
             {
-                WriteIndexedHeaderField(StaticTable.PathSlash);
+                WriteIndexedHeader(StaticTable.PathSlash);
             }
             else
             {
-                WriteIndexedHeaderName(StaticTable.PathSlash, request.RequestUri.PathAndQuery);
+                WriteIndexedHeader(StaticTable.PathSlash, pathAndQuery);
             }
 
             if (request.HasHeaders)
@@ -818,7 +832,7 @@ namespace System.Net.Http
                 string cookiesFromContainer = _pool.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
                 if (cookiesFromContainer != string.Empty)
                 {
-                    WriteIndexedHeaderName(StaticTable.Cookie, cookiesFromContainer);
+                    WriteIndexedHeader(StaticTable.Cookie, cookiesFromContainer);
                 }
             }
 
@@ -828,7 +842,7 @@ namespace System.Net.Http
                 // unless this is a method that never has a body.
                 if (normalizedMethod.MustHaveRequestBody)
                 {
-                    WriteIndexedHeaderName(StaticTable.ContentLength, "0");
+                    WriteIndexedHeader(StaticTable.ContentLength, "0");
                 }
             }
             else

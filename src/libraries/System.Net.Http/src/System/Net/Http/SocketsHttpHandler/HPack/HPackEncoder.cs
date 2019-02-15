@@ -2,214 +2,151 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Net.Http.HPack
 {
     internal static class HPackEncoder
     {
         // Things we should add:
-        // * Static table encoding
-        //          This is implemented now for pseudo-headers, but not for regular headers.
-        //          This should be based off some sort of "known headers/values" scheme, so we don't need
-        //          to re-lookup header names each time.
         // * Huffman encoding
         //      
         // Things we should consider adding:
-        // * Dynamic table encoding.
-        //          This would make the encoder stateful, which complicates things significantly.
-        //          Additionally, it's not clear exactly what strings we would add to the dynamic table
-        //          without some additional guidance from the user about this.
-        //          So for now, don't do dynamic encoding.
+        // * Dynamic table encoding:
+        //   This would make the encoder stateful, which complicates things significantly.
+        //   Additionally, it's not clear exactly what strings we would add to the dynamic table
+        //   without some additional guidance from the user about this.
+        //   So for now, don't do dynamic encoding.
 
-        public static bool EncodeIndexedField(int index, Span<byte> buffer, out int length)
+        public static bool EncodeIndexedField(int index, Span<byte> destination, out int bytesWritten)
         {
-            length = 0;
-
-            if (buffer.Length == 0)
+            if (destination.Length != 0)
             {
-                return false;
+                destination[0] = 0x80;   // Literal field
+                return IntegerEncoder.Encode(index, 7, destination, out bytesWritten);
             }
 
-            buffer[0] = 0x80;   // Literal field
-            if (!IntegerEncoder.Encode(index, 7, buffer, out length))
-            {
-                return false;
-            }
-
-            return true;
+            bytesWritten = 0;
+            return false;
         }
 
-        public static bool EncodeIndexedName(int index, string value, Span<byte> buffer, out int length)
+        public static bool EncodeIndexedName(int index, string value, Span<byte> destination, out int bytesWritten)
         {
-            int i = 0;
-            length = 0;
-
-            if (buffer.Length == 0)
+            if (destination.Length != 0)
             {
-                return false;
-            }
-
-            buffer[0] = 0x40;   // Literal name
-            if (!IntegerEncoder.Encode(index, 6, buffer, out int indexLength))
-            {
-                return false;
-            }
-
-            i = indexLength;
-            if (i == buffer.Length)
-            {
-                return false;
-            }
-
-            if (!EncodeString(value, buffer.Slice(i), out int nameLength, lowercase: false))
-            {
-                return false;
-            }
-
-            i += nameLength;
-
-            length = i;
-            return true;
-        }
-
-        public static bool EncodeIndexedName(int index, ReadOnlySpan<byte> value, Span<byte> buffer, out int length)
-        {
-            int i = 0;
-            length = 0;
-
-            if (buffer.Length == 0)
-            {
-                return false;
-            }
-
-            buffer[0] = 0x40;   // Literal name
-            if (!IntegerEncoder.Encode(index, 6, buffer, out int indexLength))
-            {
-                return false;
-            }
-
-            i = indexLength;
-            if (i == buffer.Length)
-            {
-                return false;
-            }
-
-            if (!EncodeAsciiString(value, buffer.Slice(i), out int nameLength))
-            {
-                return false;
-            }
-
-            i += nameLength;
-
-            length = i;
-            return true;
-        }
-
-        public static bool EncodeHeader(string name, string value, Span<byte> buffer, out int length)
-        {
-            int i = 0;
-            length = 0;
-
-            if (buffer.Length == 0)
-            {
-                return false;
-            }
-
-            buffer[i++] = 0;
-
-            if (i == buffer.Length)
-            {
-                return false;
-            }
-
-            if (!EncodeString(name, buffer.Slice(i), out int nameLength, lowercase: true))
-            {
-                return false;
-            }
-
-            i += nameLength;
-
-            if (i >= buffer.Length)
-            {
-                return false;
-            }
-
-            if (!EncodeString(value, buffer.Slice(i), out int valueLength, lowercase: false))
-            {
-                return false;
-            }
-
-            i += valueLength;
-
-            length = i;
-            return true;
-        }
-
-        private static bool EncodeString(string s, Span<byte> buffer, out int length, bool lowercase)
-        {
-            const int toLowerMask = 0x20;
-
-            int i = 0;
-            length = 0;
-
-            if (buffer.Length == 0)
-            {
-                return false;
-            }
-
-            buffer[0] = 0;
-
-            if (!IntegerEncoder.Encode(s.Length, 7, buffer, out int nameLength))
-            {
-                return false;
-            }
-
-            i += nameLength;
-
-            // TODO: use huffman encoding
-            for (int j = 0; j < s.Length; j++)
-            {
-                if (i >= buffer.Length)
+                destination[0] = 0x40;   // Literal name
+                if (IntegerEncoder.Encode(index, 6, destination, out int indexLength))
                 {
-                    return false;
+                    if (indexLength < destination.Length &&
+                        EncodeString(value, destination.Slice(indexLength), out int nameLength, toLower: false))
+                    {
+                        bytesWritten = indexLength + nameLength;
+                        return true;
+                    }
                 }
-
-                buffer[i++] = (byte)(s[j] | (lowercase ? toLowerMask : 0));
             }
 
-            length = i;
-            return true;
+            bytesWritten = 0;
+            return false;
         }
 
-        private static bool EncodeAsciiString(ReadOnlySpan<byte> s, Span<byte> buffer, out int length)
+        public static bool EncodeIndexedName(int index, ReadOnlySpan<byte> value, Span<byte> destination, out int bytesWritten)
         {
-            int i = 0;
-            length = 0;
-
-            if (buffer.Length == 0)
+            if (destination.Length != 0)
             {
-                return false;
+                destination[0] = 0x40;   // Literal name
+                if (IntegerEncoder.Encode(index, 6, destination, out int indexLength))
+                {
+                    if (indexLength < destination.Length &&
+                        EncodeAsciiString(value, destination.Slice(indexLength), out int nameLength))
+                    {
+                        bytesWritten = indexLength + nameLength;
+                        return true;
+                    }
+                }
             }
 
-            buffer[0] = 0;
+            bytesWritten = 0;
+            return false;
+        }
 
-            if (!IntegerEncoder.Encode(s.Length, 7, buffer, out int nameLength))
+        public static byte[] EncodeIndexedNameToAllocatedArray(int index, ReadOnlySpan<byte> value)
+        {
+            Span<byte> span = stackalloc byte[256];
+            bool success = EncodeIndexedName(index, value, span, out int length);
+            Debug.Assert(success, "Stack-allocated space was too small to accomodate known name/value.");
+            return span.Slice(0, length).ToArray();
+        }
+
+        public static bool EncodeHeaderNameValue(string name, string value, Span<byte> destination, out int bytesWritten)
+        {
+            if ((uint)destination.Length > 1 &&
+                EncodeString(name, destination.Slice(1), out int nameLength, toLower: true))
             {
-                return false;
+                destination[0] = 0;
+                if (EncodeString(value, destination.Slice(1 + nameLength), out int valueLength, toLower: false))
+                {
+                    bytesWritten = 1 + nameLength + valueLength;
+                    return true;
+                }
             }
 
-            i += nameLength;
+            bytesWritten = 0;
+            return false;
+        }
 
-            if (buffer.Slice(i).Length < s.Length)
+        private static bool EncodeString(string value, Span<byte> destination, out int bytesWritten, bool toLower)
+        {
+            if (destination.Length != 0)
             {
-                return false;
+                destination[0] = 0;
+                if (IntegerEncoder.Encode(value.Length, 7, destination, out int integerLength))
+                {
+                    // TODO: Use Huffman encoding
+                    destination = destination.Slice(integerLength);
+                    if (value.Length <= destination.Length)
+                    {
+                        if (toLower)
+                        {
+                            for (int i = 0; i < value.Length; i++)
+                            {
+                                char c = value[i];
+                                destination[i] = (byte)((uint)(c - 'A') <= ('Z' - 'A') ? c | 0x20 : c);
+                            }
+                        }
+                        else
+                        {
+                            for (int i = 0; i < value.Length; i++)
+                            {
+                                destination[i] = (byte)value[i];
+                            }
+                        }
+
+                        bytesWritten = integerLength + value.Length;
+                        return true;
+                    }
+                }
             }
 
-            s.CopyTo(buffer.Slice(i));
+            bytesWritten = 0;
+            return false;
+        }
 
-            i += s.Length;
+        private static bool EncodeAsciiString(ReadOnlySpan<byte> value, Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length != 0)
+            {
+                destination[0] = 0;
+                if (IntegerEncoder.Encode(value.Length, 7, destination, out int integerLength) &&
+                    value.TryCopyTo(destination.Slice(integerLength)))
+                {
+                    bytesWritten = integerLength + value.Length;
+                    return true;
+                }
+            }
 
-            length = i;
-            return true;
+            bytesWritten = 0;
+            return false;
         }
     }
 }
