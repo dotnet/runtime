@@ -44,7 +44,7 @@
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Memory">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
+      <Version>4.5.2</Version>
     </PackageReference>
     <PackageReference Include="System.Numerics.Vectors">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
