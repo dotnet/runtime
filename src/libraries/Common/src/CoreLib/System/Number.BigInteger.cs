@@ -460,14 +460,7 @@ namespace System
 
             public static uint CountSignificantBits(ulong value)
             {
-                uint upper = (uint)(value >> 32);
-
-                if (upper != 0)
-                {
-                    return 32 + CountSignificantBits(upper);
-                }
-
-                return CountSignificantBits((uint)value);
+                return 64 - (uint)BitOps.LeadingZeroCount(value);
             }
 
             public static uint CountSignificantBits(ref BigInteger value)
