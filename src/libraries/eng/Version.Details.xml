@@ -83,13 +83,13 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>9a5da1c8a3232c6304955c7a6ffe6109a1b13d9f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers" Version="3.0.0-beta2-final">
+    <Dependency Name="Microsoft.Net.Compilers" Version="3.0.0-beta3-final">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>231aeb8be8357239499d45c0574e5a9a8c9174f0</Sha>
+      <Sha>091091276de5136e94e4413faa87e4d4ec3a7671</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Compilers" Version="3.0.0-beta2-final">
+    <Dependency Name="Microsoft.NETCore.Compilers" Version="3.0.0-beta3-final">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>231aeb8be8357239499d45c0574e5a9a8c9174f0</Sha>
+      <Sha>091091276de5136e94e4413faa87e4d4ec3a7671</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
