@@ -89,6 +89,10 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
@@ -114,15 +118,11 @@
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\DynamicTable.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackDecoder.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackDecodingException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\Huffman.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HuffmanDecodingException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\IntegerDecoder.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
