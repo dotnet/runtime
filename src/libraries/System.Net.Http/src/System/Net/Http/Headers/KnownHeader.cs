@@ -3,13 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Net.Http.HPack;
 using System.Text;
 
 namespace System.Net.Http.Headers
 {
     internal sealed class KnownHeader
     {
-        public KnownHeader(string name, int? http2StaticTableIndex = null) : this(name, HttpHeaderType.Custom, null, null, http2StaticTableIndex)
+        public KnownHeader(string name, int? http2StaticTableIndex = null) :
+            this(name, HttpHeaderType.Custom, parser: null, knownValues: null, http2StaticTableIndex)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
             Debug.Assert(HttpRuleParser.GetTokenLength(name, 0) == name.Length);
@@ -26,7 +28,10 @@ namespace System.Net.Http.Headers
             HeaderType = headerType;
             Parser = parser;
             KnownValues = knownValues;
-            Http2StaticTableIndex = http2StaticTableIndex;
+
+            Http2EncodedName = http2StaticTableIndex.HasValue ?
+                HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(http2StaticTableIndex.GetValueOrDefault()) :
+                HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(name);
 
             var asciiBytesWithColonSpace = new byte[name.Length + 2]; // + 2 for ':' and ' '
             int asciiBytes = Encoding.ASCII.GetBytes(name, asciiBytesWithColonSpace);
@@ -42,6 +47,6 @@ namespace System.Net.Http.Headers
         public string[] KnownValues { get; }
         public byte[] AsciiBytesWithColonSpace { get; }
         public HeaderDescriptor Descriptor => new HeaderDescriptor(this);
-        public int? Http2StaticTableIndex { get; }
+        public byte[] Http2EncodedName { get; }
     }
 }

@@ -129,6 +129,7 @@ namespace System.Net.Http.HPack
         public const int ProxyAuthorization = 49;
         public const int Range = 50;
         public const int Referer = 51;
+        public const int Refresh = 52;
         public const int RetryAfter = 53;
         public const int Server = 54;
         public const int SetCookie = 55;
