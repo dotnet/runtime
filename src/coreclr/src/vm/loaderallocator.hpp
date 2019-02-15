@@ -22,6 +22,7 @@ class FuncPtrStubs;
 
 #include "callcounter.h"
 #include "methoddescbackpatchinfo.h"
+#include "crossloaderallocatorhash.h"
 
 #define VPTRU_LoaderAllocator 0x3200
 
@@ -31,6 +32,8 @@ enum LoaderAllocatorType
     LAT_Global,
     LAT_Assembly
 };
+
+typedef SHash<PtrSetSHashTraits<LoaderAllocator *>> LoaderAllocatorSet;
 
 class CLRPrivBinderAssemblyLoadContext;
 
