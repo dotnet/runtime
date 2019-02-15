@@ -741,11 +741,18 @@ NOHANDLES(ICALL(RUNH_5h, "SufficientExecutionStack", ves_icall_System_Runtime_Co
 NOHANDLES(ICALL(RUNH_6, "get_OffsetToStringData", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData))
 
 ICALL_TYPE(GCH, "System.Runtime.InteropServices.GCHandle", GCH_1)
+#if ENABLE_NETCORE
+HANDLES(GCH_1, "InternalAlloc", ves_icall_System_GCHandle_Alloc, gpointer, 2, (MonoObject, gint32))
+HANDLES(GCH_2, "InternalFree", ves_icall_System_GCHandle_Free, void, 1, (gpointer))
+HANDLES(GCH_3, "InternalGet", ves_icall_System_GCHandle_Get, MonoObject, 1, (gpointer))
+HANDLES(GCH_4, "InternalSet", ves_icall_System_GCHandle_Set, void, 2, (gpointer, MonoObject))
+#else
 NOHANDLES(ICALL(GCH_1, "CheckCurrentDomain", ves_icall_System_GCHandle_CheckCurrentDomain))
 NOHANDLES(ICALL(GCH_2, "FreeHandle", ves_icall_System_GCHandle_FreeHandle))
 NOHANDLES(ICALL(GCH_3, "GetAddrOfPinnedObject", ves_icall_System_GCHandle_GetAddrOfPinnedObject))
 HANDLES(GCH_4, "GetTarget", ves_icall_System_GCHandle_GetTarget, MonoObject, 1, (guint32))
 HANDLES(GCH_5, "GetTargetHandle", ves_icall_System_GCHandle_GetTargetHandle, guint32, 3, (MonoObject, guint32, gint32))
+#endif
 
 #ifndef DISABLE_COM
 ICALL_TYPE(MARSHAL, "System.Runtime.InteropServices.Marshal", MARSHAL_1)
