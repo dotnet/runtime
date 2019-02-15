@@ -16,8 +16,8 @@ param(
     # A pattern matching all packages in the set that the versions repository should be set to.
     [Parameter(Mandatory=$true)][string]$nupkgPath)
 
-& "$PSScriptRoot\msbuild.cmd" /nologo /verbosity:minimal /clp:Summary /nodeReuse:false `
-    /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log `
+& "$PSScriptRoot\dotnet.cmd" msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false `
+    /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log `
     /p:RestoreDefaultOptimizationDataPackage=false `
     /p:PortableBuild=true `
     /p:UsePartialNGENOptimization=false `
