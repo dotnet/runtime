@@ -20,7 +20,6 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
-    <Langversion>7.2</Langversion>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

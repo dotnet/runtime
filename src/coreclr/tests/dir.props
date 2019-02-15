@@ -9,11 +9,10 @@
   </PropertyGroup>
   
   <Import Project="dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
-  
-  <!-- Build Tools Versions -->
+
   <PropertyGroup>
-    <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
-    <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
+    <LangVersion>8.0</LangVersion>
+    <UseSharedCompilation>true</UseSharedCompilation>
   </PropertyGroup>
 
     <!--
@@ -30,7 +29,7 @@
      -->  
   <PropertyGroup>  
     <RunningOnCore>false</RunningOnCore>
-    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'Core'">true</RunningOnCore>
+    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'core'">true</RunningOnCore>
     <BuildToolsTargetsDesktop>false</BuildToolsTargetsDesktop>
     <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
     <BuildToolsTargets45>$(BuildToolsTargetsDesktop)</BuildToolsTargets45>
@@ -109,7 +108,7 @@
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)') and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
+  <Import Project="$(RoslynPropsFile)" />
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
     <!-- When we do a traversal build we get all packages up front, don't restore them again -->
