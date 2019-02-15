@@ -54,13 +54,14 @@ namespace System.Net.Http
         }
 
         public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
-        public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, _bytes.Length - _availableStart);
+        public int AvailableLength => _bytes.Length - _availableStart;
+        public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, AvailableLength);
         public Memory<byte> ActiveMemory => new Memory<byte>(_bytes, _activeStart, _availableStart - _activeStart);
         public Memory<byte> AvailableMemory => new Memory<byte>(_bytes, _availableStart, _bytes.Length - _availableStart);
 
         public void Discard(int byteCount)
         {
-            Debug.Assert(byteCount <= ActiveSpan.Length);
+            Debug.Assert(byteCount <= ActiveSpan.Length, $"Expected {byteCount} <= {ActiveSpan.Length}");
             _activeStart += byteCount;
 
             if (_activeStart == _availableStart)
@@ -72,26 +73,26 @@ namespace System.Net.Http
 
         public void Commit(int byteCount)
         {
-            Debug.Assert(byteCount <= AvailableSpan.Length);
+            Debug.Assert(byteCount <= AvailableLength);
             _availableStart += byteCount;
         }
 
         // Ensure at least [byteCount] bytes to write to.
         public void EnsureAvailableSpace(int byteCount)
         {
-            if (byteCount <= AvailableSpan.Length)
+            if (byteCount <= AvailableLength)
             {
                 return;
             }
 
-            int totalFree = _activeStart + AvailableSpan.Length;
+            int totalFree = _activeStart + AvailableLength;
             if (byteCount <= totalFree)
             {
                 // We can free up enough space by just shifting the bytes down, so do so.
                 Buffer.BlockCopy(_bytes, _activeStart, _bytes, 0, ActiveSpan.Length);
                 _availableStart = ActiveSpan.Length;
                 _activeStart = 0;
-                Debug.Assert(byteCount <= AvailableSpan.Length);
+                Debug.Assert(byteCount <= AvailableLength);
                 return;
             }
 
@@ -122,7 +123,7 @@ namespace System.Net.Http
                 ArrayPool<byte>.Shared.Return(oldBytes);
             }
 
-            Debug.Assert(byteCount <= AvailableSpan.Length);
+            Debug.Assert(byteCount <= AvailableLength);
         }
     }
 }
