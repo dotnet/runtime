@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 8903fe7b-a82a-4e2e-b691-f58430b485d1 */
-    0x8903fe7b,
-    0xa82a,
-    0x4e2e,
-    {0xb6, 0x91, 0xf5, 0x84, 0x30, 0xb4, 0x85, 0xd1}
+SELECTANY const GUID JITEEVersionIdentifier = { /* d609bed1-7831-49fc-bd49-b6f054dd4d46 */
+    0xd609bed1,
+    0x7831,
+    0x49fc,
+    {0xbd, 0x49, 0xb6, 0xf0, 0x54, 0xdd, 0x4d, 0x46}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2592,8 +2592,18 @@ public:
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;
 
-    // returns is the intersection of cls1 and cls2.
+    // Returns the intersection of cls1 and cls2.
     virtual CORINFO_CLASS_HANDLE mergeClasses(
+            CORINFO_CLASS_HANDLE        cls1,
+            CORINFO_CLASS_HANDLE        cls2
+            ) = 0;
+
+    // Returns true if cls2 is known to be a more specific type
+    // than cls1 (a subtype or more restrictive shared type)
+    // for purposes of jit type tracking. This is a hint to the
+    // jit for optimization; it does not have correctness
+    // implications.
+    virtual BOOL isMoreSpecificType(
             CORINFO_CLASS_HANDLE        cls1,
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;

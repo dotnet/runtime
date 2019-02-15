@@ -2704,27 +2704,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     // updating exact classes.
     if (!varDsc->lvClassIsExact && isNewClass)
     {
-        // Todo: improve this analysis by adding a new jit interface method
-        DWORD newAttrs = info.compCompHnd->getClassAttribs(clsHnd);
-        DWORD oldAttrs = info.compCompHnd->getClassAttribs(varDsc->lvClassHnd);
-
-        // Avoid funny things with __Canon by only merging if both shared or both unshared
-        if ((newAttrs & CORINFO_FLG_SHAREDINST) == (oldAttrs & CORINFO_FLG_SHAREDINST))
-        {
-            // If we merge types and we get back the old class, the new class is more
-            // specific and we should update to it.
-            CORINFO_CLASS_HANDLE mergeClass = info.compCompHnd->mergeClasses(clsHnd, varDsc->lvClassHnd);
-
-            if (mergeClass == varDsc->lvClassHnd)
-            {
-                shouldUpdate = true;
-            }
-        }
-        else if ((newAttrs & CORINFO_FLG_SHAREDINST) == 0)
-        {
-            // Update if we go from shared to unshared
-            shouldUpdate = true;
-        }
+        shouldUpdate = info.compCompHnd->isMoreSpecificType(varDsc->lvClassHnd, clsHnd);
     }
     // Else are we attempting to update exactness?
     else if (isExact && !varDsc->lvClassIsExact && !isNewClass)
@@ -2736,9 +2716,9 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     if (isNewClass || (isExact != varDsc->lvClassIsExact))
     {
         JITDUMP("\nlvaUpdateClass:%s Updating class for V%02u", shouldUpdate ? "" : " NOT", varNum);
-        JITDUMP(" from(%p) %s%s", dspPtr(varDsc->lvClassHnd), info.compCompHnd->getClassName(varDsc->lvClassHnd),
+        JITDUMP(" from (%p) %s%s", dspPtr(varDsc->lvClassHnd), info.compCompHnd->getClassName(varDsc->lvClassHnd),
                 varDsc->lvClassIsExact ? " [exact]" : "");
-        JITDUMP(" to(%p) %s%s\n", dspPtr(clsHnd), info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
+        JITDUMP(" to (%p) %s%s\n", dspPtr(clsHnd), info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
     }
 #endif // DEBUG
 
