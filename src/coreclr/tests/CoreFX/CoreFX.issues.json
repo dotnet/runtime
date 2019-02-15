@@ -1465,4 +1465,18 @@
             ]
         }
     },
+    {
+        "name": "System.Net.Ping.Functional.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Net.NetworkInformation.Tests.PingTest.SendPingAsyncWithIPAddress",
+                    "reason": "https://github.com/dotnet/corefx/issues/35351"
+                }
+            ]
+        }
+    },
 ]
