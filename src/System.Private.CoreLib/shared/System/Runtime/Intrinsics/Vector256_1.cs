@@ -205,11 +205,11 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(in this, other);
 
-            bool SoftwareFallback(in Vector256<T> x, Vector256<T> y)
+            static bool SoftwareFallback(in Vector256<T> vector, Vector256<T> other)
             {
                 for (int i = 0; i < Count; i++)
                 {
-                    if (!((IEquatable<T>)(x.GetElement(i))).Equals(y.GetElement(i)))
+                    if (!((IEquatable<T>)(vector.GetElement(i))).Equals(other.GetElement(i)))
                     {
                         return false;
                     }
@@ -318,10 +318,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(in this, value);
 
-            Vector256<T> SoftwareFallback(in Vector256<T> t, Vector128<T> x)
+            static Vector256<T> SoftwareFallback(in Vector256<T> vector, Vector128<T> value)
             {
-                Vector256<T> result = t;
-                Unsafe.As<Vector256<T>, Vector128<T>>(ref result) = x;
+                Vector256<T> result = vector;
+                Unsafe.As<Vector256<T>, Vector128<T>>(ref result) = value;
                 return result;
             }
         }
@@ -349,9 +349,9 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(in this);
 
-            Vector128<T> SoftwareFallback(in Vector256<T> t)
+            static Vector128<T> SoftwareFallback(in Vector256<T> vector)
             {
-                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref Unsafe.AsRef(in t));
+                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref Unsafe.AsRef(in vector));
                 return Unsafe.Add(ref lower, 1);
             }
         }
@@ -380,11 +380,11 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(in this, value);
 
-            Vector256<T> SoftwareFallback(in Vector256<T> t, Vector128<T> x)
+            static Vector256<T> SoftwareFallback(in Vector256<T> vector, Vector128<T> value)
             {
-                Vector256<T> result = t;
+                Vector256<T> result = vector;
                 ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref result);
-                Unsafe.Add(ref lower, 1) = x;
+                Unsafe.Add(ref lower, 1) = value;
                 return result;
             }
         }
