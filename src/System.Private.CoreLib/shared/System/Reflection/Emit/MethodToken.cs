@@ -8,14 +8,12 @@ namespace System.Reflection.Emit
     {
         public static readonly MethodToken Empty = new MethodToken();
 
-        private readonly int _token;
-
         internal MethodToken(int methodToken)
         {
-            _token = methodToken;
+            Token = methodToken;
         }
 
-        public int Token => _token;
+        public int Token { get; }
 
         public override int GetHashCode() => Token;
 

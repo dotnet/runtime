@@ -8,14 +8,12 @@ namespace System.Reflection.Emit
     {
         public static readonly TypeToken Empty = new TypeToken();
 
-        private readonly int _token;
-
         internal TypeToken(int typeToken)
         {
-            _token = typeToken;
+            Token = typeToken;
         }
 
-        public int Token => _token;
+        public int Token { get; }
 
         public override int GetHashCode() => Token;
 

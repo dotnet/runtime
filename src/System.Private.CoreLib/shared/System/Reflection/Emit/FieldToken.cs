@@ -14,16 +14,15 @@ namespace System.Reflection.Emit
     {
         public static readonly FieldToken Empty = new FieldToken();
 
-        private readonly int _token;
         private readonly object _class;
 
         internal FieldToken(int fieldToken, Type fieldClass)
         {
-            _token = fieldToken;
+            Token = fieldToken;
             _class = fieldClass;
         }
 
-        public int Token => _token;
+        public int Token { get; }
         
         public override int GetHashCode() => Token;
         

@@ -12,14 +12,12 @@ namespace System.Reflection.Emit
     {
         public static readonly ParameterToken Empty = new ParameterToken();
 
-        private readonly int _token;
-
         internal ParameterToken(int parameterToken)
         {
-            _token = parameterToken;
+            Token = parameterToken;
         }
 
-        public int Token => _token;
+        public int Token { get; }
 
         public override int GetHashCode() => Token;
 
