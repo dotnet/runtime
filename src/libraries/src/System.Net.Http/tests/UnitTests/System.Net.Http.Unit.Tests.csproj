@@ -299,6 +299,12 @@
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HeaderField.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs</Link>
     </Compile>

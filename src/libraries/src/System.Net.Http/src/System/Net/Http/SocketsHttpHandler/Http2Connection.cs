@@ -696,7 +696,7 @@ namespace System.Net.Http
         private void WriteIndexedHeader(int index)
         {
             int bytesWritten;
-            while (!HPackEncoder.EncodeIndexedField(index, _headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeIndexedHeaderField(index, _headerBuffer.AvailableSpan, out bytesWritten))
             {
                 _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
             }
@@ -707,7 +707,7 @@ namespace System.Net.Http
         private void WriteIndexedHeader(int index, string value)
         {
             int bytesWritten;
-            while (!HPackEncoder.EncodeIndexedName(index, value, _headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexing(index, value, _headerBuffer.AvailableSpan, out bytesWritten))
             {
                 _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
             }
@@ -718,7 +718,18 @@ namespace System.Net.Http
         private void WriteLiteralHeader(string name, string value)
         {
             int bytesWritten;
-            while (!HPackEncoder.EncodeHeaderNameValue(name, value, _headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, value, _headerBuffer.AvailableSpan, out bytesWritten))
+            {
+                _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
+            }
+
+            _headerBuffer.Commit(bytesWritten);
+        }
+
+        private void WriteLiteralHeaderValue(string value)
+        {
+            int bytesWritten;
+            while (!HPackEncoder.EncodeStringLiteral(value, _headerBuffer.AvailableSpan, out bytesWritten, toLower: false))
             {
                 _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
             }
@@ -728,7 +739,7 @@ namespace System.Net.Http
 
         private void WriteBytes(ReadOnlySpan<byte> bytes)
         {
-            if (_headerBuffer.AvailableLength < bytes.Length)
+            if (bytes.Length > _headerBuffer.AvailableLength)
             {
                 _headerBuffer.EnsureAvailableSpace(bytes.Length);
             }
@@ -747,32 +758,25 @@ namespace System.Net.Http
                 if (knownHeader != null)
                 {
                     // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
-                    // (see pseudo-header handling below in WriteHeaders). The Connection header is also not supported
-                    // in HTTP2. Don't send it.
-                    if (knownHeader == KnownHeaders.Host || knownHeader == KnownHeaders.Connection)
+                    // (see pseudo-header handling below in WriteHeaders). The Connection header is also not supported in HTTP2.
+                    if (knownHeader != KnownHeaders.Host && knownHeader != KnownHeaders.Connection)
                     {
-                        continue;
-                    }
-
-                    // If there's a static table value for this known header, use that
-                    // to write out the header index and value(s).
-                    int? staticTableIndex = knownHeader.Http2StaticTableIndex;
-                    if (staticTableIndex.HasValue)
-                    {
+                        // For all other known headers, send them via their pre-encoded name and the associated value.
                         for (int i = 0; i < header.Value.Length; i++)
                         {
-                            WriteIndexedHeader(staticTableIndex.GetValueOrDefault(), header.Value[i]);
+                            WriteBytes(knownHeader.Http2EncodedName);
+                            WriteLiteralHeaderValue(header.Value[i]);
                         }
-
-                        continue;
                     }
                 }
-
-                // Otherwise, fall back to just encoding the header name and value(s).
-                string name = header.Key.Name;
-                for (int i = 0; i < header.Value.Length; i++)
+                else
                 {
-                    WriteLiteralHeader(name, header.Value[i]);
+                    // The header is not known: fall back to just encoding the header name and value(s).
+                    string name = header.Key.Name;
+                    for (int i = 0; i < header.Value.Length; i++)
+                    {
+                        WriteLiteralHeader(name, header.Value[i]);
+                    }
                 }
             }
         }
@@ -832,7 +836,8 @@ namespace System.Net.Http
                 string cookiesFromContainer = _pool.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
                 if (cookiesFromContainer != string.Empty)
                 {
-                    WriteIndexedHeader(StaticTable.Cookie, cookiesFromContainer);
+                    WriteBytes(KnownHeaders.Cookie.Http2EncodedName);
+                    WriteLiteralHeaderValue(cookiesFromContainer);
                 }
             }
 
@@ -842,7 +847,8 @@ namespace System.Net.Http
                 // unless this is a method that never has a body.
                 if (normalizedMethod.MustHaveRequestBody)
                 {
-                    WriteIndexedHeader(StaticTable.ContentLength, "0");
+                    WriteBytes(KnownHeaders.ContentLength.Http2EncodedName);
+                    WriteLiteralHeaderValue("0");
                 }
             }
             else

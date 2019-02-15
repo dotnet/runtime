@@ -66,13 +66,14 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader PublicKeyPins = new KnownHeader("Public-Key-Pins");
         public static readonly KnownHeader Range = new KnownHeader("Range", HttpHeaderType.Request, GenericHeaderParser.RangeParser, null, StaticTable.Range);
         public static readonly KnownHeader Referer = new KnownHeader("Referer", HttpHeaderType.Request, UriHeaderParser.RelativeOrAbsoluteUriParser, null, StaticTable.Referer); // NB: The spelling-mistake "Referer" for "Referrer" must be matched.
+        public static readonly KnownHeader Refresh = new KnownHeader("Refresh", StaticTable.Refresh);
         public static readonly KnownHeader RetryAfter = new KnownHeader("Retry-After", HttpHeaderType.Response, GenericHeaderParser.RetryConditionParser, null, StaticTable.RetryAfter);
         public static readonly KnownHeader SecWebSocketAccept = new KnownHeader("Sec-WebSocket-Accept");
         public static readonly KnownHeader SecWebSocketExtensions = new KnownHeader("Sec-WebSocket-Extensions");
         public static readonly KnownHeader SecWebSocketKey = new KnownHeader("Sec-WebSocket-Key");
         public static readonly KnownHeader SecWebSocketProtocol = new KnownHeader("Sec-WebSocket-Protocol");
         public static readonly KnownHeader SecWebSocketVersion = new KnownHeader("Sec-WebSocket-Version");
-        public static readonly KnownHeader Server = new KnownHeader("Server", HttpHeaderType.Response, ProductInfoHeaderParser.MultipleValueParser);
+        public static readonly KnownHeader Server = new KnownHeader("Server", HttpHeaderType.Response, ProductInfoHeaderParser.MultipleValueParser, null, StaticTable.Server);
         public static readonly KnownHeader SetCookie = new KnownHeader("Set-Cookie", StaticTable.SetCookie);
         public static readonly KnownHeader SetCookie2 = new KnownHeader("Set-Cookie2");
         public static readonly KnownHeader StrictTransportSecurity = new KnownHeader("Strict-Transport-Security", StaticTable.StrictTransportSecurity);
@@ -193,7 +194,13 @@ namespace System.Net.Http.Headers
                         case 'A': case 'a': return AltSvc;  // [A]lt-Svc
                         case 'C': case 'c': return Cookie2; // [C]ookie2
                         case 'E': case 'e': return Expires; // [E]xpires
-                        case 'R': case 'r': return Referer; // [R]eferer
+                        case 'R': case 'r':
+                            switch (key[3])
+                            {
+                                case 'E': case 'e': return Referer; // [R]ef[e]rer
+                                case 'R': case 'r': return Refresh; // [R]ef[r]esh
+                            }
+                            break;
                         case 'T': case 't': return Trailer; // [T]railer
                         case 'U': case 'u': return Upgrade; // [U]pgrade
                         case 'W': case 'w': return Warning; // [W]arning

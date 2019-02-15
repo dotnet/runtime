@@ -127,11 +127,12 @@ namespace System.Net.Http
                     break;
             }
 
+            string hostHeader = null;
             if (_host != null)
             {
                 // Precalculate ASCII bytes for Host header
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
-                string hostHeader =
+                hostHeader =
                     (_port != (sslHostName == null ? DefaultHttpPort : DefaultHttpsPort)) ?
                     $"{_host}:{_port}" :
                     _host;
@@ -152,8 +153,8 @@ namespace System.Net.Http
                     _sslOptionsHttp2.ApplicationProtocols = Http2ApplicationProtocols;
                     _sslOptionsHttp2.AllowRenegotiation = false;
 
-                    Debug.Assert(_host != null);
-                    _encodedAuthorityHostHeader = HPackEncoder.EncodeIndexedNameToAllocatedArray(StaticTable.Authority, _hostHeaderValueBytes);
+                    Debug.Assert(hostHeader != null);
+                    _encodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(StaticTable.Authority, hostHeader);
                 }
             }
             
