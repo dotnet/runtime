@@ -591,6 +591,9 @@ public:
 
     CORINFO_CLASS_HANDLE mergeClasses(CORINFO_CLASS_HANDLE cls1,
                                 CORINFO_CLASS_HANDLE cls2);
+    BOOL isMoreSpecificType(CORINFO_CLASS_HANDLE cls1,
+                                CORINFO_CLASS_HANDLE cls2);
+
     BOOL shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope);
     CORINFO_CLASS_HANDLE getParentType(CORINFO_CLASS_HANDLE  cls);
     CorInfoType getChildType (CORINFO_CLASS_HANDLE       clsHnd,

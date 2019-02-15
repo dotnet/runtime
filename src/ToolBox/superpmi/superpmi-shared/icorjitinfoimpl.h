@@ -461,8 +461,11 @@ TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLA
 // equal, or the comparison needs to be resolved at runtime.
 TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
-// returns is the intersection of cls1 and cls2.
+// returns the intersection of cls1 and cls2.
 CORINFO_CLASS_HANDLE mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+
+// Returns true if cls2 is known to be a more specific type than cls1.
+BOOL isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
 // Given a class handle, returns the Parent type.
 // For COMObjectType, it returns Class Handle of System.Object.

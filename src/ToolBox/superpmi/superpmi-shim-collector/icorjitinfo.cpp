@@ -987,12 +987,21 @@ TypeCompareState interceptor_ICJI::compareTypesForEquality(CORINFO_CLASS_HANDLE 
     return temp;
 }
 
-// returns is the intersection of cls1 and cls2.
+// returns the intersection of cls1 and cls2.
 CORINFO_CLASS_HANDLE interceptor_ICJI::mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
     mc->cr->AddCall("mergeClasses");
     CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->mergeClasses(cls1, cls2);
     mc->recMergeClasses(cls1, cls2, temp);
+    return temp;
+}
+
+// Returns true if cls2 is known to be a more specific type than cls1.
+BOOL interceptor_ICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
+{
+    mc->cr->AddCall("isMoreSpecificType");
+    BOOL temp = original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
+    mc->recIsMoreSpecificType(cls1, cls2, temp);
     return temp;
 }
 
