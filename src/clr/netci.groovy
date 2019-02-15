@@ -940,12 +940,6 @@ def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, is
         }
         else if (isCoreFxScenario(scenario)) {
             timeout = 360
-            if (architecture == 'arm64') {
-                if (configuration == 'Checked' || configuration == 'Debug') {
-                    // ARM64 checked/debug is slow, see #17414.
-                    timeout *= 3;
-                }
-            }
         }
         else if (isJitStressScenario(scenario)) {
             timeout = 300
@@ -1566,15 +1560,6 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 break
             }
             if ((architecture == 'arm64') && isCoreFxScenario(scenario) && !isFlowJob) {
-                break
-            }
-            // Windows arm64 corefx testing all fails due to time out, partially due to no parallelism
-            // in the test run harness. So don't create cron jobs for these. We could alternatively
-            // just increase the timeout, but we don't have enough Windows arm64 machines to
-            // take so much time running these. We also have Linux/arm64 corefx test coverage.
-            // It would be best to improve the runtime of the tests.
-            // See issue https://github.com/dotnet/coreclr/issues/21236.
-            if ((architecture == 'arm64') && isCoreFxScenario(scenario) && (os == 'Windows_NT')) {
                 break
             }
             if (jobRequiresLimitedHardware(architecture, os)) {
