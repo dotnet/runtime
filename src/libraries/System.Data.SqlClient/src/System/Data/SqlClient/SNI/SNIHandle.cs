@@ -84,6 +84,8 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         public abstract Guid ConnectionId { get; }
 
+        public virtual bool SMUXEnabled => false;
+
 #if DEBUG
         /// <summary>
         /// Test handle for killing underlying connection
