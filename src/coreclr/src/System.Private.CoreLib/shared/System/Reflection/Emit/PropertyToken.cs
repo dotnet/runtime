@@ -8,14 +8,12 @@ namespace System.Reflection.Emit
     {
         public static readonly PropertyToken Empty = new PropertyToken();
 
-        private readonly int _token;
-
         internal PropertyToken(int propertyToken)
         {
-            _token = propertyToken;
+            Token = propertyToken;
         }
 
-        public int Token => _token;
+        public int Token { get; }
 
         public override int GetHashCode() => Token;
 
