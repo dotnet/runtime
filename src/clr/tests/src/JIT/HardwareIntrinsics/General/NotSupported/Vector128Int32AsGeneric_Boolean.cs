@@ -24,7 +24,7 @@ namespace JIT.HardwareIntrinsics.General
 
             try
             {
-                Vector128<bool> result = default(Vector128<int>).As<bool>();
+                Vector128<bool> result = default(Vector128<int>).As<int, bool>();
             }
             catch (NotSupportedException)
             {

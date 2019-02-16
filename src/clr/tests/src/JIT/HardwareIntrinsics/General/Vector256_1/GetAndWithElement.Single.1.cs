@@ -121,7 +121,7 @@ namespace JIT.HardwareIntrinsics.General
             try
             {
                 object result = typeof(Vector256<Single>)
-                                    .GetMethod(nameof(Vector256<Single>.GetElement), new Type[] { typeof(int) })
+                                    .GetMethod(nameof(Vector256.GetElement), new Type[] { typeof(int) })
                                     .Invoke(value, new object[] { imm });
                 ValidateGetResult((Single)(result), values);
             }
@@ -146,7 +146,7 @@ namespace JIT.HardwareIntrinsics.General
             try
             {
                 object result2 = typeof(Vector256<Single>)
-                                    .GetMethod(nameof(Vector256<Single>.WithElement), new Type[] { typeof(int), typeof(Single) })
+                                    .GetMethod(nameof(Vector256.WithElement), new Type[] { typeof(int), typeof(Single) })
                                     .Invoke(value, new object[] { imm, insertedValue });
                 ValidateWithResult((Vector256<Single>)(result2), values, insertedValue);
             }

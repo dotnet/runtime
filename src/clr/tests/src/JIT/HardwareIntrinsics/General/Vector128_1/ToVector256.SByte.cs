@@ -77,12 +77,12 @@ namespace JIT.HardwareIntrinsics.General
             Vector128<SByte> value = Vector128.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15]);
 
             object result = typeof(Vector128<SByte>)
-                                .GetMethod(nameof(Vector128<SByte>.ToVector256), new Type[] { })
+                                .GetMethod(nameof(Vector128.ToVector256), new Type[] { })
                                 .Invoke(value, new object[] { });
             ValidateResult((Vector256<SByte>)(result), values, isUnsafe: false);
 
             object unsafeResult = typeof(Vector128<SByte>)
-                                    .GetMethod(nameof(Vector128<SByte>.ToVector256), new Type[] { })
+                                    .GetMethod(nameof(Vector128.ToVector256), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector256<SByte>)(unsafeResult), values, isUnsafe: true);
         }

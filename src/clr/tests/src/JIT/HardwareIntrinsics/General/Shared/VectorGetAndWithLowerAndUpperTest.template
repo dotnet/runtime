@@ -79,18 +79,18 @@ namespace JIT.HardwareIntrinsics.General
             {VectorType}<{BaseType}> value = {VectorType}.Create({ConsumeValues});
 
             object lowerResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.GetLower), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.GetLower), new Type[] { })
                                     .Invoke(value, new object[] { });
             object upperResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.GetUpper), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.GetUpper), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateGetResult(({TgtVectorType}<{BaseType}>)(lowerResult), ({TgtVectorType}<{BaseType}>)(upperResult), values);
 
             object result = typeof({VectorType}<{BaseType}>)
-                                .GetMethod(nameof({VectorType}<{BaseType}>.WithLower), new Type[] { typeof({TgtVectorType}<{BaseType}>) })
+                                .GetMethod(nameof({VectorType}.WithLower), new Type[] { typeof({TgtVectorType}<{BaseType}>) })
                                 .Invoke(value, new object[] { upperResult });
             result = typeof({VectorType}<{BaseType}>)
-                        .GetMethod(nameof({VectorType}<{BaseType}>.WithUpper), new Type[] { typeof({TgtVectorType}<{BaseType}>) })
+                        .GetMethod(nameof({VectorType}.WithUpper), new Type[] { typeof({TgtVectorType}<{BaseType}>) })
                         .Invoke(result, new object[] { lowerResult });
             ValidateWithResult(({VectorType}<{BaseType}>)(result), values);
         }

@@ -24,7 +24,7 @@ namespace JIT.HardwareIntrinsics.General
 
             try
             {
-                Vector64<ulong> result = default(Vector64<bool>).As<ulong>();
+                Vector64<ulong> result = default(Vector64<bool>).As<bool, ulong>();
             }
             catch (NotSupportedException)
             {

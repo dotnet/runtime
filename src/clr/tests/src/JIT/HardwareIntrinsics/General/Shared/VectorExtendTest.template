@@ -77,12 +77,12 @@ namespace JIT.HardwareIntrinsics.General
             {VectorType}<{BaseType}> value = {VectorType}.Create({ConsumeValues});
 
             object result = typeof({VectorType}<{BaseType}>)
-                                .GetMethod(nameof({VectorType}<{BaseType}>.{Method}), new Type[] { })
+                                .GetMethod(nameof({VectorType}.{Method}), new Type[] { })
                                 .Invoke(value, new object[] { });
             ValidateResult(({TgtVectorType}<{BaseType}>)(result), values, isUnsafe: false);
 
             object unsafeResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({TgtVectorType}<{BaseType}>)(unsafeResult), values, isUnsafe: true);
         }

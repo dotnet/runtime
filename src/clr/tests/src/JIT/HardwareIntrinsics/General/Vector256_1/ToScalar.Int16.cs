@@ -74,7 +74,7 @@ namespace JIT.HardwareIntrinsics.General
             Vector256<Int16> value = Vector256.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15]);
 
             object result = typeof(Vector256<Int16>)
-                                .GetMethod(nameof(Vector256<Int16>.ToScalar), new Type[] { })
+                                .GetMethod(nameof(Vector256.ToScalar), new Type[] { })
                                 .Invoke(value, new object[] { });
 
             ValidateResult((Int16)(result), values);
