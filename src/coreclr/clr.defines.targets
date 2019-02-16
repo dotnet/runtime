@@ -30,5 +30,6 @@
 
         <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);PLATFORM_UNIX</DefineConstants>
         <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);PLATFORM_WINDOWS</DefineConstants>
+        <DefineConstants Condition="'$(TargetsOSX)' == 'true'">$(DefineConstants);PLATFORM_OSX</DefineConstants>
     </PropertyGroup>
 </Project>
