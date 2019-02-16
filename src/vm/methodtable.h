@@ -2441,14 +2441,14 @@ protected:
                            UINT32 slotNumber,
                            DispatchMapEntry *pEntry);
 
-public:
+private:
     BOOL FindDispatchImpl(
         UINT32         typeID, 
         UINT32         slotNumber, 
         DispatchSlot * pImplSlot,
         BOOL           throwOnConflict);
 
-
+public:
 #ifndef DACCESS_COMPILE
     BOOL FindDefaultInterfaceImplementation(
         MethodDesc *pInterfaceMD,
@@ -2459,8 +2459,6 @@ public:
 #endif // DACCESS_COMPILE
 
     DispatchSlot FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOOL throwOnConflict);
-
-    DispatchSlot FindDispatchSlot(DispatchToken tok, BOOL throwOnConflict);
 
     // You must use the second of these two if there is any chance the pMD is a method
     // on a generic interface such as IComparable<T> (which it normally can be).  The 
