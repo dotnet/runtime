@@ -24,7 +24,7 @@ namespace JIT.HardwareIntrinsics.General
 
             try
             {
-                Vector64<short> result = default(Vector64<bool>).As<short>();
+                Vector64<short> result = default(Vector64<bool>).As<bool, short>();
             }
             catch (NotSupportedException)
             {

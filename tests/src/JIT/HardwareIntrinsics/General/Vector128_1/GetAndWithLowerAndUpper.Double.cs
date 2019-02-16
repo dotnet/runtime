@@ -79,18 +79,18 @@ namespace JIT.HardwareIntrinsics.General
             Vector128<Double> value = Vector128.Create(values[0], values[1]);
 
             object lowerResult = typeof(Vector128<Double>)
-                                    .GetMethod(nameof(Vector128<Double>.GetLower), new Type[] { })
+                                    .GetMethod(nameof(Vector128.GetLower), new Type[] { })
                                     .Invoke(value, new object[] { });
             object upperResult = typeof(Vector128<Double>)
-                                    .GetMethod(nameof(Vector128<Double>.GetUpper), new Type[] { })
+                                    .GetMethod(nameof(Vector128.GetUpper), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateGetResult((Vector64<Double>)(lowerResult), (Vector64<Double>)(upperResult), values);
 
             object result = typeof(Vector128<Double>)
-                                .GetMethod(nameof(Vector128<Double>.WithLower), new Type[] { typeof(Vector64<Double>) })
+                                .GetMethod(nameof(Vector128.WithLower), new Type[] { typeof(Vector64<Double>) })
                                 .Invoke(value, new object[] { upperResult });
             result = typeof(Vector128<Double>)
-                        .GetMethod(nameof(Vector128<Double>.WithUpper), new Type[] { typeof(Vector64<Double>) })
+                        .GetMethod(nameof(Vector128.WithUpper), new Type[] { typeof(Vector64<Double>) })
                         .Invoke(result, new object[] { lowerResult });
             ValidateWithResult((Vector128<Double>)(result), values);
         }

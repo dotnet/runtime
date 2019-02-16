@@ -15,43 +15,43 @@ internal partial class IntelHardwareIntrinsicTest
     {
         if (typeof(T) == typeof(byte))
         {
-            return Sse2.Add(left.AsByte(), right.AsByte()).As<T>();
+            return Sse2.Add(left.AsByte(), right.AsByte()).As<byte, T>();
         }
         else if (typeof(T) == typeof(sbyte))
         {
-            return Sse2.Add(left.AsSByte(), right.AsSByte()).As<T>();
+            return Sse2.Add(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
         }
         else if (typeof(T) == typeof(short))
         {
-            return Sse2.Add(left.AsInt16(), right.AsInt16()).As<T>();
+            return Sse2.Add(left.AsInt16(), right.AsInt16()).As<short, T>();
         }
         else if (typeof(T) == typeof(ushort))
         {
-            return Sse2.Add(left.AsUInt16(), right.AsUInt16()).As<T>();
+            return Sse2.Add(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
         }
         else if (typeof(T) == typeof(int))
         {
-            return Sse2.Add(left.AsInt32(), right.AsInt32()).As<T>();
+            return Sse2.Add(left.AsInt32(), right.AsInt32()).As<int, T>();
         }
         else if (typeof(T) == typeof(uint))
         {
-            return Sse2.Add(left.AsUInt32(), right.AsUInt32()).As<T>();
+            return Sse2.Add(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
         }
         else if (typeof(T) == typeof(long))
         {
-            return Sse2.Add(left.AsInt64(), right.AsInt64()).As<T>();
+            return Sse2.Add(left.AsInt64(), right.AsInt64()).As<long, T>();
         }
         else if (typeof(T) == typeof(ulong))
         {
-            return Sse2.Add(left.AsUInt64(), right.AsUInt64()).As<T>();
+            return Sse2.Add(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
         }
         else if (typeof(T) == typeof(float))
         {
-            return Sse.Add(left.AsSingle(), right.AsSingle()).As<T>();
+            return Sse.Add(left.AsSingle(), right.AsSingle()).As<float, T>();
         }
         else if (typeof(T) == typeof(double))
         {
-            return Sse2.Add(left.AsDouble(), right.AsDouble()).As<T>();
+            return Sse2.Add(left.AsDouble(), right.AsDouble()).As<double, T>();
         }
         else
         {
@@ -63,43 +63,43 @@ internal partial class IntelHardwareIntrinsicTest
     {
         if (typeof(T) == typeof(byte))
         {
-            return Avx2.Add(left.AsByte(), right.AsByte()).As<T>();
+            return Avx2.Add(left.AsByte(), right.AsByte()).As<byte, T>();
         }
         else if (typeof(T) == typeof(sbyte))
         {
-            return Avx2.Add(left.AsSByte(), right.AsSByte()).As<T>();
+            return Avx2.Add(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
         }
         else if (typeof(T) == typeof(short))
         {
-            return Avx2.Add(left.AsInt16(), right.AsInt16()).As<T>();
+            return Avx2.Add(left.AsInt16(), right.AsInt16()).As<short, T>();
         }
         else if (typeof(T) == typeof(ushort))
         {
-            return Avx2.Add(left.AsUInt16(), right.AsUInt16()).As<T>();
+            return Avx2.Add(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
         }
         else if (typeof(T) == typeof(int))
         {
-            return Avx2.Add(left.AsInt32(), right.AsInt32()).As<T>();
+            return Avx2.Add(left.AsInt32(), right.AsInt32()).As<int, T>();
         }
         else if (typeof(T) == typeof(uint))
         {
-            return Avx2.Add(left.AsUInt32(), right.AsUInt32()).As<T>();
+            return Avx2.Add(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
         }
         else if (typeof(T) == typeof(long))
         {
-            return Avx2.Add(left.AsInt64(), right.AsInt64()).As<T>();
+            return Avx2.Add(left.AsInt64(), right.AsInt64()).As<long, T>();
         }
         else if (typeof(T) == typeof(ulong))
         {
-            return Avx2.Add(left.AsUInt64(), right.AsUInt64()).As<T>();
+            return Avx2.Add(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
         }
         else if (typeof(T) == typeof(float))
         {
-            return Avx.Add(left.AsSingle(), right.AsSingle()).As<T>();
+            return Avx.Add(left.AsSingle(), right.AsSingle()).As<float, T>();
         }
         else if (typeof(T) == typeof(double))
         {
-            return Avx.Add(left.AsDouble(), right.AsDouble()).As<T>();
+            return Avx.Add(left.AsDouble(), right.AsDouble()).As<double, T>();
         }
         else
         {
@@ -111,43 +111,43 @@ internal partial class IntelHardwareIntrinsicTest
     {
         if (typeof(T) == typeof(byte))
         {
-            return Vector128.Create(Convert.ToByte(value)).As<T>();
+            return Vector128.Create(Convert.ToByte(value)).As<byte, T>();
         }
         else if (typeof(T) == typeof(sbyte))
         {
-            return Vector128.Create(Convert.ToSByte(value)).As<T>();
+            return Vector128.Create(Convert.ToSByte(value)).As<sbyte, T>();
         }
         else if (typeof(T) == typeof(short))
         {
-            return Vector128.Create(Convert.ToInt16(value)).As<T>();
+            return Vector128.Create(Convert.ToInt16(value)).As<short, T>();
         }
         else if (typeof(T) == typeof(ushort))
         {
-            return Vector128.Create(Convert.ToUInt16(value)).As<T>();
+            return Vector128.Create(Convert.ToUInt16(value)).As<ushort, T>();
         }
         else if (typeof(T) == typeof(int))
         {
-            return Vector128.Create(Convert.ToInt32(value)).As<T>();
+            return Vector128.Create(Convert.ToInt32(value)).As<int, T>();
         }
         else if (typeof(T) == typeof(uint))
         {
-            return Vector128.Create(Convert.ToUInt32(value)).As<T>();
+            return Vector128.Create(Convert.ToUInt32(value)).As<uint, T>();
         }
         else if (typeof(T) == typeof(long))
         {
-            return Vector128.Create(Convert.ToInt64(value)).As<T>();
+            return Vector128.Create(Convert.ToInt64(value)).As<long, T>();
         }
         else if (typeof(T) == typeof(ulong))
         {
-            return Vector128.Create(Convert.ToUInt64(value)).As<T>();
+            return Vector128.Create(Convert.ToUInt64(value)).As<ulong, T>();
         }
         else if (typeof(T) == typeof(float))
         {
-            return Vector128.Create(Convert.ToSingle(value)).As<T>();
+            return Vector128.Create(Convert.ToSingle(value)).As<float, T>();
         }
         else if (typeof(T) == typeof(double))
         {
-            return Vector128.Create(Convert.ToDouble(value)).As<T>();
+            return Vector128.Create(Convert.ToDouble(value)).As<double, T>();
         }
         else
         {
@@ -159,43 +159,43 @@ internal partial class IntelHardwareIntrinsicTest
     {
         if (typeof(T) == typeof(byte))
         {
-            return Vector256.Create(Convert.ToByte(value)).As<T>();
+            return Vector256.Create(Convert.ToByte(value)).As<byte, T>();
         }
         else if (typeof(T) == typeof(sbyte))
         {
-            return Vector256.Create(Convert.ToSByte(value)).As<T>();
+            return Vector256.Create(Convert.ToSByte(value)).As<sbyte, T>();
         }
         else if (typeof(T) == typeof(short))
         {
-            return Vector256.Create(Convert.ToInt16(value)).As<T>();
+            return Vector256.Create(Convert.ToInt16(value)).As<short, T>();
         }
         else if (typeof(T) == typeof(ushort))
         {
-            return Vector256.Create(Convert.ToUInt16(value)).As<T>();
+            return Vector256.Create(Convert.ToUInt16(value)).As<ushort, T>();
         }
         else if (typeof(T) == typeof(int))
         {
-            return Vector256.Create(Convert.ToInt32(value)).As<T>();
+            return Vector256.Create(Convert.ToInt32(value)).As<int, T>();
         }
         else if (typeof(T) == typeof(uint))
         {
-            return Vector256.Create(Convert.ToUInt32(value)).As<T>();
+            return Vector256.Create(Convert.ToUInt32(value)).As<uint, T>();
         }
         else if (typeof(T) == typeof(long))
         {
-            return Vector256.Create(Convert.ToInt64(value)).As<T>();
+            return Vector256.Create(Convert.ToInt64(value)).As<long, T>();
         }
         else if (typeof(T) == typeof(ulong))
         {
-            return Vector256.Create(Convert.ToUInt64(value)).As<T>();
+            return Vector256.Create(Convert.ToUInt64(value)).As<ulong, T>();
         }
         else if (typeof(T) == typeof(float))
         {
-            return Vector256.Create(Convert.ToSingle(value)).As<T>();
+            return Vector256.Create(Convert.ToSingle(value)).As<float, T>();
         }
         else if (typeof(T) == typeof(double))
         {
-            return Vector256.Create(Convert.ToDouble(value)).As<T>();
+            return Vector256.Create(Convert.ToDouble(value)).As<double, T>();
         }
         else
         {

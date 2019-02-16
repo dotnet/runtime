@@ -1170,6 +1170,10 @@
                     "name": "System.ComponentModel.DataAnnotations.Tests.RangeAttributeTests.Validate_DoubleConversionOverflows_ThrowsOverflowException",
                     "reason": "https://github.com/dotnet/coreclr/pull/20707"
                 },
+                {
+                    "name": "System.ComponentModel.DataAnnotations.Tests.AssociationAttributeTests.Constructor",
+                    "reason": "https://github.com/dotnet/coreclr/pull/22595"
+                },
             ]
         }
     },
