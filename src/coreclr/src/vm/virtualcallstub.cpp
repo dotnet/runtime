@@ -1154,7 +1154,7 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
 
     // Get the token from the stub
     CONSISTENCY_CHECK(isStub(pStub));
-    size_t token = GetTokenFromStub(pStub);
+    DispatchToken token(GetTokenFromStub(pStub));
 
     // Get the this object from ECX
     Object *pObj = StubManagerHelpers::GetThisPtr(pContext);
@@ -1698,7 +1698,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     }
 #endif
 
-    target = pMgr->ResolveWorker(&callSite, protectedObj, token, stubKind);
+    target = pMgr->ResolveWorker(&callSite, protectedObj, representativeToken, stubKind);
 
     GCPROTECT_END();
 
@@ -2190,7 +2190,7 @@ VirtualCallStubManager::Resolver(
     if (token.IsTypedToken())
     {
         dbg_pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
-        dbg_pTokenMD = dbg_pTokenMT->FindDispatchSlot(token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
+        dbg_pTokenMD = dbg_pTokenMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
     }
 #endif // _DEBUG
 
@@ -2205,7 +2205,7 @@ VirtualCallStubManager::Resolver(
 
     MethodDesc * pMD = NULL;
     BOOL fShouldPatch = FALSE;
-    DispatchSlot implSlot(pMT->FindDispatchSlot(token, throwOnConflict));
+    DispatchSlot implSlot(pMT->FindDispatchSlot(token.GetTypeID(), token.GetSlotNumber(), throwOnConflict));
 
     // If we found a target, then just figure out if we're allowed to create a stub around
     // this target and backpatch the callsite.
@@ -2289,7 +2289,7 @@ VirtualCallStubManager::Resolver(
     else if (pMT->IsComObjectType() && IsInterfaceToken(token))
     {
         MethodTable * pItfMT = GetTypeFromToken(token);
-        implSlot = pItfMT->FindDispatchSlot(token.GetSlotNumber(), throwOnConflict);
+        implSlot = pItfMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict);
 
         if (pItfMT->HasInstantiation())
         {
@@ -2360,7 +2360,7 @@ VirtualCallStubManager::Resolver(
         if (token.IsTypedToken())
         {
             pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
-            pTokenMD = pTokenMT->FindDispatchSlot(token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
+            pTokenMD = pTokenMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
         }
 
 #ifdef FEATURE_COMINTEROP
@@ -2608,14 +2608,14 @@ VirtualCallStubManager::TraceResolver(
     MethodTable *pMT = pObj->GetMethodTable();
     CONSISTENCY_CHECK(CheckPointer(pMT));
 
-
-    DispatchSlot slot(pMT->FindDispatchSlot(token, FALSE /* throwOnConflict */));
-
+    DispatchSlot slot(pMT->FindDispatchSlot(token.GetTypeID(), token.GetSlotNumber(), FALSE /* throwOnConflict */));
     if (slot.IsNull() && IsInterfaceToken(token) && pMT->IsComObjectType())
     {
         MethodDesc * pItfMD = GetInterfaceMethodDescFromToken(token);
         CONSISTENCY_CHECK(pItfMD->GetMethodTable()->GetSlot(pItfMD->GetSlot()) == pItfMD->GetMethodEntryPoint());
-        slot = pItfMD->GetMethodTable()->FindDispatchSlot(pItfMD->GetSlot(), FALSE /* throwOnConflict */);
+
+        // Look up the slot on the interface itself.
+        slot = pItfMD->GetMethodTable()->FindDispatchSlot(TYPE_ID_THIS_CLASS, pItfMD->GetSlot(), FALSE /* throwOnConflict */);
     }
 
     // The dispatch slot's target may change due to code versioning shortly after it was retrieved above for the trace. This
@@ -4157,7 +4157,7 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
         return NULL;
 
     // Do the full resolve
-    size_t token = VirtualCallStubManager::GetTokenFromStubQuick(pMgr, stubStartAddress, sk);
+    DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, stubStartAddress, sk));
 
     PCODE target = NULL;
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
