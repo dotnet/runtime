@@ -286,6 +286,7 @@ do                                                                  \
 template <typename TYPENAME>
 CHECK CheckInvariant(TYPENAME &obj)
 {
+#if defined(_MSC_VER) || defined(__llvm__)
     __if_exists(TYPENAME::Invariant)
     {
         CHECK(obj.Invariant());
@@ -294,6 +295,7 @@ CHECK CheckInvariant(TYPENAME &obj)
     {
         CHECK(obj.InternalInvariant());
     }
+#endif
 
     CHECK_OK;
 }
@@ -339,10 +341,12 @@ CHECK CheckPointer(TYPENAME *o, IsNullOK ok = NULL_NOT_OK)
     }
     else
     {
+#if defined(_MSC_VER) || defined(__llvm__)
         __if_exists(TYPENAME::Check)
         {
             CHECK(o->Check());
         }
+#endif
     }
 
     CHECK_OK;
@@ -351,10 +355,12 @@ CHECK CheckPointer(TYPENAME *o, IsNullOK ok = NULL_NOT_OK)
 template <typename TYPENAME>
 CHECK CheckValue(TYPENAME &val)
 {
+#if defined(_MSC_VER) || defined(__llvm__)
     __if_exists(TYPENAME::Check)
     {
         CHECK(val.Check());
     }
+#endif
 
     CHECK(CheckInvariant(val));
 
