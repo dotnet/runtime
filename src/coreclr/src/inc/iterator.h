@@ -219,7 +219,7 @@ class CheckedIteratorBase
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-#if defined(_DEBUG)
+#if defined(_DEBUG) && (defined(_MSC_VER) || defined(__llvm__))
         __if_exists(CONTAINER::m_revision)
         {
             CHECK_MSG(m_revision == m_container->m_revision, 
@@ -242,10 +242,12 @@ class CheckedIteratorBase
         LIMITED_METHOD_CONTRACT;
 #if defined(_DEBUG)
         m_container = container;
+#if defined(_MSC_VER) || defined(__llvm__)
         __if_exists(CONTAINER::m_revision)
         {
             m_revision = m_container->m_revision;
         }
+#endif
 #endif
     }
 
@@ -253,14 +255,14 @@ class CheckedIteratorBase
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && (defined(_MSC_VER) || defined(__llvm__))
         __if_exists(CONTAINER::m_revision)
         {
             m_revision = m_container->m_revision;
         }
 #endif
     }
-    
+
 #if defined(_DEBUG)
     const CONTAINER *GetContainerDebug() const
     {
