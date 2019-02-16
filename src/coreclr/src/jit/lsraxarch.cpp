@@ -666,25 +666,28 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
             RefPosition* internalDef = nullptr;
-            if (tree->AsIndexAddr()->Index()->TypeGet() == TYP_I_IMPL)
+#ifdef _TARGET_64BIT_
+            // On 64-bit we always need a temporary register:
+            //   - if the index is `native int` then we need to load the array
+            //     length into a register to widen it to `native int`
+            //   - if the index is `int` (or smaller) then we need to widen
+            //     it to `long` to peform the address calculation
+            internalDef = buildInternalIntRegisterDefForNode(tree);
+#else  // !_TARGET_64BIT_
+            assert(!varTypeIsLong(tree->AsIndexAddr()->Index()->TypeGet()));
+            switch (tree->AsIndexAddr()->gtElemSize)
             {
-                internalDef = buildInternalIntRegisterDefForNode(tree);
-            }
-            else
-            {
-                switch (tree->AsIndexAddr()->gtElemSize)
-                {
-                    case 1:
-                    case 2:
-                    case 4:
-                    case 8:
-                        break;
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                    break;
 
-                    default:
-                        internalDef = buildInternalIntRegisterDefForNode(tree);
-                        break;
-                }
+                default:
+                    internalDef = buildInternalIntRegisterDefForNode(tree);
+                    break;
             }
+#endif // !_TARGET_64BIT_
             srcCount = BuildBinaryUses(tree->AsOp());
             if (internalDef != nullptr)
             {
