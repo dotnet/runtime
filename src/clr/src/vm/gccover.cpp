@@ -59,7 +59,7 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
     if (vsdStubKind != VirtualCallStubManager::SK_BREAKPOINT && vsdStubKind != VirtualCallStubManager::SK_UNKNOWN)
     {
         // It is a VSD stub manager.
-        DispatchToken token = VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, vsdStubKind);
+        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, vsdStubKind));
         _ASSERTE(token.IsValid());
         return VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
     }

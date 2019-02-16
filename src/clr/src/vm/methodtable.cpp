@@ -7337,15 +7337,6 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 //==========================================================================================
 DispatchSlot MethodTable::FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOOL throwOnConflict)
 {
-    WRAPPER_NO_CONTRACT;
-    DispatchSlot implSlot(NULL);
-    FindDispatchImpl(typeID, slotNumber, &implSlot, throwOnConflict);
-    return implSlot;
-}
-
-//==========================================================================================
-DispatchSlot MethodTable::FindDispatchSlot(DispatchToken tok, BOOL throwOnConflict)
-{
     CONTRACTL
     {
         THROWS;
@@ -7353,7 +7344,10 @@ DispatchSlot MethodTable::FindDispatchSlot(DispatchToken tok, BOOL throwOnConfli
         MODE_ANY;
     }
     CONTRACTL_END;
-    return FindDispatchSlot(tok.GetTypeID(), tok.GetSlotNumber(), throwOnConflict);
+
+    DispatchSlot implSlot(NULL);
+    FindDispatchImpl(typeID, slotNumber, &implSlot, throwOnConflict);
+    return implSlot;
 }
 
 #ifndef DACCESS_COMPILE
