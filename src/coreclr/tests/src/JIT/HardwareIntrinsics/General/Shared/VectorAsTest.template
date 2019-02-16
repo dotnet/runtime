@@ -98,43 +98,43 @@ namespace JIT.HardwareIntrinsics.General
             {VectorType}<{BaseType}> value;
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<byte> byteResult = value.{Method}<byte>();
+            {VectorType}<byte> byteResult = value.{Method}<{BaseType}, byte>();
             ValidateResult(byteResult, value);
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<double> doubleResult = value.{Method}<double>();
+            {VectorType}<double> doubleResult = value.{Method}<{BaseType}, double>();
             ValidateResult(doubleResult, value);
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<short> shortResult = value.{Method}<short>();
+            {VectorType}<short> shortResult = value.{Method}<{BaseType}, short>();
             ValidateResult(shortResult, value);
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<int> intResult = value.{Method}<int>();
+            {VectorType}<int> intResult = value.{Method}<{BaseType}, int>();
             ValidateResult(intResult, value);
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<long> longResult = value.{Method}<long>();
+            {VectorType}<long> longResult = value.{Method}<{BaseType}, long>();
             ValidateResult(longResult, value);
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<sbyte> sbyteResult = value.{Method}<sbyte>();
+            {VectorType}<sbyte> sbyteResult = value.{Method}<{BaseType}, sbyte>();
             ValidateResult(sbyteResult, value);
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<float> floatResult = value.{Method}<float>();
+            {VectorType}<float> floatResult = value.{Method}<{BaseType}, float>();
             ValidateResult(floatResult, value);
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<ushort> ushortResult = value.{Method}<ushort>();
+            {VectorType}<ushort> ushortResult = value.{Method}<{BaseType}, ushort>();
             ValidateResult(ushortResult, value);
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<uint> uintResult = value.{Method}<uint>();
+            {VectorType}<uint> uintResult = value.{Method}<{BaseType}, uint>();
             ValidateResult(uintResult, value);
 
             value = {VectorType}.Create({NextValueOp});
-            {VectorType}<ulong> ulongResult = value.{Method}<ulong>();
+            {VectorType}<ulong> ulongResult = value.{Method}<{BaseType}, ulong>();
             ValidateResult(ulongResult, value);
         }
 
@@ -145,61 +145,61 @@ namespace JIT.HardwareIntrinsics.General
 
             value = {VectorType}.Create({NextValueOp});
             object byteResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}Byte), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}Byte), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<byte>)(byteResult), value);
 
             value = {VectorType}.Create({NextValueOp});
             object doubleResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}Double), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}Double), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<double>)(doubleResult), value);
 
             value = {VectorType}.Create({NextValueOp});
             object shortResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}Int16), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}Int16), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<short>)(shortResult), value);
 
             value = {VectorType}.Create({NextValueOp});
             object intResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}Int32), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}Int32), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<int>)(intResult), value);
 
             value = {VectorType}.Create({NextValueOp});
             object longResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}Int64), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}Int64), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<long>)(longResult), value);
 
             value = {VectorType}.Create({NextValueOp});
             object sbyteResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}SByte), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}SByte), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<sbyte>)(sbyteResult), value);
 
             value = {VectorType}.Create({NextValueOp});
             object floatResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}Single), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}Single), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<float>)(floatResult), value);
 
             value = {VectorType}.Create({NextValueOp});
             object ushortResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}UInt16), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}UInt16), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<ushort>)(ushortResult), value);
 
             value = {VectorType}.Create({NextValueOp});
             object uintResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}UInt32), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}UInt32), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<uint>)(uintResult), value);
 
             value = {VectorType}.Create({NextValueOp});
             object ulongResult = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.{Method}UInt64), new Type[] { })
+                                    .GetMethod(nameof({VectorType}.{Method}UInt64), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult(({VectorType}<ulong>)(ulongResult), value);
         }

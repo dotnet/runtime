@@ -79,18 +79,18 @@ namespace JIT.HardwareIntrinsics.General
             Vector256<Byte> value = Vector256.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15], values[16], values[17], values[18], values[19], values[20], values[21], values[22], values[23], values[24], values[25], values[26], values[27], values[28], values[29], values[30], values[31]);
 
             object lowerResult = typeof(Vector256<Byte>)
-                                    .GetMethod(nameof(Vector256<Byte>.GetLower), new Type[] { })
+                                    .GetMethod(nameof(Vector256.GetLower), new Type[] { })
                                     .Invoke(value, new object[] { });
             object upperResult = typeof(Vector256<Byte>)
-                                    .GetMethod(nameof(Vector256<Byte>.GetUpper), new Type[] { })
+                                    .GetMethod(nameof(Vector256.GetUpper), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateGetResult((Vector128<Byte>)(lowerResult), (Vector128<Byte>)(upperResult), values);
 
             object result = typeof(Vector256<Byte>)
-                                .GetMethod(nameof(Vector256<Byte>.WithLower), new Type[] { typeof(Vector128<Byte>) })
+                                .GetMethod(nameof(Vector256.WithLower), new Type[] { typeof(Vector128<Byte>) })
                                 .Invoke(value, new object[] { upperResult });
             result = typeof(Vector256<Byte>)
-                        .GetMethod(nameof(Vector256<Byte>.WithUpper), new Type[] { typeof(Vector128<Byte>) })
+                        .GetMethod(nameof(Vector256.WithUpper), new Type[] { typeof(Vector128<Byte>) })
                         .Invoke(result, new object[] { lowerResult });
             ValidateWithResult((Vector256<Byte>)(result), values);
         }

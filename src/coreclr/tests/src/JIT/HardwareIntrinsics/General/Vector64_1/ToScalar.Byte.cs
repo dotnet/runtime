@@ -74,7 +74,7 @@ namespace JIT.HardwareIntrinsics.General
             Vector64<Byte> value = Vector64.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
 
             object result = typeof(Vector64<Byte>)
-                                .GetMethod(nameof(Vector64<Byte>.ToScalar), new Type[] { })
+                                .GetMethod(nameof(Vector64.ToScalar), new Type[] { })
                                 .Invoke(value, new object[] { });
 
             ValidateResult((Byte)(result), values);

@@ -98,43 +98,43 @@ namespace JIT.HardwareIntrinsics.General
             Vector64<Byte> value;
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<byte> byteResult = value.As<byte>();
+            Vector64<byte> byteResult = value.As<Byte, byte>();
             ValidateResult(byteResult, value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<double> doubleResult = value.As<double>();
+            Vector64<double> doubleResult = value.As<Byte, double>();
             ValidateResult(doubleResult, value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<short> shortResult = value.As<short>();
+            Vector64<short> shortResult = value.As<Byte, short>();
             ValidateResult(shortResult, value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<int> intResult = value.As<int>();
+            Vector64<int> intResult = value.As<Byte, int>();
             ValidateResult(intResult, value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<long> longResult = value.As<long>();
+            Vector64<long> longResult = value.As<Byte, long>();
             ValidateResult(longResult, value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<sbyte> sbyteResult = value.As<sbyte>();
+            Vector64<sbyte> sbyteResult = value.As<Byte, sbyte>();
             ValidateResult(sbyteResult, value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<float> floatResult = value.As<float>();
+            Vector64<float> floatResult = value.As<Byte, float>();
             ValidateResult(floatResult, value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<ushort> ushortResult = value.As<ushort>();
+            Vector64<ushort> ushortResult = value.As<Byte, ushort>();
             ValidateResult(ushortResult, value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<uint> uintResult = value.As<uint>();
+            Vector64<uint> uintResult = value.As<Byte, uint>();
             ValidateResult(uintResult, value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
-            Vector64<ulong> ulongResult = value.As<ulong>();
+            Vector64<ulong> ulongResult = value.As<Byte, ulong>();
             ValidateResult(ulongResult, value);
         }
 
@@ -145,61 +145,61 @@ namespace JIT.HardwareIntrinsics.General
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object byteResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsByte), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsByte), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<byte>)(byteResult), value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object doubleResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsDouble), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsDouble), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<double>)(doubleResult), value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object shortResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsInt16), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsInt16), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<short>)(shortResult), value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object intResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsInt32), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsInt32), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<int>)(intResult), value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object longResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsInt64), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsInt64), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<long>)(longResult), value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object sbyteResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsSByte), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsSByte), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<sbyte>)(sbyteResult), value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object floatResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsSingle), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsSingle), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<float>)(floatResult), value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object ushortResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsUInt16), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsUInt16), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<ushort>)(ushortResult), value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object uintResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsUInt32), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsUInt32), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<uint>)(uintResult), value);
 
             value = Vector64.Create(TestLibrary.Generator.GetByte());
             object ulongResult = typeof(Vector64<Byte>)
-                                    .GetMethod(nameof(Vector64<Byte>.AsUInt64), new Type[] { })
+                                    .GetMethod(nameof(Vector64.AsUInt64), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector64<ulong>)(ulongResult), value);
         }

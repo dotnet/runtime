@@ -98,43 +98,43 @@ namespace JIT.HardwareIntrinsics.General
             Vector128<UInt32> value;
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<byte> byteResult = value.As<byte>();
+            Vector128<byte> byteResult = value.As<UInt32, byte>();
             ValidateResult(byteResult, value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<double> doubleResult = value.As<double>();
+            Vector128<double> doubleResult = value.As<UInt32, double>();
             ValidateResult(doubleResult, value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<short> shortResult = value.As<short>();
+            Vector128<short> shortResult = value.As<UInt32, short>();
             ValidateResult(shortResult, value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<int> intResult = value.As<int>();
+            Vector128<int> intResult = value.As<UInt32, int>();
             ValidateResult(intResult, value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<long> longResult = value.As<long>();
+            Vector128<long> longResult = value.As<UInt32, long>();
             ValidateResult(longResult, value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<sbyte> sbyteResult = value.As<sbyte>();
+            Vector128<sbyte> sbyteResult = value.As<UInt32, sbyte>();
             ValidateResult(sbyteResult, value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<float> floatResult = value.As<float>();
+            Vector128<float> floatResult = value.As<UInt32, float>();
             ValidateResult(floatResult, value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<ushort> ushortResult = value.As<ushort>();
+            Vector128<ushort> ushortResult = value.As<UInt32, ushort>();
             ValidateResult(ushortResult, value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<uint> uintResult = value.As<uint>();
+            Vector128<uint> uintResult = value.As<UInt32, uint>();
             ValidateResult(uintResult, value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
-            Vector128<ulong> ulongResult = value.As<ulong>();
+            Vector128<ulong> ulongResult = value.As<UInt32, ulong>();
             ValidateResult(ulongResult, value);
         }
 
@@ -145,61 +145,61 @@ namespace JIT.HardwareIntrinsics.General
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object byteResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsByte), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsByte), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<byte>)(byteResult), value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object doubleResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsDouble), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsDouble), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<double>)(doubleResult), value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object shortResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsInt16), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsInt16), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<short>)(shortResult), value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object intResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsInt32), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsInt32), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<int>)(intResult), value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object longResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsInt64), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsInt64), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<long>)(longResult), value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object sbyteResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsSByte), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsSByte), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<sbyte>)(sbyteResult), value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object floatResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsSingle), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsSingle), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<float>)(floatResult), value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object ushortResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsUInt16), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsUInt16), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<ushort>)(ushortResult), value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object uintResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsUInt32), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsUInt32), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<uint>)(uintResult), value);
 
             value = Vector128.Create(TestLibrary.Generator.GetUInt32());
             object ulongResult = typeof(Vector128<UInt32>)
-                                    .GetMethod(nameof(Vector128<UInt32>.AsUInt64), new Type[] { })
+                                    .GetMethod(nameof(Vector128.AsUInt64), new Type[] { })
                                     .Invoke(value, new object[] { });
             ValidateResult((Vector128<ulong>)(ulongResult), value);
         }

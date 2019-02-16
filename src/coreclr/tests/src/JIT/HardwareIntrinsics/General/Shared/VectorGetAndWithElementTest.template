@@ -121,7 +121,7 @@ namespace JIT.HardwareIntrinsics.General
             try
             {
                 object result = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.GetElement), new Type[] { typeof(int) })
+                                    .GetMethod(nameof({VectorType}.GetElement), new Type[] { typeof(int) })
                                     .Invoke(value, new object[] { imm });
                 ValidateGetResult(({BaseType})(result), values);
             }
@@ -146,7 +146,7 @@ namespace JIT.HardwareIntrinsics.General
             try
             {
                 object result2 = typeof({VectorType}<{BaseType}>)
-                                    .GetMethod(nameof({VectorType}<{BaseType}>.WithElement), new Type[] { typeof(int), typeof({BaseType}) })
+                                    .GetMethod(nameof({VectorType}.WithElement), new Type[] { typeof(int), typeof({BaseType}) })
                                     .Invoke(value, new object[] { imm, insertedValue });
                 ValidateWithResult(({VectorType}<{BaseType}>)(result2), values, insertedValue);
             }
