@@ -3239,7 +3239,7 @@ IUnknown * ComCallWrapper::GetComIPFromCCW_HandleExtendsCOMObject(
                 MethodDesc *pClsMD = NULL;
 
                 // Find the implementation for the first slot of the interface
-                DispatchSlot impl(pMT->FindDispatchSlot(intIt.GetInterface()->GetTypeID(), 0));
+                DispatchSlot impl(pMT->FindDispatchSlot(intIt.GetInterface()->GetTypeID(), 0, FALSE /* throwOnConflict */));
                 CONSISTENCY_CHECK(!impl.IsNull());
 
                 // Get the MethodDesc for this slot in the class

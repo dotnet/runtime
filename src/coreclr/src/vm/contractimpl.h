@@ -256,7 +256,7 @@ public:
         m_token = INVALID_TOKEN;
     }
 
-    DispatchToken(UINT_PTR token)
+    explicit DispatchToken(UINT_PTR token)
     {
         CONSISTENCY_CHECK(token != INVALID_TOKEN);
         m_token = token;
