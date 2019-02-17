@@ -7,9 +7,11 @@ download-macos:
 	tar -xvf dotnet-sdk-3.tar.gz
 
 build-sample:
-	./dotnet build HelloWorld
+	dotnet build HelloWorld
 
-SHAREDRUNTIME:=shared/Microsoft.NETCore.App/3.0.0-preview-27408-5/
+# COREHOST_TRACE=1 
+VERSION:=3.0.0-preview-27408-5
+SHAREDRUNTIME:=shared/Microsoft.NETCore.App/$(VERSION)
 
 link-mono:
 	cp ../../mono/mini/.libs/libmonosgen-2.0.dylib $(SHAREDRUNTIME)/libcoreclr.dylib
@@ -18,7 +20,7 @@ link-mono:
 prepare: download-macos build-sample link-mono 
 
 run:
-	@./dotnet HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
+	@./dotnet --fx-version "$(VERSION)" HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
 
 clean:
 	rm -rf sdk shared host dotnet LICENCE.txt ThirdPartyNotices.txt

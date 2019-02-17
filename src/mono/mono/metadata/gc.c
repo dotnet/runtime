@@ -646,6 +646,46 @@ ves_icall_System_GC_get_ephemeron_tombstone (MonoError *error)
 	return MONO_HANDLE_NEW (MonoObject, mono_domain_get ()->ephemeron_tombstone);
 }
 
+#if ENABLE_NETCORE
+
+gpointer
+ves_icall_System_GCHandle_Alloc (MonoObjectHandle obj, gint32 type, MonoError *error)
+{
+	switch (type) {
+	case HANDLE_WEAK:
+		return (gpointer) mono_gchandle_new_weakref_from_handle (obj);
+	case HANDLE_WEAK_TRACK:
+		return (gpointer) mono_gchandle_new_weakref_from_handle_track_resurrection (obj);
+	case HANDLE_NORMAL:
+		return (gpointer) mono_gchandle_from_handle (obj, FALSE);
+	case HANDLE_PINNED:
+		return (gpointer) mono_gchandle_from_handle (obj, TRUE);
+	default:
+		g_assert_not_reached ();
+	}
+	return 0;
+}
+
+void
+ves_icall_System_GCHandle_Free (gpointer handle, MonoError *error)
+{
+	mono_gchandle_free_internal ((uint32_t) handle);
+}
+
+MonoObjectHandle
+ves_icall_System_GCHandle_Get (gpointer handle, MonoError *error)
+{
+	return mono_gchandle_get_target_handle ((uint32_t) handle);
+}
+
+void
+ves_icall_System_GCHandle_Set (gpointer handle, MonoObjectHandle obj, MonoError *error)
+{
+	mono_gchandle_set_target_handle ((uint32_t) handle, obj);
+}
+
+#else
+
 MonoObjectHandle
 ves_icall_System_GCHandle_GetTarget (guint32 handle, MonoError *error)
 {
@@ -721,6 +761,8 @@ ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle)
 {
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }
+
+#endif
 
 static MonoCoopSem finalizer_sem;
 static volatile gboolean finished;
