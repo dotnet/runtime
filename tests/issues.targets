@@ -509,9 +509,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b37646/*">
             <Issue>Varargs not supported on this platform</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/NativeLibs/FromNativePaths/*">
-            <Issue>Issue building native components for the test.</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinning/object-pin/*">
             <Issue>Issue building native components for the test.</Issue>
         </ExcludeList>
@@ -1695,7 +1692,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/NativeLibs/FromNativePaths/*">
-            <Issue>needs triage</Issue>
+            <Issue>This requires the native assets to be in the test folder, which is currently not the case when building against packages.</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest612/Generated612/*">
             <Issue>needs triage</Issue>
