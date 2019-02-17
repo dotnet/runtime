@@ -108,7 +108,7 @@
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" />
+  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)')" />
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
     <!-- When we do a traversal build we get all packages up front, don't restore them again -->

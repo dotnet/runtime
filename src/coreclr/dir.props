@@ -186,5 +186,5 @@
   </ItemGroup>
 
   <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" />
+  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)')" />
 </Project>
