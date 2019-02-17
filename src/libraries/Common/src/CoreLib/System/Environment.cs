@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Threading;
 
 namespace System
 {
@@ -112,7 +113,19 @@ namespace System
 
         public static bool Is64BitOperatingSystem => Is64BitProcess || Is64BitOperatingSystemWhen32BitProcess;
 
-        public static OperatingSystem OSVersion => s_osVersion.Value;
+        private static OperatingSystem s_osVersion;
+
+        public static OperatingSystem OSVersion
+        {
+            get
+            {
+                if (s_osVersion == null)
+                {
+                    Interlocked.CompareExchange(ref s_osVersion, GetOSVersion(), null);
+                }
+                return s_osVersion;
+            }
+        }
 
         public static bool UserInteractive => true;
 
