@@ -17,7 +17,6 @@
 /* memcmp is used to verify the results, so this test is dependent on it. */
 /* ditto with wcslen */
 
-
 int __cdecl main(int argc, char *argv[])
 {
     WCHAR *checkstr = NULL;
@@ -26,16 +25,16 @@ int __cdecl main(int argc, char *argv[])
     if (PAL_Initialize(argc, argv) != 0)
         return(FAIL);
 
-	checkstr = convert("hello world");
+    checkstr = convert("hello world");
     testvswp(buf, _countof(buf), checkstr);
 
     if (memcmp(checkstr, buf, wcslen(checkstr)*2+2) != 0)
     {
         Fail("ERROR: Expected \"%s\", got \"%s\"\n", 
-            convertC(checkstr), convertC(buf));
+        convertC(checkstr), convertC(buf));
     }
 
-	free(checkstr);
+    free(checkstr);
     PAL_Terminate();
     return PASS;
 }

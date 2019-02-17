@@ -29,7 +29,7 @@ Revision History:
 #include "pal/stackstring.hpp"
 
 #include <errno.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <time.h>
 #include <pthread.h>
 #include <dlfcn.h>
@@ -49,16 +49,16 @@ static const char URANDOM_DEVICE_NAME[]="/dev/urandom";
 Function :
 
     PAL_GetPALDirectoryW
-    
+
     Returns the fully qualified path name
     where the PALL DLL was loaded from.
-    
-    On failure it returns FALSE and sets the 
+
+    On failure it returns FALSE and sets the
     proper LastError code.
 
 --*/
-BOOL 
-PAL_GetPALDirectoryW(PathWCharString& lpDirectoryName) 
+BOOL
+PAL_GetPALDirectoryW(PathWCharString& lpDirectoryName)
 {
     LPCWSTR lpFullPathAndName = NULL;
     LPCWSTR lpEndPoint = NULL;
@@ -84,8 +84,8 @@ PAL_GetPALDirectoryW(PathWCharString& lpDirectoryName)
         /* The path that we return is required to have
            the trailing slash on the end.*/
         lpEndPoint++;
-    
-        
+
+
         if(!lpDirectoryName.Set(lpFullPathAndName,lpEndPoint - lpFullPathAndName))
         {
             ASSERT( "The buffer was not large enough.\n" );
@@ -101,8 +101,8 @@ PAL_GetPALDirectoryW(PathWCharString& lpDirectoryName)
         /* Error path, should not be executed. */
         SetLastError( ERROR_INTERNAL_ERROR );
     }
-    
-EXIT:    
+
+EXIT:
     PERF_EXIT(PAL_GetPALDirectoryW);
     return bRet;
 }
@@ -117,9 +117,9 @@ PAL_GetPALDirectoryA(PathCharString& lpDirectoryName)
 
     bRet = PAL_GetPALDirectoryW(directory);
 
-    if (bRet) 
+    if (bRet)
     {
-        
+
         int length = WideCharToMultiByte(CP_ACP, 0, directory.GetString(), -1, NULL, 0, NULL, 0);
         LPSTR DirectoryName = lpDirectoryName.OpenStringBuffer(length);
         if (NULL == DirectoryName)
@@ -127,7 +127,7 @@ PAL_GetPALDirectoryA(PathCharString& lpDirectoryName)
             SetLastError( ERROR_INSUFFICIENT_BUFFER );
             bRet = FALSE;
         }
-        
+
         length = WideCharToMultiByte(CP_ACP, 0, directory.GetString(), -1, DirectoryName, length, NULL, 0);
 
         if (0 == length)
@@ -135,7 +135,7 @@ PAL_GetPALDirectoryA(PathCharString& lpDirectoryName)
             bRet = FALSE;
             length++;
         }
-    
+
         lpDirectoryName.CloseBuffer(length - 1);
     }
 
@@ -148,18 +148,18 @@ PAL_GetPALDirectoryA(PathCharString& lpDirectoryName)
 Function :
 
     PAL_GetPALDirectoryW
-    
+
     Returns the fully qualified path name
     where the PALL DLL was loaded from.
-    
-    On failure it returns FALSE and sets the 
+
+    On failure it returns FALSE and sets the
     proper LastError code.
 
 --*/
 PALIMPORT
-BOOL 
+BOOL
 PALAPI
-PAL_GetPALDirectoryW( OUT LPWSTR lpDirectoryName, IN OUT UINT* cchDirectoryName ) 
+PAL_GetPALDirectoryW( OUT LPWSTR lpDirectoryName, IN OUT UINT* cchDirectoryName )
 {
     PathWCharString directory;
     BOOL bRet;
@@ -169,14 +169,14 @@ PAL_GetPALDirectoryW( OUT LPWSTR lpDirectoryName, IN OUT UINT* cchDirectoryName 
     bRet = PAL_GetPALDirectoryW(directory);
 
     if (bRet) {
-        
+
         if (directory.GetCount() > *cchDirectoryName)
         {
             SetLastError( ERROR_INSUFFICIENT_BUFFER );
             bRet = FALSE;
         }
         else
-        { 
+        {
             PAL_wcscpy(lpDirectoryName, directory.GetString());
         }
 
@@ -204,7 +204,7 @@ PAL_GetPALDirectoryA(
 
     bRet = PAL_GetPALDirectoryA(directory);
 
-    if (bRet) 
+    if (bRet)
     {
         if (directory.GetCount() > *cchDirectoryName)
         {
@@ -212,10 +212,10 @@ PAL_GetPALDirectoryA(
             bRet = FALSE;
             *cchDirectoryName = directory.GetCount();
         }
-        else if (strcpy_s(lpDirectoryName, directory.GetCount(), directory.GetString()) == SAFECRT_SUCCESS) 
+        else if (strcpy_s(lpDirectoryName, directory.GetCount(), directory.GetString()) == SAFECRT_SUCCESS)
         {
         }
-        else 
+        else
         {
             bRet = FALSE;
         }
@@ -252,7 +252,7 @@ PAL_Random(
         if (rand_des == -1)
         {
             if (errno == ENOENT)
-            {                
+            {
                 sMissingDevURandom = TRUE;
             }
             else
@@ -267,7 +267,7 @@ PAL_Random(
             DWORD offset = 0;
             do
             {
-                DWORD n = read(rand_des, (BYTE*)lpBuffer + offset , dwLength - offset);
+                ssize_t n = read(rand_des, (BYTE*)lpBuffer + offset , dwLength - offset);
                 if (n == -1)
                 {
                     if (errno == EINTR)
@@ -287,7 +287,7 @@ PAL_Random(
 
             close(rand_des);
         }
-    }    
+    }
 
     if (!sInitializedMRand)
     {
