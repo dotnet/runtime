@@ -143,7 +143,7 @@ typedef struct _eh_frame_hdr
     //   {
     //      encoded_t start_ip;     // first address covered by this FDE
     //      encoded_t fde_offset;   // offset of the FDE
-    //   } binary_search_table[fde_count]; 
+    //   } binary_search_table[fde_count];
 } eh_frame_hdr;
 
 // "DW_EH_PE_datarel|DW_EH_PE_sdata4" encoded fde table entry
@@ -173,7 +173,7 @@ typedef struct dwarf_cie_info
     unsigned int signal_frame : 1;
 } dwarf_cie_info_t;
 
-static bool 
+static bool
 ReadValue8(const libunwindInfo* info, unw_word_t* addr, uint8_t* valp)
 {
     uint8_t value;
@@ -185,7 +185,7 @@ ReadValue8(const libunwindInfo* info, unw_word_t* addr, uint8_t* valp)
     return true;
 }
 
-static bool 
+static bool
 ReadValue16(const libunwindInfo* info, unw_word_t* addr, uint16_t* valp)
 {
     uint16_t value;
@@ -197,7 +197,7 @@ ReadValue16(const libunwindInfo* info, unw_word_t* addr, uint16_t* valp)
     return true;
 }
 
-static bool 
+static bool
 ReadValue32(const libunwindInfo* info, unw_word_t* addr, uint32_t* valp)
 {
     uint32_t value;
@@ -209,7 +209,7 @@ ReadValue32(const libunwindInfo* info, unw_word_t* addr, uint32_t* valp)
     return true;
 }
 
-static bool 
+static bool
 ReadValue64(const libunwindInfo* info, unw_word_t* addr, uint64_t* valp)
 {
     uint64_t value;
@@ -221,7 +221,7 @@ ReadValue64(const libunwindInfo* info, unw_word_t* addr, uint64_t* valp)
     return true;
 }
 
-static bool 
+static bool
 ReadPointer(const libunwindInfo* info, unw_word_t* addr, unw_word_t* valp)
 {
 #ifdef BIT64
@@ -241,7 +241,7 @@ ReadPointer(const libunwindInfo* info, unw_word_t* addr, unw_word_t* valp)
 }
 
 // Read a unsigned "little-endian base 128" value. See Chapter 7.6 of DWARF spec v3.
-static bool 
+static bool
 ReadULEB128(const libunwindInfo* info, unw_word_t* addr, unw_word_t* valp)
 {
     unw_word_t value = 0;
@@ -262,7 +262,7 @@ ReadULEB128(const libunwindInfo* info, unw_word_t* addr, unw_word_t* valp)
 }
 
 // Read a signed "little-endian base 128" value. See Chapter 7.6 of DWARF spec v3.
-static bool 
+static bool
 ReadSLEB128(const libunwindInfo* info, unw_word_t* addr, unw_word_t* valp)
 {
     unw_word_t value = 0;
@@ -278,7 +278,7 @@ ReadSLEB128(const libunwindInfo* info, unw_word_t* addr, unw_word_t* valp)
         shift += 7;
     } while (byte & 0x80);
 
-    if ((shift < (8 * sizeof(unw_word_t))) && ((byte & 0x40) != 0)) {
+    if (((size_t)shift < (8 * sizeof(unw_word_t))) && ((byte & 0x40) != 0)) {
         value |= ((unw_word_t)-1) << shift;
     }
 
@@ -286,7 +286,7 @@ ReadSLEB128(const libunwindInfo* info, unw_word_t* addr, unw_word_t* valp)
     return true;
 }
 
-static bool 
+static bool
 ReadEncodedPointer(const libunwindInfo* info, unw_word_t* addr, unsigned char encoding, unw_word_t funcRel, unw_word_t* valp)
 {
     unw_word_t initialAddr = *addr;
@@ -413,7 +413,7 @@ ReadEncodedPointer(const libunwindInfo* info, unw_word_t* addr, unsigned char en
     return true;
 }
 
-static bool 
+static bool
 LookupTableEntry(const libunwindInfo* info, int32_t ip, unw_word_t tableAddr, size_t tableCount, table_entry* entry, bool* found)
 {
     size_t low, high, mid;
@@ -535,7 +535,7 @@ ParseCie(const libunwindInfo* info, unw_word_t addr, dwarf_cie_info_t* dci)
     uint8_t augmentationString[8];
     memset(augmentationString, 0, sizeof(augmentationString));
 
-    for (int i = 0; i < sizeof(augmentationString); i++)
+    for (size_t i = 0; i < sizeof(augmentationString); i++)
     {
         if (!ReadValue8(info, &addr, &ch)) {
             return false;
@@ -570,7 +570,7 @@ ParseCie(const libunwindInfo* info, unw_word_t addr, dwarf_cie_info_t* dci)
     }
 
     // Parse the augmentation string
-    for (int i = 0; i < sizeof(augmentationString); i++)
+    for (size_t i = 0; i < sizeof(augmentationString); i++)
     {
         bool done = false;
         unw_word_t augmentationSize;
@@ -671,12 +671,12 @@ ExtractProcInfoFromFde(const libunwindInfo* info, unw_word_t* addrp, unw_proc_in
         if (cieOffset == 0) {
             return true;
         }
-        // DWARF says that the CIE_pointer in the FDE is a .debug_frame-relative offset, 
-        // but the GCC-generated .eh_frame sections instead store a "pcrelative" offset, 
+        // DWARF says that the CIE_pointer in the FDE is a .debug_frame-relative offset,
+        // but the GCC-generated .eh_frame sections instead store a "pcrelative" offset,
         // which is just as fine as it's self-contained
         cieAddr = cieOffsetAddr - cieOffset;
     }
-    else 
+    else
     {
         int64_t cieOffset = 0;
 
@@ -694,8 +694,8 @@ ExtractProcInfoFromFde(const libunwindInfo* info, unw_word_t* addrp, unw_proc_in
         if (cieOffset == 0) {
             return true;
         }
-        // DWARF says that the CIE_pointer in the FDE is a .debug_frame-relative offset, 
-        // but the GCC-generated .eh_frame sections instead store a "pcrelative" offset, 
+        // DWARF says that the CIE_pointer in the FDE is a .debug_frame-relative offset,
+        // but the GCC-generated .eh_frame sections instead store a "pcrelative" offset,
         // which is just as fine as it's self-contained
         cieAddr = (unw_word_t)((uint64_t)cieOffsetAddr - cieOffset);
     }
@@ -765,13 +765,13 @@ ExtractProcInfoFromFde(const libunwindInfo* info, unw_word_t* addrp, unw_proc_in
 }
 
 
-static int 
+static int
 get_dyn_info_list_addr(unw_addr_space_t as, unw_word_t *dilap, void *arg)
 {
     return -UNW_ENOINFO;
 }
 
-static int 
+static int
 access_mem(unw_addr_space_t as, unw_word_t addr, unw_word_t *valp, int write, void *arg)
 {
     if (write)
@@ -791,7 +791,7 @@ access_mem(unw_addr_space_t as, unw_word_t addr, unw_word_t *valp, int write, vo
     }
 }
 
-static int 
+static int
 access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write, void *arg)
 {
     if (write)
@@ -851,28 +851,28 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     return UNW_ESUCCESS;
 }
 
-static int 
+static int
 access_fpreg(unw_addr_space_t as, unw_regnum_t regnum, unw_fpreg_t *fpvalp, int write, void *arg)
 {
     ASSERT("Not supposed to be ever called\n");
     return -UNW_EINVAL;
 }
 
-static int 
+static int
 resume(unw_addr_space_t as, unw_cursor_t *cp, void *arg)
 {
     ASSERT("Not supposed to be ever called\n");
     return -UNW_EINVAL;
 }
 
-static int 
+static int
 get_proc_name(unw_addr_space_t as, unw_word_t addr, char *bufp, size_t buf_len, unw_word_t *offp, void *arg)
 {
     ASSERT("Not supposed to be ever called\n");
     return -UNW_EINVAL;
 }
 
-static int 
+static int
 find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int need_unwind_info, void *arg)
 {
     const auto *info = (libunwindInfo*)arg;
@@ -948,7 +948,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         ERROR("ELF: reading ehFrameHdrAddr %p\n", ehFrameHdrAddr);
         return -UNW_EINVAL;
     }
-    TRACE("ehFrameHdrAddr %p version %d eh_frame_ptr_enc %d fde_count_enc %d table_enc %d\n", 
+    TRACE("ehFrameHdrAddr %p version %d eh_frame_ptr_enc %d fde_count_enc %d table_enc %d\n",
         ehFrameHdrAddr, ehFrameHdr.version, ehFrameHdr.eh_frame_ptr_enc, ehFrameHdr.fde_count_enc, ehFrameHdr.table_enc);
 
     if (ehFrameHdr.version != DW_EH_VERSION) {
@@ -1000,7 +1000,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     return UNW_ESUCCESS;
 }
 
-static void 
+static void
 put_unwind_info(unw_addr_space_t as, unw_proc_info_t *pip, void *arg)
 {
     if (pip->unwind_info != nullptr) {

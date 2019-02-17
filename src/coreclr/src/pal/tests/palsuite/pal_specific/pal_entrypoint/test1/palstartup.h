@@ -22,7 +22,7 @@ struct _mainargs
     char ** argv;
 };
 
-static DWORD PALAPI run_main(struct _mainargs *args)
+static DWORD run_main(struct _mainargs *args)
 {
     return (DWORD) PAL_startup_main(args->argc, args->argv);
 }

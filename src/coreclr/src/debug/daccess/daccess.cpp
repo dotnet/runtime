@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: daccess.cpp
-// 
+//
 
 //
 // ClrDataAccess implementation.
@@ -24,7 +24,7 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
-#ifdef FEATURE_PAL            
+#ifdef FEATURE_PAL
 #include <dactablerva.h>
 #endif
 
@@ -53,14 +53,14 @@ EXTERN_C BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
     {
         if (g_procInitialized)
         {
-#ifdef FEATURE_PAL            
-            // Double initialization can happen on Unix 
+#ifdef FEATURE_PAL
+            // Double initialization can happen on Unix
             // in case of manual load of DAC shared lib and calling DllMain
-            // not a big deal, we just ignore it. 
+            // not a big deal, we just ignore it.
             return TRUE;
 #else
-            return FALSE;            
-#endif            
+            return FALSE;
+#endif
         }
 
 #ifdef FEATURE_PAL
@@ -85,7 +85,7 @@ EXTERN_C BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         {
             DeleteCriticalSection(&g_dacCritSec);
         }
-#ifndef FEATURE_PAL 
+#ifndef FEATURE_PAL
         TLS_FreeMasterSlotIndex();
 #endif
         g_procInitialized = false;
@@ -179,7 +179,7 @@ GetFullClassNameFromMetadata(IMDInternalImport* mdImport,
 {
     HRESULT hr;
     LPCUTF8 baseName, namespaceName;
-    
+
     IfFailRet(mdImport->GetNameOfTypeDef(classToken, &baseName, &namespaceName));
     return ns::MakePath(buffer, bufferChars, namespaceName, baseName) ?
         S_OK : E_OUTOFMEMORY;
@@ -785,7 +785,7 @@ SplitName::SplitString(__in_opt PCWSTR fullName)
     }
     else if (!fullName)
     {
-        return E_INVALIDARG; 
+        return E_INVALIDARG;
     }
 
     return SplitFullName(fullName,
@@ -811,7 +811,7 @@ WCHAR* wcrscan(LPCWSTR beg, LPCWSTR end, WCHAR ch)
 }
 
 // This functions allocates a new UTF8 string that contains the classname
-// lying between the current sepName and the previous sepName.  E.g. for a 
+// lying between the current sepName and the previous sepName.  E.g. for a
 // class name of "Outer+middler+inner" when sepName points to the NULL
 // terminator this function will return "inner" in pResult and will update
 // sepName to point to the second '+' character in the string.  When sepName
@@ -830,7 +830,7 @@ HRESULT NextEnclosingClasName(LPCWSTR fullName, __deref_inout LPWSTR& sepName, _
     {
         sepName = wcrscan(fullName, origInnerName, W('/'));
     }
-    
+
     return AllocUtf8(sepName+1, static_cast<ULONG32>(origInnerName-sepName), pResult);
 }
 
@@ -847,7 +847,7 @@ SplitName::FindType(IMDInternalImport* mdInternal)
         return false;
     }
 
-    if ((m_namespaceName == NULL || m_namespaceName[0] == '\0') 
+    if ((m_namespaceName == NULL || m_namespaceName[0] == '\0')
         && (CompareUtf8(COR_MODULE_CLASS, m_typeName, m_nameFlags)==0))
     {
         m_typeToken = TokenFromRid(1, mdtTypeDef);  // <Module> class always has a RID of 1.
@@ -892,7 +892,7 @@ Retry:
     }
     else if (pHead < wszName)
     {
-        // if we did find a token, *and* the class name given 
+        // if we did find a token, *and* the class name given
         // does not specify any enclosing class, that's it
         return true;
     }
@@ -906,7 +906,7 @@ Retry:
         LPUTF8 utf8Name;
 
         while (
-            !bRetry 
+            !bRetry
             && SUCCEEDED(NextEnclosingClasName(wszName, pHead, &utf8Name))
         )
         {
@@ -919,13 +919,13 @@ Retry:
                 return false;
             }
             bRetry = (CompareUtf8(utf8Name, szName, m_nameFlags) != 0);
-            if (!bRetry) 
+            if (!bRetry)
             {
                 // if this is outermost class we need to compare namespaces too
                 if (tkOuter == mdTypeDefNil)
                 {
                     // is this the outermost in the class name, too?
-                    if (pHead < wszName 
+                    if (pHead < wszName
                         && CompareUtf8(m_namespaceName ? m_namespaceName : "", szNS, m_nameFlags) == 0)
                     {
                         delete[] utf8Name;
@@ -1260,29 +1260,29 @@ SplitName::CdNextField(ClrDataAccess* dac,
                        mdFieldDef* tokenRet)
 {
     HRESULT status;
-    
+
     SplitName* split = FROM_CDENUM(SplitName, *handle);
     if (!split)
     {
         return E_INVALIDARG;
     }
-    
+
     FieldDesc* fieldDesc;
-    
+
     while ((fieldDesc = split->m_fieldEnum.Next()))
     {
         if (split->m_syntax != SPLIT_NO_NAME)
         {
             LPCUTF8 fieldName;
-            if (FAILED(fieldDesc->GetName_NoThrow(&fieldName)) || 
+            if (FAILED(fieldDesc->GetName_NoThrow(&fieldName)) ||
                 (split->Compare(split->m_memberName, fieldName) != 0))
             {
                 continue;
             }
         }
-        
+
         split->m_lastField = fieldDesc;
-        
+
         if (fieldFlags != NULL)
         {
             *fieldFlags =
@@ -1302,11 +1302,11 @@ SplitName::CdNextField(ClrDataAccess* dac,
             {
                 return status;
             }
-            
+
             status = ConvertUtf8(
-                szFieldName, 
-                nameBufRetLen, 
-                nameLenRet, 
+                szFieldName,
+                nameBufRetLen,
+                nameLenRet,
                 nameBufRet);
             if (status != S_OK)
             {
@@ -1565,10 +1565,10 @@ DacInstanceManager::Add(DAC_INSTANCE* inst)
     // Assert that we don't add NULL instances. This allows us to assert that found instances
     // are not NULL in DacInstanceManager::Find
     _ASSERTE(inst != NULL);
-    
+
     DWORD nHash = DAC_INSTANCE_HASH(inst->addr);
     HashInstanceKeyBlock* block = m_hash[nHash];
-    
+
     if (!block || block->firstElement == 0)
     {
 
@@ -1581,9 +1581,9 @@ DacInstanceManager::Add(DAC_INSTANCE* inst)
         {
             // We allocate one big memory chunk that has a block for every index of the hash table to
             // improve data locality and reduce the number of allocs. In most cases, a hash bucket will
-            // use only one block, so improving data locality across blocks (i.e. keeping the buckets of the 
-            // hash table together) should help. 
-            newBlock = (HashInstanceKeyBlock*) 
+            // use only one block, so improving data locality across blocks (i.e. keeping the buckets of the
+            // hash table together) should help.
+            newBlock = (HashInstanceKeyBlock*)
                 ClrVirtualAlloc(NULL, HASH_INSTANCE_BLOCK_ALLOC_SIZE*NumItems(m_hash), MEM_COMMIT, PAGE_READWRITE);
         }
         if (!newBlock)
@@ -1591,7 +1591,7 @@ DacInstanceManager::Add(DAC_INSTANCE* inst)
             return NULL;
         }
         if (block)
-        {  
+        {
             // We add the newest block to the start of the list assuming that most accesses are for
             // recently added elements.
             newBlock->next = block;
@@ -1800,7 +1800,7 @@ DacInstanceManager::ReturnAlloc(DAC_INSTANCE* inst)
 
     // If the block is empty after returning the specified instance, that means this block was newly created
     // when this instance was allocated.  We have seen cases where we are asked to allocate a
-    // large chunk of memory only to fail to read the memory from a dump later on, i.e. when both the target 
+    // large chunk of memory only to fail to read the memory from a dump later on, i.e. when both the target
     // address and the size are invalid.  If we keep the allocation, we'll grow the VM size unnecessarily.
     // Thus, release a block if it's empty and if it's not the default size (to avoid thrashing memory).
     // See Dev10 Dbug 812112 for more information.
@@ -1832,14 +1832,14 @@ DacInstanceManager::Find(TADDR addr)
     g_nFindCalls++;
     nStart = GetCycleCount();
 #endif // #if defined(DAC_MEASURE_PERF)
-    
+
     HashInstanceKeyBlock* block = m_hash[DAC_INSTANCE_HASH(addr)];
 
 #if defined(DAC_MEASURE_PERF)
     nEnd = GetCycleCount();
     g_nFindHashTotalTime += nEnd - nStart;
 #endif // #if defined(DAC_MEASURE_PERF)
-    
+
     while (block)
     {
         DWORD nIndex = block->firstElement;
@@ -1856,14 +1856,14 @@ DacInstanceManager::Find(TADDR addr)
 
                 DAC_INSTANCE* inst = block->instanceKeys[nIndex].instance;
 
-                // inst should not be NULL even if the address was superseded. We search 
-                // the entries in the reverse order they were added. So we should have 
+                // inst should not be NULL even if the address was superseded. We search
+                // the entries in the reverse order they were added. So we should have
                 // found the superseding entry before this one. (Of course, if a NULL instance
-                // has been added, this assert is meaningless. DacInstanceManager::Add 
+                // has been added, this assert is meaningless. DacInstanceManager::Add
                 // asserts that NULL instances aren't added.)
-                
+
                 _ASSERTE(inst != NULL);
-                
+
                 return inst;
             }
         }
@@ -1876,7 +1876,7 @@ DacInstanceManager::Find(TADDR addr)
     g_nFindTotalTime += nEnd - nStart;
     if (g_nStackWalk) g_nFindStackTotalTime += nEnd - nStart;
 #endif // #if defined(DAC_MEASURE_PERF)
-    
+
     return NULL;
 }
 #else //DAC_HASHTABLE
@@ -1923,7 +1923,7 @@ void
 DacInstanceManager::Supersede(DAC_INSTANCE* inst)
 {
     _ASSERTE(inst != NULL);
-                
+
     //
     // This instance has been superseded by a larger
     // one and so must be removed from the hash.  However,
@@ -1998,8 +1998,8 @@ DacInstanceManager::Supersede(DAC_INSTANCE* inst)
 }
 #endif // if defined(DAC_HASHTABLE)
 
-// This is the default Flush() called when the DAC cache is invalidated, 
-// e.g. when we continue the debuggee process.  In this case, we want to 
+// This is the default Flush() called when the DAC cache is invalidated,
+// e.g. when we continue the debuggee process.  In this case, we want to
 // save one block of memory to avoid thrashing.  See the usage of m_unusedBlock
 // for more information.
 void DacInstanceManager::Flush(void)
@@ -2050,7 +2050,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
         while (block)
         {
             next = block->next;
-            if (next) 
+            if (next)
             {
                 delete [] block;
             }
@@ -2159,7 +2159,7 @@ DacInstanceManager::DumpAllInstances(
             for (j = block->firstElement; j < HASH_INSTANCE_BLOCK_NUM_ELEMENTS; j++)
             {
                 inst = block->instanceKeys[j].instance;
-                
+
                 // Only report those we intended to.
                 // So far, only metadata is excluded!
                 //
@@ -2234,7 +2234,7 @@ DacInstanceManager::DumpAllInstances(
        //
        if (inst->noReport == 0)
        {
-           cbTotal += inst->size;                    
+           cbTotal += inst->size;
            HRESULT hr = pCallBack->EnumMemoryRegion(TO_CDADDR(inst->addr), inst->size);
            if (hr == COR_E_OPERATIONCANCELED)
            {
@@ -2272,7 +2272,7 @@ DacInstanceManager::FindInstanceBlock(DAC_INSTANCE* inst)
     return NULL;
 }
 
-// If fSaveBlock is false, free all blocks of allocated memory.  Otherwise, 
+// If fSaveBlock is false, free all blocks of allocated memory.  Otherwise,
 // free all blocks except the one we save to avoid thrashing memory.
 // Callers very frequently flush repeatedly with little memory needed in DAC
 // so this avoids wasteful repeated allocations/deallocations.
@@ -2320,7 +2320,7 @@ namespace serialization { namespace bin {
 
     //========================================================================
     // Support functions for binary serialization of simple types to a buffer:
-    //   - raw_size() returns the size in bytes of the binary representation 
+    //   - raw_size() returns the size in bytes of the binary representation
     //                of a value.
     //   - raw_serialize() copies the binary representation of a value into a
     //                buffer.
@@ -2347,7 +2347,7 @@ namespace serialization { namespace bin {
     { // determines whether _Ty is blittable
     };
 
-    // allow types to declare themselves blittable by including a static bool 
+    // allow types to declare themselves blittable by including a static bool
     // member "is_blittable".
     template <typename _Ty>
     struct is_blittable<_Ty, typename std::enable_if<_Ty::is_blittable>::type>
@@ -2369,7 +2369,7 @@ namespace serialization { namespace bin {
     class Traits
     {
     public:
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_size(const T & val)
         {
             static_assert(false, "Non-blittable types need explicit specializations");
@@ -2393,19 +2393,19 @@ namespace serialization { namespace bin {
         // raw_size() returns the size in bytes of the binary representation of a
         //                value.
         //
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_size(const T & val)
-        { 
-            return sizeof(T); 
+        {
+            return sizeof(T);
         }
 
         //
-        // raw_serialize() copies the binary representation of a value into a 
+        // raw_serialize() copies the binary representation of a value into a
         //     "dest" buffer that has "destSize" bytes available.
-        // Returns raw_size(val), or ErrOverflow if the buffer does not have  
+        // Returns raw_size(val), or ErrOverflow if the buffer does not have
         //     enough space to accommodate "val".
         //
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_serialize(BYTE* dest, size_t destSize, const T & val)
         {
             size_t cnt = raw_size(val);
@@ -2421,12 +2421,12 @@ namespace serialization { namespace bin {
         }
 
         //
-        // raw_deserialize() generates a value "val" from its binary 
+        // raw_deserialize() generates a value "val" from its binary
         //     representation in a buffer "src".
-        // Returns raw_size(val), or ErrOverflow if the buffer does not have  
+        // Returns raw_size(val), or ErrOverflow if the buffer does not have
         //     enough space to accommodate "val".
         //
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_deserialize(T & val, const BYTE* src, size_t srcSize)
         {
             size_t cnt = raw_size(*(T*)src);
@@ -2450,13 +2450,13 @@ namespace serialization { namespace bin {
     class Traits<LPCUTF8>
     {
     public:
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_size(const LPCUTF8 & val)
         {
             return strlen(val) + 1;
         }
 
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_serialize(BYTE* dest, size_t destSize, const LPCUTF8 & val)
         {
             size_t cnt = raw_size(val);
@@ -2471,7 +2471,7 @@ namespace serialization { namespace bin {
             return cnt;
         }
 
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_deserialize(LPCUTF8 & val, const BYTE* src, size_t srcSize)
         {
             size_t cnt = strnlen((LPCUTF8)src, srcSize) + 1;
@@ -2492,14 +2492,14 @@ namespace serialization { namespace bin {
 
     //
     // Specialization for SString.
-    // SString serialization/deserialization is performed to/from a UTF8 
+    // SString serialization/deserialization is performed to/from a UTF8
     // string.
     //
     template<>
     class Traits<SString>
     {
     public:
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_size(const SString & val)
         {
             StackSString s;
@@ -2508,10 +2508,10 @@ namespace serialization { namespace bin {
             return s.GetCount() + 1;
         }
 
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_serialize(BYTE* dest, size_t destSize, const SString & val)
         {
-            // instead of calling raw_size() we inline it here, so we can reuse 
+            // instead of calling raw_size() we inline it here, so we can reuse
             // the UTF8 string obtained below as an argument to memcpy.
 
             StackSString s;
@@ -2529,7 +2529,7 @@ namespace serialization { namespace bin {
             return cnt;
         }
 
-        static FORCEINLINE size_t 
+        static FORCEINLINE size_t
         raw_deserialize(SString & val, const BYTE* src, size_t srcSize)
         {
             size_t cnt = strnlen((LPCUTF8)src, srcSize) + 1;
@@ -2616,7 +2616,7 @@ namespace serialization { namespace bin {
         }
 
         inline size_t GetPos() const
-        { 
+        {
             return crt;
         }
 
@@ -2626,8 +2626,8 @@ namespace serialization { namespace bin {
         }
 
         inline StreamBuffState State() const
-        { 
-            return sbs; 
+        {
+            return sbs;
         }
 
     private:
@@ -2671,8 +2671,8 @@ namespace serialization { namespace bin {
         }
 
         inline size_t GetPos() const
-        { 
-            return crt; 
+        {
+            return crt;
         }
 
         inline BOOL operator!() const
@@ -2688,7 +2688,7 @@ namespace serialization { namespace bin {
     private:
         size_t          buffsize; // size of buffer
         const BYTE *    buff;     // buffer to read from
-        size_t          crt;      // current offset in buffer      
+        size_t          crt;      // current offset in buffer
         StreamBuffState sbs;      // current state
     };
 
@@ -2707,16 +2707,16 @@ typedef bool (*Reserve_Fnptr)(DWORD size, void * writeState);
 
 //
 // DacEENamesStreamable
-//   Stores EE struct* -> Name mappings and streams them to a 
+//   Stores EE struct* -> Name mappings and streams them to a
 //   streambuf when asked
 //
 class DacEENamesStreamable
 {
 private:
     // the hash map storing the interesting mappings of EE* -> Names
-    MapSHash< TADDR, SString, 
-              NoRemoveSHashTraits < 
-                  NonDacAwareSHashTraits< MapSHashTraits <TADDR, SString> > 
+    MapSHash< TADDR, SString,
+              NoRemoveSHashTraits <
+                  NonDacAwareSHashTraits< MapSHashTraits <TADDR, SString> >
             > > m_hash;
 
     Reserve_Fnptr  m_reserveFn;
@@ -2755,18 +2755,18 @@ public:
         return m_reserveFn(size, m_writeState);
     }
 
-    // Adds a new mapping from an EE struct pointer (e.g. MethodDesc*) to 
+    // Adds a new mapping from an EE struct pointer (e.g. MethodDesc*) to
     // its name
     bool AddEEName(TADDR taEE, const SString & eeName)
     {
         _ASSERTE(m_reserveFn != NULL && m_writeState != NULL);
 
-        // as a micro-optimization convert to Utf8 here as both raw_size and 
-        // raw_serialize are optimized for Utf8... 
+        // as a micro-optimization convert to Utf8 here as both raw_size and
+        // raw_serialize are optimized for Utf8...
         StackSString seeName;
         eeName.ConvertToUTF8(seeName);
 
-        DWORD size = (DWORD)(serialization::bin::raw_size(taEE) + 
+        DWORD size = (DWORD)(serialization::bin::raw_size(taEE) +
                              serialization::bin::raw_size(seeName));
 
         // notify owner of the amount of space needed in the buffer
@@ -2785,7 +2785,7 @@ public:
     // Finds an EE name from a target address of an EE struct (e.g.
     // MethodDesc*)
     bool FindEEName(TADDR taEE, SString & eeName) const
-    { 
+    {
         return m_hash.Lookup(taEE, &eeName) == TRUE;
     }
 
@@ -2843,12 +2843,12 @@ public:
 
 //================================================================================
 // This class enables two scenarios:
-//   1. When debugging a triage/mini-dump the class is initialized with a valid 
-//      buffer in taMiniMetaDataBuff. Afterwards one can call MdCacheGetEEName to 
+//   1. When debugging a triage/mini-dump the class is initialized with a valid
+//      buffer in taMiniMetaDataBuff. Afterwards one can call MdCacheGetEEName to
 //      retrieve the name associated with a MethodDesc*.
 //   2. When generating a dump one must follow this sequence:
-//      a. Initialize the DacStreamManager passing a valid (if the current 
-//         debugging target is a triage/mini-dump) or empty buffer (if the 
+//      a. Initialize the DacStreamManager passing a valid (if the current
+//         debugging target is a triage/mini-dump) or empty buffer (if the
 //         current target is a live processa full or a heap dump)
 //      b. Call PrepareStreamsForWriting() before starting enumerating any memory
 //      c. Call MdCacheAddEEName() anytime we enumerate an EE structure of interest
@@ -2857,11 +2857,11 @@ public:
 class DacStreamManager
 {
 public:
-    enum eReadOrWrite 
-    { 
+    enum eReadOrWrite
+    {
         eNone,    // the stream doesn't exist (target is a live process/full/heap dump)
         eRO,      // the stream exists and we've read it (target is triage/mini-dump)
-        eWO,      // the stream doesn't exist but we're creating it 
+        eWO,      // the stream doesn't exist but we're creating it
                   // (e.g. to save a minidump from the current debugging session)
         eRW       // the stream exists but we're generating another triage/mini-dump
     };
@@ -2908,7 +2908,7 @@ public:
         else // m_rw == eWO
         {
             // this is a second invocation from a possibly live process
-            // clean up the map since the callstacks/exceptions may be different 
+            // clean up the map since the callstacks/exceptions may be different
             m_EENames.Clear();
         }
 
@@ -2983,11 +2983,11 @@ private:
         HRESULT hr = S_OK;
 
         StreamsHeader hdr;
-        DacReadAll(dac_cast<TADDR>(m_MiniMetaDataBuffAddress), 
+        DacReadAll(dac_cast<TADDR>(m_MiniMetaDataBuffAddress),
                    &hdr, sizeof(hdr), true);
 
         // when the DAC looks at a triage dump or minidump generated using
-        // a "minimetadata" enabled DAC, buff will point to a serialized 
+        // a "minimetadata" enabled DAC, buff will point to a serialized
         // representation of a methoddesc->method name hashmap.
         if (hdr.dwSig == sig)
         {
@@ -2996,7 +2996,7 @@ private:
             hr = S_OK;
         }
         else
-        // when the DAC initializes this for the case where the target is 
+        // when the DAC initializes this for the case where the target is
         // (a) a live process, or (b) a full dump, buff will point to a
         // zero initialized memory region (allocated w/ VirtualAlloc)
         if (hdr.dwSig == 0 && hdr.dwTotalSize == 0 && hdr.dwCntStreams == 0)
@@ -3011,7 +3011,7 @@ private:
         }
 
         BYTE * buff = new BYTE[m_MiniMetaDataBuffSizeMax];
-        DacReadAll(dac_cast<TADDR>(m_MiniMetaDataBuffAddress), 
+        DacReadAll(dac_cast<TADDR>(m_MiniMetaDataBuffAddress),
                    buff, m_MiniMetaDataBuffSizeMax, true);
 
         m_rawBuffer = buff;
@@ -3119,17 +3119,17 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
 
-    /* 
+    /*
      *  Stash the various forms of the new ICorDebugDataTarget interface
      */
     m_pTarget = pTarget;
     m_pTarget->AddRef();
-    
+
     HRESULT hr;
 
     hr = m_pTarget->QueryInterface(__uuidof(ICorDebugMutableDataTarget),
                                 (void**)&m_pMutableTarget);
-    
+
     if (hr != S_OK)
     {
         // Create a target which always fails the write requests with CORDBG_E_TARGET_READONLY
@@ -3137,7 +3137,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
         m_pMutableTarget->AddRef();
     }
 
-    /* 
+    /*
      * If we have a legacy target, it means we're providing compatibility for code that used
      * the old ICLRDataTarget interfaces.  There are still a few things (like metadata location,
      * GetImageBase, and VirtualAlloc) that the implementation may use which we haven't superseded
@@ -3145,7 +3145,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
      * Any functionality that does exist in ICorDebugDataTarget is accessed from that interface
      * using the DataTargetAdapter on top of the legacy interface (to unify the calling code).
      * Eventually we may expose all functionality we need using ICorDebug (possibly a private
-     * interface for things like VirtualAlloc), at which point we can stop using the legacy interfaces 
+     * interface for things like VirtualAlloc), at which point we can stop using the legacy interfaces
      * completely (except in the DataTargetAdapter).
      */
     m_pLegacyTarget = NULL;
@@ -3156,7 +3156,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     if (pLegacyTarget != NULL)
     {
         m_pLegacyTarget = pLegacyTarget;
-        
+
         m_pLegacyTarget->AddRef();
 
         m_pLegacyTarget->QueryInterface(__uuidof(ICLRDataTarget2), (void**)&m_pLegacyTarget2);
@@ -3188,7 +3188,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     m_streams = NULL;
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-    // Target consistency checks are disabled by default.  
+    // Target consistency checks are disabled by default.
     // See code:ClrDataAccess::SetTargetConsistencyChecks for details.
     m_fEnableTargetConsistencyAsserts = false;
 
@@ -3199,7 +3199,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     }
 
     // Verification asserts are disabled by default because some debuggers (cdb/windbg) probe likely locations
-    // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable 
+    // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable
     // this if they want.  It can also be overridden at run-time with COMPlus_DbgDACAssertOnMismatch,
     // see ClrDataAccess::VerifyDlls for details.
     m_fEnableDllVerificationAsserts = false;
@@ -3210,7 +3210,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
 ClrDataAccess::~ClrDataAccess(void)
 {
     SUPPORTS_DAC_HOST_ONLY;
-    
+
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
     if (m_streams)
     {
@@ -4494,7 +4494,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             }
             break;
         }
-        
+
         case DACNotify::EXCEPTION_NOTIFICATION:
         {
             TADDR threadPtr;
@@ -5417,7 +5417,7 @@ ClrDataAccess::FollowStub2(
 #pragma warning(push)
 #pragma warning(disable:4297)
 #endif // _MSC_VER
-STDMETHODIMP 
+STDMETHODIMP
 ClrDataAccess::GetGcNotification(GcEvtArgs* gcEvtArgs)
 {
     HRESULT status;
@@ -5465,7 +5465,7 @@ ClrDataAccess::GetGcNotification(GcEvtArgs* gcEvtArgs)
     return status;
 }
 
-STDMETHODIMP 
+STDMETHODIMP
 ClrDataAccess::SetGcNotification(IN GcEvtArgs gcEvtArgs)
 {
     HRESULT status;
@@ -5566,8 +5566,8 @@ ClrDataAccess::Initialize(void)
     }
 
     //
-    // Get the current DLL base for mscorwks globals. 
-    // In case of multiple-CLRs, there may be multiple dlls named "mscorwks". 
+    // Get the current DLL base for mscorwks globals.
+    // In case of multiple-CLRs, there may be multiple dlls named "mscorwks".
     // code:OpenVirtualProcess can take the base address (clrInstanceId) to select exactly
     // which CLR to is being target. If so, m_globalBase will already be set.
     //
@@ -5599,10 +5599,10 @@ ClrDataAccess::Initialize(void)
         s_procInit = true;
     }
 
-    // 
+    //
     // DAC is now setup and ready to use
-    // 
-   
+    //
+
     // Do some validation
     IfFailRet(VerifyDlls());
 
@@ -5618,7 +5618,7 @@ ClrDataAccess::Initialize(void)
     CoreClrCallbacks cccallbacks;
     cccallbacks.m_hmodCoreCLR               = (HINSTANCE)m_globalBase; // Base address of the runtime in the target process
     cccallbacks.m_pfnIEE                    = NULL;
-    cccallbacks.m_pfnGetCORSystemDirectory  = NULL;    
+    cccallbacks.m_pfnGetCORSystemDirectory  = NULL;
     cccallbacks.m_pfnGetCLRFunction         = NULL;
     InitUtilcode(cccallbacks);
 
@@ -5730,7 +5730,7 @@ ClrDataAccess::GetJitHelperName(
 #ifdef FEATURE_PAL
     if (!dynamicHelpersOnly)
 #else
-    if (!dynamicHelpersOnly && g_runtimeLoadedBaseAddress <= address && 
+    if (!dynamicHelpersOnly && g_runtimeLoadedBaseAddress <= address &&
             address < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
 #endif // FEATURE_PAL
     {
@@ -5921,8 +5921,8 @@ ClrDataAccess::RawGetMethodName(
         _ASSERTE(wszStubManagerName != NULL);
 
         int result = _snwprintf_s(
-            symbolBuf, 
-            bufLen, 
+            symbolBuf,
+            bufLen,
             _TRUNCATE,
             s_wszFormatNameWithStubManager,
             wszStubManagerName,                                         // Arg 1 = stub name
@@ -5985,7 +5985,7 @@ NameFromMethodDesc:
         static WCHAR s_wszFormatNameAddressOnly[] = W("CLRStub@%I64x");
 
         int result = _snwprintf_s(
-            symbolBuf, 
+            symbolBuf,
             bufLen,
             _TRUNCATE,
             s_wszFormatNameAddressOnly,
@@ -6199,7 +6199,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 //       pModule   - pointer to the module for the function
 //       memberRef - metadata token for the function
 // Return Value:
-//       MethodDesc for the function 
+//       MethodDesc for the function
 MethodDesc * ClrDataAccess::FindLoadedMethodRefOrDef(Module* pModule,
     mdToken memberRef)
 {
@@ -6229,13 +6229,13 @@ MethodDesc * ClrDataAccess::FindLoadedMethodRefOrDef(Module* pModule,
 // If you specify that you expect success, any failure will cause ReportMem to
 // return false.  If you do not expect success, true is always returned.
 // This function only throws when all dump collection should be cancelled.
-// 
+//
 // Arguments:
 //     addr - the starting target address for the memory to report
 //     size - the length (in bytes) to report
 //     fExpectSuccess - if true (the default), then we expect that this region of memory
 //                      should be fully readable.  Any read errors indicate a corrupt target.
-//                      
+//
 bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= true*/)
 {
     SUPPORTS_DAC_HOST_ONLY;
@@ -6243,15 +6243,15 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
     // This block of code is to help debugging blocks that we report
     // to minidump/heapdump. You can set break point here to view the static
     // variable to figure out the size of blocks that we are reporting.
-    // Most useful is set conditional break point to catch large chuck of 
-    // memory. We will leave it here for all builds. 
-    //         
+    // Most useful is set conditional break point to catch large chuck of
+    // memory. We will leave it here for all builds.
+    //
     static TADDR debugAddr;
     static TSIZE_T debugSize;
     debugAddr = addr;
     debugSize = size;
 
-    HRESULT status;        
+    HRESULT status;
     if (!addr || addr == (TADDR)-1 || !size)
     {
         if (fExpectSuccess)
@@ -6262,15 +6262,15 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
 
     //
     // Try and sanity-check the reported region of memory
-    // 
+    //
 #ifdef _DEBUG
     // in debug builds, sanity-check all reports
-    const TSIZE_T k_minSizeToCheck = 1; 
+    const TSIZE_T k_minSizeToCheck = 1;
 #else
     // in retail builds, only sanity-check larger chunks which have the potential to waste a
     // lot of time and/or space.  This avoids the overhead of checking for the majority of
     // memory regions (which are small).
-    const TSIZE_T k_minSizeToCheck = 1024;  
+    const TSIZE_T k_minSizeToCheck = 1024;
 #endif
     if (size >= k_minSizeToCheck)
     {
@@ -6282,7 +6282,7 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
                 // a module image), so just skip this block silently.
                 // Note that the EnumMemoryRegion callback won't necessarily do anything if any part of
                 // the region is unreadable, and so there is no point in calling it.  For cases where we expect
-                // the read might fail, but we want to report any partial blocks, we have to break up the region 
+                // the read might fail, but we want to report any partial blocks, we have to break up the region
                 // into pages and try reporting each page anyway
                 return true;
             }
@@ -6300,12 +6300,12 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
     // Minidumps should never contain data structures that are anywhere near 4MB.  If we see this, it's
     // probably due to memory corruption.  To keep the dump small, we'll truncate the block.  Note that
     // the size to which the block is truncated is pretty unique, so should be good evidence in a dump
-    // that this has happened.  
+    // that this has happened.
     // Note that it's hard to say what a good value would be here, or whether we should dump any of the
     // data structure at all.  Hopefully experience will help guide this going forward.
     // @dbgtodo : Extend dump-gathering API to allow a dump-log to be included.
     const TSIZE_T kMaxMiniDumpRegion = 4*1024*1024 - 3;    // 4MB-3
-    if( size > kMaxMiniDumpRegion 
+    if( size > kMaxMiniDumpRegion
         && (m_enumMemFlags == CLRDATA_ENUM_MEM_MINI
           || m_enumMemFlags == CLRDATA_ENUM_MEM_TRIAGE))
     {
@@ -6313,11 +6313,11 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
         size = kMaxMiniDumpRegion;
     }
 
-    // track the total memory reported. 
+    // track the total memory reported.
     m_cbMemoryReported += size;
-    
+
     // ICLRData APIs take only 32-bit sizes.  In practice this will almost always be sufficient, but
-    // in theory we might have some >4GB ranges on large 64-bit processes doing a heap dump 
+    // in theory we might have some >4GB ranges on large 64-bit processes doing a heap dump
     // (for example, the code:LoaderHeap).  If necessary, break up the reporting into maximum 4GB
     // chunks so we can use the existing API.
     // @dbgtodo : ICorDebugDataTarget should probably use 64-bit sizes
@@ -6345,7 +6345,7 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
         // If the return value of EnumMemoryRegion is COR_E_OPERATIONCANCELED,
         // it means that user has requested that the minidump gathering be canceled.
         // To do this we throw an exception which is caught in EnumMemoryRegionsWrapper.
-        if (status == COR_E_OPERATIONCANCELED) 
+        if (status == COR_E_OPERATIONCANCELED)
         {
             ThrowHR(status);
         }
@@ -6361,23 +6361,23 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
 
 //
 // DacUpdateMemoryRegion - updates/poisons a region of memory of generated dump
-// 
+//
 // Parameters:
 //   addr           - target address of the beginning of the memory region
 //   bufferSize     - number of bytes to update/poison
 //   buffer         - data to be written at given target address
-//                     
+//
 bool ClrDataAccess::DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer)
 {
     SUPPORTS_DAC_HOST_ONLY;
 
-    HRESULT status;        
+    HRESULT status;
     if (!addr || addr == (TADDR)-1 || !bufferSize)
     {
         return false;
     }
 
-    // track the total memory reported. 
+    // track the total memory reported.
     m_cbMemoryReported += bufferSize;
 
     if (m_updateMemCb == NULL)
@@ -6397,13 +6397,13 @@ bool ClrDataAccess::DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* 
 
 //
 // Check whether a region of target memory is fully readable.
-// 
+//
 // Arguments:
 //     addr    The base target address of the region
 //     size    The size of the region to analyze
-//     
+//
 // Return value:
-//     True if the entire regions appears to be readable, false otherwise. 
+//     True if the entire regions appears to be readable, false otherwise.
 //
 // Notes:
 //     The motivation here is that reporting large regions of unmapped address space to dbgeng can result in
@@ -6411,9 +6411,9 @@ bool ClrDataAccess::DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* 
 //     memory is corrupt, and we enumerate a data structure with a dynamic size.  Ideally we would just spec
 //     the ICLRDataEnumMemoryRegionsCallback API to require the client to fail if it detects an unmapped
 //     memory address in the region.  However, we can't change the existing dbgeng code, so for now we'll
-//     rely on this heuristic here.  
+//     rely on this heuristic here.
 //     @dbgtodo : Try and get the dbg team to change their EnumMemoryRegion behavior.  See DevDiv Bugs 6265
-//     
+//
 bool ClrDataAccess::IsFullyReadable(TADDR taBase, TSIZE_T dwSize)
 {
     // The only way we have to verify that a memory region is readable is to try reading it in it's
@@ -6478,7 +6478,7 @@ ClrDataAccess::GetHostJitNotificationTable()
     return m_jitNotificationTable;
 }
 
-GcNotification*  
+GcNotification*
 ClrDataAccess::GetHostGcNotificationTable()
 {
     if (m_gcNotificationTable == NULL)
@@ -6523,7 +6523,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEFile *pPEFile,
             dwRvaHint = pDir->VirtualAddress;
             dwDataSize = pDir->Size;
         }
-    
+
     }
     if (pDir == NULL || pDir->Size == 0)
     {
@@ -6545,7 +6545,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEFile *pPEFile,
         }
     }
 
-    // Do not fail if path can not be read. Triage dumps don't have paths and we want to fallback 
+    // Do not fail if path can not be read. Triage dumps don't have paths and we want to fallback
     // on searching metadata from IL image.
     mdImage->GetPath().DacGetUnicode(cchFilePath, wszFilePath, &uniPathChars);
 
@@ -6620,14 +6620,14 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
     _wcslwr_s(wszFilePath, cchFilePath);
     // Find the "ni.dll" or "ni.winmd" extension (check for PEFile isWinRT something to know when is winmd or not.
     // If none exists use NGEN image name.
-    // 
+    //
     const WCHAR* ngenExtension[] = {W("ni.dll"), W("ni.winmd")};
 
     for (unsigned i = 0; i < COUNTOF(ngenExtension); ++i)
     {
         if (wcslen(ilExtension) > wcslen(ngenExtension[i]))
         {
-            // We should not have IL image name bigger than NGEN image. 
+            // We should not have IL image name bigger than NGEN image.
             // It will not fit inside wszFilePath.
             continue;
         }
@@ -6636,16 +6636,16 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
         {
             LPWSTR  wszNextFileExtension = wszFileExtension;
             // Find last occurence
-            do 
+            do
             {
                 wszFileExtension = wszNextFileExtension;
                 wszNextFileExtension = wcsstr(wszFileExtension + 1, ngenExtension[i]);
             } while (wszNextFileExtension != 0);
-        
+
             // Overwrite ni.dll or ni.winmd with ilExtension(.dll, .winmd)
             if (!memcpy_s(wszFileExtension,
-                           wcslen(ngenExtension[i])*sizeof(WCHAR), 
-                           ilExtension, 
+                           wcslen(ngenExtension[i])*sizeof(WCHAR),
+                           ilExtension,
                            wcslen(ilExtension)*sizeof(WCHAR)))
             {
                 wszFileExtension[wcslen(ilExtension)] = '\0';
@@ -6771,7 +6771,7 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
         {
             goto ErrExit;
         }
-        
+
 #if defined(FEATURE_CORESYSTEM)
         const WCHAR* ilExtension[] = {W("dll"), W("winmd")};
         WCHAR ngenImageName[MAX_LONGPATH] = {0};
@@ -6983,40 +6983,40 @@ ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflect
 }
 
 
-// 
+//
 // Set whether inconsistencies in the target should raise asserts.
 // This overrides the default initial setting.
-// 
+//
 // Arguments:
 //     fEnableAsserts - whether ASSERTs in dacized code should be enabled
-// 
+//
 
-void ClrDataAccess::SetTargetConsistencyChecks(bool fEnableAsserts) 
-{ 
+void ClrDataAccess::SetTargetConsistencyChecks(bool fEnableAsserts)
+{
     LIMITED_METHOD_DAC_CONTRACT;
     m_fEnableTargetConsistencyAsserts = fEnableAsserts;
 }
 
 //
 // Get whether inconsistencies in the target should raise asserts.
-// 
+//
 // Return value:
 //     whether ASSERTs in dacized code should be enabled
-//     
+//
 // Notes:
 //     The implementation of ASSERT accesses this via code:DacTargetConsistencyAssertsEnabled
-//     
+//
 //     By default, this is disabled, unless COMPlus_DbgDACEnableAssert is set (see code:ClrDataAccess::ClrDataAccess).
 //     This is necessary for compatibility.  For example, SOS expects to be able to scan for
 //     valid MethodTables etc. (which may cause ASSERTs), and also doesn't want ASSERTs when working
 //     with targets with corrupted memory.
-//     
+//
 //     Calling code:ClrDataAccess::SetTargetConsistencyChecks overrides the default setting.
-//     
+//
 bool ClrDataAccess::TargetConsistencyAssertsEnabled()
-{ 
+{
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_fEnableTargetConsistencyAsserts; 
+    return m_fEnableTargetConsistencyAsserts;
 }
 
 #ifdef FEATURE_CORESYSTEM
@@ -7024,15 +7024,15 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
 #define time_t __time32_t
 #endif
 
-// 
+//
 // VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
 // Only done on Windows and Mac builds at the moment.
 // See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-// 
+//
 HRESULT ClrDataAccess::VerifyDlls()
 {
 #ifndef FEATURE_PAL
-    // Provide a knob for disabling this check if we really want to try and proceed anyway with a 
+    // Provide a knob for disabling this check if we really want to try and proceed anyway with a
     // DAC mismatch.  DAC behavior may be arbitrarily bad - globals probably won't be at the same
     // address, data structures may be laid out differently, etc.
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgDACSkipVerifyDlls))
@@ -7052,13 +7052,13 @@ HRESULT ClrDataAccess::VerifyDlls()
     DAC_ENTER();
     EX_TRY
     {
-        // Note that we don't need to worry about ensuring the image memory read by this code 
-        // is saved in a minidump.  Managed minidump debugging already requires that you have 
+        // Note that we don't need to worry about ensuring the image memory read by this code
+        // is saved in a minidump.  Managed minidump debugging already requires that you have
         // the full mscorwks.dll available at debug time (eg. windbg won't even load DAC without it).
         PEDecoder pedecoder(dac_cast<PTR_VOID>(m_globalBase));
 
         // We use the first codeview debug directory entry since this should always refer to the single
-        // PDB for mscorwks.dll.  
+        // PDB for mscorwks.dll.
         const UINT k_maxDebugEntries = 32;  // a reasonable upper limit in case of corruption
         for( UINT i = 0; i < k_maxDebugEntries; i++)
         {
@@ -7068,7 +7068,7 @@ HRESULT ClrDataAccess::VerifyDlls()
             if (pDebugEntry == NULL)
                 break;
 
-            // Ignore non-codeview entries.  Some scenarios (eg. optimized builds), there may be extra 
+            // Ignore non-codeview entries.  Some scenarios (eg. optimized builds), there may be extra
             // debug directory entries at the end of some other type.
             if (pDebugEntry->Type == IMAGE_DEBUG_TYPE_CODEVIEW)
             {
@@ -7106,7 +7106,7 @@ HRESULT ClrDataAccess::VerifyDlls()
 #ifdef _DEBUG
         // Check if verbose asserts are enabled.  The default is up to the specific instantiation of
         // ClrDataAccess, but can be overridden (in either direction) by a COMPlus_ knob.
-        // Note that we check this knob every time because it may be handy to turn it on in 
+        // Note that we check this knob every time because it may be handy to turn it on in
         // the environment mid-flight.
         DWORD dwAssertDefault = m_fEnableDllVerificationAsserts ? 1 : 0;
         if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_DbgDACAssertOnMismatch, dwAssertDefault))
@@ -7114,7 +7114,7 @@ HRESULT ClrDataAccess::VerifyDlls()
             // Output a nice error message that contains the timestamps in string format.
             time_t actualTime = timestamp;
             char szActualTime[30];
-            ctime_s(szActualTime, sizeof(szActualTime), &actualTime);  
+            ctime_s(szActualTime, sizeof(szActualTime), &actualTime);
 
             time_t expectedTime = g_dacTableInfo.dwID0;
             char szExpectedTime[30];
@@ -7307,7 +7307,7 @@ ClrDataAccess::GetDacGlobals()
 
     // Read the header
     struct DacTableHeader header;
-    
+
     // We currently expect the header to be 2 32-bit values and 1 16-byte value,
     // make sure there is no packing going on or anything.
     static_assert_no_msg(sizeof(DacTableHeader) == 2 * 4 + 16);
@@ -7380,9 +7380,9 @@ Exit:
 #undef MAKEINTRESOURCE
 
 //----------------------------------------------------------------------------
-// 
+//
 // IsExceptionFromManagedCode - report if pExceptionRecord points to an exception belonging to the current runtime
-// 
+//
 // Arguments:
 //    pExceptionRecord - the exception record
 //
@@ -7410,15 +7410,15 @@ BOOL ClrDataAccess::IsExceptionFromManagedCode(EXCEPTION_RECORD* pExceptionRecor
 #ifndef FEATURE_PAL
 
 //----------------------------------------------------------------------------
-// 
+//
 // GetWatsonBuckets - retrieve Watson buckets from the specified thread
-// 
+//
 // Arguments:
 //    dwThreadId - the thread ID
 //    pGM - pointer to the space to store retrieved Watson buckets
 //
 // Return Value:
-//    S_OK if the operation is successful.   
+//    S_OK if the operation is successful.
 //    or S_FALSE if Watson buckets cannot be found
 //    else detailed error code.
 //
@@ -7434,7 +7434,7 @@ HRESULT ClrDataAccess::GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM
     DAC_ENTER();
 
     Thread * pThread = DacGetThread(dwThreadId);
-    _ASSERTE(pThread != NULL);    
+    _ASSERTE(pThread != NULL);
 
     HRESULT hr = E_UNEXPECTED;
 
@@ -7450,9 +7450,9 @@ HRESULT ClrDataAccess::GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM
 #endif // FEATURE_PAL
 
 //----------------------------------------------------------------------------
-// 
+//
 // CLRDataAccessCreateInstance - create and initialize a ClrDataAccess object
-// 
+//
 // Arguments:
 //    pLegacyTarget - data target object
 //    pClrDataAccess - ClrDataAccess object
@@ -7506,9 +7506,6 @@ STDAPI CLRDataAccessCreateInstance(ICLRDataTarget * pLegacyTarget,
 // This is the legacy entrypoint to DAC, used by dbgeng/dbghelp (windbg, SOS, watson, etc).
 //
 //----------------------------------------------------------------------------
-#ifdef __GNUC__
-__attribute__((used))
-#endif // __GNUC__
 STDAPI
 CLRDataCreateInstance(REFIID iid,
                       ICLRDataTarget * pLegacyTarget,
@@ -7535,9 +7532,9 @@ CLRDataCreateInstance(REFIID iid,
 
 
 //----------------------------------------------------------------------------
-// 
+//
 // OutOfProcessExceptionEventGetProcessIdAndThreadId - get ProcessID and ThreadID
-// 
+//
 // Arguments:
 //    hProcess - process handle
 //    hThread - thread handle
@@ -7574,8 +7571,8 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
     typedef WINBASEAPI DWORD (WINAPI GET_THREADID)(HANDLE);
     GET_THREADID * pGetThreadId;
 
-    pGetProcessIdOfThread = (GET_PROCESSID_OF_THREAD *)GetProcAddress(hKernel32, "GetProcessIdOfThread"); 
-    pGetThreadId = (GET_THREADID *)GetProcAddress(hKernel32, "GetThreadId"); 
+    pGetProcessIdOfThread = (GET_PROCESSID_OF_THREAD *)GetProcAddress(hKernel32, "GetProcessIdOfThread");
+    pGetThreadId = (GET_THREADID *)GetProcAddress(hKernel32, "GetThreadId");
 
     // OOP callbacks are used on Win7 or later.   We should have having below two APIs available.
     _ASSERTE((pGetProcessIdOfThread != NULL) && (pGetThreadId != NULL));
@@ -7597,7 +7594,7 @@ typedef struct _WER_RUNTIME_EXCEPTION_INFORMATION
     DWORD dwSize;
     HANDLE hProcess;
     HANDLE hThread;
-    EXCEPTION_RECORD exceptionRecord;    
+    EXCEPTION_RECORD exceptionRecord;
     CONTEXT context;
 } WER_RUNTIME_EXCEPTION_INFORMATION, * PWER_RUNTIME_EXCEPTION_INFORMATION;
 #endif // !defined(WER_RUNTIME_EXCEPTION_INFORMATION)
@@ -7606,16 +7603,16 @@ typedef struct _WER_RUNTIME_EXCEPTION_INFORMATION
 #ifndef FEATURE_PAL
 
 //----------------------------------------------------------------------------
-// 
+//
 // OutOfProcessExceptionEventGetWatsonBucket - retrieve Watson buckets if it is a managed exception
-// 
+//
 // Arguments:
 //    pContext - the context passed at helper module registration
 //    pExceptionInformation - structure that contains information about the crash
 //    pGM - pointer to the space to store retrieved Watson buckets
 //
 // Return Value:
-//    S_OK if the operation is successful.   
+//    S_OK if the operation is successful.
 //    or S_FALSE if it is not a managed exception or Watson buckets cannot be found
 //    else detailed error code.
 //
@@ -7661,51 +7658,51 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(__in PDWORD pContext,
     {
         return S_FALSE;
     }
-                                     
+
     return pClrDataAccess->GetWatsonBuckets(ThreadId, pGMB);
 }
 
 //----------------------------------------------------------------------------
 //
-// OutOfProcessExceptionEventCallback - claim the ownership of this event if current 
+// OutOfProcessExceptionEventCallback - claim the ownership of this event if current
 //                                      runtime threw the unhandled exception
-// 
+//
 // Arguments:
 //    pContext - the context passed at helper module registration
 //    pExceptionInformation - structure that contains information about the crash
 //    pbOwnershipClaimed - output parameter for claiming the ownership of this event
-//    pwszEventName - name of the event. If this is NULL, pchSize cannot be NULL. 
+//    pwszEventName - name of the event. If this is NULL, pchSize cannot be NULL.
 //                    This parameter is valid only if * pbOwnershipClaimed is TRUE.
 //    pchSize - the size of the buffer pointed by pwszEventName
-//    pdwSignatureCount - the count of signature parameters. Valid values range from 
-//                        0 to 10. If the value returned is greater than 10, only the 
-//                        1st 10 parameters are used for bucketing parameters. This 
+//    pdwSignatureCount - the count of signature parameters. Valid values range from
+//                        0 to 10. If the value returned is greater than 10, only the
+//                        1st 10 parameters are used for bucketing parameters. This
 //                        parameter is valid only if * pbOwnershipClaimed is TRUE.
 //
 // Return Value:
 //    S_OK on success, else detailed error code.
 //
 // Note:
-//    This is the 1st function that is called into by WER. This API through its out 
-//    parameters, tells WER as to whether or not it is claiming the crash. If it does 
-//    claim the crash, WER uses the event name specified in the string pointed to by 
-//    pwszEventName for error reporting. WER then proceed to call the 
-//    OutOfProcessExceptionEventSignatureCallback to get the bucketing parameters from 
+//    This is the 1st function that is called into by WER. This API through its out
+//    parameters, tells WER as to whether or not it is claiming the crash. If it does
+//    claim the crash, WER uses the event name specified in the string pointed to by
+//    pwszEventName for error reporting. WER then proceed to call the
+//    OutOfProcessExceptionEventSignatureCallback to get the bucketing parameters from
 //    the helper dll.
 //
 //    This function follows the multiple call paradigms. WER may call into this function
 //    with *pwszEventName pointer set to NULL. This is to indicate to the function, that
-//    WER wants to know the buffer size needed by the function to populate the string 
-//    into the buffer. The function should return E_INSUFFICIENTBUFFER with the needed 
-//    buffer size in *pchSize. WER shall then allocate a buffer of size *pchSize for 
-//    pwszEventName and then call this function again at which point the function should 
-//    populate the string and return S_OK. 
+//    WER wants to know the buffer size needed by the function to populate the string
+//    into the buffer. The function should return E_INSUFFICIENTBUFFER with the needed
+//    buffer size in *pchSize. WER shall then allocate a buffer of size *pchSize for
+//    pwszEventName and then call this function again at which point the function should
+//    populate the string and return S_OK.
 //
 //    Note that *pdOwnershipClaimed should be set to TRUE everytime this function is called
 //    for the helper dll to claim ownership of bucketing.
 //
-//    The Win7 WER spec is at 
-//    http://windows/windows7/docs/COSD%20Documents/Fundamentals/Feedback%20Services%20and%20Platforms/WER-CLR%20Integration%20Dev%20Spec.docx 
+//    The Win7 WER spec is at
+//    http://windows/windows7/docs/COSD%20Documents/Fundamentals/Feedback%20Services%20and%20Platforms/WER-CLR%20Integration%20Dev%20Spec.docx
 //
 //    !!!READ THIS!!!
 //    Since this is called by external modules it's important that we don't let any exceptions leak out (see Win8 95224).
@@ -7720,11 +7717,11 @@ STDAPI OutOfProcessExceptionEventCallback(__in PDWORD pContext,
 {
     SUPPORTS_DAC_HOST_ONLY;
 
-    if ((pContext == NULL) || 
+    if ((pContext == NULL) ||
         (pExceptionInformation == NULL) ||
         (pExceptionInformation->dwSize < sizeof(WER_RUNTIME_EXCEPTION_INFORMATION)) ||
-        (pbOwnershipClaimed == NULL) || 
-        (pchSize == NULL) || 
+        (pbOwnershipClaimed == NULL) ||
+        (pchSize == NULL) ||
         (pdwSignatureCount == NULL))
     {
         return E_INVALIDARG;
@@ -7772,31 +7769,31 @@ STDAPI OutOfProcessExceptionEventCallback(__in PDWORD pContext,
 //----------------------------------------------------------------------------
 //
 // OutOfProcessExceptionEventCallback - provide custom Watson buckets
-// 
+//
 // Arguments:
 //    pContext - the context passed at helper module registration
 //    pExceptionInformation - structure that contains information about the crash
-//    dwIndex - the index of the bucketing parameter being requested. Valid values are 
+//    dwIndex - the index of the bucketing parameter being requested. Valid values are
 //              from 0 to 9
 //    pwszName - pointer to the name of the bucketing parameter
-//    pchName - pointer to character count of the pwszName buffer. If pwszName points to 
-//              null, *pchName represents the buffer size (represented in number of characters) 
+//    pchName - pointer to character count of the pwszName buffer. If pwszName points to
+//              null, *pchName represents the buffer size (represented in number of characters)
 //              needed to populate the name in pwszName.
 //    pwszValue - pointer to the value of the pwszName bucketing parameter
-//    pchValue - pointer to the character count of the pwszValue buffer. If pwszValue points 
-//               to null, *pchValue represents the buffer size (represented in number of 
+//    pchValue - pointer to the character count of the pwszValue buffer. If pwszValue points
+//               to null, *pchValue represents the buffer size (represented in number of
 //               characters) needed to populate the value in pwszValue.
 //
 // Return Value:
 //    S_OK on success, else detailed error code.
 //
 // Note:
-//    This function is called by WER only if the call to OutOfProcessExceptionEventCallback() 
-//    was successful and the value of *pbOwnershipClaimed was TRUE. This function is called 
-//    pdwSignatureCount times to collect the bucketing parameters from the helper dll. 
+//    This function is called by WER only if the call to OutOfProcessExceptionEventCallback()
+//    was successful and the value of *pbOwnershipClaimed was TRUE. This function is called
+//    pdwSignatureCount times to collect the bucketing parameters from the helper dll.
 //
-//    This function also follows the multiple call paradigm as described for the 
-//    OutOfProcessExceptionEventCallback() function. The buffer sizes needed for 
+//    This function also follows the multiple call paradigm as described for the
+//    OutOfProcessExceptionEventCallback() function. The buffer sizes needed for
 //    this function are of the pwszName and pwszValue buffers.
 //
 //    !!!READ THIS!!!
@@ -7813,11 +7810,11 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
 {
     SUPPORTS_DAC_HOST_ONLY;
 
-    if ((pContext == NULL) || 
+    if ((pContext == NULL) ||
         (pExceptionInformation == NULL) ||
         (pExceptionInformation->dwSize < sizeof(WER_RUNTIME_EXCEPTION_INFORMATION)) ||
         (pchName == NULL) ||
-        (pchValue == NULL)) 
+        (pchValue == NULL))
     {
         return E_INVALIDARG;
     }
@@ -7829,7 +7826,7 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
     }
 
     GenericModeBlock gmb;
-    const PWSTR pwszBucketValues[] = {gmb.wzP1, 
+    const PWSTR pwszBucketValues[] = {gmb.wzP1,
                                       gmb.wzP2,
                                       gmb.wzP3,
                                       gmb.wzP4,
@@ -7859,8 +7856,8 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
     if (hr != S_OK)
     {
         // S_FALSE means either it is not a managed exception or we do not have Watson buckets.
-        // Either case is a logic error becuase this function is called by WER only if the call 
-        // to OutOfProcessExceptionEventCallback() was successful and the value of 
+        // Either case is a logic error becuase this function is called by WER only if the call
+        // to OutOfProcessExceptionEventCallback() was successful and the value of
         // *pbOwnershipClaimed was TRUE.
         if (hr == S_FALSE)
         {
@@ -7869,9 +7866,9 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
 
         return hr;
     }
-    
+
     DWORD paramCount = GetCountBucketParamsForEvent(gmb.wzEventTypeName);
-    
+
     if (dwIndex >= paramCount)
     {
         _ASSERTE(!"dwIndex is out of range");
@@ -7898,36 +7895,36 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
 //----------------------------------------------------------------------------
 //
 // OutOfProcessExceptionEventCallback - provide custom debugger launch string
-// 
+//
 // Arguments:
 //    pContext - the context passed at helper module registration
 //    pExceptionInformation - structure that contains information about the crash
 //    pbCustomDebuggerNeeded - pointer to a BOOL. If this BOOL is set to TRUE, then
-//                             a custom debugger launch option is needed by the 
+//                             a custom debugger launch option is needed by the
 //                             process. In that case, the subsequent parameters will
 //                             be meaningfully used. If this is FALSE, the subsequent
 //                             parameters will be ignored.
 //    pwszDebuggerLaunch - pointer to a string that will be used to launch the debugger,
-//                         if the debugger is launched. The value of this string overrides 
+//                         if the debugger is launched. The value of this string overrides
 //                         the default debugger launch string used by WER.
-//    pchSize - pointer to the character count of the pwszDebuggerLaunch  buffer. If 
-//              pwszDebuggerLaunch points to null, *pchSize represents the buffer size 
-//              (represented in number of characters) needed to populate the debugger 
+//    pchSize - pointer to the character count of the pwszDebuggerLaunch  buffer. If
+//              pwszDebuggerLaunch points to null, *pchSize represents the buffer size
+//              (represented in number of characters) needed to populate the debugger
 //              launch string in pwszDebuggerLaunch.
-//    pbAutoLaunchDebugger - pointer to a BOOL. If this BOOL is set to TRUE, WER will 
-//                           directly launch the debugger. If set to FALSE, WER will show 
+//    pbAutoLaunchDebugger - pointer to a BOOL. If this BOOL is set to TRUE, WER will
+//                           directly launch the debugger. If set to FALSE, WER will show
 //                           the debug option to the user in the WER UI.
 //
 // Return Value:
 //    S_OK on success, else detailed error code.
 //
 // Note:
-//    This function is called into by WER only if the call to OutOfProcessExceptionEventCallback() 
+//    This function is called into by WER only if the call to OutOfProcessExceptionEventCallback()
 //    was successful and the value of *pbOwnershipClaimed was TRUE. This function allows the helper
 //    dll to customize the debugger launch options including the launch string.
 //
-//    This function also follows the multiple call paradigm as described for the 
-//    OutOfProcessExceptionEventCallback() function. The buffer sizes needed for 
+//    This function also follows the multiple call paradigm as described for the
+//    OutOfProcessExceptionEventCallback() function. The buffer sizes needed for
 //    this function are of the pwszName and pwszValue buffers.
 //
 //----------------------------------------------------------------------------
@@ -7940,13 +7937,13 @@ STDAPI OutOfProcessExceptionEventDebuggerLaunchCallback(__in PDWORD pContext,
 {
     SUPPORTS_DAC_HOST_ONLY;
 
-    if ((pContext == NULL) || 
+    if ((pContext == NULL) ||
         (pExceptionInformation == NULL) ||
         (pExceptionInformation->dwSize < sizeof(WER_RUNTIME_EXCEPTION_INFORMATION)) ||
         (pbCustomDebuggerNeeded == NULL) ||
         (pwszDebuggerLaunch == NULL) ||
         (pchSize == NULL) ||
-        (pbAutoLaunchDebugger == NULL)) 
+        (pbAutoLaunchDebugger == NULL))
     {
         return E_INVALIDARG;
     }
@@ -7973,9 +7970,9 @@ DacHandleWalker::DacHandleWalker()
 DacHandleWalker::~DacHandleWalker()
 {
     SUPPORTS_DAC;
-    
+
     HandleChunkHead *curr = mHead.Next;
-    
+
     while (curr)
     {
         HandleChunkHead *tmp = curr;
@@ -7987,50 +7984,50 @@ DacHandleWalker::~DacHandleWalker()
 HRESULT DacHandleWalker::Init(ClrDataAccess *dac, UINT types[], UINT typeCount)
 {
     SUPPORTS_DAC;
-    
+
     if (dac == NULL || types == NULL)
         return E_POINTER;
-    
+
     mDac = dac;
     m_instanceAge = dac->m_instanceAge;
-    
+
     return Init(BuildTypemask(types, typeCount));
 }
 
 HRESULT DacHandleWalker::Init(ClrDataAccess *dac, UINT types[], UINT typeCount, int gen)
 {
     SUPPORTS_DAC;
-    
+
     if (gen < 0 || gen > (int)*g_gcDacGlobals->max_gen)
         return E_INVALIDARG;
-        
+
     mGenerationFilter = gen;
-    
+
     return Init(dac, types, typeCount);
 }
 
 HRESULT DacHandleWalker::Init(UINT32 typemask)
 {
     SUPPORTS_DAC;
-    
+
     mMap = g_gcDacGlobals->handle_table_map;
     mTypeMask = typemask;
-    
+
     return S_OK;
 }
 
 UINT32 DacHandleWalker::BuildTypemask(UINT types[], UINT typeCount)
 {
     SUPPORTS_DAC;
-    
+
     UINT32 mask = 0;
-    
+
     for (UINT i = 0; i < typeCount; ++i)
     {
         _ASSERTE(types[i] < 32);
         mask |= (1 << types[i]);
     }
-    
+
     return mask;
 }
 
@@ -8039,26 +8036,26 @@ HRESULT DacHandleWalker::Next(unsigned int celt,
              unsigned int *pceltFetched)
 {
     SUPPORTS_DAC;
-    
+
     if (handles == NULL || pceltFetched == NULL)
         return E_POINTER;
-    
+
     SOSHelperEnter();
-    
+
     hr = DoHandleWalk<SOSHandleData, unsigned int, DacHandleWalker::EnumCallbackSOS>(celt, handles, pceltFetched);
-    
+
     SOSHelperLeave();
-    
+
     return hr;
 }
 
 bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
 {
     SUPPORTS_DAC;
-    
+
     // The table slots are based on the number of GC heaps in the process.
     int max_slots = 1;
-    
+
 #ifdef FEATURE_SVR_GC
     if (GCHeapUtilities::IsServerHeap())
         max_slots = GCHeapCount();
@@ -8068,9 +8065,9 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
     // them, and the count is the only thing which needs resetting.
     for (HandleChunkHead *curr = &mHead; curr; curr = curr->Next)
         curr->Count = 0;
-    
+
     DacHandleWalkerParam param(&mHead);
-    
+
     do
     {
         // Have we advanced past the end of the current bucket?
@@ -8079,14 +8076,14 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
             mIndex = 0;
             mMap = mMap->pNext;
         }
-        
+
         // Have we walked the entire handle table map?
         if (mMap == NULL)
         {
             mCurr = NULL;
             return false;
         }
-        
+
         if (mMap->pBuckets[mIndex] != NULL)
         {
             for (int i = 0; i < max_slots; ++i)
@@ -8094,7 +8091,7 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
                 DPTR(dac_handle_table) hTable = mMap->pBuckets[mIndex]->pTable[i];
                 if (hTable)
                 {
-                    // Yikes!  The handle table callbacks don't produce the handle type or 
+                    // Yikes!  The handle table callbacks don't produce the handle type or
                     // the AppDomain that we need, and it's too difficult to propogate out
                     // these things (especially the type) without worrying about performance
                     // implications for the GC.  Instead we'll have the callback walk each
@@ -8109,13 +8106,13 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
                             PTR_AppDomain pDomain = SystemDomain::GetAppDomainAtIndex(ADIndex(pTable->uADIndex));
                             param.AppDomain = TO_CDADDR(pDomain.GetAddr());
                             param.Type = handleType;
-                            
+
                             // Either enumerate the handles regularly, or walk the handle
                             // table as the GC does if a generation filter was requested.
                             if (mGenerationFilter != -1)
-                                HndScanHandlesForGC(hTable, callback, 
-                                                    (LPARAM)&param, 0, 
-                                                     &handleType, 1, 
+                                HndScanHandlesForGC(hTable, callback,
+                                                    (LPARAM)&param, 0,
+                                                     &handleType, 1,
                                                      mGenerationFilter, *g_gcDacGlobals->max_gen, 0);
                             else
                                 HndEnumHandles(hTable, &handleType, 1, callback, (LPARAM)&param, 0, FALSE);
@@ -8124,12 +8121,12 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
                 }
             }
         }
-        
+
         // Stop looping as soon as we have found data.  We also stop if we have a failed HRESULT during
         // the callback (this should indicate OOM).
         mIndex++;
     } while (mHead.Count == 0 && SUCCEEDED(param.Result));
-    
+
     mCurr = mHead.Next;
     return true;
 }
@@ -8152,7 +8149,7 @@ HRESULT DacHandleWalker::GetCount(unsigned int *pcelt)
 
 
 void DacHandleWalker::GetRefCountedHandleInfo(
-    OBJECTREF oref, unsigned int uType, 
+    OBJECTREF oref, unsigned int uType,
     unsigned int *pRefCount, unsigned int *pJupiterRefCount, BOOL *pIsPegged, BOOL *pIsStrong)
 {
     SUPPORTS_DAC;
@@ -8166,16 +8163,16 @@ void DacHandleWalker::GetRefCountedHandleInfo(
         {
             if (pRefCount)
                 *pRefCount = (unsigned int)pWrap->GetRefCount();
-                
+
             if (pJupiterRefCount)
                 *pJupiterRefCount = (unsigned int)pWrap->GetJupiterRefCount();
-            
+
             if (pIsPegged)
                 *pIsPegged = pWrap->IsConsideredPegged();
-            
+
             if (pIsStrong)
                 *pIsStrong = pWrap->IsWrapperActive();
-            
+
             return;
         }
     }
@@ -8183,13 +8180,13 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 
     if (pRefCount)
         *pRefCount = 0;
-    
+
     if (pJupiterRefCount)
         *pJupiterRefCount = 0;
-    
+
     if (pIsPegged)
         *pIsPegged = FALSE;
-    
+
     if (pIsStrong)
         *pIsStrong = FALSE;
 }
@@ -8197,16 +8194,16 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 void CALLBACK DacHandleWalker::EnumCallbackSOS(PTR_UNCHECKED_OBJECTREF handle, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2)
 {
     SUPPORTS_DAC;
-    
+
     DacHandleWalkerParam *param = (DacHandleWalkerParam *)param1;
     HandleChunkHead *curr = param->Curr;
-    
+
     // If we failed on a previous call (OOM) don't keep trying to allocate, it's not going to work.
     if (FAILED(param->Result))
         return;
-    
+
     // We've moved past the size of the current chunk.  We'll allocate a new chunk
-    // and stuff the handles there.  These are cleaned up by the destructor 
+    // and stuff the handles there.  These are cleaned up by the destructor
     if (curr->Count >= (curr->Size/sizeof(SOSHandleData)))
     {
         if (curr->Next == NULL)
@@ -8222,14 +8219,14 @@ void CALLBACK DacHandleWalker::EnumCallbackSOS(PTR_UNCHECKED_OBJECTREF handle, u
                 return;
             }
         }
-        
+
         curr = param->Curr = param->Curr->Next;
     }
-    
+
     // Fill the current handle.
     SOSHandleData *dataArray = (SOSHandleData*)curr->pData;
     SOSHandleData &data = dataArray[curr->Count++];
-    
+
     data.Handle = TO_CDADDR(handle.GetAddr());
     data.Type = param->Type;
     if (param->Type == HNDTYPE_DEPENDENT)
@@ -8250,7 +8247,7 @@ DacStackReferenceWalker::DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThr
       mChunkIndex(0), mCurr(0), mIteratorIndex(0)
 {
     Thread *curr = NULL;
-    
+
     for (curr = ThreadStore::GetThreadList(curr);
          curr;
          curr = ThreadStore::GetThreadList(curr))
@@ -8266,7 +8263,7 @@ DacStackReferenceWalker::DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThr
 DacStackReferenceWalker::~DacStackReferenceWalker()
 {
     StackRefChunkHead *curr = mHead.next;
-    
+
     while (curr)
     {
         StackRefChunkHead *tmp = curr;
@@ -8296,21 +8293,21 @@ HRESULT DacStackReferenceWalker::GetCount(unsigned int *pCount)
 {
     if (!pCount)
         return E_POINTER;
-    
+
     SOSHelperEnter();
-    
+
     if (!mEnumerated)
     {
         // Fill out our data structures.
         WalkStack<unsigned int, SOSStackRefData>(0, NULL, DacStackReferenceWalker::GCReportCallbackSOS, DacStackReferenceWalker::GCEnumCallbackSOS);
     }
-    
+
     unsigned int count = 0;
     for(StackRefChunkHead *curr = &mHead; curr; curr = curr->next)
         count += curr->count;
-    
+
     *pCount = count;
-    
+
     SOSHelperLeave();
     return hr;
 }
@@ -8321,16 +8318,16 @@ HRESULT DacStackReferenceWalker::Next(unsigned int count,
 {
     if (stackRefs == NULL || pFetched == NULL)
         return E_POINTER;
-    
+
     SOSHelperEnter();
-    
-    hr = DoStackWalk<unsigned int, SOSStackRefData, 
+
+    hr = DoStackWalk<unsigned int, SOSStackRefData,
                      DacStackReferenceWalker::GCReportCallbackSOS,
                      DacStackReferenceWalker::GCEnumCallbackSOS>
                      (count, stackRefs, pFetched);
-    
+
     SOSHelperLeave();
-    
+
     return hr;
 }
 
@@ -8338,18 +8335,18 @@ HRESULT DacStackReferenceWalker::EnumerateErrors(ISOSStackRefErrorEnum **ppEnum)
 {
     if (!ppEnum)
         return E_POINTER;
-    
+
     SOSHelperEnter();
-    
+
     if (mThread)
     {
         // Fill out our data structures.
         WalkStack<unsigned int, SOSStackRefData>(0, NULL, DacStackReferenceWalker::GCReportCallbackSOS, DacStackReferenceWalker::GCEnumCallbackSOS);
     }
-    
+
     DacStackReferenceErrorEnum *pEnum = new DacStackReferenceErrorEnum(this, mErrors);
     hr = pEnum->QueryInterface(__uuidof(ISOSStackRefErrorEnum), (void**)ppEnum);
-    
+
     SOSHelperLeave();
     return hr;
 }
@@ -8359,13 +8356,13 @@ CLRDATA_ADDRESS DacStackReferenceWalker::ReadPointer(TADDR addr)
     ULONG32 bytesRead = 0;
     TADDR result = 0;
     HRESULT hr = mDac->m_pTarget->ReadVirtual(addr, (BYTE*)&result, sizeof(TADDR), &bytesRead);
-    
+
     if (FAILED(hr) || (bytesRead != sizeof(TADDR)))
         return (CLRDATA_ADDRESS)~0;
-    
+
     return TO_CDADDR(result);
 }
-   
+
 
 void DacStackReferenceWalker::GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
@@ -8377,7 +8374,7 @@ void DacStackReferenceWalker::GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pOb
     // to fix, so we are leaving it for now.
     TADDR addr = 0;
     TADDR obj = 0;
-    
+
     if (loc.targetPtr)
     {
         addr = (TADDR)pObject;
@@ -8387,17 +8384,17 @@ void DacStackReferenceWalker::GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pOb
     {
         obj = pObject->GetAddr();
     }
-    
+
     if (flags & GC_CALL_INTERIOR)
     {
         CORDB_ADDRESS fixed_obj = 0;
         HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_obj, NULL);
-        
+
         // If we failed...oh well, SOS won't mind.  We'll just report the interior pointer as is.
         if (SUCCEEDED(hr))
             obj = TO_TADDR(fixed_obj);
     }
-    
+
     SOSStackRefData *data = dsc->pWalker->GetNextObject<SOSStackRefData>(dsc);
     if (data != NULL)
     {
@@ -8408,10 +8405,10 @@ void DacStackReferenceWalker::GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pOb
         data->Address = TO_CDADDR(addr);
         data->Object = TO_CDADDR(obj);
         data->Flags = flags;
-        
+
         // Report the frame that the data came from.
         data->StackPointer = TO_CDADDR(dsc->sp);
-        
+
         if (dsc->pFrame)
         {
             data->SourceType = SOS_StackSourceFrame;
@@ -8430,17 +8427,17 @@ void DacStackReferenceWalker::GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanCont
 {
     DacScanContext *dsc = (DacScanContext*)sc;
     CLRDATA_ADDRESS obj = dsc->pWalker->ReadPointer(ppObj.GetAddr());
-    
+
     if (flags & GC_CALL_INTERIOR)
     {
         CORDB_ADDRESS fixed_addr = 0;
         HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_addr, NULL);
-        
+
         // If we failed...oh well, SOS won't mind.  We'll just report the interior pointer as is.
         if (SUCCEEDED(hr))
             obj = TO_CDADDR(fixed_addr);
     }
-    
+
     SOSStackRefData *data = dsc->pWalker->GetNextObject<SOSStackRefData>(dsc);
     if (data != NULL)
     {
@@ -8451,7 +8448,7 @@ void DacStackReferenceWalker::GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanCont
         data->Object = obj;
         data->Flags = flags;
         data->StackPointer = TO_CDADDR(dsc->sp);
-        
+
         if (dsc->pFrame)
         {
             data->SourceType = SOS_StackSourceFrame;
@@ -8473,11 +8470,11 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
 
     GCCONTEXT *gcctx = (GCCONTEXT*)pData;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;
-    
+
     MethodDesc *pMD = pCF->GetFunction();
     gcctx->sc->pMD = pMD;
     gcctx->sc->pCurrentDomain = pCF->GetAppDomain();
-    
+
     PREGDISPLAY pRD = pCF->GetRegisterSet();
     dsc->sp = (TADDR)GetRegdisplaySP(pRD);;
     dsc->pc = PCODEToPINSTR(GetControlPC(pRD));
@@ -8494,7 +8491,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
 #endif // defined(WIN64EXCEPTIONS)
 
     Frame *pFrame = ((DacScanContext*)gcctx->sc)->pFrame = pCF->GetFrame();
-    
+
     EX_TRY
     {
         if (fReportGCReferences)
@@ -8505,7 +8502,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
                 _ASSERTE(pCM != NULL);
 
                 unsigned flags = pCF->GetCodeManagerFlags();
-            
+
                 pCM->EnumGcRefs(pCF->GetRegisterSet(),
                                 pCF->GetCodeInfo(),
                                 flags,
@@ -8522,7 +8519,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
     {
         SOSStackErrorList *err = new SOSStackErrorList;
         err->pNext = NULL;
-        
+
         if (pFrame)
         {
             err->error.SourceType = SOS_StackSourceFrame;
@@ -8533,7 +8530,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
             err->error.SourceType = SOS_StackSourceIP;
             err->error.Source = TO_CDADDR(dsc->pc);
         }
-        
+
         if (dsc->pWalker->mErrors == NULL)
         {
             dsc->pWalker->mErrors = err;
@@ -8547,7 +8544,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
             SOSStackErrorList *curr = dsc->pWalker->mErrors;
             while (curr->pNext)
                 curr = curr->pNext;
-            
+
             curr->pNext = err;
         }
     }
@@ -8559,7 +8556,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
     // If we're executing a LCG dynamic method then we must promote the associated resolver to ensure it
     // doesn't get collected and yank the method code out from under us).
 
-    // Be careful to only promote the reference -- we can also be called to relocate the reference and 
+    // Be careful to only promote the reference -- we can also be called to relocate the reference and
     // that can lead to all sorts of problems since we could be racing for the relocation with the long
     // weak handle we recover the reference from. Promoting the reference is enough, the handle in the
     // reference will be relocated properly as long as we keep it alive till the end of the collection
@@ -8597,7 +8594,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
                 if (pCF->IsFrameless())
                 {
                     // We need to grab the Context Type here because there are cases where the MethodDesc
-                    // is shared, and thus indicates there should be an instantion argument, but the JIT 
+                    // is shared, and thus indicates there should be an instantion argument, but the JIT
                     // was still allowed to optimize it away and we won't grab it below because we're not
                     // reporting any references from this frame.
                     paramContextType = pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo());
@@ -8635,7 +8632,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
         }
     }
 #endif
-    
+
     return SWA_CONTINUE;
 }
 
@@ -8644,7 +8641,7 @@ DacStackReferenceErrorEnum::DacStackReferenceErrorEnum(DacStackReferenceWalker *
     : mEnum(pEnum), mHead(pErrors), mCurr(pErrors)
 {
     _ASSERTE(mEnum);
-    
+
     if (mHead != NULL)
         mEnum->AddRef();
 }
@@ -8660,14 +8657,14 @@ HRESULT DacStackReferenceErrorEnum::Skip(unsigned int count)
     unsigned int i = 0;
     for (i = 0; i < count && mCurr; ++i)
         mCurr = mCurr->pNext;
-    
+
     return i < count ? S_FALSE : S_OK;
 }
 
 HRESULT DacStackReferenceErrorEnum::Reset()
 {
     mCurr = mHead;
-    
+
     return S_OK;
 }
 
@@ -8675,13 +8672,13 @@ HRESULT DacStackReferenceErrorEnum::GetCount(unsigned int *pCount)
 {
     SOSStackErrorList *curr = mHead;
     unsigned int count = 0;
-    
+
     while (curr)
     {
         curr = curr->pNext;
         count++;
     }
-    
+
     *pCount = count;
     return S_OK;
 }
@@ -8694,7 +8691,7 @@ HRESULT DacStackReferenceErrorEnum::Next(unsigned int count, SOSStackRefError re
     unsigned int i;
     for (i = 0; i < count && mCurr; ++i, mCurr = mCurr->pNext)
         ref[i] = mCurr->error;
-    
+
     *pFetched = i;
     return i < count ? S_FALSE : S_OK;
 }
