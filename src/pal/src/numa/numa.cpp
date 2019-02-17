@@ -357,10 +357,10 @@ GetNumaProcessorNodeEx(
 
     BOOL success = FALSE;
 
-    if ((Processor->Group < g_groupCount) && 
-        (Processor->Number < MaxCpusPerGroup) && 
+    if ((Processor->Group < g_groupCount) &&
+        (Processor->Number < MaxCpusPerGroup) &&
         (Processor->Reserved == 0))
-    {  
+    {
         short cpu = g_groupAndIndexToCpu[Processor->Group * MaxCpusPerGroup + Processor->Number];
         if (cpu != -1)
         {
@@ -372,7 +372,7 @@ GetNumaProcessorNodeEx(
     if (!success)
     {
         *NodeNumber = 0xffff;
-        SetLastError(ERROR_INVALID_PARAMETER);  
+        SetLastError(ERROR_INVALID_PARAMETER);
     }
 
     LOGEXIT("GetNumaProcessorNodeEx returns BOOL %d\n", success);
@@ -431,7 +431,7 @@ GetLogicalProcessorInformationEx(
     else
     {
         // We only support the group relationship
-        SetLastError(ERROR_INVALID_PARAMETER);  
+        SetLastError(ERROR_INVALID_PARAMETER);
     }
 
     LOGEXIT("GetLogicalProcessorInformationEx returns BOOL %d\n", success);
@@ -741,7 +741,7 @@ GetCurrentProcessorNumberEx(
     ENTRY("GetCurrentProcessorNumberEx(ProcNumber=%p\n", ProcNumber);
 
     DWORD cpu = GetCurrentProcessorNumber();
-    _ASSERTE(cpu < g_possibleCpuCount);
+    _ASSERTE((int)cpu < g_possibleCpuCount);
     ProcNumber->Group = g_cpuToAffinity[cpu].Group;
     ProcNumber->Number = g_cpuToAffinity[cpu].Number;
 
@@ -861,14 +861,14 @@ VirtualAllocExNuma(
 )
 {
     PERF_ENTRY(VirtualAllocExNuma);
-    ENTRY("VirtualAllocExNuma(hProcess=%p, lpAddress=%p, dwSize=%u, flAllocationType=%#x, flProtect=%#x, nndPreferred=%d\n", 
+    ENTRY("VirtualAllocExNuma(hProcess=%p, lpAddress=%p, dwSize=%u, flAllocationType=%#x, flProtect=%#x, nndPreferred=%d\n",
         hProcess, lpAddress, dwSize, flAllocationType, flProtect, nndPreferred);
 
     LPVOID result = NULL;
 
     if (hProcess == GetCurrentProcess())
     {
-        if (nndPreferred <= g_highestNumaNode)
+        if ((int)nndPreferred <= g_highestNumaNode)
         {
             result = VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
 #if HAVE_NUMA_H
@@ -894,7 +894,7 @@ VirtualAllocExNuma(
             // The specified node number is larger than the maximum available one
             SetLastError(ERROR_INVALID_PARAMETER);
         }
-    }    
+    }
     else
     {
         // PAL supports allocating from the current process virtual space only
@@ -976,7 +976,7 @@ SetThreadIdealProcessorEx(
             }
         }
 
-        _ASSERTE(prevCpu < g_possibleCpuCount);
+        _ASSERTE((int)prevCpu < g_possibleCpuCount);
         lpPreviousIdealProcessor->Group = g_cpuToAffinity[prevCpu].Group;
         lpPreviousIdealProcessor->Number = g_cpuToAffinity[prevCpu].Number;
         lpPreviousIdealProcessor->Reserved = 0;

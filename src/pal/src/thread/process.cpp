@@ -149,7 +149,7 @@ static int* s_helperPage = 0;
 
 //
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
-// 
+//
 pthread_mutex_t flushProcessWriteBuffersMutex;
 
 CAllowedObjectTypes aotProcess(otiProcess);
@@ -177,7 +177,7 @@ DWORD g_dwThreadCount;
 LPWSTR g_lpwstrCmdLine = NULL;
 LPWSTR g_lpwstrAppDir = NULL;
 
-// Thread ID of thread that has started the ExitProcess process 
+// Thread ID of thread that has started the ExitProcess process
 Volatile<LONG> terminator = 0;
 
 // Process and session ID of this process.
@@ -227,7 +227,7 @@ enum FILETYPE
 };
 
 #pragma pack(push,1)
-// When creating the semaphore name on Mac running in a sandbox, We reference this structure as a byte array 
+// When creating the semaphore name on Mac running in a sandbox, We reference this structure as a byte array
 // in order to encode its data into a string. Its important to make sure there is no padding between the fields
 // and also at the end of the buffer. Hence, this structure is defined inside a pack(1)
 struct UnambiguousProcessDescriptor
@@ -253,14 +253,13 @@ struct UnambiguousProcessDescriptor
 
 static
 DWORD
-PALAPI
 StartupHelperThread(
     LPVOID p);
 
-static 
-BOOL 
+static
+BOOL
 GetProcessIdDisambiguationKey(
-    IN DWORD processId, 
+    IN DWORD processId,
     OUT UINT64 *disambiguationKey);
 
 PAL_ERROR
@@ -271,7 +270,7 @@ PROCGetProcessStatus(
     DWORD *pdwExitCode);
 
 static
-void 
+void
 CreateSemaphoreName(
     char semName[CLR_SEM_MAX_NAMELEN],
     LPCSTR semaphoreName,
@@ -689,7 +688,7 @@ CorUnix::InternalCreateProcess(
     int iFdOut = -1;
     IPalObject *pobjFileErr = NULL;
     int iFdErr = -1;
-    
+
     pid_t processId;
     PathCharString lpFileNamePS;
     char **lppArgv = NULL;
@@ -711,7 +710,7 @@ CorUnix::InternalCreateProcess(
                lpApplicationName);
         palError = ERROR_INVALID_PARAMETER;
         goto InternalCreateProcessExit;
-    } 
+    }
 
     if (0 != (dwCreationFlags & ~(CREATE_SUSPENDED|CREATE_NEW_CONSOLE)))
     {
@@ -811,7 +810,7 @@ CorUnix::InternalCreateProcess(
         palError = ERROR_FILE_NOT_FOUND;
         goto InternalCreateProcessExit;
     }
-    
+
     /* check type of file */
     iRet = checkFileType(lpFileNamePS);
 
@@ -884,7 +883,7 @@ CorUnix::InternalCreateProcess(
     palError = g_pObjectManager->AllocateObject(
         pThread,
         &otProcess,
-        &oa, 
+        &oa,
         &pobjProcess
         );
 
@@ -926,7 +925,7 @@ CorUnix::InternalCreateProcess(
         &pDummyThread,
         &hDummyThread
         );
-    
+
     if (dwCreationFlags & CREATE_SUSPENDED)
     {
         int pipe_descs[2];
@@ -936,7 +935,7 @@ CorUnix::InternalCreateProcess(
             ERROR("pipe() failed! error is %d (%s)\n", errno, strerror(errno));
             palError = ERROR_NOT_ENOUGH_MEMORY;
             goto InternalCreateProcessExit;
-        }                        
+        }
 
         /* [0] is read end, [1] is write end */
         pDummyThread->suspensionInfo.SetBlockingPipe(pipe_descs[1]);
@@ -954,9 +953,9 @@ CorUnix::InternalCreateProcess(
     if (NO_ERROR != palError)
     {
         ASSERT("Unable to obtain local data for new process object\n");
-        goto InternalCreateProcessExit;    
+        goto InternalCreateProcessExit;
     }
-        
+
 
     /* fork the new process */
     processId = fork();
@@ -974,15 +973,15 @@ CorUnix::InternalCreateProcess(
         goto InternalCreateProcessExit;
     }
 
-    /* From the time the child process begins running, to when it reaches execve, 
+    /* From the time the child process begins running, to when it reaches execve,
     the child process is not a real PAL process and does not own any PAL
-    resources, although it has access to the PAL resources of its parent process. 
-    Thus, while the child process is in this window, it is dangerous for it to affect 
+    resources, although it has access to the PAL resources of its parent process.
+    Thus, while the child process is in this window, it is dangerous for it to affect
     its parent's PAL resources. As a consequence, no PAL code should be used
     in this window; all code should make unix calls. Note the use of _exit
     instead of exit to avoid calling PAL_Terminate and the lack of TRACE's and
     ASSERT's. */
-    
+
     if (processId == 0)  /* child process */
     {
         // At this point, the PAL should be considered uninitialized for this child process.
@@ -991,8 +990,8 @@ CorUnix::InternalCreateProcess(
         // calling PAL functions. Furthermore, nothing should be changing
         // the init_count in the child process at this point since this is the only
         // thread executing.
-        init_count = 0; 
-        
+        init_count = 0;
+
         sigset_t sm;
 
         //
@@ -1005,7 +1004,7 @@ CorUnix::InternalCreateProcess(
         {
             _exit(EXIT_FAILURE);
         }
-        
+
         if (dwCreationFlags & CREATE_SUSPENDED)
         {
             BYTE resume_code = 0;
@@ -1025,7 +1024,7 @@ CorUnix::InternalCreateProcess(
                 }
                 else
                 {
-                    /* note : read might return 0 (and return EAGAIN) if the other 
+                    /* note : read might return 0 (and return EAGAIN) if the other
                        end of the pipe gets closed - for example because the parent
                        process dies (very) abruptly */
                     _exit(EXIT_FAILURE);
@@ -1068,9 +1067,9 @@ CorUnix::InternalCreateProcess(
             if (dup2(iFdErr, STDERR_FILENO) == -1)
             {
                 // Didn't duplicate standard error.
-                _exit(EXIT_FAILURE);            
+                _exit(EXIT_FAILURE);
             }
-            
+
             /* now close the original FDs, we don't need them anymore */
             close(iFdIn);
             close(iFdOut);
@@ -1101,13 +1100,13 @@ CorUnix::InternalCreateProcess(
     pLocalData->dwProcessId = processId;
     pLocalDataLock->ReleaseLock(pThread, TRUE);
     pLocalDataLock = NULL;
-    
-    // 
+
+    //
     // Release file handle info; we don't need them anymore. Note that
     // this must happen after we've released the data locks, as
     // otherwise a deadlock could result.
     //
-    
+
     if (lpStartupInfo->dwFlags & STARTF_USESTDHANDLES)
     {
         pobjFileIn->ReleaseReference(pThread);
@@ -1167,11 +1166,11 @@ InternalCreateProcessExit:
         free(EnvironmentArray);
     }
 
-    /* if we still have the file structures at this point, it means we 
-       encountered an error sometime between when we acquired them and when we 
-       fork()ed. We not only have to release them, we have to give them back 
+    /* if we still have the file structures at this point, it means we
+       encountered an error sometime between when we acquired them and when we
+       fork()ed. We not only have to release them, we have to give them back
        their close-on-exec flag */
-    if (NULL != pobjFileIn) 
+    if (NULL != pobjFileIn)
     {
         if(-1 == fcntl(iFdIn, F_SETFD, 1))
         {
@@ -1180,8 +1179,8 @@ InternalCreateProcessExit:
         }
         pobjFileIn->ReleaseReference(pThread);
     }
-    
-    if (NULL != pobjFileOut) 
+
+    if (NULL != pobjFileOut)
     {
         if(-1 == fcntl(iFdOut, F_SETFD, 1))
         {
@@ -1190,8 +1189,8 @@ InternalCreateProcessExit:
         }
         pobjFileOut->ReleaseReference(pThread);
     }
-    
-    if (NULL != pobjFileErr) 
+
+    if (NULL != pobjFileErr)
     {
         if(-1 == fcntl(iFdErr, F_SETFD, 1))
         {
@@ -1248,7 +1247,7 @@ GetExitCodeProcess(
         &ps,
         &dwExitCode
         );
-    
+
     if (NO_ERROR != palError)
     {
         ASSERT("Couldn't get process status information!\n");
@@ -1270,10 +1269,10 @@ done:
     {
         pThread->SetLastError(palError);
     }
-    
+
     LOGEXIT("GetExitCodeProcess returns BOOL %d\n", NO_ERROR == palError);
     PERF_EXIT(GetExitCodeProcess);
-    
+
     return NO_ERROR == palError;
 }
 
@@ -1317,12 +1316,12 @@ ExitProcess(
     }
     else if (0 != old_terminator)
     {
-        /* another thread has already initiated the termination process. we 
-           could just block on the PALInitLock critical section, but then 
+        /* another thread has already initiated the termination process. we
+           could just block on the PALInitLock critical section, but then
            PROCSuspendOtherThreads would hang... so sleep forever here, we're
-           terminating anyway 
+           terminating anyway
 
-           Update: [TODO] PROCSuspendOtherThreads has been removed. Can this 
+           Update: [TODO] PROCSuspendOtherThreads has been removed. Can this
            code be changed? */
         WARN("termination already started from another thread; blocking.\n");
         poll(NULL, 0, INFTIM);
@@ -1341,7 +1340,7 @@ ExitProcess(
     else
     {
         exit(uExitCode);
-        
+
         /* Should not get here, because we terminate the current process */
         ASSERT("exit has returned\n");
     }
@@ -1372,7 +1371,7 @@ TerminateProcess(
     ENTRY("TerminateProcess(hProcess=%p, uExitCode=%u)\n",hProcess, uExitCode );
 
     ret = PROCEndProcess(hProcess, uExitCode, TRUE);
-    
+
     LOGEXIT("TerminateProcess returns BOOL %d\n", ret);
     PERF_EXIT(TerminateProcess);
     return ret;
@@ -1404,7 +1403,7 @@ RaiseFailFastException(
 /*++
 Function:
   PROCEndProcess
-  
+
   Called from TerminateProcess and ExitProcess. This does the work of
   TerminateProcess, but also takes a flag that determines whether we
   shut down unconditionally. If the flag is set, the PAL will do very
@@ -1426,7 +1425,7 @@ static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUncon
     {
         if (uExitCode != 0)
             WARN("exit code 0x%x ignored for external process.\n", uExitCode);
-            
+
         if (kill(dwProcessId, SIGKILL) == 0)
         {
             ret = TRUE;
@@ -1463,7 +1462,7 @@ static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUncon
         }
 
         TerminateCurrentProcessNoExit(bTerminateUnconditionally);
-        
+
         LOGEXIT("PROCEndProcess will not return\n");
 
         // exit() runs atexit handlers possibly registered by foreign code.
@@ -1471,10 +1470,10 @@ static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUncon
         // registered our own PAL_Terminate with atexit(), the latter will
         // explicitly re-enter us.
         PAL_Leave(PAL_BoundaryBottom);
-        
+
         if (bTerminateUnconditionally)
         {
-            // abort() has the semantics that 
+            // abort() has the semantics that
             // (1) it doesn't run atexit handlers
             // (2) can invoke CrashReporter or produce a coredump,
             // which is appropriate for TerminateProcess calls
@@ -1527,7 +1526,7 @@ static bool IsCoreClrModule(const char* pModulePath)
 // Build the semaphore names using the PID and a value that can be used for distinguishing
 // between processes with the same PID (which ran at different times). This is to avoid
 // cases where a prior process with the same PID exited abnormally without having a chance
-// to clean up its semaphore. 
+// to clean up its semaphore.
 // Note to anyone modifying these names in the future: Semaphore names on OS X are limited
 // to SEM_NAME_LEN characters, including null. SEM_NAME_LEN is 31 (at least on OS X 10.11).
 // NetBSD limits semaphore names to 15 characters, including null (at least up to 7.99.25).
@@ -1561,9 +1560,9 @@ class PAL_RuntimeStartupHelper
     DWORD m_threadId;
     HANDLE m_threadHandle;
     DWORD m_processId;
-#ifdef __APPLE__    
+#ifdef __APPLE__
     char m_applicationGroupId[MAX_APPLICATION_GROUP_ID_LENGTH+1];
-#endif // __APPLE__    
+#endif // __APPLE__
     char m_startupSemName[CLR_SEM_MAX_NAMELEN];
     char m_continueSemName[CLR_SEM_MAX_NAMELEN];
 
@@ -1574,17 +1573,17 @@ class PAL_RuntimeStartupHelper
     // Debugger waits on this semaphore and the runtime signals it on startup.
     sem_t *m_startupSem;
 
-    // Debuggee waits on this semaphore and the debugger signals it after the startup callback 
+    // Debuggee waits on this semaphore and the debugger signals it after the startup callback
     // registered (m_callback) returns.
     sem_t *m_continueSem;
 
     LPCSTR GetApplicationGroupId() const
     {
-#ifdef __APPLE__        
+#ifdef __APPLE__
         return m_applicationGroupId[0] == '\0' ? nullptr : m_applicationGroupId;
 #else // __APPLE__
         return nullptr;
-#endif // __APPLE__        
+#endif // __APPLE__
     }
 
 public:
@@ -1702,8 +1701,8 @@ public:
         // it can be used by the cleanup code that removes the semaphore with sem_unlink.
         ret = GetProcessIdDisambiguationKey(m_processId, &m_processIdDisambiguationKey);
 
-        // If GetProcessIdDisambiguationKey failed for some reason, it should set the value 
-        // to 0. We expect that anyone else opening the semaphore name will also fail and thus 
+        // If GetProcessIdDisambiguationKey failed for some reason, it should set the value
+        // to 0. We expect that anyone else opening the semaphore name will also fail and thus
         // will also try to use 0 as the value.
         _ASSERTE(ret == TRUE || m_processIdDisambiguationKey == 0);
 
@@ -1713,7 +1712,7 @@ public:
 
         TRACE("PAL_RuntimeStartupHelper.Register creating startup '%s' continue '%s'\n", m_startupSemName, m_continueSemName);
 
-        // Create the continue semaphore first so we don't race with PAL_NotifyRuntimeStarted. This open will fail if another 
+        // Create the continue semaphore first so we don't race with PAL_NotifyRuntimeStarted. This open will fail if another
         // debugger is trying to attach to this process because the name will already exist.
         m_continueSem = sem_open(m_continueSemName, O_CREAT | O_EXCL, S_IRWXU, 0);
         if (m_continueSem == SEM_FAILED)
@@ -1787,23 +1786,23 @@ public:
     //
     // There are a couple race conditions that need to be considered here:
     //
-    // * On launch, between the fork and execv in the PAL's CreateProcess where the target process 
-    //   may contain a coreclr module image if the debugger process is running managed code. This 
+    // * On launch, between the fork and execv in the PAL's CreateProcess where the target process
+    //   may contain a coreclr module image if the debugger process is running managed code. This
     //   makes just checking if the coreclr module exists not enough.
     //
-    // * On launch (after the execv) or attach when the coreclr is loaded but before the DAC globals 
+    // * On launch (after the execv) or attach when the coreclr is loaded but before the DAC globals
     //   table is initialized where it is too soon to use/initialize the DAC on the debugger side.
     //
     // They are both fixed by check if the one of transport pipe files has been created.
     //
     bool IsCoreClrProcessReady()
     {
-        char pipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];  
+        char pipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
 
         PAL_GetTransportPipeName(pipeName, m_processId, GetApplicationGroupId(), "in");
 
         struct stat buf;
-        if (stat(pipeName, &buf) == 0) 
+        if (stat(pipeName, &buf) == 0)
         {
             TRACE("IsCoreClrProcessReady: stat(%s) SUCCEEDED\n", pipeName);
             return true;
@@ -1823,7 +1822,7 @@ public:
             goto exit;
         }
 
-        // Enumerate all the modules in the process and invoke the callback 
+        // Enumerate all the modules in the process and invoke the callback
         // for the coreclr module if found.
         listHead = CreateProcessModules(m_processId, &count);
         if (listHead == NULL)
@@ -1853,7 +1852,7 @@ public:
         }
 
     exit:
-        // Wake up the runtime 
+        // Wake up the runtime
         if (sem_post(m_continueSem) != 0)
         {
             ASSERT("sem_post(continueSem) failed: errno is %d (%s)\n", errno, strerror(errno));
@@ -1898,8 +1897,7 @@ public:
 };
 
 static
-DWORD 
-PALAPI
+DWORD
 StartupHelperThread(LPVOID p)
 {
     TRACE("PAL's StartupHelperThread starting\n");
@@ -1916,7 +1914,7 @@ StartupHelperThread(LPVOID p)
 Parameters:
     dwProcessId - process id of runtime process
     lpApplicationGroupId - A string representing the application group ID of a sandboxed
-                           process running in Mac. Pass NULL if the process is not 
+                           process running in Mac. Pass NULL if the process is not
                            running in a sandbox and other platforms.
     pfnCallback - function to callback for coreclr module found
     parameter - data to pass to callback
@@ -1948,7 +1946,7 @@ PAL_RegisterForRuntimeStartup(
 
     PAL_RuntimeStartupHelper *helper = InternalNew<PAL_RuntimeStartupHelper>(dwProcessId, pfnCallback, parameter);
 
-    // Create the debuggee startup semaphore so the runtime (debuggee) knows to wait for 
+    // Create the debuggee startup semaphore so the runtime (debuggee) knows to wait for
     // a debugger connection.
     PAL_ERROR pe = helper->Register(lpApplicationGroupId);
     if (NO_ERROR != pe)
@@ -2013,14 +2011,14 @@ PAL_NotifyRuntimeStarted()
     UINT64 processIdDisambiguationKey = 0;
     BOOL ret = GetProcessIdDisambiguationKey(gPID, &processIdDisambiguationKey);
 
-    // If GetProcessIdDisambiguationKey failed for some reason, it should set the value 
-    // to 0. We expect that anyone else making the semaphore name will also fail and thus 
+    // If GetProcessIdDisambiguationKey failed for some reason, it should set the value
+    // to 0. We expect that anyone else making the semaphore name will also fail and thus
     // will also try to use 0 as the value.
     _ASSERTE(ret == TRUE || processIdDisambiguationKey == 0);
 
     UnambiguousProcessDescriptor unambiguousProcessDescriptor(gPID, processIdDisambiguationKey);
-    LPCSTR applicationGroupId = 
-#ifdef __APPLE__    
+    LPCSTR applicationGroupId =
+#ifdef __APPLE__
         PAL_GetApplicationGroupId();
 #else
         nullptr;
@@ -2100,7 +2098,7 @@ static_assert_no_msg(MAX_APPLICATION_GROUP_ID_LENGTH
     <= CLR_SEM_MAX_NAMELEN);
 
 // In Apple we are limited by the length of the semaphore name. However, the characters which can be used in the
-// name can be anything between 1 and 255 (since 0 will terminate the string). Thus, we encode each byte b in 
+// name can be anything between 1 and 255 (since 0 will terminate the string). Thus, we encode each byte b in
 // unambiguousProcessDescriptor as b ? b : 1, and mark an additional bit indicating if b is 0 or not. We use 7 bits
 // out of each extra byte so 1 bit will always be '1'. This will ensure that our extra bytes are never 0 which are
 // invalid characters. Thus we need an extra byte for each 7 input bytes. Hence, only extra 2 bytes for the name string.
@@ -2141,7 +2139,7 @@ void CreateSemaphoreName(char semName[CLR_SEM_MAX_NAMELEN], LPCSTR semaphoreName
         semName[length] = 0;
     }
     else
-#endif // __APPLE__    
+#endif // __APPLE__
     {
         length = sprintf_s(
             semName,
@@ -2237,10 +2235,10 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     INDEBUG(int chars = )
     snprintf(statFileName, sizeof(statFileName), "/proc/%d/stat", processId);
-    _ASSERTE(chars > 0 && chars <= sizeof(statFileName));
+    _ASSERTE(chars > 0 && chars <= (int)sizeof(statFileName));
 
     FILE *statFile = fopen(statFileName, "r");
-    if (statFile == nullptr) 
+    if (statFile == nullptr)
     {
         TRACE("GetProcessIdDisambiguationKey: fopen() FAILED");
         SetLastError(ERROR_INVALID_HANDLE);
@@ -2265,7 +2263,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     char *scanStartPosition = strrchr(line, ')') + 2;
 
     // All the format specifiers for the fields in the stat file are provided by 'man proc'.
-    int sscanfRet = sscanf_s(scanStartPosition, 
+    int sscanfRet = sscanf_s(scanStartPosition,
         "%*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
          &starttime);
 
@@ -2290,7 +2288,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
 /*++
  Function:
-  PAL_GetTransportPipeName 
+  PAL_GetTransportPipeName
 
   Builds the transport pipe names from the process id.
 --*/
@@ -2314,7 +2312,7 @@ PAL_GetTransportPipeName(
         return;
     }
 
-    // If GetProcessIdDisambiguationKey failed for some reason, it should set the value 
+    // If GetProcessIdDisambiguationKey failed for some reason, it should set the value
     // to 0. We expect that anyone else making the pipe name will also fail and thus will
     // also try to use 0 as the value.
     _ASSERTE(ret == TRUE || disambiguationKey == 0);
@@ -2346,7 +2344,7 @@ PAL_GetTransportPipeName(
         }
     }
     else
-#endif // __APPLE__    
+#endif // __APPLE__
     {
         // Get a temp file location
         dwRetVal = ::GetTempPathA(MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH, formatBuffer);
@@ -2409,7 +2407,7 @@ GetProcessTimes(
         goto GetProcessTimesExit;
     }
 
-    /* First, we need to actually retrieve the relevant statistics from the 
+    /* First, we need to actually retrieve the relevant statistics from the
        OS */
     if (getrusage (RUSAGE_SELF, &resUsage) == -1)
     {
@@ -2418,7 +2416,7 @@ GetProcessTimes(
         SetLastError(ERROR_INTERNAL_ERROR);
         goto GetProcessTimesExit;
     }
-    
+
     TRACE ("getrusage User: %ld sec,%ld microsec. Kernel: %ld sec,%ld"
            " microsec\n",
            resUsage.ru_utime.tv_sec, resUsage.ru_utime.tv_usec,
@@ -2445,7 +2443,7 @@ GetProcessTimes(
         lpKernelTime->dwLowDateTime = (DWORD)calcTime;
         lpKernelTime->dwHighDateTime = (DWORD)(calcTime >> 32);
     }
-    
+
     retval = TRUE;
 
 
@@ -2457,7 +2455,7 @@ GetProcessTimesExit:
 
 #define FILETIME_TO_ULONGLONG(f) \
     (((ULONGLONG)(f).dwHighDateTime << 32) | ((ULONGLONG)(f).dwLowDateTime))
-    
+
 /*++
 Function:
   PAL_GetCPUBusyTime
@@ -2595,7 +2593,7 @@ GetCommandLineW(
           g_lpwstrCmdLine,
           lpwstr);
     PERF_EXIT(GetCommandLineW);
-    
+
     return lpwstr;
 }
 
@@ -2684,7 +2682,7 @@ OpenProcess(
     //
     // TODO: check to see if the process actually exists?
     //
-    
+
 OpenProcessExit:
 
     if (NULL != pobjProcess)
@@ -2718,10 +2716,10 @@ Return
   TRUE if it succeeded, FALSE otherwise
 
 Notes
-  This API is tricky because the module handles are never closed/freed so there can't be any 
-  allocations for the module handle or name strings, etc. The "handles" are actually the base 
-  addresses of the modules. The module handles should only be used by GetModuleFileNameExW 
-  below. 
+  This API is tricky because the module handles are never closed/freed so there can't be any
+  allocations for the module handle or name strings, etc. The "handles" are actually the base
+  addresses of the modules. The module handles should only be used by GetModuleFileNameExW
+  below.
 --*/
 BOOL
 PALAPI
@@ -2772,7 +2770,7 @@ EnumProcessModules(
 Function:
   GetModuleFileNameExW
 
-  Used only with module handles returned from EnumProcessModule (for dbgshim). 
+  Used only with module handles returned from EnumProcessModule (for dbgshim).
 
 --*/
 DWORD
@@ -3010,9 +3008,9 @@ CreateProcessModules(
     pclose(vmmapFile);
 exit:
 
-#elif HAVE_PROCFS_MAPS 
+#elif HAVE_PROCFS_MAPS
 
-    // Here we read /proc/<pid>/maps file in order to parse it and figure out what it says 
+    // Here we read /proc/<pid>/maps file in order to parse it and figure out what it says
     // about a library we are looking for. This file looks something like this:
     //
     // [address]      [perms] [offset] [dev] [inode]     [pathname] - HEADER is not preset in an actual file
@@ -3027,7 +3025,7 @@ exit:
     // 35b1fb0000-35b1fb2000 rw-p 001b0000 08:02 135870  /usr/lib64/libc-2.15.so
 
     // Making something like: /proc/123/maps
-    char mapFileName[100]; 
+    char mapFileName[100];
     char *line = NULL;
     size_t lineLen = 0;
     int count = 0;
@@ -3035,16 +3033,16 @@ exit:
 
     INDEBUG(int chars = )
     snprintf(mapFileName, sizeof(mapFileName), "/proc/%d/maps", dwProcessId);
-    _ASSERTE(chars > 0 && chars <= sizeof(mapFileName));
+    _ASSERTE(chars > 0 && chars <= (int)sizeof(mapFileName));
 
     FILE *mapsFile = fopen(mapFileName, "r");
-    if (mapsFile == NULL) 
+    if (mapsFile == NULL)
     {
         goto exit;
     }
 
-    // Reading maps file line by line 
-    while ((read = getline(&line, &lineLen, mapsFile)) != -1) 
+    // Reading maps file line by line
+    while ((read = getline(&line, &lineLen, mapsFile)) != -1)
     {
         void *startAddress, *endAddress, *offset;
         int devHi, devLo, inode;
@@ -3122,14 +3120,14 @@ DestroyProcessModules(IN ProcessModules *listHead)
 /*++
 Function
   PROCNotifyProcessShutdown
-  
-  Calls the abort handler to do any shutdown cleanup. Call be called 
+
+  Calls the abort handler to do any shutdown cleanup. Call be called
   from the unhandled native exception handler.
 
 (no return value)
 --*/
-__attribute__((destructor)) 
-VOID 
+__attribute__((destructor))
+VOID
 PROCNotifyProcessShutdown()
 {
     // Call back into the coreclr to clean up the debugger transport pipes
@@ -3143,15 +3141,15 @@ PROCNotifyProcessShutdown()
 /*++
 Function
   PROCAbortInitialize()
-  
+
 Abstract
   Initialize the process abort crash dump program file path and
   name. Doing all of this ahead of time so nothing is allocated
   or copied in PROCAbort/signal handler.
-  
+
 Return
   TRUE - succeeds, FALSE - fails
-  
+
 --*/
 BOOL
 PROCAbortInitialize()
@@ -3297,7 +3295,7 @@ Function:
 
   Aborts the process after calling the shutdown cleanup handler. This function
   should be called instead of calling abort() directly.
-  
+
   Does not return
 --*/
 PAL_NORETURN
@@ -3322,7 +3320,7 @@ Abstract
 Return
   TRUE if it succeeded, FALSE otherwise
 --*/
-BOOL 
+BOOL
 InitializeFlushProcessWriteBuffers()
 {
     _ASSERTE(s_helperPage == 0);
@@ -3388,10 +3386,10 @@ Function:
 
 See MSDN doc.
 --*/
-VOID 
-PALAPI 
+VOID
+PALAPI
 FlushProcessWriteBuffers()
-{   
+{
     if (s_flushUsingMemBarrier)
     {
         int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0);
@@ -3440,7 +3438,7 @@ PROCGetProcessIDFromHandle(
     PAL_ERROR palError;
     IPalObject *pobjProcess = NULL;
     CPalThread *pThread = InternalGetCurrentThread();
-    
+
     DWORD dwProcessId = 0;
 
     if (hPseudoCurrentProcess == hProcess)
@@ -3448,7 +3446,7 @@ PROCGetProcessIDFromHandle(
         dwProcessId = gPID;
         goto PROCGetProcessIDFromHandleExit;
     }
-    
+
 
     palError = g_pObjectManager->ReferenceObjectByHandle(
         pThread,
@@ -3474,8 +3472,8 @@ PROCGetProcessIDFromHandle(
         {
             dwProcessId = pLocalData->dwProcessId;
             pDataLock->ReleaseLock(pThread, FALSE);
-        }        
-        
+        }
+
         pobjProcess->ReleaseReference(pThread);
     }
 
@@ -3491,7 +3489,7 @@ CorUnix::InitializeProcessData(
 {
     PAL_ERROR palError = NO_ERROR;
     bool fLockInitialized = FALSE;
-    
+
     pGThreadList = NULL;
     g_dwThreadCount = 0;
 
@@ -3519,7 +3517,7 @@ Abstract
 Parameter
     lpwstrCmdLine
     lpwstrFullPath
- 
+
 Return
     PAL_ERROR
 
@@ -3587,7 +3585,7 @@ Abstract
 
 Parameter
   pThread - the initial thread
- 
+
 Return
   PAL_ERROR
 --*/
@@ -3624,7 +3622,7 @@ CorUnix::CreateInitialProcessAndThreadObjects(
     //
     // Create and initialize process object
     //
-    
+
     palError = g_pObjectManager->AllocateObject(
         pThread,
         &otProcess,
@@ -3640,7 +3638,7 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 
     palError = pobjProcess->GetProcessLocalData(
         pThread,
-        WriteLock, 
+        WriteLock,
         &pDataLock,
         reinterpret_cast<void **>(&pLocalData)
         );
@@ -3728,7 +3726,7 @@ PROCCleanupInitialProcess(VOID)
     // Object manager shutdown will handle freeing the underlying
     // thread and process data
     //
-    
+
 }
 
 /*++
@@ -3748,7 +3746,7 @@ CorUnix::PROCAddThread(
     CPalThread *pTargetThread
     )
 {
-    /* protect the access of the thread list with critical section for 
+    /* protect the access of the thread list with critical section for
        mutithreading access */
     InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
 
@@ -3783,7 +3781,7 @@ CorUnix::PROCRemoveThread(
 {
     CPalThread *curThread, *prevThread;
 
-    /* protect the access of the thread list with critical section for 
+    /* protect the access of the thread list with critical section for
        mutithreading access */
     InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
 
@@ -3800,7 +3798,7 @@ CorUnix::PROCRemoveThread(
     if (curThread == pTargetThread)
     {
         pGThreadList =  curThread->GetNext();
-        TRACE("Thread 0x%p (id %#x) removed from the process thread list\n", 
+        TRACE("Thread 0x%p (id %#x) removed from the process thread list\n",
             pTargetThread, pTargetThread->GetThreadId());
         goto EXIT;
     }
@@ -3868,7 +3866,7 @@ VOID
 PROCProcessLock(
     VOID)
 {
-    CPalThread * pThread = 
+    CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
     InternalEnterCriticalSection(pThread, &g_csProcess);
@@ -3892,10 +3890,10 @@ VOID
 PROCProcessUnlock(
     VOID)
 {
-    CPalThread * pThread = 
+    CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);    
+    InternalLeaveCriticalSection(pThread, &g_csProcess);
 }
 
 #if USE_SYSV_SEMAPHORES
@@ -3926,7 +3924,7 @@ PROCCleanupThreadSemIds(void)
     }
 
     PROCProcessUnlock();
-    
+
 }
 #endif // USE_SYSV_SEMAPHORES
 
@@ -3962,8 +3960,8 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
            could just block on the PALInitLock critical section, but then
            PROCSuspendOtherThreads would hang... so sleep forever here, we're
            terminating anyway
- 
-           Update: [TODO] PROCSuspendOtherThreads has been removed. Can this 
+
+           Update: [TODO] PROCSuspendOtherThreads has been removed. Can this
            code be changed? */
 
         /* note that if *this* thread has already started the termination
@@ -4023,10 +4021,10 @@ PROCGetProcessStatus(
     int status;
 
     //
-    // First, check if we already know the status of this process. This will be 
+    // First, check if we already know the status of this process. This will be
     // the case if this function has already been called for the same process.
     //
-    
+
     palError = g_pObjectManager->ReferenceObjectByHandle(
         pThread,
         hProcess,
@@ -4034,7 +4032,7 @@ PROCGetProcessStatus(
         0,
         &pobjProcess
         );
-    
+
     if (NO_ERROR != palError)
     {
         goto PROCGetProcessStatusExit;
@@ -4046,23 +4044,23 @@ PROCGetProcessStatus(
         &pDataLock,
         reinterpret_cast<void **>(&pLocalData)
         );
-    
+
     if (PS_DONE == pLocalData->ps)
     {
         TRACE("We already called waitpid() on process ID %#x; process has "
-              "terminated, exit code is %d\n", 
+              "terminated, exit code is %d\n",
               pLocalData->dwProcessId, pLocalData->dwExitCode);
-        
+
         *pps = pLocalData->ps;
         *pdwExitCode = pLocalData->dwExitCode;
 
         pDataLock->ReleaseLock(pThread, FALSE);
-        
+
         goto PROCGetProcessStatusExit;
     }
 
-    /* By using waitpid(), we can even retrieve the exit code of a non-PAL 
-       process. However, note that waitpid() can only provide the low 8 bits 
+    /* By using waitpid(), we can even retrieve the exit code of a non-PAL
+       process. However, note that waitpid() can only provide the low 8 bits
        of the exit code. This is all that is required for the PAL spec. */
     TRACE("Looking for status of process; trying wait()");
 
@@ -4070,7 +4068,7 @@ PROCGetProcessStatus(
     {
         /* try to get state of process, using non-blocking call */
         wait_retval = waitpid(pLocalData->dwProcessId, &status, WNOHANG);
-        
+
         if ( wait_retval == (pid_t) pLocalData->dwProcessId )
         {
             /* success; get the exit code */
@@ -4096,10 +4094,10 @@ PROCGetProcessStatus(
         }
         else if (-1 == wait_retval)
         {
-            // This might happen if waitpid() had already been called, but 
-            // this shouldn't happen - we call waitpid once, store the 
+            // This might happen if waitpid() had already been called, but
+            // this shouldn't happen - we call waitpid once, store the
             // result, and use that afterwards.
-            // One legitimate cause of failure is EINTR; if this happens we 
+            // One legitimate cause of failure is EINTR; if this happens we
             // have to try again. A second legitimate cause is ECHILD, which
             // happens if we're trying to retrieve the status of a currently-
             // running process that isn't a child of this process.
@@ -4137,7 +4135,7 @@ PROCGetProcessStatus(
             }
             else
             {
-                // Ignoring unexpected waitpid errno and assuming that 
+                // Ignoring unexpected waitpid errno and assuming that
                 // the process is still running
                 ERROR("waitpid(pid=%u) failed with unexpected errno=%d (%s)\n",
                       pLocalData->dwProcessId, errno, strerror(errno));
@@ -4161,10 +4159,10 @@ PROCGetProcessStatus(
         pLocalData->ps = PS_DONE;
         pLocalData->dwExitCode = *pdwExitCode;
     }
-    
-    TRACE( "State of process 0x%08x : %d (exit code %d)\n", 
+
+    TRACE( "State of process 0x%08x : %d (exit code %d)\n",
            pLocalData->dwProcessId, *pps, *pdwExitCode );
-    
+
     pDataLock->ReleaseLock(pThread, TRUE);
 
 PROCGetProcessStatusExit:
@@ -4173,7 +4171,7 @@ PROCGetProcessStatusExit:
     {
         pobjProcess->ReleaseReference(pThread);
     }
-    
+
     return palError;
 }
 
@@ -4205,14 +4203,14 @@ void PROCDumpThreadList()
     while (NULL != pThread)
     {
         TRACE ("    {pThr=0x%p tid=%#x lwpid=%#x state=%d finsusp=%d}\n",
-               pThread, (int)pThread->GetThreadId(), (int)pThread->GetLwpId(), 
+               pThread, (int)pThread->GetThreadId(), (int)pThread->GetLwpId(),
                (int)pThread->synchronizationInfo.GetThreadState(),
                (int)pThread->suspensionInfo.GetSuspendedForShutdown());
 
         pThread = pThread->GetNext();
     }
     TRACE ("Threads:}\n");
-    
+
     PROCProcessUnlock();
 }
 #endif
@@ -4284,7 +4282,7 @@ getFileName(
             ASSERT("WideCharToMultiByte failure\n");
             return FALSE;
         }
-        
+
         lpPathFileName.CloseBuffer(length -1);
 
         /* Replace '\' by '/' */
@@ -4389,7 +4387,7 @@ Return:
 static
 int
 checkFileType( LPCSTR lpFileName)
-{ 
+{
     struct stat stat_data;
 
     /* check if the file exist */
@@ -4397,7 +4395,7 @@ checkFileType( LPCSTR lpFileName)
     {
         return FILE_ERROR;
     }
-    
+
     /* if it's not a PE/COFF file, check if it is executable */
     if ( -1 != stat( lpFileName, &stat_data ) )
     {
@@ -4437,17 +4435,17 @@ Parameters:
 Return:
     the number of arguments
 
-note: this doesn't yet match precisely the behavior of Windows, but should be 
+note: this doesn't yet match precisely the behavior of Windows, but should be
 sufficient.
 what's here:
 1) stripping nonquoted whitespace
-2) handling of quoted parameters and quoted "parts" of parameters, removal of 
+2) handling of quoted parameters and quoted "parts" of parameters, removal of
    doublequotes (<aaaa"b bbb b"ccc> becomes <aaaab bbb bccc>)
 3) \" as an escaped doublequote, both within doublequoted sequences and out
 what's known missing :
-1) \\ as an escaped backslash, but only if the string of '\' 
-   is followed by a " (escaped or not)                                       
-2) "alternate" escape sequence : double-doublequote within a double-quoted 
+1) \\ as an escaped backslash, but only if the string of '\'
+   is followed by a " (escaped or not)
+2) "alternate" escape sequence : double-doublequote within a double-quoted
     argument (<"aaa a""aa aaa">) expands to a single-doublequote(<aaa a"aa aaa>)
 note that there may be other special cases
 --*/
@@ -4503,7 +4501,7 @@ buildArgv(
 
     /* let's skip the first argument in the command line */
 
-    /* strip leading whitespace; function returns NULL if there's only 
+    /* strip leading whitespace; function returns NULL if there's only
         whitespace, so the if statement below will work correctly */
     lpCommandLine = UTIL_inverse_wcspbrk((LPWSTR)lpCommandLine, W16_WHITESPACE);
 
@@ -4522,14 +4520,14 @@ buildArgv(
             }
             else if('"' == *lpCommandLine)
             {
-                /* got a dquote; skip over it if it's escaped; make sure we 
-                    don't try to look before the first character in the 
+                /* got a dquote; skip over it if it's escaped; make sure we
+                    don't try to look before the first character in the
                     string */
                 if(lpCommandLine > stringstart && '\\' == lpCommandLine[-1])
                 {
                     lpCommandLine++;
                     continue;
-                } 
+                }
 
                 /* found beginning of dquoted sequence, run to the end */
                 /* don't stop if we hit an escaped dquote */
@@ -4546,9 +4544,9 @@ buildArgv(
                     {
                         /* dquote is not escaped, dquoted sequence is over*/
                         break;
-                    } 
+                    }
                     lpCommandLine++;
-                }   
+                }
                 if(NULL == lpCommandLine || '\0' == *lpCommandLine)
                 {
                     /* no terminating dquote */
@@ -4581,11 +4579,11 @@ buildArgv(
 
     pChar = lpAsciiCmdLine;
 
-    /* loops through all the arguments, to find out how many arguments there 
+    /* loops through all the arguments, to find out how many arguments there
        are; while looping replace whitespace by \0 */
 
     /* skip leading whitespace (and replace by '\0') */
-    /* note : there shouldn't be any, command starts either with PE loader name 
+    /* note : there shouldn't be any, command starts either with PE loader name
        or computed application path, but this won't hurt */
     while (*pChar)
     {
@@ -4606,14 +4604,14 @@ buildArgv(
         {
             if('"' == *pChar)
             {
-                /* skip over dquote if it's escaped; make sure we don't try to 
+                /* skip over dquote if it's escaped; make sure we don't try to
                    look before the start of the string for the \ */
                 if(pChar > lpAsciiCmdLine && '\\' == pChar[-1])
                 {
                     pChar++;
                     continue;
                 }
-                
+
                 /* found leading dquote : look for ending dquote */
                 pChar++;
                 while (*pChar)
@@ -4621,17 +4619,17 @@ buildArgv(
                     pChar = strchr(pChar,'"');
                     if(NULL == pChar)
                     {
-                        /* no ending dquote found : argument extends to the end 
+                        /* no ending dquote found : argument extends to the end
                            of the string*/
                         break;
                     }
                     if('\\' != pChar[-1])
                     {
-                        /* found a dquote, and it's not escaped : quoted 
+                        /* found a dquote, and it's not escaped : quoted
                            sequence is over*/
                         break;
-                    }      
-                    /* found a dquote, but it was escaped : skip over it, keep 
+                    }
+                    /* found a dquote, but it was escaped : skip over it, keep
                        looking */
                     pChar++;
                 }
@@ -4648,7 +4646,7 @@ buildArgv(
             /* reached the end of the string : we're done */
             break;
         }
-        /* reached end of arg; replace trailing whitespace by '\0', to split 
+        /* reached end of arg; replace trailing whitespace by '\0', to split
            arguments into separate strings */
         while (isspace((unsigned char) *pChar))
         {
@@ -4669,7 +4667,7 @@ buildArgv(
     lppTemp = lppArgv;
 
     /* at this point all parameters are separated by NULL
-       we need to fill the array of arguments; we must also remove all dquotes 
+       we need to fill the array of arguments; we must also remove all dquotes
        from arguments (new process shouldn't see them) */
     for (i = *pnArg, pChar = lpAsciiCmdLine; i; i--)
     {
@@ -4688,7 +4686,7 @@ buildArgv(
             /* copy character if it's not a dquote */
             if('"' != *pChar)
             {
-                /* if it's the \ of an escaped dquote, skip over it, we'll 
+                /* if it's the \ of an escaped dquote, skip over it, we'll
                    copy the " instead */
                 if( '\\' == pChar[0] && '"' == pChar[1] )
                 {
@@ -4755,7 +4753,7 @@ getPath(
 
             TRACE("file %s exists\n", lpFileName);
             return TRUE;
-        } 
+        }
         else
         {
             TRACE("file %s doesn't exist.\n", lpFileName);
@@ -4771,7 +4769,7 @@ getPath(
         /* convert path to multibyte, check buffer size */
         n = WideCharToMultiByte(CP_ACP, 0, lpwstr, -1, NULL, 0,
             NULL, NULL);
-        
+
         if (!lpPathFileName.Reserve(n + lpFileNameString.GetCount() + 1 ))
         {
             ERROR("StackString Reserve failed!\n");
@@ -4789,7 +4787,7 @@ getPath(
             ASSERT("WideCharToMultiByte failure!\n");
             return FALSE;
         }
-        
+
         lpPathFileName.CloseBuffer(n - 1);
 
         lpPathFileName.Append("/", 1);
@@ -4840,14 +4838,14 @@ getPath(
         {
             lpNext++;
         }
-        
+
         /* search for ':' */
         lpCurrent = strchr(lpNext, ':');
         if (lpCurrent)
         {
             *lpCurrent++ = '\0';
         }
-        
+
         nextLen = strlen(lpNext);
         slashLen = (lpNext[nextLen-1] == '/') ? 0:1;
 
@@ -4857,9 +4855,9 @@ getPath(
             ERROR("StackString ran out of memory for full path\n");
             return FALSE;
         }
-        
+
         lpPathFileName.Set(lpNext, nextLen);
-            
+
         if( slashLen == 1)
         {
             /* append a '/' if there's no '/' at the end of the path */
@@ -4896,4 +4894,4 @@ CorUnix::CProcProcessLocalData::~CProcProcessLocalData()
         DestroyProcessModules(pProcessModules);
     }
 }
-        
+
