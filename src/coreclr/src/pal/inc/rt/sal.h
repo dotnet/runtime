@@ -2604,6 +2604,7 @@ extern "C" {
 #ifndef PAL_STDCPP_COMPAT
     #define __null
     #define __notnull
+    #define __deref
 #endif // !PAL_STDCPP_COMPAT
     #define __maybenull
     #define __readonly
@@ -2618,7 +2619,6 @@ extern "C" {
     #define __writableTo(size)
     #define __elem_writableTo(size)
     #define __byte_writableTo(size)
-    #define __deref
     #define __pre
     #define __post
     #define __precond(expr)
