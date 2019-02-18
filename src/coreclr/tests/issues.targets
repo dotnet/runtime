@@ -72,9 +72,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ExecInDefAppDom/ExecInDefAppDom/*">
             <Issue>Issue building native components for the test.</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/constrainedcall/constrainedcall/*">
-            <Issue>22423</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
