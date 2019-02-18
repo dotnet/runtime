@@ -2827,19 +2827,10 @@ VirtualQuery(
          OUT PMEMORY_BASIC_INFORMATION lpBuffer,
          IN SIZE_T dwLength);
 
-PALIMPORT
-VOID
-PALAPI
-RtlMoveMemory(
-          IN PVOID Destination,
-          IN CONST VOID *Source,
-          IN SIZE_T Length);
-
 #define MoveMemory memmove
 #define CopyMemory memcpy
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
 
 PALIMPORT
 HANDLE

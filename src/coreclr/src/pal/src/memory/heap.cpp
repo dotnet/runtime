@@ -40,29 +40,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MEM);
 
 /*++
 Function:
-  RtlMoveMemory
-
-See MSDN doc.
---*/
-VOID
-PALAPI
-RtlMoveMemory(
-          IN PVOID Destination,
-          IN CONST VOID *Source,
-          IN SIZE_T Length)
-{
-    PERF_ENTRY(RtlMoveMemory);
-    ENTRY("RtlMoveMemory(Destination:%p, Source:%p, Length:%d)\n", 
-          Destination, Source, Length);
-    
-    memmove(Destination, Source, Length);
-    
-    LOGEXIT("RtlMoveMemory returning\n");
-    PERF_EXIT(RtlMoveMemory);
-}
-
-/*++
-Function:
   HeapCreate
 
 See MSDN doc.
