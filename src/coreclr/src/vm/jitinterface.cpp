@@ -5269,7 +5269,11 @@ void CEEInfo::getCallInfo(
             exactType, 
             pMD, 
             &fForceUseRuntimeLookup);
-        if (directMethod)
+        if (directMethod
+#ifdef FEATURE_DEFAULT_INTERFACES
+            && !directMethod->IsInterface() /* Could be a default interface method implementation */
+#endif
+            )
         {
             // Either
             //    1. no constraint resolution at compile time (!directMethod)
