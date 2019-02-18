@@ -2704,7 +2704,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     // updating exact classes.
     if (!varDsc->lvClassIsExact && isNewClass)
     {
-        shouldUpdate = info.compCompHnd->isMoreSpecificType(varDsc->lvClassHnd, clsHnd);
+        shouldUpdate = !!info.compCompHnd->isMoreSpecificType(varDsc->lvClassHnd, clsHnd);
     }
     // Else are we attempting to update exactness?
     else if (isExact && !varDsc->lvClassIsExact && !isNewClass)
