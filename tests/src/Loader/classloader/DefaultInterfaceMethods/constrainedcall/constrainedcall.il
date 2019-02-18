@@ -14,7 +14,7 @@
   .method public hidebysig newslot virtual instance int32 PlusPlus()
   {
     ldarg.0
-    ldc.i4.0
+    ldc.i4.1
     callvirt instance int32 class IAdder`1<!0>::Add(int32)
     ret
   }
@@ -23,8 +23,9 @@
 .class interface IGen1`1<T> { }
 .class interface IGen2`1<T> { }
 .class interface IGen3`1<T> { }
+.class value Atom { }
 
-.class value Adder`1<T> implements class IAdder`1<class IGen1`1<!T>>, class IAdder`1<class IGen2`1<!T>>, class IAdder`1<class IGen3`1<!T>>
+.class value Adder`1<T> implements class IAdder`1<class IGen1`1<!T>>, class IAdder`1<class IGen2`1<!T>>, class IAdder`1<class IGen3`1<!T>>, class IAdder`1<valuetype Atom>
 {
   .field private int32 _field
 
@@ -45,7 +46,7 @@
   {
     .override  method instance int32 class IAdder`1<class IGen1`1<!T>>::PlusPlus()
     ldarg.0
-    ldc.i4.1
+    ldc.i4.2
     call instance int32 valuetype Adder`1<!T>::Add(int32)
     ret
   }
@@ -54,7 +55,7 @@
   {
     .override  method instance int32 class IAdder`1<class IGen2`1<!T>>::PlusPlus()
     ldarg.0
-    ldc.i4.2
+    ldc.i4.3
     call instance int32 valuetype Adder`1<!T>::Add(int32)
     ret
   }
@@ -82,15 +83,16 @@
 
     .locals init (
       valuetype Adder`1<object>,
-      int32
+      int32,
+      valuetype Adder`1<valuetype Atom>
     )
 
     // This will end up calling the implementation of IAdder<IGen1<object>>.PlusPlus
     // provided by the Adder valuetype.
-    // The sum returned by the Check method will be 1+2 = 3.
+    // The sum returned by the Check method will be 2+4 = 6.
     ldloc.0
     call int32 Check<valuetype Adder`1<object>,class IGen1`1<object>>(!!0)
-    ldc.i4.3
+    ldc.i4.6
     ceq
     brtrue IGen1_OK
 
@@ -101,12 +103,12 @@ IGen1_OK:
 
     // This will end up calling the implementation of IAdder<IGen2<object>>.PlusPlus
     // provided by the Adder valuetype.
-    // The sum returned by the Check method will be 2+4 = 6.
+    // The sum returned by the Check method will be 3+6 = 9.
     ldloca 0
     initobj valuetype Adder`1<object>
     ldloc.0
     call int32 Check<valuetype Adder`1<object>,class IGen2`1<object>>(!!0)
-    ldc.i4.6
+    ldc.i4 9
     ceq
     brtrue IGen2_OK
 
@@ -156,12 +158,29 @@ AfterBoxingCall:
     ldloc.1
     ldc.i4.2
     ceq
-    brtrue AllOK
+    brtrue IGen3_OK
 
     ldc.i4.3
     ret
 
+IGen3_OK:
+
+    ldloca 0
+    initobj valuetype Adder`1<valuetype Atom>
+
+    ldloc.0
+    call int32 Check<valuetype Adder`1<valuetype Atom>,valuetype Atom>(!!0)
+    ldc.i4 2
+    ceq
+    brtrue AllOK
+
+    ldc.i4.4
+    ret
+
 AllOK:
+    ldstr "Compile time constraint resolution to default interface method OK"
+    call void [mscorlib]System.Console::WriteLine(string)
+
     ldc.i4 100
     ret
 }
