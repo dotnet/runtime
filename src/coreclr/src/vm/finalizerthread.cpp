@@ -168,12 +168,8 @@ Object * FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread,int bi
             }
         };
         {
-            ThreadLocaleHolder localeHolder;
-
-            {
-                ResetFinalizerStartTime resetTime;
-                CallFinalizer(fobj);
-            }
+            ResetFinalizerStartTime resetTime;
+            CallFinalizer(fobj);
         }
         pThread->InternalReset();
     } 
@@ -194,8 +190,6 @@ Object * FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread,int bi
             args.bitToCheck = bitToCheck;
             GCPROTECT_BEGIN(args.fobj);
             {
-                ThreadLocaleHolder localeHolder;
-
                 _ASSERTE(pThreadTurnAround != NULL);
                 ManagedThreadBase::FinalizerAppDomain(targetAppDomain,
                                                       FinalizeAllObjects_Wrapper,
