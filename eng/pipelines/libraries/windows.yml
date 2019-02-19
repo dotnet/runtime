@@ -40,6 +40,12 @@ jobs:
               _framework: netfx
               _helixQueues: $(uapNetfxQueues)
               _skipPublishPackages: true # In NETFX leg we don't produce packages
+
+            UWP_CoreCLR_x64_Debug:
+              _BuildConfig: Debug
+              _architecture: x64
+              _framework: uap
+              _helixQueues: $(uapNetfxQueues)
           
           # Official build LEGS with HELIX Testing
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -209,11 +215,6 @@ jobs:
                 _architecture: x86
                 _framework: uapaot
                 _restoreInternalTools: true
-
-              UWP_CoreCLR_x64_Debug:
-                _BuildConfig: Debug
-                _architecture: x64
-                _framework: uap
 
             ${{ if eq(parameters.isOfficialBuild, 'true') }}:
               arm_Release:
