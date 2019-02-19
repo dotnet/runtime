@@ -2741,7 +2741,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             }
         }
 
-#else // !_TARGET_ARM64_
+#else  // !_TARGET_ARM64_
 
         bool      twoParts = false;
         var_types loadType = TYP_UNDEF;
