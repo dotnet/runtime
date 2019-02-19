@@ -92,7 +92,7 @@ jobs:
 # https://github.com/Microsoft/azure-pipelines-yaml/pull/46 for more information
 
 #
-# Debug build (Pull Request)
+# Debug build (Pull request)
 #
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
   - template: eng/platform-matrix.yml
@@ -110,7 +110,7 @@ jobs:
       buildConfig: checked
 
 #
-# Release build (Pull Request)
+# Release build (Pull request)
 #
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
   - template: eng/platform-matrix.yml
@@ -119,7 +119,7 @@ jobs:
       buildConfig: release
 
 #
-# Release build (Official Build)
+# Release build (Official build)
 #
 - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
@@ -136,151 +136,66 @@ jobs:
 # Checked test builds
 #
 
-# Pri0 (Pull Request)
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
+# Pull request
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
       buildConfig: checked
       jobParameters:
-        priority: 0
-        scenarios:
-          asString: 'normal,no_tiered_compilation'
-          asArray:
-          - normal
-          - no_tiered_compilation
-        # "Total" includes building tests, waiting for a queue in Helix to become available, and running the tests.
-        # In case test-job.yml gets split into two separate jobs (e.g. build-test-job.yml and run-test.yml)
-        # this number should be adjusted accordingly.
-        timeoutTotalInMinutes: 240
-        # "PerCollection" is time needed for the "biggest" xUnit test collection to complete.
-        # In case xUnit test wrappers get refactored this number should also be adjusted.
-        timeoutPerTestCollectionInMinutes: 30
-        # "PerTest" corresponds to individual test running time (i.e. __TestTimeout).
-        timeoutPerTestInMinutes: 10
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-ci') }}:
+          testGroup: innerloop
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop') }}:
+          testGroup: outerloop
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-jitminopts-jitstress1-jitstress2') }}:
+          testGroup: outerloop-jitminopts-jitstress1-jitstress2
 
-# Pri1 (Pull Request, Outerloop)
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-outerloop')) }}:
-  - template: eng/platform-matrix.yml
-    parameters:
-      jobTemplate: test-job.yml
-      buildConfig: checked
-      jobParameters:
-        priority: 1
-        scenarios:
-          asString: 'normal,no_tiered_compilation'
-          asArray:
-          - normal
-          - no_tiered_compilation
-        timeoutTotalInMinutes: 360
-        timeoutPerTestCollectionInMinutes: 60
-        timeoutPerTestInMinutes: 10
-
-# Pri1 (CI)
+# CI
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
       buildConfig: checked
       jobParameters:
-        priority: 1
-        scenarios:
-          asString: 'normal,no_tiered_compilation'
-          asArray:
-          - normal
-          - no_tiered_compilation
-        timeoutTotalInMinutes: 360
-        timeoutPerTestCollectionInMinutes: 60
-        timeoutPerTestInMinutes: 10
+        testGroup: outerloop
 
-# Pri1 ReadyToRun (CI)
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
       buildConfig: checked
       jobParameters:
-        priority: 1
         readyToRun: true
-        scenarios:
-          asString: 'normal,no_tiered_compilation'
-          asArray:
-          - normal
-          - no_tiered_compilation
-        timeoutTotalInMinutes: 360
-        timeoutPerTestCollectionInMinutes: 60
-        timeoutPerTestInMinutes: 10
+        testGroup: outerloop
 
-# Pri1 (Schedule, Manual)
+# Schedule or Manual
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule', 'Manual')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
       buildConfig: checked
       jobParameters:
-        priority: 1
-        scenarios:
-          asString: 'normal,no_tiered_compilation,jitstress1,jitstress2,jitstress1_tiered,jitstress2_tiered,jitstressregs1,jitstressregs2,jitstressregs3,jitstressregs4,jitstressregs8,jitstressregs0x10,jitstressregs0x80,jitstressregs0x1000,jitminopts'
-          asArray:
-          - normal
-          - no_tiered_compilation
-          - jitstress1
-          - jitstress2
-          - jitstress1_tiered
-          - jitstress2_tiered
-          - jitstressregs1
-          - jitstressregs2
-          - jitstressregs3
-          - jitstressregs4
-          - jitstressregs8
-          - jitstressregs0x10
-          - jitstressregs0x80
-          - jitstressregs0x1000
-          - jitminopts
-        timeoutTotalInMinutes: 480
-        # TODO: Adjust this number as soon as we have more data on how long it takes to run these jobs in Helix.
-        timeoutPerTestCollectionInMinutes: 120
-        timeoutPerTestInMinutes: 30
-
+        testGroup: outerloop
 
 #
 # Release test builds
 #
 
-# Pri1 (Official Build)
+# Official build
 - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
       buildConfig: release
       jobParameters:
-        priority: 1
-        scenarios:
-          asString: 'normal,no_tiered_compilation'
-          asArray:
-          - normal
-          - no_tiered_compilation
-        timeoutTotalInMinutes: 360
-        timeoutPerTestCollectionInMinutes: 60
-        timeoutPerTestInMinutes: 10
+        testGroup: outerloop
 
-# Pri1 ReadyToRun (Official Build)
-- ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
       buildConfig: release
       jobParameters:
-        priority: 1
+        testGroup: outerloop
         readyToRun: true
-        scenarios:
-          asString: 'normal,no_tiered_compilation'
-          asArray:
-          - normal
-          - no_tiered_compilation
-        timeoutTotalInMinutes: 360
-        timeoutPerTestCollectionInMinutes: 60
-        timeoutPerTestInMinutes: 10
 
 
 # Publish build information to Build Assets Registry
