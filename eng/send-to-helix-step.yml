@@ -31,10 +31,10 @@ steps:
       _HelixAccessToken: ${{ parameters.helixAccessToken }}
       _HelixBuild: ${{ parameters.helixBuild }}
       _HelixSource: ${{ parameters.helixSource }}
-      _HelixTargetQueues: ${{ parameters.helixQueues }}
+      _HelixTargetQueues: ${{ parameters.helixQueues.asString }}
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
-      _Scenarios: ${{ parameters.scenarios }}
+      _Scenarios: ${{ parameters.scenarios.asString }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
@@ -54,10 +54,10 @@ steps:
       _HelixAccessToken: ${{ parameters.helixAccessToken }}
       _HelixBuild: ${{ parameters.helixBuild }}
       _HelixSource: ${{ parameters.helixSource }}
-      _HelixTargetQueues: ${{ parameters.helixQueues }}
+      _HelixTargetQueues: ${{ parameters.helixQueues.asString }}
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
-      _Scenarios: ${{ parameters.scenarios }}
+      _Scenarios: ${{ parameters.scenarios.asString }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:

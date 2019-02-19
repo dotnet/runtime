@@ -3,13 +3,9 @@ parameters:
   archType: ''
   osGroup: ''
   osIdentifier: ''
-  priority: 0
+  testGroup: ''
   readyToRun: false
-  scenarios: ''
   helixQueues: ''
-  timeoutTotalInMinutes: ''
-  timeoutPerTestCollectionInMinutes: ''
-  timeoutPerTestInMinutes: ''
   crossrootfsDir: ''
 
 ### Test job
@@ -26,35 +22,40 @@ jobs:
     osIdentifier: ${{ parameters.osIdentifier }}
 
     # Compute job name from template parameters
-    ${{ if eq(parameters.readyToRun, false) }}:
-      name: ${{ format('testbuild_pri{0}_{1}_{2}_{3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('Test Pri{0} {1} {2} {3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-    ${{ if eq(parameters.readyToRun, true) }}:
-      name: ${{ format('testbuild_pri{0}_r2r_{1}_{2}_{3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('Test Pri{0} R2R {1} {2} {3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.readyToRun, false)) }}:
+      name: ${{ format('testbuild_pri0_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Test Pri0 {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.readyToRun, true)) }}:
+      name: ${{ format('testbuild_pri0_r2r_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Test Pri0 R2R {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+
+    ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.readyToRun, false)) }}:
+      name: ${{ format('testbuild_pri1_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Test Pri1 {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.readyToRun, true)) }}:
+      name: ${{ format('testbuild_pri1_r2r_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Test Pri1 R2R {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:
     - group: DotNet-HelixApi-Access
     # Map template parameters to command line arguments
-    - ${{ if eq(parameters.priority, '1') }}:
+    - name: priorityArg
+      value: ''
+    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
         - name: priorityArg
           value: 'priority1'
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: priorityArg
           value: '-priority=1'
-    - ${{ if eq(parameters.priority, '0') }}:
-      - name: priorityArg
-        value: ''
 
+    - name: crossgenArg
+      value: ''
     - ${{ if eq(parameters.readyToRun, true) }}:
       - name: crossgenArg
         value: 'crossgen'
-    - ${{ if eq(parameters.readyToRun, false) }}:
-      - name: crossgenArg
-        value: ''
 
     - name: clangArg
       value: ''
@@ -83,7 +84,15 @@ jobs:
     # Note that the containers are resources defined in azure-pipelines.yml
     containerName: ${{ parameters.containerName }}
 
-    timeoutInMinutes: ${{ parameters.timeoutTotalInMinutes }}
+    # "Total" means building tests, waiting for a queue in Helix to become available, and running the tests.
+    # In case test-job.yml gets split into two separate jobs (e.g. build-test-job.yml and run-test.yml)
+    # this number should be adjusted accordingly.
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      timeoutInMinutes: 240
+    ${{ if eq(parameters.testGroup, 'outerloop') }}:
+      timeoutInMinutes: 360
+    ${{ if eq(parameters.testGroup, 'outerloop-jitminopts-jitstress1-jitstress2') }}:
+      timeoutInMinutes: 480
 
     steps:
 
@@ -139,18 +148,30 @@ jobs:
           helixSource: ci/dotnet/coreclr/$(Build.SourceBranch)
 
         ${{ if eq(parameters.readyToRun, false) }}:
-          helixType: ${{ format('test/functional/cli/pri{0}', parameters.priority) }}
+          helixType: 'test/functional/cli/'
         ${{ if eq(parameters.readyToRun, true) }}:
-          helixType: ${{ format('test/functional/r2r/cli/pri{0}', parameters.priority) }}
+          helixType: 'test/functional/r2r/cli/'
 
-        helixQueues: ${{ parameters.helixQueues.asString }}
+        helixQueues: ${{ parameters.helixQueues }}
 
         ${{ if eq(parameters.helixQueues.asString, '') }}:
           condition: false
 
         publishTestResults: true
-        timeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
-        timeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
+
+        ${{ if eq(parameters.testGroup, 'innerloop') }}:
+          # "PerCollection" is time needed for the "biggest" xUnit test collection to complete.
+          # In case xUnit test wrappers get refactored this number should also be adjusted.
+          timeoutPerTestCollectionInMinutes: 30
+          # "PerTest" corresponds to individual test running time (i.e. __TestTimeout).
+          timeoutPerTestInMinutes: 10
+        ${{ if eq(parameters.testGroup, 'outerloop') }}:
+          timeoutPerTestCollectionInMinutes: 60
+          timeoutPerTestInMinutes: 10
+        ${{ if eq(parameters.testGroup, 'outerloop-jitminopts-jitstress1-jitstress2') }}:
+          # TODO: Adjust this number as soon as we have more data on how long it takes to run these jobs in Helix.
+          timeoutPerTestCollectionInMinutes: 120
+          timeoutPerTestInMinutes: 30
 
         runCrossGen: ${{ parameters.readyToRun }}
 
@@ -159,4 +180,18 @@ jobs:
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
 
-        scenarios: ${{ parameters.scenarios.asString }}
+        ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
+          scenarios:
+            asString: 'normal,no_tiered_compilation'
+            asArray:
+            - normal
+            - no_tiered_compilation
+        ${{ if eq(parameters.testGroup, 'outerloop-jitminopts-jitstress1-jitstress2') }}:
+          scenarios:
+            asString: 'jitminopts,jitstress1,jitstress1_tiered,jitstress2,jitstress2_tiered'
+            asArray:
+            - jitminopts
+            - jitstress1
+            - jitstress1_tiered
+            - jitstress2
+            - jitstress2_tiered
