@@ -341,15 +341,18 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		t = ctx->method_inst->type_argv [0];
-		if (mini_is_gsharedvt_variable_type (t))
-			return NULL;
-
-		t = mini_type_get_underlying_type (t);
-		int esize = mono_class_array_element_size (mono_class_from_mono_type_internal (t));
-
 		int mul_reg = alloc_preg (cfg);
-		EMIT_NEW_BIALU_IMM (cfg, ins, OP_IMUL_IMM, mul_reg, args [1]->dreg, esize);
+
+		t = ctx->method_inst->type_argv [0];
+		if (mini_is_gsharedvt_variable_type (t)) {
+			MonoInst *esize_ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (t), MONO_RGCTX_INFO_CLASS_SIZEOF);
+			EMIT_NEW_BIALU (cfg, ins, OP_IMUL, mul_reg, args [1]->dreg, esize_ins->dreg);
+		} else {
+			t = mini_type_get_underlying_type (t);
+			int esize = mono_class_array_element_size (mono_class_from_mono_type_internal (t));
+
+			EMIT_NEW_BIALU_IMM (cfg, ins, OP_IMUL_IMM, mul_reg, args [1]->dreg, esize);
+		}
 		if (SIZEOF_REGISTER == 8)
 			MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, mul_reg, mul_reg);
 		dreg = alloc_preg (cfg);
@@ -385,10 +388,12 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (fsig->param_count == 0);
 
 		t = ctx->method_inst->type_argv [0];
-		if (mini_is_gsharedvt_variable_type (t))
-			return NULL;
-		int esize = mono_type_size (t, &align);
-		EMIT_NEW_ICONST (cfg, ins, esize);
+		if (mini_is_gsharedvt_variable_type (t)) {
+			ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (t), MONO_RGCTX_INFO_CLASS_SIZEOF);
+		} else {
+			int esize = mono_type_size (t, &align);
+			EMIT_NEW_ICONST (cfg, ins, esize);
+		}
 		ins->type = STACK_I4;
 		return ins;
 	} else if (!strcmp (cmethod->name, "ReadUnaligned")) {
