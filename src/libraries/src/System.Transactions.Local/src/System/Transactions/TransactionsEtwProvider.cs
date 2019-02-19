@@ -34,15 +34,6 @@ namespace System.Transactions
         Promote = 5
     }
 
-    internal enum EnlistmentCallback
-    {
-        Done = 0,
-        Prepared = 1,
-        ForceRollback = 2,
-        Committed = 3,
-        Aborted = 4,
-        InDoubt = 5
-    }
     internal enum TransactionScopeResult
     {
         CreatedTransaction = 0,
