@@ -243,7 +243,7 @@ void fx_muxer_t::display_missing_framework_error(
 
     trace::error(_X("  - Check application dependencies and target a framework version installed at:"));
     trace::error(_X("      %s"), fx_ver_dirs.c_str());
-    trace::error(_X("  - The .NET Core framework and SDK can be installed from:"));
+    trace::error(_X("  - The .NET Core Runtime and SDK can be installed from:"));
     trace::error(_X("      %s"), DOTNET_CORE_DOWNLOAD_URL);
 
     // Gather the list of versions installed at the shared FX location.
