@@ -2583,8 +2583,8 @@ namespace System.Data.SqlClient
 
         private T GetFieldValueFromSqlBufferInternal<T>(SqlBuffer data, _SqlMetaData metaData)
         {
-            // this block of type specific shortcuts uses RyuJIT jit behaviours to achieve fast implementations of the primative types
-            // RyuJIT will be able to determine at compilation time that the typeof(T)==typeof(<primative>) options are constant
+            // this block of type specific shortcuts uses RyuJIT jit behaviours to achieve fast implementations of the primitive types
+            // RyuJIT will be able to determine at compilation time that the typeof(T)==typeof(<primitive>) options are constant
             // and be able to remove all implementations which cannot be reached. this will eliminate non-specialized code for value types
             Type dataType = data.GetTypeFromStorageType(false);
             if (typeof(T) == typeof(int) && dataType == typeof(int))
