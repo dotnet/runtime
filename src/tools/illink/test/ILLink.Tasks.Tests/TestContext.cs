@@ -61,10 +61,10 @@ namespace ILLink.Tests
 		public static TestContext CreateDefaultContext()
 		{
 			var packageName = "ILLink.Tasks";
-			// test is run from corebuild/testbin/<config>/<tfm>
-			var corebuild = "../../../";
-			var testBin = Path.Combine(corebuild, "testbin");
-			var packageSource = Path.Combine(corebuild, "integration", "bin", "nupkgs");
+			// test working directory is test project's <baseoutputpath>/<config>/<tfm>
+			var testBin = "../../";
+			var repoRoot = Path.Combine(testBin, "..", "..", "..");
+			var packageSource = Path.Combine(repoRoot, "src", "ILLink.Tasks", "bin", "nupkgs");
 			var tasksPackages = Directory.GetFiles(packageSource)
 				.Where(p => Path.GetExtension(p) == ".nupkg")
 				.Select(p => Path.GetFileNameWithoutExtension(p))
@@ -77,7 +77,7 @@ namespace ILLink.Tests
 			}
 			var tasksPackage = tasksPackages.Single();
 			var version = tasksPackage.Remove(0, packageName.Length + 1);
-			var dotnetDir = Path.Combine(corebuild, "Tools", "dotnetcli");
+			var dotnetDir = Path.Combine(repoRoot, "corebuild", "Tools", "dotnetcli");
 			var dotnetToolNames = Directory.GetFiles(dotnetDir)
 				.Select(p => Path.GetFileName(p))
 				.Where(p => p.Contains("dotnet"));

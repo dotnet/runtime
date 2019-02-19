@@ -51,27 +51,27 @@
     <Folder Include="Extensions\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\cecil\Mono.Cecil.csproj">
+    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj">
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj">
+    <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj">
       <Project>{8559dd7f-a16f-46d0-a05a-9139faeba8fd}</Project>
       <Name>Mono.Cecil.Mdb</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
+    <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
       <Project>{63e6915c-7ea4-4d76-ab28-0d7191eea626}</Project>
       <Name>Mono.Cecil.Pdb</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Mono.Linker.csproj">
+    <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj">
       <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
       <Name>Mono.Linker</Name>
     </ProjectReference>
-    <ProjectReference Include="Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj">
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj">
       <Project>{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}</Project>
       <Name>Mono.Linker.Tests.Cases</Name>
     </ProjectReference>
-    <ProjectReference Include="Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
       <Project>{2C26601F-3E2F-45B9-A02F-58EE9296E19E}</Project>
       <Name>Mono.Linker.Tests.Cases.Expectations</Name>
     </ProjectReference>
