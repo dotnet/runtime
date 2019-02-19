@@ -10,7 +10,7 @@
     <MicrosoftNetFrameworkReferenceAssembliesVersion>1.0.0-alpha-004</MicrosoftNetFrameworkReferenceAssembliesVersion>
     <MicrosoftPrivateCoreFxNETCoreAppVersion>4.6.0-preview4.19118.1</MicrosoftPrivateCoreFxNETCoreAppVersion>
     <MicrosoftNETCorePlatformsVersion>3.0.0-preview4.19118.1</MicrosoftNETCorePlatformsVersion>
-    <MicrosoftNETCoreAppVersion>3.0.0-preview-27411-7</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreAppVersion>3.0.0-preview4-27418-4</MicrosoftNETCoreAppVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
