@@ -651,37 +651,44 @@ ves_icall_System_GC_get_ephemeron_tombstone (MonoError *error)
 gpointer
 ves_icall_System_GCHandle_Alloc (MonoObjectHandle obj, gint32 type, MonoError *error)
 {
+	guint32 handle = 0;
+
 	switch (type) {
 	case HANDLE_WEAK:
-		return (gpointer) mono_gchandle_new_weakref_from_handle (obj);
+		handle = mono_gchandle_new_weakref_from_handle (obj);
+		break;
 	case HANDLE_WEAK_TRACK:
-		return (gpointer) mono_gchandle_new_weakref_from_handle_track_resurrection (obj);
+		handle = mono_gchandle_new_weakref_from_handle_track_resurrection (obj);
+		break;
 	case HANDLE_NORMAL:
-		return (gpointer) mono_gchandle_from_handle (obj, FALSE);
+		handle = mono_gchandle_from_handle (obj, FALSE);
+		break;
 	case HANDLE_PINNED:
-		return (gpointer) mono_gchandle_from_handle (obj, TRUE);
+		handle = mono_gchandle_from_handle (obj, TRUE);
+		break;
 	default:
 		g_assert_not_reached ();
 	}
-	return 0;
+	/* The lowest bit is used to mark pinned handles by netcore's GCHandle class */
+	return GUINT_TO_POINTER (handle << 1);
 }
 
 void
 ves_icall_System_GCHandle_Free (gpointer handle, MonoError *error)
 {
-	mono_gchandle_free_internal ((uint32_t) handle);
+	mono_gchandle_free_internal (GPOINTER_TO_UINT (handle) >> 1);
 }
 
 MonoObjectHandle
 ves_icall_System_GCHandle_Get (gpointer handle, MonoError *error)
 {
-	return mono_gchandle_get_target_handle ((uint32_t) handle);
+	return mono_gchandle_get_target_handle (GPOINTER_TO_UINT (handle) >> 1);
 }
 
 void
 ves_icall_System_GCHandle_Set (gpointer handle, MonoObjectHandle obj, MonoError *error)
 {
-	mono_gchandle_set_target_handle ((uint32_t) handle, obj);
+	mono_gchandle_set_target_handle (GPOINTER_TO_UINT (handle) >> 1, obj);
 }
 
 #else
