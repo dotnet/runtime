@@ -39,7 +39,7 @@ namespace System.Net.Http
         private bool _expectingSettingsAck;
         private int _initialWindowSize;
         private int _maxConcurrentStreams;
-        private DateTimeOffset _idleSinceTime;
+        private int _idleSinceTickCount;
 
         private bool _disposed;
 
@@ -1015,7 +1015,7 @@ namespace System.Net.Http
         }
 
         /// <summary>Gets whether the connection exceeded any of the connection limits.</summary>
-        /// <param name="now">The current time.  Passed in to amortize the cost of calling DateTime.UtcNow.</param>
+        /// <param name="nowTicks">The current tick count.  Passed in to amortize the cost of calling Environment.TickCount.</param>
         /// <param name="connectionLifetime">How long a connection can be open to be considered reusable.</param>
         /// <param name="connectionIdleTimeout">How long a connection can have been idle in the pool to be considered reusable.</param>
         /// <returns>
@@ -1026,7 +1026,7 @@ namespace System.Net.Http
         /// the nature of connection pooling.
         /// </returns>
 
-        public bool IsExpired(DateTimeOffset now,
+        public bool IsExpired(int nowTicks,
                               TimeSpan connectionLifetime,
                               TimeSpan connectionIdleTimeout)
 
@@ -1037,15 +1037,16 @@ namespace System.Net.Http
             }
 
             // Check idle timeout when there are not pending requests for a while.
-            if ((connectionIdleTimeout != Timeout.InfiniteTimeSpan) && (_httpStreams.Count == 0) &&
-                    (now - _idleSinceTime > connectionIdleTimeout))
+            if ((connectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
+                (_httpStreams.Count == 0) &&
+                ((uint)(nowTicks - _idleSinceTickCount) > connectionIdleTimeout.TotalMilliseconds))
             {
-                if (NetEventSource.IsEnabled) Trace($"Connection no longer usable. Idle {now - _idleSinceTime} > {connectionIdleTimeout}.");
+                if (NetEventSource.IsEnabled) Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds((uint)(nowTicks - _idleSinceTickCount))} > {connectionIdleTimeout}.");
 
                 return true;
             }
 
-            return LifetimeExpired(now, connectionLifetime);
+            return LifetimeExpired(nowTicks, connectionLifetime);
         }
 
         private void AbortStreams(int lastValidStream)
@@ -1299,7 +1300,7 @@ namespace System.Net.Http
                 if (_httpStreams.Count == 0)
                 {
                     // If this was last pending request, get timestamp so we can monitor idle time.
-                    _idleSinceTime = DateTimeOffset.UtcNow;
+                    _idleSinceTickCount = Environment.TickCount;
                 }
 
                 if (_disposed)
