@@ -402,6 +402,12 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssemblyPath), (OBJECTREF)assemblyPathArray,
                             pStackFrameHelper->GetAppDomain());
 
+        // Allocate memory for the array of assemblies
+        MethodTable * pAssemblyMT = MscorlibBinder::GetClass(CLASS__ASSEMBLY);
+        PTRARRAYREF assemblyArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, pAssemblyMT);
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssembly), (OBJECTREF)assemblyArray,
+                            pStackFrameHelper->GetAppDomain());
+
         // Allocate memory for the LoadedPeAddress
         BASEARRAYREF loadedPeAddressArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgLoadedPeAddress), (OBJECTREF)loadedPeAddressArray,
@@ -511,6 +517,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             // IL offset
             I4 *pILI4 = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
             pILI4[iNumValidFrames] = data.pElements[i].dwILOffset;
+
+            // Assembly
+            OBJECTREF *pAssemblyArray = pStackFrameHelper->rgAssembly->GetDataPtr();
+            pAssemblyArray[iNumValidFrames] = pFunc->GetAssembly()->GetDomainAssembly()->GetExposedAssemblyObject();
 
             if (data.fDoWeHaveAnyFramesFromForeignStackTrace)
             {
