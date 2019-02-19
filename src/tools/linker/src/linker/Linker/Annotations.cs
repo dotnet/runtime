@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -45,7 +44,7 @@ namespace Mono.Linker {
 		protected readonly Dictionary<TypeDefinition, TypePreserve> preserved_types = new Dictionary<TypeDefinition, TypePreserve> ();
 		protected readonly Dictionary<IMemberDefinition, List<MethodDefinition>> preserved_methods = new Dictionary<IMemberDefinition, List<MethodDefinition>> ();
 		protected readonly HashSet<IMetadataTokenProvider> public_api = new HashSet<IMetadataTokenProvider> ();
-		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> override_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
+		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 		protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
 		protected readonly Dictionary<TypeDefinition, List<TypeDefinition>> class_type_base_hierarchy = new Dictionary<TypeDefinition, List<TypeDefinition>> ();
@@ -241,20 +240,20 @@ namespace Mono.Linker {
 			return public_api.Contains (provider);
 		}
 
-		public void AddOverride (MethodDefinition @base, MethodDefinition @override)
+		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation matchingInterfaceImplementation = null)
 		{
 			var methods = GetOverrides (@base);
 			if (methods == null) {
-				methods = new List<MethodDefinition> ();
+				methods = new List<OverrideInformation> ();
 				override_methods [@base] = methods;
 			}
 
-			methods.Add (@override);
+			methods.Add (new OverrideInformation (@base, @override, matchingInterfaceImplementation));
 		}
 
-		public List<MethodDefinition> GetOverrides (MethodDefinition method)
+		public List<OverrideInformation> GetOverrides (MethodDefinition method)
 		{
-			List<MethodDefinition> overrides;
+			List<OverrideInformation> overrides;
 			if (override_methods.TryGetValue (method, out overrides))
 				return overrides;
 
