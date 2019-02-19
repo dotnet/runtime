@@ -1238,18 +1238,18 @@ namespace System.Net.Http
             {
                 http2Stream?.Dispose();
 
-                if (e is IOException ioe)
+                if (e is IOException)
                 {
-                    throw new HttpRequestException(SR.net_http_client_execution_error, ioe);
+                    throw new HttpRequestException(SR.net_http_client_execution_error, e);
                 }
                 else if (e is ObjectDisposedException)
                 {
-                    throw new HttpRequestException(SR.net_http_client_execution_error);
+                    throw new HttpRequestException(SR.net_http_client_execution_error, e);
                 }
                 else if (e is Http2ProtocolException)
                 {
                     // ISSUE 31315: Determine if/how to expose HTTP2 error codes
-                    throw new HttpRequestException(SR.net_http_client_execution_error);
+                    throw new HttpRequestException(SR.net_http_client_execution_error, e);
                 }
                 else
                 {
