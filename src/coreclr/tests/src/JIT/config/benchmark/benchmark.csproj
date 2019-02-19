@@ -23,7 +23,7 @@
       <Version>$(MicrosoftDiagnosticsTracingTraceEventPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>$(MicrosoftNETCoreAppVersion)</Version>
+      <Version>$(MicrosoftNETCorePlatformsVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Collections.NonGeneric">
       <Version>4.4.0-beta-24913-02</Version>
