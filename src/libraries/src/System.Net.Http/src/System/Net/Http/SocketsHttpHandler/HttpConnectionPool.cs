@@ -225,7 +225,7 @@ namespace System.Net.Http
 
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
             TimeSpan pooledConnectionIdleTimeout = _poolManager.Settings._pooledConnectionIdleTimeout;
-            DateTimeOffset now = DateTimeOffset.UtcNow;
+            int nowTicks = Environment.TickCount;
             List<CachedConnection> list = _idleConnections;
 
             // Try to find a usable cached connection.
@@ -276,7 +276,7 @@ namespace System.Net.Http
                 }
 
                 HttpConnection conn = cachedConnection._connection;
-                if (!conn.LifetimeExpired(now, pooledConnectionLifetime) &&
+                if (!conn.LifetimeExpired(nowTicks, pooledConnectionLifetime) &&
                     !conn.EnsureReadAheadAndPollRead())
                 {
                     // We found a valid connection.  Return it.
@@ -336,7 +336,7 @@ namespace System.Net.Http
             if (http2Connection != null)
             {
                 TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
-                if (http2Connection.LifetimeExpired(DateTimeOffset.UtcNow, pooledConnectionLifetime))
+                if (http2Connection.LifetimeExpired(Environment.TickCount, pooledConnectionLifetime))
                 {
                     // Connection expired.
                     http2Connection.Dispose();
@@ -771,7 +771,7 @@ namespace System.Net.Http
         /// <param name="connection">The connection to return.</param>
         public void ReturnConnection(HttpConnection connection)
         {
-            bool lifetimeExpired = connection.LifetimeExpired(DateTime.UtcNow, _poolManager.Settings._pooledConnectionLifetime);
+            bool lifetimeExpired = connection.LifetimeExpired(Environment.TickCount, _poolManager.Settings._pooledConnectionLifetime);
 
             if (!lifetimeExpired)
             {
@@ -889,12 +889,12 @@ namespace System.Net.Http
 
                 // Get the current time.  This is compared against each connection's last returned
                 // time to determine whether a connection is too old and should be closed.
-                DateTimeOffset now = DateTimeOffset.UtcNow;
+                int nowTicks = Environment.TickCount;
                 Http2Connection http2Connection = _http2Connection;
 
                 if (http2Connection != null)
                 {
-                    if (http2Connection.IsExpired(now, pooledConnectionLifetime, pooledConnectionIdleTimeout))
+                    if (http2Connection.IsExpired(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                     {
                         http2Connection.Dispose();
                         // We can set _http2Connection directly while holding lock instead of calling InvalidateHttp2Connection().
@@ -904,7 +904,7 @@ namespace System.Net.Http
 
                 // Find the first item which needs to be removed.
                 int freeIndex = 0;
-                while (freeIndex < list.Count && list[freeIndex].IsUsable(now, pooledConnectionLifetime, pooledConnectionIdleTimeout, poll: true))
+                while (freeIndex < list.Count && list[freeIndex].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout, poll: true))
                 {
                     freeIndex++;
                 }
@@ -922,7 +922,7 @@ namespace System.Net.Http
                     {
                         // Look for the first item to be kept.  Along the way, any
                         // that shouldn't be kept are disposed of.
-                        while (current < list.Count && !list[current].IsUsable(now, pooledConnectionLifetime, pooledConnectionIdleTimeout, poll: true))
+                        while (current < list.Count && !list[current].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout, poll: true))
                         {
                             toDispose.Add(list[current]._connection);
                             current++;
@@ -1012,8 +1012,8 @@ namespace System.Net.Http
         {
             /// <summary>The cached connection.</summary>
             internal readonly HttpConnection _connection;
-            /// <summary>The last time the connection was used.</summary>
-            internal readonly DateTimeOffset _returnedTime;
+            /// <summary>The last tick count at which the connection was used.</summary>
+            internal readonly int _returnedTickCount;
 
             /// <summary>Initializes the cached connection and its associated metadata.</summary>
             /// <param name="connection">The connection.</param>
@@ -1021,11 +1021,11 @@ namespace System.Net.Http
             {
                 Debug.Assert(connection != null);
                 _connection = connection;
-                _returnedTime = DateTimeOffset.UtcNow;
+                _returnedTickCount = Environment.TickCount;
             }
 
             /// <summary>Gets whether the connection is currently usable.</summary>
-            /// <param name="now">The current time.  Passed in to amortize the cost of calling DateTime.UtcNow.</param>
+            /// <param name="nowTicks">The current tick count.  Passed in to amortize the cost of calling Environment.TickCount.</param>
             /// <param name="pooledConnectionLifetime">How long a connection can be open to be considered reusable.</param>
             /// <param name="pooledConnectionIdleTimeout">How long a connection can have been idle in the pool to be considered reusable.</param>
             /// <returns>
@@ -1036,20 +1036,21 @@ namespace System.Net.Http
             /// the nature of connection pooling.
             /// </returns>
             public bool IsUsable(
-                DateTimeOffset now,
+                int nowTicks,
                 TimeSpan pooledConnectionLifetime,
                 TimeSpan pooledConnectionIdleTimeout,
                 bool poll = false)
             {
                 // Validate that the connection hasn't been idle in the pool for longer than is allowed.
-                if ((pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan) && (now - _returnedTime > pooledConnectionIdleTimeout))
+                if ((pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
+                    ((uint)(nowTicks - _returnedTickCount) > pooledConnectionIdleTimeout.TotalMilliseconds))
                 {
-                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Idle {now - _returnedTime} > {pooledConnectionIdleTimeout}.");
+                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds((uint)(nowTicks - _returnedTickCount))} > {pooledConnectionIdleTimeout}.");
                     return false;
                 }
 
                 // Validate that the connection hasn't been alive for longer than is allowed.
-                if (_connection.LifetimeExpired(now, pooledConnectionLifetime))
+                if (_connection.LifetimeExpired(nowTicks, pooledConnectionLifetime))
                 {
                     return false;
                 }
