@@ -2892,9 +2892,15 @@ MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
-#ifndef FEATURE_DEFAULT_INTERFACES
         // Some interface checks.
-        if (fIsClassInterface)
+        // We only need them if default interface method support is disabled or if this is fragile crossgen
+#if !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+        if (fIsClassInterface
+#if defined(FEATURE_DEFAULT_INTERFACES)
+            // Only fragile crossgen wasn't upgraded to deal with default interface methods.
+            && !IsReadyToRunCompilation()
+#endif
+            )
         {
             if (IsMdVirtual(dwMemberAttrs))
             {
@@ -2905,14 +2911,14 @@ MethodTableBuilder::EnumerateClassMethods()
             }
             else
             {
-                // Instance field/method
+                // Instance method
                 if (!IsMdStatic(dwMemberAttrs))
                 {
                     BuildMethodTableThrowException(BFA_NONVIRT_INST_INT_METHOD);
                 }
             }
         }
-#endif
+#endif // !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
 
         // No synchronized methods in ValueTypes
         if(fIsClassValueType && IsMiSynchronized(dwImplFlags))
