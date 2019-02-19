@@ -124,14 +124,12 @@
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAttribute.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntry.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntryCollection.cs" />
-    <Compile Include="Interop\AdsAuthentication.cs" />
     <Compile Include="Interop\AdsOptions.cs" />
     <Compile Include="Interop\AdsPropertyOperation.cs" />
     <Compile Include="Interop\AdsSearchColumn.cs" />
     <Compile Include="Interop\AdsSearchPreferenceInfo.cs" />
     <Compile Include="Interop\AdsSearchPreferences.cs" />
     <Compile Include="Interop\AdsSortKey.cs" />
-    <Compile Include="Interop\AdsStatus.cs" />
     <Compile Include="Interop\AdsType.cs" />
     <Compile Include="Interop\AdsValue2.cs" />
     <Compile Include="Interop\AdsValueHelper2.cs" />
