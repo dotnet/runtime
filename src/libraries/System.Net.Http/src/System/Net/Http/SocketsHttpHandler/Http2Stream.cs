@@ -30,10 +30,14 @@ namespace System.Net.Http
             private readonly TaskCompletionSource<bool> _responseHeadersAvailable;
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
+            private int _pendingWindowUpdate;
             private TaskCompletionSource<bool> _responseDataAvailable;
             private bool _responseComplete;
             private bool _responseAborted;
             private bool _disposed;
+
+            private const int StreamWindowSize = DefaultInitialWindowSize;
+            private const int StreamWindowThreshold = StreamWindowSize / 8;
 
             public Http2Stream(HttpRequestMessage request, Http2Connection connection, int streamId, int initialWindowSize)
             {
@@ -51,6 +55,8 @@ namespace System.Net.Http
                 _disposed = false;
 
                 _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
+
+                _pendingWindowUpdate = 0;
 
                 _streamWindow = new CreditManager(initialWindowSize);
 
@@ -171,7 +177,7 @@ namespace System.Net.Http
 
                     Debug.Assert(!_responseComplete);
 
-                    if (_responseBuffer.ActiveSpan.Length + buffer.Length > DefaultInitialWindowSize)
+                    if (_responseBuffer.ActiveSpan.Length + buffer.Length > StreamWindowSize)
                     {
                         // Window size exceeded.
                         throw new Http2ProtocolException(Http2ProtocolErrorCode.FlowControlError);
@@ -232,78 +238,92 @@ namespace System.Net.Http
                 }
             }
 
-            private int ReadFromBuffer(Span<byte> buffer)
+            private void ExtendWindow(int amount)
             {
-                Debug.Assert(_responseBuffer.ActiveSpan.Length > 0);
-                Debug.Assert(buffer.Length > 0);
+                Debug.Assert(amount > 0);
+                Debug.Assert(_pendingWindowUpdate < StreamWindowThreshold);
 
-                int bytesToRead = Math.Min(buffer.Length, _responseBuffer.ActiveSpan.Length);
-                _responseBuffer.ActiveSpan.Slice(0, bytesToRead).CopyTo(buffer);
-                _responseBuffer.Discard(bytesToRead);
-
-                // Send a window update to the peer.
-                // Don't wait for completion, which could happen asynchronously.
-                ValueTask ignored = _connection.SendWindowUpdateAsync(_streamId, bytesToRead);
-
-                return bytesToRead;
-            }
-
-            // TODO: ISSUE 31310: Cancellation support
-
-            public ValueTask<int> ReadDataAsync(Memory<byte> buffer, CancellationToken cancellationToken)
-            {
-                if (buffer.Length == 0)
+                if (_responseComplete)
                 {
-                    return new ValueTask<int>(0);
+                    // We have already read to the end of the response, so there's no need to send
+                    // WINDOW_UPDATEs any more.
+                    return;
                 }
 
-                Task onDataAvailable;
+                _pendingWindowUpdate += amount;
+                if (_pendingWindowUpdate < StreamWindowThreshold)
+                {
+                    return;
+                }
+
+                int windowUpdateSize = _pendingWindowUpdate;
+                _pendingWindowUpdate = 0;
+
+                ValueTask ignored = _connection.SendWindowUpdateAsync(_streamId, windowUpdateSize);
+            }
+
+            private (Task waitForData, int bytesRead) TryReadFromBuffer(Span<byte> buffer)
+            {
+                Debug.Assert(buffer.Length > 0);
+
                 lock (SyncObject)
                 {
                     if (_disposed)
                     {
-                        return new ValueTask<int>(Task.FromException<int>(new ObjectDisposedException(nameof(Http2Stream))));
+                        throw new ObjectDisposedException(nameof(Http2Stream));
                     }
 
                     if (_responseBuffer.ActiveSpan.Length > 0)
                     {
-                        return new ValueTask<int>(ReadFromBuffer(buffer.Span));
-                    }
+                        int bytesRead = Math.Min(buffer.Length, _responseBuffer.ActiveSpan.Length);
+                        _responseBuffer.ActiveSpan.Slice(0, bytesRead).CopyTo(buffer);
+                        _responseBuffer.Discard(bytesRead);
 
-                    if (_responseComplete)
+                        return (null, bytesRead);
+                    }
+                    else if (_responseComplete)
                     {
                         if (_responseAborted)
                         {
-                            return new ValueTask<int>(Task.FromException<int>(new IOException(SR.net_http_invalid_response)));
+                            throw new IOException(SR.net_http_invalid_response);
                         }
 
-                        return new ValueTask<int>(0);
+                        return (null, 0);
                     }
 
                     Debug.Assert(_responseDataAvailable == null);
                     Debug.Assert(!_responseAborted);
+
                     _responseDataAvailable = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    onDataAvailable = _responseDataAvailable.Task;
+                    return (_responseDataAvailable.Task, 0);
                 }
+            }
 
-                return ReadDataAsyncCore(onDataAvailable, buffer);
-
-                async ValueTask<int> ReadDataAsyncCore(Task onDataAvailable, Memory<byte> buffer)
+            public async ValueTask<int> ReadDataAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+            {
+                if (buffer.Length == 0)
                 {
-                    await onDataAvailable.ConfigureAwait(false);
-
-                    lock (SyncObject)
-                    {
-                        if (!_disposed && _responseBuffer.ActiveSpan.Length > 0)
-                        {
-                            return ReadFromBuffer(buffer.Span);
-                        }
-
-                        // If no data was made available, we must be at the end of the stream
-                        Debug.Assert(_responseComplete);
-                        return 0;
-                    }
+                    return 0;
                 }
+
+                Task waitForData;
+                int bytesRead;
+
+                (waitForData, bytesRead) = TryReadFromBuffer(buffer.Span);
+                if (waitForData != null)
+                {
+                    await waitForData;
+                    (waitForData, bytesRead) = TryReadFromBuffer(buffer.Span);
+                    Debug.Assert(waitForData == null);
+                }
+
+                if (bytesRead != 0)
+                {
+                    ExtendWindow(bytesRead);
+                    _connection.ExtendWindow(bytesRead);
+                }
+
+                return bytesRead;
             }
 
             private async ValueTask SendDataAsync(ReadOnlyMemory<byte> buffer)

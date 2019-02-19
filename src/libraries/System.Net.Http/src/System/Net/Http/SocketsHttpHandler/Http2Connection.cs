@@ -39,6 +39,7 @@ namespace System.Net.Http
         private bool _expectingSettingsAck;
         private int _initialWindowSize;
         private int _maxConcurrentStreams;
+        private int _pendingWindowUpdate;
         private int _idleSinceTickCount;
 
         private bool _disposed;
@@ -55,6 +56,7 @@ namespace System.Net.Http
         // We limit it per stream, and the user controls how many streams are created.
         // So set the connection window size to a large value.
         private const int ConnectionWindowSize = 64 * 1024 * 1024;
+        private const int ConnectionWindowThreshold = ConnectionWindowSize / 8;
 
         public Http2Connection(HttpConnectionPool pool, SslStream stream)
         {
@@ -75,6 +77,7 @@ namespace System.Net.Http
             _nextStream = 1;
             _initialWindowSize = DefaultInitialWindowSize;
             _maxConcurrentStreams = int.MaxValue;
+            _pendingWindowUpdate = 0;
         }
 
         private object SyncObject => _httpStreams;
@@ -975,12 +978,7 @@ namespace System.Net.Http
             await _writerLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                // We update both the connection-level and stream-level windows at the same time
-                _outgoingBuffer.EnsureAvailableSpace((FrameHeader.Size + FrameHeader.WindowUpdateLength) * 2);
-
-                WriteFrameHeader(new FrameHeader(FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, 0));
-                BinaryPrimitives.WriteInt32BigEndian(_outgoingBuffer.AvailableSpan, amount);
-                _outgoingBuffer.Commit(FrameHeader.WindowUpdateLength);
+                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size + FrameHeader.WindowUpdateLength);
 
                 WriteFrameHeader(new FrameHeader(FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId));
                 BinaryPrimitives.WriteInt32BigEndian(_outgoingBuffer.AvailableSpan, amount);
@@ -992,6 +990,28 @@ namespace System.Net.Http
             {
                 _writerLock.Release();
             }
+        }
+
+        private void ExtendWindow(int amount)
+        {
+            Debug.Assert(amount > 0);
+
+            int windowUpdateSize;
+            lock (SyncObject)
+            {
+                Debug.Assert(_pendingWindowUpdate < ConnectionWindowThreshold);
+
+                _pendingWindowUpdate += amount;
+                if (_pendingWindowUpdate < ConnectionWindowThreshold)
+                {
+                    return;
+                }
+
+                windowUpdateSize = _pendingWindowUpdate;
+                _pendingWindowUpdate = 0;
+            }
+
+            ValueTask ignored = SendWindowUpdateAsync(0, windowUpdateSize);
         }
 
         private void WriteFrameHeader(FrameHeader frameHeader)
