@@ -681,10 +681,6 @@ inline BOOL CLRHosted()
 #ifndef FEATURE_PAL
 HMODULE CLRGetModuleHandle(LPCWSTR lpModuleFileName);
 
-// Equivalent to CLRGetModuleHandle(NULL) but doesn't have the INJECT_FAULT contract associated
-// with CLRGetModuleHandle.
-HMODULE CLRGetCurrentModuleHandle();
-
 HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 #endif // !FEATURE_PAL
 
@@ -875,29 +871,8 @@ inline bool IsInCantStopRegion()
 }
 #endif // _DEBUG
 
-
-// PAL does not support per-thread locales. The holder is no-op for FEATURE_PALs
-class ThreadLocaleHolder
-{
-#ifndef FEATURE_PAL
-public:
-
-    ThreadLocaleHolder()
-    {
-        m_locale = GetThreadLocale();
-    }
-
-    ~ThreadLocaleHolder();
-
-private:
-    LCID m_locale;
-#endif // !FEATURE_PAL
-};
-
-
-
 BOOL IsValidMethodCodeNotification(USHORT Notification);
-    
+
 typedef DPTR(struct JITNotification) PTR_JITNotification;
 struct JITNotification
 {

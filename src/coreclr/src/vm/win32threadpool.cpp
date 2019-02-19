@@ -831,8 +831,6 @@ BOOL ThreadpoolMgr::QueueUserWorkItem(LPTHREAD_START_ROUTINE Function,
         ThreadCounter::Counts counts = CPThreadCounter.GetCleanCounts();
         if ((MaxLimitTotalCPThreads - counts.NumActive) >= MinimumAvailableCPThreads )
         {
-            ThreadLocaleHolder localeHolder;
-
             QueueUserWorkItemHelp(Function, Context);
             return TRUE;
         }
@@ -1507,8 +1505,6 @@ DWORD WINAPI ThreadpoolMgr::ExecuteHostRequest(PVOID pArg)
     }
     CONTRACTL_END;
 
-    ThreadLocaleHolder localeHolder;
-
     bool foundWork, wasNotRecalled;
     ExecuteWorkRequest(&foundWork, &wasNotRecalled);
     return ERROR_SUCCESS;
@@ -2005,8 +2001,6 @@ Work:
     }
 
     {
-        ThreadLocaleHolder localeHolder;
-
         ThreadpoolMgr::UpdateLastDequeueTime();
         ThreadpoolMgr::ExecuteWorkRequest(&foundWork, &wasNotRecalled);
     }
@@ -3620,8 +3614,6 @@ Top:
 
                 {
                     CONTRACT_VIOLATION(ThrowsViolation);
-
-                    ThreadLocaleHolder localeHolder;
 
                     ((LPOVERLAPPED_COMPLETION_ROUTINE) key)(errorCode, numBytes, pOverlapped);
                 }
