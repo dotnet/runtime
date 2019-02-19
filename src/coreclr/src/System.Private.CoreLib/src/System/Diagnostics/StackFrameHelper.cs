@@ -34,6 +34,7 @@ namespace System.Diagnostics
 
         private IntPtr[] rgMethodHandle;
         private string[] rgAssemblyPath;
+        private Assembly[] rgAssembly;
         private IntPtr[] rgLoadedPeAddress;
         private int[] rgiLoadedPeSize;
         private IntPtr[] rgInMemoryPdbAddress;
@@ -47,8 +48,8 @@ namespace System.Diagnostics
         private int iFrameCount;
 #pragma warning restore 414
 
-        private delegate void GetSourceLineInfoDelegate(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize,
-            IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
+        private delegate void GetSourceLineInfoDelegate(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress,
+            int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string sourceFile, out int sourceLine, out int sourceColumn);
 
         private static GetSourceLineInfoDelegate s_getSourceLineInfo = null;
@@ -64,6 +65,7 @@ namespace System.Diagnostics
             rgiOffset = null;
             rgiILOffset = null;
             rgAssemblyPath = null;
+            rgAssembly = null;
             rgLoadedPeAddress = null;
             rgiLoadedPeSize = null;
             rgInMemoryPdbAddress = null;
@@ -138,7 +140,7 @@ namespace System.Diagnostics
                     // ENC or the source/line info was already retrieved, the method token is 0.
                     if (rgiMethodToken[index] != 0)
                     {
-                        s_getSourceLineInfo(rgAssemblyPath[index], rgLoadedPeAddress[index], rgiLoadedPeSize[index],
+                        s_getSourceLineInfo(rgAssembly[index], rgAssemblyPath[index], rgLoadedPeAddress[index], rgiLoadedPeSize[index],
                             rgInMemoryPdbAddress[index], rgiInMemoryPdbSize[index], rgiMethodToken[index],
                             rgiILOffset[index], out rgFilename[index], out rgiLineNumber[index], out rgiColumnNumber[index]);
                     }
