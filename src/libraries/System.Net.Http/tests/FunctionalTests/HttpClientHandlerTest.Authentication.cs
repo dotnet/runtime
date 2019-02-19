@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -511,6 +511,10 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { $"http://{server}/test/auth/ntlm/{authEndPoint}", false };
             yield return new object[] { $"https://{server}/test/auth/ntlm/{authEndPoint}", false };
 
+            // Curlhandler (due to libcurl bug) cannot do Negotiate (SPNEGO) Kerberos to NTLM fallback.
+            yield return new object[] { $"http://{server}/test/auth/negotiate/{authEndPoint}", true };
+            yield return new object[] { $"https://{server}/test/auth/negotiate/{authEndPoint}", true };
+
             // Server requires TLS channel binding token (cbt) with NTLM authentication.
             // CurlHandler (due to libcurl bug) cannot do NTLM authentication with cbt.
             yield return new object[] { $"https://{server}/test/auth/ntlm-epa/{authEndPoint}", true };
@@ -523,7 +527,10 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(ServerUsesWindowsAuthentication_MemberData))]
         public async Task Credentials_ServerUsesWindowsAuthentication_Success(string server, bool skipOnCurlHandler)
         {
-            if (IsCurlHandler && skipOnCurlHandler) return;
+            if (IsCurlHandler && skipOnCurlHandler)
+            {
+                throw new SkipTestException("CurlHandler (libCurl) doesn't handle Negotiate with NTLM fallback nor CBT");
+            }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
@@ -554,9 +561,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Negotiate")]
         public async Task Credentials_ServerChallengesWithWindowsAuth_ClientSendsWindowsAuthHeader(string authScheme)
         {
-            if (authScheme == "Negotiate" && !PlatformDetection.IsWindows)
+            if (authScheme == "Negotiate" && IsCurlHandler)
             {
-                throw new SkipTestException("Issue #34878");
+                throw new SkipTestException("CurlHandler (libCurl) doesn't handle Negotiate with NTLM fallback");
             }
 
             await LoopbackServerFactory.CreateClientAndServerAsync(
