@@ -31,7 +31,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Xml" />
-    <ProjectReference Include="../cecil/Mono.Cecil.csproj">
+    <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj">
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>
@@ -41,7 +41,7 @@
     <Compile Include="Main.cs" />
     <Compile Include="LinkerAnalyzerCore\DependencyGraph.cs" />
     <Compile Include="LinkerAnalyzerCore\SpaceAnalyzer.cs" />
-    <Compile Include="..\common\Mono.Options\Options.cs">
+    <Compile Include="common\Mono.Options\Options.cs">
       <Link>Options.cs</Link>
     </Compile>
   </ItemGroup>

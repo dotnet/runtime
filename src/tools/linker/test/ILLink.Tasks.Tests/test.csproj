@@ -5,7 +5,6 @@
 
     <IsPackable>false</IsPackable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <BaseOutputPath>../../testbin</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

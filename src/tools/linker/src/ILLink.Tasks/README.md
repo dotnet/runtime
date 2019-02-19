@@ -15,7 +15,7 @@ to run the linker from an MSBuild project file:
 ```
 
 For a description of the options that this task supports, see the
-comments in [LinkTask.cs](integration/ILLink.Tasks/LinkTask.cs).
+comments in [LinkTask.cs](LinkTask.cs).
 
 
 In addition, ILLink.Tasks contains MSBuild logic that makes the linker
@@ -38,7 +38,7 @@ linker> ./corebuild/dotnet.{sh/ps1} pack ./corebuild/integration/ILLink.Tasks/IL
 The output package will be placed in
 `corebuild/integration/bin/nupkgs`. If you are building on unix, you
 will need to adjust
-[ILLink.Tasks.nuspec](integration/ILLink.Tasks/ILLink.Tasks.nuspec). Replace
+[ILLink.Tasks.nuspec](ILLink.Tasks.nuspec). Replace
 the dll file includes with the following:
 
 `<file src="netcoreapp2.0/**/*.dll" target="tools/netcoreapp2.0" />`
@@ -112,9 +112,9 @@ of the linker, from the command-line (via `dotnet publish
 /p:PropertyName=PropertyValue`), or from the .csproj file (via
 `<PropertyName>PropertyValue</PropertyName>`). They are defined and
 used in
-[ILLink.Tasks.targets](integration/ILLink.Tasks/ILLink.Tasks.targets)
+[ILLink.Tasks.targets](ILLink.Tasks.targets)
 and
-[ILLink.CrossGen.targets](integration/ILLink.Tasks/ILLink.CrossGen.targets)
+[ILLink.CrossGen.targets](ILLink.CrossGen.targets)
 
 - `LinkDuringPublish` (default `true`) - Set to `false` to disable
   linking.
@@ -142,7 +142,7 @@ and
   default sets some flags that output symbols, tolerate resolution
   errors, log warnings, skip mono-specific localization assemblies,
   and keep type-forwarder assemblies. See
-  [ILLink.Tasks.targets](integration/ILLink.Tasks/ILLink.Tasks.targets).
+  [ILLink.Tasks.targets](ILLink.Tasks.targets).
   Setting this will override the defaults.
 
 - Assembly actions: illink has the ability to specify an [action](../linker#actions-on-the-assemblies) to
@@ -174,7 +174,7 @@ and
   [AssemblyAction.cs](../linker/Linker/AssemblyAction.cs) Some
   combinations of actions may be disallowed if they do not make
   sense. For more details, see
-  [SetAssemblyActions.cs](integration/ILLink.Tasks/SetAssemblyActions.cs).
+  [SetAssemblyActions.cs](SetAssemblyActions.cs).
 
 - `LinkerTrimNativeDeps` (default `true`) - If `true`, enable
   detection and removal of unused native dependencies. If `false`, all

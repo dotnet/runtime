@@ -1,4 +1,4 @@
-# [IL Linker](linker/README.md)
+# [IL Linker](src/linker/README.md)
 
 The IL Linker is a tool one can use to only ship the minimal possible IL code and metadata that a set of 
 programs might require to run as opposed to the full libraries.
@@ -8,7 +8,7 @@ an application on Android, iOS and other platforms.
 
 It can also be used in the form of [ILLink.Tasks](corebuild/README.md) to reduce the size of .NET Core apps.
 
-# [Analyzer](analyzer/README.md)
+# [Analyzer](src/analyzer/README.md)
 
 The analyzer is a tool to analyze dependencies which were recorded during linker processing and led linker to mark an item to keep it in the resulting linked assembly.
 

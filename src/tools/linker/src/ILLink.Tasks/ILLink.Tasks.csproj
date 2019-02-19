@@ -4,7 +4,7 @@
     <TargetFrameworks>netcoreapp2.0;net46</TargetFrameworks>
     <TargetFrameworks Condition=" '$(OS)' != 'Windows_NT' ">netcoreapp2.0</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <BaseOutputPath>../bin/</BaseOutputPath>
+    <BaseOutputPath>bin/</BaseOutputPath>
     <PackageOutputPath>$(BaseOutputPath)nupkgs</PackageOutputPath>
 
     <!-- IsTool true causes the build output to be placed in the
@@ -163,7 +163,7 @@
          use PrivateAssets="All" to prevent this project reference
          from being marked as a dependency of the tasks package (while
          still including it in the publish output). -->
-    <ProjectReference Include="../../../linker/Mono.Linker.csproj">
+    <ProjectReference Include="../linker/Mono.Linker.csproj">
       <!-- SetConfiguration isn't required when the configuration is
            already set in the solution. Setting it here allows packing
            the tasks csproj on its own. This lets us avoid some of the
@@ -186,7 +186,7 @@
       -->
       <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>
     </ProjectReference>
-    <ProjectReference Include="../../../cecil/Mono.Cecil.csproj" />
+    <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj" />
 
     <ProjectReference Include="../ILLink.CustomSteps/ILLink.CustomSteps.csproj">
       <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>

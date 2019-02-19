@@ -19,12 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\linker\Mono.Linker.csproj">
+    <ProjectReference Include="..\linker\Mono.Linker.csproj">
       <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=illink_Debug</SetConfiguration>
       <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=illink_Release</SetConfiguration>
       <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\cecil\Mono.Cecil.csproj">
+    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj">
       <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
       <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' And '$(TargetFramework)' == 'net46' ">Configuration=net_4_0_Debug</SetConfiguration>
       <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>

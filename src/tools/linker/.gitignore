@@ -31,8 +31,5 @@ bin/
 corebuild/Tools
 corebuild/bootstrap.log
 corebuild/global.json
-corebuild/**/bin
-corebuild/**/obj
-corebuild/testbin
 
 monobuild/TestResults.xml

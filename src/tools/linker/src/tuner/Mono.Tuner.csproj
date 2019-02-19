@@ -63,7 +63,7 @@
       <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
       <Name>Mono.Linker</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\external\cecil\Mono.Cecil.csproj">
+    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj">
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>

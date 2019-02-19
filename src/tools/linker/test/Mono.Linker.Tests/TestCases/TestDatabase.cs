@@ -163,7 +163,7 @@ namespace Mono.Linker.Tests.TestCases
 		static void GetDirectoryPaths(out string rootSourceDirectory, out string testCaseAssemblyPath, [CallerFilePath] string thisFile = null)
 		{
 			var thisDirectory = Path.GetDirectoryName(thisFile);
-			rootSourceDirectory = Path.GetFullPath(Path.Combine(thisDirectory, "..", "Mono.Linker.Tests.Cases"));
+			rootSourceDirectory = Path.GetFullPath(Path.Combine(thisDirectory, "..", "..", "Mono.Linker.Tests.Cases"));
 #if DEBUG
 			var configDirectoryName = "Debug";
 #else
