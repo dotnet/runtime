@@ -17,19 +17,19 @@ namespace GitHub_17957
         public static bool Test128()
         {
             Vector128<short> vs = Vector128<short>.Zero;
-            vs = vs.WithElement(0, -1);
+            vs = vs.WithElement(0, (short)(-1));
             if (vs.GetElement(0) != -1)
             {
                 return false;
             }
 
-            vs = vs.WithElement(3, -1);
+            vs = vs.WithElement(3, (short)(-1));
             if (vs.GetElement(3) != -1)
             {
                 return false;
             }
 
-            vs = vs.WithElement(7, -1);
+            vs = vs.WithElement(7, (short)(-1));
             if (vs.GetElement(7) != -1)
             {
                 return false;
@@ -57,19 +57,19 @@ namespace GitHub_17957
 
 
             Vector128<sbyte> vsb = Vector128<sbyte>.Zero;
-            vsb = vsb.WithElement(0, -1);
+            vsb = vsb.WithElement(0, (sbyte)(-1));
             if (vsb.GetElement(0) != -1)
             {
                 return false;
             }
 
-            vsb = vsb.WithElement(7, -1);
+            vsb = vsb.WithElement(7, (sbyte)(-1));
             if (vsb.GetElement(7) != -1)
             {
                 return false;
             }
 
-            vsb = vsb.WithElement(15, -1);
+            vsb = vsb.WithElement(15, (sbyte)(-1));
             if (vsb.GetElement(15) != -1)
             {
                 return false;
@@ -125,19 +125,19 @@ namespace GitHub_17957
         public static bool Test256()
         {
             Vector256<short> vs = Vector256<short>.Zero;
-            vs = vs.WithElement(0, -1);
+            vs = vs.WithElement(0, (short)(-1));
             if (vs.GetElement(0) != -1)
             {
                 return false;
             }
 
-            vs = vs.WithElement(3, -1);
+            vs = vs.WithElement(3, (short)(-1));
             if (vs.GetElement(3) != -1)
             {
                 return false;
             }
 
-            vs = vs.WithElement(9, -1);
+            vs = vs.WithElement(9, (short)(-1));
             if (vs.GetElement(9) != -1)
             {
                 return false;
@@ -165,19 +165,19 @@ namespace GitHub_17957
 
 
             Vector256<sbyte> vsb = Vector256<sbyte>.Zero;
-            vsb = vsb.WithElement(0, -1);
+            vsb = vsb.WithElement(0, (sbyte)(-1));
             if (vsb.GetElement(0) != -1)
             {
                 return false;
             }
 
-            vsb = vsb.WithElement(7, -1);
+            vsb = vsb.WithElement(7, (sbyte)(-1));
             if (vsb.GetElement(7) != -1)
             {
                 return false;
             }
 
-            vsb = vsb.WithElement(16, -1);
+            vsb = vsb.WithElement(16, (sbyte)(-1));
             if (vsb.GetElement(16) != -1)
             {
                 return false;
