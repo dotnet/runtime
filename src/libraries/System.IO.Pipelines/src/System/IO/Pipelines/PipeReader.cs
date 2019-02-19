@@ -13,6 +13,8 @@ namespace System.IO.Pipelines
     /// </summary>
     public abstract partial class PipeReader
     {
+        private PipeReaderStream _stream;
+
         /// <summary>
         /// Attempt to synchronously read data the <see cref="PipeReader"/>.
         /// </summary>
@@ -47,6 +49,15 @@ namespace System.IO.Pipelines
         /// The examined data communicates to the pipeline when it should signal more data is available.
         /// </remarks>
         public abstract void AdvanceTo(SequencePosition consumed, SequencePosition examined);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public virtual Stream AsStream()
+        {
+            return _stream ?? (_stream = new PipeReaderStream(this));
+        }
 
         /// <summary>
         /// Cancel to currently pending or if none is pending next call to <see cref="ReadAsync"/>, without completing the <see cref="PipeReader"/>.
@@ -99,7 +110,7 @@ namespace System.IO.Pipelines
 
                     if (result.IsCanceled)
                     {
-                        throw new OperationCanceledException();
+                        ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
                     }
 
                     while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))

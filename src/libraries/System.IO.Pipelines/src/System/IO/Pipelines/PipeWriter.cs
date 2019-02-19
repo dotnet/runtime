@@ -13,6 +13,8 @@ namespace System.IO.Pipelines
     /// </summary>
     public abstract partial class PipeWriter : IBufferWriter<byte>
     {
+        private PipeWriterStream _stream;
+
         /// <summary>
         /// Marks the <see cref="PipeWriter"/> as being complete, meaning no more items will be written to it.
         /// </summary>
@@ -42,6 +44,15 @@ namespace System.IO.Pipelines
 
         /// <inheritdoc />
         public abstract Span<byte> GetSpan(int sizeHint = 0);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public virtual Stream AsStream()
+        {
+            return _stream ?? (_stream = new PipeWriterStream(this));
+        }
 
         /// <summary>
         /// Writes <paramref name="source"/> to the pipe and makes data accessible to <see cref="PipeReader"/>
@@ -76,7 +87,7 @@ namespace System.IO.Pipelines
 
                 if (result.IsCanceled)
                 {
-                    throw new OperationCanceledException();
+                    ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
                 }
 
                 if (result.IsCompleted)
