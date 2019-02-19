@@ -72,7 +72,7 @@
       <NativeVersionLines Include="#define VER_ORIGINALFILENAME_STR    VER_FILEDESCRIPTION_STR" />
       <NativeVersionLines Include="#endif" />
       <NativeVersionLines Include="#ifndef VER_PRODUCTNAME_STR" />
-      <NativeVersionLines Include="#define VER_PRODUCTNAME_STR         &quot;Microsoft\xae .NET Core Framework&quot;" />
+      <NativeVersionLines Include="#define VER_PRODUCTNAME_STR         &quot;Microsoft\xae .NET Core&quot;" />
       <NativeVersionLines Include="#endif" />
       <NativeVersionLines Include="#undef VER_PRODUCTVERSION" />
       <NativeVersionLines Include="#define VER_PRODUCTVERSION          $(MajorVersion),$(MinorVersion),$(BuildNumberMajor),$(BuildNumberMinor)" />
