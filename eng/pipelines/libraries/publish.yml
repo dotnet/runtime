@@ -32,6 +32,18 @@ jobs:
         value: ${{ parameters.artifactsDir }}/AssetManifests
 
     steps:
+      - powershell: |
+          $prefix = "refs/heads/"
+          $branch = "$(Build.SourceBranch)"
+          $branchName = $branch
+          if ($branchName.StartsWith($prefix))
+          {
+            $branchName = $branchName.Substring($prefix.Length)
+          }
+          Write-Host "For Build.SourceBranch $branch, FullBranchName is $branchName"
+          Write-Host "##vso[task.setvariable variable=FullBranchName;]$branchName"
+        displayName: Find true SourceBranchName
+
       - task: DownloadBuildArtifacts@0
         displayName: Download packages to publish
         inputs:
@@ -46,7 +58,7 @@ jobs:
                 /t:PublishPackagesToBlobFeed
                 /p:ManifestBuildId=$(Build.BuildNumber)
                 /p:ManifestBuildData=Location=$(_dotnetFeedUrl)
-                /p:ManifestBranch=$(Build.SourceBranchName)
+                /p:ManifestBranch=$(Build.SourceBranch)
                 /p:ManifestCommit=$(Build.SourceVersion)
                 /p:ManifestRepoUri=$(Build.Repository.Uri)
                 /p:AccountKey=$(dotnetfeed-storage-access-key-1)
@@ -82,7 +94,7 @@ jobs:
                 /p:GitHubAuthToken=$(AccessToken-dotnet-build-bot-public-repo)
                 /p:VersionsRepoOwner=dotnet
                 /p:VersionsRepo=versions
-                /p:VersionsRepoPath=build-info/dotnet/corefx/$(Build.SourceBranchName)
+                /p:VersionsRepoPath=build-info/dotnet/corefx/$(FullBranchName)
                 /p:ShippedNuGetPackageGlobPath=${{ parameters.artifactsDir }}/packages/*.nupkg
         displayName: Update dotnet/versions
 
