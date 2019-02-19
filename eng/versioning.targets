@@ -42,7 +42,7 @@
     <Description Condition="'$(Description)' == ''">$(AssemblyName)</Description>
 
     <!-- SDK sets product to assembly but we want it to be our product name -->
-    <Product>Microsoft%AE .NET Framework</Product>
+    <Product>Microsoft%AE .NET Core</Product>
   </PropertyGroup>
 
   <Target Name="_ComputeBuildToolsAssemblyInfoAttributes"
