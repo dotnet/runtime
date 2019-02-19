@@ -248,12 +248,14 @@ namespace Mono.Linker.Steps {
 			if (overrides == null)
 				return;
 
-			foreach (MethodDefinition @override in overrides)
-				ProcessOverride (@override, method);
+			foreach (OverrideInformation @override in overrides)
+				ProcessOverride (@override);
 		}
 
-		void ProcessOverride (MethodDefinition method, MethodDefinition @base)
+		void ProcessOverride (OverrideInformation overrideInformation)
 		{
+			var method = overrideInformation.Override;
+			var @base = overrideInformation.Base;
 			if (!Annotations.IsMarked (method.DeclaringType))
 				return;
 
@@ -267,25 +269,41 @@ namespace Mono.Linker.Steps {
 
 			// We don't need to mark overrides until it is possible that the type could be instantiated
 			// Note : The base type is interface check should be removed once we have base type sweeping
-			if (@base.DeclaringType.IsInterface && !isInstantiated && !IsInterfaceImplementationMarked (method.DeclaringType, @base.DeclaringType)) {
-				// Before deciding it's OK to skip, we need to make sure none of the derived interface implementations are marked.
-				var derivedInterfaceTypes = Annotations.GetDerivedInterfacesForInterface (@base.DeclaringType);
-
-				// There are no derived interface types that could be marked, it's safe to skip marking this override
-				if (derivedInterfaceTypes == null)
-					return;
-
-				// If none of the other interfaces on the type that implement the interface from the @base type are marked, then it's safe to skip
-				// marking this override
-				if (!derivedInterfaceTypes.Any (d => IsInterfaceImplementationMarked (method.DeclaringType, d)))
-					return;
-			}
+			if (IsInterfaceOverrideThatDoesNotNeedMarked (overrideInformation, isInstantiated))
+				return;
 
 			if (!isInstantiated && !@base.IsAbstract && _context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval))
 				return;
 
 			MarkMethod (method);
 			ProcessVirtualMethod (method);
+		}
+
+		bool IsInterfaceOverrideThatDoesNotNeedMarked (OverrideInformation overrideInformation, bool isInstantiated)
+		{
+			if (!overrideInformation.IsOverrideOfInterfaceMember || isInstantiated)
+				return false;
+
+			if (overrideInformation.MatchingInterfaceImplementation != null)
+				return !Annotations.IsMarked (overrideInformation.MatchingInterfaceImplementation);
+
+			var interfaceType = overrideInformation.InterfaceType;
+			var overrideDeclaringType = overrideInformation.Override.DeclaringType;
+
+			if (!IsInterfaceImplementationMarked (overrideDeclaringType, interfaceType)) {
+				var derivedInterfaceTypes = Annotations.GetDerivedInterfacesForInterface (interfaceType);
+
+				// There are no derived interface types that could be marked, it's safe to skip marking this override
+				if (derivedInterfaceTypes == null)
+					return true;
+
+				// If none of the other interfaces on the type that implement the interface from the @base type are marked, then it's safe to skip
+				// marking this override
+				if (!derivedInterfaceTypes.Any (d => IsInterfaceImplementationMarked (overrideDeclaringType, d)))
+					return true;
+			}
+
+			return false;
 		}
 
 		bool IsInterfaceImplementationMarked (TypeDefinition type, TypeDefinition interfaceType)
