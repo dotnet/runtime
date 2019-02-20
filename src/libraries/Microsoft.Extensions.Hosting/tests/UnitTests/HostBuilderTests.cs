@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Hosting
                 .ConfigureAppConfiguration((hostContext, appConfig) =>
                 {
                     var env = hostContext.HostingEnvironment;
-                    Assert.Equal(EnvironmentName.Production, env.EnvironmentName);
+                    Assert.Equal(Environments.Production, env.EnvironmentName);
                     Assert.Null(env.ApplicationName);
                     Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
                     Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
@@ -151,7 +151,7 @@ namespace Microsoft.Extensions.Hosting
             using (var host = hostBuilder.Build())
             {
                 var env = host.Services.GetRequiredService<IHostEnvironment>();
-                Assert.Equal(EnvironmentName.Production, env.EnvironmentName);
+                Assert.Equal(Environments.Production, env.EnvironmentName);
                 Assert.Null(env.ApplicationName);
                 Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
                 Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
@@ -245,7 +245,7 @@ namespace Microsoft.Extensions.Hosting
             var parameters = new Dictionary<string, string>()
             {
                 { "applicationName", "MyProjectReference"},
-                { "environment", EnvironmentName.Development},
+                { "environment", Environments.Development},
                 { "contentRoot", Path.GetFullPath(".") }
             };
 
@@ -258,7 +258,7 @@ namespace Microsoft.Extensions.Hosting
             var env = host.Services.GetRequiredService<IHostEnvironment>();
 
             Assert.Equal("MyProjectReference", env.ApplicationName);
-            Assert.Equal(EnvironmentName.Development, env.EnvironmentName);
+            Assert.Equal(Environments.Development, env.EnvironmentName);
             Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
         }
 

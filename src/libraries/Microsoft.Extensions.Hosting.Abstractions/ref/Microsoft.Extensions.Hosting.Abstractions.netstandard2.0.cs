@@ -19,7 +19,14 @@ namespace Microsoft.Extensions.Hosting
         [System.Diagnostics.DebuggerStepThroughAttribute]
         public virtual System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
+    [System.ObsoleteAttribute("Use Environments instead.", false)]
     public static partial class EnvironmentName
+    {
+        public static readonly string Development;
+        public static readonly string Production;
+        public static readonly string Staging;
+    }
+    public static partial class Environments
     {
         public static readonly string Development;
         public static readonly string Production;

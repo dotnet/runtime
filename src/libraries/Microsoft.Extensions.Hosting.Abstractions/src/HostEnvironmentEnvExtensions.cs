@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Hosting
                 throw new ArgumentNullException(nameof(hostEnvironment));
             }
 
-            return hostEnvironment.IsEnvironment(EnvironmentName.Development);
+            return hostEnvironment.IsEnvironment(Environments.Development);
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Hosting
                 throw new ArgumentNullException(nameof(hostEnvironment));
             }
 
-            return hostEnvironment.IsEnvironment(EnvironmentName.Staging);
+            return hostEnvironment.IsEnvironment(Environments.Staging);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Hosting
                 throw new ArgumentNullException(nameof(hostEnvironment));
             }
 
-            return hostEnvironment.IsEnvironment(EnvironmentName.Production);
+            return hostEnvironment.IsEnvironment(Environments.Production);
         }
 
         /// <summary>

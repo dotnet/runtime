@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             using (var host = CreateBuilder().Build())
             {
                 var env = host.Services.GetService<IHostEnvironment>();
-                Assert.Equal(EnvironmentName.Production, env.EnvironmentName);
+                Assert.Equal(Environments.Production, env.EnvironmentName);
             }
         }
 
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             var vals = new Dictionary<string, string>
             {
-                { "Environment", EnvironmentName.Staging }
+                { "Environment", Environments.Staging }
             };
 
             var builder = new ConfigurationBuilder()
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             using (var host = CreateBuilder(config).Build())
             {
                 var env = host.Services.GetService<IHostEnvironment>();
-                Assert.Equal(EnvironmentName.Staging, env.EnvironmentName);
+                Assert.Equal(Environments.Staging, env.EnvironmentName);
             }
         }
 
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 await host.StartAsync();
                 var env = host.Services.GetRequiredService<IHostEnvironment>();
-                Assert.True(env.IsEnvironment(EnvironmentName.Production));
+                Assert.True(env.IsEnvironment(Environments.Production));
                 Assert.True(env.IsEnvironment("producTion"));
             }
         }
