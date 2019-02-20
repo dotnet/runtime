@@ -77,20 +77,34 @@ internal class DblArray1
         }
     }
 
+    public static void Run(Action f)
+    {
+        try
+        {
+            GC.TryStartNoGCRegion(500_000);
+            f();
+        }
+        finally
+        {
+            GC.EndNoGCRegion();
+        }
+    }
+
     public static int Main()
     {
         if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") == "x86")
         {
             s_LOH_GEN = 2;
         }
+
         try
         {
-            f0();
-            f1();
-            f2();
-            f3();
-            f4();
-            f5();
+            Run(f0);
+            Run(f1);
+            Run(f2);
+            Run(f3);
+            Run(f4);
+            Run(f5);
         }
         catch (Exception e)
         {
