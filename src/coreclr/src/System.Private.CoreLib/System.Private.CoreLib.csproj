@@ -29,7 +29,7 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
-    <DefineConstants>$(DefineConstants);CORECLR;_USE_NLS_PLUS_TABLE;CODE_ANALYSIS_BASELINE;netcoreapp</DefineConstants>
+    <DefineConstants>$(DefineConstants);CORECLR;netcoreapp</DefineConstants>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
@@ -48,12 +48,10 @@
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
-    <BaseAddress>0x180000000</BaseAddress>
     <DefineConstants>BIT64;AMD64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <PlatformTarget>x86</PlatformTarget>
-    <BaseAddress>0x10000000</BaseAddress>
     <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
@@ -70,18 +68,12 @@
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
-    <DefineConstants>_LOGGING;DEBUG;TRACE;$(DefineConstants)</DefineConstants>
+    <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'x64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugSymbols>true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-    <DebugType Condition="'$(DebugType)' == ''">pdbOnly</DebugType>
-    <DefineConstants>TRACE;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <!-- Make portable PDBs on Unix -->
-  <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
-    <DebugType>portable</DebugType>
   </PropertyGroup>
   <!-- Assembly attributes -->
   <PropertyGroup>
@@ -97,8 +89,6 @@
   <PropertyGroup>
     <CommonPath>$(MSBuildThisFileDirectory)Common</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
-    <MscorlibDir>$(MSBuildThisFileDirectory)</MscorlibDir>
-    <NlpObjDir>$(BclSourcesRoot)\System\Globalization\Tables</NlpObjDir>
   </PropertyGroup>
   <!-- Msbuild variables needed to get CoreCLR features to be set properly. -->
   <PropertyGroup>
@@ -411,7 +401,10 @@
   <PropertyGroup>
     <StrongNameSig>Silverlight</StrongNameSig>
   </PropertyGroup>
-  <Import Project="$(MSBuildThisFileDirectory)Tools\Versioning\GenerateVersionInfo.targets" />
+  <ItemGroup>
+    <AssemblyInfoLines Include="[assembly:System.Runtime.InteropServices.ComVisible(false)]" />
+    <AssemblyInfoLines Include="[assembly:System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute(System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory | System.Runtime.InteropServices.DllImportSearchPath.System32)]" />
+  </ItemGroup>
   <!--
     Import common targets: codeAnalysis, Microsoft.CSharp, sign, versioning, codeOptimizations, etc.
     In doing so, override versioning targets.
@@ -422,8 +415,6 @@
     <AssemblyOriginatorKeyFile>$(ToolsDir)SilverlightPlatformPublicKey.snk</AssemblyOriginatorKeyFile>
     <!-- Don't need a strong name signature because we only ship the native image -->
     <StrongNameSig>None</StrongNameSig>
-    <!-- Use a different nativeresource file to avoid conflicts with mscorlib-->
-    <Win32Resource Condition="'$(GenerateNativeVersionInfo)'=='true'">$(IntermediateOutputPath)\System.Private.CoreLib.res</Win32Resource>
   </PropertyGroup>
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
   <ItemGroup>
