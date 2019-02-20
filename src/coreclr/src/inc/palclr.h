@@ -496,7 +496,11 @@
 #if defined(SOURCE_FORMATTING)
 #define SELECTANY extern
 #else
+#if defined(__GNUC__)
+#define SELECTANY extern __attribute__((weak))
+#else
 #define SELECTANY extern __declspec(selectany)
+#endif
 #endif
 #if defined(SOURCE_FORMATTING)
 #define __annotation(x)

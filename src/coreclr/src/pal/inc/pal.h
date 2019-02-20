@@ -160,7 +160,7 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #endif // CORECLR
 #endif // !_MSC_VER
 
-#if defined(_MSC_VER) || defined(__llvm__)
+#if defined(_MSC_VER)
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 #else
 #define DECLSPEC_ALIGN(x)   __attribute__ ((aligned(x)))
@@ -612,11 +612,11 @@ MessageBoxW(
 
 // From win32.h
 #ifndef _CRTIMP
-#ifdef __llvm__
+#ifdef __GNUC__
 #define _CRTIMP
-#else // __llvm__
+#else // __GNUC__
 #define _CRTIMP __declspec(dllimport)
-#endif // __llvm__
+#endif // __GNUC__
 #endif // _CRTIMP
 
 /******************* winbase.h Entrypoints and defines ************************/
