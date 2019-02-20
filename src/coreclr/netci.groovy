@@ -1665,7 +1665,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
         'swaroop-sridhar',
         'jkotas',
         'markwilkie',
-        'weshaggard'
+        'weshaggard',
+        'tannergooding
     ]
 
     // Pull request builds.  Generally these fall into two categories: default triggers and on-demand triggers
