@@ -158,6 +158,66 @@
                 {
                     "name": "BasicEventSourceTests.TestsUserErrors.Test_BadEventSource_MismatchedIds",
                     "reason": "Assert.Equal() Failure Expected: 1 Actual: 2"
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener_UseEvents",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsUserErrors.Test_BadEventSource_MismatchedIds_WithEtwListener",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.FuzzyTests.Test_Write_Fuzzy",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_InvalidCalls",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_ZeroKwds",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsWriteEventToListener.Test_EventSourceCreatedEvents_BeforeListener",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_ToChannel_Coverage",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_ArgsCornerCases",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsWriteEventToListener.Test_EventSourceCreatedEvents_AfterListener",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_ArgsBasicTypes",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsEventSourceLifetime.Test_EventSource_Lifetime",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsManifestNegative.Test_GenerateManifest_InvalidEventSources",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsTraits.Test_EventSource_Traits_Dynamic",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
+                },
+                {
+                    "name": "BasicEventSourceTests.TestsTraits.Test_EventSource_Traits_Contract",
+                    "reason": "Assert.Equal() Failure Expected: Actual:   System.Runtime "
                 }
             ]
         }

@@ -90,6 +90,7 @@ namespace System.Diagnostics.Tracing
                         s_controllerInstance = new EventPipeController();
                     }
                     // If enable is explicitly set to 0, then don't start the controller (to avoid overhead).
+                    RuntimeEventSource.Initialize();
                 }
             }
             catch { }
