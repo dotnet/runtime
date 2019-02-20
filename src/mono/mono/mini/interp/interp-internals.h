@@ -95,7 +95,6 @@ typedef struct _InterpMethod
 	struct _InterpMethod *next_jit_code_hash;
 	guint32 locals_size;
 	guint32 total_locals_size;
-	guint32 args_size;
 	guint32 stack_size;
 	guint32 vt_stack_size;
 	guint32 alloca_size;
@@ -109,7 +108,6 @@ typedef struct _InterpMethod
 	MonoExceptionClause *clauses;
 	void **data_items;
 	int transformed;
-	guint32 *arg_offsets;
 	guint32 *local_offsets;
 	guint32 *exvar_offsets;
 	unsigned int param_count;

@@ -615,7 +615,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 		}
 
 		if (call->method) {
-			char *full_name = mono_method_full_name (call->method, TRUE);
+			char *full_name = mono_method_get_full_name (call->method);
 			g_string_append_printf (sbuf, " [%s]", full_name);
 			g_free (full_name);
 		} else if (call->fptr_is_patch) {

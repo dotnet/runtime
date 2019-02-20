@@ -110,6 +110,24 @@ find_system_class (const char *name)
 		return NULL;
 }
 
+static void
+mono_custom_modifiers_get_desc (GString *res, const MonoCustomModContainer *cmods, gboolean include_namespace)
+{
+	ERROR_DECL (error);
+	MonoImage *image = cmods->image;
+	for (int i = 0; i < cmods->count; ++i) {
+		const MonoCustomMod *cmod = &cmods->modifiers [i];
+		if (cmod->required)
+			g_string_append (res, " modreq(");
+		else
+			g_string_append (res, " modopt(");
+		MonoClass *cmod_class = mono_class_get_checked (image, cmod->token, error);
+		mono_error_assert_ok (error);
+		mono_type_get_desc (res, &cmod_class->_byval_arg, include_namespace);
+		g_string_append (res, ")");
+	}
+}
+
 void
 mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 {
@@ -214,6 +232,8 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 	default:
 		break;
 	}
+	if (type->has_cmods)
+		mono_custom_modifiers_get_desc (res, mono_type_get_cmods (type), include_namespace);
 	if (type->byref)
 		g_string_append_c (res, '&');
 }

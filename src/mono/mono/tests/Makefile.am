@@ -34,13 +34,13 @@ ARRAY_COOP_CS=\
 BUILT_SOURCES += $(ARRAY_COOP_CS)
 
 array-coop-bigvt.cs: array-coop-bigvt.sh array-coop-1.cs array-coop-2.cs
-	 . $(srcdir)/array-coop-bigvt.sh $(srcdir) > $@
+	 $(srcdir)/array-coop-bigvt.sh $(srcdir) > $@
 
 array-coop-smallvt.cs: array-coop-smallvt.sh array-coop-1.cs array-coop-2.cs
-	 . $(srcdir)/array-coop-smallvt.sh $(srcdir) > $@
+	 $(srcdir)/array-coop-smallvt.sh $(srcdir) > $@
 
 array-coop-int.cs: array-coop-int.sh array-coop-1.cs array-coop-2.cs
-	 . $(srcdir)/array-coop-int.sh $(srcdir) > $@
+	 $(srcdir)/array-coop-int.sh $(srcdir) > $@
 
 # These are not actually tests, but they are source files part of another test.
 TAILCALL_DISABLED_TESTS_COMPILE = \
@@ -206,11 +206,7 @@ if HYBRID_AOT_TESTS
 PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY 
 endif
 
-if AOT_FULL_INTERP_TESTS
-PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY
-endif
-
-if AOT_FULL_INTERP_LLVM_TESTS
+if FULL_AOT_INTERP_TESTS
 PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY
 endif
 
@@ -1537,7 +1533,7 @@ PROFILE_DISABLED_TESTS += \
 	namedmutex-destroy-race.exe
 endif
 
-if AOT_FULL_INTERP_TESTS
+if FULL_AOT_INTERP_TESTS
 
 # AppDomain tests
 PROFILE_DISABLED_TESTS += \
@@ -1593,66 +1589,6 @@ PROFILE_DISABLED_TESTS += \
 
 PROFILE_DISABLED_TESTS += \
 	transparentproxy.exe
-endif
-
-if AOT_FULL_INTERP_LLVM_TESTS
-# AppDomain tests
-PROFILE_DISABLED_TESTS += \
-	appdomain1.exe \
-	appdomain2.exe \
-	appdomain-async-invoke.exe \
-	appdomain.exe \
-	appdomain-exit.exe \
-	appdomain-loader.exe \
-	appdomain-marshalbyref-assemblyload.exe \
-	appdomain-serialize-exception.exe \
-	appdomain-thread-abort.exe \
-	appdomain-threadpool-unload.exe \
-	appdomain-unload-asmload.exe \
-	appdomain-unload-callback.exe \
-	appdomain-unload-doesnot-raise-pending-events.exe \
-	appdomain-unload.exe \
-	assemblyresolve_event6.exe \
-	bug-335131.2.exe \
-	bug-415577.exe \
-	cross-domain.exe \
-	dataslot.exe \
-	delegate9.exe \
-	domain-stress.exe \
-	generic-marshalbyref.2.exe \
-	generic-unloading.2.exe \
-	generic-xdomain.2.exe \
-	hostname.exe \
-	marshal-valuetypes.exe \
-	monitor.exe \
-	pinvoke3.exe \
-	remoting4.exe \
-	stackframes-async.2.exe \
-	suspend-stress-test.exe \
-	thread6.exe \
-	threadpool-exceptions7.exe \
-	unhandled-exception-7.exe \
-	unhandled-exception-test-case.2.exe \
-	unload-appdomain-on-shutdown.exe \
-	xdomain-threads.exe
-
-# Tests which load assemblies which are not in the profile
-PROFILE_DISABLED_TESTS += \
-	assembly-load-remap.exe
-
-# Tests which needs named Mutex support
-PROFILE_DISABLED_TESTS += \
-	namedmutex-destroy-race.exe
-
-# Test which needs System.Web support
-PROFILE_DISABLED_TESTS += \
-	bug-80307.exe
-
-PROFILE_DISABLED_TESTS += \
-	bug-70561.exe \
-	transparentproxy.exe \
-	finalizer-exception.exe
-
 endif
 
 AOT_DISABLED_TESTS= \
@@ -2048,10 +1984,8 @@ tailcall/coreclr/JIT/opt/Tailcall/TailcallVerifyWithPrefix.exe: \
 
 if !FULL_AOT_TESTS
 if !HYBRID_AOT_TESTS
-if !AOT_FULL_INTERP_TESTS
-if !AOT_FULL_INTERP_LLVM_TESTS
+if !FULL_AOT_INTERP_TESTS
 TEST_DRIVER_HARD_KILL_FEATURE=-r:$(CLASS)/Mono.Posix.dll
-endif
 endif
 endif
 endif
@@ -2216,6 +2150,9 @@ testinterp: test-runner.exe compile-tests
 
 testfullaotinterp: test-runner.exe compile-tests
 	$(TOOLS_RUNTIME) --debug $(TEST_RUNNER) -j a --runtime-args "--full-aot-interp" --testsuite-name "runtime-aot-interp" --timeout 300 --disabled "$(INTERP_DISABLED_TESTS)" $(TESTS_REGULAR)
+
+testllvmonlyinterp: test-runner.exe compile-tests
+	$(TOOLS_RUNTIME) --debug $(TEST_RUNNER) -j a --runtime-args "--llvmonly-interp" --testsuite-name "runtime-aot-interp" --timeout 300 --disabled "$(INTERP_DISABLED_TESTS)" $(TESTS_REGULAR)
 
 testjitspeed: $(JITTEST_PROG) compile-tests
 	for i in $(TESTS_BENCH); do	\

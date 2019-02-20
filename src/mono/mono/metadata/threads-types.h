@@ -465,6 +465,7 @@ mono_set_pending_exception_handle (MonoExceptionHandle exc);
 #define MONO_MAX_THREAD_NAME_LEN 140
 #define MONO_MAX_SUMMARY_THREADS 32
 #define MONO_MAX_SUMMARY_FRAMES 80
+#define MONO_MAX_SUMMARY_EXCEPTIONS 15
 
 typedef struct {
 	gboolean is_managed;
@@ -492,6 +493,13 @@ typedef struct {
 		gboolean has_name;
 	} unmanaged_data;
 } MonoFrameSummary;
+
+typedef struct {
+	MonoClass *managed_exc_type;
+
+	int num_managed_frames;
+	MonoFrameSummary managed_frames [MONO_MAX_SUMMARY_FRAMES];
+} MonoExcSummary;
 
 typedef struct {
 	guint64 offset_free_hash;
@@ -527,12 +535,13 @@ typedef struct {
 	int num_unmanaged_frames;
 	MonoFrameSummary unmanaged_frames [MONO_MAX_SUMMARY_FRAMES];
 
+	int num_exceptions;
+	MonoExcSummary exceptions [MONO_MAX_SUMMARY_EXCEPTIONS];
+
 	MonoStackHash hashes;
 
 	MonoContext *ctx;
 	MonoContext ctx_mem;
-
-	MonoClass *managed_exc_type;
 } MonoThreadSummary;
 
 gboolean

@@ -57,12 +57,12 @@ prof_shutdown (MonoProfiler *prof);
 static void
 usage (void)
 {
-	mono_profiler_printf ("AOT profiler.\n");
+	mono_profiler_printf ("AOT profiler.");
 	mono_profiler_printf ("Usage: mono --profile=aot[:OPTION1[,OPTION2...]] program.exe\n");
-	mono_profiler_printf ("Options:\n");
-	mono_profiler_printf ("\thelp                 show this usage info\n");
-	mono_profiler_printf ("\toutput=FILENAME      write the data to file FILENAME\n");
-	mono_profiler_printf ("\tverbose              print diagnostic info\n");
+	mono_profiler_printf ("Options:");
+	mono_profiler_printf ("\thelp                 show this usage info");
+	mono_profiler_printf ("\toutput=FILENAME      write the data to file FILENAME");
+	mono_profiler_printf ("\tverbose              print diagnostic info");
 
 	exit (0);
 }
@@ -395,7 +395,7 @@ add_method (MonoProfiler *prof, MonoMethod *m)
 	g_free (s);
 
 	if (prof->verbose)
-		mono_profiler_printf ("%s %d\n", mono_method_full_name (m, 1), id);
+		mono_profiler_printf ("%s %d", mono_method_full_name (m, 1), id);
 }
 
 /* called at the end of the program */

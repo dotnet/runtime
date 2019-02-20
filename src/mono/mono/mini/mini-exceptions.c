@@ -930,6 +930,46 @@ mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpoin
 	return res;
 }
 
+static gboolean
+mono_exception_stackframe_obj_walk (MonoStackFrame *captured_frame, MonoExceptionFrameWalk func, gpointer user_data)
+{
+	if (!captured_frame)
+		return TRUE;
+
+	gpointer ip = (gpointer) (captured_frame->method_address + captured_frame->native_offset);
+	MonoJitInfo *ji = mono_jit_info_table_find_internal (mono_domain_get (), ip, TRUE, TRUE);
+
+	// Other domain maybe?
+	if (!ji)
+		return FALSE;
+	MonoMethod *method = jinfo_get_method (ji);
+
+	gboolean r = func (method, (gpointer) captured_frame->method_address, captured_frame->native_offset, TRUE, user_data);
+	if (r)
+		return TRUE;
+
+	return FALSE;
+}
+
+static gboolean
+mono_exception_stacktrace_obj_walk (MonoStackTrace *st, MonoExceptionFrameWalk func, gpointer user_data)
+{
+	int num_captured = st->captured_traces ? mono_array_length_internal (st->captured_traces) : 0;
+	for (int i=0; i < num_captured; i++) {
+		MonoStackTrace *curr_trace = mono_array_get_fast (st->captured_traces, MonoStackTrace *, i);
+		mono_exception_stacktrace_obj_walk (curr_trace, func, user_data);
+	}
+
+	int num_frames = st->frames ? mono_array_length_internal (st->frames) : 0;
+	for (int frame = 0; frame < num_frames; frame++) {
+		gboolean r = mono_exception_stackframe_obj_walk (mono_array_get_fast (st->frames, MonoStackFrame *, frame), func, user_data);
+		if (r)
+			return TRUE;
+	}
+
+	return TRUE;
+}
+
 gboolean
 mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data)
 {
@@ -937,13 +977,15 @@ mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk fu
 
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *ta = ex->trace_ips;
-	int len, i;
 
+	/* Exception is not thrown yet */
 	if (ta == NULL)
 		return FALSE;
 
-	len = mono_array_length_internal (ta) / TRACE_IP_ENTRY_SIZE;
-	for (i = 0; i < len; i++) {
+	int len = mono_array_length_internal (ta) / TRACE_IP_ENTRY_SIZE;
+	gboolean otherwise_has_traces = len > 0;
+
+	for (int i = 0; i < len; i++) {
 		ExceptionTraceIp trace_ip;
 
 		memcpy (&trace_ip, mono_array_addr_fast (ta, ExceptionTraceIp, i), sizeof (ExceptionTraceIp));
@@ -963,15 +1005,27 @@ mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk fu
 			r = func (NULL, ip, 0, FALSE, user_data);
 			MONO_EXIT_GC_SAFE;
 			if (r)
-				return TRUE;
+				break;
 		} else {
 			MonoMethod *method = get_method_from_stack_frame (ji, generic_info);
 			if (func (method, ji->code_start, (char *) ip - (char *) ji->code_start, TRUE, user_data))
-				return TRUE;
+				break;
 		}
 	}
-	
-	return len > 0;
+
+	ta = (MonoArray *) ex->captured_traces;
+	len = ta ? mono_array_length_internal (ta) : 0;
+	gboolean captured_has_traces = len > 0;
+
+	for (int i = 0; i < len; i++) {
+		MonoStackTrace *captured_trace = mono_array_get_fast (ta, MonoStackTrace *, i);
+		if (!captured_trace)
+			break;
+
+		mono_exception_stacktrace_obj_walk (captured_trace, func, user_data);
+	}
+
+	return captured_has_traces || otherwise_has_traces;
 }
 
 MonoArray *
@@ -1601,17 +1655,34 @@ mono_summarize_exception (MonoException *exc, MonoThreadSummary *out)
 {
 	memset (out, 0, sizeof (MonoThreadSummary));
 
-	MonoSummarizeUserData data;
-	memset (&data, 0, sizeof (MonoSummarizeUserData));
-	data.max_frames = MONO_MAX_SUMMARY_FRAMES;
-	data.num_frames = 0;
-	data.frames = out->managed_frames;
-	data.hashes = &out->hashes;
+	MonoException *inner_exc = exc;
+	int exc_index = 0;
 
-	mono_exception_walk_trace (exc, summarize_frame_managed_walk, &data);
-	out->num_managed_frames = data.num_frames;
+	for (exc_index = 0; exc_index < MONO_MAX_SUMMARY_EXCEPTIONS; exc_index++) {
+		if (inner_exc == NULL)
+			break;
 
-	out->managed_exc_type = exc->object.vtable->klass;
+		// Set up state to walk this MonoException's stack
+		MonoSummarizeUserData data;
+		memset (&data, 0, sizeof (MonoSummarizeUserData));
+		data.max_frames = MONO_MAX_SUMMARY_FRAMES;
+		data.num_frames = 0;
+		data.frames = out->exceptions [exc_index].managed_frames;
+
+		// Accumulate all hashes from all exceptions in traveral order
+		data.hashes = &out->hashes;
+
+		mono_exception_walk_trace (inner_exc, summarize_frame_managed_walk, &data);
+
+		// Save per-MonoException info
+		out->exceptions [exc_index].managed_exc_type = inner_exc->object.vtable->klass;
+		out->exceptions [exc_index].num_managed_frames = data.num_frames;
+
+		// Continue to traverse nesting of exceptions
+		inner_exc = (MonoException *) inner_exc->inner_ex;
+	}
+
+	out->num_exceptions = exc_index;
 }
 
 

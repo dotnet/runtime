@@ -646,6 +646,53 @@ ves_icall_System_GC_get_ephemeron_tombstone (MonoError *error)
 	return MONO_HANDLE_NEW (MonoObject, mono_domain_get ()->ephemeron_tombstone);
 }
 
+#if ENABLE_NETCORE
+
+gpointer
+ves_icall_System_GCHandle_Alloc (MonoObjectHandle obj, gint32 type, MonoError *error)
+{
+	guint32 handle = 0;
+
+	switch (type) {
+	case HANDLE_WEAK:
+		handle = mono_gchandle_new_weakref_from_handle (obj);
+		break;
+	case HANDLE_WEAK_TRACK:
+		handle = mono_gchandle_new_weakref_from_handle_track_resurrection (obj);
+		break;
+	case HANDLE_NORMAL:
+		handle = mono_gchandle_from_handle (obj, FALSE);
+		break;
+	case HANDLE_PINNED:
+		handle = mono_gchandle_from_handle (obj, TRUE);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+	/* The lowest bit is used to mark pinned handles by netcore's GCHandle class */
+	return GUINT_TO_POINTER (handle << 1);
+}
+
+void
+ves_icall_System_GCHandle_Free (gpointer handle, MonoError *error)
+{
+	mono_gchandle_free_internal (GPOINTER_TO_UINT (handle) >> 1);
+}
+
+MonoObjectHandle
+ves_icall_System_GCHandle_Get (gpointer handle, MonoError *error)
+{
+	return mono_gchandle_get_target_handle (GPOINTER_TO_UINT (handle) >> 1);
+}
+
+void
+ves_icall_System_GCHandle_Set (gpointer handle, MonoObjectHandle obj, MonoError *error)
+{
+	mono_gchandle_set_target_handle (GPOINTER_TO_UINT (handle) >> 1, obj);
+}
+
+#else
+
 MonoObjectHandle
 ves_icall_System_GCHandle_GetTarget (guint32 handle, MonoError *error)
 {
@@ -721,6 +768,8 @@ ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle)
 {
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }
+
+#endif
 
 static MonoCoopSem finalizer_sem;
 static volatile gboolean finished;

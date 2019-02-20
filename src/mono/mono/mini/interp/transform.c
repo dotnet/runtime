@@ -571,20 +571,33 @@ can_store (int st_value, int vt_value)
 
 #endif
 
+static MonoType*
+get_arg_type_exact (TransformData *td, int n, int *mt)
+{
+	MonoType *type;
+	gboolean hasthis = mono_method_signature_internal (td->method)->hasthis;
+
+	if (hasthis && n == 0)
+		type = m_class_get_byval_arg (td->method->klass);
+	else
+		type = mono_method_signature_internal (td->method)->params [n - !!hasthis];
+
+	if (mt)
+		*mt = mint_type (type);
+
+	return type;
+}
+
 static void 
 load_arg(TransformData *td, int n)
 {
 	int mt;
 	MonoClass *klass = NULL;
 	MonoType *type;
-
 	gboolean hasthis = mono_method_signature_internal (td->method)->hasthis;
-	if (hasthis && n == 0)
-		type = m_class_get_byval_arg (td->method->klass);
-	else
-		type = mono_method_signature_internal (td->method)->params [hasthis ? n - 1 : n];
 
-	mt = mint_type (type);
+	type = get_arg_type_exact (td, n, &mt);
+
 	if (mt == MINT_TYPE_VT) {
 		gint32 size;
 		klass = mono_class_from_mono_type_internal (type);
@@ -596,23 +609,23 @@ load_arg(TransformData *td, int n)
 		if (hasthis && n == 0) {
 			mt = MINT_TYPE_P;
 			ADD_CODE (td, MINT_LDARG_P);
-			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			ADD_CODE (td, 0);
 			klass = NULL;
 		} else {
 			PUSH_VT (td, size);
 			ADD_CODE (td, MINT_LDARG_VT);
-			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			ADD_CODE (td, n);
 			WRITE32 (td, &size);
 		}
 	} else {
 		if (hasthis && n == 0) {
 			mt = MINT_TYPE_P;
 			ADD_CODE (td, MINT_LDARG_P);
-			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			ADD_CODE (td, n);
 			klass = NULL;
 		} else {
 			ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
-			ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			ADD_CODE(td, n);
 			if (mt == MINT_TYPE_O)
 				klass = mono_class_from_mono_type_internal (type);
 		}
@@ -627,13 +640,8 @@ store_arg(TransformData *td, int n)
 	CHECK_STACK (td, 1);
 	MonoType *type;
 
-	gboolean hasthis = mono_method_signature_internal (td->method)->hasthis;
-	if (hasthis && n == 0)
-		type = m_class_get_byval_arg (td->method->klass);
-	else
-		type = mono_method_signature_internal (td->method)->params [n - !!hasthis];
+	type = get_arg_type_exact (td, n, &mt);
 
-	mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
 		gint32 size;
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -642,47 +650,15 @@ store_arg(TransformData *td, int n)
 		else
 			size = mono_class_value_size (klass, NULL);
 		ADD_CODE(td, MINT_STARG_VT);
-		ADD_CODE(td, td->rtm->arg_offsets [n]);
+		ADD_CODE(td, n);
 		WRITE32(td, &size);
 		if (td->sp [-1].type == STACK_TYPE_VT)
 			POP_VT(td, size);
 	} else {
 		ADD_CODE(td, MINT_STARG_I1 + (mt - MINT_TYPE_I1));
-		ADD_CODE(td, td->rtm->arg_offsets [n]);
+		ADD_CODE(td, n);
 	}
 	--td->sp;
-}
-
-static void 
-store_inarg(TransformData *td, int n)
-{
-	MonoType *type;
-	gboolean hasthis = mono_method_signature_internal (td->method)->hasthis;
-	if (hasthis && n == 0)
-		type = m_class_get_byval_arg (td->method->klass);
-	else
-		type = mono_method_signature_internal (td->method)->params [n - !!hasthis];
-
-	int mt = mint_type (type);
-	if (hasthis && n == 0) {
-		ADD_CODE (td, MINT_STINARG_P);
-		ADD_CODE (td, n);
-		return;
-	}
-	if (mt == MINT_TYPE_VT) {
-		MonoClass *klass = mono_class_from_mono_type_internal (type);
-		gint32 size;
-		if (mono_method_signature_internal (td->method)->pinvoke)
-			size = mono_class_native_size (klass, NULL);
-		else
-			size = mono_class_value_size (klass, NULL);
-		ADD_CODE(td, MINT_STINARG_VT);
-		ADD_CODE(td, n);
-		WRITE32(td, &size);
-	} else {
-		ADD_CODE(td, MINT_STINARG_I1 + (mt - MINT_TYPE_I1));
-		ADD_CODE(td, n);
-	}
 }
 
 static void
@@ -1176,7 +1152,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && (!strcmp (klass_name, "Span`1") || !strcmp (klass_name, "ReadOnlySpan`1"))) {
-		if (!strcmp (tm, "get_Item")) {
+		if (!strcmp (tm, "get_Item") && csignature->params [0]->type != MONO_TYPE_VALUETYPE) {
 			MonoGenericClass *gclass = mono_class_get_generic_class (target_method->klass);
 			MonoClass *param_class = mono_class_from_mono_type_internal (gclass->context.class_inst->type_argv [0]);
 
@@ -2118,11 +2094,9 @@ collect_pred_seq_points (TransformData *td, InterpBasicBlock *bb, SeqPoint *seqp
 static void
 save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 {
-	InterpMethod *rtm = td->rtm;
 	GByteArray *array;
 	int i, seq_info_size;
 	MonoSeqPointInfo *info;
-	MonoDomain *domain = mono_domain_get ();
 	GSList **next = NULL;
 	GList *bblist;
 
@@ -2260,34 +2234,6 @@ interp_method_compute_offsets (InterpMethod *imethod, MonoMethodSignature *signa
 
 	imethod->locals_size = offset;
 	g_assert (imethod->locals_size < 65536);
-	offset = 0;
-	imethod->arg_offsets = (guint32*)g_malloc ((!!signature->hasthis + signature->param_count) * sizeof(guint32));
-
-	if (signature->hasthis) {
-		g_assert (!signature->pinvoke);
-		size = align = SIZEOF_VOID_P;
-		offset += align - 1;
-		offset &= ~(align - 1);
-		imethod->arg_offsets [0] = offset;
-		offset += size;
-	}
-
-	for (i = 0; i < signature->param_count; ++i) {
-		if (signature->pinvoke) {
-			guint32 dummy;
-			size = mono_type_native_stack_size (signature->params [i], &dummy);
-			align = 8;
-		}
-		else
-			size = mono_type_stack_size (signature->params [i], &align);
-		offset += align - 1;
-		offset &= ~(align - 1);
-		imethod->arg_offsets [i + !!signature->hasthis] = offset;
-		offset += size;
-	}
-	offset = (offset + 7) & ~7;
-	imethod->args_size = offset;
-	g_assert (imethod->args_size < 10000);
 }
 
 static MonoType*
@@ -2390,6 +2336,26 @@ init_bb_start (TransformData *td, MonoMethodHeader *header)
 		}
 	}
 }
+
+#ifdef NO_UNALIGNED_ACCESS
+static int
+get_unaligned_opcode (int opcode)
+{
+	switch (opcode) {
+		case MINT_LDFLD_I8:
+			return MINT_LDFLD_I8_UNALIGNED;
+		case MINT_LDFLD_R8:
+			return MINT_LDFLD_R8_UNALIGNED;
+		case MINT_STFLD_I8:
+			return MINT_STFLD_I8_UNALIGNED;
+		case MINT_STFLD_R8:
+			return MINT_STFLD_R8_UNALIGNED;
+		default:
+			g_assert_not_reached ();
+	}
+	return -1;
+}
+#endif
 
 static gboolean
 generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error)
@@ -2523,11 +2489,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			g_free (tmp);
 			g_free (name);
 		}
-
-		if (signature->hasthis)
-			store_inarg (td, 0);
-		for (i = 0; i < signature->param_count; i++)
-			store_inarg (td, i + !!signature->hasthis);
 
 		td->body_start_offset = td->new_ip - td->new_code;
 
@@ -2692,8 +2653,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			/* NOTE: n includes this */
 			INLINE_FAILURE; // probably uncommon
 			int n = ((guint8 *) td->ip) [1];
-			ADD_CODE (td, MINT_LDARGA);
-			ADD_CODE (td, td->rtm->arg_offsets [n]);
+
+			get_arg_type_exact (td, n, &mt);
+			ADD_CODE (td, mt == MINT_TYPE_VT ? MINT_LDARGA_VT : MINT_LDARGA);
+			ADD_CODE (td, n);
 			PUSH_SIMPLE_TYPE(td, STACK_TYPE_MP);
 			td->ip += 2;
 			break;
@@ -3909,7 +3872,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					ADD_CODE (td, mt == MINT_TYPE_VT ? MINT_LDSFLD_VT : MINT_LDSFLD);
 					ADD_CODE (td, get_data_item_index (td, field));
 				} else {
-					ADD_CODE (td, MINT_LDFLD_I1 + mt - MINT_TYPE_I1);
+					int opcode = MINT_LDFLD_I1 + mt - MINT_TYPE_I1;
+#ifdef NO_UNALIGNED_ACCESS
+					if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && field->offset % SIZEOF_VOID_P != 0)
+						opcode = get_unaligned_opcode (opcode);
+#endif
+					ADD_CODE (td, opcode);
 					ADD_CODE (td, m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset);
 					if (mt == MINT_TYPE_VT)
 						ADD_CODE (td, get_data_item_index (td, field));
@@ -3976,7 +3944,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					mono_class_vtable_checked (domain, fld_klass, error);
 					goto_if_nok (error, exit);
 				} else {
-					ADD_CODE (td, MINT_STFLD_I1 + mt - MINT_TYPE_I1);
+					int opcode = MINT_STFLD_I1 + mt - MINT_TYPE_I1;
+#ifdef NO_UNALIGNED_ACCESS
+					if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && field->offset % SIZEOF_VOID_P != 0)
+						opcode = get_unaligned_opcode (opcode);
+#endif
+					ADD_CODE (td, opcode);
 					ADD_CODE (td, m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset);
 					if (mt == MINT_TYPE_VT) {
 						ADD_CODE (td, get_data_item_index (td, field));
@@ -5146,8 +5119,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_LDARGA: {
 				INLINE_FAILURE;
 				int n = read16 (td->ip + 1);
-				ADD_CODE (td, MINT_LDARGA);
-				ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offsets */
+
+				get_arg_type_exact (td, n, &mt);
+				ADD_CODE (td, mt == MINT_TYPE_VT ? MINT_LDARGA_VT : MINT_LDARGA);
+				ADD_CODE (td, n);
 				PUSH_SIMPLE_TYPE(td, STACK_TYPE_MP);
 				td->ip += 3;
 				break;
@@ -5462,7 +5437,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	rtm->stack_size = ALIGN_TO (rtm->stack_size, MINT_VT_ALIGNMENT);
 	rtm->vt_stack_size = td->max_vt_sp;
 	rtm->total_locals_size = td->total_locals_size;
-	rtm->alloca_size = rtm->total_locals_size + rtm->args_size + rtm->vt_stack_size + rtm->stack_size;
+	rtm->alloca_size = rtm->total_locals_size + rtm->vt_stack_size + rtm->stack_size;
 	rtm->data_items = (gpointer*)mono_domain_alloc0 (domain, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 

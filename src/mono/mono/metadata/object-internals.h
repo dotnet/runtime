@@ -485,6 +485,13 @@ typedef struct {
 
 typedef struct {
 	MonoObject obj;
+	MonoArray *frames;
+	MonoArray *captured_traces;
+	MonoBoolean debug_info;
+} MonoStackTrace;
+
+typedef struct {
+	MonoObject obj;
 	gint32 il_offset;
 	gint32 native_offset;
 	gint64 method_address;
@@ -985,13 +992,6 @@ TYPED_HANDLE_DECL (MonoReflectionMonoEvent);
 
 typedef struct {
 	MonoObject object;
-	guint32 AttrsImpl;	
-	MonoReflectionType *ClassImpl;
-	MonoObject *DefaultValueImpl;
-	MonoObject *MemberImpl;
-	MonoString *NameImpl;
-	gint32 PositionImpl;
-	MonoObject *MarshalAsImpl;
 } MonoReflectionParameter;
 
 /* Safely access System.Reflection.ParameterInfo from native code */

@@ -1820,6 +1820,17 @@ public class Tests
 
 	struct AStruct {
 		public int a, b;
+
+		public override int GetHashCode () {
+			return 0;
+		}
+
+		public override bool Equals (object o) {
+			if (!(o is AStruct))
+				return false;
+			AStruct s = (AStruct)o;
+			return a == s.a && b == s.b;
+		}
 	}
 
 	public static int test_0_multi_dim_arrays_2 () {
@@ -2067,6 +2078,42 @@ public class Tests
 	public static int test_1_59956_regress () {
 		IFace59956 iface = new Impl59956 ();
 		return iface.foo<int> ();
+	}
+
+	interface IFaceSpan {
+		int foo<T> (T t);
+	}
+
+	class ImplSpan : IFaceSpan {
+		public int foo<T> (T t) {
+			var arr = new T[10];
+			var arr2 = new T[10];
+			var s = new Span<T> (arr);
+
+			s [0] = t;
+			T t2 = s [0];
+			if (!t.Equals (t2))
+				return 1;
+
+			var s2 = new Span<T> (arr2);
+			s.CopyTo (s2);
+			t2 = s2 [0];
+			if (!t.Equals (t2))
+				return 2;
+
+			s.Clear ();
+			t2 = s [0];
+			if (!t2.Equals (default(T)))
+				return 3;
+
+			return 0;
+		}
+	}
+
+	public static int test_0_span () {
+		IFaceSpan iface = new ImplSpan ();
+		var s = new AStruct () { a = 1, b = 2 };
+		return iface.foo<AStruct> (s);
 	}
 }
 

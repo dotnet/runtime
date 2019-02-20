@@ -48,7 +48,7 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # There is no ordering of corlib versions, no old or new,
 # the runtime expects an exact match.
 #
-MONO_CORLIB_VERSION=26CB76A6-673F-4126-99F0-E98277541B92
+MONO_CORLIB_VERSION=1A1222D8-4B4D-4EB4-B4FC-8227F50AB114
 
 #
 # Put a quoted #define in config.h.
@@ -1111,7 +1111,7 @@ AC_ARG_WITH(unreal,              [  --with-unreal=yes,no                If you w
 AC_ARG_WITH(wasm,                [  --with-wasm=yes,no                  If you want to build the WebAssembly (defaults to no)], [], [with_wasm=default])
 
 
-AC_ARG_WITH(runtime-preset, [  --with-runtime-preset=net_4_x,all,aot,aot_llvm,hybridaot,hybridaot_llvm,fullaot,fullaot_llvm,winaot,winaot_llvm,bitcode,unreal,fullaotinterp,fullaotinterp_llvm  Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+AC_ARG_WITH(runtime-preset, [  --with-runtime-preset=net_4_x,all,aot,aot_llvm,hybridaot,hybridaot_llvm,fullaot,fullaot_llvm,winaot,winaot_llvm,bitcode,bitcodeinterp,unreal,fullaotinterp,fullaotinterp_llvm  Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
 AC_ARG_WITH(spectre-mitigation,             [  --with-spectre-mitigation=yes,no   If you want to build the runtime with compiler flags that enable Spectre mitigation (defaults to no)], [], [with_spectre_mitigation=default])
 AC_ARG_WITH(spectre-indirect-branch-choice,   [  --with-spectre-indirect-branch-choice=keep,thunk,inline,extern   Convert indirect branches to the specified kind of thunk (defaults to inline)], [], [with_spectre_indirect_branch_choice=inline])
 AC_ARG_WITH(spectre-function-return-choice, [  --with-spectre-function-return-choice=keep,thunk,inline,extern   Convert function return instructions to the specified kind of thunk (defaults to inline)], [], [with_spectre_function_return_choice=inline])
@@ -1219,7 +1219,9 @@ elif test x$with_runtime_preset = xbitcode; then
    with_testing_aot_full_default=yes
    with_bitcode_default=yes
    enable_cooperative_suspend_default=yes
-   TEST_PROFILE=testing_aot_full
+   # FIXME: use TEST_PROFILE=testing_aot_full
+   TEST_PROFILE=testing_aot_bitcode
+   PLATFORM_TEST_HARNESS_EXCLUDES=BitcodeNotSupported
    enable_llvm_default=yes
 
    mono_feature_disable_com='yes'
@@ -1228,9 +1230,25 @@ elif test x$with_runtime_preset = xbitcode; then
    mono_feature_disable_reflection_emit='yes'
    mono_feature_disable_appdomains='yes'
 
-   AOT_BUILD_FLAGS="--runtime=mobile --aot=llvmonly,$INVARIANT_AOT_OPTIONS"
+   # We need at least clang++-6.0 to read the LLVM IR produced by the runtime
+   AOT_BUILD_FLAGS="--runtime=mobile --aot=llvmonly,clangxx=clang++-6.0,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--runtime=mobile --llvmonly"
    AOT_MODE="llvmonly"
+elif test x$with_runtime_preset = xbitcodeinterp; then
+   with_testing_aot_full_interp_default=yes
+   with_bitcode_default=yes
+   enable_cooperative_suspend_default=yes
+   # FIXME: use TEST_PROFILE=testing_aot_full_interp
+   TEST_PROFILE=testing_aot_bitcode_interp
+   PLATFORM_TEST_HARNESS_EXCLUDES=BitcodeNotSupported
+   enable_llvm_default=yes
+
+   # mscorlib.dll aot compilation crashes
+   mono_feature_disable_com='yes'
+
+   # We need at least clang++-6.0 to read the LLVM IR produced by the runtime
+   AOT_BUILD_FLAGS="--aot=llvmonly,interp,clangxx=clang++-6.0,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--llvmonly-interp"
 elif test x$with_runtime_preset = xfullaot; then
    DISABLE_MCS_DOCS_default=yes
    with_testing_aot_full_default=yes
@@ -1284,7 +1302,7 @@ elif test x$with_runtime_preset = xfullaotinterp; then
    AOT_RUN_FLAGS="--full-aot-interp"
 elif test x$with_runtime_preset = xfullaotinterp_llvm; then
    with_testing_aot_full_interp_default=yes
-   TEST_PROFILE=testing_aot_full_interp_llvm
+   TEST_PROFILE=testing_aot_full_interp
 
    # mscorlib.dll aot compilation crashes
    mono_feature_disable_com='yes'
@@ -1444,10 +1462,10 @@ AM_CONDITIONAL(INSTALL_ORBIS, [test "x$with_orbis" != "xno"])
 AM_CONDITIONAL(INSTALL_UNREAL, [test "x$with_unreal" != "xno"])
 AM_CONDITIONAL(INSTALL_WASM, [test "x$with_wasm" != "xno"])
 AM_CONDITIONAL(INSTALL_NETCORE, [test "x$with_core" != "xno"])
-AM_CONDITIONAL(FULL_AOT_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full"] || [test "x$TEST_PROFILE" = "xwinaot"] || [test "x$TEST_PROFILE" = "xorbis"] || [test "x$TEST_PROFILE" = "xwasm"])
+
 AM_CONDITIONAL(HYBRID_AOT_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_hybrid"] || [test "x$TEST_PROFILE" = "xunreal"])
-AM_CONDITIONAL(AOT_FULL_INTERP_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full_interp"])
-AM_CONDITIONAL(AOT_FULL_INTERP_LLVM_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full_interp_llvm"])
+AM_CONDITIONAL(FULL_AOT_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full"] || [test "x$TEST_PROFILE" = "xtesting_aot_bitcode"] || [test "x$TEST_PROFILE" = "xwinaot"] || [test "x$TEST_PROFILE" = "xorbis"] || [test "x$TEST_PROFILE" = "xwasm"])
+AM_CONDITIONAL(FULL_AOT_INTERP_TESTS, [test "x$TEST_PROFILE" = "xtesting_aot_full_interp"] || [test "x$TEST_PROFILE" = "xtesting_aot_bitcode_interp"])
 AM_CONDITIONAL(DEFAULT_TESTS, [test "x$TEST_PROFILE" = "xnet_4_x"])
 
 default_profile=net_4_x
@@ -5946,17 +5964,17 @@ fi
 # crypto primitives that we're using as part of System.Security.Cryptography.Apple.
 #
 # On Desktop, we can check at runtime whether the OS version is recent enough and switch
-# implementation accordingly.  We build a single `libmono_native` shared library.
+# implementation accordingly.  We build a single `libmono-native` shared library.
 #
 # However, on Mobile we cannot have any undefined symbols as this would break Bitcode.
 #
-# During the mobile build, we are called with `CC` containing an explicit minium version flag,
+# During the mobile build, we are called with `CFLAGS` containing an explicit minium version flag,
 # which is eiter `-mmacosx-version-min=`, `-mios-simulator-version-min=` or `-miphoneos-version-min=`
 # depending on platform.
 #
 # We build two versions of the shared library:
-# - `libmono_native_compat` is built with whichever minimum version is passed to us via `CC`.
-# - `libmono_native_unifed` is built with the minimum version set to macOS 10.12+ / iOS 10+.
+# - `libmono-native-compat` is built with whichever minimum version is passed to us via `CFLAGS`.
+# - `libmono-native-unifed` is built with the minimum version set to macOS 10.12+ / iOS 10+.
 #
 # For testing purpuses, there is a function called `mono_native_get_platform_type ()`
 # (see mono/native/mono-native-platform.c), which returns a `MonoNativePlatformType` enum value.
@@ -5966,40 +5984,41 @@ fi
 # to verify that it's the correct version of it.
 #
 
+AC_MSG_CHECKING([Mono.Native support])
 sed_version_pattern='[[0-9]]\{1,2\}\(\.[[0-9]]\{1,2\}\)'
 if test x$disable_mono_native = xyes; then
 	mono_native=no
 elif test x$target_osx = xyes; then
-	sed_remove_mac_version_pattern="s/-mmacosx-version-min=$sed_version_pattern//g"
-	grep_find_mac_version_pattern="-mmacosx-version-min=$sed_version_pattern"
-	mono_native_compat_version=`echo $CC | grep -o -e $grep_find_mac_version_pattern`
-	MONO_NATIVE_CC=`echo $CC | sed -e $sed_remove_mac_version_pattern`
-	MONO_NATIVE_CXX=`echo $CXX | sed -e $sed_remove_mac_version_pattern`
-	MONO_NATIVE_CPPFLAGS=`echo $CPPFLAGS | sed -e $sed_remove_mac_version_pattern`
-	MONO_NATIVE_CFLAGS=`echo $CFLAGS | sed -e $sed_remove_mac_version_pattern`
-	MONO_NATIVE_CXXFLAGS=`echo $CXXFLAGS | sed -e $sed_remove_mac_version_pattern`
-	MONO_NATIVE_LDFLAGS=`echo $LDFLAGS | sed -e $sed_remove_mac_version_pattern`
+	MONO_NATIVE_CC=$CC
+	MONO_NATIVE_CXX=$CXX
+	MONO_NATIVE_CCASFLAGS=$CCASFLAGS
+	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
+	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
+	MONO_NATIVE_CFLAGS=$CFLAGS
+	MONO_NATIVE_LDFLAGS=$LDFLAGS
 
 	mono_native=yes
 	MONO_NATIVE_PLATFORM=macos
 	MONO_NATIVE_PLATFORM_TYPE="MONO_NATIVE_PLATFORM_TYPE_MACOS"
-	AC_MSG_CHECKING([Mono.Native support])
-	AC_MSG_RESULT(macos)
 
 	AC_MONO_APPLE_AVAILABLE(mono_native_compat, [whether we need the compatibility layer],
 		[!(MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12)])
 
 	if test x$mono_native_compat = xyes; then
 		mono_native_compat=yes
-		mono_native_text="Mac OSX (compat+unified)"
-		MONO_NATIVE_COMPAT_CFLAGS="$CFLAGS $mono_native_compat_version"
-		MONO_NATIVE_COMPAT_CPPFLAGS="$CPPFLAGS $mono_native_compat_version"
-		MONO_NATIVE_COMPAT_CXXFLAGS="$CXXFLAGS $mono_native_compat_version"
-		MONO_NATIVE_COMPAT_LDFLAGS="$LDFLAGS $mono_native_compat_version"
-		MONO_NATIVE_UNIFIED_CFLAGS="$MONO_NATIVE_CFLAGS -mmacosx-version-min=10.12"
-		MONO_NATIVE_UNIFIED_CPPFLAGS="$MONO_NATIVE_CPPFLAGS -mmacosx-version-min=10.12"
-		MONO_NATIVE_UNIFIED_CXXFLAGS="$MONO_NATIVE_CXXFLAGS -mmacosx-version-min=10.12"
-		MONO_NATIVE_UNIFIED_LDFLAGS="$MONO_NATIVE_LDFLAGS -mmacosx-version-min=10.12"
+		mono_native_text="Mac OSX (compat + unified v10.12)"
+		MONO_NATIVE_COMPAT_CCASFLAGS=$MONO_NATIVE_CCASFLAGS
+		MONO_NATIVE_COMPAT_CPPFLAGS=$MONO_NATIVE_CPPFLAGS
+		MONO_NATIVE_COMPAT_CXXFLAGS=$MONO_NATIVE_CXXFLAGS
+		MONO_NATIVE_COMPAT_CFLAGS=$MONO_NATIVE_CFLAGS
+		MONO_NATIVE_COMPAT_LDFLAGS=$MONO_NATIVE_LDFLAGS
+
+		sed_remove_mac_version_pattern="s/-mmacosx-version-min=$sed_version_pattern//g"
+		MONO_NATIVE_UNIFIED_CCASFLAGS="`echo $CCASFLAGS | sed -e $sed_remove_mac_version_pattern` -mmacosx-version-min=10.12"
+		MONO_NATIVE_UNIFIED_CPPFLAGS="`echo $CPPFLAGS | sed -e $sed_remove_mac_version_pattern` -mmacosx-version-min=10.12"
+		MONO_NATIVE_UNIFIED_CXXFLAGS="`echo $CXXFLAGS | sed -e $sed_remove_mac_version_pattern` -mmacosx-version-min=10.12"
+		MONO_NATIVE_UNIFIED_CFLAGS="`echo $CFLAGS | sed -e $sed_remove_mac_version_pattern` -mmacosx-version-min=10.12"
+		MONO_NATIVE_UNIFIED_LDFLAGS="`echo $LDFLAGS | sed -e $sed_remove_mac_version_pattern` -mmacosx-version-min=10.12"
 	else
 		mono_native_compat=no
 		mono_native_text="Mac OSX"
@@ -6051,15 +6070,7 @@ elif test x$mono_native_platform_ios = xyes; then
 		])
 	])
 
-	AC_MSG_CHECKING([Mono.Native support])
-	AC_MSG_RESULT([$mono_native_ios_target])
-
 	AC_MONO_APPLE_AVAILABLE(mono_native_compat, [whether we need the compatibility layer], [!($mono_native_compat_check)])
-
-	sed_remove_ios_version_pattern="s/-m\(.*\)-version-min=$sed_version_pattern//g"
-	grep_find_ios_version_pattern="-m$mono_native_ios_target-version-min=$sed_version_pattern"
-
-	mono_native_compat_version=`echo $CC | grep -o -e $grep_find_ios_version_pattern`
 
 	if test x$with_bitcode = xyes; then
 		mono_native_ldflags="-framework CoreFoundation -framework Foundation -no-undefined -fatal_warnings"
@@ -6072,23 +6083,28 @@ elif test x$mono_native_platform_ios = xyes; then
 		mono_native_ldflags="$mono_native_ldflags -framework GSS"
 	fi
 
-	MONO_NATIVE_CC=`echo $CC | sed -e $sed_remove_ios_version_pattern`
-	MONO_NATIVE_CXX=`echo $CXX | sed -e $sed_remove_ios_version_pattern`
-	MONO_NATIVE_CPPFLAGS=`echo $CPPFLAGS | sed -e $sed_remove_ios_version_pattern`
-	MONO_NATIVE_CXXFLAGS=`echo $CXXFLAGS | sed -e $sed_remove_ios_version_pattern`
-	MONO_NATIVE_CFLAGS=`echo $CFLAGS | sed -e $sed_remove_ios_version_pattern`
-	MONO_NATIVE_LDFLAGS=`echo $LDFLAGS $mono_native_ldflags | sed -e $sed_remove_ios_version_pattern`
+	MONO_NATIVE_CC=$CC
+	MONO_NATIVE_CXX=$CXX
+	MONO_NATIVE_CCASFLAGS=$CCASFLAGS
+	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
+	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
+	MONO_NATIVE_CFLAGS=$CFLAGS
+	MONO_NATIVE_LDFLAGS="$LDFLAGS $mono_native_ldflags"
 
 	if test x$mono_native_compat = xyes; then
-		mono_native_text="$mono_native_text (compat+unified)"
-		MONO_NATIVE_COMPAT_CFLAGS="$CFLAGS $mono_native_compat_version"
-		MONO_NATIVE_COMPAT_CPPFLAGS="$CPPFLAGS $mono_native_compat_version"
-		MONO_NATIVE_COMPAT_CXXFLAGS="$CXXFLAGS $mono_native_compat_version"
-		MONO_NATIVE_COMPAT_LDFLAGS="$LDFLAGS $mono_native_ldflags $mono_native_compat_version"
-		MONO_NATIVE_UNIFIED_CFLAGS="$MONO_NATIVE_CFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
-		MONO_NATIVE_UNIFIED_CPPFLAGS="$MONO_NATIVE_CPPFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
-		MONO_NATIVE_UNIFIED_CXXFLAGS="$MONO_NATIVE_CXXFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
-		MONO_NATIVE_UNIFIED_LDFLAGS="$MONO_NATIVE_LDFLAGS -m$mono_native_ios_target-version-min=$mono_native_unified_version"
+		mono_native_text="$mono_native_text (compat + unified v$mono_native_unified_version)"
+		MONO_NATIVE_COMPAT_CCASFLAGS=$MONO_NATIVE_CCASFLAGS
+		MONO_NATIVE_COMPAT_CPPFLAGS=$MONO_NATIVE_CPPFLAGS
+		MONO_NATIVE_COMPAT_CXXFLAGS=$MONO_NATIVE_CXXFLAGS
+		MONO_NATIVE_COMPAT_CFLAGS=$MONO_NATIVE_CFLAGS
+		MONO_NATIVE_COMPAT_LDFLAGS=$MONO_NATIVE_LDFLAGS
+
+		sed_remove_ios_version_pattern="s/-m\(.*\)-version-min=$sed_version_pattern//g"
+		MONO_NATIVE_UNIFIED_CCASFLAGS="`echo $CCASFLAGS | sed -e $sed_remove_ios_version_pattern` -m$mono_native_ios_target-version-min=$mono_native_unified_version"
+		MONO_NATIVE_UNIFIED_CPPFLAGS="`echo $CPPFLAGS | sed -e $sed_remove_ios_version_pattern` -m$mono_native_ios_target-version-min=$mono_native_unified_version"
+		MONO_NATIVE_UNIFIED_CXXFLAGS="`echo $CXXFLAGS | sed -e $sed_remove_ios_version_pattern` -m$mono_native_ios_target-version-min=$mono_native_unified_version"
+		MONO_NATIVE_UNIFIED_CFLAGS="`echo $CFLAGS | sed -e $sed_remove_ios_version_pattern` -m$mono_native_ios_target-version-min=$mono_native_unified_version"
+		MONO_NATIVE_UNIFIED_LDFLAGS="`echo $LDFLAGS $mono_native_ldflags | sed -e $sed_remove_ios_version_pattern` -m$mono_native_ios_target-version-min=$mono_native_unified_version"
 	fi
 
 	mono_native=yes
@@ -6097,6 +6113,7 @@ elif test x$host_linux = xyes; then
 	mono_native_text="Linux"
 	MONO_NATIVE_CC=$CC
 	MONO_NATIVE_CXX=$CXX
+	MONO_NATIVE_CCASFLAGS=$CCASFLAGS
 	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
 	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
 	MONO_NATIVE_CFLAGS=$CFLAGS
@@ -6105,14 +6122,13 @@ elif test x$host_linux = xyes; then
 	mono_native=yes
 	mono_native_compat=no
 	MONO_NATIVE_PLATFORM=linux
-	AC_MSG_CHECKING([Mono.Native support])
-	AC_MSG_RESULT(linux)
 
 	MONO_NATIVE_PLATFORM_TYPE="MONO_NATIVE_PLATFORM_TYPE_LINUX"
 elif test x$target_wasm = xyes; then
 	mono_native_text="wasm"
 	MONO_NATIVE_CC=$CC
 	MONO_NATIVE_CXX=$CXX
+	MONO_NATIVE_CCASFLAGS=$CCASFLAGS
 	# The system.native code uses _WASM_ to check for wasm
 	MONO_NATIVE_CPPFLAGS="$CPPFLAGS -D_WASM_"
 	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
@@ -6122,14 +6138,13 @@ elif test x$target_wasm = xyes; then
 	mono_native=yes
 	mono_native_compat=no
 	MONO_NATIVE_PLATFORM=linux
-	AC_MSG_CHECKING([Mono.Native support])
-	AC_MSG_RESULT(wasm)
 
 	MONO_NATIVE_PLATFORM_TYPE="MONO_NATIVE_PLATFORM_TYPE_LINUX"
 elif case $host_os in aix*|os400*) true;; *) false;; esac; then
 	mono_native_text="AIX"
 	MONO_NATIVE_CC=$CC
 	MONO_NATIVE_CXX=$CXX
+	MONO_NATIVE_CCASFLAGS=$CCASFLAGS
 	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
 	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
 	MONO_NATIVE_CFLAGS=$CFLAGS
@@ -6138,8 +6153,6 @@ elif case $host_os in aix*|os400*) true;; *) false;; esac; then
 	mono_native=yes
 	mono_native_compat=no
 	MONO_NATIVE_PLATFORM=aix
-	AC_MSG_CHECKING([Mono.Native support])
-	AC_MSG_RESULT(aix)
 
 	MONO_NATIVE_PLATFORM_TYPE="MONO_NATIVE_PLATFORM_TYPE_AIX"
 elif case $host_os in freebsd*) true;; *) false;; esac; then
@@ -6170,16 +6183,14 @@ elif test x$platform_android = xyes; then
 	mono_native=yes
 	mono_native_compat=no
 	MONO_NATIVE_PLATFORM=android
-	AC_MSG_CHECKING([Mono.Native support])
-	AC_MSG_RESULT(Android)
 
 	MONO_NATIVE_PLATFORM_TYPE="MONO_NATIVE_PLATFORM_TYPE_ANDROID"
 else
 	mono_native=no
 	mono_native_text="no"
-	AC_MSG_CHECKING([Mono.Native support])
-	AC_MSG_RESULT(no)
 fi
+
+AC_MSG_RESULT($mono_native_text)
 
 if test x$mono_native_compat = xyes; then
 	MONO_NATIVE_LIBRARY_NAME=libmono-native-compat
@@ -6190,6 +6201,9 @@ fi
 AC_SUBST(MONO_NATIVE_PLATFORM)
 AC_SUBST(MONO_NATIVE_CC)
 AC_SUBST(MONO_NATIVE_CXX)
+AC_SUBST(MONO_NATIVE_CCASFLAGS)
+AC_SUBST(MONO_NATIVE_COMPAT_CCASFLAGS)
+AC_SUBST(MONO_NATIVE_UNIFIED_CCASFLAGS)
 AC_SUBST(MONO_NATIVE_CPPFLAGS)
 AC_SUBST(MONO_NATIVE_COMPAT_CPPFLAGS)
 AC_SUBST(MONO_NATIVE_UNIFIED_CPPFLAGS)

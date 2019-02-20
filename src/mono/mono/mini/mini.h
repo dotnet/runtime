@@ -1021,6 +1021,8 @@ typedef enum {
 	MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO           = 32,
 	/* Same as MONO_PATCH_INFO_METHOD_FTNDESC */
 	MONO_RGCTX_INFO_METHOD_FTNDESC                = 33,
+	/* mono_type_size () for a class */
+	MONO_RGCTX_INFO_CLASS_SIZEOF                  = 34
 } MonoRgctxInfoType;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {

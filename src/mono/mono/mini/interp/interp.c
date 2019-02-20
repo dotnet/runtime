@@ -2972,7 +2972,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			memcpy (frame->args, clause_args->base_frame->args, rtm->alloca_size);
 		}
 	}
-	sp = frame->stack = (stackval *) ((char *) frame->args + rtm->args_size);
+	sp = frame->stack = (stackval *) (char *) frame->args;
 	vt_sp = (unsigned char *) sp + rtm->stack_size;
 #if DEBUG_INTERP
 	vtalloc = vt_sp;
@@ -3150,7 +3150,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			if (realloc_frame) {
 				frame->args = g_newa (char, rtm->alloca_size);
 				memset (frame->args, 0, rtm->alloca_size);
-				sp = frame->stack = (stackval *) ((char *) frame->args + rtm->args_size);
+				sp = frame->stack = (stackval *) frame->args;
 			}
 			vt_sp = (unsigned char *) sp + rtm->stack_size;
 #if DEBUG_INTERP
@@ -3885,6 +3885,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_STIND_I8)
 			++ip;
 			sp -= 2;
+#ifdef NO_UNALIGNED_ACCESS
+			if ((gsize)sp->data.p % SIZEOF_VOID_P)
+				memcpy (sp->data.p, &sp [1].data.l, sizeof (gint64));
+			else
+#endif
 			* (gint64 *) sp->data.p = sp[1].data.l;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_R4)
@@ -3895,6 +3900,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_STIND_R8)
 			++ip;
 			sp -= 2;
+#ifdef NO_UNALIGNED_ACCESS
+			if ((gsize)sp->data.p % SIZEOF_VOID_P)
+				memcpy (sp->data.p, &sp [1].data.f, sizeof (double));
+			else
+#endif
 			* (double *) sp->data.p = sp[1].data.f;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_ATOMIC_STORE_I4)
@@ -4612,12 +4622,17 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 
-#define LDFLD(datamem, fieldtype) \
+#define LDFLD_UNALIGNED(datamem, fieldtype, unaligned) \
 	o = sp [-1].data.o; \
 	if (!o) \
 		THROW_EX (mono_get_exception_null_reference (), ip); \
-	sp[-1].data.datamem = * (fieldtype *)((char *)o + * (guint16 *)(ip + 1)) ; \
+	if (unaligned) \
+		memcpy (&sp[-1].data.datamem, (char *)o + * (guint16 *)(ip + 1), sizeof (fieldtype)); \
+	else \
+		sp[-1].data.datamem = * (fieldtype *)((char *)o + * (guint16 *)(ip + 1)) ; \
 	ip += 2;
+
+#define LDFLD(datamem, fieldtype) LDFLD_UNALIGNED(datamem, fieldtype, FALSE)
 
 		MINT_IN_CASE(MINT_LDFLD_I1) LDFLD(i, gint8); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_U1) LDFLD(i, guint8); MINT_IN_BREAK;
@@ -4629,6 +4644,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_LDFLD_R8) LDFLD(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_O) LDFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_P) LDFLD(p, gpointer); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_I8_UNALIGNED) LDFLD_UNALIGNED(l, gint64, TRUE); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_R8_UNALIGNED) LDFLD_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDFLD_VT) {
 			o = sp [-1].data.o;
@@ -4700,13 +4717,18 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 
-#define STFLD(datamem, fieldtype) \
+#define STFLD_UNALIGNED(datamem, fieldtype, unaligned) \
 	o = sp [-2].data.o; \
 	if (!o) \
 		THROW_EX (mono_get_exception_null_reference (), ip); \
 	sp -= 2; \
-	* (fieldtype *)((char *)o + * (guint16 *)(ip + 1)) = sp[1].data.datamem; \
+	if (unaligned) \
+		memcpy ((char *)o + * (guint16 *)(ip + 1), &sp[1].data.datamem, sizeof (fieldtype)); \
+	else \
+		* (fieldtype *)((char *)o + * (guint16 *)(ip + 1)) = sp[1].data.datamem; \
 	ip += 2;
+
+#define STFLD(datamem, fieldtype) STFLD_UNALIGNED(datamem, fieldtype, FALSE)
 
 		MINT_IN_CASE(MINT_STFLD_I1) STFLD(i, gint8); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_U1) STFLD(i, guint8); MINT_IN_BREAK;
@@ -4725,6 +4747,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			mono_gc_wbarrier_set_field_internal (o, (char *) o + * (guint16 *)(ip + 1), sp [1].data.o);
 			ip += 2;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STFLD_I8_UNALIGNED) STFLD_UNALIGNED(l, gint64, TRUE); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STFLD_R8_UNALIGNED) STFLD_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STFLD_VT) {
 			o = sp [-2].data.o;
@@ -5866,7 +5890,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 
 #define LDARG(datamem, argtype) \
-	sp->data.datamem = * (argtype *)(frame->args + * (guint16 *)(ip + 1)); \
+	sp->data.datamem = (argtype) frame->stack_args [*(guint16 *)(ip + 1)].data.datamem; \
 	ip += 2; \
 	++sp; 
 	
@@ -5884,7 +5908,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_LDARG_VT)
 			sp->data.p = vt_sp;
 			i32 = READ32(ip + 2);
-			memcpy(sp->data.p, frame->args + * (guint16 *)(ip + 1), i32);
+			memcpy(sp->data.p, frame->stack_args [* (guint16 *)(ip + 1)].data.p, i32);
 			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			++sp;
@@ -5892,7 +5916,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 #define STARG(datamem, argtype) \
 	--sp; \
-	* (argtype *)(frame->args + * (guint16 *)(ip + 1)) = sp->data.datamem; \
+	frame->stack_args [*(guint16 *)(ip + 1)].data.datamem = (argtype) sp->data.datamem; \
 	ip += 2; \
 	
 		MINT_IN_CASE(MINT_STARG_I1) STARG(i, gint8); MINT_IN_BREAK;
@@ -5909,36 +5933,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_STARG_VT) 
 			i32 = READ32(ip + 2);
 			--sp;
-			memcpy(frame->args + * (guint16 *)(ip + 1), sp->data.p, i32);
+			memcpy(frame->stack_args [* (guint16 *)(ip + 1)].data.p, sp->data.p, i32);
 			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			MINT_IN_BREAK;
-
-#define STINARG(datamem, argtype) \
-	do { \
-		int n = * (guint16 *)(ip + 1); \
-		* (argtype *)(frame->args + rtm->arg_offsets [n]) = frame->stack_args [n].data.datamem; \
-		ip += 2; \
-	} while (0)
-	
-		MINT_IN_CASE(MINT_STINARG_I1) STINARG(i, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STINARG_U1) STINARG(i, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STINARG_I2) STINARG(i, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STINARG_U2) STINARG(i, guint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STINARG_I4) STINARG(i, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STINARG_I8) STINARG(l, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STINARG_R4) STINARG(f_r4, float); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STINARG_R8) STINARG(f, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STINARG_O) STINARG(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STINARG_P) STINARG(p, gpointer); MINT_IN_BREAK;
-
-		MINT_IN_CASE(MINT_STINARG_VT) {
-			int n = * (guint16 *)(ip + 1);
-			i32 = READ32(ip + 2);
-			memcpy (frame->args + rtm->arg_offsets [n], frame->stack_args [n].data.p, i32);
-			ip += 4;
-			MINT_IN_BREAK;
-		}
 
 		MINT_IN_CASE(MINT_PROF_ENTER) {
 			ip += 1;
@@ -5961,7 +5959,13 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 
 		MINT_IN_CASE(MINT_LDARGA)
-			sp->data.p = frame->args + * (guint16 *)(ip + 1);
+			sp->data.p = &frame->stack_args [* (guint16 *)(ip + 1)];
+			ip += 2;
+			++sp;
+			MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_LDARGA_VT)
+			sp->data.p = frame->stack_args [* (guint16 *)(ip + 1)].data.p;
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
@@ -6331,6 +6335,7 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 	child_frame.imethod = iframe->imethod;
 	child_frame.retval = &retval;
 	child_frame.parent = iframe;
+	child_frame.stack_args = iframe->stack_args;
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
 	clause_args.start_with_ip = (guint16*) handler_ip;
@@ -6451,12 +6456,12 @@ static gpointer
 interp_frame_get_arg (MonoInterpFrameHandle frame, int pos)
 {
 	InterpFrame *iframe = (InterpFrame*)frame;
+	MonoMethodSignature *sig;
 
 	g_assert (iframe->imethod);
 
-	int arg_offset = iframe->imethod->arg_offsets [pos + (iframe->imethod->hasthis ? 1 : 0)];
-
-	return iframe->args + arg_offset;
+	sig = mono_method_signature_internal (iframe->imethod->method);
+	return stackval_to_data_addr (sig->params [pos], &iframe->stack_args [pos + !!iframe->imethod->hasthis]);
 }
 
 static gpointer
@@ -6476,10 +6481,7 @@ interp_frame_get_this (MonoInterpFrameHandle frame)
 
 	g_assert (iframe->imethod);
 	g_assert (iframe->imethod->hasthis);
-
-	int arg_offset = iframe->imethod->arg_offsets [0];
-
-	return iframe->args + arg_offset;
+	return &iframe->stack_args [0].data.p;
 }
 
 static MonoInterpFrameHandle

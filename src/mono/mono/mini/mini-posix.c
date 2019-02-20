@@ -1154,9 +1154,9 @@ mono_dump_native_crash_info (const char *signal, void *ctx, MONO_SIG_HANDLER_INF
 {
 	print_process_map ();
 
-	dump_memory_around_ip (ctx);
-
 	dump_native_stacktrace (signal, ctx);
+
+	dump_memory_around_ip (ctx);
 }
 
 void

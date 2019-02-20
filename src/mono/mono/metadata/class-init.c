@@ -2858,7 +2858,7 @@ print_vtable_layout_result (MonoClass *klass, MonoMethod **vtable, int cur_slot)
 		cm = vtable [i];
 		if (cm) {
 			printf ("  slot assigned: %03d, slot index: %03d %s\n", i, cm->slot,
-				mono_method_full_name (cm, TRUE));
+				mono_method_get_full_name (cm));
 		} else {
 			printf ("  slot assigned: %03d, <null>\n", i);
 		}

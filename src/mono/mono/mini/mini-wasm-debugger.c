@@ -702,17 +702,19 @@ describe_object_properties (guint64 objectId)
 	iter = NULL;
 	while ((p = mono_class_get_properties (obj->vtable->klass, &iter))) {
 		DEBUG_PRINTF (2, "mono_class_get_properties - %s - %s\n", p->name, p->get->name);
-		mono_wasm_add_properties_var(p->name);
-		sig = mono_method_signature_internal (p->get);
-		res = mono_runtime_try_invoke (p->get, obj, NULL, &exc, error);
-		if (!mono_error_ok (error) && exc == NULL)
-			exc = (MonoObject*) mono_error_convert_to_exception (error);
-		if (exc)
-			describe_value (mono_get_object_type (), &exc);
-		else if (!m_class_is_valuetype (mono_object_class (res)))
-			describe_value(sig->ret, &res);
-		else
-			describe_value(sig->ret, mono_object_unbox_internal (res));
+		if (p->get->name) { //if get doesn't have name means that doesn't have a getter implemented and we don't want to show value, like VS debug
+			mono_wasm_add_properties_var(p->name); 
+			sig = mono_method_signature_internal (p->get);
+			res = mono_runtime_try_invoke (p->get, obj, NULL, &exc, error);
+			if (!mono_error_ok (error) && exc == NULL)
+				exc = (MonoObject*) mono_error_convert_to_exception (error);
+			if (exc)
+				describe_value (mono_get_object_type (), &exc);
+			else if (!m_class_is_valuetype (mono_object_class (res)))
+				describe_value(sig->ret, &res);
+			else
+				describe_value(sig->ret, mono_object_unbox_internal (res));
+		}
 	}
 	return TRUE;
 }

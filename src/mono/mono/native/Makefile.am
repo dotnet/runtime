@@ -147,6 +147,13 @@ common_cflags = \
 	-DBROTLI_BUILD_NO_RBIT \
 	-Wno-typedef-redefinition
 
+# clear these flags as we set values for each target separately and automake always appends CFLAGS
+CFLAGS=
+CPPFLAGS=
+CXXFLAGS=
+LDFLAGS=
+CCASFLAGS=
+
 libmono_native_la_SOURCES = $(common_sources) $(platform_sources) platform-type.c
 
 libmono_native_la_CFLAGS = $(MONO_NATIVE_CFLAGS) $(common_cflags)
@@ -156,6 +163,8 @@ libmono_native_la_CPPFLAGS = $(MONO_NATIVE_CPPFLAGS) $(common_cppflags)
 libmono_native_la_CXXFLAGS = $(MONO_NATIVE_CXXFLAGS)
 
 libmono_native_la_LDFLAGS = $(MONO_NATIVE_LDFLAGS)
+
+libmono_native_la_CCASFLAGS = $(MONO_NATIVE_CCASFLAGS)
 
 libmono_native_la_LIBADD = $(MONO_NATIVE_LIBADD)
 
@@ -169,6 +178,8 @@ libmono_native_compat_la_CXXFLAGS = $(MONO_NATIVE_COMPAT_CXXFLAGS)
 
 libmono_native_compat_la_LDFLAGS = $(MONO_NATIVE_COMPAT_LDFLAGS)
 
+libmono_native_compat_la_CCASFLAGS = $(MONO_NATIVE_COMPAT_CCASFLAGS)
+
 libmono_native_compat_la_LIBADD = $(MONO_NATIVE_LIBADD)
 
 libmono_native_unified_la_SOURCES = $(common_sources) $(platform_sources) platform-type-unified.c
@@ -180,6 +191,8 @@ libmono_native_unified_la_CPPFLAGS = $(MONO_NATIVE_UNIFIED_CPPFLAGS) $(common_cp
 libmono_native_unified_la_CXXFLAGS = $(MONO_NATIVE_UNIFIED_CXXFLAGS)
 
 libmono_native_unified_la_LDFLAGS = $(MONO_NATIVE_UNIFIED_LDFLAGS)
+
+libmono_native_unified_la_CCASFLAGS = $(MONO_NATIVE_UNIFIED_CCASFLAGS)
 
 libmono_native_unified_la_LIBADD = $(MONO_NATIVE_LIBADD)
 

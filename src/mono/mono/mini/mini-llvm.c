@@ -1019,10 +1019,10 @@ static void
 set_preserveall_cc (LLVMValueRef func)
 {
 	/*
-	 * xcode10 doesn't seem to support preserveall on watchos, it fails with:
+	 * xcode10 (watchOS) and ARM/ARM64 doesn't seem to support preserveall, it fails with:
 	 * fatal error: error in backend: Unsupported calling convention
 	 */
-#ifndef TARGET_WATCHOS
+#if !defined(TARGET_WATCHOS) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
 	mono_llvm_set_preserveall_cc (func);
 #endif
 }
@@ -1030,7 +1030,7 @@ set_preserveall_cc (LLVMValueRef func)
 static void
 set_call_preserveall_cc (LLVMValueRef func)
 {
-#ifndef TARGET_WATCHOS
+#if !defined(TARGET_WATCHOS) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
 	mono_llvm_set_call_preserveall_cc (func);
 #endif
 }
