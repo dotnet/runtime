@@ -2717,14 +2717,14 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
             if (compiler->lvaIsGCTracked(varDsc))
             {
-                VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);
+                VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
             }
         }
 
-        // In case of a jmp call to a vararg method ensure only integer registers are passed.
         if (compiler->info.compIsVarArgs)
         {
-            assert((genRegMask(argReg) & RBM_ARG_REGS) != RBM_NONE);
+            // In case of a jmp call to a vararg method ensure only integer registers are passed.
+            assert((genRegMask(argReg) & (RBM_ARG_REGS | RBM_ARG_RET_BUFF)) != RBM_NONE);
 
             fixedIntArgMask |= genRegMask(argReg);
 
@@ -2740,7 +2740,9 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 firstArgVarNum = varNum;
             }
         }
-#else
+
+#else  // !_TARGET_ARM64_
+
         bool      twoParts = false;
         var_types loadType = TYP_UNDEF;
         if (varDsc->TypeGet() == TYP_LONG)
@@ -2835,9 +2837,9 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
         if (compiler->lvaIsGCTracked(varDsc))
         {
-            VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);
+            VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
         }
-#endif
+#endif // !_TARGET_ARM64_
     }
 
     // Jmp call to a vararg method - if the method has fewer than fixed arguments that can be max size of reg,
