@@ -51,9 +51,9 @@ namespace System.IO.Pipelines
         public abstract void AdvanceTo(SequencePosition consumed, SequencePosition examined);
 
         /// <summary>
-        /// 
+        /// Returns a <see cref="Stream"/> that wraps the <see cref="PipeReader"/>.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The <see cref="Stream"/>.</returns>
         public virtual Stream AsStream()
         {
             return _stream ?? (_stream = new PipeReaderStream(this));
