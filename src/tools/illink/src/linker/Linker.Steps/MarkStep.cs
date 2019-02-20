@@ -269,7 +269,7 @@ namespace Mono.Linker.Steps {
 			if (@base.DeclaringType.IsInterface && !isInstantiated && !IsInterfaceImplementationMarked (method.DeclaringType, @base.DeclaringType))
 				return;
 
-			if (!isInstantiated && !@base.IsAbstract)
+			if (!isInstantiated && !@base.IsAbstract && _context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval))
 				return;
 
 			MarkMethod (method);

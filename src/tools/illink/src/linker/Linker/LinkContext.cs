@@ -387,5 +387,13 @@ namespace Mono.Linker {
 	public enum CodeOptimizations
 	{
 		BeforeFieldInit = 1 << 0,
+		
+		/// <summary>
+		/// Option to disable removal of overrides of virtual methods when a type is never instantiated
+		///
+		/// Being able to disable this optimization is helpful when trying to troubleshoot problems caused by types created via reflection or from native
+		/// that do not get an instance constructor marked.
+		/// </summary>
+		OverrideRemoval = 1 << 1,
 	}
 }
