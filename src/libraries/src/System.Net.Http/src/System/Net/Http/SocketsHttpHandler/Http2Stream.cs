@@ -15,6 +15,14 @@ namespace System.Net.Http
     {
         private sealed class Http2Stream : IDisposable
         {
+            private enum StreamState : byte
+            {
+                ExpectingHeaders,
+                ExpectingData,
+                Complete,
+                Aborted
+            }
+
             private const int InitialStreamBufferSize =
 #if DEBUG
                 10;
@@ -27,13 +35,12 @@ namespace System.Net.Http
             private readonly CreditManager _streamWindow;
             private readonly HttpRequestMessage _request;
             private readonly HttpResponseMessage _response;
-            private readonly TaskCompletionSource<bool> _responseHeadersAvailable;
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
-            private TaskCompletionSource<bool> _responseDataAvailable;
-            private bool _responseComplete;
-            private bool _responseAborted;
+
+            private StreamState _state;
+            private TaskCompletionSource<bool> _waiterTaskSource;
             private bool _disposed;
 
             private const int StreamWindowSize = DefaultInitialWindowSize;
@@ -45,6 +52,8 @@ namespace System.Net.Http
             {
                 _connection = connection;
                 _streamId = streamId;
+
+                _state = StreamState.ExpectingHeaders;
 
                 _request = request;
                 _response = new HttpResponseMessage()
@@ -62,11 +71,9 @@ namespace System.Net.Http
 
                 _streamWindow = new CreditManager(initialWindowSize);
 
-                _responseHeadersAvailable = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
                 // TODO: ISSUE 31313: Avoid allocating a TaskCompletionSource repeatedly by using a resettable ValueTaskSource.
                 // See: https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Threading/Tasks/Sources/ManualResetValueTaskSource.cs
-                _responseDataAvailable = null;
+                _waiterTaskSource = null;
             }
 
             private object SyncObject => _streamWindow;
@@ -92,23 +99,6 @@ namespace System.Net.Http
                 }
             }
 
-            public async Task ReadResponseHeadersAsync()
-            {
-                // Wait for response headers to be read.
-                bool emptyResponse = await _responseHeadersAvailable.Task.ConfigureAwait(false);
-
-                // Start to process the response body.
-                ((HttpConnectionResponseContent)_response.Content).SetStream(emptyResponse ?
-                    EmptyReadStream.Instance :
-                    (Stream)new Http2ReadStream(this));
-
-                // Process Set-Cookie headers.
-                if (_connection._pool.Settings._useCookies)
-                {
-                    CookieHelper.ProcessReceivedCookies(_response, _connection._pool.Settings._cookieContainer);
-                }
-            }
-
             public void OnWindowUpdate(int amount)
             {
                 _streamWindow.AdjustCredit(amount);
@@ -123,6 +113,11 @@ namespace System.Net.Http
             public void OnResponseHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
             {
                 // TODO: ISSUE 31309: Optimize HPACK static table decoding
+
+                if (_state != StreamState.ExpectingHeaders)
+                {
+                    throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
+                }
 
                 if (name.SequenceEqual(s_statusHeaderName))
                 {
@@ -163,12 +158,33 @@ namespace System.Net.Http
 
             public void OnResponseHeadersComplete(bool endStream)
             {
-                _responseHeadersAvailable.SetResult(endStream);
+                TaskCompletionSource<bool> waiterTaskSource = null;
+
+                lock (SyncObject)
+                {
+                    if (_state != StreamState.ExpectingHeaders)
+                    {
+                        throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
+                    }
+
+                    _state = endStream ? StreamState.Complete : StreamState.ExpectingData;
+
+                    if (_waiterTaskSource != null)
+                    {
+                        waiterTaskSource = _waiterTaskSource;
+                        _waiterTaskSource = null;
+                    }
+                }
+
+                if (waiterTaskSource != null)
+                {
+                    waiterTaskSource.SetResult(true);
+                }
             }
 
             public void OnResponseData(ReadOnlySpan<byte> buffer, bool endStream)
             {
-                TaskCompletionSource<bool> readDataAvailable = null;
+                TaskCompletionSource<bool> waiterTaskSource = null;
 
                 lock (SyncObject)
                 {
@@ -177,7 +193,10 @@ namespace System.Net.Http
                         return;
                     }
 
-                    Debug.Assert(!_responseComplete);
+                    if (_state != StreamState.ExpectingData)
+                    {
+                        throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
+                    }
 
                     if (_responseBuffer.ActiveSpan.Length + buffer.Length > StreamWindowSize)
                     {
@@ -191,24 +210,26 @@ namespace System.Net.Http
 
                     if (endStream)
                     {
-                        _responseComplete = true;
+                        _state = StreamState.Complete;
                     }
 
-                    if (_responseDataAvailable != null)
+                    if (_waiterTaskSource != null)
                     {
-                        readDataAvailable = _responseDataAvailable;
-                        _responseDataAvailable = null;
+                        waiterTaskSource = _waiterTaskSource;
+                        _waiterTaskSource = null;
                     }
                 }
 
-                if (readDataAvailable != null)
+                if (waiterTaskSource != null)
                 {
-                    readDataAvailable.SetResult(true);
+                    waiterTaskSource.SetResult(true);
                 }
             }
 
             public void OnResponseAbort()
             {
+                TaskCompletionSource<bool> waiterTaskSource = null;
+
                 lock (SyncObject)
                 {
                     if (_disposed)
@@ -216,27 +237,79 @@ namespace System.Net.Http
                         return;
                     }
 
-                    Debug.Assert(!_responseComplete);
-
-                    _responseComplete = true;
-                    _responseAborted = true;
-
-                    if (!_responseHeadersAvailable.Task.IsCompleted)
+                    if (_state == StreamState.Aborted)
                     {
-                        // We are still waiting for response headers, so fail that task
-                        _responseHeadersAvailable.SetException(new IOException(SR.net_http_invalid_response));
+                        return;
+                    }
 
-                        // We shouldn't be waiting on data, since we haven't processed headers yet
-                        Debug.Assert(_responseDataAvailable == null);
+                    _state = StreamState.Aborted;
+
+                    if (_waiterTaskSource != null)
+                    {
+                        waiterTaskSource = _waiterTaskSource;
+                        _waiterTaskSource = null;
+                    }
+                }
+
+                if (waiterTaskSource != null)
+                {
+                    waiterTaskSource.SetResult(true);
+                }
+            }
+
+            private (Task waiterTask, bool isEmptyResponse) TryEnsureHeaders()
+            {
+                lock (SyncObject)
+                {
+                    if (_disposed)
+                    {
+                        throw new ObjectDisposedException(nameof(Http2Stream));
+                    }
+
+                    if (_state == StreamState.Aborted)
+                    {
+                        throw new IOException(SR.net_http_invalid_response);
+                    }
+                    else if (_state == StreamState.ExpectingHeaders)
+                    {
+                        Debug.Assert(_waiterTaskSource == null);
+                        _waiterTaskSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        return (_waiterTaskSource.Task, false);
+                    }
+                    else if (_state == StreamState.ExpectingData)
+                    {
+                        return (null, false);
                     }
                     else
                     {
-                        if (_responseDataAvailable != null)
-                        {
-                            _responseDataAvailable.SetException(new IOException(SR.net_http_invalid_response));
-                            _responseDataAvailable = null;
-                        }
+                        Debug.Assert(_state == StreamState.Complete);
+                        return (null, _responseBuffer.ActiveSpan.Length == 0);
                     }
+                }
+            }
+
+            public async Task ReadResponseHeadersAsync()
+            {
+                // Wait for response headers to be read.
+                Task waiterTask;
+                bool emptyResponse;
+                (waiterTask, emptyResponse) = TryEnsureHeaders();
+                if (waiterTask != null)
+                {
+                    await waiterTask;
+                    (waiterTask, emptyResponse) = TryEnsureHeaders();
+                    Debug.Assert(waiterTask == null);
+                }
+
+                // Start to process the response body.
+                ((HttpConnectionResponseContent)_response.Content).SetStream(emptyResponse ?
+                    EmptyReadStream.Instance :
+                    (Stream)new Http2ReadStream(this));
+
+                // Process Set-Cookie headers.
+                if (_connection._pool.Settings._useCookies)
+                {
+                    CookieHelper.ProcessReceivedCookies(_response, _connection._pool.Settings._cookieContainer);
                 }
             }
 
@@ -245,10 +318,10 @@ namespace System.Net.Http
                 Debug.Assert(amount > 0);
                 Debug.Assert(_pendingWindowUpdate < StreamWindowThreshold);
 
-                if (_responseComplete)
+                if (_state != StreamState.ExpectingData)
                 {
-                    // We have already read to the end of the response, so there's no need to send
-                    // WINDOW_UPDATEs any more.
+                    // We are not expecting any more data (because we've either completed or aborted).
+                    // So no need to send any more WINDOW_UPDATEs.
                     return;
                 }
 
@@ -283,21 +356,20 @@ namespace System.Net.Http
 
                         return (null, bytesRead);
                     }
-                    else if (_responseComplete)
+                    else if (_state == StreamState.Complete)
                     {
-                        if (_responseAborted)
-                        {
-                            throw new IOException(SR.net_http_invalid_response);
-                        }
-
                         return (null, 0);
                     }
+                    else if (_state == StreamState.Aborted)
+                    {
+                        throw new IOException(SR.net_http_invalid_response);
+                    }
 
-                    Debug.Assert(_responseDataAvailable == null);
-                    Debug.Assert(!_responseAborted);
+                    Debug.Assert(_state == StreamState.ExpectingData);
 
-                    _responseDataAvailable = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    return (_responseDataAvailable.Task, 0);
+                    Debug.Assert(_waiterTaskSource == null);
+                    _waiterTaskSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    return (_waiterTaskSource.Task, 0);
                 }
             }
 
