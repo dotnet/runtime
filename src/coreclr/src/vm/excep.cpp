@@ -8017,11 +8017,11 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     //
     // WARNING: This function could potentially throw an exception, however it should only
     // be able to do so when an interop debugger is attached
-    if(g_pDebugInterface != NULL)
+    if (g_pDebugInterface != NULL)
     {
-        if(g_pDebugInterface->FirstChanceSuspendHijackWorker(pExceptionInfo->ContextRecord,
+        if (g_pDebugInterface->FirstChanceSuspendHijackWorker(pExceptionInfo->ContextRecord,
             pExceptionInfo->ExceptionRecord) == EXCEPTION_CONTINUE_EXECUTION)
-        return EXCEPTION_CONTINUE_EXECUTION;
+            return EXCEPTION_CONTINUE_EXECUTION;
     }
 #endif
 
@@ -8040,6 +8040,12 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 #endif
+
+    if (NtCurrentTeb()->ThreadLocalStoragePointer == NULL)
+    {
+        // Ignore exceptions early during thread startup before the thread is fully initialized by the OS
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
 
     bool bIsGCMarker = false;
 
