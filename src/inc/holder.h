@@ -608,7 +608,7 @@ class BaseWrapper : public BaseHolder<TYPE, BASE, DEFAULTVALUE, IS_NULL>
     {
         return !!(this->m_value != TYPE(value));
     }
-#ifdef __llvm__
+#ifdef __GNUC__
     // This handles the NULL value that is an int and clang
     // doesn't want to convert int to a pointer
     FORCEINLINE bool operator==(int value) const
@@ -619,7 +619,7 @@ class BaseWrapper : public BaseHolder<TYPE, BASE, DEFAULTVALUE, IS_NULL>
     {
         return !!(this->m_value != TYPE((void*)(SIZE_T)value));
     }
-#endif // __llvm__
+#endif // __GNUC__
     FORCEINLINE const TYPE &operator->() const
     {
         return this->m_value;

@@ -377,11 +377,11 @@ static void EnumUResourceBundle(const UResourceBundle* bundle,
     }
 }
 
-static void CloseResBundle(const UResourceBundle* rootResBundle,
-                           const UResourceBundle* calResBundle,
-                           const UResourceBundle* targetCalResBundle,
-                           const UResourceBundle* erasColResBundle,
-                           const UResourceBundle* erasResBundle)
+static void CloseResBundle(UResourceBundle* rootResBundle,
+                           UResourceBundle* calResBundle,
+                           UResourceBundle* targetCalResBundle,
+                           UResourceBundle* erasColResBundle,
+                           UResourceBundle* erasResBundle)
 {
     ures_close(rootResBundle);
     ures_close(calResBundle);
@@ -416,7 +416,7 @@ static int32_t EnumAbbrevEraNames(const char* locale,
     while (TRUE)
     {
         UErrorCode status = U_ZERO_ERROR;
-        char* name = GetCalendarName(calendarId);
+        const char* name = GetCalendarName(calendarId);
 
         UResourceBundle* rootResBundle = ures_open(NULL, localeNamePtr, &status);
         UResourceBundle* calResBundle = ures_getByKey(rootResBundle, "calendar", NULL, &status);
