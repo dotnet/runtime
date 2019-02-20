@@ -266,8 +266,19 @@ namespace Mono.Linker.Steps {
 
 			// We don't need to mark overrides until it is possible that the type could be instantiated
 			// Note : The base type is interface check should be removed once we have base type sweeping
-			if (@base.DeclaringType.IsInterface && !isInstantiated && !IsInterfaceImplementationMarked (method.DeclaringType, @base.DeclaringType))
-				return;
+			if (@base.DeclaringType.IsInterface && !isInstantiated && !IsInterfaceImplementationMarked (method.DeclaringType, @base.DeclaringType)) {
+				// Before deciding it's OK to skip, we need to make sure none of the derived interface implementations are marked.
+				var derivedInterfaceTypes = Annotations.GetDerivedInterfacesForInterface (@base.DeclaringType);
+
+				// There are no derived interface types that could be marked, it's safe to skip marking this override
+				if (derivedInterfaceTypes == null)
+					return;
+
+				// If none of the other interfaces on the type that implement the interface from the @base type are marked, then it's safe to skip
+				// marking this override
+				if (!derivedInterfaceTypes.Any (d => IsInterfaceImplementationMarked (method.DeclaringType, d)))
+					return;
+			}
 
 			if (!isInstantiated && !@base.IsAbstract && _context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval))
 				return;

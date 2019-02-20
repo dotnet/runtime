@@ -49,6 +49,7 @@ namespace Mono.Linker {
 		protected readonly Dictionary<MethodDefinition, List<MethodDefinition>> base_methods = new Dictionary<MethodDefinition, List<MethodDefinition>> ();
 		protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
 		protected readonly Dictionary<TypeDefinition, List<TypeDefinition>> class_type_base_hierarchy = new Dictionary<TypeDefinition, List<TypeDefinition>> ();
+		protected readonly Dictionary<TypeDefinition, List<TypeDefinition>> derived_interfaces = new Dictionary<TypeDefinition, List<TypeDefinition>>();
 
 		protected readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		protected readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
@@ -365,6 +366,33 @@ namespace Mono.Linker {
 		{
 			if (class_type_base_hierarchy.TryGetValue (type, out List<TypeDefinition> bases))
 				return bases;
+
+			return null;
+		}
+
+		public void AddDerivedInterfaceForInterface (TypeDefinition @base, TypeDefinition derived)
+		{
+			if (!@base.IsInterface)
+				throw new ArgumentException ($"{nameof (@base)} must be an interface");
+
+			if (!derived.IsInterface)
+				throw new ArgumentException ($"{nameof (derived)} must be an interface");
+
+			List<TypeDefinition> derivedInterfaces;
+			if (!derived_interfaces.TryGetValue (@base, out derivedInterfaces))
+				derived_interfaces [@base] = derivedInterfaces = new List<TypeDefinition> ();
+			
+			derivedInterfaces.Add(derived);
+		}
+
+		public List<TypeDefinition> GetDerivedInterfacesForInterface (TypeDefinition @interface)
+		{
+			if (!@interface.IsInterface)
+				throw new ArgumentException ($"{nameof (@interface)} must be an interface");
+			
+			List<TypeDefinition> derivedInterfaces;
+			if (derived_interfaces.TryGetValue (@interface, out derivedInterfaces))
+				return derivedInterfaces;
 
 			return null;
 		}
