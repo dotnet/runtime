@@ -136,7 +136,7 @@ jobs:
         osGroup: ${{ parameters.osGroup }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          creator: 'coreclr'
+          creator: $(Build.DefinitionName)
 
         helixBuild: $(Build.BuildNumber)
 
