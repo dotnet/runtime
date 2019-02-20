@@ -247,7 +247,7 @@ jobs:
         - Windows.10.Amd64.Open
         - Windows.81.Amd64.Open
       ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        asString: 'Windows.10.Amd64,Windows.10.Nano.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64'
+        asString: 'Windows.10.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64'
         asArray:
         - Windows.10.Amd64
         - Windows.10.Amd64.Core
