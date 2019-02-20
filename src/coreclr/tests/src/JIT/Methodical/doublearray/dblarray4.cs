@@ -27,14 +27,23 @@ internal class DblArray4
 
         Console.WriteLine("DoubleArrayToLargeObjectHeap is {0}", Environment.GetEnvironmentVariable("complus_DoubleArrayToLargeObjectHeap"));
 
-        double[] arr = new double[101];
-        if (GC.GetGeneration(arr) != s_LOH_GEN)
+        try
         {
-            Console.WriteLine("Generation {0}", GC.GetGeneration(arr));
-            Console.WriteLine("FAILED");
-            return 1;
+            GC.TryStartNoGCRegion(500_000);
+            double[] arr = new double[101];
+            if (GC.GetGeneration(arr) != s_LOH_GEN)
+            {
+                Console.WriteLine("Generation {0}", GC.GetGeneration(arr));
+                Console.WriteLine("FAILED");
+                return 1;
+            }
+
+            Console.WriteLine("PASSED");
+            return 100;
         }
-        Console.WriteLine("PASSED");
-        return 100;
+        finally
+        {
+            GC.EndNoGCRegion();
+        }
     }
 }
