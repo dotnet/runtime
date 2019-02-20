@@ -23,6 +23,9 @@
 
     <!-- SNI runtime package -->
     <RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>
+
+    <CoreFxOptimizationDataPackageId>optimization.windows_nt-x64.IBC.CoreFx</CoreFxOptimizationDataPackageId>
+    <CoreFxOptimizationDataPackageId Condition="'$(IBCTarget)'=='Linux'">optimization.linux-x64.IBC.CoreFx</CoreFxOptimizationDataPackageId>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
@@ -45,12 +48,10 @@
     <CoverletConsolePackageVersion>1.4.0</CoverletConsolePackageVersion>
     <DotNetReportGeneratorGlobalToolPackageVersion>4.0.5</DotNetReportGeneratorGlobalToolPackageVersion>
 
-    <!-- Roslyn optimization data package version -->
     <MicrosoftDotNetIBCMergePackageVersion>4.6.0-alpha-00001</MicrosoftDotNetIBCMergePackageVersion>
     <TestILCAmd64retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCAmd64retPackageVersion>
     <TestILCArmretPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCArmretPackageVersion>
     <TestILCX86retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCX86retPackageVersion>
-    <OptimizationDataVersion>2.0.0-rc-61101-17</OptimizationDataVersion>
     <CoreFxOptimizationDataVersion>99.99.99-master-20190221.1</CoreFxOptimizationDataVersion>
   </PropertyGroup>
 

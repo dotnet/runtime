@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NETStandard.Library">
+    <PackageReference Include="NETStandard.Library" ExcludeAssets="Build">
       <Version>$(NETStandardLibraryPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
