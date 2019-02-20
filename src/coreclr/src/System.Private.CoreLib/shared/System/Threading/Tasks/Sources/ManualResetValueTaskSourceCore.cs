@@ -80,7 +80,7 @@ namespace System.Threading.Tasks.Sources
         {
             ValidateToken(token);
             return
-                !_completed ? ValueTaskSourceStatus.Pending :
+                _continuation == null || !_completed ? ValueTaskSourceStatus.Pending :
                 _error == null ? ValueTaskSourceStatus.Succeeded :
                 _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
                 ValueTaskSourceStatus.Faulted;
