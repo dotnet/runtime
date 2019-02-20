@@ -46,9 +46,9 @@ namespace System.IO.Pipelines
         public abstract Span<byte> GetSpan(int sizeHint = 0);
 
         /// <summary>
-        /// 
+        /// Returns a <see cref="Stream"/> that wraps the <see cref="PipeWriter"/>.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The <see cref="Stream"/>.</returns>
         public virtual Stream AsStream()
         {
             return _stream ?? (_stream = new PipeWriterStream(this));
