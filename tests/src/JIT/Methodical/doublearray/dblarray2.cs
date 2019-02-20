@@ -266,39 +266,53 @@ internal class DblArray
         }
     }
 
+    public static void Run(Action f)
+    {
+        try
+        {
+            GC.TryStartNoGCRegion(500_000);
+            f();
+        }
+        finally
+        {
+            GC.EndNoGCRegion();
+        }
+    }
+
     public static int Main()
     {
         if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") == "x86")
         {
             s_LOH_GEN = 2;
         }
+
         try
         {
-            f0();
-            f1a();
-            f2a();
-            f3a();
-            f4a();
-            f5a();
-            f6a();
-            f7a();
-            f8a();
-            f9a();
-            f10a();
-            f11a();
-            f12a();
-            f1b();
-            f2b();
-            f3b();
-            f4b();
-            f5b();
-            f6b();
-            f7b();
-            f8b();
-            f9b();
-            f10b();
-            f11b();
-            f12b();
+            Run(f0);
+            Run(f1a);
+            Run(f2a);
+            Run(f3a);
+            Run(f4a);
+            Run(f5a);
+            Run(f6a);
+            Run(f7a);
+            Run(f8a);
+            Run(f9a);
+            Run(f10a);
+            Run(f11a);
+            Run(f12a);
+            Run(f1b);
+            Run(f2b);
+            Run(f3b);
+            Run(f4b);
+            Run(f5b);
+            Run(f6b);
+            Run(f7b);
+            Run(f8b);
+            Run(f9b);
+            Run(f10b);
+            Run(f11b);
+            Run(f12b);
         }
         catch (Exception e)
         {
