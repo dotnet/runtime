@@ -21,7 +21,7 @@ namespace System.Globalization
         private const int MaxLunisolarYear = 2049;
 
         private static readonly DateTime s_minDate = new DateTime(1960, 1, 28);
-        private static readonly DateTime s_maxDate = new DateTime((new DateTime(2050, 1, 2, 23, 59, 59, 999)).Ticks + 9999);
+        private static readonly DateTime s_maxDate = new DateTime((new DateTime(2050, 1, 22, 23, 59, 59, 999)).Ticks + 9999);
 
         public override DateTime MinSupportedDateTime => s_minDate;
 
