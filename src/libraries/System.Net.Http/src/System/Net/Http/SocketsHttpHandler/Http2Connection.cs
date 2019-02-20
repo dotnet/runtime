@@ -56,6 +56,13 @@ namespace System.Net.Http
         // We limit it per stream, and the user controls how many streams are created.
         // So set the connection window size to a large value.
         private const int ConnectionWindowSize = 64 * 1024 * 1024;
+
+        // We hold off on sending WINDOW_UPDATE until we hit thi minimum threshold.
+        // This value is somewhat arbitrary; the intent is to ensure it is much smaller than
+        // the window size itself, or we risk stalling the server because it runs out of window space.
+        // If we want to further reduce the frequency of WINDOW_UPDATEs, it's probably better to
+        // increase the window size (and thus increase the threshold proportionally)
+        // rather than just increase the threshold.
         private const int ConnectionWindowThreshold = ConnectionWindowSize / 8;
 
         public Http2Connection(HttpConnectionPool pool, SslStream stream)
