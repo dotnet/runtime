@@ -149,7 +149,7 @@ namespace System.Net.Http
             }
         }
 
-        private async Task<FrameHeader> ReadFrameAsync()
+        private async ValueTask<FrameHeader> ReadFrameAsync()
         {
             // Read frame header
             await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false);
