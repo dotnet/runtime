@@ -179,6 +179,7 @@
     <Compile Include="CoreLink\NeverInstantiatedTypeWithOverridesFromObject.cs" />
     <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
     <Compile Include="CoreLink\InstantiatedTypeWithOverridesFromObject.cs" />
+    <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\CanDisableOverrideRemoval.cs" />
     <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\OverrideOfAbstractIsKept.cs" />
     <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\OverrideOfVirtualCanBeRemoved.cs" />
     <Compile Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\OverrideOfVirtualCanBeRemoved2.cs" />
