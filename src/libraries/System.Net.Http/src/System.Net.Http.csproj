@@ -139,6 +139,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\CreditManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\DecompressionHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\EmptyReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ExposedSocketNetworkStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Connection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthenticatedConnectionHandler.cs" />

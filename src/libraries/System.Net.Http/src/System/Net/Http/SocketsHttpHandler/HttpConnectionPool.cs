@@ -582,18 +582,17 @@ namespace System.Net.Http
 
             try
             {
-                Socket socket = null;
                 Stream stream = null;
                 switch (_kind)
                 {
                     case HttpConnectionKind.Http:
                     case HttpConnectionKind.Https:
                     case HttpConnectionKind.ProxyConnect:
-                        (socket, stream) = await ConnectHelper.ConnectAsync(_host, _port, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectHelper.ConnectAsync(_host, _port, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.Proxy:
-                        (socket, stream) = await ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.ProxyTunnel:
@@ -608,6 +607,8 @@ namespace System.Net.Http
                         }
                         break;
                 }
+
+                Socket socket = (stream as ExposedSocketNetworkStream)?.Socket; // TODO: Use NetworkStream when https://github.com/dotnet/corefx/issues/35410 is available.
 
                 TransportContext transportContext = null;
                 if (_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel)
