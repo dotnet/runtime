@@ -268,7 +268,7 @@ namespace System.Globalization
             }
         }
 
-        private static void ConvertHijriToGregorian(int HijriYear, int HijriMonth, int HijriDay, ref int yg, ref int mg, ref int dg)
+        private static void ConvertHijriToGregorian(int HijriYear, int HijriMonth, int HijriDay, out int yg, out int mg, out int dg)
         {
             Debug.Assert((HijriYear >= MinCalendarYear) && (HijriYear <= MaxCalendarYear), "Hijri year is out of range.");
             Debug.Assert(HijriMonth >= 1, "Hijri month is out of range.");
@@ -292,10 +292,7 @@ namespace System.Globalization
 
         private static long GetAbsoluteDateUmAlQura(int year, int month, int day)
         {
-            int yg = 0;
-            int mg = 0;
-            int dg = 0;
-            ConvertHijriToGregorian(year, month, day, ref yg, ref mg, ref dg);
+            ConvertHijriToGregorian(year, month, day, out int yg, out int mg, out int dg);
             return GregorianCalendar.GetAbsoluteDate(yg, mg, dg);
         }
 
@@ -343,7 +340,7 @@ namespace System.Globalization
             }
         }
 
-        private static void ConvertGregorianToHijri(DateTime time, ref int HijriYear, ref int HijriMonth, ref int HijriDay)
+        private static void ConvertGregorianToHijri(DateTime time, out int HijriYear, out int HijriMonth, out int HijriDay)
         {
             Debug.Assert((time.Ticks >= s_minDate.Ticks) && (time.Ticks <= s_maxDate.Ticks), "Gregorian date is out of range.");
 
@@ -390,13 +387,10 @@ namespace System.Globalization
         /// </summary>
         private int GetDatePart(DateTime time, int part)
         {
-            int UmAlQuraYear = 0;              // UmAlQura year
-            int UmAlQuraMonth = 0;             // UmAlQura month
-            int UmAlQuraDay = 0;               // UmAlQura day
             long ticks = time.Ticks;
             CheckTicksRange(ticks);
 
-            ConvertGregorianToHijri(time, ref UmAlQuraYear, ref UmAlQuraMonth, ref UmAlQuraDay);
+            ConvertGregorianToHijri(time, out int UmAlQuraYear, out int UmAlQuraMonth, out int UmAlQuraDay);
 
             if (part == DatePartYear)
             {
