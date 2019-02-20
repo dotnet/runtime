@@ -22,7 +22,7 @@
 
   <Import Project="Directory.Build.targets" />
 
-  <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps;RestoreOptimizationDataPackage">
+  <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps">
     <ItemGroup>
       <_RestoreProjects Include="external\dir.proj" />
     </ItemGroup>
