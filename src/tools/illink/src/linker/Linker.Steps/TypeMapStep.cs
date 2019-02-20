@@ -44,6 +44,7 @@ namespace Mono.Linker.Steps {
 		{
 			MapVirtualMethods (type);
 			MapInterfaceMethodsInTypeHierarchy (type);
+			MapInterfaceHierarchy (type);
 			MapBaseTypeHierarchy (type);
 
 			if (!type.HasNestedTypes)
@@ -51,6 +52,20 @@ namespace Mono.Linker.Steps {
 
 			foreach (var nested in type.NestedTypes)
 				MapType (nested);
+		}
+
+		void MapInterfaceHierarchy (TypeDefinition type)
+		{
+			if (!type.IsInterface || !type.HasInterfaces)
+				return;
+
+			foreach (var iface in type.Interfaces) {
+				var resolved = iface.InterfaceType.Resolve ();
+				if (resolved == null)
+					continue;
+				
+				Annotations.AddDerivedInterfaceForInterface (resolved, type);
+			}
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)

@@ -228,11 +228,17 @@
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\GenericTypeWithConstraint2.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\GenericTypeWithConstraint3.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\InterfaceOnMultipleBases.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\LocalAndNestedInterfaces.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\LocalDowncastedToInterface.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\LocalPassedAsParameter.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\LocalPassedAsParameterToGeneric.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\LocalPassedAsParameterToGenericWithConstraint.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\LocalPassedAsParameterToGenericWithConstraint2.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\NestedInterfaces1.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\NestedInterfaces2.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\NestedInterfaces3.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\NestedInterfacesWithExplicit1.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\NestedInterfacesWithExplicitAndNormal1.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\ReturnValueDowncastedToInterface.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\GenericTypeWithConstraint.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\ComInterfaceTypeRemovedWhenOnlyUsedByClassWithOnlyStaticMethod.cs" />
