@@ -37,6 +37,8 @@ namespace System.Net.Http
             private bool _disposed;
 
             private const int StreamWindowSize = DefaultInitialWindowSize;
+
+            // See comment on ConnectionWindowThreshold.
             private const int StreamWindowThreshold = StreamWindowSize / 8;
 
             public Http2Stream(HttpRequestMessage request, Http2Connection connection, int streamId, int initialWindowSize)
@@ -312,7 +314,8 @@ namespace System.Net.Http
                 (waitForData, bytesRead) = TryReadFromBuffer(buffer.Span);
                 if (waitForData != null)
                 {
-                    await waitForData;
+                    Debug.Assert(bytesRead == 0);
+                    await waitForData.ConfigureAwait(false);
                     (waitForData, bytesRead) = TryReadFromBuffer(buffer.Span);
                     Debug.Assert(waitForData == null);
                 }
