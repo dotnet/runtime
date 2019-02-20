@@ -7514,7 +7514,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             // We first call a special helper to get the statics base pointer
             op1 = impParentClassTokenToHandle(pResolvedToken);
 
-            // compIsForInlining() is false so we should not neve get NULL here
+            // compIsForInlining() is false so we should not get NULL here
             assert(op1 != nullptr);
 
             var_types type = TYP_BYREF;
@@ -8707,24 +8707,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // imperative security in the method. This is to give security a
         // chance to do any setup in the prolog and cleanup in the epilog if needed.
 
-        if (compIsForInlining())
-        {
-            // Cannot handle this if the method being imported is an inlinee by itself.
-            // Because inlinee method does not have its own frame.
+        tiSecurityCalloutNeeded = true;
 
-            compInlineResult->NoteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
-            return TYP_UNDEF;
-        }
-        else
-        {
-            tiSecurityCalloutNeeded = true;
-
-            // If the current method calls a method which needs a security check,
-            // (i.e. the method being compiled has imperative security)
-            // we need to reserve a slot for the security object in
-            // the current method's stack frame
-            opts.compNeedSecurityCheck = true;
-        }
+        // If the current method calls a method which needs a security check,
+        // (i.e. the method being compiled has imperative security)
+        // we need to reserve a slot for the security object in
+        // the current method's stack frame
+        opts.compNeedSecurityCheck = true;
     }
 
     //--------------------------- Inline NDirect ------------------------------
