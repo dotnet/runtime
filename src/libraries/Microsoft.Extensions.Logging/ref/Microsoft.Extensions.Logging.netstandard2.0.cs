@@ -57,10 +57,10 @@ namespace Microsoft.Extensions.Logging
     }
     public partial class LoggerFilterRule
     {
-        public LoggerFilterRule(string providerName, string categoryName, System.Nullable<Microsoft.Extensions.Logging.LogLevel> logLevel, System.Func<string, string, Microsoft.Extensions.Logging.LogLevel, bool> filter) { }
+        public LoggerFilterRule(string providerName, string categoryName, Microsoft.Extensions.Logging.LogLevel? logLevel, System.Func<string, string, Microsoft.Extensions.Logging.LogLevel, bool> filter) { }
         public string CategoryName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
         public System.Func<string, string, Microsoft.Extensions.Logging.LogLevel, bool> Filter { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public System.Nullable<Microsoft.Extensions.Logging.LogLevel> LogLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public Microsoft.Extensions.Logging.LogLevel? LogLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
         public string ProviderName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
         public override string ToString() { throw null; }
     }
