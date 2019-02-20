@@ -3120,32 +3120,6 @@ Assembly* SystemDomain::GetCallersAssembly(StackCrawlMark *stackMark,
     return NULL;
 }
 
-/*static*/
-Module* SystemDomain::GetCallersModule(int skip)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-
-    CallersData cdata;
-    ZeroMemory(&cdata, sizeof(CallersData));
-    cdata.skip = skip;
-
-    StackWalkFunctions(GetThread(), CallersMethodCallback, &cdata);
-
-    if(cdata.pMethod)
-        return cdata.pMethod->GetModule();
-    else
-        return NULL;
-}
-
 /*private static*/
 StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf, VOID* data)
 {

@@ -38,7 +38,6 @@ endif()
 include(configure.cmake)
 
 add_compile_options(-fPIC)
-add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
 
 set(NATIVEGLOBALIZATION_SOURCES
     pal_calendarData.c

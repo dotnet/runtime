@@ -477,6 +477,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   else()
     add_compile_options(-Wno-unused-variable)
     add_compile_options(-Wno-unused-but-set-variable)
+    add_compile_options(-fms-extensions)
   endif()
 
   # Some architectures (e.g., ARM) assume char type is unsigned while CoreCLR assumes char is signed
