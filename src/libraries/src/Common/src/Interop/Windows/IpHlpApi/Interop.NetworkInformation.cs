@@ -39,16 +39,6 @@ internal static partial class Interop
             Transient = 0x2
         }
 
-        internal enum OldOperationalStatus
-        {
-            NonOperational = 0,
-            Unreachable = 1,
-            Disconnected = 2,
-            Connecting = 3,
-            Connected = 4,
-            Operational = 5
-        }
-
         [Flags]
         internal enum GetAdaptersAddressesFlags
         {
