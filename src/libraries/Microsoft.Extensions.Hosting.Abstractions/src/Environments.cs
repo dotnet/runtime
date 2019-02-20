@@ -6,8 +6,7 @@ namespace Microsoft.Extensions.Hosting
     /// <summary>
     /// Commonly used environment names.
     /// </summary>
-    [System.Obsolete("Use Environments instead.", error: false)]
-    public static class EnvironmentName
+    public static class Environments
     {
         public static readonly string Development = "Development";
         public static readonly string Staging = "Staging";

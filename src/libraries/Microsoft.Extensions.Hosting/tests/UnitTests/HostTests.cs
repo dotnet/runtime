@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Hosting
         {
             var listener = new TestEventListener();
             var host = Host.CreateDefaultBuilder()
-                .UseEnvironment(EnvironmentName.Development)
+                .UseEnvironment(Environments.Development)
                 .ConfigureServices(serices =>
                 {
                     serices.AddScoped<ServiceA>();
