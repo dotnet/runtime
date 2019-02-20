@@ -7187,11 +7187,6 @@ public:
     template <bool ForCodeGen>
     void compChangeLife(VARSET_VALARG_TP newLife);
 
-    void genChangeLife(VARSET_VALARG_TP newLife)
-    {
-        compChangeLife</*ForCodeGen*/ true>(newLife);
-    }
-
     template <bool ForCodeGen>
     inline void compUpdateLife(VARSET_VALARG_TP newLife);
 
