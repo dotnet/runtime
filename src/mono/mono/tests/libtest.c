@@ -130,7 +130,7 @@ mono_cominterop_is_supported (void)
 }
 
 LIBTEST_API unsigned short* STDCALL
-test_lpwstr_marshal (unsigned short* chars, long length)
+test_lpwstr_marshal (unsigned short* chars, int length)
 {
 	int i = 0;
 	unsigned short *res;
