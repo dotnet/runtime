@@ -120,9 +120,10 @@ namespace JIT.HardwareIntrinsics.General
 
             try
             {
-                object result = typeof(Vector64<Single>)
-                                    .GetMethod(nameof(Vector64.GetElement), new Type[] { typeof(int) })
-                                    .Invoke(value, new object[] { imm });
+                object result = typeof(Vector64)
+                                    .GetMethod(nameof(Vector64.GetElement))
+                                    .MakeGenericMethod(typeof(Single))
+                                    .Invoke(null, new object[] { value, imm });
                 ValidateGetResult((Single)(result), values);
             }
             catch (TargetInvocationException e)
@@ -145,9 +146,10 @@ namespace JIT.HardwareIntrinsics.General
 
             try
             {
-                object result2 = typeof(Vector64<Single>)
-                                    .GetMethod(nameof(Vector64.WithElement), new Type[] { typeof(int), typeof(Single) })
-                                    .Invoke(value, new object[] { imm, insertedValue });
+                object result2 = typeof(Vector64)
+                                    .GetMethod(nameof(Vector64.WithElement))
+                                    .MakeGenericMethod(typeof(Single))
+                                    .Invoke(null, new object[] { value, imm, insertedValue });
                 ValidateWithResult((Vector64<Single>)(result2), values, insertedValue);
             }
             catch (TargetInvocationException e)

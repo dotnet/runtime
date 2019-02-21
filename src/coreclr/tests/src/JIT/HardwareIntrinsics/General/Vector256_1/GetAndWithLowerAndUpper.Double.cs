@@ -78,20 +78,24 @@ namespace JIT.HardwareIntrinsics.General
 
             Vector256<Double> value = Vector256.Create(values[0], values[1], values[2], values[3]);
 
-            object lowerResult = typeof(Vector256<Double>)
-                                    .GetMethod(nameof(Vector256.GetLower), new Type[] { })
-                                    .Invoke(value, new object[] { });
-            object upperResult = typeof(Vector256<Double>)
-                                    .GetMethod(nameof(Vector256.GetUpper), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object lowerResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.GetLower))
+                                    .MakeGenericMethod(typeof(Double))
+                                    .Invoke(null, new object[] { value });
+            object upperResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.GetUpper))
+                                    .MakeGenericMethod(typeof(Double))
+                                    .Invoke(null, new object[] { value });
             ValidateGetResult((Vector128<Double>)(lowerResult), (Vector128<Double>)(upperResult), values);
 
-            object result = typeof(Vector256<Double>)
-                                .GetMethod(nameof(Vector256.WithLower), new Type[] { typeof(Vector128<Double>) })
-                                .Invoke(value, new object[] { upperResult });
-            result = typeof(Vector256<Double>)
-                        .GetMethod(nameof(Vector256.WithUpper), new Type[] { typeof(Vector128<Double>) })
-                        .Invoke(result, new object[] { lowerResult });
+            object result = typeof(Vector256)
+                                .GetMethod(nameof(Vector256.WithLower))
+                                .MakeGenericMethod(typeof(Double))
+                                .Invoke(null, new object[] { value, upperResult });
+            result = typeof(Vector256)
+                        .GetMethod(nameof(Vector256.WithUpper))
+                        .MakeGenericMethod(typeof(Double))
+                        .Invoke(null, new object[] { result, lowerResult });
             ValidateWithResult((Vector256<Double>)(result), values);
         }
 
