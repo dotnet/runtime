@@ -8,8 +8,12 @@ namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
     /// Allows consumers to perform cleanup during a graceful shutdown.
+    /// <para>
+    ///  This type is obsolete and will be removed in a future version.
+    ///  The recommended alternative is Microsoft.Extensions.Hosting.IHostApplicationLifetime.
+    /// </para>
     /// </summary>
-    [Obsolete("Use IHostApplicationLifetime instead.", error: false)]
+    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.IHostApplicationLifetime.", error: false)]
     public interface IApplicationLifetime
     {
         /// <summary>
