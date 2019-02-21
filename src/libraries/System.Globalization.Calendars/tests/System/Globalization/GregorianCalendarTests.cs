@@ -50,7 +50,7 @@ namespace System.Globalization.Tests
         public void CalendarType_SetInvalidValue_ThrowsArgumentOutOfRangeException(GregorianCalendarTypes type)
         {
             GregorianCalendar calendar = ((GregorianCalendar)Calendar);
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("m_type", () => calendar.CalendarType = type);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", "m_type", () => calendar.CalendarType = type);
         }
     }
 
