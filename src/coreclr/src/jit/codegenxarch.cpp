@@ -2053,29 +2053,27 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 
         if (targetReg != reg0 && targetReg != reg1)
         {
-            // Copy reg0 into targetReg and let it to be handled by one
-            // of the cases below.
+            // targetReg = reg0;
+            // targetReg[127:64] = reg1[127:64]
             inst_RV_RV(ins_Copy(TYP_DOUBLE), targetReg, reg0, TYP_DOUBLE);
-            targetReg = reg0;
+            inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x00);
         }
-
-        if (targetReg == reg0)
+        else if (targetReg == reg0)
         {
-            // targeReg[63:0] = targetReg[63:0]
+            // (elided) targetReg = reg0
             // targetReg[127:64] = reg1[127:64]
             inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, reg1, 0x00);
         }
         else
         {
             assert(targetReg == reg1);
-
             // We need two shuffles to achieve this
             // First:
-            // targeReg[63:0] = targetReg[63:0]
+            // targetReg[63:0] = targetReg[63:0]
             // targetReg[127:64] = reg0[63:0]
             //
             // Second:
-            // targeReg[63:0] = targetReg[127:64]
+            // targetReg[63:0] = targetReg[127:64]
             // targetReg[127:64] = targetReg[63:0]
             //
             // Essentially copy low 8-bytes from reg0 to high 8-bytes of targetReg
