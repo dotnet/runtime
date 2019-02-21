@@ -456,7 +456,15 @@ namespace R2RDump
                         unwindInfo = new Amd64.UnwindInfo(Image, unwindOffset);
                         if (isEntryPoint[runtimeFunctionId])
                         {
-                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
+                            try
+                            {
+                                gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
+                            }
+                            catch (IndexOutOfRangeException)
+                            {
+                                Console.WriteLine($"Warning: Could not parse GC Info for method: {method.SignatureString}");
+                            }
+                            
                         }
                     }
                     else if (Machine == Machine.I386)
