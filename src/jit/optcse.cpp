@@ -1978,14 +1978,20 @@ public:
     {
         // Excat type match is the expected case
         if (cseLclVarTyp == expTyp)
+        {
             return true;
+        }
 
         // We also allow TYP_BYREF and TYP_I_IMPL as compatible types
         //
         if ((cseLclVarTyp == TYP_BYREF) && (expTyp == TYP_I_IMPL))
+        {
             return true;
+        }
         if ((cseLclVarTyp == TYP_I_IMPL) && (expTyp == TYP_BYREF))
+        {
             return true;
+        }
 
         // Otherwise we have incompatible types
         return false;
