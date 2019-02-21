@@ -317,14 +317,20 @@ namespace System.IO.Pipelines
                     ThrowHelper.ThrowInvalidOperationException_AdvancingPastBufferSize();
                 }
 
-                _currentWriteLength += bytesWritten;
-                _buffered += bytesWritten;
-                _writingMemory = _writingMemory.Slice(bytesWritten);
+                AdvanceCore(bytesWritten);
             }
             else
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytesWritten);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AdvanceCore(int bytesWritten)
+        {
+            _currentWriteLength += bytesWritten;
+            _buffered += bytesWritten;
+            _writingMemory = _writingMemory.Slice(bytesWritten);
         }
 
         internal ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken)
@@ -908,6 +914,63 @@ namespace System.IO.Pipelines
             if (_readerCompletion.IsCompletedOrThrow())
             {
                 result._resultFlags |= ResultFlags.Completed;
+            }
+        }
+
+        internal ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        {
+            if (_writerCompletion.IsCompleted)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
+            }
+
+            // Allocate whatever the pool gives us so we can write, this also marks the
+            // state as writing
+            AllocateWriteHeadIfNeeded(0);
+
+            if (source.Length <= _writingMemory.Length)
+            {
+                source.CopyTo(_writingMemory);
+
+                AdvanceCore(source.Length);
+            }
+            else
+            {
+                // This is the multi segment copy
+                WriteMultiSegment(source.Span);
+            }
+
+            return FlushAsync(cancellationToken);
+        }
+
+        private void WriteMultiSegment(ReadOnlySpan<byte> source)
+        {
+            Span<byte> destination = _writingMemory.Span;
+
+            while (true)
+            {
+                int writable = Math.Min(destination.Length, source.Length);
+                source.Slice(0, writable).CopyTo(destination);
+                source = source.Slice(writable);
+                AdvanceCore(writable);
+
+                if (source.Length == 0)
+                {
+                    break;
+                }
+
+                // We filled the segment
+                _writingHead.End += writable;
+                _buffered = 0;
+
+                // This is optimized to use pooled memory. That's why we pass 0 instead of
+                // source.Length
+                BufferSegment newSegment = AllocateSegment(0);
+
+                _writingHead.SetNext(newSegment);
+                _writingHead = newSegment;
+
+                destination = _writingMemory.Span;
             }
         }
 

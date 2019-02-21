@@ -121,5 +121,29 @@ namespace System.IO.Pipelines.Tests
                 Assert.Equal(1, pool.DisposedBlocks);
             }
         }
+
+        [Fact]
+        public async Task WriteAsyncWritesIntoPool()
+        {
+            using (var pool = new DisposeTrackingBufferPool())
+            {
+                var pipe = new Pipe(new PipeOptions(pool: pool, minimumSegmentSize: pool.MaxBufferSize));
+
+                var buffer = new byte[pool.MaxBufferSize * 2 + 1];
+                await pipe.Writer.WriteAsync(buffer);
+                pipe.Writer.Complete();
+
+                Assert.Equal(3, pool.CurrentlyRentedBlocks);
+
+                ReadResult result = await pipe.Reader.ReadAsync();
+                Assert.Equal(pool.MaxBufferSize * 2 + 1, result.Buffer.Length);
+
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                pipe.Reader.Complete();
+
+                Assert.Equal(0, pool.CurrentlyRentedBlocks);
+                Assert.Equal(3, pool.DisposedBlocks);
+            }
+        }
     }
 }
