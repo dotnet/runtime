@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable 618 // Must test deprecated features
 
 namespace Server.Contract.Servers
 {
@@ -91,7 +92,7 @@ namespace Server.Contract.Servers
     [ComImport]
     [CoClass(typeof(DispatchTestingClass))]
     [Guid("a5e04c1c-474e-46d2-bbc0-769d04e12b54")]
-    internal interface DispatchTesting : Server.Contract.IDispatchTesting 
+    internal interface DispatchTesting : Server.Contract.IDispatchTesting
     {
     }
 
@@ -143,4 +144,5 @@ namespace Server.Contract.Servers
     }
 }
 
+#pragma warning restore 618 // Must test deprecated features
 #pragma warning restore IDE1006 // Naming Styles
