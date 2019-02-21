@@ -3,7 +3,7 @@
 
 cmake_minimum_required (VERSION 2.6)
 project(apphost)
-set(DOTNET_HOST_EXE_NAME "apphost")
+set(DOTNET_PROJECT_NAME "apphost")
 
 # Add RPATH to the apphost binary that allows using local copies of shared libraries
 # dotnet core depends on for special scenarios when system wide installation of such 
