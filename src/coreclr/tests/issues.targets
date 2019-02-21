@@ -506,9 +506,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19601/Github_19601/*">
             <Issue>Needs Triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/*">
-            <Issue>22401</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Unix arm64 specific -->
