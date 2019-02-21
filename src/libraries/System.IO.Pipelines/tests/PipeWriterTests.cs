@@ -99,7 +99,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void CanWriteOverTheBlockLength()
+        public async Task CanWriteOverTheBlockLength()
         {
             Memory<byte> memory = Pipe.Writer.GetMemory();
             PipeWriter writer = Pipe.Writer;
@@ -107,7 +107,7 @@ namespace System.IO.Pipelines.Tests
             IEnumerable<byte> source = Enumerable.Range(0, memory.Length).Select(i => (byte)i);
             byte[] expectedBytes = source.Concat(source).Concat(source).ToArray();
 
-            writer.Write(expectedBytes);
+            await writer.WriteAsync(expectedBytes);
 
             Assert.Equal(expectedBytes, Read());
         }
@@ -149,8 +149,7 @@ namespace System.IO.Pipelines.Tests
             var data = new byte[length];
             new Random(length).NextBytes(data);
             PipeWriter output = Pipe.Writer;
-            output.Write(data);
-            await output.FlushAsync();
+            await output.WriteAsync(data);
 
             ReadResult result = await Pipe.Reader.ReadAsync();
             ReadOnlySequence<byte> input = result.Buffer;
