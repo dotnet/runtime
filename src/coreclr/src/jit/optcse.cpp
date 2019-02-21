@@ -1976,7 +1976,7 @@ public:
     //
     bool IsCompatibleType(var_types cseLclVarTyp, var_types expTyp)
     {
-        // Excat type match is the expected case
+        // Exact type match is the expected case
         if (cseLclVarTyp == expTyp)
         {
             return true;
