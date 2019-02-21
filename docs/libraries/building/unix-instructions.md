@@ -9,7 +9,7 @@ Building CoreFX on FreeBSD, Linux and OS X
 
 Calling the script `build.sh` builds both the native and managed code.
 
-For more information about the different options when building, run `build.sh -?` and look at examples in the [developer-guide](../project-docs/developer-guide.md).
+For more information about the different options when building, run `build.sh --help` and look at examples in the [developer-guide](../project-docs/developer-guide.md).
 
 ## Minimum Hardware Requirements
 - 2GB RAM

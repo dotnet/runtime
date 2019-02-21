@@ -1,32 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <PropertyGroup>
     <!-- When building through build-tests.cmd tests.builds is the main project that is being built. We set IsTestProject to true when the project path has /tests/.
     Since IsTestProject is set to false in this case, when TargetGroup = netfx it will add net462 and net47 build configurations if they exist on the test project.
     We only want to build tests against current TargetGroup -->
     <AdditionalBuildConfigurations Condition="'$(TargetGroup)' == 'netfx'"></AdditionalBuildConfigurations>
-    <EnableBenchviewTarget>true</EnableBenchviewTarget>
+    <EnableBenchviewTarget Condition="'$(PerformanceTest)' == 'true'">true</EnableBenchviewTarget>
     <EnableFullCoverageReportTarget>true</EnableFullCoverageReportTarget>
     <GenerateFullCoverageReport>true</GenerateFullCoverageReport>
     <CoverageReportInputPath>$(TestWorkingDir)**/coverage.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
+    <!-- For UAP we are using an APPX that is registered with a unique ID. Because of that we need to run tests sequentially -->
+    <SerializeProjects Condition="'$(BuildTests)' != 'true' AND ('$(BuildingUAPVertical)' == 'true' or '$(Coverage)' == 'true' or '$(PerformanceTest)' == 'true')">true</SerializeProjects>
+    <TraversalBuildDependsOn Condition="'$(BuildingUAPVertical)' == 'true'">MakeCommonResourcesPriFile;$(TraversalBuildDependsOn)</TraversalBuildDependsOn>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RunningSharedFrameworkValidation)'=='true'">
+  <ItemGroup Condition="'$(RunningSharedFrameworkValidation)' == 'true'">
     <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Data.Odbc.Tests.csproj" />
     <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.IO.Pipes.Tests.csproj" />
     <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.XmlSerializer.Generator.Tests.csproj" />
     <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Reflection.Context.Tests.csproj" />
   </ItemGroup>
 
-  <!-- For UAP we are using an APPX that is registered with a unique ID. Because of that we need to run tests sequentially -->
-  <PropertyGroup Condition="('$(BuildingUAPVertical)'=='true' OR '$(Coverage)' == 'true') AND '$(SkipTests)' != 'true'">
-    <SerializeProjects>true</SerializeProjects>
+  <PropertyGroup>
+    <TestProjectFilter Condition="'$(Test)' == 'true'">Tests</TestProjectFilter>
+    <TestProjectFilter Condition="'$(IntegrationTest)' == 'true'">IntegrationTests</TestProjectFilter>
+    <TestProjectFilter Condition="'$(PerformanceTest)' == 'true'">PerformanceTests</TestProjectFilter>
+
+    <_TestProjectFilter Condition="'$(TestProjectFilter)' != ''">.$(TestProjectFilter)</_TestProjectFilter>
+    <!-- By default build all test project types to capture build errors in CI. -->
+    <_TestProjectFilter Condition="'$(TestProjectFilter)' == '' or '$(BuildAllTests)' == 'true'">Tests</_TestProjectFilter>
   </PropertyGroup>
 
-  <Target Name="BinPlaceXUnitRuntimeForNetstandardSuite" Condition="'$(TargetGroup)' == 'netstandard'" BeforeTargets="BuildAllProjects">
+  <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
+    <!-- Keep in sync with pattern for test projects in build.proj -->
+    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_TestProjectFilter).csproj" Exclude="@(TestProjectExclusions)" />
+    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_TestProjectFilter).vbproj" Exclude="@(TestProjectExclusions)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
+    <Project Include="$(ProjectDir)pkg\test\testPackages.proj" />
+  </ItemGroup>
+
+  <Target Name="BinPlaceXUnitRuntimeForNetstandardSuite"
+          Condition="'$(TargetGroup)' == 'netstandard'"
+          BeforeTargets="BuildAllProjects">
     <!-- Ensure that we binplace all of the xunit assemblies on the netstandard runtime path in order to be able to build netstandard test suite -->
     <MSBuild Projects="$(MSBuildThisFileDirectory)../external/test-runtime/XUnit.Runtime.depproj"
              Properties="TargetGroup=$(TargetGroup)"
@@ -34,27 +54,5 @@
              ContinueOnError="ErrorAndStop" />
   </Target>
 
-  <PropertyGroup>
-    <_ProjectPattern Condition="'$(Performance)' != 'true'">Tests</_ProjectPattern>
-    <_ProjectPattern Condition="'$(Performance)' == 'true'">PerformanceTests</_ProjectPattern>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
-    <!-- Keep in sync with pattern for test projects in build.proj -->
-    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_ProjectPattern).csproj" Exclude="@(TestProjectExclusions)" />
-    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_ProjectPattern).vbproj" Exclude="@(TestProjectExclusions)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
-    <Project Include="$(ProjectDir)pkg\test\testPackages.proj" />
-  </ItemGroup>
-
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
-
-  <PropertyGroup Condition="'$(BuildingUAPVertical)' == 'true'">
-    <TraversalBuildDependsOn>
-      MakeCommonResourcesPriFile;
-      $(TraversalBuildDependsOn)
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.traversal.targets))"  />
 </Project>
