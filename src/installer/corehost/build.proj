@@ -62,6 +62,9 @@
       <HostFiles Include="hostpolicy">
         <FileDescription>.NET Core Host Policy - $(HostPolicyVersion)</FileDescription>
       </HostFiles>
+      <HostFiles Include="comhost">
+        <FileDescription>.NET Core COM Host</FileDescription>
+      </HostFiles>
     </ItemGroup>
     
     <MSBuild Projects="$(MSBuildProjectFullPath)"
