@@ -2315,6 +2315,47 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 	return NULL;
 }
 
+#if ENABLE_NETCORE
+MonoReflectionAssemblyHandle
+ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle, MonoStackCrawlMark *stack_mark, gpointer load_Context, MonoError *error)
+{
+	error_init (error);
+	MonoDomain *domain = mono_domain_get ();
+	MonoAssembly *ass = NULL;
+	MonoAssemblyName aname;
+	MonoAssemblyByNameRequest req;
+	MonoAssemblyContextKind asmctx;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	gboolean parsed;
+	char *name;
+
+	asmctx = MONO_ASMCTX_DEFAULT;
+	mono_assembly_request_prepare (&req.request, sizeof (req), asmctx);
+	req.basedir = NULL;
+	req.no_postload_search = TRUE;
+
+	name = mono_string_handle_to_utf8 (name_handle, error);
+	goto_if_nok (error, fail);
+	parsed = mono_assembly_name_parse (name, &aname);
+	g_free (name);
+	if (!parsed)
+		goto fail;
+
+	ass = mono_assembly_request_byname (&aname, &req, &status);
+	if (!ass)
+		goto fail;
+
+	MonoReflectionAssemblyHandle refass;
+	refass = mono_assembly_get_object_handle (domain, ass, error);
+	goto_if_nok (error, fail);
+	return refass;
+
+fail:
+	return MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
+}
+
+#endif
+
 MonoReflectionAssemblyHandle
 ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoolean refOnly, MonoStackCrawlMark *stack_mark, MonoError *error)
 {
