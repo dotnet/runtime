@@ -1,68 +1,36 @@
 # Copyright (c) .NET Foundation and contributors. All rights reserved.
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
-project (${DOTNET_HOST_EXE_NAME})
 
-if(WIN32)
-    add_compile_options($<$<CONFIG:RelWithDebInfo>:/MT>)
-    add_compile_options($<$<CONFIG:Release>:/MT>)
-    add_compile_options($<$<CONFIG:Debug>:/MTd>)
-else()
-    add_compile_options(-fPIE)
-    add_compile_options(-fvisibility=hidden)
-endif()
+project (${DOTNET_PROJECT_NAME})
 
-include(../setup.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 
 # Include directories
-if(WIN32)
-    include_directories("${CLI_CMAKE_RESOURCE_DIR}/${DOTNET_HOST_EXE_NAME}")
-endif()
-include_directories(../../)
-include_directories(../../common)
-include_directories(../)
-include_directories(../fxr)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/fxr)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 list(APPEND SOURCES
-    ../../corehost.cpp
-    ../../common/trace.cpp
-    ../../common/utils.cpp)
+    ${CMAKE_CURRENT_LIST_DIR}/../corehost.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../common/trace.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../common/utils.cpp)
 
-if(WIN32)
-    list(APPEND SOURCES
-        ../../common/pal.windows.cpp
-        ../../common/longfile.windows.cpp)
-else()
-    list(APPEND SOURCES
-        ../../common/pal.unix.cpp
-        ${VERSION_FILE_PATH})
-endif()
-
-set(RESOURCES)
-if(WIN32 AND NOT SKIP_VERSIONING)
-    list(APPEND RESOURCES ../native.rc)
-endif()
-
-add_executable(${DOTNET_HOST_EXE_NAME} ${SOURCES} ${RESOURCES})
+add_executable(${DOTNET_PROJECT_NAME} ${SOURCES} ${RESOURCES})
 
 if(NOT WIN32)
-    disable_pax_mprotect(${DOTNET_HOST_EXE_NAME})
+    disable_pax_mprotect(${DOTNET_PROJECT_NAME})
 endif()
 
-install(TARGETS ${DOTNET_HOST_EXE_NAME} DESTINATION bin)
-
-# Specify the import library to link against for Arm32 build since the default set is minimal
-if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
-    target_link_libraries(${DOTNET_HOST_EXE_NAME} shell32.lib)
-endif()
+install(TARGETS ${DOTNET_PROJECT_NAME} DESTINATION bin)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
-    target_link_libraries (${DOTNET_HOST_EXE_NAME} "pthread")
+    target_link_libraries (${DOTNET_PROJECT_NAME} "pthread")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    target_link_libraries (${DOTNET_HOST_EXE_NAME} "dl")
+    target_link_libraries (${DOTNET_PROJECT_NAME} "dl")
 endif()
 
-
-
+# Specify the import library to link against for Arm32 build since the default set is minimal
+if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
+    target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib)
+endif()

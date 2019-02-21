@@ -4,16 +4,13 @@
 cmake_minimum_required (VERSION 2.6)
 project(comhost)
 
-include(../setup.cmake)
+set(DOTNET_PROJECT_NAME "comhost")
 
 # Include directories
-include_directories(./)
-include_directories(../)
 include_directories(../fxr)
-include_directories(../../)
-include_directories(../../common)
 include_directories(../json/casablanca/include)
 
+# CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
     ../../corehost.cpp
     exports.cpp
@@ -27,16 +24,7 @@ set(SOURCES
     ../json/casablanca/src/utilities/asyncrt_utils.cpp
 )
 
-if(WIN32)
-    list(APPEND SOURCES
-        ../../common/pal.windows.cpp
-        ../../common/longfile.windows.cpp
-        Exports.def)
-else()
-    list(APPEND SOURCES
-        ../../common/pal.unix.cpp
-        ${VERSION_FILE_PATH})
-endif()
+include(../lib.cmake)
 
 # Move to setup.cmake if COMHOST is ever built on non-Windows
 if("${CLI_CMAKE_COMHOST_VER}" STREQUAL "")
@@ -45,10 +33,7 @@ else()
     add_definitions(-DLIBHOST_PKG_VER="${CLI_CMAKE_COMHOST_VER}")
 endif()
 
-add_definitions(-DEXPORT_SHARED_API=1)
 add_definitions(-DFEATURE_LIBHOST=1)
-
-add_library(comhost SHARED ${SOURCES})
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
 if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
