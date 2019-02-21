@@ -73,9 +73,10 @@ namespace JIT.HardwareIntrinsics.General
 
             Vector256<UInt16> value = Vector256.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15]);
 
-            object result = typeof(Vector256<UInt16>)
-                                .GetMethod(nameof(Vector256.ToScalar), new Type[] { })
-                                .Invoke(value, new object[] { });
+            object result = typeof(Vector256)
+                                .GetMethod(nameof(Vector256.ToScalar))
+                                .MakeGenericMethod(typeof(UInt16))
+                                .Invoke(null, new object[] { value });
 
             ValidateResult((UInt16)(result), values);
         }
