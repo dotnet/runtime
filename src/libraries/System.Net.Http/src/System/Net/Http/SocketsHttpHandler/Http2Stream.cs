@@ -114,44 +114,47 @@ namespace System.Net.Http
             {
                 // TODO: ISSUE 31309: Optimize HPACK static table decoding
 
-                if (_state != StreamState.ExpectingHeaders)
+                lock (SyncObject)
                 {
-                    throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
-                }
-
-                if (name.SequenceEqual(s_statusHeaderName))
-                {
-                    if (value.Length != 3)
-                        throw new Exception("Invalid status code");
-
-                    // Copied from HttpConnection
-                    byte status1 = value[0], status2 = value[1], status3 = value[2];
-                    if (!IsDigit(status1) || !IsDigit(status2) || !IsDigit(status3))
+                    if (_state != StreamState.ExpectingHeaders)
                     {
-                        throw new HttpRequestException(SR.net_http_invalid_response);
+                        throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
                     }
 
-                    _response.SetStatusCodeWithoutValidation((HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0')));
-                }
-                else
-                {
-                    if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
+                    if (name.SequenceEqual(s_statusHeaderName))
                     {
-                        // Invalid header name
-                        throw new HttpRequestException(SR.net_http_invalid_response);
-                    }
+                        if (value.Length != 3)
+                            throw new Exception("Invalid status code");
 
-                    string headerValue = descriptor.GetHeaderValue(value);
+                        // Copied from HttpConnection
+                        byte status1 = value[0], status2 = value[1], status3 = value[2];
+                        if (!IsDigit(status1) || !IsDigit(status2) || !IsDigit(status3))
+                        {
+                            throw new HttpRequestException(SR.net_http_invalid_response);
+                        }
 
-                    // Note we ignore the return value from TryAddWithoutValidation; 
-                    // if the header can't be added, we silently drop it.
-                    if (descriptor.HeaderType == HttpHeaderType.Content)
-                    {
-                        _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                        _response.SetStatusCodeWithoutValidation((HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0')));
                     }
                     else
                     {
-                        _response.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                        if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
+                        {
+                            // Invalid header name
+                            throw new HttpRequestException(SR.net_http_invalid_response);
+                        }
+
+                        string headerValue = descriptor.GetHeaderValue(value);
+
+                        // Note we ignore the return value from TryAddWithoutValidation; 
+                        // if the header can't be added, we silently drop it.
+                        if (descriptor.HeaderType == HttpHeaderType.Content)
+                        {
+                            _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                        }
+                        else
+                        {
+                            _response.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                        }
                     }
                 }
             }
@@ -176,10 +179,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (waiterTaskSource != null)
-                {
-                    waiterTaskSource.SetResult(true);
-                }
+                waiterTaskSource?.SetResult(true);
             }
 
             public void OnResponseData(ReadOnlySpan<byte> buffer, bool endStream)
@@ -220,10 +220,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (waiterTaskSource != null)
-                {
-                    waiterTaskSource.SetResult(true);
-                }
+                waiterTaskSource?.SetResult(true);
             }
 
             public void OnResponseAbort()
@@ -251,10 +248,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (waiterTaskSource != null)
-                {
-                    waiterTaskSource.SetResult(true);
-                }
+                waiterTaskSource?.SetResult(true);
             }
 
             private (Task waiterTask, bool isEmptyResponse) TryEnsureHeaders()
@@ -291,12 +285,10 @@ namespace System.Net.Http
             public async Task ReadResponseHeadersAsync()
             {
                 // Wait for response headers to be read.
-                Task waiterTask;
-                bool emptyResponse;
-                (waiterTask, emptyResponse) = TryEnsureHeaders();
+                (Task waiterTask, bool emptyResponse) = TryEnsureHeaders();
                 if (waiterTask != null)
                 {
-                    await waiterTask;
+                    await waiterTask.ConfigureAwait(false);
                     (waiterTask, emptyResponse) = TryEnsureHeaders();
                     Debug.Assert(waiterTask == null);
                 }
@@ -380,10 +372,7 @@ namespace System.Net.Http
                     return 0;
                 }
 
-                Task waitForData;
-                int bytesRead;
-
-                (waitForData, bytesRead) = TryReadFromBuffer(buffer.Span);
+                (Task waitForData, int bytesRead) = TryReadFromBuffer(buffer.Span);
                 if (waitForData != null)
                 {
                     Debug.Assert(bytesRead == 0);
