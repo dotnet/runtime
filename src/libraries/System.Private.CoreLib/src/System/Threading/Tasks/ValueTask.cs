@@ -369,7 +369,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Gets an awaiter for this <see cref="ValueTask"/>.</summary>
-        public ValueTaskAwaiter GetAwaiter() => new ValueTaskAwaiter(this);
+        public ValueTaskAwaiter GetAwaiter() => new ValueTaskAwaiter(in this);
 
         /// <summary>Configures an awaiter for this <see cref="ValueTask"/>.</summary>
         /// <param name="continueOnCapturedContext">
@@ -765,7 +765,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets an awaiter for this <see cref="ValueTask{TResult}"/>.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ValueTaskAwaiter<TResult> GetAwaiter() => new ValueTaskAwaiter<TResult>(this);
+        public ValueTaskAwaiter<TResult> GetAwaiter() => new ValueTaskAwaiter<TResult>(in this);
 
         /// <summary>Configures an awaiter for this <see cref="ValueTask{TResult}"/>.</summary>
         /// <param name="continueOnCapturedContext">
