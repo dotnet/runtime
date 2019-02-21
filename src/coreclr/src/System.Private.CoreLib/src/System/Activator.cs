@@ -143,8 +143,7 @@ namespace System
                 {
                     // Classic managed type
                     assembly = RuntimeAssembly.InternalLoadAssemblyName(
-                        assemblyName, null, ref stackMark,
-                        true /*thrownOnFileNotFound*/);
+                        assemblyName, ref stackMark);
                 }
             }
 

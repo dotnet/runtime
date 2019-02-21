@@ -33,11 +33,10 @@
 
 
 
-FCIMPL7(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE, 
+FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE,
         StringObject* codeBaseUNSAFE, 
         AssemblyBaseObject* requestingAssemblyUNSAFE,
         StackCrawlMark* stackMark,
-        ICLRPrivBinder * pPrivHostBinder,
         CLR_BOOL fThrowOnFileNotFound,
         INT_PTR ptrLoadContextBinder)
 {
@@ -101,12 +100,6 @@ FCIMPL7(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     if (!spec.HasUniqueIdentity())
     {   // Insuficient assembly name for binding (e.g. ContentType=WindowsRuntime cannot bind by assembly name)
         EEFileLoadException::Throw(&spec, COR_E_NOTSUPPORTED);
-    }
-    
-    if (pPrivHostBinder != NULL)
-    {
-        pParentAssembly = NULL;
-        spec.SetHostBinder(pPrivHostBinder);
     }
     
     if (gc.codeBase != NULL)
