@@ -1752,44 +1752,8 @@ public:
             ENTRY_POINT;
         }
         CONTRACTL_END;
-
-        HRESULT hr = S_OK;
-        BEGIN_ENTRYPOINT_NOTHROW;
-
-    #if defined(ENABLE_PERF_COUNTERS)
-
-        Perf_GC     *pgc = &GetPerfCounters().m_GC;
-
-        if (!pStats)
-            IfFailGo(E_INVALIDARG);
-
-        if (pStats->Flags & COR_GC_COUNTS)
-        {
-            pStats->ExplicitGCCount = pgc->cInducedGCs;
-
-            for (int idx=0; idx<3; idx++)
-                pStats->GenCollectionsTaken[idx] = pgc->cGenCollections[idx];
-        }
-
-        if (pStats->Flags & COR_GC_MEMORYUSAGE)
-        {
-            pStats->CommittedKBytes = SizeInKBytes(pgc->cTotalCommittedBytes);
-            pStats->ReservedKBytes = SizeInKBytes(pgc->cTotalReservedBytes);
-            pStats->Gen0HeapSizeKBytes = SizeInKBytes(pgc->cGenHeapSize[0]);
-            pStats->Gen1HeapSizeKBytes = SizeInKBytes(pgc->cGenHeapSize[1]);
-            pStats->Gen2HeapSizeKBytes = SizeInKBytes(pgc->cGenHeapSize[2]);
-            pStats->LargeObjectHeapSizeKBytes = SizeInKBytes(pgc->cLrgObjSize);
-            pStats->KBytesPromotedFromGen0 = SizeInKBytes(pgc->cbPromotedMem[0]);
-            pStats->KBytesPromotedFromGen1 = SizeInKBytes(pgc->cbPromotedMem[1]);
-        }
-        hr = S_OK;
-ErrExit:
-    #else
-        hr = E_NOTIMPL;
-    #endif // ENABLE_PERF_COUNTERS
-
-        END_ENTRYPOINT_NOTHROW;
-        return hr;
+        
+        return E_NOTIMPL;
     }
     virtual HRESULT STDMETHODCALLTYPE SetGCStartupLimits(
         DWORD SegmentSize,

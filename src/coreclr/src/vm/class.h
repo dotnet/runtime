@@ -42,7 +42,6 @@
 #include "slist.h"
 #include "spinlock.h"
 #include "typehandle.h"
-#include "perfcounters.h"
 #include "methodtable.h"
 #include "eeconfig.h"
 #include "typectxt.h"
