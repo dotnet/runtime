@@ -120,9 +120,10 @@ namespace JIT.HardwareIntrinsics.General
 
             try
             {
-                object result = typeof(Vector256<UInt16>)
-                                    .GetMethod(nameof(Vector256.GetElement), new Type[] { typeof(int) })
-                                    .Invoke(value, new object[] { imm });
+                object result = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.GetElement))
+                                    .MakeGenericMethod(typeof(UInt16))
+                                    .Invoke(null, new object[] { value, imm });
                 ValidateGetResult((UInt16)(result), values);
             }
             catch (TargetInvocationException e)
@@ -145,9 +146,10 @@ namespace JIT.HardwareIntrinsics.General
 
             try
             {
-                object result2 = typeof(Vector256<UInt16>)
-                                    .GetMethod(nameof(Vector256.WithElement), new Type[] { typeof(int), typeof(UInt16) })
-                                    .Invoke(value, new object[] { imm, insertedValue });
+                object result2 = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.WithElement))
+                                    .MakeGenericMethod(typeof(UInt16))
+                                    .Invoke(null, new object[] { value, imm, insertedValue });
                 ValidateWithResult((Vector256<UInt16>)(result2), values, insertedValue);
             }
             catch (TargetInvocationException e)

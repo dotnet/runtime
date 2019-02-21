@@ -76,14 +76,16 @@ namespace JIT.HardwareIntrinsics.General
 
             Vector64<Int64> value = Vector64.Create(values[0]);
 
-            object result = typeof(Vector64<Int64>)
-                                .GetMethod(nameof(Vector64.ToVector128), new Type[] { })
-                                .Invoke(value, new object[] { });
+            object result = typeof(Vector64)
+                                .GetMethod(nameof(Vector64.ToVector128))
+                                .MakeGenericMethod(typeof(Int64))
+                                .Invoke(null, new object[] { value });
             ValidateResult((Vector128<Int64>)(result), values, isUnsafe: false);
 
-            object unsafeResult = typeof(Vector64<Int64>)
-                                    .GetMethod(nameof(Vector64.ToVector128), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object unsafeResult = typeof(Vector64)
+                                    .GetMethod(nameof(Vector64.ToVector128))
+                                    .MakeGenericMethod(typeof(Int64))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector128<Int64>)(unsafeResult), values, isUnsafe: true);
         }
 

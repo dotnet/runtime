@@ -73,9 +73,10 @@ namespace JIT.HardwareIntrinsics.General
 
             Vector128<Single> value = Vector128.Create(values[0], values[1], values[2], values[3]);
 
-            object result = typeof(Vector128<Single>)
-                                .GetMethod(nameof(Vector128.ToScalar), new Type[] { })
-                                .Invoke(value, new object[] { });
+            object result = typeof(Vector128)
+                                .GetMethod(nameof(Vector128.ToScalar))
+                                .MakeGenericMethod(typeof(Single))
+                                .Invoke(null, new object[] { value });
 
             ValidateResult((Single)(result), values);
         }
