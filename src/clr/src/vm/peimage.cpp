@@ -739,8 +739,6 @@ LoaderHeap *PEImage::IJWFixupData::GetThunkHeap()
             size_t * pPrivatePCLBytes = NULL;
             size_t * pGlobalPCLBytes = NULL;
 
-            COUNTER_ONLY(pPrivatePCLBytes = &(GetPerfCounters().m_Loading.cbLoaderHeapSize));
-
             LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
                 0,                                 // DWORD dwCommitBlockSize
                 pPrivatePCLBytes,

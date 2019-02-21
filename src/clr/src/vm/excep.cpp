@@ -22,7 +22,6 @@
 #include "siginfo.hpp"
 #include "gcheaputilities.h"
 #include "eedbginterfaceimpl.h" //so we can clearexception in RealCOMPlusThrow
-#include "perfcounters.h"
 #include "dllimportcallback.h"
 #include "stackwalk.h" //for CrawlFrame, in SetIPFromSrcToDst
 #include "shimload.h"
@@ -3627,7 +3626,6 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
 
         ++m_dFrameCount;
         bRetVal = TRUE;
-        COUNTER_ONLY(GetPerfCounters().m_Excep.cThrowToCatchStackDepth++);
     }
 
 #ifndef FEATURE_PAL // Watson is supported on Windows only   

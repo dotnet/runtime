@@ -13,7 +13,6 @@
 #include "eeconfig.h"
 #include "gcheaputilities.h"
 #include "eventtrace.h"
-#include "perfcounters.h"
 #include "assemblyname.hpp"
 #include "eeprofinterfaces.h"
 #include "dbginterface.h"
@@ -3742,7 +3741,6 @@ void AppDomain::Init()
     SetStage(STAGE_READYFORMANAGEDCODE);
 
 #ifndef CROSSGEN_COMPILE
-    COUNTER_ONLY(GetPerfCounters().m_Loading.cAppDomains++);
 
 #ifdef FEATURE_TIERED_COMPILATION
     m_tieredCompilationManager.Init(GetId());
