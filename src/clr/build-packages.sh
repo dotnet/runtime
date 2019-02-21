@@ -10,38 +10,18 @@ usage()
     exit 1
 }
 
-initHostDistroRid()
+initDistroRid()
 {
-    __HostDistroRid=""
-    if [ "$__HostOS" == "Linux" ]; then
-        if [ -e /etc/os-release ]; then
-            source /etc/os-release
-            if [[ $ID == "rhel" ]]; then
-                # remove the last version digit
-                VERSION_ID=${VERSION_ID%.*}
-            fi
-            __HostDistroRid="$ID.$VERSION_ID-$__Arch"
-            if [[ $ID == "alpine" ]]; then
-                __HostDistroRid="linux-musl-$__Arch"
-            fi
-        elif [ -e /etc/redhat-release ]; then
-            local redhatRelease=$(</etc/redhat-release)
-            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
-               __HostDistroRid="rhel.6-$__Arch"
-            fi
-            if [[ $redhatRelease == "CentOS Linux release 7."* ]]; then
-                __HostDistroRid="rhel.7-$__Arch"
-            fi
-        fi
-    fi
-    if [ "$__HostOS" == "FreeBSD" ]; then
-        __freebsd_version=`sysctl -n kern.osrelease | cut -f1 -d'.'`
-        __HostDistroRid="freebsd.$__freebsd_version-$__Arch"
+    source init-distro-rid.sh
+
+    local passedRootfsDir=""
+
+    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
+    if [ -z "${__CrossBuild}" ]; then
+        passedRootfsDir=${ROOTFS_DIR}
     fi
 
-    if [ "$__HostDistroRid" == "" ]; then
-        echo "WARNING: Cannot determine runtime id for current distro."
-    fi
+    initDistroRidGlobal ${__BuildOS} ${__BuildArch} ${__IsPortableBuild} ${passedRootfsDir}
 }
 
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -103,8 +83,8 @@ while :; do
             exit 1
             ;;
         -BuildArch=*)
-            __Arch=$(echo $1| cut -d'=' -f 2)
-            buildArgs="$buildArgs /p:__BuildArch=$__Arch"
+            __BuildArch=$(echo $1| cut -d'=' -f 2)
+            buildArgs="$buildArgs /p:__BuildArch=$__BuildArch"
             ;;
         -BuildType=*)
             __Type=$(echo $1| cut -d'=' -f 2)
@@ -130,20 +110,7 @@ while :; do
     shift
 done
 
-# Portable builds target the base RID
-if [ $__IsPortableBuild == 1 ]; then
-    if [ "$__BuildOS" == "Linux" ]; then
-        export __DistroRid="linux-$__Arch"
-    elif [ "$__BuildOS" == "OSX" ]; then
-        export __DistroRid="osx-$__Arch"
-    elif [ "$__BuildOS" == "FreeBSD" ]; then
-        export __DistroRid="freebsd-$__Arch"
-    fi
-else
-    # init the host distro name
-    initHostDistroRid
-    export __DistroRid="$__HostDistroRid"
-fi
+initDistroRid
 
 $__ProjectRoot/dotnet.sh msbuild /nologo /verbosity:minimal /clp:Summary \
                          /p:__BuildOS=$__BuildOS /flp:v=detailed\;Append\;LogFile=build-packages.log \
