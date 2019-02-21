@@ -155,22 +155,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			string expectedBaseName;
 			var expectedBaseGenericAttr = src.CustomAttributes.FirstOrDefault (w => w.AttributeType.Name == nameof (KeptBaseTypeAttribute) && w.ConstructorArguments.Count > 1);
 			if (expectedBaseGenericAttr != null) {
-				StringBuilder builder = new StringBuilder ();
-				builder.Append (expectedBaseGenericAttr.ConstructorArguments [0].Value);
-				builder.Append ("<");
-				bool separator = false;
-				foreach (var caa in (CustomAttributeArgument[])expectedBaseGenericAttr.ConstructorArguments [1].Value) {
-					if (separator)
-						builder.Append (",");
-					else
-						separator = true;
-
-					var arg = (CustomAttributeArgument)caa.Value;
-					builder.Append (arg.Value);
-				}
-
-				builder.Append (">");
-				expectedBaseName = builder.ToString ();
+				expectedBaseName = FormatBaseOrInterfaceAttributeValue (expectedBaseGenericAttr);
 			} else {
 				var defaultBaseType = src.IsEnum ? "System.Enum" : src.IsValueType ? "System.ValueType" : "System.Object";
 				expectedBaseName = GetCustomAttributeCtorValues<object> (src, nameof (KeptBaseTypeAttribute)).FirstOrDefault ()?.ToString () ?? defaultBaseType;
@@ -180,7 +165,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		void VerifyInterfaces (TypeDefinition src, TypeDefinition linked)
 		{
-			var expectedInterfaces = new HashSet<string> (GetCustomAttributeCtorValues<object> (src, nameof (KeptInterfaceAttribute)).Select (val => val.ToString ()));
+			var expectedInterfaces = new HashSet<string> (src.CustomAttributes
+				.Where (w => w.AttributeType.Name == nameof (KeptInterfaceAttribute))
+				.Select (FormatBaseOrInterfaceAttributeValue));
 			if (expectedInterfaces.Count == 0) {
 				Assert.IsFalse (linked.HasInterfaces, $"Type `{src}' has unexpected interfaces");
 			} else {
@@ -190,6 +177,29 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 				Assert.IsEmpty (expectedInterfaces, $"Unexpected interfaces on {src}");
 			}
+		}
+
+		static string FormatBaseOrInterfaceAttributeValue (CustomAttribute attr)
+		{
+			if (attr.ConstructorArguments.Count == 1)
+				return attr.ConstructorArguments [0].Value.ToString ();
+			
+			StringBuilder builder = new StringBuilder ();
+			builder.Append (attr.ConstructorArguments [0].Value);
+			builder.Append ("<");
+			bool separator = false;
+			foreach (var caa in (CustomAttributeArgument [])attr.ConstructorArguments [1].Value) {
+				if (separator)
+					builder.Append (",");
+				else
+					separator = true;
+
+				var arg = (CustomAttributeArgument)caa.Value;
+				builder.Append (arg.Value);
+			}
+
+			builder.Append (">");
+			return builder.ToString ();
 		}
 
 		void VerifyField (FieldDefinition src, FieldDefinition linked)

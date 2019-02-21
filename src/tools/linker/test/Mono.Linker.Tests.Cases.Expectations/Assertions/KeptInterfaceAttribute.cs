@@ -11,5 +11,13 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			if (interfaceType == null)
 				throw new ArgumentNullException (nameof (interfaceType));
 		}
+		
+		public KeptInterfaceAttribute (Type interfaceType, params object[] typeArguments)
+		{
+			if (interfaceType == null)
+				throw new ArgumentNullException (nameof (interfaceType));
+			if (typeArguments == null)
+				throw new ArgumentNullException (nameof (typeArguments));
+		}
 	}
 }
