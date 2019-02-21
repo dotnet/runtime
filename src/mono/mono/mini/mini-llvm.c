@@ -6042,6 +6042,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_GC_SAFE_POINT: {
 			LLVMValueRef val, cmp, callee;
 			LLVMBasicBlockRef poll_bb, cont_bb;
+			LLVMValueRef args [2];
 			static LLVMTypeRef sig;
 			const char *icall_name = "mono_threads_state_poll";
 
@@ -6057,6 +6058,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			cmp = LLVMBuildICmp (builder, LLVMIntEQ, val, LLVMConstNull (LLVMTypeOf (val)), "");
 			poll_bb = gen_bb (ctx, "POLL_BB");
 			cont_bb = gen_bb (ctx, "CONT_BB");
+
+			args [0] = cmp;
+			args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
+			cmp = LLVMBuildCall (ctx->builder, get_intrinsic (ctx, "llvm.expect.i1"), args, 2, "");
+
 			LLVMBuildCondBr (builder, cmp, cont_bb, poll_bb);
 
 			ctx->builder = builder = create_builder (ctx);
