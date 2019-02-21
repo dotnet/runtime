@@ -27,6 +27,7 @@
       <_RestoreProjects Include="external\dir.proj" />
     </ItemGroup>
 
+    <MSBuild Projects="@(_RestoreProjects)" Properties="$(ProjectProperties);DefaultBuildAllTarget=Restore" />
     <MSBuild Projects="@(_RestoreProjects)" Properties="$(ProjectProperties)" />
   </Target>
 
