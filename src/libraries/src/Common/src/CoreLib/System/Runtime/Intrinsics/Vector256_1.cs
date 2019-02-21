@@ -93,83 +93,6 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{U}" />.</summary>
-        /// <typeparam name="U">The type of the vector the current instance should be reinterpreted as.</typeparam>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{U}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) or the type of the target (<typeparamref name="U" />) is not supported.</exception>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector256<U> As<U>() where U : struct
-        {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<U>();
-            return Unsafe.As<Vector256<T>, Vector256<U>>(ref Unsafe.AsRef(in this));
-        }
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Byte}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Byte}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        public Vector256<byte> AsByte() => As<byte>();
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Double}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Double}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        public Vector256<double> AsDouble() => As<double>();
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Int16}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Int16}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        public Vector256<short> AsInt16() => As<short>();
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Int32}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Int32}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        public Vector256<int> AsInt32() => As<int>();
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Int64}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Int64}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        public Vector256<long> AsInt64() => As<long>();
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{SByte}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{SByte}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        public Vector256<sbyte> AsSByte() => As<sbyte>();
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Single}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Single}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        public Vector256<float> AsSingle() => As<float>();
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{UInt16}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{UInt16}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        public Vector256<ushort> AsUInt16() => As<ushort>();
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{UInt32}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{UInt32}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        public Vector256<uint> AsUInt32() => As<uint>();
-
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{UInt64}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{UInt64}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        public Vector256<ulong> AsUInt64() => As<ulong>();
-
         /// <summary>Determines whether the specified <see cref="Vector256{T}" /> is equal to the current instance.</summary>
         /// <param name="other">The <see cref="Vector256{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
@@ -181,13 +104,13 @@ namespace System.Runtime.Intrinsics
             {
                 if (typeof(T) == typeof(float))
                 {
-                    Vector256<float> result = Avx.Compare(AsSingle(), other.AsSingle(), FloatComparisonMode.EqualOrderedNonSignaling);
+                    Vector256<float> result = Avx.Compare(this.AsSingle(), other.AsSingle(), FloatComparisonMode.EqualOrderedNonSignaling);
                     return Avx.MoveMask(result) == 0b1111_1111; // We have one bit per element
                 }
 
                 if (typeof(T) == typeof(double))
                 {
-                    Vector256<double> result = Avx.Compare(AsDouble(), other.AsDouble(), FloatComparisonMode.EqualOrderedNonSignaling);
+                    Vector256<double> result = Avx.Compare(this.AsDouble(), other.AsDouble(), FloatComparisonMode.EqualOrderedNonSignaling);
                     return Avx.MoveMask(result) == 0b1111; // We have one bit per element
                 }
             }
@@ -199,7 +122,7 @@ namespace System.Runtime.Intrinsics
                 // bytes are exactly the same.
 
                 Debug.Assert((typeof(T) != typeof(float)) && (typeof(T) != typeof(double)));
-                Vector256<byte> result = Avx2.CompareEqual(AsByte(), other.AsByte());
+                Vector256<byte> result = Avx2.CompareEqual(this.AsByte(), other.AsByte());
                 return Avx2.MoveMask(result) == unchecked((int)(0b1111_1111_1111_1111_1111_1111_1111_1111)); // We have one bit per element
             }
 
@@ -228,47 +151,6 @@ namespace System.Runtime.Intrinsics
             return (obj is Vector256<T>) && Equals((Vector256<T>)(obj));
         }
 
-        /// <summary>Gets the element at the specified index.</summary>
-        /// <param name="index">The index of the element to get.</param>
-        /// <returns>The value of the element at <paramref name="index" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
-        public T GetElement(int index)
-        {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-
-            if ((uint)(index) >= (uint)(Count))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            ref T e0 = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in this));
-            return Unsafe.Add(ref e0, index);
-        }
-
-        /// <summary>Creates a new <see cref="Vector256{T}" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the current instance.</summary>
-        /// <param name="index">The index of the element to set.</param>
-        /// <param name="value">The value to set the value to.</param>
-        /// <returns>A <see cref="Vector256{T}" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in the current instance.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
-        public Vector256<T> WithElement(int index, T value)
-        {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-
-            if ((uint)(index) >= (uint)(Count))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            Vector256<T> result = this;
-            ref T e0 = ref Unsafe.As<Vector256<T>, T>(ref result);
-            Unsafe.Add(ref e0, index) = value;
-            return result;
-        }
-
         /// <summary>Gets the hash code for the instance.</summary>
         /// <returns>The hash code for the instance.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
@@ -280,125 +162,10 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Count; i++)
             {
-                hashCode = HashCode.Combine(hashCode, GetElement(i).GetHashCode());
+                hashCode = HashCode.Combine(hashCode, this.GetElement(i).GetHashCode());
             }
 
             return hashCode;
-        }
-
-        /// <summary>Gets the value of the lower 128-bits as a new <see cref="Vector128{T}" />.</summary>
-        /// <returns>The value of the lower 128-bits as a new <see cref="Vector128{T}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        public Vector128<T> GetLower()
-        {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-            return Unsafe.As<Vector256<T>, Vector128<T>>(ref Unsafe.AsRef(in this));
-        }
-
-        /// <summary>Creates a new <see cref="Vector256{T}" /> with the lower 128-bits set to the specified value and the lower 128-bits set to the same value as that in the current instance.</summary>
-        /// <param name="value">The value of the lower 128-bits as a <see cref="Vector128{T}" />.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the specified value and the lower 128-bits set to the same value as that in the current instance.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector256<T> WithLower(Vector128<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-
-            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
-            {
-                // All integral types generate the same instruction, so just pick one rather than handling each T separately
-                return Avx2.InsertVector128(AsByte(), value.AsByte(), 0).As<T>();
-            }
-
-            if (Avx.IsSupported)
-            {
-                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
-                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
-                return Avx.InsertVector128(AsSingle(), value.AsSingle(), 0).As<T>();
-            }
-
-            return SoftwareFallback(in this, value);
-
-            static Vector256<T> SoftwareFallback(in Vector256<T> vector, Vector128<T> value)
-            {
-                Vector256<T> result = vector;
-                Unsafe.As<Vector256<T>, Vector128<T>>(ref result) = value;
-                return result;
-            }
-        }
-
-        /// <summary>Gets the value of the upper 128-bits as a new <see cref="Vector128{T}" />.</summary>
-        /// <returns>The value of the upper 128-bits as a new <see cref="Vector128{T}" />.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector128<T> GetUpper()
-        {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-
-            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
-            {
-                // All integral types generate the same instruction, so just pick one rather than handling each T separately
-                return Avx2.ExtractVector128(AsByte(), 1).As<T>();
-            }
-
-            if (Avx.IsSupported)
-            {
-                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
-                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
-                return Avx.ExtractVector128(AsSingle(), 1).As<T>();
-            }
-
-            return SoftwareFallback(in this);
-
-            static Vector128<T> SoftwareFallback(in Vector256<T> vector)
-            {
-                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref Unsafe.AsRef(in vector));
-                return Unsafe.Add(ref lower, 1);
-            }
-        }
-
-        /// <summary>Creates a new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the upper 128-bits set to the same value as that in the current instance.</summary>
-        /// <param name="value">The value of the upper 128-bits as a <see cref="Vector128{T}" />.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the upper 128-bits set to the same value as that in the current instance.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector256<T> WithUpper(Vector128<T> value)
-        {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-
-            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
-            {
-                // All integral types generate the same instruction, so just pick one rather than handling each T separately
-                return Avx2.InsertVector128(AsByte(), value.AsByte(), 1).As<T>();
-            }
-
-            if (Avx.IsSupported)
-            {
-                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
-                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
-                return Avx.InsertVector128(AsSingle(), value.AsSingle(), 1).As<T>();
-            }
-
-            return SoftwareFallback(in this, value);
-
-            static Vector256<T> SoftwareFallback(in Vector256<T> vector, Vector128<T> value)
-            {
-                Vector256<T> result = vector;
-                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref result);
-                Unsafe.Add(ref lower, 1) = value;
-                return result;
-            }
-        }
-
-        /// <summary>Converts the current instance to a scalar containing the value of the first element.</summary>
-        /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
-        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        public T ToScalar()
-        {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-            return Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in this));
         }
 
         /// <summary>Converts the current instance to an equivalent string representation.</summary>
@@ -435,11 +202,11 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < lastElement; i++)
             {
-                sb.Append(((IFormattable)(GetElement(i))).ToString(format, formatProvider));
+                sb.Append(((IFormattable)(this.GetElement(i))).ToString(format, formatProvider));
                 sb.Append(separator);
                 sb.Append(' ');
             }
-            sb.Append(((IFormattable)(GetElement(lastElement))).ToString(format, formatProvider));
+            sb.Append(((IFormattable)(this.GetElement(lastElement))).ToString(format, formatProvider));
 
             sb.Append('>');
             return StringBuilderCache.GetStringAndRelease(sb);
