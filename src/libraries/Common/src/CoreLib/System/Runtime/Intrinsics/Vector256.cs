@@ -1758,6 +1758,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
         public static T GetElement<T>(this Vector256<T> vector, int index)
             where T : struct
         {
@@ -1780,6 +1781,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A <see cref="Vector256{T}" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
         public static Vector256<T> WithElement<T>(this Vector256<T> vector, int index, T value)
             where T : struct
         {
@@ -1801,11 +1803,11 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to get the lower 128-bits from.</param>
         /// <returns>The value of the lower 128-bits as a new <see cref="Vector128{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static Vector128<T> GetLower<T>(this Vector256<T> vector)
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-
             return Unsafe.As<Vector256<T>, Vector128<T>>(ref vector);
         }
 
@@ -1815,14 +1817,33 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value of the lower 128-bits as a <see cref="Vector128{T}" />.</param>
         /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the specified value and the upper 128-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> WithLower<T>(this Vector256<T> vector, Vector128<T> value)
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
-            Vector256<T> result = vector;
-            Unsafe.As<Vector256<T>, Vector128<T>>(ref result) = value;
-            return result;
+            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
+            {
+                // All integral types generate the same instruction, so just pick one rather than handling each T separately
+                return Avx2.InsertVector128(vector.AsByte(), value.AsByte(), 0).As<byte, T>();
+            }
+
+            if (Avx.IsSupported)
+            {
+                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
+                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
+                return Avx.InsertVector128(vector.AsSingle(), value.AsSingle(), 0).As<float, T>();
+            }
+
+            return SoftwareFallback(vector, value);
+
+            static Vector256<T> SoftwareFallback(Vector256<T> vector, Vector128<T> value)
+            {
+                Vector256<T> result = vector;
+                Unsafe.As<Vector256<T>, Vector128<T>>(ref result) = value;
+                return result;
+            }
         }
 
         /// <summary>Gets the value of the upper 128-bits as a new <see cref="Vector128{T}" />.</summary>
@@ -1830,13 +1851,32 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to get the upper 128-bits from.</param>
         /// <returns>The value of the upper 128-bits as a new <see cref="Vector128{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> GetUpper<T>(this Vector256<T> vector)
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
-            ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref vector);
-            return Unsafe.Add(ref lower, 1);
+            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
+            {
+                // All integral types generate the same instruction, so just pick one rather than handling each T separately
+                return Avx2.ExtractVector128(vector.AsByte(), 1).As<byte, T>();
+            }
+
+            if (Avx.IsSupported)
+            {
+                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
+                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
+                return Avx.ExtractVector128(vector.AsSingle(), 1).As<float, T>();
+            }
+
+            return SoftwareFallback(vector);
+
+            static Vector128<T> SoftwareFallback(Vector256<T> vector)
+            {
+                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref vector);
+                return Unsafe.Add(ref lower, 1);
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the upper 128-bits set to the same value as that in the given vector.</summary>
@@ -1845,15 +1885,34 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value of the upper 128-bits as a <see cref="Vector128{T}" />.</param>
         /// <returns>A new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the upper 128-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> WithUpper<T>(this Vector256<T> vector, Vector128<T> value)
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
-            Vector256<T> result = vector;
-            ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref result);
-            Unsafe.Add(ref lower, 1) = value;
-            return result;
+            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
+            {
+                // All integral types generate the same instruction, so just pick one rather than handling each T separately
+                return Avx2.InsertVector128(vector.AsByte(), value.AsByte(), 1).As<byte, T>();
+            }
+
+            if (Avx.IsSupported)
+            {
+                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
+                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
+                return Avx.InsertVector128(vector.AsSingle(), value.AsSingle(), 1).As<float, T>();
+            }
+
+            return SoftwareFallback(vector, value);
+
+            static Vector256<T> SoftwareFallback(Vector256<T> vector, Vector128<T> value)
+            {
+                Vector256<T> result = vector;
+                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref result);
+                Unsafe.Add(ref lower, 1) = value;
+                return result;
+            }
         }
 
         /// <summary>Converts the given vector to a scalar containing the value of the first element.</summary>

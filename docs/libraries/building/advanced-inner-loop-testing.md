@@ -10,13 +10,13 @@ For the sake of completeness, we have placed our repositories under `d:\git\`.
 If you've made changes to coreclr make sure to also build it and pass its binaries to corefx.
 ```
 coreclr\build -release
-corefx\build -release -- /p:CoreCLROverridePath=d:\git\coreclr\bin\Product\Windows_NT.x64.Release\
+corefx\build -c Release /p:CoreCLROverridePath=d:\git\coreclr\bin\Product\Windows_NT.x64.Release\
 ```
 
 ## Compile corefx with pre-compiled coreclr binaries
 If you haven't made any changes to coreclr you're fine with just building corefx. This automatically picks pre-compiled coreclr binaries from MyGet.
 ```
-corefx\build -release
+corefx\build -c Release
 ```
 
 ## Create and prepare your application
@@ -42,7 +42,7 @@ public class Program
 
 3. Copy the just built corefx assemblies into your application directory. When using Visual Studio or the .NET Core SDK Host (`dotnet.exe`) you usually compile against *reference assemblies*. For simplicity we compile against the same assembly set that we use during run time.
 ```
-xcopy ..\corefx\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9 runtime /e /i /y /s
+xcopy ..\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9 runtime /e /i /y /s
 ```
 
 You don't need all the assemblies that are built by corefx but copying the entire directory makes it easier if you want to reference additional ones. At a minimum, this app will need the following assemblies to run:

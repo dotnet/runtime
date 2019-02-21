@@ -14,7 +14,7 @@
 
 function BuildAndTestBinary
 {
-    $output = (msbuild /t:rebuild,test /p:Outerloop=true)
+    $output = (msbuild /t:rebuild,test /p:OuterLoop=true)
     if ($lastexitcode -ne 0)
     {
         throw "Build/test failed."
