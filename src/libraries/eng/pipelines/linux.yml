@@ -36,7 +36,7 @@ jobs:
             _helixQueues: $(linuxArm64Queues)
             _dockerContainer: ubuntu_1604_arm64_cross_container
             _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
-            _buildExtraArguments: ''
+            _buildExtraArguments: --warnAsError false
 
           ${{ if eq(parameters.isOuterloopBuild, 'true') }}:
             x64_Debug:
@@ -55,7 +55,7 @@ jobs:
               _helixQueues: $(linuxArm64Queues)
               _dockerContainer: ubuntu_1604_arm64_cross_container
               _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
-              _buildExtraArguments: ''
+              _buildExtraArguments: --warnAsError false
           
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             musl_x64_Release:
@@ -110,7 +110,7 @@ jobs:
               _BuildConfig: Release
               _architecture: arm
               _framework: netcoreapp
-              _buildExtraArguments: /p:RuntimeOS=ubuntu.16.04
+              _buildExtraArguments: /p:RuntimeOS=ubuntu.16.04 --warnAsError false
               _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm '
               _dockerContainer: ubuntu_1604_arm_cross_container
 

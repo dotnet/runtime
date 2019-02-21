@@ -5,16 +5,12 @@
   <Import Project="Directory.Build.props" />
 
   <PropertyGroup>
-    <BuildRestore Condition="'$(BuildRestore)' == ''">true</BuildRestore>
     <BuildNative Condition="'$(BuildNative)' == ''">true</BuildNative>
     <BuildManaged Condition="'$(BuildManaged)' == ''">true</BuildManaged>
-    <BuildTests Condition="'$(BuildTests)' == ''">false</BuildTests>
     <BuildPackages Condition="'$(BuildPackages)' == ''">true</BuildPackages>
 
-    <BuildDependsOn Condition="'$(BuildRestore)' == 'true'">$(BuildDependsOn);Restore</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildNative)' == 'true'">$(BuildDependsOn);BuildNative</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildManaged)' == 'true'">$(BuildDependsOn);BuildManaged</BuildDependsOn>
-    <BuildDependsOn Condition="'$(BuildTests)' == 'true'">$(BuildDependsOn);Test</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildPackages)' == 'true'">$(BuildDependsOn);Pack</BuildDependsOn>
 
     <!-- Explicitly set Configuration based on BuildConfiguration for the root projects -->
@@ -58,12 +54,44 @@
     <MSBuild Projects="@(_BuildMangedProjects)" Properties="$(ProjectProperties)" />
   </Target>
 
+  <Target Name="BuildTests">
+    <ItemGroup>
+      <_TestProjects Include="src\tests.builds" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_TestProjects)"
+             Targets="BuildAllProjects"
+             Properties="$(ProjectProperties);BuildTests=true" />
+  </Target>
+
   <Target Name="Test">
     <ItemGroup>
       <_TestProjects Include="src\tests.builds" />
     </ItemGroup>
 
-    <MSBuild Projects="@(_TestProjects)" Properties="$(ProjectProperties)" />
+    <MSBuild Projects="@(_TestProjects)"
+             Targets="TestAllProjects"
+             Properties="$(ProjectProperties);Test=true" />
+  </Target>
+
+  <Target Name="IntegrationTest">
+    <ItemGroup>
+      <_TestProjects Include="src\tests.builds" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_TestProjects)"
+             Targets="TestAllProjects"
+             Properties="$(ProjectProperties);IntegrationTest=true" />
+  </Target>
+
+  <Target Name="PerformanceTest">
+    <ItemGroup>
+      <_TestProjects Include="src\tests.builds" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_TestProjects)"
+             Targets="TestAllProjects"
+             Properties="$(ProjectProperties);PerformanceTest=true" />
   </Target>
 
   <Target Name="Pack">

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>CoreFx.Private.TestUtilities</AssemblyName>
     <ProjectGuid>{EBDB0247-CA43-4226-B7A1-8FEF21061D09}</ProjectGuid>
@@ -17,6 +17,7 @@
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\Diagnostics\RemoteExecutorTestBase.cs" />
     <Compile Include="System\Net\PlatformDetection.Networking.cs" />
+    <Compile Include="System\PlatformApis.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="System\TestEnvironment.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'netcoreapp2.0'" Include="System\Diagnostics\RemoteExecutorTestBase.netcore.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\Diagnostics\RemoteExecutorTestBase.netfx.cs" />
@@ -102,7 +103,6 @@
     <ReferenceFromRuntime Include="xunit.core" />
     <ReferenceFromRuntime Include="$(MicrosoftDotNetXUnitExtensionsPackage)" />
     <ReferenceFromRuntime Include="xunit.assert" />
-    <ReferenceFromRuntime Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
