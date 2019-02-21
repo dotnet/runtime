@@ -127,7 +127,7 @@ jobs:
           - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ClientRS4.ES.Open
           - nanoQueues: Windows.10.Nano.Amd64.Open
           - uapNetfxQueues: Windows.10.Amd64.ClientRS5.Open
-        
+
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - netcoreappWindowsQueues: Windows.7.Amd64+Windows.81.Amd64+Windows.10.Amd64.Core+Windows.10.Amd64.ClientRS4
           - nanoQueues: Windows.10.Nano.Amd64
@@ -177,30 +177,27 @@ jobs:
 
         customBuildSteps:
           - script: build.cmd
+                    -restore
+                    -build
+                    -configuration $(_BuildConfig)
                     -ci
-                    -$(_framework)
-                    /p:ArchGroup=$(_architecture)
-                    /p:ConfigurationGroup=$(_BuildConfig)
+                    -buildtests
+                    -allconfigurations
+                    -arch $(_architecture)
                     /p:RuntimeOS=win10
+                    /p:ArchiveTests=Packages
                     $(_windowsOfficialBuildArguments)
                     $(_msbuildCommonParameters)
-            displayName: Build Packages
-          - script: build.cmd
-                    -ci
-                    -test
-                    -$(_framework)
-                    /p:ArchGroup=$(_architecture)
-                    /p:ConfigurationGroup=$(_BuildConfig)
-                    /p:ArchiveTests=true
-            displayName: Build test projects
+            displayName: Build Packages and Tests
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             - script: build.cmd
+                      -restore
+                      -build
+                      -configuration $(_BuildConfig)
                       -ci
-                      -test
-                      /p:TargetGroup=netstandard
-                      /p:ArchGroup=$(_architecture)
-                      /p:ConfigurationGroup=$(_BuildConfig)
-                      /p:SkipTests=true
+                      -buildtests
+                      -framework netstandard
+                      -arch $(_architecture)
               displayName: Build Netstandard Test Suite
 
       # TODO: UAPAOT official builds should send to helix using continuation runner.

@@ -173,4 +173,4 @@ Helper scripts are available at https://github.com/dotnet/corefx/tree/master/src
 * `*System.Threading.Tasks.Dataflow.DataflowEventSource {16F53577-E41D-43D4-B47E-C17025BF4025}`: Provides an event source for tracing Dataflow information.
 
 ## Notes 
-* You can find the test invocation command-line by looking at the logs generated after the `dotnet msbuild /t:rebuild,test` within the test folder.
+* You can find the test invocation command-line by looking at the logs generated after the `dotnet msbuild /t:rebuildandtest` within the test folder.

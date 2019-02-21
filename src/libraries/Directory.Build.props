@@ -443,7 +443,6 @@
   <!-- Test properties for full build. -->
   <PropertyGroup Condition="'$(BuildAllProjects)' == 'true'">
     <GenerateFullCoverageReport Condition="'$(GenerateFullCoverageReport)' == ''">true</GenerateFullCoverageReport>
-    <Performance Condition="'$(Performance)' == ''">false</Performance>
   </PropertyGroup>
 
   <!-- TODO: Fix VB test project reference to Test SDK. -->
