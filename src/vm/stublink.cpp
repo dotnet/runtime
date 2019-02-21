@@ -12,7 +12,6 @@
 #include "threads.h"
 #include "excep.h"
 #include "stublink.h"
-#include "perfcounters.h"
 #include "stubgen.h"
 #include "stublink.inl"
 
@@ -1969,8 +1968,6 @@ VOID Stub::DeleteStub()
     }
     CONTRACTL_END;
 
-    COUNTER_ONLY(GetPerfCounters().m_Interop.cStubs--);
-
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     if (HasUnwindInfo())
     {
@@ -2148,8 +2145,6 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     _ASSERTE(!nUnwindInfoSize || !pHeap || pHeap->m_fPermitStubsWithUnwindInfo);
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
-
-    COUNTER_ONLY(GetPerfCounters().m_Interop.cStubs++);
 
     S_SIZE_T size = S_SIZE_T(sizeof(Stub));
 

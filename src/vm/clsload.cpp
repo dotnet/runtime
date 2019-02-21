@@ -30,7 +30,6 @@
 #include "jitinterface.h"
 #include "vars.hpp"
 #include "assembly.hpp"
-#include "perfcounters.h"
 #include "eeprofinterfaces.h"
 #include "eehash.h"
 #include "typehash.h"
@@ -523,8 +522,6 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
 #endif
 
 #ifndef DACCESS_COMPILE
-            COUNTER_ONLY(GetPerfCounters().m_Loading.cLoadFailures++);
-
             m_pAssembly->ThrowTypeLoadException(pName, IDS_CLASSLOAD_GENERAL);
 #else
             DacNotImpl();
@@ -3655,10 +3652,6 @@ void ClassLoader::Notify(TypeHandle typeHnd)
             typeHnd.NotifyDebuggerLoad(NULL, FALSE);
         }
 #endif // DEBUGGING_SUPPORTED
-
-#if defined(ENABLE_PERF_COUNTERS)
-        GetPerfCounters().m_Loading.cClassesLoaded ++;
-#endif
     }
 }
 

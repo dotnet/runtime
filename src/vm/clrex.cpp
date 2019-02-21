@@ -1623,8 +1623,6 @@ OBJECTREF EETypeLoadException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    COUNTER_ONLY(GetPerfCounters().m_Loading.cLoadFailures++);
-
     MethodTable *pMT = MscorlibBinder::GetException(kTypeLoadException);
 
     struct _gc {
@@ -1823,8 +1821,6 @@ OBJECTREF EEFileLoadException::CreateThrowable()
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-    
-    COUNTER_ONLY(GetPerfCounters().m_Loading.cLoadFailures++);
 
     // Fetch any log info from the fusion log
     SString logText;

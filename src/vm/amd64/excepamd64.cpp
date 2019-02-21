@@ -23,7 +23,6 @@
 #include "siginfo.hpp"
 #include "gcheaputilities.h"
 #include "eedbginterfaceimpl.h" //so we can clearexception in COMPlusThrow
-#include "perfcounters.h"
 #include "asmconstants.h"
 
 #include "exceptionhandling.h"

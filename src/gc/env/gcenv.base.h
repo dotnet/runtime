@@ -498,8 +498,6 @@ inline bool dbgOnly_IsSpecialEEThread()
 // Performance logging
 //
 
-#define COUNTER_ONLY(x)
-
 //#include "etmdummy.h"
 //#define ETW_EVENT_ENABLED(e,f) false
 
