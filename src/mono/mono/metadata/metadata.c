@@ -2506,12 +2506,6 @@ image_sets_unlock (void)
 	mono_os_mutex_unlock (&image_sets_mutex);
 }
 
-static int
-compare_pointers (const void *a, const void *b)
-{
-	return (size_t)a - (size_t)b;
-}
-
 //1103, 1327, 1597
 #define HASH_TABLE_SIZE 1103
 static MonoImageSet *img_set_cache [HASH_TABLE_SIZE];
