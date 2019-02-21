@@ -31,11 +31,8 @@
 
     <PropertyGroup>
       <ExcludeTraits Condition="'$(ExcludeTraits)'==''">category=outerloop;category=failing</ExcludeTraits>
-      <!-- Run one assembly at a time on Linux/arm to avoid OutOfMemory (see https://github.com/dotnet/coreclr/issues/20328) -->
-      <ParallelRun Condition="'$(ParallelRun)'=='' and '$(__BuildOS)'=='Linux' and '$(__BuildArch)'=='arm'">collections</ParallelRun>
-      <!-- Run one assembly at a time on arm64 to avoid excessive parallelism leading to test timeouts (see https://github.com/dotnet/coreclr/issues/22419) -->
-      <ParallelRun Condition="'$(ParallelRun)'=='' and '$(__BuildArch)'=='arm64'">collections</ParallelRun>
-      <ParallelRun Condition="'$(ParallelRun)'==''">all</ParallelRun>
+      <!-- Run one assembly at a time to avoid excessive parallelism leading to test timeouts -->
+      <ParallelRun Condition="'$(ParallelRun)'==''">collections</ParallelRun>
     </PropertyGroup>
     <ItemGroup>
       <IncludeTraitsItems Include="$(IncludeTraits)" />
