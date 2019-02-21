@@ -144,63 +144,73 @@ namespace JIT.HardwareIntrinsics.General
             Vector256<Int32> value;
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object byteResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsByte), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object byteResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsByte))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<byte>)(byteResult), value);
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object doubleResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsDouble), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object doubleResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsDouble))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<double>)(doubleResult), value);
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object shortResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsInt16), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object shortResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsInt16))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<short>)(shortResult), value);
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object intResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsInt32), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object intResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsInt32))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<int>)(intResult), value);
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object longResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsInt64), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object longResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsInt64))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<long>)(longResult), value);
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object sbyteResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsSByte), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object sbyteResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsSByte))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<sbyte>)(sbyteResult), value);
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object floatResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsSingle), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object floatResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsSingle))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<float>)(floatResult), value);
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object ushortResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsUInt16), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object ushortResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsUInt16))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<ushort>)(ushortResult), value);
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object uintResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsUInt32), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object uintResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsUInt32))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<uint>)(uintResult), value);
 
             value = Vector256.Create(TestLibrary.Generator.GetInt32());
-            object ulongResult = typeof(Vector256<Int32>)
-                                    .GetMethod(nameof(Vector256.AsUInt64), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object ulongResult = typeof(Vector256)
+                                    .GetMethod(nameof(Vector256.AsUInt64))
+                                    .MakeGenericMethod(typeof(Int32))
+                                    .Invoke(null, new object[] { value });
             ValidateResult((Vector256<ulong>)(ulongResult), value);
         }
 

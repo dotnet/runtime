@@ -73,9 +73,10 @@ namespace JIT.HardwareIntrinsics.General
 
             {VectorType}<{BaseType}> value = {VectorType}.Create({ConsumeValues});
 
-            object result = typeof({VectorType}<{BaseType}>)
-                                .GetMethod(nameof({VectorType}.{Method}), new Type[] { })
-                                .Invoke(value, new object[] { });
+            object result = typeof({VectorType})
+                                .GetMethod(nameof({VectorType}.{Method}))
+                                .MakeGenericMethod(typeof({BaseType}))
+                                .Invoke(null, new object[] { value });
 
             ValidateResult(({BaseType})(result), values);
         }

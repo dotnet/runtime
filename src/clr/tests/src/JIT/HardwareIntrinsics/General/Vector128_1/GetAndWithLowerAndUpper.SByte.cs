@@ -78,20 +78,24 @@ namespace JIT.HardwareIntrinsics.General
 
             Vector128<SByte> value = Vector128.Create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15]);
 
-            object lowerResult = typeof(Vector128<SByte>)
-                                    .GetMethod(nameof(Vector128.GetLower), new Type[] { })
-                                    .Invoke(value, new object[] { });
-            object upperResult = typeof(Vector128<SByte>)
-                                    .GetMethod(nameof(Vector128.GetUpper), new Type[] { })
-                                    .Invoke(value, new object[] { });
+            object lowerResult = typeof(Vector128)
+                                    .GetMethod(nameof(Vector128.GetLower))
+                                    .MakeGenericMethod(typeof(SByte))
+                                    .Invoke(null, new object[] { value });
+            object upperResult = typeof(Vector128)
+                                    .GetMethod(nameof(Vector128.GetUpper))
+                                    .MakeGenericMethod(typeof(SByte))
+                                    .Invoke(null, new object[] { value });
             ValidateGetResult((Vector64<SByte>)(lowerResult), (Vector64<SByte>)(upperResult), values);
 
-            object result = typeof(Vector128<SByte>)
-                                .GetMethod(nameof(Vector128.WithLower), new Type[] { typeof(Vector64<SByte>) })
-                                .Invoke(value, new object[] { upperResult });
-            result = typeof(Vector128<SByte>)
-                        .GetMethod(nameof(Vector128.WithUpper), new Type[] { typeof(Vector64<SByte>) })
-                        .Invoke(result, new object[] { lowerResult });
+            object result = typeof(Vector128)
+                                .GetMethod(nameof(Vector128.WithLower))
+                                .MakeGenericMethod(typeof(SByte))
+                                .Invoke(null, new object[] { value, upperResult });
+            result = typeof(Vector128)
+                        .GetMethod(nameof(Vector128.WithUpper))
+                        .MakeGenericMethod(typeof(SByte))
+                        .Invoke(null, new object[] { result, lowerResult });
             ValidateWithResult((Vector128<SByte>)(result), values);
         }
 
