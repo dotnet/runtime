@@ -281,17 +281,7 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
-        // Wrapper function to wrap the typical use of InternalLoad.
-        internal static RuntimeAssembly InternalLoad(string assemblyString,
-                                                     ref StackCrawlMark stackMark)
-        {
-            return InternalLoad(assemblyString, ref stackMark, IntPtr.Zero);
-        }
-
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal static RuntimeAssembly InternalLoad(string assemblyString,
-                                                     ref StackCrawlMark stackMark,
-                                                     IntPtr pPrivHostBinder)
+        internal static RuntimeAssembly InternalLoad(string assemblyString, ref StackCrawlMark stackMark)
         {
             RuntimeAssembly assembly;
             AssemblyName an = CreateAssemblyName(assemblyString, out assembly);
@@ -302,9 +292,7 @@ namespace System.Reflection
                 return assembly;
             }
 
-            return InternalLoadAssemblyName(an, null, ref stackMark,
-                                            pPrivHostBinder,
-                                            true  /*thrownOnFileNotFound*/);
+            return InternalLoadAssemblyName(an, ref stackMark);
         }
 
         // Creates AssemblyName. Fills assembly if AssemblyResolve event has been raised.
@@ -327,28 +315,8 @@ namespace System.Reflection
             return an;
         }
 
-        // Wrapper function to wrap the typical use of InternalLoadAssemblyName.
-        internal static RuntimeAssembly InternalLoadAssemblyName(
-            AssemblyName assemblyRef,
-            RuntimeAssembly reqAssembly,
-            ref StackCrawlMark stackMark,
-            bool throwOnFileNotFound,
-            IntPtr ptrLoadContextBinder = default)
+        internal static RuntimeAssembly InternalLoadAssemblyName(AssemblyName assemblyRef, ref StackCrawlMark stackMark, IntPtr ptrLoadContextBinder = default)
         {
-            return InternalLoadAssemblyName(assemblyRef, reqAssembly, ref stackMark, IntPtr.Zero, throwOnFileNotFound, ptrLoadContextBinder);
-        }
-
-        internal static RuntimeAssembly InternalLoadAssemblyName(
-            AssemblyName assemblyRef,
-            RuntimeAssembly reqAssembly,
-            ref StackCrawlMark stackMark,
-            IntPtr pPrivHostBinder,
-            bool throwOnFileNotFound,
-            IntPtr ptrLoadContextBinder = default)
-        {
-            if (assemblyRef == null)
-                throw new ArgumentNullException(nameof(assemblyRef));
-
 #if FEATURE_APPX
             if (ApplicationModel.IsUap)
             {
@@ -368,19 +336,16 @@ namespace System.Reflection
 
             string codeBase = VerifyCodeBase(assemblyRef.CodeBase);
 
-            return nLoad(assemblyRef, codeBase, reqAssembly, ref stackMark,
-                pPrivHostBinder,
-                throwOnFileNotFound, ptrLoadContextBinder);
+            return nLoad(assemblyRef, codeBase, null, ref stackMark, true, ptrLoadContextBinder);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern RuntimeAssembly nLoad(AssemblyName fileName,
                                                     string codeBase,
-                                                    RuntimeAssembly locationHint,
+                                                    RuntimeAssembly assemblyContext,
                                                     ref StackCrawlMark stackMark,
-                                                    IntPtr pPrivHostBinder,
                                                     bool throwOnFileNotFound,
-                                                    IntPtr ptrLoadContextBinder = default);
+                                                    IntPtr ptrLoadContextBinder);
 
         public override bool ReflectionOnly
         {
@@ -654,9 +619,6 @@ namespace System.Reflection
                                                        Version version,
                                                        bool throwOnFileNotFound)
         {
-            // This stack crawl mark is never used because the requesting assembly is explicitly specified,
-            // so the value could be anything.
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             AssemblyName an = new AssemblyName();
 
             an.SetPublicKey(GetPublicKey());
@@ -670,9 +632,10 @@ namespace System.Reflection
             an.CultureInfo = culture;
             an.Name = GetSimpleName() + ".resources";
 
-            RuntimeAssembly retAssembly = nLoad(an, null, this, ref stackMark,
-                                IntPtr.Zero,
-                                throwOnFileNotFound);
+            // This stack crawl mark is never used because the requesting assembly is explicitly specified,
+            // so the value could be anything.
+            StackCrawlMark unused = default;
+            RuntimeAssembly retAssembly = nLoad(an, null, this, ref unused, throwOnFileNotFound, IntPtr.Zero);
 
             if (retAssembly == this)
             {

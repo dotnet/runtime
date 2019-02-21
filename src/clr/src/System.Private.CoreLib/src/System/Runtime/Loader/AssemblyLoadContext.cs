@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System.Runtime.Loader
 {
@@ -368,10 +369,15 @@ namespace System.Runtime.Loader
             return assembly;
         }
 
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
+            if (assemblyName == null)
+                throw new ArgumentNullException(nameof(assemblyName));
+
             // Attempt to load the assembly, using the same ordering as static load, in the current load context.
-            return Assembly.Load(assemblyName, m_pNativeAssemblyLoadContext);
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
+            return Assembly.Load(assemblyName, ref stackMark, m_pNativeAssemblyLoadContext);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
