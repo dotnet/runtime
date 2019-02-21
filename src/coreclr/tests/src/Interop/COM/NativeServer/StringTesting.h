@@ -317,7 +317,7 @@ public: // IUnknown
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
     {
-        return DoQueryInterface<StringTesting, IStringTesting>(this, riid, ppvObject);
+        return DoQueryInterface(riid, ppvObject, static_cast<IStringTesting *>(this));
     }
 
     DEFINE_REF_COUNTING();

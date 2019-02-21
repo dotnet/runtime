@@ -5,6 +5,8 @@
 using System.Collections;
 using System.Runtime.InteropServices.ComTypes;
 
+using Variant = System.Runtime.InteropServices.Variant;
+
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
     internal class EnumerableViewOfDispatch : ICustomAdapter, System.Collections.IEnumerable
@@ -23,19 +25,25 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 
         public IEnumerator GetEnumerator()
         {
-            DISPPARAMS dispParams = new DISPPARAMS();
-            Guid guid = Guid.Empty;
-            Dispatch.Invoke(
-                DISPID_NEWENUM,
-                ref guid,
-                LCID_DEFAULT,
-                InvokeFlags.DISPATCH_METHOD | InvokeFlags.DISPATCH_PROPERTYGET,
-                ref dispParams,
-                out object result,
-                IntPtr.Zero,
-                IntPtr.Zero);
+            Variant result;
+            unsafe
+            {
+                void *resultLocal = &result;
+                DISPPARAMS dispParams = new DISPPARAMS();
+                Guid guid = Guid.Empty;
+                Dispatch.Invoke(
+                    DISPID_NEWENUM,
+                    ref guid,
+                    LCID_DEFAULT,
+                    InvokeFlags.DISPATCH_METHOD | InvokeFlags.DISPATCH_PROPERTYGET,
+                    ref dispParams,
+                    new IntPtr(resultLocal),
+                    IntPtr.Zero,
+                    IntPtr.Zero);
+            }
 
-            if (!(result is IEnumVARIANT enumVariant))
+            object resultAsObject = result.ToObject();
+            if (!(resultAsObject is IEnumVARIANT enumVariant))
             {
                 throw new InvalidOperationException(SR.InvalidOp_InvalidNewEnumVariant);
             }

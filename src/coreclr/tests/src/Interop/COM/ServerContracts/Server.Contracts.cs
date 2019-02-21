@@ -234,6 +234,24 @@ namespace Server.Contract
     }
 
     [ComVisible(true)]
+    [Guid("83AFF8E4-C46A-45DB-9D91-2ADB5164545E")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    public interface IEventTesting
+    {
+        [DispId(1)]
+        void FireEvent();
+    }
+
+    [ComImport]
+    [Guid("28ea6635-42ab-4f5b-b458-4152e78b8e86")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    public interface TestingEvents
+    {
+        [DispId(100)]
+        void OnEvent([MarshalAs(UnmanagedType.BStr)] string msg);
+    };
+
+    [ComVisible(true)]
     [Guid("98cc27f0-d521-4f79-8b63-e980e3a92974")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IAggregationTesting
