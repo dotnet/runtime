@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 
 namespace System.Runtime.InteropServices
@@ -14,6 +13,12 @@ namespace System.Runtime.InteropServices
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IDispatch
     {
+        int GetTypeInfoCount();
+
+        ComTypes.ITypeInfo GetTypeInfo(
+            int iTInfo,
+            int lcid);
+
         void GetIDsOfNames(
             ref Guid riid,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 2), In]
@@ -22,21 +27,17 @@ namespace System.Runtime.InteropServices
             int lcid,
             [Out] int[] rgDispId);
 
-        ITypeInfo GetTypeInfo(
-            int iTInfo,
-            int lcid);
-
-        int GetTypeInfoCount();
-
+        // The last 3 parameters of Invoke() are optional and must be defined
+        // as IntPtr in C#, since there is no language feature for optional ref/out.
         void Invoke(
             int dispIdMember,
             ref Guid riid,
             int lcid,
             InvokeFlags wFlags,
-            ref DISPPARAMS pDispParams,
-            out object pVarResult,
-            IntPtr pExcepInfo,
-            IntPtr puArgErr);
+            ref ComTypes.DISPPARAMS pDispParams,
+            /* out/optional */ IntPtr pVarResult,
+            /* out/optional */ IntPtr pExcepInfo,
+            /* out/optional */ IntPtr puArgErr);
     }
 
     [Flags]

@@ -63,7 +63,7 @@ public:
         REFIID riid,
         void** ppvObject)
     {
-        return DoQueryInterface<IntegerEnumerator, IEnumVARIANT>(this, riid, ppvObject);
+        return DoQueryInterface(riid, ppvObject, static_cast<IEnumVARIANT *>(this));
     }
 
     DEFINE_REF_COUNTING();
@@ -146,7 +146,7 @@ public:
         REFIID riid,
         void** ppvObject)
     {
-        return DoQueryInterface<IntegerEnumerable, IDispatch>(this, riid, ppvObject);
+        return DoQueryInterface(riid, ppvObject, static_cast<IDispatch*>(this));
     }
 
     DEFINE_REF_COUNTING();
