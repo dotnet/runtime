@@ -1120,7 +1120,14 @@ namespace System.Net.Http
 
             _connectionWindow.Dispose();
             _concurrentStreams.Dispose();
-            _writerLock.Dispose();
+
+            // ISSUE #35466
+            // We can't dispose the writer lock here, because there's a timing issue where this can occur 
+            // before a writer that has completed writing has actually release the lock.
+            // It's not clear that we actually need to dispose this object, since it shouldn't
+            // actually hold any unmanaged resources. However, we should ensure we have a clear understanding
+            // of shutdown semantics and object lifetimes in general, even if we don't actually dispose this.
+            // _writerLock.Dispose();
         }
 
         public void Dispose()
