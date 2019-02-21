@@ -50,7 +50,7 @@ jobs:
           artifactName: packages
           downloadPath: ${{ parameters.artifactsDir }}
 
-      - script: build.cmd -InitTools
+      - script: build.cmd -restore
         displayName: Restore Tools
 
       - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
@@ -127,7 +127,7 @@ jobs:
           artifactName: packages
           downloadPath: ${{ parameters.artifactsDir }}
 
-      - script: build.cmd -InitTools
+      - script: build.cmd -restore
         displayName: Restore Tools
 
       - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
