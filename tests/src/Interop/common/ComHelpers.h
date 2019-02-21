@@ -16,19 +16,15 @@
 
 namespace Internal
 {
-    template<typename C, typename I>
+    template<typename I>
     HRESULT __QueryInterfaceImpl(
-        /* [in] */ C *obj,
         /* [in] */ REFIID riid,
-        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject,
+        /* [in] */ I obj)
     {
         if (riid == __uuidof(I))
         {
-            *ppvObject = static_cast<I*>(obj);
-        }
-        else if (riid == __uuidof(IUnknown))
-        {
-            *ppvObject = static_cast<IUnknown*>(obj);
+            *ppvObject = static_cast<I>(obj);
         }
         else
         {
@@ -39,19 +35,20 @@ namespace Internal
         return S_OK;
     }
 
-    template<typename C, typename I1, typename I2, typename ...R>
+    template<typename I1, typename ...IR>
     HRESULT __QueryInterfaceImpl(
-        /* [in] */ C *obj,
         /* [in] */ REFIID riid,
-        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject,
+        /* [in] */ I1 i1,
+        /* [in] */ IR... remain)
     {
         if (riid == __uuidof(I1))
         {
-            *ppvObject = static_cast<I1*>(obj);
+            *ppvObject = static_cast<I1>(i1);
             return S_OK;
         }
 
-        return __QueryInterfaceImpl<C, I2, R...>(obj, riid, ppvObject);
+        return __QueryInterfaceImpl(riid, ppvObject, remain...);
     }
 }
 
@@ -68,21 +65,29 @@ public:
     UnknownImpl(UnknownImpl&&) = default;
     UnknownImpl& operator=(UnknownImpl&&) = default;
 
-    template<typename C, typename ...I>
+    template<typename I1, typename ...IR>
     HRESULT DoQueryInterface(
-        /* [in] */ C *derived,
         /* [in] */ REFIID riid,
-        /* [iid_is][out] */ _COM_Outptr_ void **ppvObject)
+        /* [iid_is][out] */ _COM_Outptr_ void **ppvObject,
+        /* [in] */ I1 i1,
+        /* [in] */ IR... remain)
     {
-        assert(derived != nullptr);
         if (ppvObject == nullptr)
             return E_POINTER;
 
-        HRESULT hr = Internal::__QueryInterfaceImpl<C, I...>(derived, riid, ppvObject);
-        if (hr == S_OK)
-            DoAddRef();
+        if (riid == __uuidof(IUnknown))
+        {
+            *ppvObject = static_cast<IUnknown *>(i1);
+        }
+        else
+        {
+            HRESULT hr = Internal::__QueryInterfaceImpl(riid, ppvObject, i1, remain...);
+            if (hr != S_OK)
+                return hr;
+        }
 
-        return hr;
+        DoAddRef();
+        return S_OK;
     }
 
     ULONG DoAddRef()
@@ -162,7 +167,7 @@ public: // IUnknown
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
     {
-        return DoQueryInterface<ClassFactoryBasic, IClassFactory>(this, riid, ppvObject);
+        return DoQueryInterface(riid, ppvObject, static_cast<IClassFactory *>(this));
     }
 
     DEFINE_REF_COUNTING();
@@ -221,7 +226,7 @@ public: // IUnknown
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
     {
-        return DoQueryInterface<ClassFactoryAggregate, IClassFactory>(this, riid, ppvObject);
+        return DoQueryInterface(riid, ppvObject, static_cast<IClassFactory *>(this));
     }
 
     DEFINE_REF_COUNTING();
