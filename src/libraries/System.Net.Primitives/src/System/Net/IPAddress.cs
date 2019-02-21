@@ -28,6 +28,8 @@ namespace System.Net
         public static readonly IPAddress IPv6Loopback = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 0);
         public static readonly IPAddress IPv6None = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
 
+        private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1 }, 0);
+
         /// <summary>
         /// For IPv4 addresses, this field stores the Address.
         /// For IPv6 addresses, this field stores the ScopeId.
@@ -425,7 +427,7 @@ namespace System.Net
             if (address.IsIPv6)
             {
                 // Do Equals test for IPv6 addresses
-                return address.Equals(IPv6Loopback);
+                return address.Equals(IPv6Loopback) || address.Equals(s_loopbackMappedToIPv6);
             }
             else
             {
@@ -542,49 +544,37 @@ namespace System.Net
             }
         }
 
-        internal bool Equals(object comparandObj, bool compareScopeId)
+        /// <summary>Compares two IP addresses.</summary>
+        public override bool Equals(object comparand)
         {
-            IPAddress comparand = comparandObj as IPAddress;
+            return comparand is IPAddress address && Equals(address);
+        }
 
-            if (comparand == null)
-            {
-                return false;
-            }
+        internal bool Equals(IPAddress comparand)
+        {
+            Debug.Assert(comparand != null);
 
             // Compare families before address representations
             if (AddressFamily != comparand.AddressFamily)
             {
                 return false;
             }
+
             if (IsIPv6)
             {
-                // For IPv6 addresses, we must compare the full 128-bit representation.
-                for (int i = 0; i < NumberOfLabels; i++)
-                {
-                    if (comparand._numbers[i] != _numbers[i])
-                    {
-                        return false;
-                    }
-                }
-
-                // The scope IDs must also match
-                return comparand.PrivateScopeId == PrivateScopeId || !compareScopeId;
+                // For IPv6 addresses, we must compare the full 128-bit representation and the scope IDs.
+                ReadOnlySpan<byte> thisNumbers = MemoryMarshal.AsBytes<ushort>(_numbers);
+                ReadOnlySpan<byte> comparandNumbers = MemoryMarshal.AsBytes<ushort>(comparand._numbers);
+                return
+                    MemoryMarshal.Read<ulong>(thisNumbers) == MemoryMarshal.Read<ulong>(comparandNumbers) &&
+                    MemoryMarshal.Read<ulong>(thisNumbers.Slice(sizeof(ulong))) == MemoryMarshal.Read<ulong>(comparandNumbers.Slice(sizeof(ulong))) &&
+                    PrivateScopeId == comparand.PrivateScopeId;
             }
             else
             {
                 // For IPv4 addresses, compare the integer representation.
                 return comparand.PrivateAddress == PrivateAddress;
             }
-        }
-
-        /// <devdoc>
-        ///   <para>
-        ///     Compares two IP addresses.
-        ///   </para>
-        /// </devdoc>
-        public override bool Equals(object comparand)
-        {
-            return Equals(comparand, true);
         }
 
         public override int GetHashCode()
