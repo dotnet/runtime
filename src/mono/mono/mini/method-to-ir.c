@@ -5708,31 +5708,7 @@ handle_constrained_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		ins->type = STACK_OBJ;
 		sp [0] = ins;
 	} else {
-		if (m_class_is_valuetype (cmethod->klass)) {
-			/* Own method */
-		} else {
-			/* Interface method */
-			int ioffset, slot;
-
-			mono_class_setup_vtable (constrained_class);
-			CHECK_TYPELOAD (constrained_class);
-			ioffset = mono_class_interface_offset (constrained_class, cmethod->klass);
-			if (ioffset == -1)
-				TYPE_LOAD_ERROR (constrained_class);
-			slot = mono_method_get_vtable_slot (cmethod);
-			if (slot == -1)
-				TYPE_LOAD_ERROR (cmethod->klass);
-			cmethod = m_class_get_vtable (constrained_class) [ioffset + slot];
-			*ref_cmethod = cmethod;
-
-			if (cmethod->klass == mono_defaults.enum_class) {
-				/* Enum implements some interfaces, so treat this as the first case */
-				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (constrained_class), sp [0]->dreg, 0);
-				ins->klass = constrained_class;
-				sp [0] = mini_emit_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
-				CHECK_CFG_EXCEPTION;
-			}
-		}
+		g_assert (m_class_is_valuetype (cmethod->klass));
 		*ref_virtual = FALSE;
 	}
 
