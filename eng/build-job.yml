@@ -47,7 +47,7 @@ jobs:
     - name: portableBuildArg
       value: ''
     # Ensure that we produce os-specific packages for the following distros:
-    - ${{ if in(parameters.osIdentifier, 'Linux_rhel6', 'Linux_musl') }}:
+    - ${{ if in(parameters.osIdentifier, 'Linux_rhel6') }}:
       - name: portableBuildArg
         value: '-portablebuild=false'
     - name: clangArg
