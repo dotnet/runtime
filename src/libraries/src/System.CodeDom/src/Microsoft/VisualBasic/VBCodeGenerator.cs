@@ -2183,9 +2183,6 @@ namespace Microsoft.VisualBasic
             Output.WriteLine(SR.AutoGen_Comment_Line1);
             Output.Write("'     ");
             Output.WriteLine(SR.AutoGen_Comment_Line2);
-            Output.Write("'     ");
-            Output.Write(SR.AutoGen_Comment_Line3);
-            Output.WriteLine(Environment.Version.ToString());
             Output.WriteLine("'");
             Output.Write("'     ");
             Output.WriteLine(SR.AutoGen_Comment_Line4);
