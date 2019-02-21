@@ -1971,6 +1971,32 @@ public:
         return result;
     }
 
+    // IsCompatibleType() takes two var_types and returns true if they
+    // are compatible types for CSE substitution
+    //
+    bool IsCompatibleType(var_types cseLclVarTyp, var_types expTyp)
+    {
+        // Exact type match is the expected case
+        if (cseLclVarTyp == expTyp)
+        {
+            return true;
+        }
+
+        // We also allow TYP_BYREF and TYP_I_IMPL as compatible types
+        //
+        if ((cseLclVarTyp == TYP_BYREF) && (expTyp == TYP_I_IMPL))
+        {
+            return true;
+        }
+        if ((cseLclVarTyp == TYP_I_IMPL) && (expTyp == TYP_BYREF))
+        {
+            return true;
+        }
+
+        // Otherwise we have incompatible types
+        return false;
+    }
+
     // PerformCSE() takes a successful candidate and performs  the appropriate replacements:
     //
     // It will replace all of the CSE defs with assignments to a new "cse0" LclVar
@@ -2105,7 +2131,10 @@ public:
 
             /* Figure out the actual type of the value */
             var_types expTyp = genActualType(exp->TypeGet());
-            noway_assert(expTyp == cseLclVarTyp);
+
+            // The cseLclVarType must be a compatible with expTyp
+            //
+            noway_assert(IsCompatibleType(cseLclVarTyp, expTyp));
 
             // This will contain the replacement tree for exp
             // It will either be the CSE def or CSE ref
