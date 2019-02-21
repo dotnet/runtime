@@ -32,7 +32,6 @@
 #include "process.h"
 #endif // !FEATURE_PAL
 
-#include "perfcounters.h"
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
 #endif

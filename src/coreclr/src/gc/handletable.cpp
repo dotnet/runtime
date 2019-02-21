@@ -184,8 +184,10 @@ void HndDestroyHandleTable(HHANDLETABLE hTable)
     // fetch the handle table pointer
     HandleTable *pTable = Table(hTable);
 
+#ifdef ENABLE_PERF_COUNTERS
     // decrement handle count by number of handles in this table
     COUNTER_ONLY(GetPerfCounters().m_GC.cHandles -= HndCountHandles(hTable));
+#endif
 
     // We are going to free the memory for this HandleTable.
     // Let us reset the copy in g_pHandleTableArray to NULL.

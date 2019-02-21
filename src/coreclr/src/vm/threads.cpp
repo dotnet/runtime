@@ -23,7 +23,6 @@
 #include "corprof.h"                // profiling
 #include "eeprofinterfaces.h"
 #include "eeconfig.h"
-#include "perfcounters.h"
 #include "corhost.h"
 #include "win32threadpool.h"
 #include "jitinterface.h"
@@ -1494,9 +1493,6 @@ Thread::Thread()
     _ASSERTE((((size_t) &m_State) & 3) == 0);
     _ASSERTE((((size_t) &m_ThreadTasks) & 3) == 0);
 
-    // Track perf counter for the logical thread object.
-    COUNTER_ONLY(GetPerfCounters().m_LocksAndThreads.cCurrentThreadsLogical++);
-
     // On all callbacks, call the trap code, which we now have
     // wired to cause a GC.  Thus we will do a GC on all Transition Frame Transitions (and more).
    if (GCStress<cfg_transition>::IsEnabled())
@@ -1653,15 +1649,6 @@ BOOL Thread::InitThread(BOOL fInternal)
         // all memory allocations).  By sending a message now, we insure that the stress
         // log will not allocate memory at these critical times an avoid deadlock.
     STRESS_LOG2(LF_ALWAYS, LL_ALWAYS, "SetupThread  managed Thread %p Thread Id = %x\n", this, GetThreadId());
-
-    if ((m_State & TS_WeOwn) == 0)
-    {
-    COUNTER_ONLY(GetPerfCounters().m_LocksAndThreads.cRecognizedThreads++);
-    }
-    else
-    {
-        COUNTER_ONLY(GetPerfCounters().m_LocksAndThreads.cCurrentThreadsPhysical++);
-    }
 
 #ifndef FEATURE_PAL
     // workaround: Remove this when we flow impersonation token to host.
@@ -2608,20 +2595,6 @@ Thread::~Thread()
 #ifdef _DEBUG
     m_pFrame = (Frame *)POISONC;
 #endif
-
-    // Update Perfmon counters.
-    COUNTER_ONLY(GetPerfCounters().m_LocksAndThreads.cCurrentThreadsLogical--);
-
-    // Current recognized threads are non-runtime threads that are alive and ran under the
-    // runtime. Check whether this Thread was one of them.
-    if ((m_State & TS_WeOwn) == 0)
-    {
-        COUNTER_ONLY(GetPerfCounters().m_LocksAndThreads.cRecognizedThreads--);
-    }
-    else
-    {
-        COUNTER_ONLY(GetPerfCounters().m_LocksAndThreads.cCurrentThreadsPhysical--);
-    }
 
     // Normally we shouldn't get here with a valid thread handle; however if SetupThread
     // failed (due to an OOM for example) then we need to CloseHandle the thread

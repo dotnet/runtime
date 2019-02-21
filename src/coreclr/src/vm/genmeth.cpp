@@ -12,7 +12,6 @@
 #include "method.hpp"
 #include "field.h"
 #include "eeconfig.h"
-#include "perfcounters.h"
 #include "crst.h"
 #include "generics.h"
 #include "genericdict.h"
