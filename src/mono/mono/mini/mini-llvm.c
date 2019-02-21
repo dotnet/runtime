@@ -7719,16 +7719,15 @@ emit_method_inner (EmitContext *ctx)
 			if (ctx->unreachable [node->in_bb->block_num])
 				continue;
 
-			if (!values [sreg1]) {
-				/* Can happen with values in EH clauses */
-				set_failure (ctx, "incoming phi sreg1");
-				return;
-			}
-
 			if (phi->opcode == OP_VPHI) {
 				g_assert (LLVMTypeOf (ctx->addresses [sreg1]) == LLVMTypeOf (values [phi->dreg]));
 				LLVMAddIncoming (values [phi->dreg], &ctx->addresses [sreg1], &in_bb, 1);
 			} else {
+				if (!values [sreg1]) {
+					/* Can happen with values in EH clauses */
+					set_failure (ctx, "incoming phi sreg1");
+					return;
+				}
 				if (LLVMTypeOf (values [sreg1]) != LLVMTypeOf (values [phi->dreg])) {
 					set_failure (ctx, "incoming phi arg type mismatch");
 					return;
