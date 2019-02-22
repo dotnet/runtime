@@ -12,6 +12,9 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
+
+    <!-- Test fails to build on .Net Core 3.0 preview3 -->
+    <DisableProjectBuild Condition="'$(__BuildOS)' == 'OSX'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
