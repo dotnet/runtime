@@ -1025,7 +1025,27 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
 
             // Failfast if exception indicates corrupted process state            
             if (pTracker->GetCorruptionSeverity() == ProcessCorrupting)
-                EEPOLICY_HANDLE_FATAL_ERROR(pExceptionRecord->ExceptionCode);
+            {
+                OBJECTREF oThrowable = NULL;
+                SString message;
+
+                GCPROTECT_BEGIN(oThrowable);
+                oThrowable = pTracker->GetThrowable();
+                if (oThrowable != NULL)
+                {
+                    EX_TRY
+                    {
+                        GetExceptionMessage(oThrowable, message);
+                    }
+                    EX_CATCH
+                    {
+                    }
+                    EX_END_CATCH(SwallowAllExceptions);
+                }
+                GCPROTECT_END();
+
+                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(pExceptionRecord->ExceptionCode, (LPCWSTR)message);
+            }
         }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
