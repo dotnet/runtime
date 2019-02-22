@@ -553,15 +553,17 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			virtual_ = FALSE;
 		}
 
+		if (!virtual_) {
+			if (!method->string_ctor)
+				MONO_EMIT_NEW_CHECK_THIS (cfg, this_reg);
+		}
+
 		if (!virtual_ && cfg->llvm_only && cfg->interp && !tailcall && can_enter_interp (cfg, method, FALSE)) {
 			MonoInst *ftndesc = mini_emit_get_rgctx_method (cfg, -1, method, MONO_RGCTX_INFO_METHOD_FTNDESC);
 
 			/* This call might need to enter the interpreter so make it indirect */
 			return mini_emit_llvmonly_calli (cfg, sig, args, ftndesc);
 		} else if (!virtual_) {
-			if (!method->string_ctor)
-				MONO_EMIT_NEW_CHECK_THIS (cfg, this_reg);
-
 			call->inst.opcode = callvirt_to_call (call->inst.opcode);
 		} else {
 			vtable_reg = alloc_preg (cfg);

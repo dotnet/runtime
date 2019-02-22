@@ -2241,6 +2241,8 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 void
 mono_field_get_value_internal (MonoObject *obj, MonoClassField *field, void *value);
 
+MonoMethod* mono_get_context_capture_method (void);
+
 /* GC handles support
  *
  * A handle can be created to refer to a managed object and either prevent it

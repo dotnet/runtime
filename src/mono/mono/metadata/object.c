@@ -91,7 +91,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, "System.Runtime.Remotin
 static GENERATE_GET_CLASS_WITH_CACHE (unhandled_exception_event_args, "System", "UnhandledExceptionEventArgs")
 static GENERATE_GET_CLASS_WITH_CACHE (sta_thread_attribute, "System", "STAThreadAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (activation_services, "System.Runtime.Remoting.Activation", "ActivationServices")
-
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading", "ExecutionContext")
 static GENERATE_GET_CLASS_WITH_CACHE (asyncresult, "System.Runtime.Remoting.Messaging", "AsyncResult");
 
 #define ldstr_lock() mono_coop_mutex_lock (&ldstr_section)
@@ -8008,6 +8008,25 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 	return sh->handle;
 }
 
+/*
+ * Returns the MonoMethod to call to Capture the ExecutionContext.
+ */
+MonoMethod*
+mono_get_context_capture_method (void)
+{
+	static MonoMethod *method;
+
+	/* older corlib revisions won't have the class (nor the method) */
+	MonoClass *execution_context = mono_class_try_get_execution_context_class ();
+	if (execution_context && !method) {
+		ERROR_DECL (error);
+		mono_class_init_internal (execution_context);
+		method = mono_class_get_method_from_name_checked (execution_context, "Capture", 0, 0, error);
+		mono_error_assert_ok (error);
+	}
+
+	return method;
+}
 
 static MonoObject*
 mono_runtime_capture_context (MonoDomain *domain, MonoError *error)
@@ -8038,6 +8057,7 @@ mono_runtime_capture_context (MonoDomain *domain, MonoError *error)
 	return runtime_invoke (NULL, NULL, NULL, domain->capture_context_method);
 #endif
 }
+
 /**
  * mono_async_result_new:
  * \param domain domain where the object will be created.

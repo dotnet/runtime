@@ -43,7 +43,7 @@ assertf_LDADD = ../libeglib.la $(LTLIBICONV)
 
 # Something amiss with subdirs ordering?
 ../libeglib.la: ../goutput.c # etc
-	make  -C .. $(@F)
+	$(MAKE)  -C .. $(@F)
 
 run-eglib: all
 	srcdir=`readlink -f $(srcdir)` ./test-eglib

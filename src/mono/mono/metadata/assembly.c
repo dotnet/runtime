@@ -1055,7 +1055,7 @@ mono_assemblies_init (void)
 	assembly_remapping_table = g_hash_table_new (g_str_hash, g_str_equal);
 
 	int i;
-	for (i = 0; i < G_N_ELEMENTS (framework_assemblies) - 1; ++i)
+	for (i = 0; i < G_N_ELEMENTS (framework_assemblies); ++i)
 		g_hash_table_insert (assembly_remapping_table, (void*)framework_assemblies [i].assembly_name, (void*)&framework_assemblies [i]);
 
 #endif

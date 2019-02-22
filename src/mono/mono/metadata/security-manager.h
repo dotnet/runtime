@@ -52,7 +52,6 @@ typedef struct {
 } MonoSecurityManager;
 
 gboolean mono_is_ecma_key (const char *publickey, int size);
-MonoMethod* mono_get_context_capture_method (void);
 
 MonoSecurityManager* mono_security_manager_get_methods (void);
 

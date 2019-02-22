@@ -444,8 +444,8 @@ gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo) MONO
 gconstpointer     mono_icall_get_wrapper_full  (MonoJitICallInfo* callinfo, gboolean do_compile);
 
 MonoJumpInfo* mono_patch_info_dup_mp        (MonoMemPool *mp, MonoJumpInfo *patch_info);
-guint     mono_patch_info_hash (gconstpointer data);
-gint      mono_patch_info_equal (gconstpointer ka, gconstpointer kb);
+guint     mono_patch_info_hash (gconstpointer data) MONO_LLVM_INTERNAL;
+gint      mono_patch_info_equal (gconstpointer ka, gconstpointer kb) MONO_LLVM_INTERNAL;
 MonoJumpInfo *mono_patch_info_list_prepend  (MonoJumpInfo *list, int ip, MonoJumpInfoType type, gconstpointer target);
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token);
 MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context);

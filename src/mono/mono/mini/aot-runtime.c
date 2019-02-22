@@ -5883,6 +5883,20 @@ i16_idx_comparer (const void *key, const void *member)
 	return idx1 - idx2;
 }
 
+static gboolean
+aot_is_slim_amodule (MonoAotModule *amodule)
+{
+	if (!amodule)
+		return FALSE;
+
+	/* "slim" only applies to mscorlib.dll */
+	if (strcmp (amodule->aot_name, "mscorlib"))
+		return FALSE;
+
+	guint32 f = amodule->info.flags;
+	return (f & MONO_AOT_FILE_FLAG_INTERP) && !(f & MONO_AOT_FILE_FLAG_FULL_AOT);
+}
+
 gpointer
 mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 {
@@ -5910,7 +5924,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	} else
 		amodule = m_class_get_image (method->klass)->aot_module;
 
-	if (amodule == NULL || method_index == 0xffffff) {
+	if (amodule == NULL || method_index == 0xffffff || aot_is_slim_amodule (amodule)) {
 		/* couldn't find unbox trampoline specifically generated for that
 		 * method. this should only happen when an unbox trampoline is needed
 		 * for `fullAOT code -> native-to-interp -> interp` transition if

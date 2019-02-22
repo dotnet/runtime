@@ -19,6 +19,7 @@ struct MonoBtlsSslCtx {
 	void *instance;
 	MonoBtlsVerifyFunc verify_func;
 	MonoBtlsSelectFunc select_func;
+	MonoBtlsServerNameFunc server_name_func;
 };
 
 #define debug_print(ptr,message) \
@@ -294,4 +295,31 @@ mono_btls_ssl_ctx_set_client_ca_list (MonoBtlsSslCtx *ctx, int count, int *sizes
 	// Takes ownership of the list.
 	SSL_CTX_set_client_CA_list (ctx->ctx, name_list);
 	return 1;
+}
+
+static int
+server_name_callback (SSL *ssl, int *out_alert, void *arg)
+{
+	MonoBtlsSslCtx *ctx = (MonoBtlsSslCtx *)arg;
+
+	if (ctx->server_name_func (ctx->instance) == 1)
+		return SSL_TLSEXT_ERR_OK;
+
+	*out_alert = SSL_AD_USER_CANCELLED;
+	return SSL_TLSEXT_ERR_ALERT_FATAL;
+}
+
+void
+mono_btls_ssl_ctx_set_server_name_callback (MonoBtlsSslCtx *ptr, MonoBtlsServerNameFunc func)
+{
+	ptr->server_name_func = func;
+
+	SSL_CTX_set_tlsext_servername_callback (ptr->ctx, server_name_callback);
+	SSL_CTX_set_tlsext_servername_arg (ptr->ctx, ptr);
+}
+
+const char *
+mono_btls_ssl_ctx_get_servername (MonoBtlsSslCtx *ptr)
+{
+	return SSL_get_servername (ptr->ctx, TLSEXT_NAMETYPE_host_name);
 }

@@ -1601,38 +1601,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			ADD_CODE (td, MINT_LDIND_I);
 			ADD_CODE (td, csignature->param_count);
 		} else {
-			if (m_class_is_valuetype (target_method->klass)) {
-				/* Own method */
-			} else {
-				/* Interface method */
-				int ioffset, slot;
-
-				mono_class_setup_vtable (constrained_class);
-				ioffset = mono_class_interface_offset (constrained_class, target_method->klass);
-				if (ioffset == -1)
-					g_error ("type load error: constrained_class");
-				slot = mono_method_get_vtable_slot (target_method);
-				if (slot == -1)
-					g_error ("type load error: target_method->klass");
-				target_method = m_class_get_vtable (constrained_class) [ioffset + slot];
-
-				if (target_method->klass == mono_defaults.enum_class) {
-					if ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
-						/* managed pointer on the stack, we need to deref that puppy */
-						ADD_CODE (td, MINT_LDIND_I);
-						ADD_CODE (td, csignature->param_count);
-					}
-					if (mint_type (m_class_get_byval_arg (constrained_class)) == MINT_TYPE_VT) {
-						ADD_CODE (td, MINT_BOX_VT);
-						ADD_CODE (td, get_data_item_index (td, constrained_class));
-						ADD_CODE (td, csignature->param_count | ((td->sp - 1 - csignature->param_count)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP));
-					} else {
-						ADD_CODE (td, MINT_BOX);
-						ADD_CODE (td, get_data_item_index (td, constrained_class));
-						ADD_CODE (td, csignature->param_count);
-					}
-				}
-			}
+			g_assert (m_class_is_valuetype (target_method->klass));
 			is_virtual = FALSE;
 		}
 	}

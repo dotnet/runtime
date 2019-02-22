@@ -780,6 +780,12 @@ mono_local_cprop (MonoCompile *cfg)
 				bb_opt->in_count = bb_opt->out_count = 0;
 				cfg->cbb = bb_opt;
 
+				if (!saved_prev) {
+					/* first instruction of basic block got replaced, so create
+					 * dummy inst that points to start of basic block */
+					MONO_INST_NEW (cfg, saved_prev, OP_NOP);
+					saved_prev = bb->code;
+				}
 				/* ins is hanging, continue scanning the emitted code */
 				ins = saved_prev;
 				continue;

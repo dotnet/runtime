@@ -4112,7 +4112,7 @@ mono_interp_to_native_trampoline (gpointer addr, gpointer ccontext)
 }
 
 static gboolean
-mini_is_interpreter_enabled ()
+mini_is_interpreter_enabled (void)
 {
 	return mono_use_interpreter;
 }
