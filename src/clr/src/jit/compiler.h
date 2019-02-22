@@ -1632,6 +1632,7 @@ class fgArgInfo
     bool            hasStackArgs; // true if we have one or more stack arguments
     bool            argsComplete; // marker for state
     bool            argsSorted;   // marker for state
+    bool            needsTemps;   // one or more arguments must be copied to a temp by EvalArgsToTemps
     fgArgTabEntry** argTable;     // variable sized array of per argument descrption: (i.e. argTable[argTableSize])
 
 private:
@@ -1700,6 +1701,10 @@ public:
     bool HasRegArgs()
     {
         return hasRegArgs;
+    }
+    bool NeedsTemps()
+    {
+        return needsTemps;
     }
     bool HasStackArgs()
     {
