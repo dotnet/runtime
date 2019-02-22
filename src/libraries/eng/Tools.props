@@ -69,7 +69,7 @@
       <OptionalToolProjectPath>$(OptionalToolDir)Tools.csproj</OptionalToolProjectPath>
     </PropertyGroup>
 
-    <Exec Command="$(DotNetCmd) restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources"
+    <Exec Command="$(DotNetCmd) restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources /p:TargetGroup=$(TargetGroup)"
           WorkingDirectory="$(RepoRoot)" />
 
   </Target>

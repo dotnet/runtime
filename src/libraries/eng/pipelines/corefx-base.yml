@@ -80,16 +80,16 @@ jobs:
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+          - _dotnetFeedUrl: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+          - group: DotNet-Internal-Tools-Feed
+          - group: DotNet-Blob-Feed
+
         - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
           - _msbuildCommonParameters: ''
 
         - ${{ if eq(job.submitToHelix, 'true') }}:
           - group: DotNet-HelixApi-Access
           - _archiveTestsParameter: /p:ArchiveTests=Tests
-
-        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-          - group: DotNet-Blob-Feed
-          - _dotnetFeedUrl: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
 
         # Windows variables
         - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
@@ -103,10 +103,6 @@ jobs:
 
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             - _windowsOfficialBuildArguments: ''
-
-          # Optional tooling variables
-          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - group: DotNet-Internal-Tools-Feed
 
         # Non-Windows variables
         - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
@@ -149,25 +145,24 @@ jobs:
           - ${{ if ne(job.preBuildSteps[0], '') }}:
             - ${{ job.preBuildSteps }}
 
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - task: NuGetToolInstaller@0
+              inputs:
+                versionSpec: '4.9.2'
+              condition: ne(variables['_skipRestoreInternalTools'], 'true')
+            - task: NuGetCommand@2
+              displayName: Restore internal tools
+              inputs:
+                command: restore
+                feedsToUse: config
+                restoreSolution: 'eng\common\internal\Tools.csproj'
+                nugetConfigPath: 'NuGet.config'
+                restoreDirectory: '$(Build.SourcesDirectory)\.packages'
+              env:
+                VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials": [{"endpoint":"https://devdiv.pkgs.visualstudio.com/_packaging/8f470c7e-ac49-4afe-a6ee-cf784e438b93/nuget/v3/index.json", "username":"dn-bot","password":"$(dn-bot-devdiv-nuget-feed-read)"}]}'
+                TargetGroup: $(_framework)
+
           - ${{ if eq(job.customBuildSteps[0], '') }}:
-
-            - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-              - task: NuGetToolInstaller@0
-                inputs:
-                  versionSpec: '4.9.2'
-                condition: eq(variables['_restoreInternalTools'], 'true')
-              - task: NuGetCommand@2
-                displayName: Restore internal tools
-                inputs:
-                  command: restore
-                  feedsToUse: config
-                  restoreSolution: 'eng\common\internal\Tools.csproj'
-                  nugetConfigPath: 'NuGet.config'
-                  restoreDirectory: '$(Build.SourcesDirectory)\.packages'
-                condition: eq(variables['_restoreInternalTools'], 'true')
-                env:
-                  VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials": [{"endpoint":"https://devdiv.pkgs.visualstudio.com/_packaging/8f470c7e-ac49-4afe-a6ee-cf784e438b93/nuget/v3/index.json", "username":"dn-bot","password":"$(dn-bot-devdiv-nuget-feed-read)"}]}'
-
             - script: $(_buildScript)
                     $(_commonArguments)
                     -f $(_framework)
@@ -194,7 +189,7 @@ jobs:
                       /p:TargetGroup=$(_framework)
                       /p:OfficialBuildId=$(Build.BuildNumber)
                       /p:ContinuousIntegrationBuild=true
-                      /p:AssetManifestFileName='corefx-test-assets.xml'
+                      /p:AssetManifestFileName=corefx-test-assets.xml
                       /p:ManifestBuildId=$(Build.BuildNumber)
                       /p:ManifestBuildData=Location=$(_dotnetFeedUrl)
                       /p:ManifestBranch=$(Build.SourceBranchName)
