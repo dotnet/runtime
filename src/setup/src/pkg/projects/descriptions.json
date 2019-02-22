@@ -43,5 +43,10 @@
         "Name": "Microsoft.NETCore.App.Ref",
         "Description": "A set of .NET APIs that are included in the default .NET Core application model. Contains reference assemblies, documentation, and other design-time assets.",
         "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.WindowsDesktop.App.Ref",
+        "Description": "Windows Forms and WPF targeting pack. Contains reference assemblies, documentation, and other design-time assets.",
+        "CommonTypes": [ ]
     }
 ]

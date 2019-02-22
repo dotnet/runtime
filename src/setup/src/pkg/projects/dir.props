@@ -14,11 +14,15 @@
 
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
 
-    <IncludeSourceFilesInPackage Condition="'$(DotNetBuildFromSource)' == 'true'">false</IncludeSourceFilesInPackage>
-    <IncludeSourceFilesInPackage Condition="'$(IncludeSourceFilesInPackage)' == ''">true</IncludeSourceFilesInPackage>
+    <BuildRuntimePackages>true</BuildRuntimePackages>
 
     <PackProjectDependencies>true</PackProjectDependencies>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <!-- WindowsDesktop packs currently depend on non-source-built App package. -->
+    <ProjectExclusions Include="windowsdesktop\**\*.*proj" />
+  </ItemGroup>
 
   <ItemGroup>
     <FrameworkListRootAttributes Include="Name" Value="$(NETCoreAppFrameworkBrandName)" />
@@ -59,6 +63,64 @@
     </Otherwise>
   </Choose>
 
+  <!-- Detect framework pack suffix and apply defaults. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Ref'))">
+    <IsTargetingPack>true</IsTargetingPack>
+
+    <!--
+      Prevent 'runtime.<rid>.Microsoft.<framework>.App.Ref' packages from being built.
+
+      Not the same as HasRuntimePackages, which is used to set up ProjectReferences on the runtime
+      packages and generate assets such as the platform manifest.
+    -->
+    <BuildRuntimePackages>false</BuildRuntimePackages>
+
+    <PackageType>DotnetPlatform</PackageType>
+    <Version>$(SharedFrameworkNugetVersion)</Version>
+
+    <!-- Include the platform manifest in the data dir. -->
+    <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
+
+    <!-- Exclude runtime.json from the package. -->
+    <IncludeRuntimeJson>false</IncludeRuntimeJson>
+    <IsLineupPackage>false</IsLineupPackage>
+
+    <!-- Remove package dependencies. -->
+    <ExcludeLineupReference>true</ExcludeLineupReference>
+    <PackProjectDependencies>false</PackProjectDependencies>
+
+    <!-- Location to lay out pack contents. Used later to create installers. -->
+    <PackLayoutDir>$(IntermediateOutputPath)layout/</PackLayoutDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.depproj'">
+    <!-- we intentionally don't want to produce output -->
+    <OutputPath>unused</OutputPath>
+    <!--
+      we don't want any analyzers by ResolveNuGetPackageAssets
+      null-refs when this isn't set and an analyzer is in the packages
+    -->
+    <Language>unused</Language>
+    <NuGetTargetMoniker>$(NETCoreAppFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NETCoreAppFramework)</NuGetTargetMonikerShort>
+    <PackageTargetFramework>$(NETCoreAppFramework)</PackageTargetFramework>
+    <CrossGenOutputPath>$(CrossGenRootPath)/$(MSBuildProjectName)/$(NuGetRuntimeIdentifier)</CrossGenOutputPath>
+    <ContainsPackageReferences>true</ContainsPackageReferences>
+    <RestorePackages>true</RestorePackages>
+    <RidSpecificAssets Condition="'$(NuGetRuntimeIdentifier)' != ''">true</RidSpecificAssets>
+    <IntermediateOutputPath>$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)</IntermediateOutputPath>
+    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
+    <AdditionalRestoreArgs>/p:HasRuntimePackages=false /p:IntermediateOutputPath=$(IntermediateOutputPath)</AdditionalRestoreArgs>
+    <CrossGenSymbolsOutputPath>$(PackageSymbolsBinDir)/$(MSBuildProjectName)</CrossGenSymbolsOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsFrameworkPackage)' == 'true'">
+    <Version>$(SharedFrameworkNugetVersion)</Version>
+    <OmitDependencies>true</OmitDependencies>
+    <SkipValidatePackage>true</SkipValidatePackage>
+  </PropertyGroup>
+
   <!-- Add required legal files to packages -->
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
     <File Condition="Exists('$(PackageLicenseFile)')"
@@ -92,11 +154,6 @@
     </BuildRID>
     <BuildRID Include="@(_buildingOnRID)"/>
   </ItemGroup>
-  
-  <PropertyGroup>
-    <_projectExtension Condition="Exists('$(MSBuildProjectName).pkgproj')">.pkgproj</_projectExtension>
-    <_projectExtension Condition="'$(_projectExtension)' == '' AND Exists('$(MSBuildProjectName).depproj')">.depproj</_projectExtension>
-  </PropertyGroup>
 
   <ItemGroup Condition="'$(HasRuntimePackages)' != 'false'">
     <_project Include="@(BuildRID)">
@@ -105,10 +162,11 @@
       <AdditionalProperties>PackageTargetRuntime=%(Identity);NuGetRuntimeIdentifier=%(Identity);Platform=%(Platform)</AdditionalProperties>
     </_project>
 
-    <Project Include="@(_project->'$(MSBuildProjectName)$(_projectExtension)')" />
+    <RuntimeProject Include="@(_project->'$(MSBuildProjectFullPath)')" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == '' and '$(HasRuntimePackages)' != 'false'">
-    <ProjectReference Include="@(Project)" />
-  </ItemGroup>  
+    <ProjectReference Include="@(RuntimeProject)" />
+  </ItemGroup>
+  
 </Project>

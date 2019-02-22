@@ -21,6 +21,8 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public string TargetFile { get; set; }
 
+        public string[] TargetFilePrefixes { get; set; }
+
         /// <summary>
         /// Extra attributes to place on the root node.
         /// 
@@ -39,7 +41,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
             foreach (var f in Files
                 .Where(item =>
-                    item.GetMetadata("TargetPath")?.StartsWith("data/") == true &&
+                    IsTargetPathIncluded(item) &&
                     item.ItemSpec.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                 .Select(item => new
                 {
@@ -77,6 +79,12 @@ namespace Microsoft.DotNet.Build.Tasks
             File.WriteAllText(TargetFile, frameworkManifest.ToString());
 
             return !Log.HasLoggedErrors;
+        }
+
+        private bool IsTargetPathIncluded(ITaskItem item)
+        {
+            return TargetFilePrefixes
+                ?.Any(prefix => item.GetMetadata("TargetPath")?.StartsWith(prefix) == true) ?? true;
         }
     }
 }

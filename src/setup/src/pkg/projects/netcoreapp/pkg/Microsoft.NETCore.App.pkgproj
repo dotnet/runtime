@@ -3,10 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Version>$(SharedFrameworkNugetVersion)</Version>
-    <OmitDependencies>true</OmitDependencies>
-    <SkipValidatePackage>true</SkipValidatePackage>
-    <ShouldCreateLayout>false</ShouldCreateLayout>
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
     <BuildTargetPath>build/$(NETCoreAppFramework)</BuildTargetPath>
     <PlatformManifestTargetPath>$(BuildTargetPath)</PlatformManifestTargetPath>
@@ -16,7 +12,7 @@
   <!-- Identity / Reference package content -->
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
     <!-- reference RID specific packages to generate lineup -->
-    <ProjectReference Include="@(Project)" />
+    <ProjectReference Include="@(RuntimeProject)" />
 
     <!-- references the host packages -->
     <Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
@@ -29,14 +25,5 @@
     </File>
   </ItemGroup>
 
-  <!-- Redistributed package content from other nuget packages-->
-  <ItemGroup>
-    <ProjectReference Include="src\Microsoft.NETCore.App.depproj">
-      <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
-    </ProjectReference>
-  </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
-  <Target Name="GetPackageReport" />
 </Project>

@@ -1,0 +1,10 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Shared targets specific to projects building 'Microsoft.*.App*' packages.
+  -->
+
+  <!-- Target overrides (can't be shared with other package projects) -->
+
+  <Target Name="GetPackageReport" />
+
+</Project>
