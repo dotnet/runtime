@@ -149,7 +149,7 @@ extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const c
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
 //
 // Parameters:
-//  exePath                 - Absolute path of the executable that invoked the ExecuteAssembly
+//  exePath                 - Absolute path of the executable that invoked the ExecuteAssembly (the native host application)
 //  appDomainFriendlyName   - Friendly name of the app domain that will be created to execute the assembly
 //  propertyCount           - Number of properties (elements of the following two arguments)
 //  propertyKeys            - Keys of properties of the app domain
@@ -275,7 +275,7 @@ int coreclr_initialize(
 //
 // Parameters:
 //  hostHandle              - Handle of the host
-//  domainId                - Id of the domain 
+//  domainId                - Id of the domain
 //
 // Returns:
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
