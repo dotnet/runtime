@@ -17,7 +17,7 @@ initDistroRid()
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
-    if [ -z "${__CrossBuild}" ]; then
+    if (( ${__CrossBuild} == 1 )); then
         passedRootfsDir=${ROOTFS_DIR}
     fi
 
@@ -26,6 +26,7 @@ initDistroRid()
 
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 __IsPortableBuild=1
+__CrossBuild=0
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
