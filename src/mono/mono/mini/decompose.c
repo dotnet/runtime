@@ -1986,6 +1986,13 @@ mono_local_emulate_ops (MonoCompile *cfg)
 					first_bb->in_count = first_bb->out_count = 0;
 					cfg->cbb = first_bb;
 
+					if (!saved_prev) {
+						/* first instruction of basic block got replaced, so create
+						 * dummy inst that points to start of basic block */
+						MONO_INST_NEW (cfg, saved_prev, OP_NOP);
+						saved_prev = bb->code;
+					}
+
 					/* ins is hanging, continue scanning the emitted code */
 					ins = saved_prev;
 				} else {
