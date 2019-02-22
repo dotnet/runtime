@@ -6,7 +6,7 @@
 //
 
 // 
-// Inline definitions of various items declared in REJIT.H\
+// Inline definitions of various items declared in REJIT.H
 // ===========================================================================
 #ifndef _REJIT_INL_
 #define _REJIT_INL_

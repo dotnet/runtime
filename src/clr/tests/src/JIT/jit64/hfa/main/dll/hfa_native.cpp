@@ -3,6 +3,17 @@
 
 #include "hfa_native.h"
 
+#ifndef _MSC_VER
+#ifdef BIT64
+#define __int64     long
+#else // BIT64
+#define __int64     long long
+#endif // BIT64
+
+#define __int32     int
+#define __int16     short int
+#define __int8      char        // assumes char is signed
+#endif
 
 // ---------------------------------------------------
 // Init Methods

@@ -37,14 +37,20 @@
     return false; \
     }
 
+#if defined(_MSC_VER)
+#define FUNCTIONNAME __FUNCSIG__
+#else
+#define FUNCTIONNAME __PRETTY_FUNCTION__
+#endif //_MSC_VER
+
 #define VERIFY_ERROR(__expect, __actual) \
-    std::cout << '[' << __FUNCSIG__ << "] EXPECT: " << (__expect) << ", ACTUAL: " << (__actual) << std::endl
+    std::cout << '[' << FUNCTIONNAME << "] EXPECT: " << (__expect) << ", ACTUAL: " << (__actual) << std::endl
 
 #define TRACE(__msg) \
     std::cout << __msg << std::endl
 
 #define VERIFY_ERROR_MSG(__msg, __expect, __actual) \
-    printf("["##__FUNCSIG__##"] "##__msg, (__expect), (__actual))
+    printf("["##FUNCTIONNAME##"] "##__msg, (__expect), (__actual))
 
 //////////////////////////////////////////////////////////////////////////////
 // Verify helper methods

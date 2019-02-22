@@ -70,7 +70,7 @@ HRESULT AlignDWORD( IStream * strm, UINT32 * totalBytes )
 {
     HRESULT hr = S_OK;
 
-    UINT32 aligned = *totalBytes + 3 & ~3;
+    UINT32 aligned = (*totalBytes + 3) & ~3;
     if (aligned > *totalBytes)
     {   // The *totalBytes were not aligned to DWORD, we need to add padding
         DWORD data = 0;
