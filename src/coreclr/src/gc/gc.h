@@ -264,13 +264,6 @@ public:
     {
         return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
     }
-
-protected: 
-public:
-#if defined(FEATURE_BASICFREEZE) && defined(VERIFY_HEAP)
-    // Return TRUE if object lives in frozen segment
-    virtual BOOL IsInFrozenSegment (Object * object) = 0;
-#endif // defined(FEATURE_BASICFREEZE) && defined(VERIFY_HEAP)
 };
 
 // Go through and touch (read) each page straddled by a memory block.

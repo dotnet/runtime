@@ -111,6 +111,7 @@ if(WIN32)
     add_definitions(-DFEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION)
 endif(WIN32)
 
+add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CORECLR)
 add_definitions(-DFEATURE_CORESYSTEM)
 add_definitions(-DFEATURE_CORRUPTING_EXCEPTIONS)

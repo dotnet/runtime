@@ -140,6 +140,14 @@ public:
     
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
 
+#ifdef FEATURE_BASICFREEZE
+    static
+    void* QCALLTYPE RegisterFrozenSegment(void *pSection, INT32 sizeSection);
+
+    static
+    void QCALLTYPE UnregisterFrozenSegment(void *segmentHandle);
+#endif // FEATURE_BASICFREEZE
+
     static 
     int QCALLTYPE StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
 
