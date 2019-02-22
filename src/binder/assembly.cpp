@@ -291,7 +291,7 @@ Exit:
     LPCWSTR Assembly::GetSimpleName() 
     {
         AssemblyName *pAsmName = GetAssemblyName();
-        return (pAsmName == nullptr ? nullptr : pAsmName->GetSimpleName());
+        return (pAsmName == nullptr ? nullptr : (LPCWSTR)pAsmName->GetSimpleName());
     }
 
     HRESULT Assembly::BindAssemblyByName(IAssemblyName * pIAssemblyName, ICLRPrivAssembly ** ppAssembly)

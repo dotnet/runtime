@@ -5020,7 +5020,7 @@ extern "C" uint64_t __rdtsc();
     {
         return (ptrdiff_t)__rdtsc();
     }
-#elif defined(__clang__)    
+#elif defined(__GNUC__)
     static ptrdiff_t get_cycle_count()
     {
         ptrdiff_t cycles;
@@ -9081,7 +9081,7 @@ retry:
                 new_address += pad;
             }
             assert ((chosen_power2 && (i == 0)) ||
-                    (!chosen_power2) && (i < free_space_count));
+                    ((!chosen_power2) && (i < free_space_count)));
         }
 
         int new_bucket_power2 = index_of_highest_set_bit (new_free_space_size);

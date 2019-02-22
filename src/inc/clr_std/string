@@ -53,9 +53,8 @@ public:
         copy(_Ptr, _Count);
     }
 
-    basic_string(const value_type* _Ptr)
+    basic_string(const value_type* _Ptr) : basic_string(_Ptr, c_len(_Ptr))
     {
-        this->basic_string::basic_string(_Ptr, c_len(_Ptr));
     }
 
     void reserve(size_t newcapacity)

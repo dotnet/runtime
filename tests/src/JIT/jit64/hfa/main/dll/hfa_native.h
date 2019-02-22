@@ -7,6 +7,17 @@
 #else // __i386__
 #define __stdcall
 #endif  // !__i386__
+
+#ifdef BIT64
+#define __int64     long
+#else // BIT64
+#define __int64     long long
+#endif // BIT64
+
+#define __int32     int
+#define __int16     short int
+#define __int8      char        // assumes char is signed
+
 #endif // !defined(_MSC_VER)
 
 #if defined(_MSC_VER)
