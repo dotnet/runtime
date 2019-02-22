@@ -71,7 +71,7 @@ void GCHeap::UpdatePreGCCounters()
 #endif //_PREFAST_
     if (hp->settings.reason == reason_induced IN_STRESS_HEAP( && !hp->settings.stress_induced))
     {
-        COUNTER_ONLY(GetPerfCounters().m_GC.cInducedGCs++);
+        GetPerfCounters().m_GC.cInducedGCs++;
     }
 
     GetPerfCounters().m_Security.timeRTchecks = 0;
