@@ -531,6 +531,7 @@ namespace ETW
                 ManifestModule=0x8,
                 IbcOptimized=0x10,
                 ReadyToRunModule=0x20,
+                PartialReadyToRunModule=0x40,
             }ModuleFlags;
 
             typedef enum _RangeFlags

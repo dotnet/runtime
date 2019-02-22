@@ -70,6 +70,12 @@ public:
         return m_pHeader->Flags & READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
     }
 
+    BOOL IsPartial()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->Flags & READYTORUN_FLAG_PARTIAL;
+    }
+
     PTR_PEImageLayout GetImage()
     {
         LIMITED_METHOD_CONTRACT;

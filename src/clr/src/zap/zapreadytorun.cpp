@@ -41,6 +41,9 @@ void ZapReadyToRunHeader::Save(ZapWriter * pZapWriter)
     if (pImage->GetCompileInfo()->AreAllClassesFullyLoaded(pImage->GetModuleHandle()))
         readyToRunHeader.Flags |= READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
 
+    if (pImage->GetZapperOptions()->m_fPartialNGen)
+        readyToRunHeader.Flags |= READYTORUN_FLAG_PARTIAL;
+
     readyToRunHeader.NumberOfSections = m_Sections.GetCount();
 
     pZapWriter->Write(&readyToRunHeader, sizeof(readyToRunHeader));
