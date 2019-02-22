@@ -9,5 +9,6 @@ namespace Internal.Cryptography.Pal
         internal const string CryptographyFeatureName = "cryptography";
         internal const string X509StoresSubFeatureName = "x509stores";
         internal const string CrlsSubFeatureName = "crls";
+        internal const string OcspSubFeatureName = "ocsp";
     }
 }
