@@ -123,9 +123,6 @@
   <data name="BackpressureDeadlock" xml:space="preserve">
     <value>The maximum buffer limit of {0} bytes was exceeded by the writer.</value>
   </data>
-  <data name="CannotAdvancePastCurrentBufferSize" xml:space="preserve">
-    <value>Can't advance past buffer size.</value>
-  </data>
   <data name="CannotCompleteWhileReading" xml:space="preserve">
     <value>Can't complete reader while reading.</value>
   </data>
@@ -146,9 +143,6 @@
   </data>
   <data name="NoReadingOperationToComplete" xml:space="preserve">
     <value>No reading operation to complete.</value>
-  </data>
-  <data name="NoWritingOperation" xml:space="preserve">
-    <value>No writing operation. Make sure GetMemory() was called.</value>
   </data>
   <data name="ReadCanceledOnPipeReader" xml:space="preserve">
     <value>Read was canceled on underlying PipeReader.</value>

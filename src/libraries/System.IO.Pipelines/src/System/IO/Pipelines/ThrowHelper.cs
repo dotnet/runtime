@@ -16,10 +16,6 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateArgumentNullException(ExceptionArgument argument) => new ArgumentNullException(argument.ToString());
 
-        public static void ThrowInvalidOperationException_NotWritingNoAlloc() { throw CreateInvalidOperationException_NotWritingNoAlloc(); }
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static Exception CreateInvalidOperationException_NotWritingNoAlloc() => new InvalidOperationException(SR.NoWritingOperation);
-
         public static void ThrowInvalidOperationException_AlreadyReading() => throw CreateInvalidOperationException_AlreadyReading();
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_AlreadyReading() => new InvalidOperationException(SR.ReadingIsInProgress);
@@ -44,10 +40,6 @@ namespace System.IO.Pipelines
         public static void ThrowInvalidOperationException_NoReadingAllowed() => throw CreateInvalidOperationException_NoReadingAllowed();
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_NoReadingAllowed() => new InvalidOperationException(SR.ReadingAfterCompleted);
-
-        public static void ThrowInvalidOperationException_AdvancingPastBufferSize() => throw CreateInvalidOperationException_AdvancingPastBufferSize();
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static Exception CreateInvalidOperationException_AdvancingPastBufferSize() => new InvalidOperationException(SR.CannotAdvancePastCurrentBufferSize);
 
         public static void ThrowInvalidOperationException_BackpressureDeadlock(long sizeLimit) => throw CreateInvalidOperationException_BackpressureDeadlock(sizeLimit);
         [MethodImpl(MethodImplOptions.NoInlining)]

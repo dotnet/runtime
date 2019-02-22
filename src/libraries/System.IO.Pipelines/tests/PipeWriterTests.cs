@@ -176,16 +176,14 @@ namespace System.IO.Pipelines.Tests
         public void ThrowsOnAdvanceOverMemorySize()
         {
             Memory<byte> buffer = Pipe.Writer.GetMemory(1);
-            var exception = Assert.Throws<InvalidOperationException>(() => Pipe.Writer.Advance(buffer.Length + 1));
-            Assert.Equal("Can't advance past buffer size.", exception.Message);
+            Assert.Throws<ArgumentOutOfRangeException>(() => Pipe.Writer.Advance(buffer.Length + 1));
         }
 
         [Fact]
         public void ThrowsOnAdvanceWithNoMemory()
         {
             PipeWriter buffer = Pipe.Writer;
-            var exception = Assert.Throws<InvalidOperationException>(() => buffer.Advance(1));
-            Assert.Equal("No writing operation. Make sure GetMemory() was called.", exception.Message);
+            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.Advance(1));
         }
     }
 }
