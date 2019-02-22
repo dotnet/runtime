@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1224,6 +1225,35 @@ namespace System.IO.Compression
                 baseStream.Write(bytes, 0, size);
             else
                 baseStream.Read(bytes, 0, size);
+        }
+
+        [Fact]
+        public async Task Parallel_CompressDecompressMultipleStreamsConcurrently()
+        {
+            const int ParallelOperations = 20;
+            const int DataSize = 10 * 1024;
+
+            var sourceData = new byte[DataSize];
+            new Random().NextBytes(sourceData);
+
+            await Task.WhenAll(Enumerable.Range(0, ParallelOperations).Select(_ => Task.Run(async () =>
+            {
+                var compressedStream = new MemoryStream();
+                using (Stream ds = CreateStream(compressedStream, CompressionMode.Compress, leaveOpen: true))
+                {
+                    await ds.WriteAsync(sourceData, 0, sourceData.Length);
+                }
+
+                compressedStream.Position = 0;
+
+                var decompressedStream = new MemoryStream();
+                using (Stream ds = CreateStream(compressedStream, CompressionMode.Decompress, leaveOpen: true))
+                {
+                    await ds.CopyToAsync(decompressedStream);
+                }
+
+                Assert.Equal(sourceData, decompressedStream.ToArray());
+            })));
         }
     }
 
