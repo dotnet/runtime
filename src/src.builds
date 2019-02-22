@@ -10,7 +10,7 @@
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)corehost/build.proj" />
     <Project Include="$(MSBuildThisFileDirectory)managed/dir.proj" />
-    <Project Include="$(MSBuildThisFileDirectory)pkg/**/src/*.builds" />
+    <Project Include="$(MSBuildThisFileDirectory)pkg/projects/src.builds" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

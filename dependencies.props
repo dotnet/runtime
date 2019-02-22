@@ -14,6 +14,11 @@
 
   <PropertyGroup>
     <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
+  </PropertyGroup>
+
+  <!-- Get Windows.winmd for crossgen. -->
+  <PropertyGroup>
+    <MicrosoftTargetingPackPrivateWinRTPackage>Microsoft.TargetingPack.Private.WinRT</MicrosoftTargetingPackPrivateWinRTPackage>
     <MicrosoftTargetingPackPrivateWinRTPackageVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTPackageVersion>
   </PropertyGroup>
 
