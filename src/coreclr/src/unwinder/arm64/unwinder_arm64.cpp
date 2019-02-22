@@ -235,7 +235,7 @@ Return Value:
         SourceAddress = StartingSp + FIELD_OFFSET(ARM64_KTRAP_FRAME, X);
         for (RegIndex = 0; RegIndex < 18; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
-#ifdef __clang__
+#ifdef __GNUC__
             *(&ContextRecord->X0 + RegIndex) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 #else
             ContextRecord->X[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
@@ -315,7 +315,7 @@ Return Value:
         SourceAddress = StartingSp + FIELD_OFFSET(T_CONTEXT, X0);
         for (RegIndex = 0; RegIndex < 29; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
-#ifdef __clang__
+#ifdef __GNUC__
             *(&ContextRecord->X0 + RegIndex) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 #else
             ContextRecord->X[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
@@ -501,7 +501,7 @@ Return Value:
 
     for (RegIndex = 0; RegIndex < RegisterCount; RegIndex++) {
         UPDATE_CONTEXT_POINTERS(UnwindParams, FirstRegister + RegIndex, CurAddress);
-#ifdef __clang__
+#ifdef __GNUC__
         *(&ContextRecord->X0 + FirstRegister + RegIndex) = MEMORY_READ_QWORD(UnwindParams, CurAddress);
 #else
         ContextRecord->X[FirstRegister + RegIndex] = MEMORY_READ_QWORD(UnwindParams, CurAddress);

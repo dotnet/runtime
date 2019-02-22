@@ -446,6 +446,14 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-Werror)
   endif(CLR_CMAKE_WARNINGS_ARE_ERRORS)
 
+  # Disabled common warnings
+  add_compile_options(-Wno-unused-variable)
+  add_compile_options(-Wno-unused-value)
+  add_compile_options(-Wno-unused-function)
+
+  #These seem to indicate real issues
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-offsetof")
+
   if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # The -ferror-limit is helpful during the porting, it makes sure the compiler doesn't stop
     # after hitting just about 20 errors.
@@ -453,7 +461,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 
     # Disabled warnings
     add_compile_options(-Wno-unused-private-field)
-    add_compile_options(-Wno-unused-variable)
     # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
     add_compile_options(-Wno-microsoft)
     # This warning is caused by comparing 'this' to NULL
@@ -468,8 +475,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 
     add_compile_options(-Wno-unknown-warning-option)
 
-    #These seem to indicate real issues
-    add_compile_options(-Wno-invalid-offsetof)
     # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied
     # to a struct or a class that has virtual members or a base class. In that case, clang
     # may not generate the same object layout as MSVC.

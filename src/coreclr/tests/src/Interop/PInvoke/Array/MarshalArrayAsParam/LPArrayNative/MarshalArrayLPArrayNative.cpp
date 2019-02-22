@@ -5,6 +5,12 @@
 #include <xplatform.h>
 #include "MarshalArray.h"
 
+#if defined(_MSC_VER)
+#define FUNCTIONNAME __FUNCSIG__
+#else
+#define FUNCTIONNAME __PRETTY_FUNCTION__
+#endif //_MSC_VER
+
 template<typename T>
 bool Equals(T *pActual, int cActual, T *pExpected, int cExpected)
 {
@@ -21,7 +27,7 @@ bool Equals(T *pActual, int cActual, T *pExpected, int cExpected)
     {
         if (!IsObjectEquals(pActual[i], pExpected[i]))
         {
-            printf("WARNING: Test error - %s\n", __FUNCSIG__);
+            printf("WARNING: Test error - %s\n", FUNCTIONNAME);
             return false;
         }
     }
