@@ -403,8 +403,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                             pStackFrameHelper->GetAppDomain());
 
         // Allocate memory for the array of assemblies
-        MethodTable * pAssemblyMT = MscorlibBinder::GetClass(CLASS__ASSEMBLY);
-        PTRARRAYREF assemblyArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, pAssemblyMT);
+        PTRARRAYREF assemblyArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pObjectClass);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssembly), (OBJECTREF)assemblyArray,
                             pStackFrameHelper->GetAppDomain());
 
