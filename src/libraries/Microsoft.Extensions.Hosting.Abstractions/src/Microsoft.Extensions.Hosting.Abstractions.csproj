@@ -8,6 +8,7 @@
     <PackageTags>hosting</PackageTags>
     <RootNamespace>Microsoft.Extensions.Hosting</RootNamespace>
     <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants);DISPOSE_ASYNC</DefineConstants>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
