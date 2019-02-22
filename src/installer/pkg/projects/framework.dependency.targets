@@ -1,0 +1,91 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Shared targets specific to dependency projects (depproj).
+  -->
+
+  <!-- Fetches all the file items from the packages that we want to redist -->
+  <Target Name="GetFilesFromPackages">
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
+      <!-- RID-specific: include all runtime files. -->
+      <FilesToPackage Include="@(ReferenceCopyLocalPaths)">
+        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native),
+             calculate it by looking for native in the path -->
+        <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
+      </FilesToPackage>
+      <FilesToPackage>
+        <TargetPath Condition="'%(FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
+        <TargetPath Condition="'%(FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+      <!-- Not RID-specific: include all reference files. -->
+      <FilesToPackage Include="@(Reference)">
+        <TargetPath>ref/$(PackageTargetFramework)</TargetPath>
+      </FilesToPackage>
+
+      <!-- include all doc files -->
+      <_docFilesToPackage Include="%(FilesToPackage.RootDir)%(FilesToPackage.Directory)**\%(FilesToPackage.FileName).xml" />
+
+      <FilesToPackage Include="@(_docFilesToPackage)">
+        <TargetPath>ref/$(PackageTargetFramework)/%(RecursiveDir)</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+
+    <!-- Add versions file with the hashes of the repos we consume -->
+    <ItemGroup>
+      <FilesToPackage Include="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt">
+        <TargetPath></TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetFilesToPackage"
+          DependsOnTargets="ResolveNuGetPackages;GetFilesFromPackages"
+          Returns="@(FilesToPackage)" />
+
+  <Target Name="GetDependenciesToPackage"
+          Condition="'@(DependenciesToPackage)' != ''"
+          DependsOnTargets="ResolveNuGetPackages"
+          Returns="@(_DependenciesToPackageWithVersion)">
+    <ItemGroup>
+      <!-- intersect ReferencedPackage with DependenciesToPackage -->
+      <_DependenciesToPackageWithVersion Include="@(PackageReference)" Condition="'@(PackageReference)' == '@(DependenciesToPackage)' AND '%(Identity)' != ''">
+        <TargetFramework>$(PackageTargetFramework)</TargetFramework>
+      </_DependenciesToPackageWithVersion>
+    </ItemGroup>
+
+    <Message Importance="low" Text="%(_DependenciesToPackageWithVersion.Identity) : %(_DependenciesToPackageWithVersion.Version) : %(_DependenciesToPackageWithVersion.TargetFramework)" />
+  </Target>
+
+  <!-- Creates the *.versions.txt file describing where data in this package came from. -->
+  <Target Name="GenerateHashVersionsFile" DependsOnTargets="GetDependencyVersionFiles">
+    <Error
+      Condition="!Exists('%(DependencyVersionFile.Identity)')"
+      Text="'%(Name)' version file does not exist: %(Identity)" />
+
+    <ItemGroup>
+      <DependencyVersionFile Content="$([System.IO.File]::ReadAllText('%(Identity)').Trim())" />
+
+      <_VersionsFileLines Include="core-setup $(LatestCommit)" />
+      <_VersionsFileLines Include="@(DependencyVersionFile ->'%(Name) %(Content)')" />
+    </ItemGroup>
+
+    <WriteLinesToFile Lines="@(_VersionsFileLines)"
+                       File="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt"
+                       Overwrite="true"/>
+  </Target>
+
+  <!--
+    Stub DetermineRuntimeDependencies target so that when GenerateRuntimeDependencies builds this
+    target on the depproj, the build doesn't fail. BuildTools gives pkgproj a default implementation
+    that depproj doesn't get.
+    remove when fixing https://github.com/dotnet/buildtools/issues/1273
+  -->
+  <Target Name="DetermineRuntimeDependencies" />
+
+  <!-- Target overrides (can't be shared with pkgproj) -->
+
+  <Target Name="Build" DependsOnTargets="GenerateHashVersionsFile;GetFilesToPackage" />
+
+</Project>

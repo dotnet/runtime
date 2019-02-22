@@ -10,7 +10,7 @@
   </PropertyGroup>  
 
   <ItemGroup>
-    <Project Include="$(ProjectsBasePath)*\*.builds">
+    <Project Include="$(ProjectsBasePath)pkg.builds">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
   </ItemGroup>  

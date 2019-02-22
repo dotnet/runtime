@@ -3,12 +3,34 @@
 
   <Import Project="$(MSBuildThisFileDirectory)..\dir.traversal.targets" />
 
-  <Target Name="FilterProjects" BeforeTargets="Build">
-    <Error Condition="'$(PackageRID)' == ''" Text="'PackageRID' property must be specified."/>
+  <!--
+    Some projects need to be built multiple times using different properties. Ask each
+    @(ProjectProvider) to give us the list of @(Project) items that need to be built. A pkgproj can
+    use this to build runtime packages, for example.
+  -->
+  <Target Name="ExpandProjects"
+          BeforeTargets="Build">
+    <MSBuild Projects="@(ProjectProvider)" Targets="GetProjectsToBuild">
+      <Output TaskParameter="TargetOutputs" ItemName="Project" />
+    </MSBuild>
+  </Target>
+
+  <!--
+    Filter runtime package builds down to the current RID and packages that aren't RID-specific.
+  -->
+  <Target Name="FilterProjects"
+          BeforeTargets="Build"
+          DependsOnTargets="ExpandProjects">
+    <Error Condition="'$(PackageRID)' == ''" Text="'PackageRID' property must be specified." />
 
     <!-- Only build packages for current RID or non-RID-specific -->
     <ItemGroup>
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR '%(Project.BuidOnRID)' == '$(PackageRID)' OR '%(Project.PackageTargetRuntime)' == ''" />
+      <_projectsToBuild
+        Include="@(Project)"
+        Condition="
+          '%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR
+          '%(Project.BuidOnRID)' == '$(PackageRID)' OR
+          '%(Project.PackageTargetRuntime)' == ''" />
     </ItemGroup>
 
     <ItemGroup>

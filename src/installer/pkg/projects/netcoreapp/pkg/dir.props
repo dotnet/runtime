@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <IsFrameworkPackage>true</IsFrameworkPackage>
+  </PropertyGroup>
+
+  <Import Project="..\..\dir.props" />
+
+  <!-- Redistribute package content from other nuget packages. -->
+  <ItemGroup>
+    <ProjectReference Include="..\src\netcoreapp.depproj">
+      <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

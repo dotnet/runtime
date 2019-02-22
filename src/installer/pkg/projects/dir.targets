@@ -1,6 +1,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.targets" />
 
+  <!--
+    Include common targets for specific project types. These files include BuildTools target
+    overrides that shouldn't be applied to other projects.
+  -->
+  <Import Project="framework.dependency.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'"/>
+  <Import Project="framework.packaging.targets" Condition="'$(IsFrameworkPackage)' == 'true'"/>
+
   <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
 
@@ -110,7 +117,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="GetDependenciesToPackage"
+  <Target Name="GetNonPkgProjDependenciesToPackage"
           Condition="'$(PackProjectDependencies)' == 'true'"
           AfterTargets="ExpandProjectReferences">
     <!-- allow projects to provide dependencies -->
@@ -191,12 +198,59 @@
     <CreateFrameworkListFile
       Files="@(File)"
       TargetFile="$(FrameworkListFile)"
+      TargetFilePrefixes="ref/;runtimes/"
       RootAttributes="@(FrameworkListRootAttributes)" />
 
     <ItemGroup>
       <File Include="$(FrameworkListFile)">
         <TargetPath>$(FrameworkListTargetPath)</TargetPath>
       </File>
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Copy the files in the package's data/ dir to a layout directory. This is what the targeting pack
+    installer will place in the dotnet install dir.
+
+    This extracts from the nupkg (zip) directly. An alternative would be using the PackageFile
+    items, but there's some risk of handling TargetPath metadata differently than NuGet does. Using
+    the nupkg directly ensures results are identical.
+  -->
+  <Target Name="CreateTargetingPackLayout"
+          AfterTargets="CreatePackage"
+          Condition="'$(IsTargetingPack)' == 'true'">
+    <PropertyGroup>
+      <TargetingPackNupkgFile>$(PackageOutputPath)$(Id).$(PackageVersion).nupkg</TargetingPackNupkgFile>
+    </PropertyGroup>
+
+    <ZipFileGetEntries TargetArchive="$(TargetingPackNupkgFile)">
+      <Output TaskParameter="Entries" ItemName="TargetingPackNupkgEntries" />
+    </ZipFileGetEntries>
+
+    <ItemGroup>
+      <TargetingPackDataEntries
+        Include="@(TargetingPackNupkgEntries)"
+        Condition="
+          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('data/')) OR
+          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('ref/')) OR
+          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('runtimes/'))" />
+    </ItemGroup>
+
+    <ZipFileExtractToDirectory
+      SourceArchive="$(TargetingPackNupkgFile)"
+      DestinationDirectory="$(PackLayoutDir)packs/$(Id)/$(Version)/"
+      OverwriteDestination="true"
+      Include="@(TargetingPackDataEntries)" />
+  </Target>
+
+  <!--
+    Get Project items: build the project, and build runtime packages if necessary. All projects in
+    this directory are ProjectProviders.
+  -->
+  <Target Name="GetProjectsToBuild" Returns="@(Project)">
+    <ItemGroup>
+      <Project Include="@(RuntimeProject)" Condition="'$(BuildRuntimePackages)' == 'true'" />
+      <Project Include="$(MSBuildProjectFullPath)" />
     </ItemGroup>
   </Target>
 

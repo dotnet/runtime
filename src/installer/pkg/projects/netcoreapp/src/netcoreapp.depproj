@@ -1,24 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
   <PropertyGroup>
-    <!-- we intentionally don't want to produce output -->
-    <OutputPath>unused</OutputPath>
-    <!-- we don't want any analyzers by ResolveNuGetPackageAssets
-         null-refs when this isn't set and an analyzer is in the packages -->
-    <Language>unused</Language>
-    <NuGetTargetMoniker>$(NETCoreAppFrameworkMoniker)</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>$(NETCoreAppFramework)</NuGetTargetMonikerShort>
-    <PackageTargetFramework>$(NETCoreAppFramework)</PackageTargetFramework>
-    <PrimaryPackage>Microsoft.Private.CoreFx.NETCoreApp</PrimaryPackage>
-    <CrossGenOutputPath>$(CrossGenRootPath)/$(MSBuildProjectName)/$(NuGetRuntimeIdentifier)</CrossGenOutputPath>
-    <ContainsPackageReferences>true</ContainsPackageReferences>
-    <RestorePackages>true</RestorePackages>
-    <RidSpecificAssets Condition="'$(NuGetRuntimeIdentifier)' != ''">true</RidSpecificAssets>
-    <IntermediateOutputPath>$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)</IntermediateOutputPath>
-    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
-    <AdditionalRestoreArgs>/p:HasRuntimePackages=false /p:IntermediateOutputPath=$(IntermediateOutputPath)</AdditionalRestoreArgs>
-    <CrossGenSymbolsOutputPath>$(PackageSymbolsBinDir)/$(MSBuildProjectName)</CrossGenSymbolsOutputPath>
+    <FrameworkPackageName>Microsoft.NETCore.App</FrameworkPackageName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,7 +25,7 @@
     <PackageReference Include="NETStandard.Library">
       <Version>$(NETStandardLibraryPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT">
+    <PackageReference Include="$(MicrosoftTargetingPackPrivateWinRTPackage)" ExcludeAssets="All">
       <Version>$(MicrosoftTargetingPackPrivateWinRTPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
@@ -53,8 +38,6 @@
     <DependenciesToPackage Include="Microsoft.NETCore.Targets" />
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
   <!-- get paths from packages that are needed for cross-gen and other includes,
        only relevant for runtime-specific builds -->
   <Target Name="GetPackagePaths" Condition="'$(NuGetRuntimeIdentifier)' != ''" DependsOnTargets="ResolveNuGetPackages">
@@ -63,7 +46,9 @@
       <_runtimeCoreLib Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Private.CoreLib.dll'" />
       <_runtimeJIT Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'" />
       <_fxSystemRuntime Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Runtime.dll'" />
-      <_windowsWinMD Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'Windows.winmd'" />
+
+      <!-- Find Windows.winmd in package cache to allow ExcludeAssets=All. -->
+      <_windowsWinMD Include="$(PackagesDir)$(MicrosoftTargetingPackPrivateWinRTPackage.ToLowerInvariant())/$(MicrosoftTargetingPackPrivateWinRTPackageVersion)/**/Windows.winmd" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -110,51 +95,32 @@
     <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
   </Target>
 
-  <Target Name="GenerateHashVersionsFile" DependsOnTargets="GetPackagePaths;ResolveNuGetPackages">
-    <PropertyGroup>
-      <CoreFxVersionFile
-        Condition="$([System.String]::new('%(Reference.Identity)').ToLowerInvariant().Contains('system.runtime.dll'))">
-          $(PackagesDir)$([System.String]::new('%(Reference.NuGetPackageId)').ToLowerInvariant())/%(Reference.NuGetPackageVersion)/version.txt
-      </CoreFxVersionFile>
-      <CoreClrVersionFile Condition="'$(NuGetRuntimeIdentifier)' != ''">
-          $(_runtimePackagePath)/version.txt
-      </CoreClrVersionFile>
-    </PropertyGroup>
-    <ReadLinesFromFile File="$(CoreFxVersionFile)" Condition="Exists('$(CoreFxVersionFile)')">
-      <Output TaskParameter="Lines" PropertyName="CoreFxHash" />
-    </ReadLinesFromFile>
-    <ReadLinesFromFile File="$(CoreClrVersionFile)" Condition="Exists('$(CoreClrVersionFile)')">
-      <Output TaskParameter="Lines" PropertyName="CoreClrHash" />
-    </ReadLinesFromFile>
-
-    <Error Condition="!Exists('$(CoreFxVersionFile)')" Text="Failed to find the corefx version.txt file at $(CoreFxVersionFile)" />
-
+  <Target Name="GetDependencyVersionFiles" DependsOnTargets="GetPackagePaths;ResolveNuGetPackages">
     <ItemGroup>
-      <_VersionsFileLines Include="core-setup $(LatestCommit)" />
-      <_VersionsFileLines Include="corefx $(CoreFxHash)" />
-      <_VersionsFileLines Include="dotnet/versions/corefx $(CoreFxCurrentRef)" />
-      <_VersionsFileLines Include="coreclr $(CoreClrHash)" Condition="'$(CoreClrHash)'!=''" />
-      <_VersionsFileLines Include="dotnet/versions/coreclr $(CoreClrCurrentRef)" Condition="'$(CoreClrHash)'!=''" />
+      <_coreFxVersionFile
+        Include="$(PackagesDir)$([System.String]::new('%(Reference.NuGetPackageId)').ToLowerInvariant())/%(Reference.NuGetPackageVersion)/version.txt"
+        Condition="$([System.String]::new('%(Reference.Identity)').ToLowerInvariant().Contains('system.runtime.dll'))"
+        Name="corefx" />
+      <_coreClrVersionFile
+        Include="$(_runtimePackagePath)/version.txt"
+        Condition="'$(NuGetRuntimeIdentifier)' != ''"
+        Name="coreclr" />
+
+      <DependencyVersionFile Include="@(_coreFxVersionFile);@(_coreClrVersionFile)" />
     </ItemGroup>
 
-    <WriteLinesToFile Lines="@(_VersionsFileLines)"
-                       File="$(IntermediateOutputPath)\Microsoft.NETCore.App.versions.txt"
-                       Overwrite="true"/>
+    <Error
+      Condition="'@(_coreFxVersionFile)' == ''"
+      Text="Failed to locate corefx version.txt file." />
+
+    <Error
+      Condition="'@(_coreClrVersionFile)' == '' AND '$(NuGetRuntimeIdentifier)' != ''"
+      Text="Failed to locate coreclr version.txt file." />
   </Target>
 
-  <!-- Fetches all the file items from the packages that we want to redist -->
-  <Target Name="GetFilesFromPackages" DependsOnTargets="GetPackagePaths">
+  <!-- Fetches all the runtime items from the packages that we want to redist -->
+  <Target Name="GetRuntimeFilesFromPackages" DependsOnTargets="GetPackagePaths">
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
-      <!-- RID-specific: include all runtime files except files in Microsoft.TargetingPack.Private.WinRT -->
-      <FilesToPackage Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' != 'Microsoft.TargetingPack.Private.WinRT'">
-        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native),
-             calculate it by looking for native in the path -->
-        <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
-      </FilesToPackage>
-      <FilesToPackage>
-        <TargetPath Condition="'%(FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
-        <TargetPath Condition="'%(FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
-      </FilesToPackage>
       <_ToolsToPackage Include="$(_runtimePackagePath)/tools/**/*.*"/>
       <FilesToPackage Include="@(_ToolsToPackage)">
         <NuGetPackageId>$(_runtimePackageId)</NuGetPackageId>
@@ -164,54 +130,6 @@
       <FilesToPackage Condition="'$(_crossDir)' != ''" Include="$(_jitPackagePath)/runtimes$(_crossDir)/native/*.*">
         <TargetPath>runtimes$(_crossDir)/native</TargetPath>
         <IsNative>true</IsNative>
-      </FilesToPackage>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
-      <!-- Not RID-specific: include all reference files except files in Microsoft.TargetingPack.Private.WinRT -->
-      <FilesToPackage Include="@(Reference)" Condition="'%(Reference.NuGetPackageId)' != 'Microsoft.TargetingPack.Private.WinRT'">
-        <TargetPath>ref/$(PackageTargetFramework)</TargetPath>
-      </FilesToPackage>
-
-      <!-- include all doc files -->
-      <_docFilesToPackage Include="%(FilesToPackage.RootDir)%(FilesToPackage.Directory)**\%(FilesToPackage.FileName).xml" />
-
-      <FilesToPackage Include="@(_docFilesToPackage)">
-        <TargetPath>ref/$(PackageTargetFramework)/%(RecursiveDir)</TargetPath>
-      </FilesToPackage>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(IncludeSourceFilesInPackage)' == 'true'">
-      <!-- pick up any src our sources directory from packages contributing files -->
-      <_sourcePathCandidate Include="@(FilesToPackage->'$(PackagesDir)\%(NuGetPackageId)\%(NuGetPackageVersion)\sources')" />
-      <_sourcePathCandidate Include="@(FilesToPackage->'$(PackagesDir)\%(NuGetPackageId)\%(NuGetPackageVersion)\src')" />
-      <_sourcePath Include="@(_sourcePathCandidate)" Condition="Exists('%(Identity)')" />
-    </ItemGroup>
-
-    <!-- Add versions file with the hashes of the repos we consume -->
-    <ItemGroup>
-      <FilesToPackage Include="$(IntermediateOutputPath)\Microsoft.NETCore.App.versions.txt">
-        <TargetPath></TargetPath>
-      </FilesToPackage>
-    </ItemGroup>
-
-    <!-- on windows workaround max-path -->
-    <!-- this can be removed once we build on core MSBuild which supports long paths. -->
-    <ItemGroup Condition="'$(OsEnvironment)'=='Windows_NT'">
-      <!-- choose a shorter path name, excluding package version -->
-      <_shortSourcePath Include="@(_sourcePath->'$(ObjDir.Replace('/', '\'))src-%(NuGetPackageId)')">
-        <Original>%(_sourcePath.FullPath)</Original>
-      </_shortSourcePath>
-      <_sourcePath Remove="@(_sourcePath)" />
-      <_sourcePath Include="@(_shortSourcePath)" />
-    </ItemGroup>
-    <RemoveDir Condition="'@(_shortSourcePath)' != '' AND Exists('%(_shortSourcePath.Identity)')" Directories="%(_shortSourcePath.Identity)" />
-    <Exec Condition="'@(_shortSourcePath)' != ''" Command="mklink /J %(_shortSourcePath.Identity) %(_shortSourcePath.Original)" />
-
-    <ItemGroup>
-      <FilesToPackage Include="%(_sourcePath.Identity)\%2A%2A\%2A.%2A">
-        <TargetPath>src</TargetPath>
-        <IsSourceCodeFile>true</IsSourceCodeFile>
       </FilesToPackage>
     </ItemGroup>
   </Target>
@@ -258,6 +176,7 @@
   </Target>
 
   <Target Name="CrossGen"
+          BeforeTargets="Build"
           DependsOnTargets="CreateCrossGenImages;CreateCrossGenSymbols" />
 
   <Target Name="CreateCrossGenImages"
@@ -328,24 +247,10 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="GetFilesToPackage"
-          DependsOnTargets="ResolveNuGetPackages;GetFilesFromPackages;PrepareForCrossGen;GetCrossGenSymbolsFiles"
-          Returns="@(FilesToPackage)" />
-
-  <Target Name="GetDependenciesToPackage" Condition="'@(DependenciesToPackage)' != ''" DependsOnTargets="ResolveNuGetPackages" Returns="@(_DependenciesToPackageWithVersion)">
-    <ItemGroup>
-      <!-- intersect ReferencedPackage with DependenciesToPackage -->
-      <_DependenciesToPackageWithVersion Include="@(PackageReference)" Condition="'@(PackageReference)' == '@(DependenciesToPackage)' AND '%(Identity)' != ''">
-        <TargetFramework>$(PackageTargetFramework)</TargetFramework>
-      </_DependenciesToPackageWithVersion>
-    </ItemGroup>
-
-    <Message Importance="low" Text="%(_DependenciesToPackageWithVersion.Identity) : %(_DependenciesToPackageWithVersion.Version) : %(_DependenciesToPackageWithVersion.TargetFramework)" />
+  <Target Name="GetRuntimeFilesToPackage"
+          BeforeTargets="GetFilesToPackage"
+          DependsOnTargets="GetRuntimeFilesFromPackages;PrepareForCrossGen;GetCrossGenSymbolsFiles">
   </Target>
 
-  <!-- Run crossgen -->
-  <Target Name="Build" DependsOnTargets="GenerateHashVersionsFile;CrossGen;GetFilesToPackage" />
-
-  <!-- remove when fixing https://github.com/dotnet/buildtools/issues/1273 -->
-  <Target Name="DetermineRuntimeDependencies" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
