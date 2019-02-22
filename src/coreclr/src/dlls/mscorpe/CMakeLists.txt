@@ -11,7 +11,7 @@ set(MSCORPE_SOURCES
 
 if(WIN32)
 else()
-  add_compile_options(-Wno-delete-non-virtual-dtor)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-non-virtual-dtor")
 endif(WIN32)
 
 add_library_clr(mscorpe STATIC

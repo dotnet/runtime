@@ -18,7 +18,17 @@
 #define _cdecl
 #endif
 
-#endif // _MSC_VER
+#define __int32     int
+#define __int16     short int
+#define __int8      char        // assumes char is signed
+
+#ifdef BIT64
+#define __int64     long
+#else // BIT64
+#define __int64     long long
+#endif // BIT64
+
+#endif // !_MSC_VER
 
 /* Structures */
 

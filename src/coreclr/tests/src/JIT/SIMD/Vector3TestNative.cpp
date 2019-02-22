@@ -5,13 +5,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(__clang__)
-#define EXPORT(type) __attribute__((visibility("default"))) extern "C" type
+#if defined(__GNUC__)
+#define EXPORT(type) extern "C" __attribute__((visibility("default"))) type
 #elif defined(_MSC_VER)
 #define EXPORT(type) extern "C" __declspec(dllexport) type
-#else // defined(__clang__)
+#else // defined(__GNUC__)
 #define EXPORT(type) type
-#endif // !defined(__clang__)
+#endif // !defined(__GNUC__)
 
 #if !defined(_MSC_VER)
 #if __i386__

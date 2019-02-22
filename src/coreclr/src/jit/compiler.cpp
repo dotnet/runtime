@@ -76,7 +76,7 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
     return true;
 }
 
-#elif defined(__clang__)
+#elif defined(__GNUC__)
 
 inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 {
@@ -86,7 +86,7 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
     return true;
 }
 
-#else // neither _MSC_VER nor __clang__
+#else // neither _MSC_VER nor __GNUC__
 
 // The following *might* work - might as well try.
 #define _our_GetThreadCycles(cp) GetThreadCycles(cp)

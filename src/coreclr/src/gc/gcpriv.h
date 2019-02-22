@@ -13,7 +13,12 @@
 #pragma optimize( "t", on )
 #endif
 #endif
+
+#ifdef __GNUC__
+#define inline __attribute__((always_inline)) inline
+#else
 #define inline __forceinline
+#endif // __GNUC__
 
 #include "gc.h"
 

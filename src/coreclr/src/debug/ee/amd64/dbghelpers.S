@@ -29,7 +29,7 @@ NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
         //
         // epilogue
         //
-        add     rsp, 20h
+        add     rsp, 0x20
         TAILJMP_RAX
 NESTED_END FuncEvalHijack, _TEXT
 
@@ -65,14 +65,14 @@ NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
         // its arguments on the stack. In x64, it gets its arguments in
         // registers (set up for us by DacDbiInterfaceImpl::Hijack),
         // and this stack space may be reused.
-        mov     rax, [rsp + 20h]
+        mov     rax, [rsp + 0x20]
         mov     [rsp], rax
-        mov     rax, [rsp + 28h]
-        mov     [rsp + 8h], rax
-        mov     rax, [rsp + 30h]
-        mov     [rsp + 10h], rax
-        mov     rax, [rsp + 38h]
-        mov     [rsp + 18h], rax
+        mov     rax, [rsp + 0x28]
+        mov     [rsp + 0x8], rax
+        mov     rax, [rsp + 0x30]
+        mov     [rsp + 0x10], rax
+        mov     rax, [rsp + 0x38]
+        mov     [rsp + 0x18], rax
         
         // DD Hijack primitive already set the stack. So just make the call now.
         call    C_FUNC(ExceptionHijackWorker)
@@ -93,7 +93,7 @@ NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
         //
         // epilogue
         //
-        add     rsp, 20h
+        add     rsp, 0x20
         TAILJMP_RAX
 
 // Put a label here to tell the debugger where the end of this function is.

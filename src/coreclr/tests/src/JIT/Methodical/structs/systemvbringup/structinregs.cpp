@@ -1,10 +1,10 @@
 #include <stdio.h>
 
-#if defined(__clang__)
-#define EXPORT(type) __attribute__((visibility("default"))) extern "C" type
-#else // defined(__clang__)
+#if defined(__GNUC__)
+#define EXPORT(type) extern "C" __attribute__((visibility("default"))) type
+#else // defined(__GNUC__)
 #define EXPORT(type) type
-#endif // !defined(__clang__)
+#endif // !defined(__GNUC__)
 
 #if !defined(_MSC_VER)
 #if __i386__
@@ -324,7 +324,7 @@ EXPORT(void) NATIVEAPI InvokeCallback19(PFNACTION19 callback, S19 s)
 
 EXPORT(void) NATIVEAPI InvokeCallback20(PFNACTION20 callback, S20 s)
 {
-#ifdef __clang__
+#ifdef __GNUC__
     printf("Native S20: %lld, %lld, %lld, %lld\n", s.x, s.y, s.z, s.w);
 #else
     printf("Native S20: %I64d, %I64d, %I64d, %I64d\n", s.x, s.y, s.z, s.w);
@@ -468,7 +468,7 @@ EXPORT(S19) NATIVEAPI InvokeCallback19R(PFNACTION19 callback, S19 s)
 
 EXPORT(S20) NATIVEAPI InvokeCallback20R(PFNACTION20 callback, S20 s)
 {
-#ifdef __clang__
+#ifdef __GNUC__
     printf("Native S20: %lld, %lld, %lld, %lld\n", s.x, s.y, s.z, s.w);
 #else
     printf("Native S20: %I64d, %I64d, %I64d, %I64d\n", s.x, s.y, s.z, s.w);
