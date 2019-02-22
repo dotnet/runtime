@@ -236,6 +236,7 @@ public:	// FIX
     // frozen segment management functions
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo);
     virtual void UnregisterFrozenSegment(segment_handle seg);
+    virtual bool IsInFrozenSegment(Object *object);
 
     // Event control functions
     void ControlEvents(GCEventKeyword keyword, GCEventLevel level);
@@ -303,9 +304,6 @@ protected:
 
 public:
     Object * NextObj (Object * object);
-#if defined (FEATURE_BASICFREEZE) && defined (VERIFY_HEAP)
-    BOOL IsInFrozenSegment (Object * object);
-#endif // defined (FEATURE_BASICFREEZE) && defined (VERIFY_HEAP)
 };
 
 #endif  // GCIMPL_H_

@@ -771,6 +771,12 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("_ReRegisterForFinalize", GCInterface::ReRegisterForFinalize)
 
     FCFuncElement("_GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
+
+#ifdef FEATURE_BASICFREEZE
+    QCFuncElement("_RegisterFrozenSegment", GCInterface::RegisterFrozenSegment)
+    QCFuncElement("_UnregisterFrozenSegment", GCInterface::UnregisterFrozenSegment)
+#endif // FEATURE_BASICFREEZE
+
 FCFuncEnd()
 
 FCFuncStart(gGCSettingsFuncs)

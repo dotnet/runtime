@@ -23957,8 +23957,12 @@ uint8_t* tree_search (uint8_t* tree, uint8_t* old_address)
 bool gc_heap::frozen_object_p (Object* obj)
 {
 #ifdef MULTIPLE_HEAPS
+#ifdef SEG_MAPPING_TABLE
+    heap_segment* pSegment = seg_mapping_table_segment_of((uint8_t*)obj);
+#else
     ptrdiff_t delta = 0;
     heap_segment* pSegment = segment_of ((uint8_t*)obj, delta);
+#endif
 #else //MULTIPLE_HEAPS
     heap_segment* pSegment = gc_heap::find_segment ((uint8_t*)obj, FALSE);
     _ASSERTE(pSegment);
@@ -34522,24 +34526,6 @@ Object * GCHeap::NextObj (Object * object)
     return nullptr;
 #endif // VERIFY_HEAP
 }
-
-#ifdef VERIFY_HEAP
-
-#ifdef FEATURE_BASICFREEZE
-BOOL GCHeap::IsInFrozenSegment (Object * object)
-{
-    uint8_t* o = (uint8_t*)object;
-    heap_segment * hs = gc_heap::find_segment (o, FALSE);
-    //We create a frozen object for each frozen segment before the segment is inserted
-    //to segment list; during ngen, we could also create frozen objects in segments which
-    //don't belong to current GC heap.
-    //So we return true if hs is NULL. It might create a hole about detecting invalidate 
-    //object. But given all other checks present, the hole should be very small
-    return !hs || heap_segment_read_only_p (hs);
-}
-#endif //FEATURE_BASICFREEZE
-
-#endif //VERIFY_HEAP
 
 // returns TRUE if the pointer is in one of the GC heaps.
 bool GCHeap::IsHeapPointer (void* vpObject, bool small_heap_only)
