@@ -61,6 +61,7 @@ public:
     // Note: these are on the PInvoke class to hide these from the user.
     static FCDECL0(EXCEPTION_POINTERS*, GetExceptionPointers);
     static FCDECL0(INT32, GetExceptionCode);
+    static FCDECL0(UINT32, GetExceptionCount);
 };
 
 class MemoryNative

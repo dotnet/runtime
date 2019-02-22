@@ -428,7 +428,7 @@ CPFH_AdjustContextForThreadSuspensionRace(CONTEXT *pContext, Thread *pThread)
 }
 #endif // FEATURE_HIJACK
 
-
+uint32_t            g_exceptionCount;
 
 //******************************************************************************
 EXCEPTION_DISPOSITION COMPlusAfterUnwind(
@@ -1054,6 +1054,8 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         tct.pBottomFrame = NULL;
 
         EEToProfilerExceptionInterfaceWrapper::ExceptionThrown(pThread);
+
+        g_exceptionCount++;
         
     } // End of case-1-or-3
 
