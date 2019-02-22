@@ -874,44 +874,58 @@ inline void LogCallstackForLogWorker()
 
 //---------------------------------------------------------------------------------------
 //
-// Generate an EventLog entry for unhandled exception.
+// Print information on fatal error to stderr.
 //
 // Arguments:
-//    pExceptionInfo - Exception information
+//    exitCode - code of the fatal error
+//    pszMessage - error message (can be NULL)
+//    errorSource - details on the source of the error
+//    argExceptionString - exception details
 //
 // Return Value:
 //    None
 //
-inline void DoLogForFailFastException(LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
+void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     WRAPPER_NO_CONTRACT;
 
     Thread *pThread = GetThread();
     EX_TRY
     {
-        if (errorSource == NULL)
+        if ((exitCode == (UINT)COR_E_FAILFAST) && (errorSource == NULL))
         {
-            PrintToStdErrA("FailFast:");
-        }
-        else 
-        {
-            PrintToStdErrW((WCHAR*)errorSource);
+            PrintToStdErrA("FailFast:\n");
         }
 
-        PrintToStdErrA("\n");
-        PrintToStdErrW((WCHAR*)pszMessage);
+        if (errorSource != NULL)
+        {
+            PrintToStdErrW(errorSource);
+            PrintToStdErrA("\n");
+        }
+
+        if (pszMessage != NULL)
+        {
+            PrintToStdErrW(pszMessage);
+        }
+        else
+        {
+            // If no message was passed in, generate it from the exitCode
+            SString exitCodeMessage;
+            GetHRMsg(exitCode, exitCodeMessage);
+            PrintToStdErrW((LPCWSTR)exitCodeMessage);
+        }
+
         PrintToStdErrA("\n");
 
         if (pThread && errorSource == NULL)
         {
-            PrintToStdErrA("\n");
             LogCallstackForLogWorker();
 
             if (argExceptionString != NULL) {
                 PrintToStdErrA("\n");
                 PrintToStdErrA("Exception details:");
                 PrintToStdErrA("\n");
-                PrintToStdErrW((WCHAR*)argExceptionString);
+                PrintToStdErrW(argExceptionString);
                 PrintToStdErrA("\n");
             }
         }
@@ -936,11 +950,8 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
 
     _ASSERTE(pExceptionInfo != NULL);
 
-    // Log FailFast exception to StdErr
-    if (exitCode == (UINT)COR_E_FAILFAST)
-    {
-        DoLogForFailFastException(pszMessage, pExceptionInfo, errorSource, argExceptionString);
-    }
+    // Log exception to StdErr
+    LogInfoForFatalError(exitCode, pszMessage, errorSource, argExceptionString);
 
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, FailFast))
     {
