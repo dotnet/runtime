@@ -14,7 +14,8 @@ namespace ManagedCallingNative
     {
         static int Main(string[] args)
         {
-            if(Environment.OSVersion.Platform != PlatformID.Win32NT)
+            // Disable running on Windows 7 until IJW activation work is complete.
+            if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7)
             {
                 return 100;
             }
