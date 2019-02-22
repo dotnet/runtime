@@ -32,13 +32,20 @@ Copyright (c) .NET Foundation. All rights reserved.
     <MicrosoftNetCoreRuntimeCoreClrPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.runtime.coreclr</MicrosoftNetCoreRuntimeCoreClrPackageName>
     <MicrosoftNetCoreJitPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.jit</MicrosoftNetCoreJitPackageName>
 
-    <ToolsDir Condition="'$(ToolsDir)' == ''">$([System.IO.Path]::Combine($([System.IO.Path]::GetTempPath()), $([System.IO.Path]::GetRandomFileName())))</ToolsDir>
+    <!-- If ILAsmToolPath is specified, it will be used and no packages will be restored
+         Otherwise packages will be restored and copied to $(ToolsDir)\ilasm
+         If ToolsDir is not defined a directory will be created under obj ($(BaseIntermediateOutputPath)).  -->
+    <_IlasmDir>$([MSBuild]::NormalizeDirectory($(ILAsmToolPath)))</_IlasmDir>
+    <_IlasmDir Condition="'$(_IlasmDir)' == '' AND '$(ToolsDir)' != ''">$([MSBuild]::NormalizeDirectory($(ToolsDir), 'ilasm'))</ILAsmDir>
+    <_IlasmDir Condition="'$(_IlasmDir)' == ''">$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'ilasm'))</ToolsDir>
+    <CoreCompileDependsOn Condition="'$(ILAsmToolPath)' == ''">$(CoreCompileDependsOn);CopyILAsmTool</CoreCompileDependsOn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="$(MicrosoftNetCoreIlasmPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-    <PackageReference Include="$(MicrosoftNetCoreRuntimeCoreClrPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-    <PackageReference Include="$(MicrosoftNetCoreJitPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  <ItemGroup Condition="'$(ILAsmToolPath)' == ''">
+    <_IlasmPackageReference Include="$(MicrosoftNetCoreIlasmPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" />
+    <_IlasmPackageReference Include="$(MicrosoftNetCoreRuntimeCoreClrPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" />
+    <_IlasmPackageReference Include="$(MicrosoftNetCoreJitPackageName)" Version="$(MicrosoftNetCoreIlasmPackageVersion)" />
+    <PackageReference Include="@(_IlasmPackageReference)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -51,21 +58,26 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Required by Microsoft.Common.targets -->
   </Target>
 
+  <Target Name="CopyILAsmTool">
+    <ItemGroup>
+      <_IlasmPackageReference NativePath="$(NuGetPackageRoot)\%(Identity)\%(Version)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native" />
+      <_IlasmSourceFiles Include="%(_IlasmPackageReference.NativePath)\**\*" />
+    </ItemGroup>
+    <Error Condition="!Exists('%(_IlasmPackageReference.NativePath)')" Text="Package %(_IlasmPackageReference.Identity)\%(_IlasmPackageReference.Version) was not restored" />
+
+    <!-- Having to copy these binaries is really inefficient. https://github.com/dotnet/coreclr/issues/18892 tracks making the ilasm tool self-contained  -->
+    <MakeDir Directories="$(_IlasmDir)" />
+    <Copy DestinationFolder="$(_IlasmDir)" SourceFiles="@(_IlasmSourceFiles)" />
+  </Target>
+
   <Target Name="CoreCompile"
           Inputs="$(MSBuildAllProjects);
                   @(Compile)"
           Outputs="@(IntermediateAssembly)"
           Returns=""
           DependsOnTargets="$(CoreCompileDependsOn)">
-    <ItemGroup>
-      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreIlasmPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
-      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreRuntimeCoreClrPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
-      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreJitPackageName)\$(MicrosoftNetCoreIlasmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
-    </ItemGroup>
 
     <PropertyGroup>
-      <_IlasmDir>$([MSBuild]::NormalizeDirectory('$(ToolsDir)', 'ilasm'))</_IlasmDir>
-
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">-DLL</_OutputTypeArgument>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">-EXE</_OutputTypeArgument>
 
@@ -80,10 +92,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_IlasmSwitches Condition="'$(Optimize)' == 'True'">$(_IlasmSwitches) -OPTIMIZE</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(IlasmResourceFile)' != ''">$(_IlasmSwitches) -RESOURCES=$(IlasmResourceFile)</_IlasmSwitches>
     </PropertyGroup>
-
-    <!-- Having to copy these binaries is really inefficient. https://github.com/dotnet/coreclr/issues/18892 tracks making the ilasm tool self-contained  -->
-    <MakeDir Directories="$(_IlasmDir)" />
-    <Copy DestinationFolder="$(_IlasmDir)" SourceFiles="@(_IlasmSourceFiles)" />
 
     <Exec Command="$(_IlasmDir)ilasm $(_IlasmSwitches) $(_OutputTypeArgument) $(IlasmFlags) -OUTPUT=&quot;@(IntermediateAssembly)&quot; $(_KeyFileArgument) @(Compile, ' ')">
       <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
