@@ -54,12 +54,14 @@ jobs:
               _architecture: x64
               _framework: netcoreapp
               _helixQueues: $(netcoreappWindowsQueues)+$(nanoQueues)
+              _publishTests: true
 
             x86_Release:
               _BuildConfig: Release
               _architecture: x86
               _framework: netcoreapp
               _helixQueues: $(netcoreappWindowsQueues)
+              _publishTests: true
 
             NETFX_x86_Release:
               _BuildConfig: Release
