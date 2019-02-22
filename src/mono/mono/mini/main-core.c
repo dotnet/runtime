@@ -160,6 +160,8 @@ int coreclr_initialize (const char* exePath, const char* appDomainFriendlyName,
 	int propertyCount, const char** propertyKeys, const char** propertyValues,
 	void** hostHandle, unsigned int* domainId)
 {
+	mono_runtime_register_appctx_properties (propertyCount, propertyKeys, propertyValues);
+
 	// TODO: TRUSTED_PLATFORM_ASSEMBLIES is the property key for managed assemblies mapping
 	if (!parse_properties (propertyCount, propertyKeys, propertyValues))
 		return 0x80004005; /* E_FAIL */

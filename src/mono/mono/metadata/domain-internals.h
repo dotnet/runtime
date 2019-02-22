@@ -647,4 +647,10 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 GPtrArray*
 mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly);
 
+void
+mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values);
+
+void
+mono_runtime_install_appctx_properties (void);
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */
