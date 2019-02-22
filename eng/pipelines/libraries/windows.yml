@@ -100,14 +100,12 @@ jobs:
               _architecture: x86
               _framework: uapaot
               _helixQueues: $(uapNetfxQueues)
-              _restoreInternalTools: true
 
             UAPAOT_x64_Release:
               _BuildConfig: Release
               _architecture: x64
               _framework: uapaot
               _helixQueues: $(uapNetfxQueues)
-              _restoreInternalTools: true
 
       pool:
         ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -213,7 +211,6 @@ jobs:
                 _BuildConfig: Release
                 _architecture: x86
                 _framework: uapaot
-                _restoreInternalTools: true
 
             ${{ if eq(parameters.isOfficialBuild, 'true') }}:
               arm_Release:
@@ -230,13 +227,11 @@ jobs:
                 _BuildConfig: Release
                 _architecture: arm
                 _framework: uapaot
-                _restoreInternalTools: true
 
               UAPAOT_arm64_Release:
                 _BuildConfig: Release
                 _architecture: arm64
                 _framework: uapaot
-                _restoreInternalTools: true
 
         pool:
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:

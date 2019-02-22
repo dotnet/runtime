@@ -144,7 +144,7 @@
       </_ManifestToPush>
     </ItemGroup>
 
-    <Message Importance="High" Text="PublishTestAssets: $(_FileRelativePathBase)corefx-test-assets.xml" />
+    <Message Importance="High" Text="PublishTestAssets: $(_FileRelativePathBase)$(AssetManifestFileName)" />
 
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
