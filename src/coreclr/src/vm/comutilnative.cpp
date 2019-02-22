@@ -1238,6 +1238,64 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
 }
 FCIMPLEND
 
+#ifdef FEATURE_BASICFREEZE
+
+/*===============================RegisterFrozenSegment===============================
+**Action: Registers the frozen segment
+**Returns: segment_handle
+**Arguments: args-> pointer to section, size of section
+**Exceptions: None
+==============================================================================*/
+void* QCALLTYPE GCInterface::RegisterFrozenSegment(void* pSection, INT32 sizeSection)
+{
+    QCALL_CONTRACT;
+
+    void* retVal = nullptr;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(pSection != nullptr);
+    _ASSERTE(sizeSection > 0);
+
+    GCX_COOP();
+
+    segment_info seginfo;
+    seginfo.pvMem           = pSection;
+    seginfo.ibFirstObject   = sizeof(ObjHeader);
+    seginfo.ibAllocated     = sizeSection;
+    seginfo.ibCommit        = seginfo.ibAllocated;
+    seginfo.ibReserved      = seginfo.ibAllocated;
+
+    retVal = (void*)GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
+
+    END_QCALL;
+
+    return retVal;
+}
+
+/*===============================UnregisterFrozenSegment===============================
+**Action: Unregisters the frozen segment
+**Returns: void
+**Arguments: args-> segment handle
+**Exceptions: None
+==============================================================================*/
+void QCALLTYPE GCInterface::UnregisterFrozenSegment(void* segment)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(segment != nullptr);
+
+    GCX_COOP();
+
+    GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)segment);
+
+    END_QCALL;
+}
+
+#endif // FEATURE_BASICFREEZE
+
 /*==============================SuppressFinalize================================
 **Action: Indicate that an object's finalizer should not be run by the system
 **Arguments: Object of interest

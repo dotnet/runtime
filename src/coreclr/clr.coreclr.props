@@ -8,6 +8,7 @@
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeaturePerfTracing>true</FeaturePerfTracing>
     <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
+    <FeatureBasicFreeze>true</FeatureBasicFreeze>
     <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
   </PropertyGroup>
 
