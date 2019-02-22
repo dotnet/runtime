@@ -319,6 +319,12 @@ namespace System
             return newSize;
         }
 
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, int sectionSize);
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern IntPtr _UnregisterFrozenSegment(IntPtr segmentHandle);
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern long _GetAllocatedBytesForCurrentThread();
 

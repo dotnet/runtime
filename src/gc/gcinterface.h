@@ -868,6 +868,9 @@ public:
     // Unregisters a frozen segment.
     virtual void UnregisterFrozenSegment(segment_handle seg) = 0;
 
+    // Indicates whether an object is in a frozen segment.
+    virtual bool IsInFrozenSegment(Object *object) = 0;
+
     /*
     ===========================================================================
     Routines for informing the GC about which events are enabled.

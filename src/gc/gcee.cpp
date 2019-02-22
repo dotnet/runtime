@@ -600,6 +600,22 @@ void GCHeap::UnregisterFrozenSegment(segment_handle seg)
 #endif // FEATURE_BASICFREEZE
 }
 
+bool GCHeap::IsInFrozenSegment(Object *object)
+{
+#ifdef FEATURE_BASICFREEZE
+    uint8_t* o = (uint8_t*)object;
+    heap_segment * hs = gc_heap::find_segment (o, FALSE);
+    //We create a frozen object for each frozen segment before the segment is inserted
+    //to segment list; during ngen, we could also create frozen objects in segments which
+    //don't belong to current GC heap.
+    //So we return true if hs is NULL. It might create a hole about detecting invalidate 
+    //object. But given all other checks present, the hole should be very small
+    return !hs || heap_segment_read_only_p (hs);
+#else // FEATURE_BASICFREEZE
+    return false;
+#endif
+}
+
 bool GCHeap::RuntimeStructuresValid()
 {
     return GCScan::GetGcRuntimeStructuresValid();
