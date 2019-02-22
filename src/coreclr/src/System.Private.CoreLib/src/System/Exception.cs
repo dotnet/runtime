@@ -530,6 +530,9 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern object CopyDynamicMethods(object currentDynamicMethods);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern uint GetExceptionCount();
+
         internal object DeepCopyStackTrace(object currentStackTrace)
         {
             if (currentStackTrace != null)
