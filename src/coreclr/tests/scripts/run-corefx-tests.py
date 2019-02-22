@@ -288,7 +288,16 @@ def main(args):
 
     # Gather up some arguments to pass to the different build scripts.
 
-    config_args = '-Release /p:OSGroup=%s /p:ArchGroup=%s' % (clr_os, arch)
+    config_args = '-c Release /p:OSGroup=%s /p:ArchGroup=%s' % (clr_os, arch)
+    
+    if Is_windows:
+        config_args += ' -restore -build -buildtests'
+        if not no_run_tests:
+            config_args += ' -test'
+    else:
+        config_args += ' --restore --build --buildtests'
+        if not no_run_tests:
+            config_args += ' --test'
 
     build_args = config_args
 
@@ -326,9 +335,9 @@ def main(args):
     # Build the test command line.
 
     if Is_windows:
-        command = 'build.cmd -test'
+        command = 'build.cmd'
     else:
-        command = './build.sh -test'
+        command = './build.sh'
 
     # If we're doing altjit testing, then don't run any tests that don't work with altjit.
     if ci_arch is not None and (ci_arch == 'x86_arm_altjit' or ci_arch == 'x64_arm64_altjit'):
@@ -361,7 +370,6 @@ def main(args):
     command = ' '.join((
         command,
         config_args,
-        '-SkipTests' if no_run_tests else '',
         without_categories
     ))
 
