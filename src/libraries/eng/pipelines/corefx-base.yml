@@ -26,6 +26,10 @@ parameters:
   #     _skipTests: true | false
   #     _outerloop: true | false
 
+  # Optional: _publishTests -> Boolean -> Publish test assets to blob storage if true.
+  # Default: false
+  #     _publishTests: true | false
+
   # Required: submitToHelix -> Boolean -> Value to know if it should submit tests payloads to helix.
 
   # Optional: buildScriptPrefix -> String -> string to append to Unix build script.
@@ -55,6 +59,7 @@ jobs:
     - template: ../common/templates/job/job.yml
       parameters:
         variables:
+
         # pass along job variables
         - ${{ each variable in job.variables }}:
           - ${{ if ne(variable.name, '') }}:
@@ -81,6 +86,10 @@ jobs:
         - ${{ if eq(job.submitToHelix, 'true') }}:
           - group: DotNet-HelixApi-Access
           - _archiveTestsParameter: /p:ArchiveTests=Tests
+
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - group: DotNet-Blob-Feed
+          - _dotnetFeedUrl: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
 
         # Windows variables
         - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
@@ -173,6 +182,35 @@ jobs:
             - ${{ job.customBuildSteps }}
 
           - ${{ if eq(job.submitToHelix, 'true') }}:
+            - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+              - script: $(_msbuildCommand) eng/publish.proj
+                      /t:PublishTestAssets
+                      /p:FilesToPublishPattern=$(Build.SourcesDirectory)/artifacts/helix/**/*.zip
+                      /p:AccountKey=$(dotnetfeed-storage-access-key-1)
+                      /p:ExpectedFeedUrl=$(_dotnetFeedUrl)
+                      /p:OSGroup=${{ parameters.targetOS }}
+                      /p:ArchGroup=$(_architecture)
+                      /p:ConfigurationGroup=$(_BuildConfig)
+                      /p:TargetGroup=$(_framework)
+                      /p:OfficialBuildId=$(Build.BuildNumber)
+                      /p:ContinuousIntegrationBuild=true
+                      /p:AssetManifestFileName='corefx-test-assets.xml'
+                      /p:ManifestBuildId=$(Build.BuildNumber)
+                      /p:ManifestBuildData=Location=$(_dotnetFeedUrl)
+                      /p:ManifestBranch=$(Build.SourceBranchName)
+                      /p:ManifestCommit=$(Build.SourceVersion)
+                      /p:ManifestRepoUri=$(Build.Repository.Uri)
+                displayName: Publish test assets to dotnet-core feed
+                condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
+
+              - task: PublishBuildArtifacts@1
+                displayName: Publish test asset manifest to artifacts container
+                inputs:
+                  pathToPublish: $(Build.SourcesDirectory)/artifacts/AssetManifests
+                  artifactName: $(Agent.Os)_$(Agent.JobName)
+                  artifactType: container
+                condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
+
             - template: /eng/pipelines/helix.yml
               parameters:
                 targetOS: ${{ parameters.targetOS }}

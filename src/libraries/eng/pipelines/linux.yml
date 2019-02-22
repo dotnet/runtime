@@ -28,6 +28,7 @@ jobs:
             _dockerContainer: rhel7_container
             _buildScriptPrefix: ''
             _buildExtraArguments: ''
+            _publishTests: true
 
           arm64_Release:
             _BuildConfig: Release
