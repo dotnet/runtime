@@ -303,26 +303,12 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Advance(int bytesWritten)
         {
-            if (_writingHead == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NotWritingNoAlloc();
-            }
-
-            if (bytesWritten >= 0)
-            {
-                Debug.Assert(_writingHead.Next == null);
-
-                if (bytesWritten > _writingMemory.Length)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_AdvancingPastBufferSize();
-                }
-
-                AdvanceCore(bytesWritten);
-            }
-            else
+            if ((uint)bytesWritten > (uint)_writingMemory.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytesWritten);
             }
+
+            AdvanceCore(bytesWritten);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
