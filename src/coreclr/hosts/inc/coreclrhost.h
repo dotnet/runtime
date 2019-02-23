@@ -10,17 +10,17 @@
 #define __CORECLR_HOST_H__
 
 #if defined(_WIN32) && defined(_M_IX86)
-#define CALLING_CONVENTION __stdcall
+#define CORECLR_CALLING_CONVENTION __stdcall
 #else
-#define CALLING_CONVENTION
+#define CORECLR_CALLING_CONVENTION
 #endif
 
 // For each hosting API, we define a function prototype and a function pointer
 // The prototype is useful for implicit linking against the dynamic coreclr
 // library and the pointer for explicit dynamic loading (dlopen, LoadLibrary)
 #define CORECLR_HOSTING_API(function, ...) \
-    extern "C" int CALLING_CONVENTION function(__VA_ARGS__); \
-    typedef int (CALLING_CONVENTION *function##_ptr)(__VA_ARGS__)
+    extern "C" int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
+    typedef int (CORECLR_CALLING_CONVENTION *function##_ptr)(__VA_ARGS__)
     
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
