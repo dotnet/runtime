@@ -5,15 +5,17 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.Net.Http
 {
     internal sealed partial class Http2Connection 
     {
-        private sealed class Http2Stream : IDisposable
+        private sealed class Http2Stream : IValueTaskSource, IDisposable
         {
             private enum StreamState : byte
             {
@@ -40,8 +42,15 @@ namespace System.Net.Http
             private int _pendingWindowUpdate;
 
             private StreamState _state;
-            private TaskCompletionSource<bool> _waiterTaskSource;
             private bool _disposed;
+
+            /// <summary>The core logic for the IValueTaskSource implementation.</summary>
+            private ManualResetValueTaskSourceCore<bool> _waitSource = new ManualResetValueTaskSourceCore<bool> { RunContinuationsAsynchronously = true }; // mutable struct, do not make this readonly
+            /// <summary>
+            /// Whether code has requested or is about to request a wait be performed and thus requires a call to SetResult to complete it.
+            /// This is read and written while holding the lock so that most operations on _waitSourceCore don't need to be.
+            /// </summary>
+            private bool _hasWaiter;
 
             private const int StreamWindowSize = DefaultInitialWindowSize;
 
@@ -70,10 +79,6 @@ namespace System.Net.Http
                 _pendingWindowUpdate = 0;
 
                 _streamWindow = new CreditManager(initialWindowSize);
-
-                // TODO: ISSUE 31313: Avoid allocating a TaskCompletionSource repeatedly by using a resettable ValueTaskSource.
-                // See: https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Threading/Tasks/Sources/ManualResetValueTaskSource.cs
-                _waiterTaskSource = null;
             }
 
             private object SyncObject => _streamWindow;
@@ -161,8 +166,7 @@ namespace System.Net.Http
 
             public void OnResponseHeadersComplete(bool endStream)
             {
-                TaskCompletionSource<bool> waiterTaskSource = null;
-
+                bool signalWaiter;
                 lock (SyncObject)
                 {
                     if (_state != StreamState.ExpectingHeaders)
@@ -172,20 +176,19 @@ namespace System.Net.Http
 
                     _state = endStream ? StreamState.Complete : StreamState.ExpectingData;
 
-                    if (_waiterTaskSource != null)
-                    {
-                        waiterTaskSource = _waiterTaskSource;
-                        _waiterTaskSource = null;
-                    }
+                    signalWaiter = _hasWaiter;
+                    _hasWaiter = false;
                 }
 
-                waiterTaskSource?.SetResult(true);
+                if (signalWaiter)
+                {
+                    _waitSource.SetResult(true);
+                }
             }
 
             public void OnResponseData(ReadOnlySpan<byte> buffer, bool endStream)
             {
-                TaskCompletionSource<bool> waiterTaskSource = null;
-
+                bool signalWaiter;
                 lock (SyncObject)
                 {
                     if (_disposed)
@@ -213,20 +216,19 @@ namespace System.Net.Http
                         _state = StreamState.Complete;
                     }
 
-                    if (_waiterTaskSource != null)
-                    {
-                        waiterTaskSource = _waiterTaskSource;
-                        _waiterTaskSource = null;
-                    }
+                    signalWaiter = _hasWaiter;
+                    _hasWaiter = false;
                 }
 
-                waiterTaskSource?.SetResult(true);
+                if (signalWaiter)
+                {
+                    _waitSource.SetResult(true);
+                }
             }
 
             public void OnResponseAbort()
             {
-                TaskCompletionSource<bool> waiterTaskSource = null;
-
+                bool signalWaiter;
                 lock (SyncObject)
                 {
                     if (_disposed)
@@ -241,17 +243,17 @@ namespace System.Net.Http
 
                     _state = StreamState.Aborted;
 
-                    if (_waiterTaskSource != null)
-                    {
-                        waiterTaskSource = _waiterTaskSource;
-                        _waiterTaskSource = null;
-                    }
+                    signalWaiter = _hasWaiter;
+                    _hasWaiter = false;
                 }
 
-                waiterTaskSource?.SetResult(true);
+                if (signalWaiter)
+                {
+                    _waitSource.SetResult(true);
+                }
             }
 
-            private (Task waiterTask, bool isEmptyResponse) TryEnsureHeaders()
+            private (bool wait, bool isEmptyResponse) TryEnsureHeaders()
             {
                 lock (SyncObject)
                 {
@@ -266,18 +268,19 @@ namespace System.Net.Http
                     }
                     else if (_state == StreamState.ExpectingHeaders)
                     {
-                        Debug.Assert(_waiterTaskSource == null);
-                        _waiterTaskSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                        return (_waiterTaskSource.Task, false);
+                        Debug.Assert(!_hasWaiter);
+                        _hasWaiter = true;
+                        _waitSource.Reset();
+                        return (true, false);
                     }
                     else if (_state == StreamState.ExpectingData)
                     {
-                        return (null, false);
+                        return (false, false);
                     }
                     else
                     {
                         Debug.Assert(_state == StreamState.Complete);
-                        return (null, _responseBuffer.ActiveSpan.Length == 0);
+                        return (false, _responseBuffer.ActiveSpan.Length == 0);
                     }
                 }
             }
@@ -285,12 +288,12 @@ namespace System.Net.Http
             public async Task ReadResponseHeadersAsync()
             {
                 // Wait for response headers to be read.
-                (Task waiterTask, bool emptyResponse) = TryEnsureHeaders();
-                if (waiterTask != null)
+                (bool wait, bool emptyResponse) = TryEnsureHeaders();
+                if (wait)
                 {
-                    await waiterTask.ConfigureAwait(false);
-                    (waiterTask, emptyResponse) = TryEnsureHeaders();
-                    Debug.Assert(waiterTask == null);
+                    await GetWaiterTask().ConfigureAwait(false);
+                    (wait, emptyResponse) = TryEnsureHeaders();
+                    Debug.Assert(!wait);
                 }
 
                 // Start to process the response body.
@@ -329,7 +332,7 @@ namespace System.Net.Http
                 ValueTask ignored = _connection.SendWindowUpdateAsync(_streamId, windowUpdateSize);
             }
 
-            private (Task waitForData, int bytesRead) TryReadFromBuffer(Span<byte> buffer)
+            private (bool wait, int bytesRead) TryReadFromBuffer(Span<byte> buffer)
             {
                 Debug.Assert(buffer.Length > 0);
 
@@ -346,11 +349,11 @@ namespace System.Net.Http
                         _responseBuffer.ActiveSpan.Slice(0, bytesRead).CopyTo(buffer);
                         _responseBuffer.Discard(bytesRead);
 
-                        return (null, bytesRead);
+                        return (false, bytesRead);
                     }
                     else if (_state == StreamState.Complete)
                     {
-                        return (null, 0);
+                        return (false, 0);
                     }
                     else if (_state == StreamState.Aborted)
                     {
@@ -359,9 +362,10 @@ namespace System.Net.Http
 
                     Debug.Assert(_state == StreamState.ExpectingData);
 
-                    Debug.Assert(_waiterTaskSource == null);
-                    _waiterTaskSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    return (_waiterTaskSource.Task, 0);
+                    Debug.Assert(!_hasWaiter);
+                    _hasWaiter = true;
+                    _waitSource.Reset();
+                    return (true, 0);
                 }
             }
 
@@ -372,13 +376,13 @@ namespace System.Net.Http
                     return 0;
                 }
 
-                (Task waitForData, int bytesRead) = TryReadFromBuffer(buffer.Span);
-                if (waitForData != null)
+                (bool wait, int bytesRead) = TryReadFromBuffer(buffer.Span);
+                if (wait)
                 {
                     Debug.Assert(bytesRead == 0);
-                    await waitForData.ConfigureAwait(false);
-                    (waitForData, bytesRead) = TryReadFromBuffer(buffer.Span);
-                    Debug.Assert(waitForData == null);
+                    await GetWaiterTask().ConfigureAwait(false);
+                    (wait, bytesRead) = TryReadFromBuffer(buffer.Span);
+                    Debug.Assert(!wait);
                 }
 
                 if (bytesRead != 0)
@@ -420,6 +424,14 @@ namespace System.Net.Http
                     }
                 }
             }
+
+            // This object is itself usable as a backing source for ValueTask.  Since there's only ever one awaiter
+            // for this object's state transitions at a time, we allow the object to be awaited directly. All functionality
+            // associated with the implementation is just delegated to the ManualResetValueTaskSourceCore.
+            private ValueTask GetWaiterTask() => new ValueTask(this, _waitSource.Version);
+            ValueTaskSourceStatus IValueTaskSource.GetStatus(short token) => _waitSource.GetStatus(token);
+            void IValueTaskSource.OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => _waitSource.OnCompleted(continuation, state, token, flags);
+            void IValueTaskSource.GetResult(short token) => _waitSource.GetResult(token);
 
             private sealed class Http2ReadStream : BaseAsyncStream
             {
