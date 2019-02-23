@@ -64,6 +64,9 @@ create type WeakPoint external name weakpoint.[WeakPoint]
 create type WeakLine external name weakline.[WeakLine]
 go
 
+create type CustomerAddress as table( name nvarchar(30) NOT NULL, addr Address NULL )
+go
+
 create table cities (name sysname,location Point)
 create table lines(ids int null, pos Line null)
 create table customers(name nvarchar(30), address Address)
@@ -123,6 +126,11 @@ go
 create proc sp_insert_customer(@name nvarchar(30), @addr Address output)
 as
 insert into customers values (@name, @addr)
+go
+
+create proc sp_insert_customers ( @customers CustomerAddress READONLY )
+as
+insert into customers(name,address) select name,addr from @customers
 go
 
 create assembly Utf8String from 
