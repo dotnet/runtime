@@ -641,8 +641,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             try
             {
                 string architecture = fixture.CurrentRid.Split('-')[1];
-                RegistryKey sdkKey = testKey.CreateSubKey($@"Setup\InstalledVersions\{architecture}\sdk");
-                sdkKey.SetValue("InstallLocation", _regDir);
+                RegistryKey dotnetLocationKey = testKey.CreateSubKey($@"Setup\InstalledVersions\{architecture}");
+                dotnetLocationKey.SetValue("InstallLocation", _regDir);
 
                 // Add SDK versions
                 AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.4");
