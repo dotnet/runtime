@@ -88,7 +88,6 @@
 #define IDS_DS_DSOTHREADMODEL                   0x1707
 
 #define IDS_EE_NDIRECT_UNSUPPORTED_SIG          0x1708
-#define IDS_EE_EXCEPTION_FROM_HRESULT           0x1709
 #define IDS_EE_NDIRECT_BADNATL                  0x170a
 #define IDS_EE_NDIRECT_LOADLIB_WIN              0x170b
 #define IDS_EE_NDIRECT_GETPROCADDRESS_WIN       0x170c
