@@ -148,6 +148,9 @@
     <OfficialBuildRID Include="linux-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-musl-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="tizen.4.0.0-armel">
       <Platform>armel</Platform>
     </OfficialBuildRID>
