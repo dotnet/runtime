@@ -1007,6 +1007,12 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_get_version local_X509_get_version
 #define X509_up_ref local_X509_up_ref
 
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
+
+#define X509_STORE_CTX_get0_store local_X509_STORE_CTX_get0_store
+
+#endif
+
 // Restore the old names for RENAMED_FUNCTION functions.
 #define EVP_MD_CTX_free EVP_MD_CTX_destroy
 #define EVP_MD_CTX_new EVP_MD_CTX_create
