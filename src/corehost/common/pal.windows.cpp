@@ -261,7 +261,7 @@ bool get_sdk_self_registered_dir(pal::string_t* recv)
         dotnet_key_path = environmentRegistryPathOverride;
     }
 
-    pal::string_t sub_key = dotnet_key_path + pal::string_t(_X("\\Setup\\InstalledVersions\\")) + get_arch() + pal::string_t(_X("\\sdk"));
+    pal::string_t sub_key = dotnet_key_path + pal::string_t(_X("\\Setup\\InstalledVersions\\")) + get_arch();
     pal::char_t* value = _X("InstallLocation");
 
     // Must use RegOpenKeyEx to be able to specify KEY_WOW64_32KEY to access the 32-bit registry in all cases.
