@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
-    <!-- Some of the other test projects reference this assembly to re-use shared test code. -->
-    <IsProjectReferenceProvider>true</IsProjectReferenceProvider>
   </PropertyGroup>
 
   <ItemGroup>
