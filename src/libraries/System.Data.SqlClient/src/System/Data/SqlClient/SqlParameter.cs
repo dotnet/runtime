@@ -1131,16 +1131,8 @@ namespace System.Data.SqlClient
             destination._offset = _offset;
             destination._sourceColumn = _sourceColumn;
             destination._sourceVersion = _sourceVersion;
-            destination.Set(SqlParameterFlags.SourceColumnNullMapping, _flags.HasFlag(SqlParameterFlags.SourceColumnNullMapping));
-            destination.Set(SqlParameterFlags.IsNullable, _flags.HasFlag(SqlParameterFlags.IsNullable));
-
             destination._metaType = _metaType;
             destination._collation = _collation;
-            if (_xmlSchemaCollection!=null)
-            {
-                destination._xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
-                destination._xmlSchemaCollection.CopyFrom(_xmlSchemaCollection);
-            }
             destination._udtTypeName = _udtTypeName;
             destination._typeName = _typeName;
             destination._udtLoadError = _udtLoadError;
@@ -1151,11 +1143,22 @@ namespace System.Data.SqlClient
             destination._internalMetaType = _internalMetaType;
             destination.CoercedValue = CoercedValue; // copy cached value reference because of XmlReader problem
             destination._valueAsINullable = _valueAsINullable;
-            destination.Set(SqlParameterFlags.IsSqlParameterSqlType, _flags.HasFlag(SqlParameterFlags.IsSqlParameterSqlType));
-            destination.Set(SqlParameterFlags.IsNull, _flags.HasFlag(SqlParameterFlags.IsNull));
-            destination.Set(SqlParameterFlags.CoercedValueIsDataFeed, _flags.HasFlag(SqlParameterFlags.CoercedValueIsDataFeed));
-            destination.Set(SqlParameterFlags.CoercedValueIsSqlType, _flags.HasFlag(SqlParameterFlags.CoercedValueIsSqlType));
+
+            SqlParameterFlags setFlags =
+                SqlParameterFlags.IsSqlParameterSqlType |
+                SqlParameterFlags.IsNull |
+                SqlParameterFlags.IsNullable |
+                SqlParameterFlags.CoercedValueIsDataFeed |
+                SqlParameterFlags.CoercedValueIsSqlType |
+                SqlParameterFlags.SourceColumnNullMapping;
+            destination._flags = (destination._flags & ~setFlags) | (_flags & setFlags);
             destination._actualSize = _actualSize;
+
+            if (_xmlSchemaCollection != null)
+            {
+                destination._xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
+                destination._xmlSchemaCollection.CopyFrom(_xmlSchemaCollection);
+            }
         }
 
         public override DataRowVersion SourceVersion

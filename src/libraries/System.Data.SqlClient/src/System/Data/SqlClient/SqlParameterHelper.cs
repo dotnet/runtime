@@ -194,9 +194,9 @@ namespace System.Data.SqlClient
             destination._sourceColumn = _sourceColumn;
             destination._sourceVersion = _sourceVersion;
             destination._parameterName = _parameterName;
-            destination.Set(SqlParameterFlags.SourceColumnNullMapping, _flags.HasFlag(SqlParameterFlags.SourceColumnNullMapping));
-            destination.Set(SqlParameterFlags.IsNullable, _flags.HasFlag(SqlParameterFlags.IsNullable));
-            destination.Set(SqlParameterFlags.IsNull, _flags.HasFlag(SqlParameterFlags.IsNull));
+
+            SqlParameterFlags setFlags = SqlParameterFlags.SourceColumnNullMapping | SqlParameterFlags.IsNullable | SqlParameterFlags.IsNull;
+            destination._flags = (destination._flags & ~setFlags) | (_flags & setFlags);
             
         }
     }
