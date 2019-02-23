@@ -129,10 +129,30 @@ namespace System
 
         public static bool UserInteractive => true;
 
-        // Previously this represented the File version of mscorlib.dll.  Many other libraries in the framework and outside took dependencies on the first three parts of this version 
-        // remaining constant throughout 4.x.  From 4.0 to 4.5.2 this was fine since the file version only incremented the last part. Starting with 4.6 we switched to a file versioning
-        // scheme that matched the product version.  In order to preserve compatibility with existing libraries, this needs to be hard-coded.
-        public static Version Version => new Version(4, 0, 30319, 42000);
+        public static Version Version
+        {
+            get
+            {
+                // FX_PRODUCT_VERSION is expected to be set by the host
+                string versionString = (string)AppContext.GetData("FX_PRODUCT_VERSION");
+
+                if (versionString == null)
+                {
+                    // Use AssemblyInformationalVersionAttribute as fallback if the exact product version is not specified by the host
+                    versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                }
+
+                ReadOnlySpan<char> versionSpan = versionString.AsSpan();
+
+                // Strip optional suffixes
+                int separatorIndex = versionSpan.IndexOfAny("-+ ");
+                if (separatorIndex != -1)
+                    versionSpan = versionSpan.Slice(0, separatorIndex);
+
+                // Return zeros rather then failing if the version string fails to parse
+                return Version.TryParse(versionSpan, out Version version) ? version : new Version();
+            }
+        }
 
         public static long WorkingSet
         {
