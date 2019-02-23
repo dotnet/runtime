@@ -477,7 +477,6 @@ namespace System.Text
         /// The <see cref="Utf8SequenceLength"/> property can be queried ahead of time to determine
         /// the required size of the <paramref name="destination"/> buffer.
         /// </remarks>
-        // ** This is public so it can be unit tested but isn't yet exposed via the reference assemblies. **
         public bool TryEncodeToUtf8Bytes(Span<byte> destination, out int bytesWritten)
         {
             // TODO: Optimize some of these writes by using BMI2 instructions.
