@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 
 //Measure allocation time when allocating objects on a single thread.
 //Should be run with server GC
@@ -17,11 +18,10 @@ class Allocation
             return;
         }
 
-        string processor = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-        Console.WriteLine("Running on {0}", processor);
+        Console.WriteLine("Running on {0}", RuntimeInformation.ProcessArchitecture);
 
         UInt64 MaxBytes = 1500000000;
-        if (processor.ToLower() == "amd64")
+        if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
         {
             MaxBytes = 5000000000;
         }
