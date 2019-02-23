@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -57,9 +59,19 @@ namespace System.ComponentModel
                 return false;
             }
 
-            if (other.IsDefaultAttribute())
+            // ExtenderProperty is null if the attribute is created with
+            // the default constructor. In this case, all the properties
+            // are null (and are immutable), so we only need to check the
+            // nullability of one property to know about the nullability
+            // of the rest.
+            if (other.ExtenderProperty == null)
             {
-                return IsDefaultAttribute();
+                Debug.Assert(other.Provider == null);
+                Debug.Assert(other.ReceiverType == null);
+                Debug.Assert(Provider == null);
+                Debug.Assert(ReceiverType == null);
+
+                return ExtenderProperty == null;
             }
 
             return other.ExtenderProperty.Equals(ExtenderProperty)
