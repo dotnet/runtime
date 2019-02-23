@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -86,10 +87,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
             // which just returns the value of its sole Int64 dateData field.  Here, we don't
             // have access to that member (which doesn't even exist anymore, since it was only for
             // BinaryFormatter, which is now in a separate assembly).  To address that,
-            // we access the sole field directly via an unsafe cast; ideally this would
-            // just use Unsafe.As, but since we can't use that here due to not having a netcoreapp
-            // build of System.Runtime.CompilerServices.Unsafe.dll, we instead go through span.
-            long dateData = MemoryMarshal.Cast<DateTime, long>(MemoryMarshal.CreateReadOnlySpan(ref value, 1))[0];
+            // we access the sole field directly via an unsafe cast.
+            long dateData = Unsafe.As<DateTime, long>(ref value);
             WriteInt64(dateData);
         }
 

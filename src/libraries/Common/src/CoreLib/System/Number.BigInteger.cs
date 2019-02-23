@@ -311,12 +311,6 @@ namespace System
                 0x00000000,
             };
 
-            private static readonly uint[] s_MultiplyDeBruijnBitPosition = new uint[]
-            {
-                0, 9, 1, 10, 13, 21, 2, 29, 11, 14, 16, 18, 22, 25, 3, 30,
-                8, 12, 20, 28, 15, 17, 24, 7, 19, 27, 23, 6, 26, 5, 4, 31
-            };
-
             private int _length;
             private fixed uint _blocks[MaxBlockCount];
 
@@ -461,19 +455,12 @@ namespace System
 
             public static uint CountSignificantBits(uint value)
             {
-                return (value != 0) ? (1 + LogBase2(value)) : 0;
+                return 32 - (uint)BitOps.LeadingZeroCount(value);
             }
 
             public static uint CountSignificantBits(ulong value)
             {
-                uint upper = (uint)(value >> 32);
-
-                if (upper != 0)
-                {
-                    return 32 + CountSignificantBits(upper);
-                }
-
-                return CountSignificantBits((uint)(value));
+                return 64 - (uint)BitOps.LeadingZeroCount(value);
             }
 
             public static uint CountSignificantBits(ref BigInteger value)
@@ -566,7 +553,7 @@ namespace System
                     uint divLo = rhs._blocks[rhsLength - 2];
 
                     // We measure the leading zeros of the divisor
-                    int shiftLeft = (int)(LeadingZeroCount(divHi));
+                    int shiftLeft = BitOps.LeadingZeroCount(divHi);
                     int shiftRight = 32 - shiftLeft;
 
                     // And, we make sure the most significant bit is set
@@ -748,47 +735,6 @@ namespace System
                 }
 
                 return quotient;
-            }
-
-            public static uint LeadingZeroCount(uint value)
-            {
-                return 32 - CountSignificantBits(value);
-            }
-
-            public static uint LeadingZeroCount(ulong value)
-            {
-                return 64 - CountSignificantBits(value);
-            }
-
-            public static uint LogBase2(uint value)
-            {
-                Debug.Assert(value != 0);
-
-                // This comes from the Stanford Bit Widdling Hacks by Sean Eron Anderson:
-                // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogDeBruijn
-
-                value |= (value >> 1); // first round down to one less than a power of 2 
-                value |= (value >> 2);
-                value |= (value >> 4);
-                value |= (value >> 8);
-                value |= (value >> 16);
-
-                uint index = (value * 0x07C4ACDD) >> 27;
-                return s_MultiplyDeBruijnBitPosition[(int)(index)];
-            }
-
-            public static uint LogBase2(ulong value)
-            {
-                Debug.Assert(value != 0);
-
-                uint upper = (uint)(value >> 32);
-
-                if (upper != 0)
-                {
-                    return 32 + LogBase2(upper);
-                }
-
-                return LogBase2((uint)(value));
             }
 
             public static void Multiply(ref BigInteger lhs, uint value, ref BigInteger result)

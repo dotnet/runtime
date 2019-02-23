@@ -44,6 +44,11 @@ int32_t CryptoNative_ObjSn2Nid(const char* sn)
     return OBJ_sn2nid(sn);
 }
 
+int32_t CryptoNative_ObjTxt2Nid(const char* sn)
+{
+    return OBJ_txt2nid(sn);
+}
+
 const ASN1_OBJECT* CryptoNative_ObjNid2Obj(int32_t nid)
 {
     return OBJ_nid2obj(nid);

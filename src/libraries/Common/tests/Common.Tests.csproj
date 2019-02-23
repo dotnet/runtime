@@ -1,7 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{C72FD34C-539A-4447-9796-62A229571199}</ProjectGuid>
-    <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
     <CoverageSupported>false</CoverageSupported>
@@ -67,10 +66,14 @@
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\BitOps.cs">
+      <Link>Common\CoreLib\System\BitOps.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
       <Link>Common\CoreLib\System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="Tests\Interop\procfsTests.cs" />
+    <Compile Include="Tests\System\BitOpsTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />

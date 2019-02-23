@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.X86;
 
 namespace System.Buffers.Text
 {
@@ -104,36 +103,9 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountHexDigits(ulong value)
         {
-            if (Lzcnt.X64.IsSupported)
-            {
-                int right = 64 - (int)Lzcnt.X64.LeadingZeroCount(value | 1);
-                return (right + 3) >> 2;
-            }
-
-            int digits = 1;
-
-            if (value > 0xFFFFFFFF)
-            {
-                digits += 8;
-                value >>= 0x20;
-            }
-            if (value > 0xFFFF)
-            {
-                digits += 4;
-                value >>= 0x10;
-            }
-            if (value > 0xFF)
-            {
-                digits += 2;
-                value >>= 0x8;
-            }
-            if (value > 0xF)
-                digits++;
-
-            return digits;
+            return (64 - BitOps.LeadingZeroCount(value | 1) + 3) >> 2;
         }
 
-        
         // Counts the number of trailing '0' digits in a decimal number.
         // e.g., value =      0 => retVal = 0, valueWithoutTrailingZeros = 0
         //       value =   1234 => retVal = 0, valueWithoutTrailingZeros = 1234

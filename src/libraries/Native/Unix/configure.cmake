@@ -119,6 +119,11 @@ check_symbol_exists(
     HAVE_STAT64)
 
 check_symbol_exists(
+    vfork
+    unistd.h
+    HAVE_VFORK)
+
+check_symbol_exists(
     pipe2
     unistd.h
     HAVE_PIPE2)

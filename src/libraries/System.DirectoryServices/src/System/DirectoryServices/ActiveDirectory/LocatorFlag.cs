@@ -31,11 +31,4 @@ namespace System.DirectoryServices.ActiveDirectory
         ReturnDNSName = 0x40000000,
         ReturnFlatName = 0x80000000
     }
-
-    [Flags]
-    internal enum DcEnumFlag : int
-    {
-        OnlyDoSiteName = 0x01,
-        NotifyAfterSiteRecords = 0x02
-    }
 }

@@ -292,7 +292,7 @@ namespace Internal.Cryptography.Pal
             throw new CryptographicException(SR.Cryptography_X509_StoreNoFileAvailable);
         }
 
-        private static string GetStorePath(string storeName)
+        internal static string GetStorePath(string storeName)
         {
             string directoryName = GetDirectoryName(storeName);
 

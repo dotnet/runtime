@@ -71,9 +71,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileOperations.cs">
       <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileShareMode.cs">
-      <Link>Common\Interop\Windows\Interop.FileShareMode.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FlushViewOfFile.cs">
       <Link>Common\Interop\Windows\Interop.FlushViewOfFile.cs</Link>
     </Compile>
