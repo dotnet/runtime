@@ -7,17 +7,17 @@ Building and Running Tests
 -----------
 Performance test files (if present) are stored within a library's ```tests/Performance``` directory and contain test methods that are all marked with a perf-specific *Benchmark* attribute.
 
-**Step # 1:** Prior to running performance tests, a full build from the repo root must be completed: ```build -release```
+**Step # 1:** Prior to running performance tests, a full build from the repo root must be completed: `build -c Release`
 
 **Step # 2:** Change directory to the performance tests directory: ```cd path/to/library/tests/Performance```
 
 **Step # 3:** Build and run the tests:
- - Windows ```dotnet msbuild /t:BuildAndTest /p:ConfigurationGroup=Release```
- - Linux: ```dotnet msbuild /t:BuildAndTest /p:ConfigurationGroup=Release```
-
-**Note: Because test build runs tests concurrently, do not use it for executing performance tests. If you still want to run them concurrently you need to pass the flag `/p:Performance=true` to it: `build -test -release /p:Performance=true`.**
+ - Windows ```dotnet msbuild /t:BuildAndPerformanceTest /p:ConfigurationGroup=Release```
+ - Linux: ```dotnet msbuild /t:BuildAndPerformanceTest /p:ConfigurationGroup=Release```
 
 The results files will be dropped in corefx/artifacts/bin/tests/TESTLIBRARY/FLAVOR/.  The console output will also specify the location of these files.
+
+To build and run all tests from root, execute the following command: `build -performanceTest -buildtests -c Release`.
 
 **Getting memory usage**
 

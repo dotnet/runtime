@@ -3,7 +3,11 @@
 <Project>
   <Import Project="dependencies.props" />
 
-  <ItemGroup>
+  <PropertyGroup>
+    <UsingILCTools Condition="'$(UsingILCTools)' == '' AND $(TargetGroup.EndsWith('aot'))">true</UsingILCTools>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UsingILCTools)' == 'true'">
     <PackageReference Include="TestILC.amd64ret" Version="$(TestILCAmd64retPackageVersion)" />
     <PackageReference Include="TestILC.armret" Version="$(TestILCArmretPackageVersion)" />
     <PackageReference Include="TestILC.x86ret" Version="$(TestILCX86retPackageVersion)" />

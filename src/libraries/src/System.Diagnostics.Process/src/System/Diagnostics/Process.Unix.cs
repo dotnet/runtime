@@ -64,69 +64,62 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Stops the associated process immediately.</summary>
-        private void Stop()
-        {
-            EnsureState(State.HaveNonExitedId);
-            if (Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGSTOP) != 0)
-            {
-                throw new Win32Exception(); // to match behavior of Kill()
-            }
-        }
-
         private IEnumerable<Exception> KillTree()
         {
-            try
+            List<Exception> exceptions = null;
+            KillTree(ref exceptions);
+            return exceptions ?? Enumerable.Empty<Exception>();
+        }
+
+        private void KillTree(ref List<Exception> exceptions)
+        {
+            // If the process has exited, we can no longer determine its children.
+            if (HasExited)
             {
-                // Stop but don't kill the process. Keeps additional children from being started but leaves the process alive 
-                // so that its children can be enumerated.
-                //
-                // This method can return before stopping has completed. Down the road, could possibly wait for stopping to complete (e.g. using waitid) before continuing.
-                Stop();
-            }
-            catch (InvalidOperationException)
-            {
-                // It appears that nothing more can be done with the process. Implies that its children can't be enumerated.
-                return Enumerable.Empty<Exception>();
-            }
-            catch (Win32Exception e)
-            {
-                return new[] { e };
+                return;
             }
 
+            // Stop the process, so it won't start additional children.
+            // This is best effort: kill can return before the process is stopped.
+            int stopResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGSTOP);
+            if (stopResult != 0)
+            {
+                Interop.Error error = Interop.Sys.GetLastError();
+                // Ignore 'process no longer exists' error.
+                if (error != Interop.Error.ESRCH)
+                {
+                    AddException(ref exceptions, new Win32Exception());
+                }
+                return;
+            }
 
-            List<Exception> exceptions = new List<Exception>();
             IReadOnlyList<Process> children = GetChildProcesses();
 
-            try
+            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
+            if (killResult != 0)
             {
-                try
+                Interop.Error error = Interop.Sys.GetLastError();
+                // Ignore 'process no longer exists' error.
+                if (error != Interop.Error.ESRCH)
                 {
-                    // Since children have been enumerated, the process can be terminated.
-                    Kill();
-                }
-                catch (InvalidOperationException)
-                {
-                    // Ignore. The process is already dead.
-                }
-                catch (Win32Exception e)
-                {
-                    exceptions.Add(e);
-                }
-
-                foreach (Process childProcess in children)
-                {
-                    IEnumerable<Exception> exceptionsFromChild = childProcess.KillTree();
-                    exceptions.AddRange(exceptionsFromChild);
+                    AddException(ref exceptions, new Win32Exception());
                 }
             }
-            finally
+
+            foreach (Process childProcess in children)
             {
-                foreach (Process child in children)
-                    child.Dispose();
+                childProcess.KillTree(ref exceptions);
+                childProcess.Dispose();
             }
 
-            return exceptions;
+            void AddException(ref List<Exception> list, Exception e)
+            {
+                if (list == null)
+                {
+                    list = new List<Exception>();
+                }
+                list.Add(e);
+            }
         }
 
         /// <summary>Discards any information about the associated process.</summary>

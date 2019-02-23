@@ -38,7 +38,7 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<(Socket, Stream)> ConnectAsync(string host, int port, CancellationToken cancellationToken)
+        public static async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
             // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
             // Socket.ConnectAsync with a SocketAsyncEventArgs, as we can then use Socket.CancelConnectAsync
@@ -77,7 +77,7 @@ namespace System.Net.Http
                 // Configure the socket and return a stream for it.
                 Socket socket = saea.ConnectSocket;
                 socket.NoDelay = true;
-                return (socket, new NetworkStream(socket, ownsSocket: true));
+                return new ExposedSocketNetworkStream(socket, ownsSocket: true);
             }
             catch (Exception error)
             {

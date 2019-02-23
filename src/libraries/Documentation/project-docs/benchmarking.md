@@ -16,7 +16,7 @@ See [BenchmarkDotNet](https://benchmarkdotnet.org/articles/guides/getting-starte
 
 Since `0.11.1` BenchmarkDotNet knows how to run benchmarks with CoreRun. So you just need to provide it the path to CoreRun! The simplest way to do that is via console line arguments:
 
-    dotnet run -c Release -f netcoreapp3.0 -- -f *MyBenchmarkName* --coreRun "C:\Projects\corefx\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe"
+    dotnet run -c Release -f netcoreapp3.0 -- -f *MyBenchmarkName* --coreRun "C:\Projects\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe"
 
 **Hint:** If you are curious to know what BDN does internally you just need to apply `[KeepBenchmarkFiles]` attribute to your class or set `KeepBenchmarkFiles = true` in your config file. After running the benchmarks you can find the auto-generated files in `%pathToBenchmarkApp\bin\Release\$TFM\` folder.
 
@@ -52,7 +52,7 @@ If you want to run your benchmarks without spawning a new process per benchmark 
 
 1. Before you start benchmarking the code you need to build entire CoreFX in Release which is going to generate the right CoreRun bits for you:
 
-        C:\Projects\corefx>build.cmd -release /p:ArchGroup=x64
+        C:\Projects\corefx>build.cmd -c Release -arch x64
 
 After that, you should be able to find `CoreRun.exe` in a location similar to:
 
@@ -98,7 +98,7 @@ After that, you should be able to find `System.Private.Corelib.dll` in a locatio
 
 2. Build entire CoreFX in Release using your local private build of coreclr (See [Testing With Private CoreCLR Bits](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md#testing-with-private-coreclr-bits))
 
-        C:\Projects\corefx>build.cmd -release /p:CoreCLROverridePath=C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
+        C:\Projects\corefx>build.cmd -c Release /p:CoreCLROverridePath=C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
 
 After that, you should be able to find `CoreRun.exe` in a location similar to:
 
@@ -128,7 +128,7 @@ class Program
 
   - Rebuild given CoreFX part in Release:
 
-          C:\Projects\corefx>build.cmd -release /p:CoreCLROverridePath=C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
+          C:\Projects\corefx>build.cmd -c Release /p:CoreCLROverridePath=C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
 
   - OR manually copy over the relevant files from within the root of the coreclr output folder to where `CoreRun.exe` lives within corefx (excluding the subdirectories). This ends up being much faster than the first option and if the only thing that changed is   `System.Private.Corelib.dll`, just copy that over:
 
