@@ -37,6 +37,19 @@
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
   </PropertyGroup>
+
+  <!-- Approximate Arcade version string https://github.com/dotnet/arcade/blob/master/Documentation/CorePackages/Versioning.md -->
+  <!-- This workaround should be removed once CoreCLR repo is updated to use Arcade -->
+  <PropertyGroup>
+    <InformationalVersion>$(VersionPrefix)</InformationalVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PreReleaseLabel)' != ''">
+    <InformationalVersion>$(InformationalVersion)-$(PreReleaseLabel).$(BuildNumberMajor).$(BuildNumberMinor)</InformationalVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(LatestCommit)' != ''">
+    <InformationalVersion>$(InformationalVersion)+$(LatestCommit)</InformationalVersion>
+  </PropertyGroup>
+
   <!-- Add Serviceable attribute to the project's metadata -->
   <ItemGroup>
     <AssemblyMetadata Include="Serviceable">
