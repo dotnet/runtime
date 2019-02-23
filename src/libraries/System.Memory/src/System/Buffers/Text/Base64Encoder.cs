@@ -15,7 +15,7 @@ namespace System.Buffers.Text
     {
         /// <summary>
         /// Encode the span of binary data into UTF-8 encoded text represented as base 64.
-        ///
+        /// </summary> 
         /// <param name="bytes">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="utf8">The output span which contains the result of the operation, i.e. the UTF-8 encoded text in base 64.</param>
         /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
@@ -26,8 +26,8 @@ namespace System.Buffers.Text
         /// - Done - on successful processing of the entire input span
         /// - DestinationTooSmall - if there is not enough space in the output span to fit the encoded input
         /// - NeedMoreData - only if isFinalBlock is false, otherwise the output is padded if the input is not a multiple of 3
-        /// It does not return InvalidData since that is not possible for base 64 encoding.</returns>
-        /// </summary> 
+        /// It does not return InvalidData since that is not possible for base 64 encoding.
+        /// </returns>
         public static OperationStatus EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> utf8, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
         {
             ref byte srcBytes = ref MemoryMarshal.GetReference(bytes);
@@ -114,7 +114,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Encode the span of binary data (in-place) into UTF-8 encoded text represented as base 64. 
         /// The encoded text output is larger than the binary data contained in the input (the operation inflates the data).
-        ///
+        /// </summary>
         /// <param name="buffer">The input span which contains binary data that needs to be encoded. 
         /// It needs to be large enough to fit the result of the operation.</param>
         /// <param name="dataLength">The amount of binary data contained within the buffer that needs to be encoded 
@@ -124,8 +124,8 @@ namespace System.Buffers.Text
         /// - Done - on successful processing of the entire buffer
         /// - DestinationTooSmall - if there is not enough space in the buffer beyond dataLength to fit the result of encoding the input
         /// It does not return NeedMoreData since this method tramples the data in the buffer and hence can only be called once with all the data in the buffer.
-        /// It does not return InvalidData since that is not possible for base 64 encoding.</returns>
-        /// </summary> 
+        /// It does not return InvalidData since that is not possible for base 64 encoding.
+        /// </returns>
         public static OperationStatus EncodeToUtf8InPlace(Span<byte> buffer, int dataLength, out int bytesWritten)
         {
             int encodedLength = GetMaxEncodedToUtf8Length(dataLength);

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
@@ -15,10 +16,20 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CrlCache
     {
+        private static readonly string s_crlDir =
+            PersistedFiles.GetUserFeatureDirectory(
+                X509Persistence.CryptographyFeatureName,
+                X509Persistence.CrlsSubFeatureName);
+
+        private static readonly string s_ocspDir =
+            PersistedFiles.GetUserFeatureDirectory(
+                X509Persistence.CryptographyFeatureName,
+                X509Persistence.OcspSubFeatureName);
+
         private const ulong X509_R_CERT_ALREADY_IN_HASH_TABLE = 0x0B07D065;
 
         public static void AddCrlForCertificate(
-            X509Certificate2 cert,
+            SafeX509Handle cert,
             SafeX509StoreHandle store,
             X509RevocationMode revocationMode,
             DateTime verificationTime,
@@ -46,7 +57,7 @@ namespace Internal.Cryptography.Pal
             DownloadAndAddCrl(cert, store, ref remainingDownloadTime);
         }
 
-        private static bool AddCachedCrl(X509Certificate2 cert, SafeX509StoreHandle store, DateTime verificationTime)
+        private static bool AddCachedCrl(SafeX509Handle cert, SafeX509StoreHandle store, DateTime verificationTime)
         {
             string crlFile = GetCachedCrlPath(cert);
 
@@ -108,7 +119,7 @@ namespace Internal.Cryptography.Pal
         }
 
         private static void DownloadAndAddCrl(
-            X509Certificate2 cert,
+            SafeX509Handle cert,
             SafeX509StoreHandle store,
             ref TimeSpan remainingDownloadTime)
         {
@@ -160,18 +171,17 @@ namespace Internal.Cryptography.Pal
                 }
             }
         }
-        
-        private static string GetCachedCrlPath(X509Certificate2 cert, bool mkDir=false)
+
+        internal static string GetCachedOcspResponseDirectory()
         {
-            OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)cert.Pal;
+            return s_ocspDir;
+        }
 
-            string crlDir = PersistedFiles.GetUserFeatureDirectory(
-                X509Persistence.CryptographyFeatureName,
-                X509Persistence.CrlsSubFeatureName);
-
+        private static string GetCachedCrlPath(SafeX509Handle cert, bool mkDir=false)
+        {
             // X509_issuer_name_hash returns "unsigned long", which is marshalled as ulong.
             // But it only sets 32 bits worth of data, so force it down to uint just... in case.
-            ulong persistentHashLong = Interop.Crypto.X509IssuerNameHash(pal.SafeHandle);
+            ulong persistentHashLong = Interop.Crypto.X509IssuerNameHash(cert);
             if (persistentHashLong == 0)
             {
                 Interop.Crypto.ErrClearError();
@@ -185,58 +195,55 @@ namespace Internal.Cryptography.Pal
 
             if (mkDir)
             {
-                Directory.CreateDirectory(crlDir);
+                Directory.CreateDirectory(s_crlDir);
             }
 
-            return Path.Combine(crlDir, localFileName);
+            return Path.Combine(s_crlDir, localFileName);
         }
 
-        private static string GetCdpUrl(X509Certificate2 cert)
+        private static string GetCdpUrl(SafeX509Handle cert)
         {
-            byte[] crlDistributionPoints = null;
+            ArraySegment<byte> crlDistributionPoints =
+                OpenSslX509CertificateReader.FindFirstExtension(cert, Oids.CrlDistributionPoints);
 
-            foreach (X509Extension extension in cert.Extensions)
-            {
-                if (StringComparer.Ordinal.Equals(extension.Oid.Value, Oids.CrlDistributionPoints))
-                {
-                    // If there's an Authority Information Access extension, it might be used for
-                    // looking up additional certificates for the chain.
-                    crlDistributionPoints = extension.RawData;
-                    break;
-                }
-            }
-
-            if (crlDistributionPoints == null)
+            if (crlDistributionPoints.Array == null)
             {
                 return null;
             }
 
-            AsnReader reader = new AsnReader(crlDistributionPoints, AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
-            reader.ThrowIfNotEmpty();
-
-            while (sequenceReader.HasData)
+            try
             {
-                DistributionPointAsn.Decode(sequenceReader, out DistributionPointAsn distributionPoint);
+                AsnReader reader = new AsnReader(crlDistributionPoints, AsnEncodingRules.DER);
+                AsnReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
 
-                // Only distributionPoint is supported
-                // Only fullName is supported, nameRelativeToCRLIssuer is for LDAP-based lookup.
-                if (distributionPoint.DistributionPoint.HasValue &&
-                    distributionPoint.DistributionPoint.Value.FullName != null)
+                while (sequenceReader.HasData)
                 {
-                    foreach (GeneralNameAsn name in distributionPoint.DistributionPoint.Value.FullName)
+                    DistributionPointAsn.Decode(sequenceReader, out DistributionPointAsn distributionPoint);
+
+                    // Only distributionPoint is supported
+                    // Only fullName is supported, nameRelativeToCRLIssuer is for LDAP-based lookup.
+                    if (distributionPoint.DistributionPoint.HasValue &&
+                        distributionPoint.DistributionPoint.Value.FullName != null)
                     {
-                        if (name.Uri != null &&
-                            Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
-                            uri.Scheme == "http")
+                        foreach (GeneralNameAsn name in distributionPoint.DistributionPoint.Value.FullName)
                         {
-                            return name.Uri;
+                            if (name.Uri != null &&
+                                Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
+                                uri.Scheme == "http")
+                            {
+                                return name.Uri;
+                            }
                         }
                     }
                 }
-            }
 
-            return null;
+                return null;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(crlDistributionPoints.Array);
+            }
         }
     }
 }

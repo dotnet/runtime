@@ -9,63 +9,22 @@ namespace System.Tests
 {
     public class EnvironmentProcessorCount
     {
-        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get processor information
         [Fact]
-        public void Windows_ProcessorCountTest()
+        public void ProcessorCount_IsPositive()
         {
-            //arrange
-            SYSTEM_INFO sysInfo = new SYSTEM_INFO();
-            GetSystemInfo(ref sysInfo);
-            int expected = sysInfo.dwNumberOfProcessors;
-
-            //act
-            int actual = Environment.ProcessorCount;
-
-            //assert
-            Assert.True(actual > 0);
-            Assert.Equal(expected, actual);
+            Assert.InRange(Environment.ProcessorCount, 1, int.MaxValue);
         }
-
-#if Unix
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to get processor information
+        
+        [PlatformSpecific(TestPlatforms.Windows)] // Uses P/Invokes to get processor information
         [Fact]
-        public void Unix_ProcessorCountTest()
+        public void ProcessorCount_Windows_MatchesGetSystemInfo()
         {
-            //arrange
-            int SYSCONF_GET_NUMPROCS;
-
-            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm ||
-                RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-            {
-                SYSCONF_GET_NUMPROCS = /* _SC_NPROCESSORS_CONF */
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 83 :
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")) ? 1001 :
-                    57;
-            }
-            else
-            {
-                SYSCONF_GET_NUMPROCS = /* _SC_NPROCESSORS_ONLN */
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 84 :
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")) ? 1002 :
-                    58;
-            }
-
-            int expected = (int)sysconf(SYSCONF_GET_NUMPROCS);
-
-            //act
-            int actual = Environment.ProcessorCount;
-
-            //assert
-            Assert.True(actual > 0);
-            Assert.Equal(expected, actual);
+            GetSystemInfo(out SYSTEM_INFO sysInfo);
+            Assert.Equal(sysInfo.dwNumberOfProcessors, Environment.ProcessorCount);
         }
-
-        [DllImport("libc")]
-        private static extern long sysconf(int name);
-#endif
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
+        internal static extern void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct SYSTEM_INFO
