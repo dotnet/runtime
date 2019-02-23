@@ -5,6 +5,7 @@
 
 
 using System;
+using System.Runtime.InteropServices;
 
 internal struct VT
 {
@@ -141,8 +142,8 @@ internal class DblArray3
 
     public static int Main()
     {
-        Console.WriteLine(Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"));
-        if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") == "x86")
+        Console.WriteLine(RuntimeInformation.ProcessArchitecture);
+        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
         {
             s_LOH_GEN = 2;
         }

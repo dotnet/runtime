@@ -12,6 +12,7 @@
 // 6) the threshold can be set by registry key DoubleArrayToLargeObjectHeap
 
 
+using System.Runtime.InteropServices;
 using System;
 internal class DblArray
 {
@@ -281,7 +282,7 @@ internal class DblArray
 
     public static int Main()
     {
-        if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") == "x86")
+        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
         {
             s_LOH_GEN = 2;
         }

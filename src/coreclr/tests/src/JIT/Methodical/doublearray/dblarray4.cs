@@ -14,13 +14,14 @@
 // Test DoubleArrayToLargeObjectHeap - need to set the key to <= 100
 
 using System;
+using System.Runtime.InteropServices;
 
 internal class DblArray4
 {
     private static int s_LOH_GEN = 0;
     public static int Main()
     {
-        if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") == "x86")
+        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
         {
             s_LOH_GEN = 2;
         }
