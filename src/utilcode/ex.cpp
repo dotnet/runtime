@@ -1200,7 +1200,6 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
         result.Append(strDescr);
     }
 
-    
     if (!bNoGeekStuff)
     {
         if (fHaveDescr)
@@ -1208,21 +1207,16 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
             result.Append(W(" ("));
         }
 
-        SString strExcepFromHR;
-        strExcepFromHR.LoadResource(CCompRC::Error, IDS_EE_EXCEPTION_FROM_HRESULT);
-        result.Append(strExcepFromHR);
         result.AppendPrintf(W("0x%.8X"), hr);
         if (name != NULL)
         {
             result.AppendPrintf(W(" (%S)"), name);
         }
 
-
         if (fHaveDescr)
         {
             result.Append(W(")"));
         }
-        
     }
 }
 
