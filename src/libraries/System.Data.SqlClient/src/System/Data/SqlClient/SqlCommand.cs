@@ -3331,8 +3331,21 @@ namespace System.Data.SqlClient
                         // detect incorrectly derived type names unchanged by the caller and fix them
                         if (parameter.IsDerivedParameterTypeName)
                         {
-                            MultiPartTableName name = new MultiPartTableName(parameter.TypeName);
-                            parameter.TypeName = "[" + name.SchemaName + "].[" + name.TableName + "]";
+                            string[] parts = MultipartIdentifier.ParseMultipartIdentifier(parameter.TypeName, "[\"", "]\"", SR.SQL_TDSParserTableName, false);
+                            if (parts != null)
+                            {
+                                int length = parts.Length;
+                                if (
+                                    length > 3 && //require at least 3 parts
+                                    parts[length - 1] != null && // name must not be null
+                                    parts[length - 2] != null && // schema must not be null
+                                    parts[length - 3] != null && // server should not be null or we don't need to remove it
+                                    (length == 3 || parts[length - 4] == null) // if a database space is availble then is must be null
+                                )
+                                {
+                                    parameter.TypeName = QuoteIdentifier(parts.AsSpan(length-2));
+                                }
+                            }
                         }
 
                         // remember that null == Convert.IsEmpty, DBNull.Value is a database null!
@@ -3679,9 +3692,14 @@ namespace System.Data.SqlClient
 
         // Adds quotes to each part of a SQL identifier that may be multi-part, while leaving
         //  the result as a single composite name.
-        private string ParseAndQuoteIdentifier(string identifier, bool isUdtTypeName)
+        private static string ParseAndQuoteIdentifier(string identifier, bool isUdtTypeName)
         {
             string[] strings = SqlParameter.ParseTypeName(identifier, isUdtTypeName);
+            return QuoteIdentifier(strings);
+        }
+
+        private static string QuoteIdentifier(ReadOnlySpan<string> strings)
+        {
             StringBuilder bld = new StringBuilder();
 
             // Stitching back together is a little tricky. Assume we want to build a full multi-part name
@@ -3696,7 +3714,7 @@ namespace System.Data.SqlClient
                 }
                 if (null != strings[i] && 0 != strings[i].Length)
                 {
-                    bld.Append(ADP.BuildQuotedString("[", "]", strings[i]));
+                    ADP.AppendQuotedString(bld, "[", "]", strings[i]);
                 }
             }
 
