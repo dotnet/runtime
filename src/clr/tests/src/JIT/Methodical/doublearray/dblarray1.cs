@@ -13,6 +13,7 @@
 
 // Variation on array length
 
+using System.Runtime.InteropServices;
 using System;
 internal class DblArray1
 {
@@ -92,7 +93,7 @@ internal class DblArray1
 
     public static int Main()
     {
-        if (Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE") == "x86")
+        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
         {
             s_LOH_GEN = 2;
         }
