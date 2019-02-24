@@ -106,7 +106,7 @@ public:
     static count_t Hash(key_t k)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ((count_t)k.m_methodDef ^ (count_t)k.m_module);
+        return k.m_methodDef ^ *(count_t*)k.m_module;
     }
     static const element_t Null()
     {

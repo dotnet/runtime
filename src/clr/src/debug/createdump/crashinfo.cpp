@@ -317,7 +317,7 @@ CrashInfo::EnumerateModuleMappings()
     // Making something like: /proc/123/maps
     char mapPath[128];
     int chars = snprintf(mapPath, sizeof(mapPath), "/proc/%d/maps", m_pid);
-    assert(chars > 0 && chars <= sizeof(mapPath));
+    assert(chars > 0 && (size_t)chars <= sizeof(mapPath));
 
     FILE* mapsFile = fopen(mapPath, "r");
     if (mapsFile == nullptr)
@@ -374,7 +374,7 @@ CrashInfo::EnumerateModuleMappings()
                     std::string coreclrPath;
                     coreclrPath.append(moduleName);
                     size_t last = coreclrPath.rfind(MAKEDLLNAME_A("coreclr"));
-                    if (last != -1) {
+                    if (last != std::string::npos) {
                         m_coreclrPath = coreclrPath.substr(0, last);
                     }
                 }
@@ -909,7 +909,7 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
     // time to avoid the overlapping pages.
     uint64_t numberPages = region.Size() / PAGE_SIZE;
 
-    for (int p = 0; p < numberPages; p++, start += PAGE_SIZE)
+    for (uint64_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
     {
         MemoryRegion memoryRegionPage(region.Flags(), start, start + PAGE_SIZE);
 
@@ -957,7 +957,7 @@ CrashInfo::ValidRegion(const MemoryRegion& region)
         uint64_t start = region.StartAddress();
 
         uint64_t numberPages = region.Size() / PAGE_SIZE;
-        for (int p = 0; p < numberPages; p++, start += PAGE_SIZE)
+        for (uint64_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
         {
             BYTE buffer[1];
             uint32_t read;
