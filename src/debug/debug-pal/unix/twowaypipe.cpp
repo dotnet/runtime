@@ -117,8 +117,8 @@ int TwoWayPipe::Read(void *buffer, DWORD bufferSize)
     while ((bytesRead = (int)read(m_inboundPipe, buffer, cb)) > 0)
     {
         totalBytesRead += bytesRead;
-        _ASSERTE(totalBytesRead <= bufferSize);
-        if (totalBytesRead >= bufferSize)
+        _ASSERTE(totalBytesRead <= (int)bufferSize);
+        if (totalBytesRead >= (int)bufferSize)
         {
             break;
         }
@@ -144,8 +144,8 @@ int TwoWayPipe::Write(const void *data, DWORD dataSize)
     while ((bytesWritten = (int)write(m_outboundPipe, data, cb)) > 0)
     {
         totalBytesWritten += bytesWritten;
-        _ASSERTE(totalBytesWritten <= dataSize);
-        if (totalBytesWritten >= dataSize)
+        _ASSERTE(totalBytesWritten <= (int)dataSize);
+        if (totalBytesWritten >= (int)dataSize)
         {
             break;
         }
