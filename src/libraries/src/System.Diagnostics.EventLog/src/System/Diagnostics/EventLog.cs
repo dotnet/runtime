@@ -307,17 +307,13 @@ namespace System.Diagnostics
                     }
 
                     logKey = eventKey.OpenSubKey(logName, true);
-                    if (logKey == null && logName.Length >= 8)
+                    if (logKey == null)
                     {
-                        string logNameFirst8 = logName.Substring(0, 8);
-                        if (string.Equals(logNameFirst8, "AppEvent", StringComparison.OrdinalIgnoreCase) ||
-                             string.Equals(logNameFirst8, "SecEvent", StringComparison.OrdinalIgnoreCase) ||
-                             string.Equals(logNameFirst8, "SysEvent", StringComparison.OrdinalIgnoreCase))
+                        if (logName.Length == 8 && (
+                            string.Equals(logName, "AppEvent", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(logName, "SecEvent", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(logName, "SysEvent", StringComparison.OrdinalIgnoreCase)))
                             throw new ArgumentException(SR.Format(SR.InvalidCustomerLogName, logName));
-
-                        string sameLogName = FindSame8FirstCharsLog(eventKey, logName);
-                        if (sameLogName != null)
-                            throw new ArgumentException(SR.Format(SR.DuplicateLogName, logName, sameLogName));
                     }
 
                     bool createLogKey = (logKey == null);
@@ -527,7 +523,7 @@ namespace System.Diagnostics
                 if (eventkey == null)
                     return false;
 
-                logKey = eventkey.OpenSubKey(logName, false);         // try to find log file key immediately.
+                logKey = eventkey.OpenSubKey(logName, false); // try to find log file key immediately.
                 return (logKey != null);
             }
             finally
@@ -535,23 +531,6 @@ namespace System.Diagnostics
                 eventkey?.Close();
                 logKey?.Close();
             }
-        }
-        // Try to find log file name with the same 8 first characters.
-        // Returns 'null' if no "same first 8 chars" log is found.   logName.Length must be > 7
-        private static string FindSame8FirstCharsLog(RegistryKey keyParent, string logName)
-        {
-            string logNameFirst8 = logName.Substring(0, 8);
-            string[] logNames = keyParent.GetSubKeyNames();
-
-            for (int i = 0; i < logNames.Length; i++)
-            {
-                string currentLogName = logNames[i];
-                if (currentLogName.Length >= 8 &&
-                    string.Equals(currentLogName.Substring(0, 8), logNameFirst8, StringComparison.OrdinalIgnoreCase))
-                    return currentLogName;
-            }
-
-            return null;   // not found
         }
 
         private static RegistryKey FindSourceRegistration(string source, string machineName, bool readOnly)

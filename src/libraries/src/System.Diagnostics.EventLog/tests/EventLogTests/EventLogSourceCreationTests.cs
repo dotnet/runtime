@@ -27,6 +27,65 @@ namespace System.Diagnostics.Tests
             Assert.False(EventLog.SourceExists(source));
         }
 
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void LogNameWithSame8FirstChars_NetCore()
+        {
+            string firstSource = "FirstSource_" + nameof(LogNameWithSame8FirstChars_NetCore);
+            string firstLog = "LogNameWithSame8FirstChars";
+            string secondSource = "SecondSource_" + nameof(LogNameWithSame8FirstChars_NetCore);
+            string secondLog = "LogNameWithSame8FirstCharsDuplicate";
+
+            // No Exception should be thrown.
+            try
+            {
+                EventLog.CreateEventSource(firstSource, firstLog);
+                Assert.True(EventLog.SourceExists(firstSource));
+                EventLog.CreateEventSource(secondSource, secondLog);
+                Assert.True(EventLog.SourceExists(secondSource));
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(firstSource);
+                Helpers.RetryOnWin7(() => EventLog.Delete(firstLog));
+                EventLog.DeleteEventSource(secondSource);
+                Helpers.RetryOnWin7(() => EventLog.Delete(secondLog));
+            }
+        }
+
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void LogNameWithSame8FirstChars_NetFramework()
+        {
+            string firstSource = "FirstSource_" + nameof(LogNameWithSame8FirstChars_NetFramework);
+            string firstLog = "LogNameWithSame8FirstChars";
+            string secondSource = "SecondSource_" + nameof(LogNameWithSame8FirstChars_NetFramework);
+            string secondLog = "LogNameWithSame8FirstCharsDuplicate";
+
+            try
+            {
+                EventLog.CreateEventSource(firstSource, firstLog);
+                Assert.True(EventLog.SourceExists(firstSource));
+                Assert.Throws<ArgumentException>(() => EventLog.CreateEventSource(secondSource, secondLog));
+            }
+            finally
+            {
+                EventLog.DeleteEventSource(firstSource);
+                Helpers.RetryOnWin7(() => EventLog.Delete(firstLog));
+            }
+        }
+
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [InlineData("AppEvent")]
+        [InlineData("SecEvent")]
+        [InlineData("SysEvent")]
+        public void SystemLogNamesThrowException(string logName)
+        {
+            string source = "Source_" + nameof(SystemLogNamesThrowException);
+            Assert.False(EventLog.SourceExists(source));
+            Assert.Throws<ArgumentException>(() => EventLog.CreateEventSource(source, logName));         
+        }
+
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void CheckSourceExistsArgumentNull()
         {
