@@ -5691,6 +5691,14 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssemblyHandle asse
 	return res;
 }
 
+#if ENABLE_NETCORE
+MonoArrayHandle
+ves_icall_System_Reflection_RuntimeAssembly_GetExportedTypes (MonoReflectionAssemblyHandle assembly_handle, MonoError *error)
+{
+	return ves_icall_System_Reflection_Assembly_GetTypes (assembly_handle, TRUE, error);
+}
+#endif
+
 void
 ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct, MonoError *error)
 {
