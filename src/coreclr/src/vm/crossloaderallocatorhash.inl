@@ -201,7 +201,7 @@ template <class TKey_, class TValue_>
 /*static*/ inline INT32 GCHeapHashDependentHashTrackerHashTraits::Hash(PtrTypeKey *pValue)
 {
     LIMITED_METHOD_CONTRACT;
-    return (INT32)*pValue;
+    return *(INT32*)pValue;
 }
 
 /*static*/ inline INT32 GCHeapHashDependentHashTrackerHashTraits::Hash(PTRARRAYREF arr, INT32 index)

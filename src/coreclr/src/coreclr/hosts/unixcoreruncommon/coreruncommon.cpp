@@ -190,7 +190,7 @@ void AddFilesFromDirectoryToTpaList(const char* directory, std::string& tpaList)
 
     // Walk the directory for each extension separately so that we first get files with .ni.dll extension,
     // then files with .dll extension, etc.
-    for (int extIndex = 0; extIndex < sizeof(tpaExtensions) / sizeof(tpaExtensions[0]); extIndex++)
+    for (size_t extIndex = 0; extIndex < sizeof(tpaExtensions) / sizeof(tpaExtensions[0]); extIndex++)
     {
         const char* ext = tpaExtensions[extIndex];
         int extLength = strlen(ext);
