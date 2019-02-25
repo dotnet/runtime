@@ -9,15 +9,15 @@ MCC_API VType1 sum(double first, ...) {
 
     int count = 0;
     float sum = 0.0;
-    float val = (float)first;
+    double val = first;
     va_list args;
 
     // initialize variable arguments.
     va_start(args, first);
-    while (val != (float)-1) {
-        sum += val;
+    while (val != (double)-1) {
+        sum += (float)val;
         count++;
-        val = (float)va_arg(args, double);
+        val = va_arg(args, double);
     }
     // reset variable arguments.
     va_end(args);
