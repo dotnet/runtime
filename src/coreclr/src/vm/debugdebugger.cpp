@@ -518,7 +518,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             pILI4[iNumValidFrames] = data.pElements[i].dwILOffset;
 
             // Assembly
-            OBJECTREF pAssembly = pFunc->GetAssembly()->GetDomainAssembly()->GetExposedAssemblyObject(); 
+            OBJECTREF pAssembly = pFunc->GetAssembly()->GetExposedObject(); 
             pStackFrameHelper->rgAssembly->SetAt(iNumValidFrames, pAssembly);
 
             if (data.fDoWeHaveAnyFramesFromForeignStackTrace)
