@@ -150,8 +150,8 @@ DumpDataTarget::ReadVirtual(
     /* [optional][out] */ ULONG32 *done)
 {
     assert(m_fd != -1);
-    size_t read = pread64(m_fd, buffer, size, (off64_t)(ULONG_PTR)address);
-    if (read == (size_t)-1)
+    ssize_t read = pread64(m_fd, buffer, size, (off64_t)(ULONG_PTR)address);
+    if (read == -1)
     {
         *done = 0;
         return E_FAIL;
