@@ -77,7 +77,7 @@ CORECLR_HOSTING_API(coreclr_shutdown_2,
             int* latchedExitCode);
 
 //
-// Create a native callable delegate for a managed method.
+// Create a native callable function pointer for a managed method.
 //
 // Parameters:
 //  hostHandle              - Handle of the host
@@ -85,7 +85,7 @@ CORECLR_HOSTING_API(coreclr_shutdown_2,
 //  entryPointAssemblyName  - Name of the assembly which holds the custom entry point
 //  entryPointTypeName      - Name of the type which holds the custom entry point
 //  entryPointMethodName    - Name of the method which is the custom entry point
-//  delegate                - Output parameter, the function stores a pointer to the delegate at the specified address
+//  delegate                - Output parameter, the function stores a native callable function pointer to the delegate at the specified address
 //
 // Returns:
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
