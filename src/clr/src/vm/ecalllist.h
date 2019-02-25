@@ -689,10 +689,9 @@ FCFuncStart(gRegisteredWaitHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gWaitHandleFuncs)
-    FCFuncElement("WaitOneNative", WaitHandleNative::CorWaitOneNative)
-    FCFuncElement("WaitMultiple", WaitHandleNative::CorWaitMultipleNative)
-    FCFuncElement("SignalAndWaitOne", WaitHandleNative::CorSignalAndWaitOneNative)
-    FCFuncElement("WaitMultipleIgnoringSyncContext", WaitHandleNative::WaitHelper)
+    FCFuncElement("WaitOneCore", WaitHandleNative::CorWaitOneNative)
+    FCFuncElement("WaitMultipleIgnoringSyncContext", WaitHandleNative::CorWaitMultipleNative)
+    FCFuncElement("SignalAndWaitNative", WaitHandleNative::CorSignalAndWaitOneNative)
 FCFuncEnd()
 
 #ifdef FEATURE_COMINTEROP
