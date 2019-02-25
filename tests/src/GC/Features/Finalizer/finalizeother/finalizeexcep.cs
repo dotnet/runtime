@@ -32,6 +32,8 @@ public class Test {
     public class CreateObj {
         public Dummy obj;
 
+        // No inline to ensure no stray refs to the Dummy object
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public CreateObj() {
             obj = new Dummy();
         }
