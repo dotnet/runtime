@@ -133,6 +133,7 @@ static const gint16 opt_names [] = {
 #define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
 
 static char *mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend);
+static char *mono_parse_response_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend);
 
 static guint32
 parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
@@ -2348,15 +2349,30 @@ mono_main (int argc, char* argv[])
 			mono_runtime_install_custom_handlers_usage ();
 			return 0;
 		} else if (strncmp (argv [i], "--response=", 11) == 0){
-			gchar *text;
-			gsize len;
-			
-			if (!g_file_get_contents (&argv[i][11], &text, &len, NULL)){
+			gchar *response_content;
+			gchar *response_options;
+			gsize response_content_len;
+
+			if (!g_file_get_contents (&argv[i][11], &response_content, &response_content_len, NULL)){
 				fprintf (stderr, "The specified response file can not be read\n");
 				exit (1);
 			}
-			mono_parse_options (text, &argc, &argv, FALSE);
-			g_free (text);
+
+			response_options = response_content;
+
+			// Check for UTF8 BOM in file and remove if found.
+			if (response_content_len >= 3 && response_content [0] == '\xef' && response_content [1] == '\xbb' && response_content [2] == '\xbf') {
+				response_content_len -= 3;
+				response_options += 3;
+			}
+
+			if (response_content_len == 0) {
+				fprintf (stderr, "The specified response file is empty\n");
+				exit (1);
+			}
+
+			mono_parse_response_options (response_options, &argc, &argv, FALSE);
+			g_free (response_content);
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
@@ -2920,21 +2936,52 @@ mono_parse_options_from (const char *options, int *ref_argc, char **ref_argv [])
 	return mono_parse_options (options, ref_argc, ref_argv, TRUE);
 }
 
-static char *
-mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend)
+static void
+merge_parsed_options (GPtrArray *parsed_options, int *ref_argc, char **ref_argv [], gboolean prepend)
 {
 	int argc = *ref_argc;
 	char **argv = *ref_argv;
+
+	if (parsed_options->len > 0){
+		int new_argc = parsed_options->len + argc;
+		char **new_argv = g_new (char *, new_argc + 1);
+		guint i;
+		guint j;
+
+		new_argv [0] = argv [0];
+
+		i = 1;
+		if (prepend){
+			/* First the environment variable settings, to allow the command line options to override */
+			for (i = 0; i < parsed_options->len; i++)
+				new_argv [i+1] = (char *)g_ptr_array_index (parsed_options, i);
+			i++;
+		}
+		for (j = 1; j < argc; j++)
+			new_argv [i++] = argv [j];
+		if (!prepend){
+			for (j = 0; j < parsed_options->len; j++)
+				new_argv [i++] = (char *)g_ptr_array_index (parsed_options, j);
+		}
+		new_argv [i] = NULL;
+
+		*ref_argc = new_argc;
+		*ref_argv = new_argv;
+	}
+}
+
+static char *
+mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend)
+{
 	GPtrArray *array = g_ptr_array_new ();
 	GString *buffer = g_string_new ("");
 	const char *p;
-	unsigned i;
 	gboolean in_quotes = FALSE;
 	char quote_char = '\0';
 
 	if (options == NULL)
 		return NULL;
-	
+
 	for (p = options; *p; p++){
 		switch (*p){
 		case ' ': case '\t': case '\n':
@@ -2972,39 +3019,84 @@ mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboo
 	}
 	if (in_quotes) 
 		return g_strdup_printf ("Unmatched quotes in value: [%s]\n", options);
-		
+
 	if (buffer->len != 0)
 		g_ptr_array_add (array, g_strdup (buffer->str));
 	g_string_free (buffer, TRUE);
 
-	if (array->len > 0){
-		int new_argc = array->len + argc;
-		char **new_argv = g_new (char *, new_argc + 1);
-		int j;
-
-		new_argv [0] = argv [0];
-
-		i = 1;
-		if (prepend){
-			/* First the environment variable settings, to allow the command line options to override */
-			for (i = 0; i < array->len; i++)
-				new_argv [i+1] = (char *)g_ptr_array_index (array, i);
-			i++;
-		}
-		for (j = 1; j < argc; j++)
-			new_argv [i++] = argv [j];
-		if (!prepend){
-			for (j = 0; j < array->len; j++)
-				new_argv [i++] = (char *)g_ptr_array_index (array, j);
-		}
-		new_argv [i] = NULL;
-
-		*ref_argc = new_argc;
-		*ref_argv = new_argv;
-	}
+	merge_parsed_options (array, ref_argc, ref_argv, prepend);
 	g_ptr_array_free (array, TRUE);
+
 	return NULL;
 }
+
+#if defined(HOST_WIN32) && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#include <shellapi.h>
+
+static char *
+mono_win32_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend)
+{
+	int argc;
+	gunichar2 **argv;
+	gunichar2 *optionsw;
+
+	if (!options)
+		return NULL;
+
+	GPtrArray *array = g_ptr_array_new ();
+	optionsw = g_utf8_to_utf16 (options, -1, NULL, NULL, NULL);
+	if (optionsw) {
+		gunichar2 *p;
+		gboolean in_quotes = FALSE;
+		gunichar2 quote_char = L'\0';
+		for (p = optionsw; *p; p++){
+			switch (*p){
+			case L'\n':
+				if (!in_quotes)
+					*p = L' ';
+				break;
+			case L'\'':
+			case L'"':
+				if (in_quotes) {
+					if (quote_char == *p)
+						in_quotes = FALSE;
+				} else {
+					in_quotes = TRUE;
+					quote_char = *p;
+				}
+				break;
+			}
+		}
+
+		argv = CommandLineToArgvW (optionsw, &argc);
+		if (argv) {
+			for (int i = 0; i < argc; i++)
+				g_ptr_array_add (array, g_utf16_to_utf8 (argv[i], -1, NULL, NULL, NULL));
+
+			LocalFree (argv);
+		}
+
+		g_free (optionsw);
+	}
+
+	merge_parsed_options (array, ref_argc, ref_argv, prepend);
+	g_ptr_array_free (array, TRUE);
+
+	return NULL;
+}
+
+static inline char *
+mono_parse_response_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend)
+{
+	return mono_win32_parse_options (options, ref_argc, ref_argv, prepend);
+}
+#else
+static inline char *
+mono_parse_response_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend)
+{
+	return mono_parse_options (options, ref_argc, ref_argv, prepend);
+}
+#endif
 
 /**
  * mono_parse_env_options:
