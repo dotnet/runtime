@@ -117,7 +117,13 @@ namespace System.Diagnostics
                         return;
                     }
 
-                    MethodInfo symbolsMethodInfo = symbolsType.GetMethod("GetSourceLineInfo", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    Type[] parameterTypes = new Type[] 
+                    {
+                        typeof(string), typeof(IntPtr), typeof(int), typeof(IntPtr), 
+                        typeof(int), typeof(int), typeof(int), 
+                        typeof(string).MakeByRefType(), typeof(int).MakeByRefType(), typeof(int).MakeByRefType() 
+                    };
+                    MethodInfo symbolsMethodInfo = symbolsType.GetMethod("GetSourceLineInfo", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, parameterTypes, null);
                     if (symbolsMethodInfo == null)
                     {
                         return;
