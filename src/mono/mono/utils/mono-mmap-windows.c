@@ -157,10 +157,21 @@ mono_file_map_error (size_t length, int flags, int fd, guint64 offset, void **re
 	HANDLE const file = (HANDLE)_get_osfhandle (fd);
 	const char *failed_function = NULL;
 
+	// The size of the mapping is the maximum file offset to map.
+	//
+	// It is not, as you might expect, the maximum view size to be mapped from it.
+	//
+	// If it were the maximum view size, the size parameter would have just
+	// been one DWORD in 32bit Windows, expanded to SIZE_T in 64bit Windows.
+	// It is 64bits even on 32bit Windows to allow large files.
+	//
+	// See https://docs.microsoft.com/en-us/windows/desktop/Memory/creating-a-file-mapping-object.
+	const guint64 mapping_length = offset + length;
+
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 
 	failed_function = "CreateFileMapping";
-	mapping = CreateFileMappingW (file, NULL, prot, (DWORD)(length >> 31 >> 1), (DWORD)length, NULL);
+	mapping = CreateFileMappingW (file, NULL, prot, (DWORD)(mapping_length >> 32), (DWORD)mapping_length, NULL);
 	if (mapping == NULL)
 		goto exit;
 
@@ -172,7 +183,7 @@ mono_file_map_error (size_t length, int flags, int fd, guint64 offset, void **re
 #elif G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
 
 	failed_function = "CreateFileMappingFromApp";
-	mapping = CreateFileMappingFromApp (file, NULL, prot, length, NULL);
+	mapping = CreateFileMappingFromApp (file, NULL, prot, mapping_length, NULL);
 	if (mapping == NULL)
 		goto exit;
 
