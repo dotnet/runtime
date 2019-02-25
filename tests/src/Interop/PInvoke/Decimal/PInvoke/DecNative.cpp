@@ -10,7 +10,7 @@ DECIMAL g_DECIMAL_MaxValue = { 0, {{ 0, 0 }}, static_cast<int>(0xffffffff), {{st
 DECIMAL g_DECIMAL_MinValue  = { 0, {{ 0, DECIMAL_NEG }}, static_cast<int>(0xffffffff), {{static_cast<int>(0xffffffff), static_cast<int>(0xffffffff)}} };
 DECIMAL g_DECIMAL_Zero = { 0 };
 
-CY g_CY_MaxValue = { { static_cast<int>(0xffffffff), static_cast<int>(0x7fffffff) } };
+CY g_CY_MaxValue = { { static_cast<int>(0xffffffff), 0x7fffffff} };
 CY g_CY_MinValue = { { (LONG)0x00000000, (LONG)0x80000000 } };
 CY g_CY_Zero = { { 0 } };
 
