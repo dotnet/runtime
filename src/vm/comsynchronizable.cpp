@@ -676,15 +676,7 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
     if ((iTime < 0) && (iTime != INFINITE_TIMEOUT))
         COMPlusThrowArgumentOutOfRange(W("millisecondsTimeout"), W("ArgumentOutOfRange_NeedNonNegOrNegative1"));
 
-    while(true)
-    {
-        INT64 sPauseTime = g_PauseTime;
-        INT64 sTime = CLRGetTickCount64();
-        GetThread()->UserSleep(iTime);       
-        iTime = (INT32)AdditionalWait(sPauseTime, sTime, iTime);
-        if(iTime == 0)
-            break;
-    }
+    GetThread()->UserSleep(iTime);       
 
     HELPER_METHOD_FRAME_END();
 }

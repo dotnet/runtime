@@ -4032,40 +4032,6 @@ COR_PRF_SUSPEND_REASON GCSuspendReasonToProfSuspendReason(ThreadSuspend::SUSPEND
 #endif // PROFILING_SUPPORTED
 
 //************************************************************************************
-// To support fast application switch (FAS), one requirement is that the CPU 
-// consumption during the time the CLR is paused should be 0. Given that the process
-// will be anyway suspended this should've been an NOP for CLR. However, in Mango
-// we ensured that no handle timed out or no other such context switch happens
-// during the pause time. To match that and also to ensure that in-between the 
-// pause and when the process is suspended (~60 sec) no context switch happens due to 
-// CLR handles (like Waits/sleeps due to calls from BCL) we call APC on these
-// Threads and make them wait on the resume handle
-void __stdcall PauseAPC(__in ULONG_PTR dwParam)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    
-    if(g_IsPaused && (GetThread()->m_State & Thread::TS_Interruptible))
-    {
-        _ASSERTE(g_ClrResumeEvent.IsValid());
-        EX_TRY {
-            g_ClrResumeEvent.Wait(INFINITE, FALSE);
-        }
-        EX_CATCH {
-            // Assert on debug builds 
-            _ASSERTE(FALSE);
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-    }
-}
-
-
-//************************************************************************************
 //
 // SuspendRuntime is responsible for ensuring that all managed threads reach a
 // "safe point."  It returns when all threads are known to be in "preemptive" mode.
@@ -4365,16 +4331,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 #endif // DISABLE_THREADSUSPEND
 
         }
-        else
-        {
-            // To ensure 0 CPU utilization for FAS (see implementation of PauseAPC)
-            // we queue the APC to all interruptable threads. 
-            if(g_IsPaused && (thread->m_State & Thread::TS_Interruptible))
-            {
-                HANDLE handle = thread->GetThreadHandle();
-                QueueUserAPC((PAPCFUNC)PauseAPC, handle, APC_Code);
-            }
-        }
     }
 
 #ifdef _DEBUG
@@ -4436,14 +4392,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive it is at a GC safe point\n", thread);
                 countThreads--;
                 thread->ResetThreadState(Thread::TS_GCSuspendPending);
-
-                // To ensure 0 CPU utilization for FAS (see implementation of PauseAPC)
-                // we queue the APC to all interruptable threads.
-                if(g_IsPaused && (thread->m_State & Thread::TS_Interruptible))
-                {
-                    HANDLE handle = thread->GetThreadHandle();
-                    QueueUserAPC((PAPCFUNC)PauseAPC, handle, APC_Code);
-                }
             }
         }
 
