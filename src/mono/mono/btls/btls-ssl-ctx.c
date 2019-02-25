@@ -317,9 +317,3 @@ mono_btls_ssl_ctx_set_server_name_callback (MonoBtlsSslCtx *ptr, MonoBtlsServerN
 	SSL_CTX_set_tlsext_servername_callback (ptr->ctx, server_name_callback);
 	SSL_CTX_set_tlsext_servername_arg (ptr->ctx, ptr);
 }
-
-const char *
-mono_btls_ssl_ctx_get_servername (MonoBtlsSslCtx *ptr)
-{
-	return SSL_get_servername (ptr->ctx, TLSEXT_NAMETYPE_host_name);
-}
