@@ -55,6 +55,8 @@ namespace Three {
 #pragma warning restore 0414
         C c;
 
+        // No inline to ensure no stray refs to the B, C, D objects.
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public CreateObj()
         {
             b = new B();
