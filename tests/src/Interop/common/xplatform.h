@@ -18,7 +18,7 @@ typedef ptrdiff_t INT_PTR;
 typedef size_t UINT_PTR;
 
 typedef unsigned long long ULONG64;
-typedef unsigned long long LONG64;
+typedef long long LONG64;
 typedef double DOUBLE;
 typedef float FLOAT;
 typedef int INT, *LPINT;
