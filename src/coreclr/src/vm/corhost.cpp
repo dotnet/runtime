@@ -74,12 +74,6 @@ extern void PrintToStdOutA(const char *pszString);
 extern void PrintToStdOutW(const WCHAR *pwzString);
 extern BOOL g_fEEHostedStartup;
 
-INT64 g_PauseTime;         // Total time in millisecond the CLR has been paused
-Volatile<BOOL> g_IsPaused;  // True if the runtime is paused (FAS)
-CLREventStatic g_ClrResumeEvent; // Event that is fired at FAS Resuming 
-
-extern BYTE g_rbTestKeyBuffer[];
-
 //***************************************************************************
 
 ULONG CorRuntimeHostBase::m_Version = 0;
@@ -969,149 +963,6 @@ HRESULT CorHost2::SetStartupFlags(STARTUP_FLAGS flag)
     return S_OK;
 }
 
-
-
-HRESULT SuspendEEForPause()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_PREEMPTIVE;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    // In CoreCLR, we always resume from the same thread that paused.  So we can simply suspend the EE from this thread,
-    // knowing we'll restart from the same thread.
-    ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-
-    return hr;
-}
-
-HRESULT RestartEEFromPauseAndSetResumeEvent()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_PREEMPTIVE;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // see comments in SuspendEEFromPause
-    ThreadSuspend::RestartEE(FALSE, TRUE);
-
-    _ASSERTE(g_ClrResumeEvent.IsValid());
-    g_ClrResumeEvent.Set();
-
-    return S_OK;
-}
-    
-
-
-CorExecutionManager::CorExecutionManager()
-    : m_dwFlags(0), m_pauseStartTime(0)
-{
-    LIMITED_METHOD_CONTRACT;
-    g_IsPaused = FALSE;
-    g_PauseTime = 0;
-}
-
-HRESULT CorExecutionManager::Pause(DWORD dwAppDomainId, DWORD dwFlags)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-        ENTRY_POINT;  // This is called by a host.
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-
-    if(g_IsPaused)
-        return E_FAIL;
-
-    EX_TRY
-    {
-        if(!g_ClrResumeEvent.IsValid())
-            g_ClrResumeEvent.CreateManualEvent(FALSE);
-        else
-            g_ClrResumeEvent.Reset();
-
-    }
-    EX_CATCH_HRESULT(hr);
-    
-    if (FAILED(hr))
-        return hr;
-    
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    m_dwFlags = dwFlags;
-
-
-    if (SUCCEEDED(hr))
-    {
-        g_IsPaused = TRUE;
-
-        hr = SuspendEEForPause();
-
-        // Even though this is named with TickCount, it returns milliseconds
-        m_pauseStartTime = (INT64)CLRGetTickCount64(); 
-    }
-
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-
-
-HRESULT CorExecutionManager::Resume(DWORD dwAppDomainId)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-        ENTRY_POINT;  // This is called by a host.
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-
-    if(!g_IsPaused)
-        return E_FAIL;
-
-    // GCThread is the thread that did the Pause. Resume should also happen on that same thread
-    Thread *pThread = GetThread();
-    if(pThread != ThreadSuspend::GetSuspensionThread())
-    {
-        _ASSERTE(!"HOST BUG: The same thread that did Pause should do the Resume");
-        return E_FAIL;
-    }
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    // Even though this is named with TickCount, it returns milliseconds
-    INT64 currTime = (INT64)CLRGetTickCount64(); 
-    _ASSERTE(currTime >= m_pauseStartTime);
-    _ASSERTE(m_pauseStartTime != 0);
-
-    g_PauseTime += (currTime - m_pauseStartTime);
-    g_IsPaused = FALSE;
-
-    hr = RestartEEFromPauseAndSetResumeEvent();
-
-
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-
-
 #endif //!DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -1367,14 +1218,6 @@ HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
             FastInterlockCompareExchange((LONG*)&m_Version, version, 0);
 
         *ppUnk = static_cast<ICLRRuntimeHost4 *>(this);
-    }
-    else if (riid == IID_ICLRExecutionManager)
-    {
-        ULONG version = 2;
-        if (m_Version == 0)
-            FastInterlockCompareExchange((LONG*)&m_Version, version, 0);
-
-        *ppUnk = static_cast<ICLRExecutionManager *>(this);
     }
 #ifndef FEATURE_PAL
     else if (riid == IID_IPrivateManagedExceptionReporting)
