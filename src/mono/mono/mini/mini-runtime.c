@@ -4473,7 +4473,9 @@ register_icalls (void)
 	register_icall (mono_llvm_set_unhandled_exception_handler, "mono_llvm_set_unhandled_exception_handler", NULL, TRUE);
 
 	// FIXME: This is broken
+#ifndef TARGET_WASM
 	register_icall (mono_debug_personality, "mono_debug_personality", "int int int ptr ptr ptr", TRUE);
+#endif
 #endif
 
 	if (!mono_llvm_only) {
