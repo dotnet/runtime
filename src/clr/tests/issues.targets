@@ -115,12 +115,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Features/HeapExpansion/pluggaps/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizearray/*">
-            <Issue>19218</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizearraysleep/*">
-            <Issue>19218</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/v2.0-beta2/460373/460373/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
