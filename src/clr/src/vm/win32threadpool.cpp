@@ -4177,19 +4177,6 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
             continue;
 #endif // DEBUGGING_SUPPORTED
 
-        if(g_IsPaused)
-        {
-            _ASSERTE(g_ClrResumeEvent.IsValid());
-            EX_TRY {
-                g_ClrResumeEvent.Wait(INFINITE, TRUE);
-            }
-            EX_CATCH {
-                // Assert on debug builds 
-                _ASSERTE(FALSE);
-            }
-            EX_END_CATCH(SwallowAllExceptions);
-        }
-
         if (!GCHeapUtilities::IsGCInProgress(FALSE) )
         {
             if (IgnoreNextSample)
