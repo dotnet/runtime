@@ -78,37 +78,6 @@ private:
     }
 };
 
-void AcquireSafeHandleFromWaitHandle(WAITHANDLEREF wh)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS; 
-        MODE_COOPERATIVE;
-        PRECONDITION(wh != NULL);
-    } CONTRACTL_END;
-
-    SAFEHANDLEREF sh = wh->GetSafeHandle();
-    if (sh == NULL)
-        COMPlusThrow(kObjectDisposedException);
-    sh->AddRef();
-}
-
-void ReleaseSafeHandleFromWaitHandle(WAITHANDLEREF wh)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(wh != NULL);
-    } CONTRACTL_END;
-    
-    SAFEHANDLEREF sh = wh->GetSafeHandle();
-    _ASSERTE(sh);
-    sh->Release();
-}
-
-typedef ObjArrayHolder<WAITHANDLEREF, AcquireSafeHandleFromWaitHandle, ReleaseSafeHandleFromWaitHandle> WaitHandleArrayHolder;
-
 INT64 AdditionalWait(INT64 sPauseTime, INT64 sTime, INT64 expDuration)
 {
     LIMITED_METHOD_CONTRACT;
@@ -157,91 +126,58 @@ INT64 AdditionalWait(INT64 sPauseTime, INT64 sTime, INT64 expDuration)
     return additional;
 }
 
-FCIMPL3(INT32, WaitHandleNative::CorWaitOneNative, SafeHandle* safeWaitHandleUNSAFE, INT32 timeout, CLR_BOOL exitContext)
+FCIMPL2(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout)
 {
     FCALL_CONTRACT;
 
     INT32 retVal = 0;
-    SAFEHANDLEREF sh(safeWaitHandleUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(sh);
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    _ASSERTE(sh != NULL);
+    _ASSERTE(handle != 0);
+    _ASSERTE(handle != INVALID_HANDLE_VALUE);
 
     Thread* pThread = GET_THREAD();
 
     DWORD res = (DWORD) -1;
 
-    SafeHandleHolder shh(&sh);
-    // Note that SafeHandle is a GC object, and RequestCallback and 
-    // DoAppropriateWait work on an array of handles.  Don't pass the address
-    // of the handle field - that's a GC hole.  Instead, pass this temp
-    // array.
-    HANDLE handles[1];
-    handles[0] = sh->GetHandle();
+    // Support for pause/resume (FXFREEZE)
+    while(true)
     {
-        // Support for pause/resume (FXFREEZE)
-        while(true)
-        {
-            INT64 sPauseTime = g_PauseTime;
-            INT64 sTime = CLRGetTickCount64();
-            res = pThread->DoAppropriateWait(1,handles,TRUE,timeout, WaitMode_Alertable /*alertable*/);
-            if(res != WAIT_TIMEOUT)
-                break;
-            timeout = (INT32)AdditionalWait(sPauseTime, sTime, timeout);
-            if(timeout == 0)
-                break;
-        }
+        INT64 sPauseTime = g_PauseTime;
+        INT64 sTime = CLRGetTickCount64();
+        res = pThread->DoAppropriateWait(1, &handle, TRUE, timeout, (WaitMode)(WaitMode_Alertable | WaitMode_IgnoreSyncCtx));
+        if(res != WAIT_TIMEOUT)
+            break;
+        timeout = (INT32)AdditionalWait(sPauseTime, sTime, timeout);
+        if(timeout == 0)
+            break;
     }
 
     retVal = res;
-
 
     HELPER_METHOD_FRAME_END();
     return retVal;
 }
 FCIMPLEND
 
-FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, Object* waitObjectsUNSAFE, INT32 timeout, CLR_BOOL exitContext, CLR_BOOL waitForAll)
+FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, HANDLE *handleArray, INT32 numHandles, CLR_BOOL waitForAll, INT32 timeout)
 {
     FCALL_CONTRACT;
 
-    INT32 retVal = 0;
-    OBJECTREF waitObjects = (OBJECTREF) waitObjectsUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(waitObjects);
+    INT32 ret = 0;
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    _ASSERTE(waitObjects);
-
-    Thread* pThread = GET_THREAD();
-
-    PTRARRAYREF pWaitObjects = (PTRARRAYREF)waitObjects;  // array of objects on which to wait
-    int numWaiters = pWaitObjects->GetNumComponents();
+    Thread * pThread = GET_THREAD();
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // There are some issues with wait-all from an STA thread
     // - https://github.com/dotnet/coreclr/issues/17787#issuecomment-385117537
-    if (waitForAll && numWaiters > 1 && pThread->GetApartment() == Thread::AS_InSTA)
+    if (waitForAll && numHandles > 1 && pThread->GetApartment() == Thread::AS_InSTA)
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_WaitAllSTAThread"));
     }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-    WaitHandleArrayHolder arrayHolder;
-    arrayHolder.Initialize(numWaiters, (PTRARRAYREF*) &waitObjects);
-    
-    pWaitObjects = (PTRARRAYREF)waitObjects;  // array of objects on which to wait
-    HANDLE* internalHandles = (HANDLE*) _alloca(numWaiters*sizeof(HANDLE));
-    for (int i=0;i<numWaiters;i++)
-    {
-        WAITHANDLEREF waitObject = (WAITHANDLEREF) pWaitObjects->m_Array[i];
-        _ASSERTE(waitObject != NULL);
-
-        //If the size of the array is 1 and handle is INVALID_HANDLE_VALUE then WaitForMultipleObjectsEx will
-        //   return ERROR_INVALID_HANDLE but DoAppropriateWait will convert to WAIT_OBJECT_0.  i.e Success,
-        //   this behavior seems wrong but someone explicitly coded that condition so it must have been for a reason.        
-        internalHandles[i] = waitObject->GetWaitHandle();
-
-    }
-
     DWORD res = (DWORD) -1;
     {
         // Support for pause/resume (FXFREEZE)
@@ -249,7 +185,7 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, Object* waitObjectsUNSAF
         {
             INT64 sPauseTime = g_PauseTime;
             INT64 sTime = CLRGetTickCount64();
-            res = pThread->DoAppropriateWait(numWaiters, internalHandles, waitForAll, timeout, WaitMode_Alertable /*alertable*/);
+            res = pThread->DoAppropriateWait(numHandles, handleArray, waitForAll, timeout, (WaitMode)(WaitMode_Alertable | WaitMode_IgnoreSyncCtx));
             if(res != WAIT_TIMEOUT)
                 break;
             timeout = (INT32)AdditionalWait(sPauseTime, sTime, timeout);
@@ -258,30 +194,23 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, Object* waitObjectsUNSAF
         }
     }
 
-
-    retVal = res;
-
+    ret = res;
+    
     HELPER_METHOD_FRAME_END();
-    return retVal;
+    return ret;
 }
 FCIMPLEND
 
-FCIMPL4(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWaitHandleSignalUNSAFE,SafeHandle* safeWaitHandleWaitUNSAFE, INT32 timeout, CLR_BOOL exitContext)
+FCIMPL3(INT32, WaitHandleNative::CorSignalAndWaitOneNative, HANDLE waitHandleSignalUNSAFE, HANDLE waitHandleWaitUNSAFE, INT32 timeout)
 {
     FCALL_CONTRACT;
 
     INT32 retVal = 0;
-    SAFEHANDLEREF shSignal(safeWaitHandleSignalUNSAFE);
-    SAFEHANDLEREF shWait(safeWaitHandleWaitUNSAFE);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(shSignal,shWait);
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    if(shSignal == NULL || shWait == NULL)
-        COMPlusThrow(kObjectDisposedException);    
-
-    _ASSERTE(safeWaitHandleSignalUNSAFE != NULL);
-    _ASSERTE( safeWaitHandleWaitUNSAFE != NULL);
-
+    _ASSERTE(waitHandleSignalUNSAFE != 0);
+    _ASSERTE(waitHandleWaitUNSAFE != 0);
 
     Thread* pThread = GET_THREAD();
 
@@ -293,47 +222,16 @@ FCIMPL4(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
 
     DWORD res = (DWORD) -1;
 
-    SafeHandleHolder shhSignal(&shSignal);
-    SafeHandleHolder shhWait(&shWait);
-    // Don't pass the address of the handle field 
-    // - that's a GC hole.  Instead, pass this temp array.
     HANDLE handles[2];
-    handles[0] = shSignal->GetHandle();
-    handles[1] = shWait->GetHandle();
+    handles[0] = waitHandleSignalUNSAFE;
+    handles[1] = waitHandleWaitUNSAFE;
     {
-        res = pThread->DoSignalAndWait(handles,timeout,TRUE /*alertable*/);
+        res = pThread->DoSignalAndWait(handles, timeout, TRUE /*alertable*/);
     }
-
 
     retVal = res;
 
     HELPER_METHOD_FRAME_END();
     return retVal;
-}
-FCIMPLEND
-
-FCIMPL3(DWORD, WaitHandleNative::WaitHelper, PTRArray *handleArrayUNSAFE, CLR_BOOL waitAll, DWORD millis)
-{
-    FCALL_CONTRACT;
-
-    DWORD ret = 0;
-
-    PTRARRAYREF handleArrayObj = (PTRARRAYREF) handleArrayUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(handleArrayObj);
-
-    CQuickArray<HANDLE> qbHandles;
-    int cHandles = handleArrayObj->GetNumComponents();
-
-    // Since DoAppropriateWait could cause a GC, we need to copy the handles to an unmanaged block
-    // of memory to ensure they aren't relocated during the call to DoAppropriateWait.
-    qbHandles.AllocThrows(cHandles);
-    memcpy(qbHandles.Ptr(), handleArrayObj->GetDataPtr(), cHandles * sizeof(HANDLE));
-
-    Thread * pThread = GetThread();
-    ret = pThread->DoAppropriateWait(cHandles, qbHandles.Ptr(), waitAll, millis, 
-                                     (WaitMode)(WaitMode_Alertable | WaitMode_IgnoreSyncCtx));
-    
-    HELPER_METHOD_FRAME_END();
-    return ret;
 }
 FCIMPLEND
