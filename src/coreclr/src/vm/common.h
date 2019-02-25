@@ -475,11 +475,6 @@ extern DummyGlobalContract ___contract;
 #undef FPO_ON
 #endif
 
-extern INT64 g_PauseTime;          // Total duration of all pauses in the runtime
-extern Volatile<BOOL> g_IsPaused;   // True if the runtime is Paused for FAS
-extern CLREventStatic g_ClrResumeEvent;  // Event fired when the runtime is resumed after a Pause for FAS
-INT64 AdditionalWait(INT64 sPauseTime, INT64 sTime, INT64 expDuration);
-
 #endif // !_common_h_
 
 
