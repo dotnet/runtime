@@ -628,7 +628,7 @@ void DataImage::SaveRvaStructure()
         // rvaInfo->size are monotonically decreasing if rva are the same.
         _ASSERTE(previousRvaInfo==NULL ||
                  previousRvaInfo->rva < rvaInfo->rva ||
-                 previousRvaInfo->rva == rvaInfo->rva && previousRvaInfo->size >= rvaInfo->size
+                 ((previousRvaInfo->rva == rvaInfo->rva) && (previousRvaInfo->size >= rvaInfo->size))
                 );
 
         if (previousRvaInfo==NULL || previousRvaInfo->rva != rvaInfo->rva) {

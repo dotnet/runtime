@@ -59,19 +59,19 @@ LEAF_ENTRY ResolveWorkerChainLookupAsmStub, _TEXT
         jnz     Fail_RWCLAS          // If the BACKPATCH_FLAGS is set we will go directly to the ResolveWorkerAsmStub
         
 MainLoop_RWCLAS:
-        mov     rax, [rax+18h]   // get the next entry in the chain (don't bother checking the first entry again)
+        mov     rax, [rax+0x18]   // get the next entry in the chain (don't bother checking the first entry again)
         test    rax,rax          // test if we hit a terminating NULL
         jz      Fail_RWCLAS
 
-        cmp    rdx, [rax+00h]    // compare our MT with the one in the ResolveCacheElem
+        cmp    rdx, [rax+0x00]    // compare our MT with the one in the ResolveCacheElem
         jne    MainLoop_RWCLAS
-        cmp    r10, [rax+08h]    // compare our DispatchToken with one in the ResolveCacheElem
+        cmp    r10, [rax+0x08]    // compare our DispatchToken with one in the ResolveCacheElem
         jne    MainLoop_RWCLAS
 Success_RWCLAS:        
         PREPARE_EXTERNAL_VAR CHAIN_SUCCESS_COUNTER, rdx
         sub    qword ptr [rdx],1 // decrement success counter 
         jl     Promote_RWCLAS
-        mov    rax, [rax+10h]    // get the ImplTarget
+        mov    rax, [rax+0x10]    // get the ImplTarget
         pop    rdx
         jmp    rax
         

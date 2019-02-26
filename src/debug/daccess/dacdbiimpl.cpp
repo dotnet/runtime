@@ -184,8 +184,8 @@ template<class T> void DeleteDbiMemory(T *p)
 //    Must call Destroy to on interface to free its resources.
 //
 //---------------------------------------------------------------------------------------
-DLLEXPORT 
 STDAPI
+DLLEXPORT
 DacDbiInterfaceInstance(
     ICorDebugDataTarget * pTarget,
     CORDB_ADDRESS baseAddress,

@@ -118,6 +118,11 @@ if [ "${__DistroRid}" = "linux-musl-arm64" ]; then
     # will break this logic. To work around this, pass ArchGroup explicitely.
 
     export ArchGroup=arm64
+
+    # Currently the decision tree in src/.nuget/dirs.props will incorrectly
+    # reparse the already calculated __DistroRid. For linux-musl-arm64 use
+    # the hack/hook to specifically bypass this logic.
+    export OutputRID=${__DistroRid}
 fi
 
 $__ProjectRoot/dotnet.sh msbuild /nologo /verbosity:minimal /clp:Summary \

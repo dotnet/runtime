@@ -52,7 +52,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   # Clang also produces a bad-codegen on this prebuilt file with optimization.
   # https://github.com/dotnet/coreclr/issues/2305
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-non-virtual-dtor")
-  add_compile_options(-Wno-deprecated-register)
+  add_compile_options(-Wno-register)
   add_compile_options(-Wno-array-bounds)
   add_compile_options(-Wno-unused-label)
   set_source_files_properties( prebuilt/asmparse.cpp PROPERTIES COMPILE_FLAGS "-O0" )

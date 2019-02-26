@@ -32,7 +32,7 @@ Method::Method(Assembler *pAssembler, Class *pClass, __in __nullterminated char 
     m_szExportAlias = NULL;
     m_dwExportOrdinal = 0xFFFFFFFF;
     m_ulLines[0]=m_ulLines[1]=0;
-    m_ulColumns[0]=m_ulColumns[0]=0;
+    m_ulColumns[0]=m_ulColumns[1]=0;
     m_pbsBody = NULL;
     m_fNewBody = TRUE;
     m_fNew = TRUE;

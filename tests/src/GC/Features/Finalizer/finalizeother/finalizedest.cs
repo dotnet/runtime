@@ -29,6 +29,8 @@ public class Test
         Dummy obj;
 #pragma warning restore 0414
 
+        // No inline to ensure no stray refs to the Dummy object
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public CreateObj()
         {
             obj = new Dummy();

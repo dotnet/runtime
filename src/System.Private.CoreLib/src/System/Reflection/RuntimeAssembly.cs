@@ -175,9 +175,13 @@ namespace System.Reflection
         {
             get
             {
-                List<RuntimeType> rtTypes = new List<RuntimeType>();
-
                 RuntimeModule[] modules = GetModulesInternal(true, false);
+                if (modules.Length == 1)
+                {
+                    return modules[0].GetDefinedTypes();
+                }
+
+                List<RuntimeType> rtTypes = new List<RuntimeType>();
 
                 for (int i = 0; i < modules.Length; i++)
                 {
