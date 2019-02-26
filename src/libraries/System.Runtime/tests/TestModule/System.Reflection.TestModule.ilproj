@@ -4,7 +4,7 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <ProjectGuid>{3B7489C4-65DB-4E69-BE01-F6234133400C}</ProjectGuid>
     <Configurations>Debug;Release</Configurations>
-    <IsTestProject>false</IsTestProject>
+    <TestStrongNameKeyId>Microsoft</TestStrongNameKeyId>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.TestModule.il" />
