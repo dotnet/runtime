@@ -201,7 +201,7 @@ template <class TKey_, class TValue_>
 /*static*/ inline INT32 GCHeapHashDependentHashTrackerHashTraits::Hash(PtrTypeKey *pValue)
 {
     LIMITED_METHOD_CONTRACT;
-    return (INT32)*pValue;
+    return (INT32)(SIZE_T)*pValue;
 }
 
 /*static*/ inline INT32 GCHeapHashDependentHashTrackerHashTraits::Hash(PTRARRAYREF arr, INT32 index)
@@ -274,7 +274,7 @@ template <class TKey>
 /*static*/ INT32 KeyToValuesGCHeapHashTraits<TRAITS>::Hash(TKey *pValue)
 {
     LIMITED_METHOD_CONTRACT;
-    return (INT32)(DWORD)*pValue;
+    return (INT32)(SIZE_T)*pValue;
 }
 
 template<class TRAITS>
@@ -924,7 +924,7 @@ template <class Visitor>
             WRAPPER_NO_CONTRACT;
 
             m_pKeysToValueHash->GetElement(index, *m_pKeyValueStore);
-            return VisitKeyValueStore(m_pLoaderAllocatorRef, m_pKeyValueStore, visitor);
+            return VisitKeyValueStore(m_pLoaderAllocatorRef, m_pKeyValueStore, m_pVisitor);
         }
     };
 

@@ -1396,7 +1396,7 @@ private:
     void RecordAndBackpatchEntryPointSlot_Locked(LoaderAllocator *mdLoaderAllocator, LoaderAllocator *slotLoaderAllocator, TADDR slot, EntryPointSlots::SlotType slotType, PCODE currentEntryPoint);
 
 public:
-    void MethodDesc::BackpatchEntryPointSlots(PCODE entryPoint)
+    void BackpatchEntryPointSlots(PCODE entryPoint)
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(entryPoint != GetPrestubEntryPointToBackpatch());
@@ -1405,7 +1405,7 @@ public:
         BackpatchEntryPointSlots(entryPoint, false /* isPrestubEntryPoint */);
     }
 
-    void MethodDesc::BackpatchToResetEntryPointSlots()
+    void BackpatchToResetEntryPointSlots()
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
