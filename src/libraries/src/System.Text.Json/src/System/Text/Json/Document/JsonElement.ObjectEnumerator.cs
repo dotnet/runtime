@@ -10,12 +10,18 @@ namespace System.Text.Json
 {
     public partial struct JsonElement
     {
+        /// <summary>
+        ///   An enumerable and enumerator for the properties of a JSON object.
+        /// </summary>
         public struct ObjectEnumerator : IEnumerable<JsonProperty>, IEnumerator<JsonProperty>
         {
             private readonly JsonElement _target;
             private int _curIdx;
             private readonly int _endIdx;
 
+            /// <summary>
+            ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+            /// </summary>
             internal ObjectEnumerator(JsonElement target)
             {
                 Debug.Assert(target.TokenType == JsonTokenType.StartObject);
@@ -25,11 +31,25 @@ namespace System.Text.Json
                 _endIdx = _target._parent.GetEndIndex(_target._idx, includeEndElement: false);
             }
 
+            /// <inheritdoc />
             public JsonProperty Current =>
                 _curIdx < 0 ?
                     default :
                     new JsonProperty(new JsonElement(_target._parent, _curIdx));
 
+            /// <summary>
+            ///   Returns an enumerator that iterates the properties of an object.
+            /// </summary>
+            /// <returns>
+            ///   An <see cref="ObjectEnumerator"/> value that can be used to iterate
+            ///   through the object.
+            /// </returns>
+            /// <remarks>
+            ///   The enumerator will enumerate the properties in the order they are
+            ///   declared, and when an object has multiple definitions of a single
+            ///   property they will all individually be returned (each in the order
+            ///   they appear in the content).
+            /// </remarks>
             public ObjectEnumerator GetEnumerator()
             {
                 ObjectEnumerator ator = this;
@@ -37,22 +57,28 @@ namespace System.Text.Json
                 return ator;
             }
 
+            /// <inheritdoc />
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+            /// <inheritdoc />
             IEnumerator<JsonProperty> IEnumerable<JsonProperty>.GetEnumerator() => GetEnumerator();
 
+            /// <inheritdoc />
             public void Dispose()
             {
                 _curIdx = _endIdx;
             }
 
+            /// <inheritdoc />
             public void Reset()
             {
                 _curIdx = -1;
             }
 
+            /// <inheritdoc />
             object IEnumerator.Current => Current;
 
+            /// <inheritdoc />
             public bool MoveNext()
             {
                 if (_curIdx >= _endIdx)
