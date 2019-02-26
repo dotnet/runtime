@@ -10,8 +10,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Override strong name key to always be Open for test projects -->
-    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">Open</StrongNameKeyId>
+    <!-- Override strong name key to default to Open for test projects,
+         Tests which wish to control this should set TestStrongNameKeyId. -->
+    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
+    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
