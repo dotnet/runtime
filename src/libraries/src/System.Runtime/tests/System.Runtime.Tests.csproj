@@ -304,8 +304,7 @@
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj">
       <Name>TestCollectibleAssembly</Name>
     </ProjectReference>
-    <Reference Include="TestModule\System.Reflection.TestModule.dll">
-    </Reference>
+    <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
