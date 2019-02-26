@@ -47,7 +47,6 @@ set processedArgs=
 set __UnprocessedBuildArgs=
 set __CommonMSBuildArgs=
 
-set __BuildAgainstPackagesArg=
 set __SkipRestorePackages=
 set __SkipManaged=
 set __SkipNative=
@@ -85,7 +84,7 @@ if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"            (set __SkipNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtesthostonly"     (set __SkipNative=1&set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "buildagainstpackages"  (set __BuildAgainstPackagesArg=/p:BuildTestsAgainstPackages=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b1)
 if /i "%1" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
@@ -108,13 +107,6 @@ if [!processedArgs!]==[] (
 @REM Special handling for -priority=N argument.
 if %__Priority% GTR 0 (
     set "__PriorityArg=/p:CLRTestPriorityToBuild=%__Priority%"
-)
-
-if defined __BuildAgainstPackagesArg (
-    if not defined __RuntimeID (
-        echo %__MsgPrefix%Error: When building against packages, you must supply a target Runtime ID.
-        exit /b 1
-    )
 )
 
 set TargetsWindowsArg=
@@ -275,34 +267,7 @@ call "%__ProjectDir%\dotnet.cmd" msbuild /nologo /verbosity:minimal /clp:Summary
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   %__ProjectDir%\tests\build.proj /t:BatchRestorePackages^
-  !__Logging! %__CommonMSBuildArgs% %__BuildAgainstPackagesArg% %__PriorityArg% %__UnprocessedBuildArgs%
-
-if not defined __BuildAgainstPackagesArg goto SkipRestoreProduct
-
-echo %__MsgPrefix%BinPlacing CoreLib
-
-set __BuildLogRootName=Tests_GenerateRuntimeLayout
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
-set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
-
-call "%__ProjectDir%\dotnet.cmd" msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-  /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
-  /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-  /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__Projectdir%\tests\runtest.proj /t:BinPlaceRef /t:BinPlaceProduct /t:CopyCrossgenToProduct /p:RuntimeId="%__RuntimeId%"^
-  !__Logging! %__CommonMSBuildArgs% %__BuildAgainstPackagesArg% %__PriorityArg% %__UnprocessedBuildArgs%
-if errorlevel 1 (
-    echo %__MsgPrefix%Error: BinPlace of mscorlib.dll failed. Refer to the build log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
-)
+  !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__UnprocessedBuildArgs%
 
 :SkipRestoreProduct
 
@@ -344,9 +309,9 @@ for /l %%G in (1, 1, %__BuildLoopCount%) do (
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%";Append=!__AppendToLog!
 
     set TestBuildSlice=%%G
-    echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% %__BuildAgainstPackagesArg% !__PriorityArg! %__UnprocessedBuildArgs%
+    echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%
 
-    call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% %__BuildAgainstPackagesArg% !__PriorityArg! %__UnprocessedBuildArgs%
+    call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%
 
     if errorlevel 1 (
         echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
@@ -395,19 +360,6 @@ if exist "%CORE_ROOT_STAGE%" rd /s /q "%CORE_ROOT_STAGE%"
 md "%CORE_ROOT%"
 md "%CORE_ROOT_STAGE%"
 xcopy "%__BinDir%" "%CORE_ROOT_STAGE%"
-
-if defined __BuildAgainstPackagesArg ( 
-    if "%__TargetsWindows%"=="0" (
-
-        if not exist %__PackagesDir%\TestNativeBins (
-            echo %__MsgPrefix%Error: Ensure you have run sync.cmd -ab before building a non-Windows test overlay against packages
-            exit /b 1
-        )
-
-        for /R %__PackagesDir%\TestNativeBins\%__RuntimeId%\%__BuildType% %%f in (*.so) do copy %%f %CORE_ROOT_STAGE%
-        for /R %__PackagesDir%\TestNativeBins\%__RuntimeId%\%__BuildType% %%f in (*.dylib) do copy %%f %CORE_ROOT_STAGE%
-    )
-)
 
 REM =========================================================================================
 REM ===
@@ -499,7 +451,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
-call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\runtest.proj /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/  /p:BuildWrappers=true !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__BuildAgainstPackagesArg% %__UnprocessedBuildArgs%
+call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\runtest.proj /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/  /p:BuildWrappers=true !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__MsgPrefix%Error: Xunit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -555,7 +507,6 @@ echo Build type: one of Debug, Checked, Release ^(default: Debug^).
 echo skipmanaged: skip the managed tests build
 echo skipnative: skip the native tests build
 echo buildtesthostonly: build the CoreFX testhost only
-echo buildagainstpackages: builds tests against restored packages, instead of against a built product.
 echo skiprestorepackages: skip package restore
 echo runtimeid ^<ID^>: Builds a test overlay for the specified OS ^(Only supported when building against packages^). Supported IDs are:
 echo     alpine.3.4.3-x64: Builds overlay for Alpine 3.4.3
