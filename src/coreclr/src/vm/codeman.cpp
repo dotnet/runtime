@@ -1547,7 +1547,7 @@ JIT_LOAD_DATA g_JitLoadData;
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 // Global that holds the path to custom JIT location
-extern "C" LPCWSTR g_CLRJITPath = nullptr;
+LPCWSTR g_CLRJITPath = nullptr;
 
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 

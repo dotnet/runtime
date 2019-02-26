@@ -21,11 +21,11 @@ class EventPipeBufferList;
 // when the thread dies so we can free EventPipeBufferList in the destructor.  
 class ThreadEventBufferList
 {
-#ifndef __llvm__
+#ifndef __GNUC__
 __declspec(thread) static ThreadEventBufferList gCurrentThreadEventBufferList;
-#else // !__llvm__
+#else // !__GNUC__
 thread_local static ThreadEventBufferList gCurrentThreadEventBufferList;
-#endif // !__llvm__
+#endif // !__GNUC__
     EventPipeBufferList * m_pThreadEventBufferList = NULL;
     ~ThreadEventBufferList();
 

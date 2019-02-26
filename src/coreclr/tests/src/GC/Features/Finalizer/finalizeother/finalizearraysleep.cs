@@ -22,6 +22,8 @@ public class Test {
         public Dummy[] obj;
         public int ExitCode = 0;		
 
+        // No inline to ensure no stray refs to the new array
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public CreateObj() {
             obj = new Dummy[10];
 

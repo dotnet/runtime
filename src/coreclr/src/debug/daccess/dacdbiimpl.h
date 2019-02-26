@@ -14,14 +14,14 @@
 
 // Prototype for creation functions
 
-DLLEXPORT 
 STDAPI
+DLLEXPORT
 CLRDataCreateInstance(REFIID iid,
     ICLRDataTarget * pLegacyTarget,
     void ** iface);
 
-DLLEXPORT 
 STDAPI
+DLLEXPORT
 DacDbiInterfaceInstance(
     ICorDebugDataTarget * pTarget,
     CORDB_ADDRESS baseAddress,

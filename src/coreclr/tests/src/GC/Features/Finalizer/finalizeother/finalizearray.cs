@@ -22,6 +22,8 @@ public class Test
     {
         public Dummy[] obj;
 
+        // No inline to ensure no stray refs to the new array
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public CreateObj() {
             obj = new Dummy[10000];
             for(int i=0;i<10000;i++) {

@@ -2,7 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="src\dir.props" />
   <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets') AND '$(BuildWrappers)' == 'true'" />
-  <Import Project="helixperftasks.targets" Condition="'$(Performance)'=='true'"/>
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
@@ -457,21 +456,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
           DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)" 
           SkipUnchangedFiles="true" />
   </Target>
-
-  <Target Name="RunPerfTests" Condition="'$(Performance)'=='true'">
-    <Message Text="Executing steps for perf tests" Importance="High"/>
-
-    <!-- generate project.json for runtime dependency -->
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateTestRuntimeJsonFile"/>
-
-    <!-- generate project.lock.json file corresponding to above json file -->
-    <MSBuild Projects="src\Common\test_dependencies\test_dependencies.csproj"/>
-
-    <!-- Package each perf test, upload it and trigger event to execute the tests -->
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="UploadPerfAssemblies" />
-  </Target>
-
 
   <Target Name="Build">
 

@@ -4,8 +4,16 @@
 
 #include <windows.h>
 
+#ifndef DLLEXPORT
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__((visibility("default")))
+#endif
+#endif
+
 // Entrypoint jumped to by IJW dlls when their dllmain is called
-extern "C" __declspec(dllexport) BOOL WINAPI _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpReserved)
+extern "C" DLLEXPORT BOOL WINAPI _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpReserved)
 {
     return TRUE;
 }
