@@ -71,6 +71,8 @@ namespace System
                 ? dlopen("libgdiplus.dylib", RTLD_LAZY) != IntPtr.Zero
                 : dlopen("libgdiplus.so", RTLD_LAZY) != IntPtr.Zero || dlopen("libgdiplus.so.0", RTLD_LAZY) != IntPtr.Zero;
 
+        public static bool IsInContainer => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/.dockerenv");
+
         [DllImport("libdl")]
         private static extern IntPtr dlopen(string libName, int flags);
         private const int RTLD_LAZY = 0x001;
