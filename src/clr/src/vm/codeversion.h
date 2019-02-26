@@ -105,16 +105,14 @@ private:
         Synthetic
     };
 
-    struct SyntheticStorage
-    {
-        PTR_MethodDesc m_pMethodDesc;
-    };
-
     StorageKind m_storageKind;
     union
     {
         PTR_NativeCodeVersionNode m_pVersionNode;
-        SyntheticStorage m_synthetic;
+        struct
+        {
+            PTR_MethodDesc m_pMethodDesc;
+        } m_synthetic;
     };
 #endif // FEATURE_CODE_VERSIONING
 };
@@ -215,7 +213,11 @@ private:
     union
     {
         PTR_ILCodeVersionNode m_pVersionNode;
-        SyntheticStorage m_synthetic;
+        struct
+        {
+            PTR_Module m_pModule;
+            mdMethodDef m_methodDef;
+        } m_synthetic;
     };
 };
 
