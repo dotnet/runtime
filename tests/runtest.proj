@@ -349,22 +349,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Properties="Language=C#;TargetRid=$(TargetRid)" />
   </Target>
 
-  <Target Name="BinPlaceRef">
-    <!-- Copy mscorlib.dll from TargetingPack to bin/Product/ref, if we're building against packages -->
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CopyDependencyToRef"
-             Properties="Language=C#;TargetRid=$(TargetRid)"
-             Condition=" '$(BuildTestsAgainstPackages)'=='true' " />
-  </Target>
-
-  <Target Name="BinPlaceProduct">
-    <!-- Copy test dependencies to bin/Product, if we're building against packages -->
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CopyDependencyToProduct"
-             Properties="Language=C#;TargetRid=$(TargetRid)"
-             Condition=" '$(BuildTestsAgainstPackages)'=='true' " />
-  </Target>
-
   <Target Name="ResolveTestHostDependencies">
     <MSBuild Projects="$(MSBuildThisFileDirectory)src\Common\CoreFX\CoreFX.depproj" 
             Properties="OutputPath=$(NETCoreAppTestSharedFrameworkPath);" />
