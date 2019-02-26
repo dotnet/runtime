@@ -42,7 +42,6 @@ set __Sequential=
 set __msbuildExtraArgs=
 set __LongGCTests=
 set __GCSimulatorTests=
-set __AgainstPackages=
 set __JitDisasm=
 set __IlasmRoundTrip=
 set __CollectDumps=
@@ -78,7 +77,7 @@ if /i "%1" == "vs2017"                                  (set __VSVersion=%1&shif
 if /i "%1" == "vs2019"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
             
 if /i "%1" == "TestEnv"                                 (set __TestEnv=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "AgainstPackages"                         (set __AgainstPackages=1&shift&goto Arg_Loop)
+if /i "%1" == "AgainstPackages"                         (echo error: Remove /AgainstPackages switch&&echo /b 1)
 if /i "%1" == "sequential"                              (set __Sequential=1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"                                (set __DoCrossgen=1&shift&goto Arg_Loop)
 if /i "%1" == "crossgenaltjit"                          (set __DoCrossgen=1&set __CrossgenAltJit=%2&shift&shift&goto Arg_Loop)
@@ -156,7 +155,6 @@ REM For official builds we will continue to run tests using the un-unified scrip
 REM which relies on msbuild and calls runtest.proj directly. For all other scenarios
 REM runtest.py will handle setup and will then call runtest.proj
 
-if defined __AgainstPackages goto SetupMSBuildAndCallRuntestProj
 if "%__CoreFXTests%"=="true" goto SetupMSBuildAndCallRuntestProj
 if defined __GenerateLayoutOnly goto SetupMSBuildAndCallRuntestProj
 
@@ -267,10 +265,6 @@ if not defined __Sequential (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /maxcpucount
 ) else (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /p:ParallelRun=false
-)
-
-if defined __AgainstPackages (
-    set __msbuildCommonArgs=%__msbuildCommonArgs% /p:BuildTestsAgainstPackages=true
 )
 
 if defined DoLink (
@@ -686,7 +680,6 @@ echo ^<build_architecture^>      - Specifies build architecture: x64, x86, arm, 
 echo ^<build_type^>              - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
 echo VSVersion ^<vs_version^>    - VS2017 or VS2019 ^(default: VS2019^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
-echo AgainstPackages           - This indicates that we are running tests that were built against packages.
 echo GenerateLayoutOnly        - If specified will not run the tests and will only create the Runtime Dependency Layout
 echo skipgeneratelayout        - Do not generate the core root. Used for cross target testing.
 echo sequential                - Run tests sequentially (no parallelism).
