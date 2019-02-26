@@ -35,9 +35,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- If ILAsmToolPath is specified, it will be used and no packages will be restored
          Otherwise packages will be restored and copied to $(ToolsDir)\ilasm
          If ToolsDir is not defined a directory will be created under obj ($(BaseIntermediateOutputPath)).  -->
-    <_IlasmDir>$([MSBuild]::NormalizeDirectory($(ILAsmToolPath)))</_IlasmDir>
-    <_IlasmDir Condition="'$(_IlasmDir)' == '' AND '$(ToolsDir)' != ''">$([MSBuild]::NormalizeDirectory($(ToolsDir), 'ilasm'))</ILAsmDir>
-    <_IlasmDir Condition="'$(_IlasmDir)' == ''">$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'ilasm'))</ToolsDir>
+    <_IlasmDir Condition="'$(ILAsmToolPath)' != ''">$([MSBuild]::NormalizeDirectory($(ILAsmToolPath)))</_IlasmDir>
+    <_IlasmDir Condition="'$(_IlasmDir)' == '' AND '$(ToolsDir)' != ''">$([MSBuild]::NormalizeDirectory($(ToolsDir), 'ilasm'))</_IlasmDir>
+    <_IlasmDir Condition="'$(_IlasmDir)' == ''">$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'ilasm'))</_IlasmDir>
     <CoreCompileDependsOn Condition="'$(ILAsmToolPath)' == ''">$(CoreCompileDependsOn);CopyILAsmTool</CoreCompileDependsOn>
   </PropertyGroup>
 
