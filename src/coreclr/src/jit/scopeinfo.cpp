@@ -44,7 +44,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  Also,
  *  o At every assignment to a variable, siCheckVarScope() adds an open scope
  *    for the variable being assigned to.
- *  o genChangeLife() calls siUpdate() which closes scopes for variables which
+ *  o UpdateLifeVar() calls siUpdate() which closes scopes for variables which
  *    are not live anymore.
  *
  ******************************************************************************
@@ -918,15 +918,15 @@ void CodeGen::siEndBlock(BasicBlock* block)
 #endif
 }
 
-/*****************************************************************************
- *                          siUpdate
- *
- * Called at the start of basic blocks, and during code-gen of a block,
- * for non-debuggable code, whenever the life of any tracked variable changes
- * and the appropriate code has been generated. For debuggable code, variables are
- * live over their entire scope, and so they go live or dead only on
- * block boundaries.
- */
+//------------------------------------------------------------------------
+// siUpdate: Closes the "ScopeInfo" of the tracked variables that has become dead.
+//
+// Notes:
+//    Called at the start of basic blocks, and during code-gen of a block,
+//    for non-debuggable code, whenever the life of any tracked variable changes
+//    and the appropriate code has been generated. For debuggable code, variables are
+//    live over their entire scope, and so they go live or dead only on
+//    block boundaries.
 void CodeGen::siUpdate()
 {
     if (!compiler->opts.compScopeInfo)
