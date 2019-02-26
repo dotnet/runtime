@@ -423,19 +423,8 @@ class AssemblySpecBindingCache
                 delete m_pException;
         };
 
-        void OnAppDomainUnload()
-        {
-            LIMITED_METHOD_CONTRACT;
-            if (m_exceptionType == EXTYPE_EE)
-            {
-                m_exceptionType = EXTYPE_NONE;
-                delete m_pException;
-                m_pException = NULL;
-            }
-        };
-
         inline DomainAssembly* GetAssembly(){ LIMITED_METHOD_CONTRACT; return m_pAssembly;};
-        inline void SetAssembly(DomainAssembly* pAssembly){ LIMITED_METHOD_CONTRACT;  m_pAssembly=pAssembly;};        
+        inline void SetAssembly(DomainAssembly* pAssembly){ LIMITED_METHOD_CONTRACT;  m_pAssembly=pAssembly;};
         inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pFile;};
         inline BOOL IsError(){ LIMITED_METHOD_CONTRACT; return (m_exceptionType!=EXTYPE_NONE);};
 
@@ -578,8 +567,6 @@ class AssemblySpecBindingCache
 
     void Init(CrstBase *pCrst, LoaderHeap *pHeap = NULL);
     void Clear();
-
-    void OnAppDomainUnload();
 
     BOOL Contains(AssemblySpec *pSpec);
 
