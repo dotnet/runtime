@@ -38,13 +38,13 @@ PATCH_LABEL JIT_WriteBarrier_PreGrow64_Patch_Label_CardTable
 
         // Touch the card table entry, if not already dirty.
         shr     rdi, 0x0B
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
         .byte 0x75, 0x02
         // jne     UpdateCardTable_PreGrow64
         REPRET
 
     UpdateCardTable_PreGrow64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         NOP_6_BYTE // padding for alignment of constant
@@ -55,14 +55,14 @@ PATCH_LABEL JIT_WriteBarrier_PreGrow64_Patch_Label_CardBundleTable
         // Touch the card bundle, if not already dirty.
         // rdi is already shifted by 0xB, so shift by 0xA more
         shr     rdi, 0x0A
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
 
         .byte 0x75, 0x02 
         // jne     UpdateCardBundle_PreGrow64
         REPRET
 
     UpdateCardBundle_PreGrow64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 #endif
 
         ret
@@ -123,13 +123,13 @@ PATCH_LABEL JIT_WriteBarrier_PostGrow64_Patch_Label_CardTable
 
         // Touch the card table entry, if not already dirty.
         shr     rdi, 0x0B
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
         .byte 0x75, 0x02
         // jne     UpdateCardTable_PostGrow64
         REPRET
 
     UpdateCardTable_PostGrow64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         NOP_6_BYTE // padding for alignment of constant
@@ -140,14 +140,14 @@ PATCH_LABEL JIT_WriteBarrier_PostGrow64_Patch_Label_CardBundleTable
         // Touch the card bundle, if not already dirty.
         // rdi is already shifted by 0xB, so shift by 0xA more
         shr     rdi, 0x0A
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
 
         .byte 0x75, 0x02 
         // jne     UpdateCardBundle_PostGrow64
         REPRET
 
     UpdateCardBundle_PostGrow64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 #endif
 
         ret
@@ -182,13 +182,13 @@ PATCH_LABEL JIT_WriteBarrier_SVR64_PatchLabel_CardTable
 
         shr     rdi, 0x0B
 
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
         .byte 0x75, 0x02
         // jne     UpdateCardTable_SVR64
         REPRET
 
     UpdateCardTable_SVR64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         NOP_6_BYTE // padding for alignment of constant
@@ -198,14 +198,14 @@ PATCH_LABEL JIT_WriteBarrier_SVR64_PatchLabel_CardBundleTable
 
         // Shift the address by 0xA more since already shifted by 0xB
         shr     rdi, 0x0A
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
 
         .byte 0x75, 0x02 
         // jne     UpdateCardBundle_SVR64
         REPRET
 
     UpdateCardBundle_SVR64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 #endif
 
         ret
@@ -236,15 +236,15 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PreGrow64, _TEXT
         mov     rax, rdi
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_WriteWatchTable
         movabs  r10, 0xF0F0F0F0F0F0F0F0
-        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        shr     rax, 0x0C // SoftwareWriteWatch::AddressToTableByteIndexShift
         NOP_2_BYTE // padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_Lower
         movabs  r11, 0xF0F0F0F0F0F0F0F0
         add     rax, r10
-        cmp     byte ptr [rax], 0h
+        cmp     byte ptr [rax], 0x0
         .byte 0x75, 0x03
         // jne     CheckCardTable_WriteWatch_PreGrow64
-        mov     byte ptr [rax], 0FFh
+        mov     byte ptr [rax], 0xFF
 
     CheckCardTable_WriteWatch_PreGrow64:
         // Check the lower ephemeral region bound.
@@ -263,13 +263,13 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_Lower
         NOP_2_BYTE // padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_CardTable
         movabs  rax, 0xF0F0F0F0F0F0F0F0
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
         .byte 0x75, 0x02
         // jne     UpdateCardTable_WriteWatch_PreGrow64
         REPRET
 
     UpdateCardTable_WriteWatch_PreGrow64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         NOP_2_BYTE // padding for alignment of constant
@@ -277,14 +277,14 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_CardBundleTable
         movabs  rax, 0xF0F0F0F0F0F0F0F0
 
         shr     rdi, 0x0A
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
 
         .byte 0x75, 0x02
         // jne     UpdateCardBundle_WriteWatch_PreGrow64
         REPRET
 
     UpdateCardBundle_WriteWatch_PreGrow64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 #endif
 
         ret
@@ -314,15 +314,15 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_PostGrow64, _TEXT
         mov     rax, rdi
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_WriteWatchTable
         movabs  r10, 0xF0F0F0F0F0F0F0F0
-        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        shr     rax, 0x0C // SoftwareWriteWatch::AddressToTableByteIndexShift
         NOP_2_BYTE // padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_Lower
         movabs  r11, 0xF0F0F0F0F0F0F0F0
         add     rax, r10
-        cmp     byte ptr [rax], 0h
+        cmp     byte ptr [rax], 0x0
         .byte 0x75, 0x06
         // jne     CheckCardTable_WriteWatch_PostGrow64
-        mov     byte ptr [rax], 0FFh
+        mov     byte ptr [rax], 0xFF
 
         NOP_3_BYTE // padding for alignment of constant
 
@@ -358,13 +358,13 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardTable
 
         // Touch the card table entry, if not already dirty.
         shr     rdi, 0x0B
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
         .byte 0x75, 0x02
         // jne     UpdateCardTable_WriteWatch_PostGrow64
         REPRET
 
     UpdateCardTable_WriteWatch_PostGrow64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         NOP_2_BYTE // padding for alignment of constant
@@ -372,14 +372,14 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardTable
 
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardBundleTable
         movabs  rax, 0xF0F0F0F0F0F0F0F0
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
 
         .byte 0x75, 0x02
         // jne     UpdateCardBundle_WriteWatch_PostGrow64
         REPRET
 
     UpdateCardBundle_WriteWatch_PostGrow64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 #endif
 
         ret
@@ -417,25 +417,25 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_SVR64, _TEXT
         mov     rax, rdi
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_WriteWatchTable
         movabs  r10, 0xF0F0F0F0F0F0F0F0
-        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
         NOP_2_BYTE // padding for alignment of constant
 PATCH_LABEL JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardTable
         movabs  r11, 0xF0F0F0F0F0F0F0F0
         add     rax, r10
-        cmp     byte ptr [rax], 0h
+        cmp     byte ptr [rax], 0x0
         .byte 0x75, 0x03
         // jne     CheckCardTable_WriteWatch_SVR64
-        mov     byte ptr [rax], 0FFh
+        mov     byte ptr [rax], 0xFF
 
     CheckCardTable_WriteWatch_SVR64:
         shr     rdi, 0x0B
-        cmp     byte ptr [rdi + r11], 0FFh
+        cmp     byte ptr [rdi + r11], 0xFF
         .byte 0x75, 0x02
         // jne     UpdateCardTable_WriteWatch_SVR64
         REPRET
 
     UpdateCardTable_WriteWatch_SVR64:
-        mov     byte ptr [rdi + r11], 0FFh
+        mov     byte ptr [rdi + r11], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         NOP // padding for alignment of constant
@@ -444,13 +444,13 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardBundleTable
         movabs  r11, 0xF0F0F0F0F0F0F0F0
 
         shr     rdi, 0x0A
-        cmp     byte ptr [rdi + r11], 0FFh
+        cmp     byte ptr [rdi + r11], 0xFF
         .byte 0x75, 0x02
         // jne     UpdateCardBundle_WriteWatch_SVR64
         REPRET
 
     UpdateCardBundle_WriteWatch_SVR64:
-        mov     byte ptr [rdi + r11], 0FFh
+        mov     byte ptr [rdi + r11], 0xFF
 #endif
 
         ret

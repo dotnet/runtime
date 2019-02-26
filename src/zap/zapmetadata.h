@@ -209,7 +209,7 @@ private:
         static count_t Hash(key_t k) 
         {
             LIMITED_METHOD_CONTRACT;
-            return (count_t)k;
+            return (count_t)(SIZE_T)k;
         }
 
         static element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
