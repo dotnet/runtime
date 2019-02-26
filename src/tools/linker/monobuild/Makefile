@@ -4,13 +4,13 @@ CONFIGURATION = Debug
 all: build check
 
 build: prepare
-	$(MSBUILD) ../linker.sln /p:Configuration=$(CONFIGURATION)
+	$(MSBUILD) ../monolinker.sln /p:Configuration=$(CONFIGURATION)
 
 clean:
-	$(MSBUILD) ../linker.sln /t:clean
+	$(MSBUILD) ../monolinker.sln /t:clean
 
 prepare:
-	nuget restore ../linker.sln
+	nuget restore ../monolinker.sln
 	# A hack for project.assets.json issues
 	rm -f ../external/cecil/obj/project.assets.json
 	rm -f ../external/cecil/symbols/pdb/obj/project.assets.json
