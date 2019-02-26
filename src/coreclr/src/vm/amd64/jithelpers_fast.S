@@ -81,14 +81,14 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
         // Update the write watch table if necessary
         mov     rax, rdi
         movabs  r10, 0xF0F0F0F0F0F0F0F0
-        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
         NOP_2_BYTE // padding for alignment of constant
         movabs  r11, 0xF0F0F0F0F0F0F0F0
         add     rax, r10
-        cmp     byte ptr [rax], 0h
+        cmp     byte ptr [rax], 0x0
         .byte 0x75, 0x06
         // jne     CheckCardTable
-        mov     byte ptr [rax], 0FFh
+        mov     byte ptr [rax], 0xFF
 
         NOP_3_BYTE // padding for alignment of constant
 
@@ -112,27 +112,27 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
 
         // Touch the card table entry, if not already dirty.
         shr     rdi, 0x0B
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
         .byte 0x75, 0x02
         // jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         NOP_2_BYTE // padding for alignment of constant
         shr     rdi, 0x0A
 
         movabs  rax, 0xF0F0F0F0F0F0F0F0
-        cmp     byte ptr [rdi + rax], 0FFh
+        cmp     byte ptr [rdi + rax], 0xFF
 
         .byte 0x75, 0x02
         // jne     UpdateCardBundle_WriteWatch_PostGrow64
         REPRET
 
     UpdateCardBundle_WriteWatch_PostGrow64:
-        mov     byte ptr [rdi + rax], 0FFh
+        mov     byte ptr [rdi + rax], 0xFF
 #endif
 
         ret
@@ -312,15 +312,15 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Update the write watch table if necessary
         PREPARE_EXTERNAL_VAR g_sw_ww_enabled_for_gc_heap, rax
-        cmp     byte ptr [rax], 0h
+        cmp     byte ptr [rax], 0x0
         je      CheckCardTable_ByRefWriteBarrier
         mov     rax, rdi
-        shr     rax, 0Ch // SoftwareWriteWatch::AddressToTableByteIndexShift
+        shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
         PREPARE_EXTERNAL_VAR g_sw_ww_table, r10
         add     rax, qword ptr [r10]
-        cmp     byte ptr [rax], 0h
+        cmp     byte ptr [rax], 0x0
         jne     CheckCardTable_ByRefWriteBarrier
-        mov     byte ptr [rax], 0FFh
+        mov     byte ptr [rax], 0xFF
 #endif
 
     CheckCardTable_ByRefWriteBarrier:
@@ -334,8 +334,8 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
 
         // move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
-        add     rsi, 8h
-        add     rdi, 8h
+        add     rsi, 0x8
+        add     rdi, 0x8
 
         // Check if we need to update the card table
         // Calc pCardByte
@@ -345,13 +345,13 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         mov     rax, [rax]
 
         // Check if this card is dirty
-        cmp     byte ptr [rcx + rax], 0FFh
+        cmp     byte ptr [rcx + rax], 0xFF
 
         jne     UpdateCardTable_ByRefWriteBarrier
         REPRET
 
     UpdateCardTable_ByRefWriteBarrier:
-        mov     byte ptr [rcx + rax], 0FFh
+        mov     byte ptr [rcx + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Shift rcx by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
@@ -361,13 +361,13 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         add     rcx, [rax]
 
         // Check if this bundle byte is dirty
-        cmp     byte ptr [rcx], 0FFh
+        cmp     byte ptr [rcx], 0xFF
 
         jne     UpdateCardBundle_ByRefWriteBarrier
         REPRET
 
     UpdateCardBundle_ByRefWriteBarrier:
-        mov     byte ptr [rcx], 0FFh
+        mov     byte ptr [rcx], 0xFF
 #endif
 
         ret
@@ -383,8 +383,8 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
 #endif
     Exit_ByRefWriteBarrier:
         // Increment the pointers before leaving
-        add     rdi, 8h
-        add     rsi, 8h
+        add     rdi, 0x8
+        add     rsi, 0x8
         ret
 LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 

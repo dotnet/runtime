@@ -10,11 +10,11 @@
 
 #ifdef FEATURE_PERFTRACING
 
-#ifndef __llvm__
+#ifndef __GNUC__
 __declspec(thread) ThreadEventBufferList ThreadEventBufferList::gCurrentThreadEventBufferList;
-#else // !__llvm__
+#else // !__GNUC__
 thread_local ThreadEventBufferList ThreadEventBufferList::gCurrentThreadEventBufferList;
-#endif // !__llvm__
+#endif // !__GNUC__
 
 EventPipeBufferManager::EventPipeBufferManager()
 {

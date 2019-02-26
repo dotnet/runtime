@@ -109,7 +109,7 @@ private:
     union
     {
         PTR_NativeCodeVersionNode m_pVersionNode;
-        struct SyntheticStorage
+        struct
         {
             PTR_MethodDesc m_pMethodDesc;
         } m_synthetic;
@@ -207,7 +207,7 @@ private:
     union
     {
         PTR_ILCodeVersionNode m_pVersionNode;
-        struct SyntheticStorage
+        struct
         {
             PTR_Module m_pModule;
             mdMethodDef m_methodDef;

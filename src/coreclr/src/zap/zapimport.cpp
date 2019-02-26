@@ -1674,7 +1674,7 @@ public:
 
     CORCOMPILE_FIXUP_BLOB_KIND GetKind()
     {
-        int kind = (int)GetHandle();
+        int kind = (int)(SIZE_T)GetHandle();
 
         if ((kind & 1) == 1)
         {

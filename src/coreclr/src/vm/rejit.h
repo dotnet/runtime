@@ -150,7 +150,7 @@ private:
         typedef CodeVersionManager * key_t;
         static key_t GetKey(const element_t &e) { return e->m_pCodeVersionManager; }
         static BOOL Equals(key_t k1, key_t k2) { return (k1 == k2); }
-        static count_t Hash(key_t k) { return (count_t)k; }
+        static count_t Hash(key_t k) { return (count_t)(SIZE_T)k; }
         static bool IsNull(const element_t &e) { return (e == NULL); }
     };
 

@@ -509,7 +509,7 @@ struct VTableCallHolder
         return 3 + (offsetOfIndirection >= 0x80 ? 7 : 4) + (offsetAfterIndirection >= 0x80 ? 6 : 3) + 4;
     }
 
-    static VTableCallHolder* VTableCallHolder::FromVTableCallEntry(PCODE entry) { LIMITED_METHOD_CONTRACT; return (VTableCallHolder*)entry; }
+    static VTableCallHolder* FromVTableCallEntry(PCODE entry) { LIMITED_METHOD_CONTRACT; return (VTableCallHolder*)entry; }
 
 private:
     // VTableCallStub follows here. It is dynamically sized on allocation because it could 
@@ -732,13 +732,13 @@ void ResolveHolder::InitializeStatic()
     resolveInit.part4 [2]              = 0x50;
     resolveInit.mtOffset               = offsetof(ResolveCacheElem,pMT) & 0xFF;
     resolveInit.part5 [0]              = 0x75;
-    resolveInit.toMiss1                = offsetof(ResolveStub,miss)-(offsetof(ResolveStub,toMiss1)+1) & 0xFF;
+    resolveInit.toMiss1                = (offsetof(ResolveStub,miss)-(offsetof(ResolveStub,toMiss1)+1)) & 0xFF;
     resolveInit.part6 [0]              = 0x4C;
     resolveInit.part6 [1]              = 0x3B;
     resolveInit.part6 [2]              = 0x50;
     resolveInit.tokenOffset            = offsetof(ResolveCacheElem,token) & 0xFF;
     resolveInit.part7 [0]              = 0x75;
-    resolveInit.toMiss2                = offsetof(ResolveStub,miss)-(offsetof(ResolveStub,toMiss2)+1) & 0xFF;
+    resolveInit.toMiss2                = (offsetof(ResolveStub,miss)-(offsetof(ResolveStub,toMiss2)+1)) & 0xFF;
     resolveInit.part8 [0]              = 0x48;
     resolveInit.part8 [1]              = 0x8B;
     resolveInit.part8 [2]              = 0x40;
