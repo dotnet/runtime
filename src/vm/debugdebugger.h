@@ -48,6 +48,7 @@ public:
     PTRARRAYREF dynamicMethods;
     BASEARRAYREF rgMethodHandle;
     PTRARRAYREF rgAssemblyPath;
+    PTRARRAYREF rgAssembly;
     BASEARRAYREF rgLoadedPeAddress;
     I4ARRAYREF rgiLoadedPeSize;
     BASEARRAYREF rgInMemoryPdbAddress;
