@@ -8,6 +8,7 @@
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <BlockReflectionAttribute>false</BlockReflectionAttribute>
+    <CLSCompliant>false</CLSCompliant>
     <Configurations>net45-Debug;net45-Release;net46-Debug;net46-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'net45'">
@@ -25,6 +26,7 @@
   <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
+    <Reference Include="System.Memory" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' != 'net45' And '$(TargetGroup)' != 'netstandard1.1'">
@@ -41,13 +43,14 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetGroup)' != 'netfx'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
