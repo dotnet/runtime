@@ -1584,7 +1584,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (m_class_is_valuetype (constrained_class) && (target_method->klass == mono_defaults.object_class || target_method->klass == m_class_get_parent (mono_defaults.enum_class) || target_method->klass == mono_defaults.enum_class)) {
 			if (target_method->klass == mono_defaults.enum_class && (td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
 				/* managed pointer on the stack, we need to deref that puppy */
-				ADD_CODE (td, MINT_LDIND_I);
+				/* Always load the entire stackval, to handle also the case where the enum has long storage */
+				ADD_CODE (td, MINT_LDIND_I8);
 				ADD_CODE (td, csignature->param_count);
 			}
 			if (mint_type (m_class_get_byval_arg (constrained_class)) == MINT_TYPE_VT) {
@@ -2461,13 +2462,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 		td->body_start_offset = td->new_ip - td->new_code;
 
-		for (i = 0; i < header->num_locals; i++) {
-			int mt = mint_type(header->locals [i]);
-			if (mt == MINT_TYPE_VT || mt == MINT_TYPE_O || mt == MINT_TYPE_P) {
-				ADD_CODE(td, MINT_INITLOCALS);
-				break;
-			}
-		}
+		if (header->num_locals && header->init_locals)
+			ADD_CODE(td, MINT_INITLOCALS);
 
 		if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
 			ADD_CODE (td, MINT_PROF_ENTER);

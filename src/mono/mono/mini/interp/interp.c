@@ -2941,9 +2941,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	0 };
 #endif
 
-
 	frame->ex = NULL;
-	frame->ip = NULL;
 	debug_enter (frame, &tracing);
 
 	imethod = frame->imethod;
@@ -2954,6 +2952,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		g_free (mn);
 #endif
 
+		frame->ip = NULL;
 		do_transform_method (frame, context);
 		if (frame->ex)
 			THROW_EX (frame->ex, NULL);
@@ -2962,8 +2961,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 	if (!clause_args) {
 		frame->args = g_newa (char, imethod->alloca_size);
-		memset (frame->args, 0, imethod->alloca_size);
-
 		ip = imethod->code;
 	} else {
 		ip = clause_args->start_with_ip;
@@ -3831,6 +3828,17 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_LDIND_I) {
 			guint16 offset = * (guint16 *)(ip + 1);
 			sp[-1 - offset].data.p = *(gpointer*)sp[-1 - offset].data.p;
+			ip += 2;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_LDIND_I8) {
+			guint16 offset = * (guint16 *)(ip + 1);
+#ifdef NO_UNALIGNED_ACCESS
+			if ((gsize)sp [-1 - offset].data.p % SIZEOF_VOID_P)
+				memcpy (&sp [-1 - offset].data.l, sp [-1 - offset].data.p, sizeof (gint64));
+			else
+#endif
+			sp[-1 - offset].data.l = *(gint64*)sp[-1 - offset].data.p;
 			ip += 2;
 			MINT_IN_BREAK;
 		}
