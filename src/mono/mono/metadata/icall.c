@@ -730,8 +730,14 @@ ves_icall_System_Array_FastCopy (MonoArrayHandle source, int source_idx, MonoArr
 	if (src_vtable->rank != dest_vtable->rank)
 		return FALSE;
 
-	if (MONO_HANDLE_GETVAL (source, bounds) || MONO_HANDLE_GETVAL (dest, bounds))
-		return FALSE;
+	MonoArrayBounds *source_bounds = MONO_HANDLE_GETVAL (source, bounds);
+	MonoArrayBounds *dest_bounds = MONO_HANDLE_GETVAL (dest, bounds);
+
+	for (int i = 0; i < src_vtable->rank; i++) {
+		if ((source_bounds && source_bounds [i].lower_bound > 0) ||
+			(dest_bounds && dest_bounds [i].lower_bound > 0))
+			return FALSE;
+	}
 
 	/* there's no integer overflow since mono_array_length_internal returns an unsigned integer */
 	if ((dest_idx + length > mono_array_handle_length (dest)) ||
