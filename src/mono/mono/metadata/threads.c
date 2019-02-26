@@ -73,6 +73,10 @@ extern gboolean
 mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 #endif
 
+#if defined(TARGET_FUCHSIA)
+#include <zircon/syscalls.h>
+#endif
+
 #if defined(HOST_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
 #define USE_TKILL_ON_ANDROID 1
 #endif
@@ -713,7 +717,27 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 	MONO_EXIT_GC_SAFE;
 	if (!res)
 		g_error ("%s: SetThreadPriority failed, error %d", __func__, last_error);
-#else /* HOST_WIN32 */
+#elif defined(TARGET_FUCHSIA)
+	int z_priority;
+	
+	if (priority == MONO_THREAD_PRIORITY_LOWEST)
+		z_priority = ZX_PRIORITY_LOWEST;
+	else if (priority == MONO_THREAD_PRIORITY_BELOW_NORMAL)
+		z_priority = ZX_PRIORITY_LOW;
+	else if (priority == MONO_THREAD_PRIORITY_NORMAL)
+		z_priority = ZX_PRIORITY_DEFAULT;
+	else if (priority == MONO_THREAD_PRIORITY_ABOVE_NORMAL)
+		z_priority = ZX_PRIORITY_HIGH;
+	else if (priority == MONO_THREAD_PRIORITY_HIGHEST)
+		z_priority = ZX_PRIORITY_HIGHEST;
+	else
+		return;
+	
+	//
+	// When this API becomes available on an arbitrary thread, we can use it,
+	// not available on current Zircon
+	//
+#else /* !HOST_WIN32 and not TARGET_FUCHSIA */
 	pthread_t tid;
 	int policy;
 	struct sched_param param;

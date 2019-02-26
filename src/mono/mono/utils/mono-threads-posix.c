@@ -15,6 +15,10 @@
 #define _DARWIN_C_SOURCE 1
 #endif
 
+#if defined (TARGET_FUCHSIA)
+
+#endif
+
 #if defined (__HAIKU__)
 #include <os/kernel/OS.h>
 #endif
@@ -131,6 +135,15 @@ mono_threads_platform_exit (gsize exit_code)
 	pthread_exit ((gpointer) exit_code);
 }
 
+#if TARGET_FUCHSIA
+int
+mono_thread_info_get_system_max_stack_size (void)
+{
+	/* For now, we do not enforce any limits */
+	return INT_MAX;
+}
+
+#else
 int
 mono_thread_info_get_system_max_stack_size (void)
 {
@@ -144,6 +157,7 @@ mono_thread_info_get_system_max_stack_size (void)
 		return INT_MAX;
 	return (int)lim.rlim_max;
 }
+#endif
 
 int
 mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
