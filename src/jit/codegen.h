@@ -592,7 +592,7 @@ public:
     void siBeginBlock(BasicBlock* block);
 
     void siEndBlock(BasicBlock* block);
-
+    // Closes the "ScopeInfo" of the tracked variables that has become dead.
     virtual void siUpdate();
 
     void siCheckVarScope(unsigned varNum, IL_OFFSET offs);
