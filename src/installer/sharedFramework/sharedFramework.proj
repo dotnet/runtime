@@ -58,6 +58,7 @@
       <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.runtimeconfig.json" />
       <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\apphost$(ExeSuffix)" />
       <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\$(LibPrefix)hostfxr$(LibSuffix)" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\$(LibPrefix)comhost$(LibSuffix)" />
     </ItemGroup>
 
     <Message Text="To delete: @(ToDelete)" />
