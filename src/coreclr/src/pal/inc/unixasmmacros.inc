@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#define INVALIDGCVALUE 0CCCCCCCDh
+#define INVALIDGCVALUE 0xCCCCCCCD
 
 #if defined(__APPLE__)
 #define C_FUNC(name) _##name

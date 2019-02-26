@@ -216,13 +216,13 @@ public:
     ///
 
     // Implementation of ICorDebugManagedCallback4::BeforeGarbageCollection
-    COM_METHOD ShimProxyCallback::BeforeGarbageCollection(ICorDebugProcess* pProcess);
+    COM_METHOD BeforeGarbageCollection(ICorDebugProcess* pProcess);
 
     // Implementation of ICorDebugManagedCallback4::AfterGarbageCollection
-    COM_METHOD ShimProxyCallback::AfterGarbageCollection(ICorDebugProcess* pProcess);
+    COM_METHOD AfterGarbageCollection(ICorDebugProcess* pProcess);
 
     // Implementation of ICorDebugManagedCallback4::DataBreakpoint
-    COM_METHOD ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread, BYTE* pContext, ULONG32 contextSize);
+    COM_METHOD DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread, BYTE* pContext, ULONG32 contextSize);
 };
 
 

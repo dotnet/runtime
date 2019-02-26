@@ -734,7 +734,7 @@ COUNT_T ZapImage::MethodCodeTraits::Hash(key_t k)
             case ZapNodeType_Import_ClassHandle:
             case ZapNodeType_MethodHandle:
             case ZapNodeType_Import_MethodHandle:
-                hash = ((hash << 5) + hash) ^ (COUNT_T)(pTarget);
+                hash = ((hash << 5) + hash) ^ (COUNT_T)((SIZE_T)pTarget);
                 break;
             default:
                 break;
