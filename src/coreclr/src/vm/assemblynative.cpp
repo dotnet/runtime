@@ -83,9 +83,7 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
             pRefAssembly = gc.requestingAssembly->GetAssembly();
         }
         
-        // Shared or collectible assemblies should not be used for the parent in the
-        // late-bound case.
-        if (pRefAssembly && (!pRefAssembly->IsCollectible()))
+        if (pRefAssembly)
         {
             pParentAssembly= pRefAssembly->GetDomainAssembly();
         }

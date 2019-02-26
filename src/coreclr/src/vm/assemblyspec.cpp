@@ -1223,27 +1223,6 @@ void AssemblySpecBindingCache::Clear()
     m_map.Clear();
 }
 
-void AssemblySpecBindingCache::OnAppDomainUnload()
-{
-    CONTRACTL
-    {
-        DESTRUCTOR_CHECK;
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PtrHashMap::PtrIterator i = m_map.begin();
-    while (!i.end())
-    {
-        AssemblyBinding *b = (AssemblyBinding*) i.GetValue();
-        b->OnAppDomainUnload();
-
-        ++i;
-    }
-}
-
 void AssemblySpecBindingCache::Init(CrstBase *pCrst, LoaderHeap *pHeap)
 {
     WRAPPER_NO_CONTRACT;
@@ -1872,6 +1851,11 @@ VOID DomainAssemblyCache::InsertEntry(AssemblySpec* pSpec, LPVOID pData1, LPVOID
 
             pEntry->spec.CopyFrom(pSpec);
             pEntry->spec.CloneFieldsToLoaderHeap(AssemblySpec::ALL_OWNED, m_pDomain->GetLowFrequencyHeap(), pamTracker);
+
+            // Clear the parent assembly, it is not needed for the AssemblySpec in the cache entry and it could contain stale
+            // pointer when the parent was a collectible assembly that was collected.
+            pEntry->spec.SetParentAssembly(NULL);
+
             pEntry->pData[0] = pData1;
             pEntry->pData[1] = pData2;
             DWORD hashValue = pEntry->Hash();

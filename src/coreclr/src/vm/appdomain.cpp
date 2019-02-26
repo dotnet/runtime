@@ -1175,27 +1175,6 @@ void AppDomain::ShutdownNativeDllSearchDirectories()
     m_NativeDllSearchDirectories.Clear();
 }
 
-void AppDomain::ReleaseDomainBoundInfo()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;;
-    // Shutdown assemblies
-    m_AssemblyCache.OnAppDomainUnload();
-
-    AssemblyIterator i = IterateAssembliesEx( (AssemblyIterationFlags)(kIncludeFailedToLoad) );
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-    
-    while (i.Next(pDomainAssembly.This()))
-    {
-       pDomainAssembly->ReleaseManagedData();
-    }
-}
-
 void AppDomain::ReleaseFiles()
 {
     STANDARD_VM_CONTRACT;
