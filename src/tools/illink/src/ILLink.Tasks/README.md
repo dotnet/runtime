@@ -31,8 +31,8 @@ The full set of options is described below.
 ## Building
 
 ```
-linker> ./corebuild/dotnet.{sh/ps1} restore ./corebuild/integration/linker.sln
-linker> ./corebuild/dotnet.{sh/ps1} pack ./corebuild/integration/ILLink.Tasks/ILLink.Tasks.csproj
+linker> ./corebuild/dotnet.{sh/ps1} restore illink.sln
+linker> ./corebuild/dotnet.{sh/ps1} pack src/ILLink.Tasks/ILLink.Tasks.csproj
 ```
 
 The output package will be placed in
