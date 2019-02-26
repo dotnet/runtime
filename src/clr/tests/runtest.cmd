@@ -48,7 +48,6 @@ set __IlasmRoundTrip=
 set __CollectDumps=
 set __DoCrossgen=
 set __CrossgenAltJit=
-set __PerfTests=
 set __CoreFXTests=
 set __CoreFXTestsRunAllAvailable=
 set __SkipGenerateLayout=
@@ -95,7 +94,6 @@ if /i "%1" == "GenerateLayoutOnly"                      (set __GenerateLayoutOnl
 if /i "%1" == "skipgeneratelayout"                      (set __SkipGenerateLayout=1&shift&goto Arg_Loop)
 if /i "%1" == "buildxunitwrappers"                      (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
-if /i "%1" == "PerfTests"                               (set __PerfTests=true&shift&goto Arg_Loop)
 if /i "%1" == "CoreFXTests"                             (set __CoreFXTests=true&shift&goto Arg_Loop)
 if /i "%1" == "CoreFXTestsAll"                          (set __CoreFXTests=true&set __CoreFXTestsRunAllAvailable=true&shift&goto Arg_Loop)
 if /i "%1" == "CoreFXTestList"                          (set __CoreFXTests=true&set __CoreFXTestList=%2&shift&shift&goto Arg_Loop)
@@ -132,7 +130,6 @@ shift
 :: Done with argument processing. Check argument values for validity.
 
 if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Environment script %__TestEnv% not found && exit /b 1)
-if "%__PerfTests%"=="true" (if defined __GenerateLayoutOnly  echo %__MsgPrefix%Error: Don't specify both "PerfTests" and "GenerateLayoutOnly" && exit /b 1)
 if "%__CoreFXTests%"=="true" (if defined __GenerateLayoutOnly  echo %__MsgPrefix%Error: Don't specify both "CoreFXTests" and "GenerateLayoutOnly" && exit /b 1)
 
 if defined __CoreFXTestList (
@@ -161,7 +158,6 @@ REM runtest.py will handle setup and will then call runtest.proj
 
 if defined __AgainstPackages goto SetupMSBuildAndCallRuntestProj
 if "%__CoreFXTests%"=="true" goto SetupMSBuildAndCallRuntestProj
-if "%__PerfTests%"=="true" goto SetupMSBuildAndCallRuntestProj
 if defined __GenerateLayoutOnly goto SetupMSBuildAndCallRuntestProj
 
 REM We are not running in the official build scenario, call runtest.py
@@ -319,8 +315,6 @@ if not exist %CORE_ROOT%\coreclr.dll (
 
 if "%__CoreFXTests%"=="true" goto RunCoreFXTests
 
-if "%__PerfTests%"=="true" goto RunPerfTests
-
 REM =========================================================================================
 REM ===
 REM === Run normal (non-perf) tests
@@ -383,27 +377,6 @@ if %__errorlevel% GEQ 1 (
     echo %__MsgPrefix%Test Run failed. Refer to the following:
     echo     Html report: %__TestRunHtmlLog%
     exit /b 1
-)
-
-goto TestsDone
-
-REM =========================================================================================
-REM ===
-REM === Run perf tests
-REM ===
-REM =========================================================================================
-
-:RunPerfTests 
-echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%  
-echo %__MsgPrefix%Starting test run at %TIME%
-
-set __BuildLogRootName=PerfTestRunResults  
-echo %__MsgPrefix%Running perf tests  
-call :msbuild "%__ProjectFilesDir%\runtest.proj" /t:RunPerfTests /clp:showcommandline  
-
-if errorlevel 1 (  
-    echo %__MsgPrefix%Test Run failed. Refer to the following:  
-    echo     Html report: %__TestRunHtmlLog%  
 )
 
 goto TestsDone
@@ -723,7 +696,6 @@ echo link ^<ILlink^>             - Runs the tests after linking via the IL linke
 echo CoreFXTests               - Runs CoreFX tests
 echo CoreFXTestsAll            - Runs all CoreFX tests ^(no exclusions^)
 echo CoreFXTestList ^<file^>     - Specify a file containing a list of CoreFX tests to run, and runs them.
-echo PerfTests                 - Runs perf tests
 echo RunCrossgenTests          - Runs ReadytoRun tests
 echo jitstress ^<n^>             - Runs the tests with COMPlus_JitStress=n
 echo jitstressregs ^<n^>         - Runs the tests with COMPlus_JitStressRegs=n
