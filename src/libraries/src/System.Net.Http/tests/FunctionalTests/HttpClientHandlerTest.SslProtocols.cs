@@ -89,12 +89,7 @@ namespace System.Net.Http.Functional.Tests
             // These protocols are disabled by default, so we can only connect with them explicitly.
             // On certain platforms these are completely disabled and cannot be used at all.
 #pragma warning disable 0618
-            if (PlatformDetection.IsWindows ||
-                PlatformDetection.IsOSX ||
-                (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
-                 PlatformDetection.OpenSslVersion < new Version(1, 0, 2) &&
-                 !PlatformDetection.IsDebian &&
-                 !PlatformDetection.IsRedHatFamily6))
+            if (PlatformDetection.SupportsSsl3)
             {
                 // TODO #28790: SSLv3 is supported on RHEL 6, but this test case still fails.
                 yield return new object[] { SslProtocols.Ssl3, true };

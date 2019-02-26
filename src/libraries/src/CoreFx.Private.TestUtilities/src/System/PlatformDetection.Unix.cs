@@ -60,6 +60,8 @@ namespace System
         public static bool IsNetfx471OrNewer => false;
         public static bool IsNetfx472OrNewer => false;
 
+        public static bool SupportsSsl3 => (PlatformDetection.IsOSX || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion < new Version(1, 0, 2) && !PlatformDetection.IsDebian));
+
         public static bool IsDrawingSupported { get; } =
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
 #if netcoreapp30
