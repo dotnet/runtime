@@ -52,7 +52,6 @@ set __SkipRestorePackages=
 set __SkipManaged=
 set __SkipNative=
 set __RuntimeId=
-set __ZipTests=
 set __TargetsWindows=1
 set __DoCrossgen=
 
@@ -86,9 +85,8 @@ if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"            (set __SkipNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtesthostonly"     (set __SkipNative=1&set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "buildagainstpackages"  (set __ZipTests=1&set __BuildAgainstPackagesArg=/p:BuildTestsAgainstPackages=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "buildagainstpackages"  (set __BuildAgainstPackagesArg=/p:BuildTestsAgainstPackages=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "ziptests"              (set __ZipTests=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -535,41 +533,6 @@ rd /s /q "%CORE_ROOT_STAGE%"
 
 REM =========================================================================================
 REM ===
-REM === Prep test binaries for Helix publishing
-REM ===
-REM =========================================================================================
-
-if not defined __ZipTests goto SkipPrepForPublish
-
-echo %__MsgPrefix%Preparing test binaries for Helix publishing
-
-set __BuildLogRootName=Helix_Prep
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
-set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
-
-call %__ProjectDir%\dotnet.cmd msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-  /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
-  /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-  /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__ProjectDir%\tests\helixprep.proj^
-  !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %TargetsWindowsMSBuildArg% %__CrossgenArg% %__PriorityArg% %__UnprocessedBuildArgs%
-if errorlevel 1 (
-    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
-)
-
-:SkipPrepForPublish
-
-REM =========================================================================================
-REM ===
 REM === All builds complete!
 REM ===
 REM =========================================================================================
@@ -608,7 +571,6 @@ echo     ubuntu.16.04-x64: Builds overlay for Ubuntu 16.04
 echo     ubuntu.16.10-x64: Builds overlay for Ubuntu 16.10
 echo     win-x64: Builds overlay for portable Windows
 echo     win7-x64: Builds overlay for Windows 7
-echo ziptests: zips CoreCLR tests and Core_Root for a Helix run
 echo crossgen: Precompiles the framework managed assemblies
 echo targetsNonWindows:
 echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
