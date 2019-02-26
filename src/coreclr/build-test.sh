@@ -280,11 +280,6 @@ build_Tests()
     fi
 
     generate_layout
-
-    if [ $__ZipTests -ne 0 ]; then
-        echo "${__MsgPrefix}ZIP tests packages..."
-        build_MSBuild_projects "Helix_Prep" "$__ProjectDir/tests/helixprep.proj" "Prep test binaries for Helix publishing" " "
-    fi
 }
 
 build_MSBuild_projects()
@@ -495,7 +490,6 @@ usage()
     echo "generatetesthostonly - only pull down dependencies and build coreroot and the CoreFX testhost"
     echo "skiprestorepackages - skip package restore"
     echo "runtests - run tests after building them"
-    echo "ziptests - zips CoreCLR tests & Core_Root for a Helix run"
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
     echo "msbuildonunsupportedplatform - build managed binaries even if distro is not officially supported."
     echo "priority1 - include priority=1 tests in the build"
@@ -615,7 +609,6 @@ __DistroRid=""
 __cmakeargs=""
 __PortableLinux=0
 __msbuildonunsupportedplatform=0
-__ZipTests=0
 __NativeTestIntermediatesDir=
 __RunTests=0
 __RebuildTests=0
@@ -754,10 +747,6 @@ while :; do
         skipmanaged|-skipmanaged)
             __SkipManaged=1
             __BuildTestWrappers=0
-            ;;
-
-        ziptests)
-            __ZipTests=1
             ;;
 
         buildtestwrappersonly)

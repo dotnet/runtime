@@ -42,20 +42,6 @@ class AppDomain;
 class Assembly;
 
 
-class CorExecutionManager
-    : public ICLRExecutionManager
-{
-public:
-    CorExecutionManager();
-
-    STDMETHODIMP STDMETHODCALLTYPE Pause(DWORD dwAppDomainId, DWORD dwFlags);
-    STDMETHODIMP STDMETHODCALLTYPE Resume(DWORD dwAppDomainId);
-
-private:
-    DWORD m_dwFlags; //flags passed to the last Pause call.
-    INT64 m_pauseStartTime;
-};
-
 class CorRuntimeHostBase
 {
 protected:
@@ -235,7 +221,6 @@ class CorHost2 :
     , public IPrivateManagedExceptionReporting /* This interface is for internal Watson testing only*/
 #endif // FEATURE_PAL    
     , public ICLRRuntimeHost4
-    , public CorExecutionManager
 {
     friend struct _DacGlobals;
 

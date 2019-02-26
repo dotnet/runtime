@@ -137,7 +137,7 @@ static void ConvertConfigPropertiesToUnicode(
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 // Reference to the global holding the path to the JIT
-extern "C" LPCWSTR g_CLRJITPath;
+extern LPCWSTR g_CLRJITPath;
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 #ifdef FEATURE_GDBJIT
