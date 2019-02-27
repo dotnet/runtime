@@ -2242,8 +2242,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
     }
     CONTRACTL_END;
 
-    _ASSERTE ((requester & TAR_Thread) == TAR_Thread);
-
     AbortRequestLockHolder lh(this);
 
     if (fTentative)
