@@ -16,6 +16,13 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This test has a secondary thread with an infinite loop -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+
+    <!--
+      Test is blocking official build.
+      Related failures: #18907, #19340, #22441, #22729.
+      Issue tracking to re-enable: #22898.
+    -->
+    <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
