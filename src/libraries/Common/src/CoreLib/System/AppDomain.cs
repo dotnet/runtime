@@ -16,6 +16,9 @@ using System.Threading;
 
 namespace System
 {
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
+#endif
     public sealed partial class AppDomain : MarshalByRefObject
     {
         private static readonly AppDomain s_domain = new AppDomain();
@@ -85,7 +88,7 @@ namespace System
             }
             if (assemblyName.Length == 0 || assemblyName[0] == '\0')
             {
-                throw new ArgumentException(SR.ZeroLengthString);
+                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(assemblyName));
             }
 
             return assemblyName;
@@ -120,7 +123,7 @@ namespace System
             MethodInfo entry = assembly.EntryPoint;
             if (entry == null)
             {
-                throw new MissingMethodException(SR.EntryPointNotFound + assembly.FullName);
+                throw new MissingMethodException(SR.Arg_EntryPointNotFoundException);
             }
 
             object result = entry.Invoke(
@@ -165,7 +168,7 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(domain));
             }
-            throw new CannotUnloadAppDomainException(SR.NotSupported_Platform);
+            throw new CannotUnloadAppDomainException(SR.Arg_PlatformNotSupported);
         }
 
         public Assembly Load(byte[] rawAssembly) => Assembly.Load(rawAssembly);

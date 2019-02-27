@@ -182,7 +182,6 @@ using System.Security.Permissions;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32;
-using Internal.Runtime.Augments;
 
 #if ES_BUILD_STANDALONE
 using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
@@ -2803,11 +2802,7 @@ namespace System.Diagnostics.Tracing
                     // 5 chunks, so only the largest manifests will hit the pause.
                     if ((envelope.ChunkNumber % 5) == 0)
                     {
-#if ES_BUILD_STANDALONE
                         Thread.Sleep(15);
-#else
-                        RuntimeThread.Sleep(15);
-#endif
                     }
                 }
             }
@@ -4685,7 +4680,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (!m_osThreadId.HasValue)
                 {
-                    m_osThreadId = (long)RuntimeThread.CurrentOSThreadId;
+                    m_osThreadId = (long)Thread.CurrentOSThreadId;
                 }
 
                 return m_osThreadId.Value;
