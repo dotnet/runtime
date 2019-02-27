@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Buffers
@@ -346,7 +345,7 @@ namespace System.Buffers
                 // Try to push on to the associated stack first.  If that fails,
                 // round-robin through the other stacks.
                 LockedStack[] stacks = _perCoreStacks;
-                int index = RuntimeThread.GetCurrentProcessorId() % stacks.Length;
+                int index = Thread.GetCurrentProcessorId() % stacks.Length;
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if (stacks[index].TryPush(array)) return;
@@ -362,7 +361,7 @@ namespace System.Buffers
                 // round-robin through the other stacks.
                 T[] arr;
                 LockedStack[] stacks = _perCoreStacks;
-                int index = RuntimeThread.GetCurrentProcessorId() % stacks.Length;
+                int index = Thread.GetCurrentProcessorId() % stacks.Length;
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if ((arr = stacks[index].TryPop()) != null) return arr;
