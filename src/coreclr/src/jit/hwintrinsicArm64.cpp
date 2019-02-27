@@ -312,6 +312,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Base_Vector128_AsUInt32:
         case NI_Base_Vector128_AsUInt64:
         {
+            if (!featureSIMD)
+            {
+                return nullptr;
+            }
+
             // We fold away the cast here, as it only exists to satisfy
             // the type system. It is safe to do this here since the retNode type
             // and the signature return type are both the same TYP_SIMD.
