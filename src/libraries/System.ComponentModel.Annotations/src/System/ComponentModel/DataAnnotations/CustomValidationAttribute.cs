@@ -243,7 +243,7 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             // Method must return a ValidationResult or derived class
-             if (!typeof(ValidationResult).IsAssignableFrom(methodInfo.ReturnType))
+            if (!typeof(ValidationResult).IsAssignableFrom(methodInfo.ReturnType))
             {
                 return SR.Format(SR.CustomValidationAttribute_Method_Must_Return_ValidationResult, Method, ValidatorType.Name);
             }
