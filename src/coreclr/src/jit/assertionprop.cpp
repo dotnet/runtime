@@ -4777,8 +4777,9 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* stmt, Ge
     //
     assert((relop->gtFlags & GTF_RELOP_JMP_USED) != 0);
 
-    ValueNum vnCns = relop->gtVNPair.GetConservative();
-    ValueNum vnLib = relop->gtVNPair.GetLiberal();
+    // We want to use the Normal ValueNumber when checking for constants.
+    ValueNum vnCns = vnStore->VNConservativeNormalValue(relop->gtVNPair);
+    ValueNum vnLib = vnStore->VNLiberalNormalValue(relop->gtVNPair);
     if (!vnStore->IsVNConstant(vnCns))
     {
         return nullptr;
