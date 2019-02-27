@@ -171,6 +171,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Resources;
 using System.Security;
@@ -185,7 +186,7 @@ using Internal.Runtime.Augments;
 
 #if ES_BUILD_STANDALONE
 using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
-using BitOps = Microsoft.Diagnostics.Tracing.Internal.BitOps;
+using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
 #else
 using System.Threading.Tasks;
 #endif
@@ -1580,7 +1581,7 @@ namespace System.Diagnostics.Tracing
             {
                 for (int i = 16; i != 80; i++)
                 {
-                    this.w[i] = BitOps.RotateLeft((this.w[i - 3] ^ this.w[i - 8] ^ this.w[i - 14] ^ this.w[i - 16]), 1);
+                    this.w[i] = BitOperations.RotateLeft((this.w[i - 3] ^ this.w[i - 8] ^ this.w[i - 14] ^ this.w[i - 16]), 1);
                 }
 
                 unchecked
@@ -1595,28 +1596,28 @@ namespace System.Diagnostics.Tracing
                     {
                         const uint k = 0x5A827999;
                         uint f = (b & c) | ((~b) & d);
-                        uint temp = BitOps.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOps.RotateLeft(b, 30); b = a; a = temp;
+                        uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
                     }
 
                     for (int i = 20; i != 40; i++)
                     {
                         uint f = b ^ c ^ d;
                         const uint k = 0x6ED9EBA1;
-                        uint temp = BitOps.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOps.RotateLeft(b, 30); b = a; a = temp;
+                        uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
                     }
 
                     for (int i = 40; i != 60; i++)
                     {
                         uint f = (b & c) | (b & d) | (c & d);
                         const uint k = 0x8F1BBCDC;
-                        uint temp = BitOps.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOps.RotateLeft(b, 30); b = a; a = temp;
+                        uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
                     }
 
                     for (int i = 60; i != 80; i++)
                     {
                         uint f = b ^ c ^ d;
                         const uint k = 0xCA62C1D6;
-                        uint temp = BitOps.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOps.RotateLeft(b, 30); b = a; a = temp;
+                        uint temp = BitOperations.RotateLeft(a, 5) + f + e + k + this.w[i]; e = d; d = c; c = BitOperations.RotateLeft(b, 30); b = a; a = temp;
                     }
 
                     this.w[80] += a;
