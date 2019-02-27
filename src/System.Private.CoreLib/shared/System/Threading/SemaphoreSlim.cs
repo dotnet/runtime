@@ -5,8 +5,6 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-using Thread = Internal.Runtime.Augments.RuntimeThread;
-
 namespace System.Threading
 {
     /// <summary>
