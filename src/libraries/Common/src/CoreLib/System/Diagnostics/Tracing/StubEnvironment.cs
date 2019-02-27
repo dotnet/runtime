@@ -54,7 +54,7 @@ namespace System.Diagnostics.Tracing.Internal
     }
 
 #if ES_BUILD_STANDALONE
-    internal static class BitOps
+    internal static class BitOperations
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint RotateLeft(uint value, int offset)
