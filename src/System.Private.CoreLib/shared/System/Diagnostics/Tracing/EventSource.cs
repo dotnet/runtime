@@ -185,7 +185,7 @@ using Microsoft.Win32;
 
 #if ES_BUILD_STANDALONE
 using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
-using BitOps = Microsoft.Diagnostics.Tracing.Internal.BitOps;
+using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
 #else
 using System.Threading.Tasks;
 #endif
