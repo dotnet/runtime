@@ -19,10 +19,6 @@ using System.Threading.Tasks;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
-#if CORERT
-using Thread = Internal.Runtime.Augments.RuntimeThread;
-#endif
-
 namespace System.Runtime.CompilerServices
 {
     /// <summary>

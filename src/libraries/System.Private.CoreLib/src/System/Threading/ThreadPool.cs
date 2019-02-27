@@ -22,8 +22,6 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Internal.Runtime.CompilerServices;
 
-using Thread = Internal.Runtime.Augments.RuntimeThread;
-
 namespace System.Threading
 {
     internal static class ThreadPoolGlobals
