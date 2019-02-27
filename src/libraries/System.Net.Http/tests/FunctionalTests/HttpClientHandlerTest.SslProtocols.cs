@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
@@ -91,7 +92,6 @@ namespace System.Net.Http.Functional.Tests
 #pragma warning disable 0618
             if (PlatformDetection.SupportsSsl3)
             {
-                // TODO #28790: SSLv3 is supported on RHEL 6, but this test case still fails.
                 yield return new object[] { SslProtocols.Ssl3, true };
             }
             if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater)
@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
 #endif
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
@@ -118,11 +118,13 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseSocketsHttpHandler)
+#pragma warning disable 0618
+            if (IsCurlHandler && PlatformDetection.IsRedHatFamily6 && acceptedProtocol == SslProtocols.Ssl3)
             {
-                // TODO #26186: SocketsHttpHandler is failing on some OSes.
-                return;
+                // Issue: #28790: SSLv3 is supported on RHEL 6, but it fails with curl.
+                throw new SkipTestException("CurlHandler (libCurl) has problems with SSL3 on RH6");
             }
+#pragma warning restore 0618
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
