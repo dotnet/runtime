@@ -15,9 +15,9 @@ unprocessedBuildArgs=
 # Parse arguments
 # Assume the default '-p' argument if the only arguments specified are specified after double dash.
 # Only position parameters can be specified after the double dash.
-if [ $# == 0 ] || [ $1 == '--' ]; then
+if [ $# == 0 ] || [ "$1" == "--" ]; then
     buildArgs="./build.proj /p:RestoreDuringBuild=true /t:Sync"
-    if [ $1 == '--' ]; then
+    if [ "$1" == "--" ]; then
         shift
     fi
 fi
