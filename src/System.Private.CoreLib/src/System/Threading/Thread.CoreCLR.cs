@@ -29,11 +29,14 @@ namespace System.Threading
             _executionContext = ec;
         }
 
-        internal static ContextCallback _ccb = new ContextCallback(ThreadStart_Context);
+        internal static readonly ContextCallback s_threadStartContextCallback = new ContextCallback(ThreadStart_Context);
 
         private static void ThreadStart_Context(object state)
         {
             ThreadHelper t = (ThreadHelper)state;
+
+            t.InitializeCulture();
+
             if (t._start is ThreadStart)
             {
                 ((ThreadStart)t._start)();
@@ -63,16 +66,15 @@ namespace System.Threading
         internal void ThreadStart(object obj)
         {
             _startArg = obj;
-
-            InitializeCulture();
-
+            
             ExecutionContext context = _executionContext;
             if (context != null)
             {
-                ExecutionContext.RunInternal(context, _ccb, (object)this);
+                ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
             }
             else
             {
+                InitializeCulture();
                 ((ParameterizedThreadStart)_start)(obj);
             }
         }
@@ -80,15 +82,14 @@ namespace System.Threading
         // call back helper
         internal void ThreadStart()
         {
-            InitializeCulture();
-
             ExecutionContext context = _executionContext;
             if (context != null)
             {
-                ExecutionContext.RunInternal(context, _ccb, (object)this);
+                ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
             }
             else
             {
+                InitializeCulture();
                 ((ThreadStart)_start)();
             }
         }
@@ -111,7 +112,7 @@ namespace System.Threading
         ** ThreadBaseObject to maintain alignment between the two classes.
         ** DON'T CHANGE THESE UNLESS YOU MODIFY ThreadBaseObject in vm\object.h
         =========================================================================*/
-        private ExecutionContext m_ExecutionContext;    // this call context follows the logical thread
+        internal ExecutionContext m_ExecutionContext;    // this call context follows the logical thread
         private SynchronizationContext m_SynchronizationContext;    // On CoreCLR, this is maintained separately from ExecutionContext
 
         private string m_Name;
@@ -254,11 +255,7 @@ namespace System.Threading
             }
         }
 
-        public ExecutionContext ExecutionContext
-        {
-            get { return m_ExecutionContext; }
-            internal set { m_ExecutionContext = value; }
-        }
+        public ExecutionContext ExecutionContext => ExecutionContext.Capture();
 
         internal SynchronizationContext SynchronizationContext
         {
