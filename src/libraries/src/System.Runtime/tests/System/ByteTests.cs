@@ -155,6 +155,10 @@ namespace System.Tests
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
             byte b = 123;
+            Assert.Throws<FormatException>(() => b.ToString("r")); // Invalid format
+            Assert.Throws<FormatException>(() => b.ToString("r", null)); // Invalid format
+            Assert.Throws<FormatException>(() => b.ToString("R")); // Invalid format
+            Assert.Throws<FormatException>(() => b.ToString("R", null)); // Invalid format
             Assert.Throws<FormatException>(() => b.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => b.ToString("Y", null)); // Invalid format
         }

@@ -160,6 +160,10 @@ namespace System.Tests
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
             uint i = 123;
+            Assert.Throws<FormatException>(() => i.ToString("r")); // Invalid format
+            Assert.Throws<FormatException>(() => i.ToString("r", null)); // Invalid format
+            Assert.Throws<FormatException>(() => i.ToString("R")); // Invalid format
+            Assert.Throws<FormatException>(() => i.ToString("R", null)); // Invalid format
             Assert.Throws<FormatException>(() => i.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => i.ToString("Y", null)); // Invalid format
         }
