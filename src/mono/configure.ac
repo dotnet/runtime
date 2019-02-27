@@ -402,7 +402,7 @@ case "$host" in
 		;;
 	*-*-fuchsia*)
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
-		AC_DEFINE(TARGET_FUCHSIA,1,[Targeting the Fuchsia platform])
+		AC_DEFINE(HOST_FUCHSIA,1,[Targeting the Fuchsia platform])
 		fuchsia=true
 		with_tls=pthread
 		with_sigaltstack=yes
@@ -4409,7 +4409,7 @@ if test "x$host" != "x$target"; then
 	x86_64-google-fuchsia)
 		TARGET=AMD64
 		target_win32=nop
-		AC_DEFINE(TARGET_FUCHSIA,1,[Targeting the Fuchsia platform])
+		AC_DEFINE(HOST_FUCHSIA,1,[Targeting the Fuchsia platform])
 		;;
 	*)
 		AC_MSG_ERROR([Cross compiling is not supported for target $target])

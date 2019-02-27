@@ -15,8 +15,8 @@
 #define _DARWIN_C_SOURCE 1
 #endif
 
-#if defined (TARGET_FUCHSIA)
-
+#if defined (HOST_FUCHSIA)
+#include <zircon/syscalls.h>
 #endif
 
 #if defined (__HAIKU__)
@@ -135,7 +135,7 @@ mono_threads_platform_exit (gsize exit_code)
 	pthread_exit ((gpointer) exit_code);
 }
 
-#if TARGET_FUCHSIA
+#if HOST_FUCHSIA
 int
 mono_thread_info_get_system_max_stack_size (void)
 {
