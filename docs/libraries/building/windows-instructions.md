@@ -103,7 +103,7 @@ Visual Studio Solution (.sln) files exist for related groups of libraries. These
 
 Note that when calling the script `build.cmd` attempts to build both the native and managed code.
 
-For more information about the different options when building, run `build.cmd -?` and look at examples in the [developer-guide](../project-docs/developer-guide.md).
+For more information about the different options when building, run `build.cmd -help` and look at examples in the [developer-guide](../project-docs/developer-guide.md).
 
 ### Running tests from the command line
 

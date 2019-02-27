@@ -12,16 +12,15 @@ namespace System.Net.Http.Functional.Tests
     public abstract class HttpClientHandlerTest_Http2 : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
+        protected override bool UseHttp2LoopbackServer => true;
+
         public static bool SupportsAlpn => PlatformDetection.SupportsAlpn;
 
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_ClientPreface_Sent()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -34,11 +33,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_InitialSettings_SentAndAcked()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -69,11 +65,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_DataSentBeforeServerPreface_ProtocolError()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -90,11 +83,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_NoResponseBody_Success()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -113,11 +103,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_ZeroLengthResponseBody_Success()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -140,11 +127,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_ServerSendsValidSettingsValues_Success()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -184,11 +168,8 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -209,11 +190,8 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -231,11 +209,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_StreamResetByServerAfterHeadersSent_RequestFails()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -256,11 +231,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_StreamResetByServerAfterPartialBodySent_RequestFails()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -286,11 +258,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task DataFrame_NoStream_ConnectionError()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -303,6 +272,9 @@ namespace System.Net.Http.Functional.Tests
 
                 // As this is a connection level error, the client should see the request fail.
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
             }
         }
 
@@ -318,11 +290,8 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -335,6 +304,9 @@ namespace System.Net.Http.Functional.Tests
 
                 // As this is a connection level error, the client should see the request fail.
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
             }
         }
 
@@ -350,11 +322,8 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -366,6 +335,193 @@ namespace System.Net.Http.Functional.Tests
 
                 // As this is a connection level error, the client should see the request fail.
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        private static Frame MakeSimpleHeadersFrame(int streamId, bool endHeaders = false, bool endStream = false) =>
+            new HeadersFrame(new byte[] { 0x88 },       // :status: 200 
+                (endHeaders ? FrameFlags.EndHeaders : FrameFlags.None) | (endStream ? FrameFlags.EndStream : FrameFlags.None),
+                0, 0, 0, streamId);
+
+        private static Frame MakeSimpleContinuationFrame(int streamId, bool endHeaders = false) =>
+            new ContinuationFrame(new byte[] { 0x88 },       // :status: 200 
+                (endHeaders ? FrameFlags.EndHeaders : FrameFlags.None),
+                0, 0, 0, streamId);
+
+        private static Frame MakeSimpleDataFrame(int streamId, bool endStream = false) =>
+            new DataFrame(new byte[] { 0x00 },
+                (endStream ? FrameFlags.EndStream : FrameFlags.None),
+                0, streamId);
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ResponseStreamFrames_ContinuationBeforeHeaders_ConnectionError()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = CreateHttpClient())
+            {
+                Task sendTask = client.GetAsync(server.Address);
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.WriteFrameAsync(MakeSimpleContinuationFrame(streamId));
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ResponseStreamFrames_DataBeforeHeaders_ConnectionError()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = CreateHttpClient())
+            {
+                Task sendTask = client.GetAsync(server.Address);
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.WriteFrameAsync(MakeSimpleDataFrame(streamId));
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ResponseStreamFrames_HeadersAfterHeadersWithoutEndHeaders_ConnectionError()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = CreateHttpClient())
+            {
+                Task sendTask = client.GetAsync(server.Address);
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ResponseStreamFrames_HeadersAfterHeadersAndContinuationWithoutEndHeaders_ConnectionError()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = CreateHttpClient())
+            {
+                Task sendTask = client.GetAsync(server.Address);
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+                await server.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: false));
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ResponseStreamFrames_HeadersAfterHeadersWithEndHeaders_ConnectionError()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = CreateHttpClient())
+            {
+                Task sendTask = client.GetAsync(server.Address);
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: true));
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ResponseStreamFrames_HeadersAfterHeadersAndContinuationWithEndHeaders_ConnectionError()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = CreateHttpClient())
+            {
+                Task sendTask = client.GetAsync(server.Address);
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+                await server.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: true));
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ResponseStreamFrames_DataAfterHeadersWithoutEndHeaders_ConnectionError()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = CreateHttpClient())
+            {
+                Task sendTask = client.GetAsync(server.Address);
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+                await server.WriteFrameAsync(MakeSimpleDataFrame(streamId));
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ResponseStreamFrames_DataAfterHeadersAndContinuationWithoutEndHeaders_ConnectionError()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = CreateHttpClient())
+            {
+                Task sendTask = client.GetAsync(server.Address);
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.WriteFrameAsync(MakeSimpleHeadersFrame(streamId, endHeaders: false));
+                await server.WriteFrameAsync(MakeSimpleContinuationFrame(streamId, endHeaders: false));
+                await server.WriteFrameAsync(MakeSimpleDataFrame(streamId));
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
             }
         }
 
@@ -375,11 +531,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task GoAwayFrame_NonzeroStream_ConnectionError()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -392,17 +545,17 @@ namespace System.Net.Http.Functional.Tests
 
                 // As this is a connection level error, the client should see the request fail.
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // The client should close the connection as this is a fatal connection level error.
+                Assert.Null(await server.ReadFrameAsync(TimeSpan.FromSeconds(30)));
             }
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task DataFrame_TooLong_ConnectionError()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -421,11 +574,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task CompletedResponse_FrameReceived_ConnectionError()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -456,11 +606,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task EmptyResponse_FrameReceived_ConnectionError()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -488,11 +635,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task ResetResponseStream_FrameReceived_ConnectionError()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -538,11 +682,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task GoAwayFrame_NoPendingStreams_ConnectionClosed()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 int streamId = await EstablishConnectionAndProcessOneRequestAsync(client, server);
 
@@ -561,11 +702,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task GoAwayFrame_AllPendingStreamsValid_RequestsSucceedAndConnectionClosed()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 await EstablishConnectionAndProcessOneRequestAsync(client, server);
 
@@ -656,14 +794,10 @@ namespace System.Net.Http.Functional.Tests
             const int InitialWindowSize = 65535;
             const int ContentSize = 100_000;
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
-
             var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
 
@@ -764,14 +898,10 @@ namespace System.Net.Http.Functional.Tests
             const int DefaultInitialWindowSize = 65535;
             const int ContentSize = 100_000;
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
-
             var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
 
@@ -889,11 +1019,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_MaxConcurrentStreams_LimitEnforced()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (var client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 

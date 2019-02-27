@@ -6,14 +6,20 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-#if BUILDING_INBOX_LIBRARY
-using Internal.Runtime.CompilerServices;
-#else
 using System.Runtime.CompilerServices;
-#endif
 
 namespace System.Text.Json
 {
+    /// <summary>
+    ///   Provides a mechanism for examining the structural content of a JSON value without
+    ///   automatically instantiating data values.
+    /// </summary>
+    /// <remarks>
+    ///   This class utilizes resources from pooled memory to minimize the garbage collector (GC)
+    ///   impact in high-usage scenarios. Failure to properly Dispose this object will result in
+    ///   the memory not being returned to the pool, which will cause an increase in GC impact across
+    ///   various parts of the framework.
+    /// </remarks>
     public sealed partial class JsonDocument : IDisposable
     {
         private ReadOnlyMemory<byte> _utf8Json;
@@ -21,6 +27,9 @@ namespace System.Text.Json
         private byte[] _extraRentedBytes;
         private (int, string) _lastIndexAndString = (-1, null);
 
+        /// <summary>
+        ///   The <see cref="JsonElement"/> representing the value of the document.
+        /// </summary>
         public JsonElement RootElement => new JsonElement(this, 0);
 
         private JsonDocument(ReadOnlyMemory<byte> utf8Json, MetadataDb parsedData, byte[] extraRentedBytes)
@@ -32,6 +41,7 @@ namespace System.Text.Json
             _extraRentedBytes = extraRentedBytes;
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
             if (_utf8Json.IsEmpty)
@@ -53,6 +63,9 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal JsonTokenType GetJsonTokenType(int index)
         {
             CheckNotDisposed();
@@ -60,6 +73,9 @@ namespace System.Text.Json
             return _parsedData.GetJsonTokenType(index);
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal int GetArrayLength(int index)
         {
             CheckNotDisposed();
@@ -71,6 +87,9 @@ namespace System.Text.Json
             return row.SizeOrLength;
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal JsonElement GetArrayIndexElement(int currentIndex, int arrayIndex)
         {
             CheckNotDisposed();
@@ -119,6 +138,9 @@ namespace System.Text.Json
             throw new IndexOutOfRangeException();
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal int GetEndIndex(int index, bool includeEndElement)
         {
             CheckNotDisposed();
@@ -197,6 +219,9 @@ namespace System.Text.Json
             return _utf8Json.Slice(start, end - start);
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal string GetString(int index, JsonTokenType expectedType)
         {
             CheckNotDisposed();
@@ -236,12 +261,18 @@ namespace System.Text.Json
             return lastString;
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal string GetNameOfPropertyValue(int index)
         {
             // The property name is one row before the property value
             return GetString(index - DbRow.Size, JsonTokenType.PropertyName);
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal bool TryGetValue(int index, out int value)
         {
             CheckNotDisposed();
@@ -264,6 +295,9 @@ namespace System.Text.Json
             return false;
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal bool TryGetValue(int index, out uint value)
         {
             CheckNotDisposed();
@@ -286,6 +320,9 @@ namespace System.Text.Json
             return false;
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal bool TryGetValue(int index, out long value)
         {
             CheckNotDisposed();
@@ -308,6 +345,9 @@ namespace System.Text.Json
             return false;
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal bool TryGetValue(int index, out ulong value)
         {
             CheckNotDisposed();
@@ -330,6 +370,9 @@ namespace System.Text.Json
             return false;
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal bool TryGetValue(int index, out double value)
         {
             CheckNotDisposed();
@@ -354,6 +397,9 @@ namespace System.Text.Json
             return false;
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal bool TryGetValue(int index, out float value)
         {
             CheckNotDisposed();
@@ -378,6 +424,9 @@ namespace System.Text.Json
             return false;
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal bool TryGetValue(int index, out decimal value)
         {
             CheckNotDisposed();
@@ -402,12 +451,18 @@ namespace System.Text.Json
             return false;
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal string GetRawValueAsString(int index)
         {
             ReadOnlyMemory<byte> segment = GetRawValue(index, includeQuotes: true);
             return JsonReaderHelper.TranscodeHelper(segment.Span);
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal string GetPropertyRawValueAsString(int valueIndex)
         {
             ReadOnlyMemory<byte> segment = GetPropertyRawValue(valueIndex);

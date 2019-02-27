@@ -10,7 +10,7 @@ namespace System.Linq.Parallel.Tests
     {
         // For outerloop, we use a large count that makes it more likely we'll fill buffers and saturate
         // producers/consumers, while at the same time being cognizant of total test execution time.
-        public static readonly int OuterLoopCount = 16 * 1024 * Environment.ProcessorCount;
+        public static readonly int OuterLoopCount = 4 * 1024 * Environment.ProcessorCount;
 
         private static readonly IEnumerable<int> OuterLoopCounts = new[] { OuterLoopCount };
 

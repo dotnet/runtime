@@ -37,6 +37,10 @@ namespace System.Reflection
         public virtual Type[] GetTypes()
         {
             Module[] m = GetModules(false);
+            if (m.Length == 1)
+            {
+                return m[0].GetTypes();
+            }
 
             int finalLength = 0;
             Type[][] moduleTypes = new Type[m.Length][];

@@ -7709,6 +7709,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public static bool TryCreate(uint value, out Rune result) { throw null; }
         public bool TryEncode(Span<char> destination, out int charsWritten) { throw null; }
+        public bool TryEncodeToUtf8Bytes(Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryGetRuneAt(string input, int index, out Rune value) { throw null; }
         public static double GetNumericValue(Rune value) { throw null; }
         public static System.Globalization.UnicodeCategory GetUnicodeCategory(Rune value) { throw null; }

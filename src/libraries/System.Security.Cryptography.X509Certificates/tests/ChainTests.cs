@@ -559,6 +559,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     for (int j = 0; j < onlineChain.ChainElements.Count; j++)
                     {
+                        X509ChainStatusFlags chainFlags = onlineChain.ChainStatus.Aggregate(
+                            X509ChainStatusFlags.NoError,
+                            (cur, status) => cur | status.Status);
+
+                        const X509ChainStatusFlags WontCheck =
+                            X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.UntrustedRoot;
+
+                        if (chainFlags == WontCheck)
+                        {
+                            Console.WriteLine($"{nameof(VerifyWithRevocation)}: online chain failed with {{{chainFlags}}}, skipping");
+                            return;
+                        }
+
                         X509ChainElement chainElement = onlineChain.ChainElements[j];
 
                         // Since `NoError` gets mapped as the empty array, just look for non-empty arrays

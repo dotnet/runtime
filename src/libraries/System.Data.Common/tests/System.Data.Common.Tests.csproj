@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{B473F77D-4168-4123-932A-E88020B768FA}</ProjectGuid>
     <NoWarn>0168,0169,0414,0219,0649</NoWarn>
@@ -19,6 +19,7 @@
     <Compile Include="System\Data\Common\DbDataAdapterTest.cs" />
     <Compile Include="System\Data\Common\DbDataReaderMock.cs" />
     <Compile Include="System\Data\Common\DbDataReaderTest.cs" />
+    <Compile Include="System\Data\Common\DbDataReaderTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\Data\Common\DbTransactionTest.cs" />
     <Compile Include="System\Data\Common\RowUpdatedEventArgsTest.cs" />
     <Compile Include="System\Data\Common\RowUpdatingEventArgsTest.cs" />
