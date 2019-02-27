@@ -42,7 +42,7 @@ namespace System.Threading
         // waitIndex).
         internal const int WaitAbandoned = 0x80;
 
-        internal const int WaitTimeout = 0x102;
+        public const int WaitTimeout = 0x102;
 
         protected WaitHandle()
         {
