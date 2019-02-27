@@ -433,7 +433,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (input[current] == closeChar)
+                if (current < input.Length &&  input[current] == closeChar)
                 {
                     length = current - startIndex + 1;
                     return HttpParseResult.Parsed;
