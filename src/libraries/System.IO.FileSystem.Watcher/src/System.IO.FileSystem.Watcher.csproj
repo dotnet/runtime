@@ -60,9 +60,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CreateFile2.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs">
-      <Link>Common\Interop\Windows\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs">
       <Link>Common\Interop\Windows\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs</Link>
     </Compile>

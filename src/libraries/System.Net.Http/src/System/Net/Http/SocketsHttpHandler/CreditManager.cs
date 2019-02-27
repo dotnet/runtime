@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal class CreditManager : IDisposable
+    internal sealed class CreditManager : IDisposable
     {
         private struct Waiter
         {
@@ -17,21 +17,29 @@ namespace System.Net.Http
         }
 
         private int _current;
-        private object _syncObject;
         private Queue<Waiter> _waiters;
         private bool _disposed;
 
         public CreditManager(int initialCredit)
         {
             _current = initialCredit;
-            _syncObject = new object();
             _waiters = null;
             _disposed = false;
         }
 
+        private object SyncObject
+        {
+            get
+            {
+                // Generally locking on "this" is considered poor form, but this type is internal,
+                // and it's unnecessary overhead to allocate another object just for this purpose.
+                return this;
+            }
+        }
+
         public ValueTask<int> RequestCreditAsync(int amount)
         {
-            lock (_syncObject)
+            lock (SyncObject)
             {
                 if (_disposed)
                 {
@@ -65,7 +73,7 @@ namespace System.Net.Http
             // Note credit can be adjusted *downward* as well.
             // This can cause the current credit to become negative.
 
-            lock (_syncObject)
+            lock (SyncObject)
             {
                 if (_disposed)
                 {
@@ -93,7 +101,7 @@ namespace System.Net.Http
 
         public void Dispose()
         {
-            lock (_syncObject)
+            lock (SyncObject)
             {
                 if (_disposed)
                 {

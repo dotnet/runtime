@@ -11,6 +11,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         netfx461,
         netfx471,
         netfx472,
+        netfx472_3260,
         netcoreapp20,
         netcoreapp21,
         netcoreapp30

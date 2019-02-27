@@ -140,6 +140,22 @@ namespace Internal.Cryptography.Pal
             return new ExportProvider(certificates);
         }
 
+        internal static CollectionBackedStoreProvider GetMachineRoot()
+        {
+            return (CollectionBackedStoreProvider)FromSystemStore(
+                X509Store.RootStoreName,
+                StoreLocation.LocalMachine,
+                OpenFlags.ReadOnly);
+        }
+
+        internal static CollectionBackedStoreProvider GetMachineIntermediate()
+        {
+            return (CollectionBackedStoreProvider)FromSystemStore(
+                X509Store.IntermediateCAStoreName,
+                StoreLocation.LocalMachine,
+                OpenFlags.ReadOnly);
+        }
+
         public static IStorePal FromSystemStore(string storeName, StoreLocation storeLocation, OpenFlags openFlags)
         {
             if (storeLocation == StoreLocation.CurrentUser)

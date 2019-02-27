@@ -18,6 +18,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 case TargetFrameworkMoniker.netfx461:
                 case TargetFrameworkMoniker.netfx471:
                 case TargetFrameworkMoniker.netfx472:
+                case TargetFrameworkMoniker.netfx472_3260:
                     return true;
             }
 
@@ -26,16 +27,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         public static int GetPlatformIndex(this TypeSerializableValue[] blobs)
         {
-            bool IsNetfx472PatchedOrNewer()
+            bool IsNetFxPatchedVersion(int build)
             {
-                if (!PlatformDetection.IsNetfx472OrNewer)
-                    return false;
-
-                // .NET Framework 4.7.3062.0 is min patched.
                 string versionRaw = RuntimeInformation.FrameworkDescription.Replace(".NET Framework", "").Trim();
                 if (Version.TryParse(versionRaw, out Version version))
                 {
-                    return version.Minor >= 7 && version.Build >= 3062;
+                    return version.Build >= build;
                 }
 
                 return false;
@@ -47,8 +44,17 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // .NET Framework
             if (PlatformDetection.IsFullFramework)
             {
+                // Check if a specialized blob for >=netfx472 build 3260 is present and return if found.
+                if (PlatformDetection.IsNetfx472OrNewer && IsNetFxPatchedVersion(3260))
+                {
+                    index = blobList.FindIndex(b => b.Platform == TargetFrameworkMoniker.netfx472_3260);
+
+                    if (index >= 0)
+                        return index;
+                }
+
                 // Check if a specialized blob for >=netfx472 is present and return if found.
-                if (IsNetfx472PatchedOrNewer())
+                if (PlatformDetection.IsNetfx472OrNewer)
                 {
                     index = blobList.FindIndex(b => b.Platform == TargetFrameworkMoniker.netfx472);
 

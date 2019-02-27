@@ -58,23 +58,14 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An item with the same key has already been added. Key: {0}</value>
-  </data>
   <data name="Argument_AddingDuplicate_OldAndNewKeys " xml:space="preserve">
     <value>Item has already been added. Key in dictionary: '{0}'  Key being added: '{1}'</value>
-  </data>
-  <data name="Argument_ImplementIComparable" xml:space="preserve">
-    <value>At least one object must implement IComparable.</value>
   </data>
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
-  </data>
-  <data name="Arg_HTCapacityOverflow" xml:space="preserve">
-    <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
   <data name="Arg_RemoveArgNotFound" xml:space="preserve">
     <value>Cannot remove the specified item because it was not found in the specified Collection.</value>

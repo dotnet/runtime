@@ -479,6 +479,16 @@ int32_t local_SSL_is_init_finished(const SSL* ssl)
     return SSL_state(ssl) == SSL_ST_OK;
 }
 
+X509Stack* local_X509_STORE_CTX_get0_chain(X509_STORE_CTX* ctx)
+{
+    return ctx ? ctx->chain : NULL;
+}
+
+X509_STORE* local_X509_STORE_CTX_get0_store(X509_STORE_CTX* ctx)
+{
+    return ctx ? ctx->ctx: NULL;
+}
+
 X509Stack* local_X509_STORE_CTX_get0_untrusted(X509_STORE_CTX* ctx)
 {
     return ctx ? ctx->untrusted : NULL;
@@ -487,6 +497,11 @@ X509Stack* local_X509_STORE_CTX_get0_untrusted(X509_STORE_CTX* ctx)
 X509* local_X509_STORE_CTX_get0_cert(X509_STORE_CTX* ctx)
 {
     return ctx ? ctx->cert : NULL;
+}
+
+X509_VERIFY_PARAM* local_X509_STORE_get0_param(X509_STORE* ctx)
+{
+    return ctx ? ctx->param: NULL;
 }
 
 int32_t local_X509_up_ref(X509* x509)

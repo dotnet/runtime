@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
@@ -10,6 +11,8 @@ namespace System.IO.Tests
 {
     public class Directory_Delete_str : FileSystemTest
     {
+        static bool IsBindMountSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !PlatformDetection.IsInContainer && !PlatformDetection.IsRedHatFamily6;
+
         #region Utilities
 
         public virtual void Delete(string path)
@@ -202,15 +205,12 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(testDir));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsBindMountSupported))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_NotFoundDirectory_ReadOnlyVolume()
         {
-            if (PlatformDetection.IsRedHatFamily6 || PlatformDetection.IsAlpine)
-                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/21920)]
-
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
             {
                 Assert.Throws<DirectoryNotFoundException>(() => Delete(Path.Combine(readOnlyDirectory, "DoesNotExist")));

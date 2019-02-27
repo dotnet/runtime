@@ -172,9 +172,9 @@ namespace System.Tests
         }
 
         [Fact]
-        public void Version_MatchesFixedVersion()
+        public void Version_Valid()
         {
-            Assert.Equal(new Version(4, 0, 30319, 42000), Environment.Version);
+            Assert.True(Environment.Version >= new Version(3, 0));
         }
 
         [Fact]

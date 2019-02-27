@@ -60,34 +60,27 @@ namespace System
         public static bool IsNetfx471OrNewer => false;
         public static bool IsNetfx472OrNewer => false;
 
-        public static bool IsDrawingSupported { get; } = GetGdiplusIsAvailable();
-        public static bool IsSoundPlaySupported { get; } = false;
+        public static bool SupportsSsl3 => (PlatformDetection.IsOSX || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion < new Version(1, 0, 2) && !PlatformDetection.IsDebian));
+
+        public static bool IsDrawingSupported { get; } =
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+#if netcoreapp30
+                ? NativeLibrary.TryLoad("libgdiplus.dylib", out _)
+                : NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
+#else
+                ? dlopen("libgdiplus.dylib", RTLD_LAZY) != IntPtr.Zero
+                : dlopen("libgdiplus.so", RTLD_LAZY) != IntPtr.Zero || dlopen("libgdiplus.so.0", RTLD_LAZY) != IntPtr.Zero;
+
+        public static bool IsInContainer => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/.dockerenv");
 
         [DllImport("libdl")]
         private static extern IntPtr dlopen(string libName, int flags);
-        public const int RTLD_NOW = 0x002;
+        private const int RTLD_LAZY = 0x001;
+#endif
 
-        private static bool GetGdiplusIsAvailable()
-        {
-            IntPtr nativeLib;
+        public static bool IsSoundPlaySupported { get; } = false;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                nativeLib = dlopen("libgdiplus.dylib", RTLD_NOW);
-            }
-            else
-            {
-                nativeLib = dlopen("libgdiplus.so", RTLD_NOW);
-                if (nativeLib == IntPtr.Zero)
-                {
-                    nativeLib = dlopen("libgdiplus.so.0", RTLD_NOW);
-                }
-            }
-
-            return nativeLib != IntPtr.Zero;
-        }
-
-        public static Version OSXVersion { get; } = ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion);
+        public static Version OSXVersion { get; } = ToVersion(PlatformApis.GetOSVersion());
 
         public static Version OpenSslVersion => !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetOpenSslVersion() : throw new PlatformNotSupportedException();
 
@@ -98,9 +91,9 @@ namespace System
                 return "OSX Version=" + s_osxProductVersion.ToString();
             }
 
-            DistroInfo v = GetDistroInfo();
+            var (name, version) = GetDistroInfo();
 
-            return "Distro=" + v.Id + " VersionId=" + v.VersionId;
+            return "Distro=" + name + " VersionId=" + version;
         }
 
         /// <summary>
@@ -168,11 +161,8 @@ namespace System
             return new Version(int.Parse(versionString), 0);
         }
 
-        private static DistroInfo GetDistroInfo() => new DistroInfo()
-        {
-            Id = Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystem,
-            VersionId = ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion)
-        };
+        private static (string name, Version version) GetDistroInfo() =>
+            (PlatformApis.GetOSName(), ToVersion(PlatformApis.GetOSVersion()));
 
         private static bool IsRedHatFamilyAndVersion(int major = -1, int minor = -1, int build = -1, int revision = -1)
         {
@@ -211,8 +201,8 @@ namespace System
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                DistroInfo v = GetDistroInfo();
-                if (distroPredicate(v.Id) && VersionEquivalentTo(major, minor, build, revision, v.VersionId))
+                var (name, version) = GetDistroInfo();
+                if (distroPredicate(name) && VersionEquivalentTo(major, minor, build, revision, version))
                 {
                     return true;
                 }
@@ -225,8 +215,8 @@ namespace System
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                DistroInfo v = GetDistroInfo();
-                if (distroPredicate(v.Id) && VersionEquivalentToOrHigher(major, minor, build, revision, v.VersionId))
+                var (name, version) = GetDistroInfo();
+                if (distroPredicate(name) && VersionEquivalentToOrHigher(major, minor, build, revision, version))
                 {
                     return true;
                 }
@@ -344,11 +334,5 @@ namespace System
         private static extern int GlobalizationNative_GetICUVersion();
 
         public static bool IsSuperUser => geteuid() == 0;
-
-        private struct DistroInfo
-        {
-            public string Id { get; set; }
-            public Version VersionId { get; set; }
-        }
     }
 }

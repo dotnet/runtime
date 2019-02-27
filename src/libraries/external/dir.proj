@@ -17,6 +17,7 @@
     <Project Include="harvestPackages/harvestPackages.depproj" />
     <Project Include="binplacePackages/binplacePackages.depproj" />
     <Project Include="docs/docs.depproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <Project Include="optimizationData/optimizationData.depproj" Condition="'$(EnablePartialNgenOptimization)' == 'true' AND '$(DotNetBuildFromSource)' != 'true'" />
     <Project Condition="'$(ILLinkTrimAssembly)' != 'false'" Include="ILLink/ILLink.depproj" />
   </ItemGroup>
 
