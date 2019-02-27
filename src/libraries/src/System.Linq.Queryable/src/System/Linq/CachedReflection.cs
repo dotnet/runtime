@@ -830,6 +830,13 @@ namespace System.Linq
              (s_Where_Index_TSource_2 = new Func<IQueryable<object>, Expression<Func<object, int, bool>>, IQueryable<object>>(Queryable.Where).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TSource);
 
+        private static MethodInfo s_Zip_TFirst_TSecond_2;
+
+        public static MethodInfo Zip_TFirst_TSecond_2(Type TFirst, Type TSecond) =>
+            (s_Zip_TFirst_TSecond_2 ??
+            (s_Zip_TFirst_TSecond_2 = new Func<IQueryable<object>, IEnumerable<object>, IQueryable<ValueTuple<object, object>>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition()))
+            .MakeGenericMethod(TFirst, TSecond);
+
         private static MethodInfo s_Zip_TFirst_TSecond_TResult_3;
 
         public static MethodInfo Zip_TFirst_TSecond_TResult_3(Type TFirst, Type TSecond, Type TResult) =>

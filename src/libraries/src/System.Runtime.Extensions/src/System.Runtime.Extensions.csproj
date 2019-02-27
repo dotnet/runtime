@@ -10,11 +10,8 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\AppDomain.cs" />
-    <Compile Include="System\AppDomainSetup.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
     <Compile Include="System\ApplicationId.cs" />
-    <Compile Include="System\CannotUnloadAppDomainException.cs" />
     <Compile Include="System\CodeDom\Compiler\IndentedTextWriter.cs" />
     <Compile Include="System\Context.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
@@ -36,18 +33,41 @@
     <Compile Include="System\Runtime\Versioning\ResourceScope.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelper.cs" />
     <Compile Include="System\StringNormalizationExtensions.cs" />
-    <Compile Include="System\Collections\ArrayList.cs" />
-    <Compile Include="System\Security\IPermission.cs" />
-    <Compile Include="System\Security\ISecurityEncodable.cs" />
-    <Compile Include="System\Security\IStackWalk.cs" />
-    <Compile Include="System\Security\SecurityElement.cs" />
     <Compile Include="System\Security\Permissions\CodeAccessSecurityAttribute.cs" />
-    <Compile Include="System\Security\Permissions\PermissionState.cs" />
     <Compile Include="System\Security\Permissions\SecurityAction.cs" />
     <Compile Include="System\Security\Permissions\SecurityAttribute.cs" />
     <Compile Include="System\Security\Permissions\SecurityPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\SecurityPermissionFlag.cs" />
-    <Compile Include="System\Security\PermissionSet.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\AppDomain.cs">
+      <Link>Common\CoreLib\System\AppDomain.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\AppDomainSetup.cs">
+      <Link>Common\CoreLib\System\AppDomainSetup.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\CannotUnloadAppDomainException.cs">
+      <Link>Common\CoreLib\System\CannotUnloadAppDomainException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Collections\ArrayList.cs">
+      <Link>Common\CoreLib\System\Collections\ArrayList.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\IPermission.cs">
+      <Link>Common\CoreLib\System\Security\IPermission.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\ISecurityEncodable.cs">
+      <Link>Common\CoreLib\System\Security\ISecurityEncodable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\IStackWalk.cs">
+      <Link>Common\CoreLib\System\Security\IStackWalk.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\SecurityElement.cs">
+      <Link>Common\CoreLib\System\Security\SecurityElement.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\Permissions\PermissionState.cs">
+      <Link>Common\CoreLib\System\Security\Permissions\PermissionState.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\PermissionSet.cs">
+      <Link>Common\CoreLib\System\Security\PermissionSet.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>

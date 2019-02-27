@@ -132,8 +132,37 @@ struct x509_st
 
 struct x509_store_ctx_st
 {
-    const void* _ignored0;
+    X509_STORE* ctx;
     int _ignored1;
     X509* cert;
     STACK_OF(X509*) untrusted;
+    const void* _ignored2;
+    const void* _ignored3;
+    const void* _ignored4;
+    // For comparison purposes to the 1.0.x headers:
+    // BEGIN FUNCTION POINTERS
+    const void* _ignored5;
+    const void* _ignored6;
+    const void* _ignored7;
+    const void* _ignored8;
+    const void* _ignored9;
+    const void* _ignored10;
+    const void* _ignored11;
+    const void* _ignored12;
+    const void* _ignored13;
+    const void* _ignored14;
+    const void* _ignored15;
+    const void* _ignored16;
+    // END FUNCTION POINTERS
+    int _ignored17;
+    int _ignored18;
+    STACK_OF(X509*) chain;
+};
+
+struct x509_store_st
+{
+    int _ignored0;
+    const void* _ignored1;
+    const void* _ignored2;
+    X509_VERIFY_PARAM* param;
 };

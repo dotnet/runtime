@@ -180,6 +180,7 @@ namespace System.Net.Sockets.Tests
             File.Delete(filename);
         }
 
+        [ActiveIssue(35493)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(SendFile_MemberData))]

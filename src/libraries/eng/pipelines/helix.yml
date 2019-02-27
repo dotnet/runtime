@@ -20,7 +20,7 @@ steps:
             /p:ArchGroup=${{ parameters.archGroup }}
             /p:ConfigurationGroup=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
-            /p:Outerloop=${{ parameters.outerloop }}
+            /p:OuterLoop=${{ parameters.outerloop }}
             /p:TargetGroup=${{ parameters.framework }}
             /p:HelixTargetQueues=${{ parameters.helixQueues }}
             /p:HelixBuild=$(Build.BuildNumber)

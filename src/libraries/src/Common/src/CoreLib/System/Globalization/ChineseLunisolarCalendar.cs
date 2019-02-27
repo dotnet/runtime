@@ -2,54 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 namespace System.Globalization
 {
-    /*
-    **  Calendar support range:
-    **      Calendar               Minimum             Maximum
-    **      ==========             ==========          ==========
-    **      Gregorian              1901/02/19          2101/01/28
-    **      ChineseLunisolar       1901/01/01          2100/12/29
-    */
+    /// <remarks>
+    /// Calendar support range:
+    ///     Calendar               Minimum             Maximum
+    ///     ==========             ==========          ==========
+    ///     Gregorian              1901/02/19          2101/01/28
+    ///     ChineseLunisolar       1901/01/01          2100/12/29
+    /// </remarks>
 
     public class ChineseLunisolarCalendar : EastAsianLunisolarCalendar
     {
-        //
-        // The era value for the current era.
-        //
-
         public const int ChineseEra = 1;
 
-        internal const int MIN_LUNISOLAR_YEAR = 1901;
-        internal const int MAX_LUNISOLAR_YEAR = 2100;
+        private const int MinLunisolarYear = 1901;
+        private const int MaxLunisolarYear = 2100;
 
-        internal const int MIN_GREGORIAN_YEAR = 1901;
-        internal const int MIN_GREGORIAN_MONTH = 2;
-        internal const int MIN_GREGORIAN_DAY = 19;
+        private static readonly DateTime s_minDate = new DateTime(1901, 2, 19);
+        private static readonly DateTime s_maxDate = new DateTime((new DateTime(2101, 1, 28, 23, 59, 59, 999)).Ticks + 9999);
 
-        internal const int MAX_GREGORIAN_YEAR = 2101;
-        internal const int MAX_GREGORIAN_MONTH = 1;
-        internal const int MAX_GREGORIAN_DAY = 28;
+        public override DateTime MinSupportedDateTime => s_minDate;
 
-        internal static DateTime minDate = new DateTime(MIN_GREGORIAN_YEAR, MIN_GREGORIAN_MONTH, MIN_GREGORIAN_DAY);
-        internal static DateTime maxDate = new DateTime((new DateTime(MAX_GREGORIAN_YEAR, MAX_GREGORIAN_MONTH, MAX_GREGORIAN_DAY, 23, 59, 59, 999)).Ticks + 9999);
-
-        public override DateTime MinSupportedDateTime
-        {
-            get
-            {
-                return (minDate);
-            }
-        }
-
-        public override DateTime MaxSupportedDateTime
-        {
-            get
-            {
-                return (maxDate);
-            }
-        }
+        public override DateTime MaxSupportedDateTime => s_maxDate;
 
         protected override int DaysInYearBeforeMinSupportedYear
         {
@@ -62,11 +37,11 @@ namespace System.Globalization
         }
 
         // Data for years 1901-1905 and 1907-2100 matches output of Calendrical Calculations [2] and published calendar tables [3].
-        // For 1906, month 4 of the Chinese year starts on 24 Apr 1906 and has 29 days.  This is historially accurate 
-        // but different to the values in [1] and output from [2].  This is due to a change in the astronomical methods used 
+        // For 1906, month 4 of the Chinese year starts on 24 Apr 1906 and has 29 days.  This is historially accurate
+        // but different to the values in [1] and output from [2].  This is due to a change in the astronomical methods used
         // by the Chinese to calculate the calendar from 1913 onwards (see warnings in [1]).
-        // [2] Reingold, Edward M, and Nachum Dershowitz. Calendrical Calculations: The Ultimate Edition. Cambridge [etc.: Cambridge University Press, 2018. Print. 
-        // [3] Wang, Jianmin. Xin Bian Wan Nian Li: (1840-2050) Chong Bian Ben. Beijing: Ke xue pu ji chu ban she, 1990. Print. 
+        // [2] Reingold, Edward M, and Nachum Dershowitz. Calendrical Calculations: The Ultimate Edition. Cambridge [etc.: Cambridge University Press, 2018. Print.
+        // [3] Wang, Jianmin. Xin Bian Wan Nian Li: (1840-2050) Chong Bian Ben. Beijing: Ke xue pu ji chu ban she, 1990. Print.
         private static readonly int[,] s_yinfo =
         {
 /*Y           LM  Lmon  Lday    DaysPerMonth               D1   D2   D3   D4   D5   D6   D7   D8   D9   D10  D11  D12  D13  #Days
@@ -272,58 +247,24 @@ namespace System.Globalization
 2100     */ { 00,   02,   09,   0b1101010100100000 }, /*   30   30   29   30   29   30   29   30   29   29   30   29        354
          */ };
 
-        internal override int MinCalendarYear
-        {
-            get
-            {
-                return (MIN_LUNISOLAR_YEAR);
-            }
-        }
+        internal override int MinCalendarYear => MinLunisolarYear;
 
-        internal override int MaxCalendarYear
-        {
-            get
-            {
-                return (MAX_LUNISOLAR_YEAR);
-            }
-        }
+        internal override int MaxCalendarYear => MaxLunisolarYear;
 
-        internal override DateTime MinDate
-        {
-            get
-            {
-                return (minDate);
-            }
-        }
+        internal override DateTime MinDate => s_minDate;
 
-        internal override DateTime MaxDate
-        {
-            get
-            {
-                return (maxDate);
-            }
-        }
+        internal override DateTime MaxDate => s_maxDate;
 
-        internal override EraInfo[] CalEraInfo
-        {
-            get
-            {
-                return (null);
-            }
-        }
+        internal override EraInfo[] CalEraInfo => null;
 
         internal override int GetYearInfo(int lunarYear, int index)
         {
-            if ((lunarYear < MIN_LUNISOLAR_YEAR) || (lunarYear > MAX_LUNISOLAR_YEAR))
+            if (lunarYear < MinLunisolarYear || lunarYear > MaxLunisolarYear)
             {
-                throw new ArgumentOutOfRangeException(
-                            "year",
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.ArgumentOutOfRange_Range, MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
+                throw new ArgumentOutOfRangeException("year", lunarYear, SR.Format(SR.ArgumentOutOfRange_Range, MinLunisolarYear, MaxLunisolarYear));
             }
 
-            return s_yinfo[lunarYear - MIN_LUNISOLAR_YEAR, index];
+            return s_yinfo[lunarYear - MinLunisolarYear, index];
         }
 
         internal override int GetYear(int year, DateTime time)
@@ -335,16 +276,11 @@ namespace System.Globalization
         {
             if (era != CurrentEra && era != ChineseEra)
             {
-                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
+                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
-
-            if (year < MIN_LUNISOLAR_YEAR || year > MAX_LUNISOLAR_YEAR)
+            if (year < MinLunisolarYear || year > MaxLunisolarYear)
             {
-                throw new ArgumentOutOfRangeException(
-                            nameof(year),
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.ArgumentOutOfRange_Range, MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
+                throw new ArgumentOutOfRangeException(nameof(year), year, SR.Format(SR.ArgumentOutOfRange_Range, MinLunisolarYear, MaxLunisolarYear));
             }
 
             return year;
@@ -357,32 +293,20 @@ namespace System.Globalization
         public override int GetEra(DateTime time)
         {
             CheckTicksRange(time.Ticks);
-            return (ChineseEra);
+            return ChineseEra;
         }
 
-        internal override CalendarId ID
-        {
-            get
-            {
-                return (CalendarId.CHINESELUNISOLAR);
-            }
-        }
+        internal override CalendarId ID => CalendarId.CHINESELUNISOLAR;
 
         internal override CalendarId BaseCalendarID
         {
             get
             {
                 //Use CAL_GREGORIAN just to get CurrentEraValue as 1 since we do not have data under the ID CAL_ChineseLunisolar yet
-                return (CalendarId.GREGORIAN);
+                return CalendarId.GREGORIAN;
             }
         }
 
-        public override int[] Eras
-        {
-            get
-            {
-                return (new int[] { ChineseEra });
-            }
-        }
+        public override int[] Eras => new int[] { ChineseEra };
     }
 }

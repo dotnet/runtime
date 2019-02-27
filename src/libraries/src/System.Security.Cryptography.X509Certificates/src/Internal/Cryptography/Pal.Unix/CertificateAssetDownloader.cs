@@ -73,6 +73,29 @@ namespace Internal.Cryptography.Pal
             return null;
         }
 
+        internal static SafeOcspResponseHandle DownloadOcspGet(string uri, ref TimeSpan remainingDownloadTime)
+        {
+            byte[] data = DownloadAsset(uri, ref remainingDownloadTime);
+
+            if (data == null)
+            {
+                return null;
+            }
+
+            // https://tools.ietf.org/html/rfc6960#appendix-A.2 says that the response is the DER-encoded
+            // response, so no rebuffering to interpret PEM is required.
+            SafeOcspResponseHandle resp = Interop.Crypto.DecodeOcspResponse(data);
+
+            if (resp.IsInvalid)
+            {
+                // We're not going to report this error to a user, so clear it
+                // (to avoid tainting future exceptions)
+                Interop.Crypto.ErrClearError();
+            }
+
+            return resp;
+        }
+
         private static byte[] DownloadAsset(string uri, ref TimeSpan remainingDownloadTime)
         {
             if (s_downloadBytes != null && remainingDownloadTime > TimeSpan.Zero)

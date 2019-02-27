@@ -14,7 +14,6 @@
     <Compile Include="TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
-    <Compile Include="Microsoft\Internal\AdaptationHelpers.cs" />
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.cs" />
     <Compile Include="Microsoft\Internal\Collections\CollectionServices.CollectionOfObject.cs" />

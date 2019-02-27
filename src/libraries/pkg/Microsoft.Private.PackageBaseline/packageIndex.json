@@ -222,12 +222,6 @@
         "10.0.4.0": "10.4.0"
       }
     },
-    "Microsoft.VisualBasic.Core": {
-      "InboxOn": {
-          "netcoreapp3.0": "10.0.4.0",
-          "uap10.0.16300": "10.0.4.0"
-      }
-    },
     "Microsoft.VisualBasic.Compatibility": {
       "InboxOn": {
         "net45": "10.0.0.0"
@@ -236,6 +230,12 @@
     "Microsoft.VisualBasic.Compatibility.Data": {
       "InboxOn": {
         "net45": "10.0.0.0"
+      }
+    },
+    "Microsoft.VisualBasic.Core": {
+      "InboxOn": {
+        "netcoreapp3.0": "10.0.4.0",
+        "uap10.0.16300": "10.0.4.0"
       }
     },
     "Microsoft.VisualC": {
@@ -497,6 +497,10 @@
         "4.5.0"
       ],
       "BaselineVersion": "4.5.0",
+      "InboxOn": {}
+    },
+    "runtime.native.System.IO.Ports": {
+      "BaselineVersion": "4.6.0",
       "InboxOn": {}
     },
     "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": {
@@ -3717,7 +3721,8 @@
       ],
       "BaselineVersion": "4.5.1",
       "InboxOn": {
-        "uap10.0.16300": "4.0.5.0"
+        "uap10.0.16300": "4.0.5.0",
+        "netcoreapp3.0": "4.0.5.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.3.0": "4.4.0",
@@ -4411,7 +4416,8 @@
         "4.0.1.0": "4.3.0",
         "4.0.2.0": "4.4.0",
         "4.0.3.0": "4.5.0",
-        "4.0.4.0": "4.6.0"
+        "4.0.4.0": "4.6.0",
+        "4.1.0.0": "4.6.0"
       }
     },
     "System.Security.Cryptography.Primitives": {
@@ -5869,7 +5875,8 @@
     }
   },
   "ModulesToPackages": {
-    "sni.dll": "runtime.native.System.Data.SqlClient.sni"
+    "sni.dll": "runtime.native.System.Data.SqlClient.sni",
+    "System.IO.Ports.Native": "runtime.native.System.IO.Ports"
   },
   "MetaPackages": {
     "NETStandard.Library": [
