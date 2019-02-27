@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Numerics;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -31,7 +32,7 @@ namespace System
             else
             {
                 Debug.Assert(mantissa != 0);
-                mantissaHighBitIdx = (uint)BitOps.Log2(mantissa);
+                mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
             }
 
             int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent));
@@ -61,7 +62,7 @@ namespace System
             else
             {
                 Debug.Assert(mantissa != 0);
-                mantissaHighBitIdx = (uint)BitOps.Log2(mantissa);
+                mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
             }
 
             int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent));
@@ -292,7 +293,7 @@ namespace System
                 // This is safe because (2^28 - 1) = 268435455 which is less than 429496729.
                 // This means that all values with a highest bit at index 27 are within range.
                 Debug.Assert(hiBlock != 0);
-                uint hiBlockLog2 = (uint)BitOps.Log2(hiBlock);
+                uint hiBlockLog2 = (uint)BitOperations.Log2(hiBlock);
                 Debug.Assert((hiBlockLog2 < 3) || (hiBlockLog2 > 27));
                 uint shift = (32 + 27 - hiBlockLog2) % 32;
 
