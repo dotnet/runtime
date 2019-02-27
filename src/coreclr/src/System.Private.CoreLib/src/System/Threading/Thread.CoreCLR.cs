@@ -254,10 +254,10 @@ namespace System.Threading
             }
         }
 
-        internal ExecutionContext ExecutionContext
+        public ExecutionContext ExecutionContext
         {
             get { return m_ExecutionContext; }
-            set { m_ExecutionContext = value; }
+            internal set { m_ExecutionContext = value; }
         }
 
         internal SynchronizationContext SynchronizationContext
