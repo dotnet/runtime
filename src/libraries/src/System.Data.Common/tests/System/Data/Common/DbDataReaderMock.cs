@@ -66,12 +66,12 @@ namespace System.Data.Tests.Common
 
         public override bool GetBoolean(int ordinal)
         {
-            throw new NotImplementedException();
+            return (bool)GetValue(ordinal);
         }
 
         public override byte GetByte(int ordinal)
         {
-            throw new NotImplementedException();
+            return (byte)GetValue(ordinal);
         }
 
         public override long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length)
@@ -90,12 +90,21 @@ namespace System.Data.Tests.Common
 
         public override char GetChar(int ordinal)
         {
-            throw new NotImplementedException();
+            return (char)GetValue(ordinal);
         }
 
         public override long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length)
         {
-            throw new NotImplementedException();
+            object value = GetValue(ordinal);
+            if (value == DBNull.Value)
+            {
+                return 0;
+            }
+
+            char[] data = value.ToString().ToCharArray();
+            long bytesToRead = Math.Min(data.Length - dataOffset, length);
+            Array.Copy(data, dataOffset, buffer, bufferOffset, bytesToRead);
+            return bytesToRead;
         }
 
         public override string GetDataTypeName(int ordinal)
@@ -105,17 +114,17 @@ namespace System.Data.Tests.Common
 
         public override DateTime GetDateTime(int ordinal)
         {
-            throw new NotImplementedException();
+            return (DateTime)GetValue(ordinal);
         }
 
         public override decimal GetDecimal(int ordinal)
         {
-            throw new NotImplementedException();
+            return (decimal)GetValue(ordinal);
         }
 
         public override double GetDouble(int ordinal)
         {
-            throw new NotImplementedException();
+            return (double)GetValue(ordinal);
         }
 
         public override global::System.Collections.IEnumerator GetEnumerator()
@@ -130,37 +139,48 @@ namespace System.Data.Tests.Common
 
         public override float GetFloat(int ordinal)
         {
-            throw new NotImplementedException();
+            return (float)GetValue(ordinal);
         }
 
         public override Guid GetGuid(int ordinal)
         {
-            throw new NotImplementedException();
+            return (Guid)GetValue(ordinal);
         }
 
         public override short GetInt16(int ordinal)
         {
-            throw new NotImplementedException();
+            return (short)GetValue(ordinal);
         }
 
         public override int GetInt32(int ordinal)
         {
-            throw new NotImplementedException();
+            return (int)GetValue(ordinal);
         }
 
         public override long GetInt64(int ordinal)
         {
-            throw new NotImplementedException();
+            return (long)GetValue(ordinal);
         }
 
         public override string GetName(int ordinal)
         {
-            throw new NotImplementedException();
+            return _testDataTable.Columns[ordinal].ColumnName;
         }
 
         public override int GetOrdinal(string name)
         {
-            throw new NotImplementedException();
+            // TODO: not efficient; needs to cache the columns
+            for (var i = 0; i < _testDataTable.Columns.Count; ++i)
+            {
+                var columnName = _testDataTable.Columns[i].ColumnName;
+
+                if (columnName.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         public override DataTable GetSchemaTable()

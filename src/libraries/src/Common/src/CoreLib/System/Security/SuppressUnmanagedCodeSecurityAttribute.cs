@@ -5,8 +5,7 @@
 namespace System.Security
 {
     // SuppressUnmanagedCodeSecurityAttribute:
-    //  Indicates that the target P/Invoke method(s) should skip the per-call
-    //  security checked for unmanaged code permission.
+    //  This attribute has no functional impact in CoreCLR.
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
     public sealed class SuppressUnmanagedCodeSecurityAttribute : Attribute
     {

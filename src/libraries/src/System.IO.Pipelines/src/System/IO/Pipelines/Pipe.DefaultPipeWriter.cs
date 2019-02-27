@@ -41,6 +41,11 @@ namespace System.IO.Pipelines
             public FlushResult GetResult(short token) => _pipe.GetFlushAsyncResult();
 
             public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => _pipe.OnFlushAsyncCompleted(continuation, state, flags);
+
+            public override ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            {
+                return _pipe.WriteAsync(source, cancellationToken);
+            }
         }
     }
 }

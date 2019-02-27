@@ -1082,6 +1082,38 @@ int32_t CryptoNative_SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
     return 1;
 }
 
+int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
+                                            int32_t year,
+                                            int32_t month,
+                                            int32_t day,
+                                            int32_t hour,
+                                            int32_t minute,
+                                            int32_t second,
+                                            int32_t isDst)
+{
+    if (!ctx)
+    {
+        return 0;
+    }
+
+    time_t verifyTime = MakeTimeT(year, month, day, hour, minute, second, isDst);
+
+    if (verifyTime == (time_t)-1)
+    {
+        return 0;
+    }
+
+    X509_VERIFY_PARAM* verifyParams = X509_STORE_get0_param(ctx);
+
+    if (!verifyParams)
+    {
+        return 0;
+    }
+
+    X509_VERIFY_PARAM_set_time(verifyParams, verifyTime);
+    return 1;
+}
+
 /*
 Function:
 ReadX509AsDerFromBio

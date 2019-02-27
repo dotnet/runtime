@@ -191,6 +191,11 @@ namespace System
             throw GetArgumentOutOfRangeException(argument, paramNumber, resource);
         }
 
+        internal static void ThrowInvalidOperationException()
+        {
+            throw new InvalidOperationException();
+        }
+
         internal static void ThrowInvalidOperationException(ExceptionResource resource)
         {
             throw GetInvalidOperationException(resource);

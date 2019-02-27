@@ -33,7 +33,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Initializes the awaiter.</summary>
         /// <param name="value">The value to be awaited.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ValueTaskAwaiter(ValueTask value) => _value = value;
+        internal ValueTaskAwaiter(in ValueTask value) => _value = value;
 
         /// <summary>Gets whether the <see cref="ValueTask"/> has completed.</summary>
         public bool IsCompleted
@@ -116,7 +116,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Initializes the awaiter.</summary>
         /// <param name="value">The value to be awaited.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ValueTaskAwaiter(ValueTask<TResult> value) => _value = value;
+        internal ValueTaskAwaiter(in ValueTask<TResult> value) => _value = value;
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> has completed.</summary>
         public bool IsCompleted

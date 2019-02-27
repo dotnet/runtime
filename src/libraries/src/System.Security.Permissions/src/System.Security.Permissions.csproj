@@ -178,9 +178,15 @@
     <Compile Include="System\Web\AspNetHostingPermissionLevel.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="..\..\System.Runtime.Extensions\src\System\Security\IStackWalk.cs" />
-    <Compile Include="..\..\System.Runtime.Extensions\src\System\Security\PermissionSet.cs" />
-    <Compile Include="..\..\System.Runtime.Extensions\src\System\Security\Permissions\PermissionState.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\IStackWalk.cs">
+      <Link>Common\CoreLib\System\Security\IStackWalk.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\PermissionSet.cs">
+      <Link>Common\CoreLib\System\Security\PermissionSet.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\Permissions\PermissionState.cs">
+      <Link>Common\CoreLib\System\Security\Permissions\PermissionState.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />

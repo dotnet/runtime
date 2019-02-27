@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <!--
@@ -10,8 +10,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Override strong name key to always be Open for test projects -->
-    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">Open</StrongNameKeyId>
+    <!-- Override strong name key to default to Open for test projects,
+         Tests which wish to control this should set TestStrongNameKeyId. -->
+    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
+    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
@@ -33,14 +35,6 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
-
-  <Target Name="CheckForBuildTools">
-    <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'=='true'"
-           Text="The tools directory [$(ToolsDir)] does not exist. Please run build -Restore in your repo to ensure the tools are installed before attempting to build an individual project." />
-    <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'!='true'"
-           Text="The tools directory [$(ToolsDir)] does not exist. Please run build -InitTools in your repo to ensure the tools are installed before attempting to build an individual project." />
-  </Target>
-
   <Import Project="$(RepositoryEngineeringDir)CodeAnalysis.targets" />
 
   <!-- Corefx-specific binplacing properties -->
@@ -142,20 +136,11 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)blockReflectionAttribute.targets" />
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="$(RepositoryEngineeringDir)Resources.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
-  
-  <!-- TODO: remove remaining functionality from buildtools -->
-  <PropertyGroup>
-     <!-- codeOptimization uses DnuRestoreCommand -->
-    <DnuRestoreCommand>$(DotnetTool) restore</DnuRestoreCommand>
-     <!-- optionalTooling uses DotnetToolCommand -->
-    <DotnetToolCommand>$(DotnetTool)</DotnetToolCommand>
-  </PropertyGroup>
-  <Import Project="$(ToolsDir)codeOptimization.targets" />
-  <Import Project="$(ToolsDir)OptionalTooling.targets" />
 
   <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets')" />
 
