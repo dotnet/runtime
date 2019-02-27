@@ -2573,7 +2573,7 @@ interp_entry_general (gpointer this_arg, gpointer res, gpointer *args, gpointer 
 // inline so we can alloc on stack
 #define alloc_storage_for_stackval(s, t, p) do {							\
 		if ((t)->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (t)) {		\
-			(s)->data.vt = alloca (mono_class_value_size ((t)->data.generic_class->container_class, NULL));	\
+			(s)->data.vt = alloca (mono_class_value_size (mono_class_from_mono_type_internal (t), NULL));	\
 		} else if ((t)->type == MONO_TYPE_VALUETYPE) {						\
 			if (p)										\
 				(s)->data.vt = alloca (mono_class_native_size ((t)->data.klass, NULL));	\
