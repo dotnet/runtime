@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Numerics;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -30,7 +31,8 @@ namespace System
             }
             else
             {
-                mantissaHighBitIdx = BigInteger.LogBase2(mantissa);
+                Debug.Assert(mantissa != 0);
+                mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
             }
 
             int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent));
@@ -59,7 +61,8 @@ namespace System
             }
             else
             {
-                mantissaHighBitIdx = BigInteger.LogBase2(mantissa);
+                Debug.Assert(mantissa != 0);
+                mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
             }
 
             int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent));
@@ -289,7 +292,8 @@ namespace System
                 // We are more likely to make accurate quotient estimations in BigInteger.HeuristicDivide() with higher denominator values so we shift the denominator to place the highest bit at index 27 of the highest block.
                 // This is safe because (2^28 - 1) = 268435455 which is less than 429496729.
                 // This means that all values with a highest bit at index 27 are within range.
-                uint hiBlockLog2 = BigInteger.LogBase2(hiBlock);
+                Debug.Assert(hiBlock != 0);
+                uint hiBlockLog2 = (uint)BitOperations.Log2(hiBlock);
                 Debug.Assert((hiBlockLog2 < 3) || (hiBlockLog2 > 27));
                 uint shift = (32 + 27 - hiBlockLog2) % 32;
 

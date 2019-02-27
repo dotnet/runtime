@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
-    <ExcludePackages Include="CoreFx.Private.TestUtilities" />
+    <ExcludePackages Include="CoreFx.Private.TestUtilities;System.IO.Ports;runtime.native.System.IO.Ports" />
     <ExcludePackages Include="$(ExcludePackages)" />
 
     <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
@@ -162,7 +162,7 @@
 
   <Target Name="ArchiveHelixItems"
           DependsOnTargets="GenerateProjects;CopyProducedPackages"
-          Condition="'$(ArchiveTests)' == 'true'">
+          Condition="'$(ArchiveTests.ToLower())' == 'packages' or '$(ArchiveTests.ToLower())' == 'all'">
 
     <MakeDir Directories="$(TestArchiveTestsRoot)" />
     <ZipDirectory
@@ -180,7 +180,7 @@
 
   <Target Name="RestoreProjects"
           DependsOnTargets="GenerateProjects"
-          Condition="'$(ArchiveTests)' != 'true'">
+          Condition="'$(ArchiveTests.ToLower())' != 'packages' and '$(ArchiveTests.ToLower())' != 'all'">
 
     <PropertyGroup>
       <TestRestoreCommand>$(TestDotNetPath)</TestRestoreCommand>
@@ -197,7 +197,7 @@
 
   <Target Name="BuildProjects"
           DependsOnTargets="RestoreProjects"
-          Condition="'$(ArchiveTests)' != 'true'">
+          Condition="'$(ArchiveTests.ToLower())' != 'packages' and '$(ArchiveTests.ToLower())' != 'all'">
 
     <PropertyGroup>
       <TestBuildCommand>$(TestDotNetPath)</TestBuildCommand>

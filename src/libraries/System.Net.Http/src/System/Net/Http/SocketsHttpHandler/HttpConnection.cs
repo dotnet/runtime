@@ -1657,7 +1657,7 @@ namespace System.Net.Http
 
         private static void ThrowInvalidHttpResponse(Exception innerException) => throw new HttpRequestException(SR.net_http_invalid_response, innerException);
 
-        internal override void Trace(string message, [CallerMemberName] string memberName = null) =>
+        internal sealed override void Trace(string message, [CallerMemberName] string memberName = null) =>
             NetEventSource.Log.HandlerMessage(
                 _pool?.GetHashCode() ?? 0,    // pool ID
                 GetHashCode(),                // connection ID

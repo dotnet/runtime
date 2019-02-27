@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -24,7 +25,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(activityName, activity.OperationName);
             Assert.Null(activity.Id);
             Assert.Null(activity.RootId);
-            Assert.Equal(TimeSpan.Zero, activity.Duration);            
+            Assert.Equal(TimeSpan.Zero, activity.Duration);
             Assert.Null(activity.Parent);
             Assert.Null(activity.ParentId);
             Assert.Equal(0, activity.Baggage.ToList().Count);
@@ -263,7 +264,7 @@ namespace System.Diagnostics.Tests
         public void RootId()
         {
 
-            var parentIds = new []{
+            var parentIds = new[]{
                 "123",   //Parent does not start with '|' and does not contain '.'
                 "123.1", //Parent does not start with '|' but contains '.'
                 "|123",  //Parent starts with '|' and does not contain '.'
@@ -274,6 +275,302 @@ namespace System.Diagnostics.Tests
                 var activity = new Activity("activity");
                 activity.SetParentId(parentId);
                 Assert.Equal("123", activity.RootId);
+            }
+        }
+
+        public static bool IdIsW3CFormat(string id)
+        {
+            if (id.Length != 55)
+                return false;
+            if (id[2] != '-')
+                return false;
+            if (id[35] != '-')
+                return false;
+            if (id[52] != '-')
+                return false;
+            return Regex.IsMatch(id, "^[0-9A-Fa-f][0-9A-Fa-f]-[0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f][0-9A-Fa-f]$");
+        }
+
+        public static bool IsHex(string s)
+        {
+            return Regex.IsMatch(s, "^[0-9A-Fa-f]*$");
+        }
+
+        /****** ActivityTraceId tests *****/
+        [Fact]
+        public void ActivityTraceIdTests()
+        {
+            Span<byte> idBytes1 = stackalloc byte[16];
+            Span<byte> idBytes2 = stackalloc byte[16];
+
+            // Empty Constructor 
+            string zeros = "00000000000000000000000000000000";
+            ActivityTraceId emptyId = new ActivityTraceId();
+            Assert.Equal(zeros, emptyId.AsHexString);
+            emptyId.CopyTo(idBytes1);
+            Assert.Equal(new byte[16], idBytes1.ToArray());
+
+            Assert.True(emptyId == new ActivityTraceId());
+            Assert.True(!(emptyId != new ActivityTraceId()));
+            Assert.True(emptyId.Equals(new ActivityTraceId()));
+            Assert.True(emptyId.Equals((object)new ActivityTraceId()));
+            Assert.Equal(new ActivityTraceId().GetHashCode(), emptyId.GetHashCode());
+
+            // NewActivityTraceId
+            ActivityTraceId newId1 = ActivityTraceId.NewTraceId();
+            Assert.True(IsHex(newId1.AsHexString));
+            Assert.Equal(32, newId1.AsHexString.Length);
+
+            ActivityTraceId newId2 = ActivityTraceId.NewTraceId();
+            Assert.Equal(32, newId1.AsHexString.Length);
+            Assert.NotEqual(newId1.AsHexString, newId2.AsHexString);
+
+            // Test equality
+            Assert.True(newId1 != newId2);
+            Assert.True(!(newId1 == newId2));
+            Assert.True(!(newId1.Equals(newId2)));
+            Assert.True(!(newId1.Equals((object)newId2)));
+            Assert.NotEqual(newId1.GetHashCode(), newId2.GetHashCode());
+
+            ActivityTraceId newId3 = new ActivityTraceId("00000000000000000000000000000001".AsSpan());
+            Assert.True(newId3 != emptyId);
+            Assert.True(!(newId3 == emptyId));
+            Assert.True(!(newId3.Equals(emptyId)));
+            Assert.True(!(newId3.Equals((object)emptyId)));
+            Assert.NotEqual(newId3.GetHashCode(), emptyId.GetHashCode());
+
+            // Use in Dictionary (this does assume we have no collisions in IDs over 100 tries (very good).  
+            var dict = new Dictionary<ActivityTraceId, string>();
+            for(int i = 0; i < 100; i++)
+            {
+                var newId7 = ActivityTraceId.NewTraceId();
+                dict[newId7] = newId7.AsHexString;
+            }
+            int ctr = 0;
+            foreach(string value in dict.Values)
+            {
+                string valueInDict;
+                Assert.True(dict.TryGetValue(new ActivityTraceId(value.AsSpan()), out valueInDict));
+                Assert.Equal(value, valueInDict);
+                ctr++;
+            }
+            Assert.Equal(100, ctr);     // We got out what we put in.  
+
+            // AsBytes and Byte constructor.  
+            newId2.CopyTo(idBytes2);
+            ActivityTraceId newId2Clone = new ActivityTraceId(idBytes2);
+            Assert.Equal(newId2.AsHexString, newId2Clone.AsHexString);
+            newId2Clone.CopyTo(idBytes1);
+            Assert.Equal(idBytes2.ToArray(), idBytes1.ToArray());
+
+            Assert.True(newId2 == newId2Clone);
+            Assert.True(newId2.Equals(newId2Clone));
+            Assert.True(newId2.Equals((object)newId2Clone));
+            Assert.Equal(newId2.GetHashCode(), newId2Clone.GetHashCode());
+
+            // String constructor and AsHexString.  
+            string idStr = "0123456789ABCDEF0123456789ABCDEF";
+            ActivityTraceId id = new ActivityTraceId(idStr.AsSpan());
+            Assert.Equal(idStr, id.AsHexString);
+
+            // Utf8 Constructor. 
+            byte[] idUtf8 = Encoding.UTF8.GetBytes(idStr);
+            ActivityTraceId id1 = new ActivityTraceId(idUtf8, true);
+            Assert.Equal(idStr, id1.AsHexString);
+
+            // ToString
+            Assert.Equal(idStr, id.ToString());
+        }
+
+        /****** ActivitySpanId tests *****/
+        [Fact]
+        public void ActivitySpanIdTests()
+        {
+            Span<byte> idBytes1 = stackalloc byte[8];
+            Span<byte> idBytes2 = stackalloc byte[8];
+
+            // Empty Constructor 
+            string zeros = "0000000000000000";
+            ActivitySpanId emptyId = new ActivitySpanId();
+            Assert.Equal(zeros, emptyId.AsHexString);
+            emptyId.CopyTo(idBytes1);
+            Assert.Equal(new byte[8], idBytes1.ToArray());
+
+            Assert.True(emptyId == new ActivitySpanId());
+            Assert.True(!(emptyId != new ActivitySpanId()));
+            Assert.True(emptyId.Equals(new ActivitySpanId()));
+            Assert.True(emptyId.Equals((object)new ActivitySpanId()));
+            Assert.Equal(new ActivitySpanId().GetHashCode(), emptyId.GetHashCode());
+
+            // NewActivitySpanId
+            ActivitySpanId newId1 = ActivitySpanId.NewSpanId();
+            Assert.True(IsHex(newId1.AsHexString));
+            Assert.Equal(16, newId1.AsHexString.Length);
+
+            ActivitySpanId newId2 = ActivitySpanId.NewSpanId();
+            Assert.Equal(16, newId1.AsHexString.Length);
+            Assert.NotEqual(newId1.AsHexString, newId2.AsHexString);
+
+            // Test equality
+            Assert.True(newId1 != newId2);
+            Assert.True(!(newId1 == newId2));
+            Assert.True(!(newId1.Equals(newId2)));
+            Assert.True(!(newId1.Equals((object)newId2)));
+            Assert.NotEqual(newId1.GetHashCode(), newId2.GetHashCode());
+
+            ActivitySpanId newId3 = new ActivitySpanId("0000000000000001".AsSpan());
+            Assert.True(newId3 != emptyId);
+            Assert.True(!(newId3 == emptyId));
+            Assert.True(!(newId3.Equals(emptyId)));
+            Assert.True(!(newId3.Equals((object)emptyId)));
+            Assert.NotEqual(newId3.GetHashCode(), emptyId.GetHashCode());
+
+            // Use in Dictionary (this does assume we have no collisions in IDs over 100 tries (very good).  
+            var dict = new Dictionary<ActivitySpanId, string>();
+            for (int i = 0; i < 100; i++)
+            {
+                var newId7 = ActivitySpanId.NewSpanId();
+                dict[newId7] = newId7.AsHexString;
+            }
+            int ctr = 0;
+            foreach (string value in dict.Values)
+            {
+                string valueInDict;
+                Assert.True(dict.TryGetValue(new ActivitySpanId(value.AsSpan()), out valueInDict));
+                Assert.Equal(value, valueInDict);
+                ctr++;
+            }
+            Assert.Equal(100, ctr);     // We got out what we put in.  
+
+            // AsBytes and Byte constructor.  
+            newId2.CopyTo(idBytes2);
+            ActivitySpanId newId2Clone = new ActivitySpanId(idBytes2);
+            Assert.Equal(newId2.AsHexString, newId2Clone.AsHexString);
+            newId2Clone.CopyTo(idBytes1);
+            Assert.Equal(idBytes2.ToArray(), idBytes1.ToArray());
+
+            Assert.True(newId2 == newId2Clone);
+            Assert.True(newId2.Equals(newId2Clone));
+            Assert.True(newId2.Equals((object)newId2Clone));
+            Assert.Equal(newId2.GetHashCode(), newId2Clone.GetHashCode());
+
+            // String constructor and AsHexString.  
+            string idStr = "0123456789ABCDEF";
+            ActivitySpanId id = new ActivitySpanId(idStr.AsSpan());
+            Assert.Equal(idStr, id.AsHexString);
+
+            // Utf8 Constructor. 
+            byte[] idUtf8 = Encoding.UTF8.GetBytes(idStr);
+            ActivitySpanId id1 = new ActivitySpanId(idUtf8, true);
+            Assert.Equal(idStr, id1.AsHexString);
+
+            // ToString
+            Assert.Equal(idStr, id.ToString());
+        }
+
+        /****** WC3 Format tests *****/
+        [Fact]
+        public void IdFormatTests()
+        {
+            try
+            {
+                Activity activity;
+
+                // Default format is the default (Hierarchical)
+                activity = new Activity("activity1");
+                activity.Start();
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                activity.Stop();
+
+                // Set the parent to something that is WC3 by string
+                activity = new Activity("activity2");
+                activity.SetParentId("00-0123456789ABCDEF0123456789ABCDEF-0123456789ABCDEF-01");
+                activity.Start();
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.Equal("0123456789ABCDEF0123456789ABCDEF", activity.TraceId.AsHexString);
+                Assert.True(IdIsW3CFormat(activity.Id));
+                activity.Stop();
+
+                // Set the parent to something that is WC3 byt using ActivityTraceId,ActivitySpanId version of SetParentId.  
+                activity = new Activity("activity3");
+                ActivityTraceId activityTraceId = ActivityTraceId.NewTraceId();
+                activity.SetParentId(activityTraceId, ActivitySpanId.NewSpanId());
+                activity.Start();
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.Equal(activityTraceId.AsHexString, activity.TraceId.AsHexString);
+                Assert.True(IdIsW3CFormat(activity.Id));
+                activity.Stop();
+
+                // Change DefaultIdFormat to W3C, confirm I get the new format.  
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+                activity = new Activity("activity4");
+                activity.Start();
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.True(IdIsW3CFormat(activity.Id));
+                activity.Stop();
+
+                // But I don't get the default format if parent is hierarchical 
+                activity = new Activity("activity5");
+                string parentId = "|a000b421-5d183ab6.1";
+                activity.SetParentId(parentId);
+                activity.Start();
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                Assert.True(activity.Id.StartsWith(parentId));
+
+                // Heirarchical Ids return null ActivityTraceId and ActivitySpanIds
+                Assert.Equal("00000000000000000000000000000000", activity.TraceId.AsHexString);
+                Assert.Equal("0000000000000000", activity.SpanId.AsHexString);
+                activity.Stop();
+
+                // But if I set ForceDefaultFormat I get what I asked for (W3C format)
+                Activity.ForceDefaultIdFormat = true;
+                activity = new Activity("activity6");
+                activity.SetParentId(parentId);
+                activity.Start();
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.True(IdIsW3CFormat(activity.Id));
+                Assert.NotEqual("00000000000000000000000000000000", activity.TraceId.AsHexString);
+                Assert.NotEqual("0000000000000000", activity.SpanId.AsHexString);
+
+                /* TraceStateString testing */
+                // Test TraceStateString (that it inherits from parent)
+                Activity parent = new Activity("parent");
+                string testString = "MyTestString";
+                parent.TraceStateString = testString;
+                parent.Start();
+                Assert.Equal(testString, parent.TraceStateString);
+
+                activity = new Activity("activity7");
+                activity.Start();
+                Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+                Assert.True(IdIsW3CFormat(activity.Id));
+                Assert.Equal(testString, activity.TraceStateString);
+
+                // Update child 
+                string childTestString = "ChildTestString";
+                activity.TraceStateString = childTestString;
+
+                // Confirm that child sees update, but parent does not
+                Assert.Equal(childTestString, activity.TraceStateString);
+                Assert.Equal(testString, parent.TraceStateString);
+
+                // Update parent
+                string parentTestString = "newTestString";
+                parent.TraceStateString = parentTestString;
+
+                // Confirm that parent sees update but child does not.  
+                Assert.Equal(childTestString, activity.TraceStateString);
+                Assert.Equal(parentTestString, parent.TraceStateString);
+
+                activity.Stop();
+                parent.Stop();
+            }
+            finally
+            {
+                // Set global settings back to the default, just to put the state back. 
+                Activity.ForceDefaultIdFormat = false;
+                Activity.DefaultIdFormat = ActivityIdFormat.Hierarchical;
+                Activity.Current = null;
             }
         }
 
@@ -472,7 +769,7 @@ namespace System.Diagnostics.Tests
 
                     // let's only check that Duration is set in StopActivity, we do not intend to check precision here
                     Assert.InRange(observer.Activity.Duration, TimeSpan.FromTicks(1), stopWatch.Elapsed.Add(TimeSpan.FromMilliseconds(2 * MaxClockErrorMSec)));
-                } 
+                }
             }
         }
 

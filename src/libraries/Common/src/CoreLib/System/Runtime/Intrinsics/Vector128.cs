@@ -202,26 +202,26 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<byte> SoftwareFallback(byte x)
+            static Vector128<byte> SoftwareFallback(byte value)
             {
                 var pResult = stackalloc byte[16]
                 {
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<byte>>(pResult);
@@ -251,12 +251,12 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<double> SoftwareFallback(double x)
+            static Vector128<double> SoftwareFallback(double value)
             {
                 var pResult = stackalloc double[2]
                 {
-                    x,
-                    x,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<double>>(pResult);
@@ -287,18 +287,18 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<short> SoftwareFallback(short x)
+            static Vector128<short> SoftwareFallback(short value)
             {
                 var pResult = stackalloc short[8]
                 {
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<short>>(pResult);
@@ -325,14 +325,14 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<int> SoftwareFallback(int x)
+            static Vector128<int> SoftwareFallback(int value)
             {
                 var pResult = stackalloc int[4]
                 {
-                    x,
-                    x,
-                    x,
-                    x,
+                    value,
+                    value,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<int>>(pResult);
@@ -361,12 +361,12 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<long> SoftwareFallback(long x)
+            static Vector128<long> SoftwareFallback(long value)
             {
                 var pResult = stackalloc long[2]
                 {
-                    x,
-                    x,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<long>>(pResult);
@@ -405,26 +405,26 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<sbyte> SoftwareFallback(sbyte x)
+            static Vector128<sbyte> SoftwareFallback(sbyte value)
             {
                 var pResult = stackalloc sbyte[16]
                 {
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<sbyte>>(pResult);
@@ -457,14 +457,14 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<float> SoftwareFallback(float x)
+            static Vector128<float> SoftwareFallback(float value)
             {
                 var pResult = stackalloc float[4]
                 {
-                    x,
-                    x,
-                    x,
-                    x,
+                    value,
+                    value,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<float>>(pResult);
@@ -496,18 +496,18 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<ushort> SoftwareFallback(ushort x)
+            static Vector128<ushort> SoftwareFallback(ushort value)
             {
                 var pResult = stackalloc ushort[8]
                 {
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
-                    x,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<ushort>>(pResult);
@@ -535,14 +535,14 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<uint> SoftwareFallback(uint x)
+            static Vector128<uint> SoftwareFallback(uint value)
             {
                 var pResult = stackalloc uint[4]
                 {
-                    x,
-                    x,
-                    x,
-                    x,
+                    value,
+                    value,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<uint>>(pResult);
@@ -572,12 +572,12 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<ulong> SoftwareFallback(ulong x)
+            static Vector128<ulong> SoftwareFallback(ulong value)
             {
                 var pResult = stackalloc ulong[2]
                 {
-                    x,
-                    x,
+                    value,
+                    value,
                 };
 
                 return Unsafe.AsRef<Vector128<ulong>>(pResult);
@@ -660,26 +660,26 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
 
-            Vector128<byte> SoftwareFallback(byte i0, byte i1, byte i2, byte i3, byte i4, byte i5, byte i6, byte i7, byte i8, byte i9, byte i10, byte i11, byte i12, byte i13, byte i14, byte i15)
+            static Vector128<byte> SoftwareFallback(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15)
             {
                 var pResult = stackalloc byte[16]
                 {
-                    i0,
-                    i1,
-                    i2,
-                    i3,
-                    i4,
-                    i5,
-                    i6,
-                    i7,
-                    i8,
-                    i9,
-                    i10,
-                    i11,
-                    i12,
-                    i13,
-                    i14,
-                    i15,
+                    e0,
+                    e1,
+                    e2,
+                    e3,
+                    e4,
+                    e5,
+                    e6,
+                    e7,
+                    e8,
+                    e9,
+                    e10,
+                    e11,
+                    e12,
+                    e13,
+                    e14,
+                    e15,
                 };
 
                 return Unsafe.AsRef<Vector128<byte>>(pResult);
@@ -703,12 +703,12 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1);
 
-            Vector128<double> SoftwareFallback(double i0, double i1)
+            static Vector128<double> SoftwareFallback(double e0, double e1)
             {
                 var pResult = stackalloc double[2]
                 {
-                    i0,
-                    i1,
+                    e0,
+                    e1,
                 };
 
                 return Unsafe.AsRef<Vector128<double>>(pResult);
@@ -742,18 +742,18 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
 
-            Vector128<short> SoftwareFallback(short i0, short i1, short i2, short i3, short i4, short i5, short i6, short i7)
+            static Vector128<short> SoftwareFallback(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7)
             {
                 var pResult = stackalloc short[8]
                 {
-                    i0,
-                    i1,
-                    i2,
-                    i3,
-                    i4,
-                    i5,
-                    i6,
-                    i7,
+                    e0,
+                    e1,
+                    e2,
+                    e3,
+                    e4,
+                    e5,
+                    e6,
+                    e7,
                 };
 
                 return Unsafe.AsRef<Vector128<short>>(pResult);
@@ -790,14 +790,14 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1, e2, e3);
 
-            Vector128<int> SoftwareFallback(int i0, int i1, int i2, int i3)
+            static Vector128<int> SoftwareFallback(int e0, int e1, int e2, int e3)
             {
                 var pResult = stackalloc int[4]
                 {
-                    i0,
-                    i1,
-                    i2,
-                    i3,
+                    e0,
+                    e1,
+                    e2,
+                    e3,
                 };
 
                 return Unsafe.AsRef<Vector128<int>>(pResult);
@@ -824,12 +824,12 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1);
 
-            Vector128<long> SoftwareFallback(long i0, long i1)
+            static Vector128<long> SoftwareFallback(long e0, long e1)
             {
                 var pResult = stackalloc long[2]
                 {
-                    i0,
-                    i1,
+                    e0,
+                    e1,
                 };
 
                 return Unsafe.AsRef<Vector128<long>>(pResult);
@@ -913,26 +913,26 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
 
-            Vector128<sbyte> SoftwareFallback(sbyte i0, sbyte i1, sbyte i2, sbyte i3, sbyte i4, sbyte i5, sbyte i6, sbyte i7, sbyte i8, sbyte i9, sbyte i10, sbyte i11, sbyte i12, sbyte i13, sbyte i14, sbyte i15)
+            static Vector128<sbyte> SoftwareFallback(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15)
             {
                 var pResult = stackalloc sbyte[16]
                 {
-                    i0,
-                    i1,
-                    i2,
-                    i3,
-                    i4,
-                    i5,
-                    i6,
-                    i7,
-                    i8,
-                    i9,
-                    i10,
-                    i11,
-                    i12,
-                    i13,
-                    i14,
-                    i15,
+                    e0,
+                    e1,
+                    e2,
+                    e3,
+                    e4,
+                    e5,
+                    e6,
+                    e7,
+                    e8,
+                    e9,
+                    e10,
+                    e11,
+                    e12,
+                    e13,
+                    e14,
+                    e15,
                 };
 
                 return Unsafe.AsRef<Vector128<sbyte>>(pResult);
@@ -966,14 +966,14 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1, e2, e3);
 
-            Vector128<float> SoftwareFallback(float i0, float i1, float i2, float i3)
+            static Vector128<float> SoftwareFallback(float e0, float e1, float e2, float e3)
             {
                 var pResult = stackalloc float[4]
                 {
-                    i0,
-                    i1,
-                    i2,
-                    i3,
+                    e0,
+                    e1,
+                    e2,
+                    e3,
                 };
 
                 return Unsafe.AsRef<Vector128<float>>(pResult);
@@ -1008,18 +1008,18 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
 
-            Vector128<ushort> SoftwareFallback(ushort i0, ushort i1, ushort i2, ushort i3, ushort i4, ushort i5, ushort i6, ushort i7)
+            static Vector128<ushort> SoftwareFallback(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7)
             {
                 var pResult = stackalloc ushort[8]
                 {
-                    i0,
-                    i1,
-                    i2,
-                    i3,
-                    i4,
-                    i5,
-                    i6,
-                    i7,
+                    e0,
+                    e1,
+                    e2,
+                    e3,
+                    e4,
+                    e5,
+                    e6,
+                    e7,
                 };
 
                 return Unsafe.AsRef<Vector128<ushort>>(pResult);
@@ -1057,14 +1057,14 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1, e2, e3);
 
-            Vector128<uint> SoftwareFallback(uint i0, uint i1, uint i2, uint i3)
+            static Vector128<uint> SoftwareFallback(uint e0, uint e1, uint e2, uint e3)
             {
                 var pResult = stackalloc uint[4]
                 {
-                    i0,
-                    i1,
-                    i2,
-                    i3,
+                    e0,
+                    e1,
+                    e2,
+                    e3,
                 };
 
                 return Unsafe.AsRef<Vector128<uint>>(pResult);
@@ -1092,12 +1092,12 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(e0, e1);
 
-            Vector128<ulong> SoftwareFallback(ulong i0, ulong i1)
+            static Vector128<ulong> SoftwareFallback(ulong e0, ulong e1)
             {
                 var pResult = stackalloc ulong[2]
                 {
-                    i0,
-                    i1,
+                    e0,
+                    e1,
                 };
 
                 return Unsafe.AsRef<Vector128<ulong>>(pResult);
@@ -1273,10 +1273,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<byte> SoftwareFallback(byte x)
+            static Vector128<byte> SoftwareFallback(byte value)
             {
                 var result = Vector128<byte>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<byte>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<byte>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1294,10 +1294,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<double> SoftwareFallback(double x)
+            static Vector128<double> SoftwareFallback(double value)
             {
                 var result = Vector128<double>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<double>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<double>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1317,10 +1317,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<short> SoftwareFallback(short x)
+            static Vector128<short> SoftwareFallback(short value)
             {
                 var result = Vector128<short>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<short>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<short>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1338,10 +1338,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<int> SoftwareFallback(int x)
+            static Vector128<int> SoftwareFallback(int value)
             {
                 var result = Vector128<int>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<int>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<int>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1358,10 +1358,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<long> SoftwareFallback(long x)
+            static Vector128<long> SoftwareFallback(long value)
             {
                 var result = Vector128<long>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<long>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<long>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1382,10 +1382,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<sbyte> SoftwareFallback(sbyte x)
+            static Vector128<sbyte> SoftwareFallback(sbyte value)
             {
                 var result = Vector128<sbyte>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<sbyte>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<sbyte>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1403,10 +1403,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<float> SoftwareFallback(float x)
+            static Vector128<float> SoftwareFallback(float value)
             {
                 var result = Vector128<float>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1427,10 +1427,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<ushort> SoftwareFallback(ushort x)
+            static Vector128<ushort> SoftwareFallback(ushort value)
             {
                 var result = Vector128<ushort>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ushort>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ushort>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1449,10 +1449,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<uint> SoftwareFallback(uint x)
+            static Vector128<uint> SoftwareFallback(uint value)
             {
                 var result = Vector128<uint>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<uint>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<uint>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1471,10 +1471,10 @@ namespace System.Runtime.Intrinsics
 
             return SoftwareFallback(value);
 
-            Vector128<ulong> SoftwareFallback(ulong x)
+            static Vector128<ulong> SoftwareFallback(ulong value)
             {
                 var result = Vector128<ulong>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ulong>, byte>(ref result), x);
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<ulong>, byte>(ref result), value);
                 return result;
             }
         }
@@ -1630,6 +1630,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
         public static T GetElement<T>(this Vector128<T> vector, int index)
             where T : struct
         {
@@ -1652,6 +1653,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A <see cref="Vector128{T}" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
         public static Vector128<T> WithElement<T>(this Vector128<T> vector, int index, T value)
             where T : struct
         {
@@ -1677,7 +1679,6 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-
             return Unsafe.As<Vector128<T>, Vector64<T>>(ref vector);
         }
 

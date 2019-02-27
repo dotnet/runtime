@@ -7,9 +7,15 @@
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
-    <Compile Include="System\Security\Principal\IIdentity.cs" />
-    <Compile Include="System\Security\Principal\IPrincipal.cs" />
-    <Compile Include="System\Security\Principal\PrincipalPolicy.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\Principal\IIdentity.cs">
+      <Link>Common\CoreLib\System\Security\Principal\IIdentity.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\Principal\IPrincipal.cs">
+      <Link>Common\CoreLib\System\Security\Principal\IPrincipal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\Principal\PrincipalPolicy.cs">
+      <Link>Common\CoreLib\System\Security\Principal\PrincipalPolicy.cs</Link>
+    </Compile>
     <Compile Include="System\Security\Principal\TokenImpersonationLevel.cs" />
   </ItemGroup>
   <ItemGroup>

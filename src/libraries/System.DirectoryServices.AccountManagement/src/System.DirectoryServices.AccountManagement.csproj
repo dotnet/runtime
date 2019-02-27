@@ -29,7 +29,6 @@
     <Compile Include="System\DirectoryServices\AccountManagement\PasswordInfo.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\MatchType.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\CredentialTypes.cs" />
-    <Compile Include="System\DirectoryServices\AccountManagement\RejectedClaimChange.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\ContextType.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\ContextOptions.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\SidType.cs" />
