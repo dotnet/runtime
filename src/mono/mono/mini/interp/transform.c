@@ -1581,7 +1581,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		return_val_if_nok (error, FALSE);
 		mono_class_setup_vtable (target_method->klass);
 
-		if (m_class_is_valuetype (constrained_class) && (target_method->klass == mono_defaults.object_class || target_method->klass == m_class_get_parent (mono_defaults.enum_class) || target_method->klass == mono_defaults.enum_class)) {
+		if (!m_class_is_valuetype (constrained_class)) {
+			/* managed pointer on the stack, we need to deref that puppy */
+			ADD_CODE (td, MINT_LDIND_I);
+			ADD_CODE (td, csignature->param_count);
+		} else if (target_method->klass == mono_defaults.object_class || target_method->klass == m_class_get_parent (mono_defaults.enum_class) || target_method->klass == mono_defaults.enum_class) {
 			if (target_method->klass == mono_defaults.enum_class && (td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
 				/* managed pointer on the stack, we need to deref that puppy */
 				/* Always load the entire stackval, to handle also the case where the enum has long storage */
@@ -1597,12 +1601,28 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				ADD_CODE (td, get_data_item_index (td, constrained_class));
 				ADD_CODE (td, csignature->param_count);
 			}
-		} else if (!m_class_is_valuetype (constrained_class)) {
-			/* managed pointer on the stack, we need to deref that puppy */
-			ADD_CODE (td, MINT_LDIND_I);
-			ADD_CODE (td, csignature->param_count);
 		} else {
-			g_assert (m_class_is_valuetype (target_method->klass));
+			if (target_method->klass != constrained_class) {
+				/*
+				 * The type parameter is instantiated as a valuetype,
+				 * but that type doesn't override the method we're
+				 * calling, so we need to box `this'.
+				 */
+				if ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
+					/* managed pointer on the stack, we need to deref that puppy */
+					ADD_CODE (td, MINT_LDIND_I);
+					ADD_CODE (td, csignature->param_count);
+				}
+				if (mint_type (m_class_get_byval_arg (constrained_class)) == MINT_TYPE_VT) {
+					ADD_CODE (td, MINT_BOX_VT);
+					ADD_CODE (td, get_data_item_index (td, constrained_class));
+					ADD_CODE (td, csignature->param_count | ((td->sp - 1 - csignature->param_count)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP));
+				} else {
+					ADD_CODE (td, MINT_BOX);
+					ADD_CODE (td, get_data_item_index (td, constrained_class));
+					ADD_CODE (td, csignature->param_count);
+				}
+			}
 			is_virtual = FALSE;
 		}
 	}

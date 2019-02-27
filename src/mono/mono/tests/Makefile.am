@@ -995,6 +995,8 @@ TESTS_IL_SRC=			\
 	bug-45841-fpstack-exceptions.il \
 	instance_tailrec.il	\
 	dim-constrainedcall.il	\
+	dim-constrained3.il	\
+	dim-constrained3_gm.il	\
 	dim-diamondshape.il	\
 	dim-genericmethods.il	\
 	dim-methodimpl.il	\
