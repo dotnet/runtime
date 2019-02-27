@@ -16,6 +16,10 @@ When EventCounter was first designed, it was tailored towards aggregating a set 
 
 **Emit data to all sessions at the rates requested by all clients** - This requires a little extra complexity in the runtime to maintain potentially multiple concurrent aggregations, and it is more verbose in the event stream if that is occuring. Clients need to filter out responses that don't match their requested rate, which is a little more complex than ideal, but still simpler than needing to synthesize statistics. In the case of multiple clients we can still encourage people to use a few canonical rates such as per-second, per-10 seconds, per-minute, per-hour which makes it likely that similar use cases will be able to share the exact same set of events. In the worst case that a few different aggregations are happening in parallel the overhead of our common counter aggregations shouldn't be that high, otherwise they weren't very suitable for lightweight monitoring in the first place. In terms of runtime code complexity I think the difference between supporting 1 aggregation and N aggregations is probably <50 lines per counter type and we only have a few counter types.
 
+Doing the filtering requires that each client can identify which EventCounter data packets are the ones it asked for and which are unrelated. Using IntervalSec as I had originally intended does not work because IntervalSec contains the exact amount of time measured in each interval rather than the nominal interval the client requested. For example a client that asks for EventCounterIntervalSec=1 could see packets that have IntervalSec=1.002038, IntervalSec=0.997838, etc. To resolve this we will add another key/pair to the payload, Series="Interval=T", where T is the number of seconds that was passed to EventCounterIntervalSec. To ensure clients with basically the same needs don't arbitrarily create different series that are identical or near identical we enforce that IntervalSec is always a whole non-negative number of seconds. Any value that can't be parsed by uint.TryParse() will be interpreted the same as IntervalSec=0. Using leading zeros on the number, ie IntervalSec=0002 may or may not work so clients are discouraged from doing so (in practice, its whatever text uint.TryParse handles).
+
+The changes to the parsing of EventCounterIntervalSec is technically a **breaking change**, but in practice I anticipate it will not be an issue.
+
 
 ### API design ###
 
@@ -39,28 +43,60 @@ We believe adding some new top-level types will satisfy these requests:
         string DisplayName;
     }
 
-    class AggregatingEventCounter {
-        AggregatingEventCounter(string name, EventSource eventSource);
+    class IncrementingEventCounter {
+        IncrementingEventCounter(string name, EventSource eventSource);
         string DisplayName;
-        Increment(long increment = 1);
+        Increment(float increment = 1);
     }
 
-    class AggregatingPollingCounter {
-        AggregatingPollingCounter(string name, EventSource eventSource, Func<long> getCountFunction);
+    class IncrementingPollingCounter {
+        IncrementingPollingCounter(string name, EventSource eventSource, Func<float> getCountFunction);
         string DisplayName;
     }
     
 
-EventCounter does what it has always done. PollingCounter calls getMetricFunction once per aggregation interval. All the other counters produce 1 value, call it X, per interval and publish it using the same statistics payload that EventCounter uses. It will have values Min=X, Max=X, Mean=X, Count=1, StdDev=0. How each counter produces X:
-1. PollingCounter - X is the return value of the call to getMetricFunction()
-2. AggregatingEventCounter - X is the sum of all the values passed to Increment()
-3. AggregatingPollingCounter - X is the most recent result from getCountFunction() - the previous result. (It is the amount the counter increased during the time interval)
+EventCounter does what it has always done, producing a set of 5 stats (Min/Max/Mean/Count/StandardDeviation) and emitting a sequence of events that hold that data. PollingCounter is the same as EventCounter except instead of the caller invoking WriteMetric, the counter infrastructure invokes the callback function periodically to retrieve the data. The counter infrastructure will invoke the callback at least as often as necessary to have 1 sample of data in each aggregated sampling interval. In the current implementation it will occur exactly once at the transition point between adjacent sampling intervals. If multiple time series have an interval boundary at the same moment in time the callback is allowed to be shared for each of them but it is not required to be. 
+
+On the wire EventCounter and PollingCounter both produce an event with name "EventCounters" and example body:
+    
+    Payload = {
+        DisplayName: "Request Bytes"
+        Name: "request-bytes",
+        Mean: 12.32,
+        StandardDeviation: 2.45
+        Count: 7
+        Min: -3.4
+        Max: 22.98
+        IntervalSec: 1.00324
+        Series: "Interval=1"
+        CounterType: "Mean"
+    }
+        
+
+
+IncrementingEventCounter and IncrementingPollingCounter, unlike the previous two, generate only a single sum value as their output statistic. IncrementingEventCounter adds together all arguments passed to its Increment() function during the time interval. IncrementingPollingCounter uses the callback to sample the count at the beginning of the interval and again at the end, using the difference between the two as the result (the increment during that interval). 
+
+On the wire IncrementingEventCounter and IncrementingPollingCounter both produce an event with the name "EventCounters" and example body:
+
+    Payload = {
+        DisplayName: "Exceptions Thrown"
+        Name: "exceptions-thrown"
+        Increment: 246
+        IntervalSec: 1.0043
+        Series: "Interval=1"
+        CounterType: "Sum"
+    }
+
+
+**Note: Why not match the five-tuple used by EventCounter?** Originally the plan was that counter viewers could treat all the counter types the same when it rendered them. Serializing one number as five numbers, needing to explain that the field which says 'Mean' really means 'Sum', or that WriteMetric distinguished individual events whereas Increment() pre-merges them all seemed a bit awkward, but it was a price to pay to get standardization for viewers. However late in our last discussion Vance said he wanted the wire format to be the sum, but the display format should still be a rate. This means we've lost the benefits of standardization because now viewers have to handle the incrementing counters differently than the averaging counters. It also means that any old viewer, such as PerfView's graph UI, would incorrectly apply the averaging conventions instead of the sum/rate convention because it wasn't designed to distinguish. So I am proposing that if we aren't going to get the benefits of a standardized output convention, we should at least avoid letting it muddy the waters.
+
+I think there is still an argument to be made that standardization could benefit libraries that are merely exporting the data for storage in a time series database because rendering isn't their concern. However these tools are going to care about data storage size. If a few lines of code to discriminate two cases is going to distinguish counters that produce 5 numbers and counters that produce 1, I think any good export tool is going to want that savings.
 
 ### Canonicalizing a single value output per counter ###
 
-For EventCounter and PollingCounter we expect simple viewers to use the display name as-is and use the value for 'Mean'. For AggregatingEventCounter and AggregatingPollingCounter, we expect simple viewers to display the display name with " / Min" appended after it. The value should be computed by reading the Mean statistic and multiplying it by the number of measurement intervals per minute. For example if the counter had display name "Exceptions Thrown", value 2, and Interval=1sec the viewer should display "Exceptions Thrown / Min" with value 120.
+For EventCounter and PollingCounter we expect simple viewers to use the display name as-is and use the value for 'Mean'. For IncrementingEventCounter and IncrementingPollingCounter, we expect simple viewers to display the display name with " / Min" appended after it. The display value should be computed by reading the 'Value' statistic and multiplying it by the number of measurement intervals per minute. For example if the counter had display name "Exceptions Thrown", value 2, and IntervalSec=1.01 the viewer should display "Exceptions Thrown / Min" with value 118.8.
 
 
-### EventStream format
+### Metadata
 
-We should add "DisplayName" and "Metadata" to the payload fields. We still need to define exactly what the encoding of Metadata is, but at minimum assume that it contains the counter type as a well-known constant.
+I added fields for DisplayName and CounterType directly to the payload. Vance suggested adding a 'Metadata' field, which I would be OK with, but I see no benefit to using it for fields we can anticipate will exist in advance, and we already have strongly typed APIs that generate their values. In the future if we added an API that let EventCounter consumers set arbitrary key value pairs on the counter, that seems like the data we'd want to encode in a Metadata string.
