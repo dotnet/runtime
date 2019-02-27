@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Binary
@@ -105,8 +106,8 @@ namespace System.Buffers.Binary
             // Testing shows that throughput increases if the AND
             // is performed before the ROL / ROR.
 
-            return BitOps.RotateRight(value & 0x00FF00FFu, 8) // xx zz
-                + BitOps.RotateLeft(value & 0xFF00FF00u, 8); // ww yy
+            return BitOperations.RotateRight(value & 0x00FF00FFu, 8) // xx zz
+                + BitOperations.RotateLeft(value & 0xFF00FF00u, 8); // ww yy
         }
 
         /// <summary>
