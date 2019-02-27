@@ -33,6 +33,7 @@ jobs:
               _architecture: x64
               _framework: netcoreapp
               _helixQueues: $(macOSQueues)
+              _publishTests: true
 
       pool:
         name: Hosted Mac Internal Sierra

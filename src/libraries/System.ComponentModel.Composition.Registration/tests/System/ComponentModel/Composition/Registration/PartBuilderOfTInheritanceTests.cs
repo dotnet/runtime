@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition.Registration.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
     public class PartBuilderOfTInheritanceTests
     {
         private abstract class BaseClass
@@ -26,7 +27,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         [Fact]
         public void ImportPropertyTargetingBaseClass_ShouldGenerateImportForPropertySelected()
         {
-            var builder = new PartBuilder<DerClass>(t => true);
+            var builder = InternalCalls.PartBuilder<DerClass>(t => true);
             builder.ImportProperty(p => p.P2); // P2 is string
 
             IEnumerable<Attribute> typeAtts;
@@ -51,7 +52,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         [Fact]
         public void ImportPropertyTargetingBaseClass_ShouldGenerateImportManyForPropertySelected()
         {
-            var builder = new PartBuilder<DerClass>(t => true);
+            var builder = InternalCalls.PartBuilder<DerClass>(t => true);
             builder.ImportProperty(p => p.P3); // P3 is IEnumerable<int>
 
             IEnumerable<Attribute> typeAtts;
@@ -76,7 +77,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         [Fact]
         public void ImportPropertyTargetingDerivedClass_ShouldGenerateImportForPropertySelected()
         {
-            var builder = new PartBuilder<DerClass>(t => true);
+            var builder = InternalCalls.PartBuilder<DerClass>(t => true);
             builder.ImportProperty(p => p.P4); // P4 is string
 
             IEnumerable<Attribute> typeAtts;
@@ -101,7 +102,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         [Fact]
         public void ExportPropertyTargetingDerivedClass_ShouldGenerateExportForPropertySelected()
         {
-            var builder = new PartBuilder<DerClass>(t => true);
+            var builder = InternalCalls.PartBuilder<DerClass>(t => true);
             builder.ExportProperty(p => p.P4); // P4 is string
 
             IEnumerable<Attribute> typeAtts;
@@ -126,7 +127,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         [Fact]
         public void ExportPropertyTargetingBaseClass_ShouldGenerateExportForPropertySelected()
         {
-            var builder = new PartBuilder<DerClass>(t => true);
+            var builder = InternalCalls.PartBuilder<DerClass>(t => true);
             builder.ExportProperty(p => p.P2); // P2 is string
 
             IEnumerable<Attribute> typeAtts;

@@ -5,9 +5,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ComponentModel_Composition_Registration</GeneratePlatformNotSupportedAssemblyMessage>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
-    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilder.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\ImportBuilder.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\ParameterImportBuilder.cs" />

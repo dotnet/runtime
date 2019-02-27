@@ -922,14 +922,6 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("decimals", () => decimal.Round(1, decimals, MidpointRounding.AwayFromZero));
         }
 
-        [Theory]
-        [InlineData(MidpointRounding.ToEven - 1)]
-        [InlineData(MidpointRounding.AwayFromZero + 1)]
-        public void Round_InvalidMidpointRounding_ThrowsArgumentException(MidpointRounding mode)
-        {
-            AssertExtensions.Throws<ArgumentException>("mode", () => decimal.Round(1, 2, mode));
-        }
-
         public static IEnumerable<object[]> Subtract_Valid_TestData()
         {
             yield return new object[] { 1m, 1m, 0m };

@@ -495,6 +495,7 @@ namespace System.Media.Test
             Assert.Null(ea.UserState);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx hangs")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]

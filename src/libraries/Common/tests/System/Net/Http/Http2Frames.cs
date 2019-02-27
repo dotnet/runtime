@@ -105,9 +105,9 @@ namespace System.Net.Test.Common
     public class DataFrame : Frame
     {
         public byte PadLength;
-        public byte[] Data;
+        public ReadOnlyMemory<byte> Data;
 
-        public DataFrame(byte[] data, FrameFlags flags, byte padLength, int streamId) :
+        public DataFrame(ReadOnlyMemory<byte> data, FrameFlags flags, byte padLength, int streamId) :
             base(0, FrameType.Data, flags, streamId)
         {
             Length = (flags & FrameFlags.Padded) == 0 ? data.Length : data.Length + padLength + 1;
@@ -133,11 +133,11 @@ namespace System.Net.Test.Common
             if (PaddedFlag)
             {
                 buffer[Frame.FrameHeaderLength] = PadLength;
-                Data.CopyTo(buffer.Slice(Frame.FrameHeaderLength + 1));
+                Data.Span.CopyTo(buffer.Slice(Frame.FrameHeaderLength + 1));
             }
             else
             {
-                Data.CopyTo(buffer.Slice(Frame.FrameHeaderLength));
+                Data.Span.CopyTo(buffer.Slice(Frame.FrameHeaderLength));
             }
         }
 
@@ -153,9 +153,9 @@ namespace System.Net.Test.Common
         public byte PadLength = 0;
         public int StreamDependency = 0;
         public byte Weight = 0;
-        public byte[] Data;
+        public Memory<byte> Data;
 
-        public HeadersFrame(byte[] data, FrameFlags flags, byte padLength, int streamDependency, byte weight, int streamId) :
+        public HeadersFrame(Memory<byte> data, FrameFlags flags, byte padLength, int streamDependency, byte weight, int streamId) :
             base(0, FrameType.Headers, flags, streamId)
         {
             Length = data.Length + (PaddedFlag ? padLength + 1 : 0) + (PriorityFlag ? 5 : 0);
@@ -168,7 +168,7 @@ namespace System.Net.Test.Common
 
         public static HeadersFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
         {
-            int idx = Frame.FrameHeaderLength;
+            int idx = 0;
 
             byte padLength = (byte)(header.PaddedFlag ? buffer[idx++] : 0);
             int streamDependency = header.PriorityFlag ? (int)((uint)((buffer[idx++] << 24) | (buffer[idx++] << 16) | (buffer[idx++] << idx++) | buffer[idx++]) & 0x7FFFFFFF) : 0;
@@ -198,7 +198,66 @@ namespace System.Net.Test.Common
 
                 buffer[idx++] = Weight;
             }
-            Data.CopyTo(buffer.Slice(idx));
+            Data.Span.CopyTo(buffer.Slice(idx));
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + $"\nPadding: {PadLength}\nStream Dependency: {StreamDependency}\nWeight: {Weight}";
+        }
+    }
+
+    public class ContinuationFrame : Frame
+    {
+        public byte PadLength = 0;
+        public int StreamDependency = 0;
+        public byte Weight = 0;
+        public Memory<byte> Data;
+
+        public ContinuationFrame(Memory<byte> data, FrameFlags flags, byte padLength, int streamDependency, byte weight, int streamId) :
+            base(0, FrameType.Continuation, flags, streamId)
+        {
+            Length = data.Length + (PaddedFlag ? padLength + 1 : 0) + (PriorityFlag ? 5 : 0);
+
+            Data = data;
+            PadLength = padLength;
+            StreamDependency = streamDependency;
+            Weight = weight;
+        }
+
+        public static ContinuationFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
+        {
+            int idx = 0;
+
+            byte padLength = (byte)(header.PaddedFlag ? buffer[idx++] : 0);
+            int streamDependency = header.PriorityFlag ? (int)((uint)((buffer[idx++] << 24) | (buffer[idx++] << 16) | (buffer[idx++] << idx++) | buffer[idx++]) & 0x7FFFFFFF) : 0;
+            byte weight = (byte)(header.PaddedFlag ? buffer[idx++] : 0);
+
+            byte[] data = buffer.Slice(idx).ToArray();
+
+            return new ContinuationFrame(data, header.Flags, padLength, streamDependency, weight, header.StreamId);
+        }
+
+        public override void WriteTo(Span<byte> buffer)
+        {
+            base.WriteTo(buffer);
+
+            int idx = Frame.FrameHeaderLength;
+            if (PaddedFlag)
+            {
+                buffer[idx++] = PadLength;
+            }
+
+            if (PriorityFlag)
+            {
+                buffer[idx++] = (byte)((StreamDependency & 0xFF000000) >> 24);
+                buffer[idx++] = (byte)((StreamDependency & 0x00FF0000) >> 16);
+                buffer[idx++] = (byte)((StreamDependency & 0x0000FF00) >> 8);
+                buffer[idx++] = (byte)(StreamDependency & 0x000000FF);
+
+                buffer[idx++] = Weight;
+            }
+            Data.Span.CopyTo(buffer.Slice(idx));
         }
 
         public override string ToString()

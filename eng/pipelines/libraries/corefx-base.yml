@@ -26,8 +26,12 @@ parameters:
   #     _skipTests: true | false
   #     _outerloop: true | false
 
+  # Optional: _publishTests -> Boolean -> Publish test assets to blob storage if true.
+  # Default: false
+  #     _publishTests: true | false
+
   # Required: submitToHelix -> Boolean -> Value to know if it should submit tests payloads to helix.
-  
+
   # Optional: buildScriptPrefix -> String -> string to append to Unix build script.
   #   buildScriptPrefix: 'HOME=/home/ ' -> 'HOME=/home/ ./build.sh ...'
 
@@ -41,7 +45,7 @@ parameters:
 
   # Optional: enableMicrobuild -> Boolean - if microbuild plugin for signing should be enabled
   # Default: false
-  
+
   # Optional: preBuildSteps -> Array -> list of steps to be executed before common build steps.
   # In example, to install build dependencies, or setup an environment.
   #   preBuildSteps:
@@ -55,6 +59,7 @@ jobs:
     - template: ../common/templates/job/job.yml
       parameters:
         variables:
+
         # pass along job variables
         - ${{ each variable in job.variables }}:
           - ${{ if ne(variable.name, '') }}:
@@ -71,44 +76,41 @@ jobs:
               - name: ${{ pair.key }}
                 value: ${{ pair.value }}
 
+        - _archiveTestsParameter: ''
+
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+          - _dotnetFeedUrl: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+          - group: DotNet-Internal-Tools-Feed
+          - group: DotNet-Blob-Feed
+
         - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
           - _msbuildCommonParameters: ''
 
         - ${{ if eq(job.submitToHelix, 'true') }}:
           - group: DotNet-HelixApi-Access
+          - _archiveTestsParameter: /p:ArchiveTests=Tests
 
         # Windows variables
         - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
           - _buildScript: build.cmd
-          - _commonArguments: -ci -includetests
+          - _commonArguments: -restore -build -configuration $(_BuildConfig) -ci -buildtests -arch $(_architecture)
           - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
 
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _optionalToolsArguments: /p:OptionalToolSourceUser=dn-bot
-                                       /p:OptionalToolSource=$(OptionalToolSourceUri)
-                                       /p:OptionalToolSourcePassword=$(dn-bot-devdiv-nuget-feed-read)
             - _windowsOfficialBuildArguments: -sign
                                               /p:DotNetSignType=$(_SignType)
-                                              /p:EnableProfileGuidedOptimization=true
-                                              $(_optionalToolsArguments)
 
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             - _windowsOfficialBuildArguments: ''
 
-          # Optional tooling variables
-          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - group: DotNet-Internal-Tools-Feed
-
         # Non-Windows variables
         - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
           - _buildScript: ${{ job.buildScriptPrefix }}./build.sh
-
+          - _args: --restore --build --configuration $(_BuildConfig) --ci --buildtests --arch $(_architecture)
+          - _commonArguments: $(_args)
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _commonArguments: --ci -includetests -stripSymbols
-          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            - _commonArguments: --ci -includetests
+            - _commonArguments: $(_args) --stripSymbols
 
           - _msbuildCommand: ${{ job.buildScriptPrefix }}./eng/common/msbuild.sh --warnaserror false --ci
           - _windowsOfficialBuildArguments: ''
@@ -130,6 +132,9 @@ jobs:
         workspace:
           clean: all
 
+        # enabling publish build artifacts, will publish all build logs under /artifacts/log/
+        enablePublishBuildArtifacts: true
+
         ${{ if ne(job.enableMicrobuild, '') }}:
           enableMicrobuild: ${{ job.enableMicrobuild }}
 
@@ -140,15 +145,29 @@ jobs:
           - ${{ if ne(job.preBuildSteps[0], '') }}:
             - ${{ job.preBuildSteps }}
 
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - task: NuGetToolInstaller@0
+              inputs:
+                versionSpec: '4.9.2'
+              condition: ne(variables['_skipRestoreInternalTools'], 'true')
+            - task: NuGetCommand@2
+              displayName: Restore internal tools
+              inputs:
+                command: restore
+                feedsToUse: config
+                restoreSolution: 'eng\common\internal\Tools.csproj'
+                nugetConfigPath: 'NuGet.config'
+                restoreDirectory: '$(Build.SourcesDirectory)\.packages'
+              env:
+                VSS_NUGET_EXTERNAL_FEED_ENDPOINTS: '{"endpointCredentials": [{"endpoint":"https://devdiv.pkgs.visualstudio.com/_packaging/8f470c7e-ac49-4afe-a6ee-cf784e438b93/nuget/v3/index.json", "username":"dn-bot","password":"$(dn-bot-devdiv-nuget-feed-read)"}]}'
+                TargetGroup: $(_framework)
+
           - ${{ if eq(job.customBuildSteps[0], '') }}:
             - script: $(_buildScript)
                     $(_commonArguments)
-                    -framework $(_framework)
-                    /p:ArchGroup=$(_architecture)
-                    /p:ConfigurationGroup=$(_BuildConfig)
-                    /p:SkipTests=$(_skipTests)
-                    /p:Outerloop=$(_outerloop)
-                    /p:ArchiveTests=${{ job.submitToHelix }}
+                    -f $(_framework)
+                    /p:OuterLoop=$(_outerloop)
+                    $(_archiveTestsParameter)
                     ${{ job.buildExtraArguments }}
                     $(_msbuildCommonParameters)
                     $(_windowsOfficialBuildArguments)
@@ -158,6 +177,35 @@ jobs:
             - ${{ job.customBuildSteps }}
 
           - ${{ if eq(job.submitToHelix, 'true') }}:
+            - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+              - script: $(_msbuildCommand) eng/publish.proj
+                      /t:PublishTestAssets
+                      /p:FilesToPublishPattern=$(Build.SourcesDirectory)/artifacts/helix/**/*.zip
+                      /p:AccountKey=$(dotnetfeed-storage-access-key-1)
+                      /p:ExpectedFeedUrl=$(_dotnetFeedUrl)
+                      /p:OSGroup=${{ parameters.targetOS }}
+                      /p:ArchGroup=$(_architecture)
+                      /p:ConfigurationGroup=$(_BuildConfig)
+                      /p:TargetGroup=$(_framework)
+                      /p:OfficialBuildId=$(Build.BuildNumber)
+                      /p:ContinuousIntegrationBuild=true
+                      /p:AssetManifestFileName=corefx-test-assets.xml
+                      /p:ManifestBuildId=$(Build.BuildNumber)
+                      /p:ManifestBuildData=Location=$(_dotnetFeedUrl)
+                      /p:ManifestBranch=$(Build.SourceBranchName)
+                      /p:ManifestCommit=$(Build.SourceVersion)
+                      /p:ManifestRepoUri=$(Build.Repository.Uri)
+                displayName: Publish test assets to dotnet-core feed
+                condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
+
+              - task: PublishBuildArtifacts@1
+                displayName: Publish test asset manifest to artifacts container
+                inputs:
+                  pathToPublish: $(Build.SourcesDirectory)/artifacts/AssetManifests
+                  artifactName: $(Agent.Os)_$(Agent.JobName)
+                  artifactType: container
+                condition: and(succeeded(), eq(variables['_publishTests'], 'true'))
+
             - template: /eng/pipelines/helix.yml
               parameters:
                 targetOS: ${{ parameters.targetOS }}
@@ -167,16 +215,13 @@ jobs:
                 msbuildScript: $(_msbuildCommand)
                 framework: $(_framework)
                 outerloop: $(_outerloop)
+                enableAzurePipelinesReporter: false
 
                 ${{ if eq(parameters.isOfficialBuild, 'true') }}:
                   isExternal: false
                   waitForCompletion: false
                   officialBuildId: $(Build.BuildNumber)
                   helixToken: $(HelixApiAccessToken)
-                  ${{ if ne(job.enableAzurePipelinesReporter, '') }}:
-                    enableAzurePipelinesReporter: ${{ job.enableAzurePipelinesReporter }}
-                  ${{ if eq(job.enableAzurePipelinesReporter, '') }}:
-                    enableAzurePipelinesReporter: true
 
                 ${{ if eq(parameters.isOfficialBuild, 'false') }}:
                   # TODO: SET Creator to the PR owner whenever Azure DevOps supports a good way to retrieve it.
@@ -184,8 +229,6 @@ jobs:
                   isExternal: true
                   waitForCompletion: true
                   helixToken: ''
-                  # TODO: Enable azure pipelines reporter for PRs once retry feature is available.
-                  enableAzurePipelinesReporter: false
 
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - task: PublishBuildArtifacts@1

@@ -32,18 +32,44 @@ namespace System.SpanTests
         public static void IndexerWithRangeTest()
         {
             ReadOnlySpan<char> span = "Hello".AsSpan();
-            ReadOnlySpan<char> sliced = span[Range.Create(new Index(1, fromEnd: false), new Index(1, fromEnd: true))];
+            ReadOnlySpan<char> sliced = span[new Range(new Index(1, fromEnd: false), new Index(1, fromEnd: true))];
             Assert.True(span.Slice(1, 3) == sliced);
 
             Assert.Throws<ArgumentOutOfRangeException>(() =>
-                { ReadOnlySpan<char> s = "Hello".AsSpan()[Range.Create(new Index(1, fromEnd: true), new Index(1, fromEnd: false))]; });
+                { ReadOnlySpan<char> s = "Hello".AsSpan()[new Range(new Index(1, fromEnd: true), new Index(1, fromEnd: false))]; });
 
             Span<char> span1 = new Span<char>(new char [] { 'H', 'e', 'l', 'l', 'o'});
-            Span<char> sliced1 = span1[Range.Create(new Index(2, fromEnd: false), new Index(1, fromEnd: true))];
+            Span<char> sliced1 = span1[new Range(new Index(2, fromEnd: false), new Index(1, fromEnd: true))];
             Assert.True(span1.Slice(2, 2) == sliced1);
 
             Assert.Throws<ArgumentOutOfRangeException>(() =>
-                { Span<char> s = new Span<char>(new char [] { 'H', 'i' })[Range.Create(new Index(0, fromEnd: true), new Index(1, fromEnd: false))]; });
+                { Span<char> s = new Span<char>(new char [] { 'H', 'i' })[new Range(new Index(0, fromEnd: true), new Index(1, fromEnd: false))]; });
+        }
+
+        [Fact]
+        public static void SlicingUsingIndexAndRangeTest()
+        {
+            Range range;
+            string s = "0123456789ABCDEF";
+            ReadOnlySpan<char> roSpan = s.AsSpan();
+            Span<char> span = new Span<char>(s.ToCharArray());
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                Assert.True(span.Slice(i) == span.Slice(Index.FromStart(i)));
+                Assert.True(span.Slice(span.Length - i - 1) == span.Slice(Index.FromEnd(i + 1)));
+
+                Assert.True(roSpan.Slice(i) == roSpan.Slice(Index.FromStart(i)));
+                Assert.True(roSpan.Slice(roSpan.Length - i - 1) == roSpan.Slice(Index.FromEnd(i + 1)));
+
+                range = new Range(Index.FromStart(i), Index.FromEnd(0));
+                Assert.True(span.Slice(i, span.Length - i) == span.Slice(range));
+                Assert.True(roSpan.Slice(i, roSpan.Length - i) == roSpan.Slice(range));
+            }
+
+            range = new Range(Index.FromStart(0), Index.FromStart(span.Length + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Span<char>(s.ToCharArray()).Slice(range));
+            Assert.Throws<ArgumentOutOfRangeException>(() => s.AsSpan().Slice(range));
         }
     }
 }

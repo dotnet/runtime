@@ -69,6 +69,14 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="key">The key to parse</param>
         /// <returns>Array of individual key members</returns>
-        private static string[] GetKeyMembers(string key) => key.Replace(" ", string.Empty).Split(',');
+        private static string[] GetKeyMembers(string key)
+        {
+            if (key == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            return key.Replace(" ", string.Empty).Split(',');
+        }
     }
 }

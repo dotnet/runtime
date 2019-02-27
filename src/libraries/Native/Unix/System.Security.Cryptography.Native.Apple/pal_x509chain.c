@@ -186,14 +186,15 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         // It doesn't represent a new error code, and we're still getting the old ones, so
         // just ignore it for now.
     }
-    else if (CFEqual(keyString, CFSTR("NonEmptySubject")) || CFEqual(keyString, CFSTR("GrayListedKey")))
+    else if (CFEqual(keyString, CFSTR("NonEmptySubject")) || CFEqual(keyString, CFSTR("GrayListedKey")) ||
+             CFEqual(keyString, CFSTR("CTRequired")))
     {
         // Not a "problem" that we report.
     }
     else
     {
-#ifdef DEBUGGING_UNKNOWN_VALUE
-        printf("%s\n", CFStringGetCStringPtr(keyString, CFStringGetSystemEncoding()));
+#if defined DEBUG || defined DEBUGGING_UNKNOWN_VALUE
+        printf("Unknown Chain Status: %s\n", CFStringGetCStringPtr(keyString, CFStringGetSystemEncoding()));
 #endif
         *pStatus |= PAL_X509ChainErrorUnknownValue;
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,8 +11,10 @@ namespace System.IO.Pipelines
     /// <summary>
     /// Defines a class that provides access to a read side of pipe.
     /// </summary>
-    public abstract class PipeReader
+    public abstract partial class PipeReader
     {
+        private PipeReaderStream _stream;
+
         /// <summary>
         /// Attempt to synchronously read data the <see cref="PipeReader"/>.
         /// </summary>
@@ -48,6 +51,15 @@ namespace System.IO.Pipelines
         public abstract void AdvanceTo(SequencePosition consumed, SequencePosition examined);
 
         /// <summary>
+        /// Returns a <see cref="Stream"/> that wraps the <see cref="PipeReader"/>.
+        /// </summary>
+        /// <returns>The <see cref="Stream"/>.</returns>
+        public virtual Stream AsStream()
+        {
+            return _stream ?? (_stream = new PipeReaderStream(this));
+        }
+
+        /// <summary>
         /// Cancel to currently pending or if none is pending next call to <see cref="ReadAsync"/>, without completing the <see cref="PipeReader"/>.
         /// </summary>
         public abstract void CancelPendingRead();
@@ -62,5 +74,64 @@ namespace System.IO.Pipelines
         /// Cancel the pending <see cref="ReadAsync"/> operation. If there is none, cancels next <see cref="ReadAsync"/> operation, without completing the <see cref="PipeWriter"/>.
         /// </summary>
         public abstract void OnWriterCompleted(Action<Exception, object> callback, object state);
+
+        /// <summary>
+        /// Asynchronously reads the bytes from the <see cref="PipeReader"/> and writes them to the specified stream, using a specified buffer size and cancellation token.
+        /// </summary>
+        /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous copy operation.</returns>
+        public virtual Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
+        {
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            return CopyToAsyncCore(destination, cancellationToken);
+        }
+
+        private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                SequencePosition consumed = default;
+
+                try
+                {
+                    ReadResult result = await ReadAsync(cancellationToken).ConfigureAwait(false);
+                    ReadOnlySequence<byte> buffer = result.Buffer;
+                    SequencePosition position = buffer.Start;
+
+                    if (result.IsCanceled)
+                    {
+                        ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
+                    }
+
+                    while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
+                    {
+                        await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
+
+                        consumed = position;
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        break;
+                    }
+                }
+                finally
+                {
+                    // Advance even if WriteAsync throws so the PipeReader is not left in the
+                    // currently reading state
+                    AdvanceTo(consumed);
+                }
+            }
+        }
     }
 }

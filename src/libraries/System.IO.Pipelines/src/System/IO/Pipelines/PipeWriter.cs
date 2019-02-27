@@ -11,8 +11,10 @@ namespace System.IO.Pipelines
     /// <summary>
     /// Defines a class that provides a pipeline to which data can be written.
     /// </summary>
-    public abstract class PipeWriter : IBufferWriter<byte>
+    public abstract partial class PipeWriter : IBufferWriter<byte>
     {
+        private PipeWriterStream _stream;
+
         /// <summary>
         /// Marks the <see cref="PipeWriter"/> as being complete, meaning no more items will be written to it.
         /// </summary>
@@ -44,12 +46,55 @@ namespace System.IO.Pipelines
         public abstract Span<byte> GetSpan(int sizeHint = 0);
 
         /// <summary>
+        /// Returns a <see cref="Stream"/> that wraps the <see cref="PipeWriter"/>.
+        /// </summary>
+        /// <returns>The <see cref="Stream"/>.</returns>
+        public virtual Stream AsStream()
+        {
+            return _stream ?? (_stream = new PipeWriterStream(this));
+        }
+
+        /// <summary>
         /// Writes <paramref name="source"/> to the pipe and makes data accessible to <see cref="PipeReader"/>
         /// </summary>
         public virtual ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
         {
             this.Write(source.Span);
             return FlushAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously reads the bytes from the specified stream and writes them to the <see cref="PipeWriter"/>.
+        /// </summary>
+        /// <param name="source">The stream from which the contents will be copied.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous copy operation.</returns>
+        protected internal virtual async Task CopyFromAsync(Stream source, CancellationToken cancellationToken = default)
+        {
+            while (true)
+            {
+                Memory<byte> buffer = GetMemory();
+                int read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+                if (read == 0)
+                {
+                    break;
+                }
+
+                Advance(read);
+
+                FlushResult result = await FlushAsync(cancellationToken).ConfigureAwait(false);
+
+                if (result.IsCanceled)
+                {
+                    ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                }
+
+                if (result.IsCompleted)
+                {
+                    break;
+                }
+            }
         }
     }
 }
