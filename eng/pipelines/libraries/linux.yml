@@ -89,7 +89,7 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - linuxDefaultQueues: Centos.7.Amd64+RedHat.7.Amd64+Debian.8.Amd64+Debian.9.Amd64+Ubuntu.1604.Amd64+Ubuntu.1804.Amd64+Ubuntu.1810.Amd64+OpenSuse.42.Amd64+SLES.12.Amd64+SLES.15.Amd64+Fedora.27.Amd64+Fedora.28.Amd64
           - linuxArm64Queues: Ubuntu.1604.Arm64
-          - alpineQueues: Alpine.36.Amd64+Alpine.38.Amd64+ubuntu.1604.amd64@microsoft/dotnet-buildtools-prereqs:alpine-3.9-helix-af66924-20190215231918
+          - alpineQueues: Alpine.36.Amd64+Alpine.38.Amd64+ubuntu.1604.amd64@microsoft/dotnet-buildtools-prereqs:alpine-3.9-helix-34f2903-20190227035445
 
     # Legs without helix testing
     # There is no point of running legs without outerloop tests, when in an outerloop build.
