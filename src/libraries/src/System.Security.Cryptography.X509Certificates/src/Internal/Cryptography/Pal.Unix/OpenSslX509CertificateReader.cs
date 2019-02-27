@@ -442,6 +442,21 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        internal static ArraySegment<byte> FindFirstExtension(SafeX509Handle cert, string oidValue)
+        {
+            int nid = Interop.Crypto.ResolveRequiredNid(oidValue);
+
+            using (SafeSharedAsn1OctetStringHandle data = Interop.Crypto.X509FindExtensionData(cert, nid))
+            {
+                if (data.IsInvalid)
+                {
+                    return default;
+                }
+
+                return Interop.Crypto.RentAsn1StringBytes(data.DangerousGetHandle());
+            }
+        }
+
         internal void SetPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             _privateKey = privateKey;

@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
     internal sealed class CollectionBackedStoreProvider : IStorePal
     {
         private readonly List<X509Certificate2> _certs;
+        private SafeX509StackHandle _nativeCollection;
 
         internal CollectionBackedStoreProvider(List<X509Certificate2> certs)
         {
@@ -52,6 +54,40 @@ namespace Internal.Cryptography.Pal
         SafeHandle IStorePal.SafeHandle
         {
             get { return null; }
+        }
+
+        internal SafeX509StackHandle GetNativeCollection()
+        {
+            if (_nativeCollection == null)
+            {
+                lock (_certs)
+                {
+                    if (_nativeCollection == null)
+                    {
+                        SafeX509StackHandle nativeCollection = Interop.Crypto.NewX509Stack();
+
+                        foreach (X509Certificate2 cert in _certs)
+                        {
+                            var certPal = (OpenSslX509CertificateReader)cert.Pal;
+
+                            using (SafeX509Handle tmp = Interop.Crypto.X509UpRef(certPal.SafeHandle))
+                            {
+                                if (!Interop.Crypto.PushX509StackField(nativeCollection, tmp))
+                                {
+                                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                                }
+
+                                // Ownership was transferred to the cert stack.
+                                tmp.SetHandleAsInvalid();
+                            }
+                        }
+
+                        _nativeCollection = nativeCollection;
+                    }
+                }
+            }
+
+            return _nativeCollection;
         }
     }
 }

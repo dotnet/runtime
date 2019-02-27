@@ -288,7 +288,7 @@ namespace System.Net.Http
         {
             // Clone the settings to get a relatively consistent view that won't change after this point.
             // (This isn't entirely complete, as some of the collections it contains aren't currently deeply cloned.)
-            HttpConnectionSettings settings = _settings.Clone();
+            HttpConnectionSettings settings = _settings.CloneAndNormalize();
 
             HttpConnectionPoolManager poolManager = new HttpConnectionPoolManager(settings);
 

@@ -5,10 +5,7 @@
     <IncludePath>include\$(TargetGroup)</IncludePath>
     <IncludePath Condition="'$(TargetGroup)' == 'netcoreapp2.0'">include\netcoreapp</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath)</IlasmFlags>
-    <!-- cannot build on unix, but package as OS-agnostic -->
-    <PackageTargetRuntime />
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
-    <MicrosoftNetCoreIldasmPackageName>runtime.$(MicrosoftNetCoreIlasmPackageRuntimeId).microsoft.netcore.ildasm</MicrosoftNetCoreIldasmPackageName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,16 +19,8 @@
           Condition="'$(OS)'=='Windows_NT'"
           Inputs="$(ContractOutputPath)/$(MSBuildProjectName).dll"
           Outputs="$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj">
-    <ItemGroup>
-      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreIldasmPackageName)\$(MicrosoftNETCoreILAsmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
-      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreRuntimeCoreClrPackageName)\$(MicrosoftNETCoreILAsmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
-      <_IlasmSourceFiles Include="$(NuGetPackageRoot)\$(MicrosoftNetCoreJitPackageName)\$(MicrosoftNETCoreILAsmPackageVersion)\runtimes\$(MicrosoftNetCoreIlasmPackageRuntimeId)\native\**\*" />
-    </ItemGroup>
-
     <PropertyGroup>
-      <_IlasmDir>$(ToolsDir)\ilasm</_IlasmDir>
-
-      <_IldasmCommand>"$(_IlasmDir)\ildasm.exe"</_IldasmCommand>
+      <_IldasmCommand>"$(ILAsmToolPath)ildasm.exe"</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) "$(ContractOutputPath)/$(MSBuildProjectName).dll"</_IldasmCommand>
       <_IldasmCommand>$(_IldasmCommand) /OUT="$(IntermediateOutputPath)/$(MSBuildProjectName).ref.il"</_IldasmCommand>
 
@@ -46,10 +35,6 @@
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)$(MSBuildProjectName).ref.*" />
     </ItemGroup>
-
-    <!-- Having to copy these binaries is really inefficient. https://github.com/dotnet/coreclr/issues/18892 tracks making the ilasm tool self-contained  -->
-    <MakeDir Directories="$(_IlasmDir)" />
-    <Copy DestinationFolder="$(_IlasmDir)" SourceFiles="@(_IlasmSourceFiles)" />
 
     <!-- Getting the res file by disassemblying the contract assembly -->
     <Exec Command="$(_IldasmCommand)" ConsoleToMSBuild="true" StandardOutputImportance="Low">

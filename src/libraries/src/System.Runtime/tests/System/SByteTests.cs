@@ -171,9 +171,13 @@ namespace System.Tests
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
-            IComparable comparable = (sbyte)123;
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a sbyte
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a sbyte
+            sbyte b = 123;
+            Assert.Throws<FormatException>(() => b.ToString("r")); // Invalid format
+            Assert.Throws<FormatException>(() => b.ToString("r", null)); // Invalid format
+            Assert.Throws<FormatException>(() => b.ToString("R")); // Invalid format
+            Assert.Throws<FormatException>(() => b.ToString("R", null)); // Invalid format
+            Assert.Throws<FormatException>(() => b.ToString("Y")); // Invalid format
+            Assert.Throws<FormatException>(() => b.ToString("Y", null)); // Invalid format
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()

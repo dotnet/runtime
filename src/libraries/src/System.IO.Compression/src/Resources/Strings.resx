@@ -309,7 +309,4 @@
   <data name="Zip64EOCDNotWhereExpected" xml:space="preserve">
     <value>Zip 64 End of Central Directory Record not where indicated.</value>
   </data>
-  <data name="Argument_InvalidPathChars" xml:space="preserve">
-    <value>Illegal characters in path '{0}'.</value>
-  </data>
 </root>

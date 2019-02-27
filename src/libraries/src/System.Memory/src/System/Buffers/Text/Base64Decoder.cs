@@ -13,7 +13,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Decode the span of UTF-8 encoded text represented as base 64 into binary data.
         /// If the input is not a multiple of 4, it will decode as much as it can, to the closest multiple of 4.
-        ///
+        /// </summary>
         /// <param name="utf8">The input span which contains UTF-8 encoded text in base 64 that needs to be decoded.</param>
         /// <param name="bytes">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
@@ -25,8 +25,8 @@ namespace System.Buffers.Text
         /// - DestinationTooSmall - if there is not enough space in the output span to fit the decoded input
         /// - NeedMoreData - only if isFinalBlock is false and the input is not a multiple of 4, otherwise the partial input would be considered as InvalidData
         /// - InvalidData - if the input contains bytes outside of the expected base 64 range, or if it contains invalid/more than two padding characters,
-        ///   or if the input is incomplete (i.e. not a multiple of 4) and isFinalBlock is true.</returns>
-        /// </summary> 
+        ///   or if the input is incomplete (i.e. not a multiple of 4) and isFinalBlock is true.
+        /// </returns>
         public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
         {
             ref byte srcBytes = ref MemoryMarshal.GetReference(utf8);
@@ -186,7 +186,7 @@ namespace System.Buffers.Text
         /// Decode the span of UTF-8 encoded text in base 64 (in-place) into binary data.
         /// The decoded binary output is smaller than the text data contained in the input (the operation deflates the data).
         /// If the input is not a multiple of 4, it will not decode any.
-        ///
+        /// </summary>
         /// <param name="buffer">The input span which contains the base 64 text data that needs to be decoded.</param>
         /// <param name="bytesWritten">The number of bytes written into the buffer.</param>
         /// <returns>It returns the OperationStatus enum values:
@@ -195,8 +195,8 @@ namespace System.Buffers.Text
         ///   or if the input is incomplete (i.e. not a multiple of 4).
         /// It does not return DestinationTooSmall since that is not possible for base 64 decoding.
         /// It does not return NeedMoreData since this method tramples the data in the buffer and 
-        /// hence can only be called once with all the data in the buffer.</returns>
-        /// </summary> 
+        /// hence can only be called once with all the data in the buffer.
+        /// </returns>
         public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten)
         {
             int bufferLength = buffer.Length;
