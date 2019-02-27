@@ -44,6 +44,7 @@ namespace System.IO.Pipelines
         protected PipeReader() { }
         public abstract void AdvanceTo(System.SequencePosition consumed);
         public abstract void AdvanceTo(System.SequencePosition consumed, System.SequencePosition examined);
+        public virtual System.IO.Stream AsStream() { throw null; }
         public abstract void CancelPendingRead();
         public abstract void Complete(System.Exception exception = null);
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -62,6 +63,7 @@ namespace System.IO.Pipelines
     {
         protected PipeWriter() { }
         public abstract void Advance(int bytes);
+        public virtual System.IO.Stream AsStream() { throw null; }
         public abstract void CancelPendingFlush();
         public abstract void Complete(System.Exception exception = null);
         protected internal virtual System.Threading.Tasks.Task CopyFromAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

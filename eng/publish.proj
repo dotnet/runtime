@@ -8,9 +8,10 @@
 
   <PropertyGroup>
     <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">corefx</GitHubRepositoryName>
-    <AssetManifestFileName Condition="'$(AssetManifestFileName)' == '' AND '$(ManifestBuildId)' != ''">$(GitHubRepositoryName)-$(ManifestBuildId)</AssetManifestFileName>
-    <AssetManifestFileName Condition="'$(AssetManifestFileName)' == ''">$(GitHubRepositoryName)</AssetManifestFileName>
-    <AssetManifestFilePath>$(ArtifactsDir)AssetManifests\$(AssetManifestFileName).xml</AssetManifestFilePath>
+    <AssetManifestFileName Condition="'$(AssetManifestFileName)' == '' AND '$(ManifestBuildId)' != ''">$(GitHubRepositoryName)-$(ManifestBuildId).xml</AssetManifestFileName>
+    <AssetManifestFileName Condition="'$(AssetManifestFileName)' == ''">$(GitHubRepositoryName).xml</AssetManifestFileName>
+    <AssetManifestDir>$(ArtifactsDir)AssetManifests\</AssetManifestDir>
+    <AssetManifestFilePath>$(AssetManifestDir)$(AssetManifestFileName)</AssetManifestFilePath>
 
     <PackageOutputRoot Condition="'$(PackagesOutputRoot)' == ''">$(ArtifactsDir)/packages/</PackageOutputRoot>
     <FinalPublishPattern>$(PackageOutputRoot)*.nupkg</FinalPublishPattern>
@@ -103,5 +104,57 @@
     <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
 
     <Message Importance="High" Text="Publishing %(SymbolPackagesToPublish.Identity) to $(SymbolServerPath)"/>
+  </Target>
+
+  <Target Name="PublishTestAssets">
+    <Error Text="The ExpectedFeedUrl property wasn't supplied." Condition="'$(ExpectedFeedUrl)' == ''" />
+    <Error Text="The AccountKey property wasn't supplied." Condition="'$(AccountKey)' == ''" />
+    <Error Text="FilesToPublishPattern property wasn't supplied." Condition="'$(FilesToPublishPattern)' == ''" />
+
+    <PropertyGroup>
+      <_TestAssetVersion>$(PackageVersion)-$(VersionSuffix)</_TestAssetVersion>
+      <_FileRelativePathBase>corefx-tests/$(_TestAssetVersion)/$(OSGroup).$(ArchGroup)/$(TargetGroup)/</_FileRelativePathBase>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ItemsToPush Remove="@(_ItemsToPush)" />
+      <_ItemsToPush Include="$(FilesToPublishPattern)" />
+      <_ItemsToPush>
+        <RelativeBlobPath>$(_FileRelativePathBase)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      </_ItemsToPush>
+    </ItemGroup>
+
+    <Error Condition="'@(_ItemsToPush)' == ''" Text="No files to push." />
+
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(_ItemsToPush)"
+                    PublishFlatContainer="true"
+                    ManifestBuildId="$(ManifestBuildId)"
+                    ManifestBranch="$(ManifestBranch)"
+                    ManifestCommit="$(ManifestCommit)"
+                    ManifestBuildData="$(ManifestBuildData)"
+                    ManifestRepoUri="$(ManifestRepoUri)"
+                    AssetManifestPath="$(AssetManifestFilePath)" />
+
+    <ItemGroup>
+      <_ManifestToPush Remove="@(_ManifestToPush)" />
+      <_ManifestToPush Include="$(AssetManifestFilePath)">
+        <RelativeBlobPath>$(_FileRelativePathBase)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+      </_ManifestToPush>
+    </ItemGroup>
+
+    <Message Importance="High" Text="PublishTestAssets: $(_FileRelativePathBase)$(AssetManifestFileName)" />
+
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(_ManifestToPush)"
+                    PublishFlatContainer="true"
+                    ManifestBuildId="$(ManifestBuildId)"
+                    ManifestBranch="$(ManifestBranch)"
+                    ManifestCommit="$(ManifestCommit)"
+                    ManifestBuildData="$(ManifestBuildData)"
+                    ManifestRepoUri="$(ManifestRepoUri)"
+                    AssetManifestPath="$(AssetManifestDir)ManifestUpload.xml" />
   </Target>
 </Project>

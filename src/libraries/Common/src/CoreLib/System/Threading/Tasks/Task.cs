@@ -4394,7 +4394,7 @@ namespace System.Threading.Tasks
             AddCompletionAction(action, addBeforeOthers: false);
         }
 
-        private void AddCompletionAction(ITaskCompletionAction action, bool addBeforeOthers)
+        internal void AddCompletionAction(ITaskCompletionAction action, bool addBeforeOthers)
         {
             if (!AddTaskContinuation(action, addBeforeOthers))
                 action.Invoke(this); // run the action directly if we failed to queue the continuation (i.e., the task completed)
@@ -5127,7 +5127,7 @@ namespace System.Threading.Tasks
 
             if (signaledTaskIndex == -1 && tasks.Length != 0)
             {
-                Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks);
+                Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks, isSyncBlocking: true);
                 bool waitCompleted = firstCompleted.Wait(millisecondsTimeout, cancellationToken);
                 if (waitCompleted)
                 {

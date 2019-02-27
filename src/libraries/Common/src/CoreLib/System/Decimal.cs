@@ -881,7 +881,6 @@ namespace System
             return new decimal(value);
         }
 
-
         public static explicit operator decimal(float value)
         {
             return new decimal(value);

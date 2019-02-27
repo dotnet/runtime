@@ -34,8 +34,11 @@ const ASN1_TIME* local_X509_CRL_get0_nextUpdate(const X509_CRL* crl);
 int32_t local_X509_NAME_get0_der(X509_NAME* x509Name, const uint8_t** pder, size_t* pderlen);
 int32_t local_X509_PUBKEY_get0_param(
     ASN1_OBJECT** palgOid, const uint8_t** pkeyBytes, int* pkeyBytesLen, X509_ALGOR** palg, X509_PUBKEY* pubkey);
+STACK_OF(X509)* local_X509_STORE_CTX_get0_chain(X509_STORE_CTX* ctx);
 X509* local_X509_STORE_CTX_get0_cert(X509_STORE_CTX* ctx);
-STACK_OF(X509) * local_X509_STORE_CTX_get0_untrusted(X509_STORE_CTX* ctx);
+X509_STORE* local_X509_STORE_CTX_get0_store(X509_STORE_CTX* ctx);
+STACK_OF(X509)* local_X509_STORE_CTX_get0_untrusted(X509_STORE_CTX* ctx);
+X509_VERIFY_PARAM* local_X509_STORE_get0_param(X509_STORE* ctx);
 const ASN1_TIME* local_X509_get0_notAfter(const X509* x509);
 const ASN1_TIME* local_X509_get0_notBefore(const X509* x509);
 ASN1_BIT_STRING* local_X509_get0_pubkey_bitstr(const X509* x509);

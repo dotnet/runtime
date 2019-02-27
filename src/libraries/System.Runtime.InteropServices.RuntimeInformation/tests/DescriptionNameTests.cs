@@ -44,31 +44,17 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
         [Fact]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
-        public void VerifyRuntimeDebugNameOnNetCoreApp()
+        public void VerifyRuntimeNameOnNetCoreApp()
         {
-            AssemblyFileVersionAttribute attr = (AssemblyFileVersionAttribute)(typeof(object).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyFileVersionAttribute)));
-            string expected = string.Format(".NET Core {0}", attr.Version);
-            Assert.Equal(expected, RuntimeInformation.FrameworkDescription);
+            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET Core"), RuntimeInformation.FrameworkDescription);
             Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void VerifyRuntimeDebugNameOnNetFramework()
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.UapAot)]
+        public void VerifyRuntimeNameOnNetNative()
         {
-            AssemblyFileVersionAttribute attr = (AssemblyFileVersionAttribute)(typeof(object).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyFileVersionAttribute)));
-            string expected = string.Format(".NET Framework {0}", attr.Version);
-            Assert.Equal(expected, RuntimeInformation.FrameworkDescription);
-            Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.Netcoreapp)]
-        public void VerifyRuntimeDebugNameOnNetCoreUwp()
-        {
-            AssemblyFileVersionAttribute attr = (AssemblyFileVersionAttribute)(typeof(object).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyFileVersionAttribute)));
-            string expected = string.Format(PlatformDetection.IsNetNative ? ".NET Native {0}" : ".NET Core {0}", attr.Version);
-            Assert.Equal(expected, RuntimeInformation.FrameworkDescription);
+            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"), RuntimeInformation.FrameworkDescription);
             Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
         }
 
@@ -87,32 +73,32 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.False(RuntimeInformation.OSDescription.EndsWith(" "));
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows debug name in RuntimeInformation
-        public void VerifyWindowsDebugName()
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows name in RuntimeInformation
+        public void VerifyWindowsName()
         {
             Assert.Contains("windows", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.Linux)]  // Checks Linux debug name in RuntimeInformation
-        public void VerifyLinuxDebugName()
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]  // Checks Linux name in RuntimeInformation
+        public void VerifyLinuxName()
         {
             Assert.Contains("linux", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.NetBSD)]  // Checks NetBSD debug name in RuntimeInformation
-        public void VerifyNetBSDDebugName()
+        [Fact, PlatformSpecific(TestPlatforms.NetBSD)]  // Checks NetBSD name in RuntimeInformation
+        public void VerifyNetBSDName()
         {
             Assert.Contains("netbsd", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]  // Checks FreeBSD debug name in RuntimeInformation
-        public void VerifyFreeBSDDebugName()
+        [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]  // Checks FreeBSD name in RuntimeInformation
+        public void VerifyFreeBSDName()
         {
             Assert.Contains("FreeBSD", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.OSX)]  // Checks OSX debug name in RuntimeInformation
-        public void VerifyOSXDebugName()
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]  // Checks OSX name in RuntimeInformation
+        public void VerifyOSXName()
         {
             Assert.Contains("darwin", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }

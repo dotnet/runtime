@@ -38,6 +38,9 @@
     <PackageReference Include="$(TargetingPackNugetPackageId)">
       <Version >$(_TargetingPackVersion)</Version>
     </PackageReference>
+    <PackageReference Include="System.Memory" Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46'">
+      <Version>4.5.2</Version>
+    </PackageReference>
     <PackageReference Include="$(NETStandardSupportPackageId)" Condition="'$(AddNetStandardSupportPackage)' == 'true'">
       <Version>$(NETStandardSupportPackageVersion)</Version>
     </PackageReference>

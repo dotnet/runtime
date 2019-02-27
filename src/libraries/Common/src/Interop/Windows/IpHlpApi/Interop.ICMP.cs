@@ -78,44 +78,6 @@ internal static partial class Interop
             // internal IntPtr data; data os after tjos
         }
 
-        internal enum IcmpV4Type
-        {
-            // Can be mapped:
-            ICMP4_ECHO_REPLY = 0, // Echo Reply.
-            ICMP4_DST_UNREACH = 3, // Destination Unreachable.
-            ICMP4_SOURCE_QUENCH = 4, // Source Quench.
-            ICMP4_TIME_EXCEEDED = 11, // Time Exceeded.
-            ICMP4_PARAM_PROB = 12, // Parameter Problem.
-
-            // Un-mappable:
-            ICMP4_REDIRECT = 5, // Redirect.
-            ICMP4_ECHO_REQUEST = 8, // Echo Request.
-            ICMP4_ROUTER_ADVERT = 9, // Router Advertisement.
-            ICMP4_ROUTER_SOLICIT = 10, // Router Solicitation.
-            ICMP4_TIMESTAMP_REQUEST = 13, // Time-stamp Request.
-            ICMP4_TIMESTAMP_REPLY = 14, // Time-stamp Reply.
-            ICMP4_MASK_REQUEST = 17, // Address Mask Request.
-            ICMP4_MASK_REPLY = 18, // Address Mask Reply.
-        }
-
-        internal enum IcmpV4Code
-        {
-            ICMP4_UNREACH_NET = 0,
-            ICMP4_UNREACH_HOST = 1,
-            ICMP4_UNREACH_PROTOCOL = 2,
-            ICMP4_UNREACH_PORT = 3,
-            ICMP4_UNREACH_FRAG_NEEDED = 4,
-            ICMP4_UNREACH_SOURCEROUTE_FAILED = 5,
-            ICMP4_UNREACH_NET_UNKNOWN = 6,
-            ICMP4_UNREACH_HOST_UNKNOWN = 7,
-            ICMP4_UNREACH_ISOLATED = 8,
-            ICMP4_UNREACH_NET_ADMIN = 9,
-            ICMP4_UNREACH_HOST_ADMIN = 10,
-            ICMP4_UNREACH_NET_TOS = 11,
-            ICMP4_UNREACH_HOST_TOS = 12,
-            ICMP4_UNREACH_ADMIN = 13,
-        }
-
         internal sealed class SafeCloseIcmpHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             private SafeCloseIcmpHandle() : base(true)

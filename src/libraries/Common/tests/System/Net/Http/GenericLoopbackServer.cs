@@ -75,7 +75,9 @@ namespace System.Net.Test.Common
             string[] values = GetHeaderValues(headerName);
             if (values.Length != 1)
             {
-                throw new Exception($"Expected single value for {headerName} header, actual count: {values.Length}");
+                throw new Exception(
+                    $"Expected single value for {headerName} header, actual count: {values.Length}{Environment.NewLine}" +
+                    $"{"\t"}{string.Join(Environment.NewLine + "\t", values)}");
             }
 
             return values[0];

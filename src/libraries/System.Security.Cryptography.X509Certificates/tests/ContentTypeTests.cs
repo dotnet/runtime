@@ -28,6 +28,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(contentType, blobType);
         }
 
+        [Fact]
+        public static void TestThrowsWhenGivenInvalidContent()
+        {
+            byte[] blob = new byte[] { 0x00, 0xFF, 0x00, 0xFF };
+            Assert.ThrowsAny<CryptographicException>(() => X509Certificate2.GetCertContentType(blob));
+        }
+
         public static IEnumerable<object[]> GetContentBlobsWithType()
         {
             return new[]
@@ -44,6 +51,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 new object[] { "EmptyPfx", TestData.EmptyPfx, X509ContentType.Pkcs12 },
                 new object[] { "MultiPrivatePfx", TestData.MultiPrivateKeyPfx, X509ContentType.Pkcs12 },
                 new object[] { "ChainPfx", TestData.ChainPfxBytes, X509ContentType.Pkcs12 },
+                new object[] { "ConcatenatedPem", TestData.ConcatenatedPemFile, X509ContentType.Cert }
             };
         }
     }
