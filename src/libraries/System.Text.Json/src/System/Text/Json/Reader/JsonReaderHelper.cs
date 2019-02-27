@@ -7,10 +7,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if BUILDING_INBOX_LIBRARY
-using Internal.Runtime.CompilerServices;
-#endif
-
 namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper

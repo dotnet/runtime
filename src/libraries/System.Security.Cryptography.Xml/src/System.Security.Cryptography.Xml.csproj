@@ -66,7 +66,6 @@
     <Compile Include="System\Security\Cryptography\Xml\SymmetricKeyWrap.cs" />
     <Compile Include="System\Security\Cryptography\Xml\Transform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\TransformChain.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\TransformInputType.cs" />
     <Compile Include="System\Security\Cryptography\Xml\Utils.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDecryptionTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigBase64Transform.cs" />

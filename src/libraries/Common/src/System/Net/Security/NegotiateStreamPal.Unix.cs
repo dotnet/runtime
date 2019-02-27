@@ -99,12 +99,14 @@ namespace System.Net.Security
             SafeGssCredHandle credential,
             bool isNtlm,
             ChannelBinding channelBinding,
-            SafeGssNameHandle targetName,
+            bool isNtlmFallback,
+            SafeGssNameHandle targetNameKerberos,
+            SafeGssNameHandle targetNameNtlm,
             Interop.NetSecurityNative.GssFlags inFlags,
             byte[] buffer,
             out byte[] outputBuffer,
             out uint outFlags,
-            out int isNtlmUsed)
+            out bool isNtlmUsed)
         {
             // If a TLS channel binding token (cbt) is available then get the pointer
             // to the application specific data.
@@ -141,7 +143,9 @@ namespace System.Net.Security
                                                           isNtlm,
                                                           cbtAppData,
                                                           cbtAppDataSize,
-                                                          targetName,
+                                                          isNtlmFallback,
+                                                          targetNameKerberos,
+                                                          targetNameNtlm,
                                                           (uint)inFlags,
                                                           buffer,
                                                           (buffer == null) ? 0 : buffer.Length,
@@ -149,7 +153,8 @@ namespace System.Net.Security
                                                           out outFlags,
                                                           out isNtlmUsed);
 
-                if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) && (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))
+                if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) &&
+                    (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))
                 {
                     throw new Interop.NetSecurityNative.GssApiException(status, minorStatus);
                 }
@@ -175,34 +180,51 @@ namespace System.Net.Security
           ref ContextFlagsPal outFlags)
         {
             bool isNtlmOnly = credential.IsNtlmOnly;
+            bool initialContext = false;
 
             if (context == null)
             {
-                // Empty target name causes the failure on Linux, hence passing a non-empty string  
-                context = isNtlmOnly ? new SafeDeleteNegoContext(credential, credential.UserName) : new SafeDeleteNegoContext(credential, targetName);
+                if (NetEventSource.IsEnabled)
+                {
+                    string protocol = isNtlmOnly ? "NTLM" : "SPNEGO";
+                    NetEventSource.Info($"EstablishSecurityContext: protocol = {protocol}, target = {targetName}");
+                }
+
+                initialContext = true;
+                context = new SafeDeleteNegoContext(credential, targetName);
             }
 
             SafeDeleteNegoContext negoContext = (SafeDeleteNegoContext)context;
             try
             {
-                Interop.NetSecurityNative.GssFlags inputFlags = ContextFlagsAdapterPal.GetInteropFromContextFlagsPal(inFlags, isServer: false);
+                Interop.NetSecurityNative.GssFlags inputFlags =
+                    ContextFlagsAdapterPal.GetInteropFromContextFlagsPal(inFlags, isServer: false);
                 uint outputFlags;
-                int isNtlmUsed;
+                bool isNtlmUsed;
                 SafeGssContextHandle contextHandle = negoContext.GssContext;
                 bool done = GssInitSecurityContext(
                    ref contextHandle,
                    credential.GssCredential,
                    isNtlmOnly,
                    channelBinding,
-                   negoContext.TargetName,
+                   negoContext.IsNtlmFallback,
+                   negoContext.TargetNameKerberos,
+                   negoContext.TargetNameNtlm,
                    inputFlags,
                    incomingBlob,
                    out resultBuffer,
                    out outputFlags,
                    out isNtlmUsed);
 
+                // Remember if SPNEGO did a fallback from Kerberos to NTLM while generating the initial context.                 
+                if (initialContext && !isNtlmOnly && isNtlmUsed)
+                {
+                    negoContext.IsNtlmFallback = true;
+                }
+
                 Debug.Assert(resultBuffer != null, "Unexpected null buffer returned by GssApi");
-                outFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop((Interop.NetSecurityNative.GssFlags)outputFlags, isServer: false);
+                outFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop(
+                    (Interop.NetSecurityNative.GssFlags)outputFlags, isServer: false);
                 Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
 
                 // Save the inner context handle for further calls to NetSecurity
@@ -215,7 +237,12 @@ namespace System.Net.Security
                 // Populate protocol used for authentication
                 if (done)
                 {
-                    negoContext.SetAuthenticationPackage(Convert.ToBoolean(isNtlmUsed));
+                    negoContext.SetAuthenticationPackage(isNtlmUsed);
+                    if (NetEventSource.IsEnabled)
+                    {
+                        string protocol = isNtlmOnly ? "NTLM" : isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos";
+                        NetEventSource.Info($"EstablishSecurityContext: completed handshake, protocol = {protocol}");
+                    }
                 }
 
                 SecurityStatusPalErrorCode errorCode = done ?

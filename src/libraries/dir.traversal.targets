@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="Directory.Build.targets" /> 
+<Project>
+  <Import Project="Directory.Build.targets" />
 
   <Target Name="ProducesPackageId"
           Returns="@(PackageIds)"
@@ -52,23 +52,26 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <Target Name="TestAllProjects"
-          AfterTargets="BuildAllProjects"
-          Condition="$(MSBuildProjectName.EndsWith('tests'))">
+  <Target Name="TestAllProjects" DependsOnTargets="FilterProjects">
+    <PropertyGroup>
+      <TestAllTarget Condition="'$(IntegrationTest)' == 'true'">IntegrationTest</TestAllTarget>
+      <TestAllTarget Condition="'$(PerformanceTest)' == 'true'">PerformanceTest</TestAllTarget>
+      <TestAllTarget Condition="'$(Test)' == 'true'">Test</TestAllTarget>
+    </PropertyGroup>
 
     <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
          however since the project names are unique it will essentially force each to run in its own batch -->
 
-    <MSBuild Targets="Test"
+    <MSBuild Targets="$(TestAllTarget)"
              Projects="@(Project)"
-             Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Condition="'$(SerializeProjects)' == 'true' AND '%(Identity)' != ''"
+             Properties="BuildConfiguration=$(BuildConfiguration)"
              ContinueOnError="ErrorAndContinue" />
 
-    <MSBuild Targets="Test"
+    <MSBuild Targets="$(TestAllTarget)"
              Projects="@(Project)"
-             Condition="'$(SerializeProjects)'!='true'"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Condition="'$(SerializeProjects)' != 'true'"
+             Properties="BuildConfiguration=$(BuildConfiguration)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 
@@ -129,14 +132,11 @@
   </PropertyGroup>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
-
-  <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
-
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
+  <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
-  <Target Name="Test" />
   <Target Name="Restore" />
+  <Target Name="Test" />
 
 </Project>

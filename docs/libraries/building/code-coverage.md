@@ -40,11 +40,11 @@ You can navigate to this from your PR by clicking the "Details" link to the righ
 
 ## Local Code Coverage Runs
 
-You can perform code coverage runs for the entire repository locally by adding the `coverage` argument to the `build -includetests` command.
+You can perform code coverage runs for the entire repository locally by adding the `coverage` switch (assuming that  source and test assemblies are already built):
 
-    build -includetests -coverage
+    build -test -coverage
 
-This builds and tests the test assemblies and generates the full code coverage report. The resulting index.htm file providing the results of the run should be available at:
+This runs the tests and generates the full code coverage report. The resulting index.htm file providing the results of the run should be available at:
 
     artifacts\coverage\index.htm
 
