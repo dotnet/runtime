@@ -238,31 +238,27 @@ void fx_muxer_t::display_missing_framework_error(
     }
     else
     {
-        trace::error(_X("No frameworks were found."));
+        trace::error(_X("The specified framework '%s' was not found."), fx_name.c_str());
     }
 
-    trace::error(_X("  - Check application dependencies and target a framework version installed at:"));
-    trace::error(_X("      %s"), fx_ver_dirs.c_str());
-    trace::error(_X("  - The .NET Core Runtime and SDK can be installed from:"));
-    trace::error(_X("      %s"), DOTNET_CORE_DOWNLOAD_URL);
-
-    // Gather the list of versions installed at the shared FX location.
-    bool is_print_header = true;
-
-    for (const framework_info& info : framework_infos)
+    if (framework_infos.size())
     {
-        // Print banner only once before printing the versions
-        if (is_print_header)
+        trace::error(_X("  - The following frameworks were found:"));
+        for (const framework_info& info : framework_infos)
         {
-            trace::error(_X("  - The following versions are installed:"));
-            is_print_header = false;
+            trace::error(_X("      %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
         }
-
-        trace::error(_X("      %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
+    }
+    else
+    {
+        trace::error(_X("  - No frameworks were found."));
     }
 
-    trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem:"));
-    trace::error(_X("      %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
+    trace::error(_X(""));
+    trace::error(_X("You can resolve the problem by installing the specified framework and/or SDK."));
+    trace::error(_X(""));
+    trace::error(_X("The .NET Core framework can be found at:"));
+    trace::error(_X("  - %s"), DOTNET_CORE_DOWNLOAD_URL);
 }
 
 /**
