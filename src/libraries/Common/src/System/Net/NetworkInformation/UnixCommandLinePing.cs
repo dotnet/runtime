@@ -84,10 +84,17 @@ namespace System.Net.NetworkInformation
 
             if (ttl > 0)
             {
-                if (!ipv4 && s_isBSD)
+                if (s_isBSD)
                 {
-                    // OSX and FreeBSD use -h to set hop limit for IPv6
-                    sb.Append(" -h ");
+                    // OSX and FreeBSD use -h to set hop limit for IPv6 and -m ttl for IPv4
+                    if (ipv4)
+                    {
+                        sb.Append(" -m ");
+                    }
+                    else
+                    {
+                        sb.Append(" -h ");
+                    }
                 }
                 else
                 {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
 
@@ -9,6 +10,8 @@ namespace System.IO.Tests
 {
     public class File_Delete : FileSystemTest
     {
+        static bool IsBindMountSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !PlatformDetection.IsInContainer && !PlatformDetection.IsRedHatFamily6;
+
         public virtual void Delete(string path)
         {
             File.Delete(path);
@@ -113,30 +116,24 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Fact]
+        [ConditionalFact(nameof(IsBindMountSupported))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_NonExistentPath_ReadOnlyVolume()
         {
-            if (PlatformDetection.IsRedHatFamily6 || PlatformDetection.IsAlpine)
-                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/21920)]
-
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
             {
                 Delete(Path.Combine(readOnlyDirectory, "DoesNotExist"));
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsBindMountSupported))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_ExistingDirectory_ReadOnlyVolume()
         {
-            if (PlatformDetection.IsRedHatFamily6 || PlatformDetection.IsAlpine)
-                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/21920)]
-
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
             {
                 Assert.Throws<IOException>(() => Delete(Path.Combine(readOnlyDirectory, "subdir")));

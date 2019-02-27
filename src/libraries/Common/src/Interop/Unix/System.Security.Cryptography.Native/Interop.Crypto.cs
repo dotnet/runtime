@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -108,6 +109,17 @@ internal static partial class Interop
             int second,
             [MarshalAs(UnmanagedType.Bool)] bool isDst);
 
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_X509StoreSetVerifyTime(
+            SafeX509StoreHandle ctx,
+            int year,
+            int month,
+            int day,
+            int hour,
+            int minute,
+            int second,
+            [MarshalAs(UnmanagedType.Bool)] bool isDst);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509IpAddress")]
         internal static extern int CheckX509IpAddress(SafeX509Handle x509, [In]byte[] addressBytes, int addressLen, string hostname, int cchHostname);
 
@@ -117,6 +129,11 @@ internal static partial class Interop
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)
         {
             return GetDynamicBuffer((ptr, buf, i) => GetAsn1StringBytes(ptr, buf, i), asn1);
+        }
+
+        internal static ArraySegment<byte> RentAsn1StringBytes(IntPtr asn1)
+        {
+            return RentDynamicBuffer((ptr, buf, i) => GetAsn1StringBytes(ptr, buf, i), asn1);
         }
 
         internal static byte[] GetX509Thumbprint(SafeX509Handle x509)
@@ -159,6 +176,28 @@ internal static partial class Interop
             }
         }
 
+        internal static void X509StoreSetVerifyTime(SafeX509StoreHandle ctx, DateTime verifyTime)
+        {
+            // OpenSSL is going to convert our input time to universal, so we should be in Local or
+            // Unspecified (local-assumed).
+            Debug.Assert(verifyTime.Kind != DateTimeKind.Utc, "UTC verifyTime should have been normalized to Local");
+
+            int succeeded = CryptoNative_X509StoreSetVerifyTime(
+                ctx,
+                verifyTime.Year,
+                verifyTime.Month,
+                verifyTime.Day,
+                verifyTime.Hour,
+                verifyTime.Minute,
+                verifyTime.Second,
+                verifyTime.IsDaylightSavingTime());
+
+            if (succeeded != 1)
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+        }
+
         private static byte[] GetDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)
         {
             int negativeSize = method(handle, null, 0);
@@ -178,6 +217,29 @@ internal static partial class Interop
             }
 
             return bytes;
+        }
+
+        private static ArraySegment<byte> RentDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)
+        {
+            int negativeSize = method(handle, null, 0);
+
+            if (negativeSize > 0)
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
+            int targetSize = -negativeSize;
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(targetSize);
+
+            int ret = method(handle, bytes, targetSize);
+
+            if (ret != 1)
+            {
+                ArrayPool<byte>.Shared.Return(bytes);
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
+            return new ArraySegment<byte>(bytes, 0, targetSize);
         }
     }
 }

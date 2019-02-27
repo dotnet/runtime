@@ -10,12 +10,18 @@ namespace System.Text.Json
 {
     public partial struct JsonElement
     {
+        /// <summary>
+        ///   An enumerable and enumerator for the contents of a JSON array.
+        /// </summary>
         public struct ArrayEnumerator : IEnumerable<JsonElement>, IEnumerator<JsonElement>
         {
             private readonly JsonElement _target;
             private int _curIdx;
             private readonly int _endIdx;
 
+            /// <summary>
+            ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+            /// </summary>
             internal ArrayEnumerator(JsonElement target)
             {
                 Debug.Assert(target.TokenType == JsonTokenType.StartArray);
@@ -25,9 +31,17 @@ namespace System.Text.Json
                 _endIdx = _target._parent.GetEndIndex(_target._idx, includeEndElement: false);
             }
 
+            /// <inheritdoc />
             public JsonElement Current =>
                 _curIdx < 0 ? default : new JsonElement(_target._parent, _curIdx);
 
+            /// <summary>
+            ///   Returns an enumerator that iterates through a collection.
+            /// </summary>
+            /// <returns>
+            ///   An <see cref="ArrayEnumerator"/> value that can be used to iterate
+            ///   through the array.
+            /// </returns>
             public ArrayEnumerator GetEnumerator()
             {
                 ArrayEnumerator ator = this;
@@ -35,22 +49,28 @@ namespace System.Text.Json
                 return ator;
             }
 
+            /// <inheritdoc />
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+            /// <inheritdoc />
             IEnumerator<JsonElement> IEnumerable<JsonElement>.GetEnumerator() => GetEnumerator();
 
+            /// <inheritdoc />
             public void Dispose()
             {
                 _curIdx = _endIdx;
             }
 
+            /// <inheritdoc />
             public void Reset()
             {
                 _curIdx = -1;
             }
 
+            /// <inheritdoc />
             object IEnumerator.Current => Current;
 
+            /// <inheritdoc />
             public bool MoveNext()
             {
                 if (_curIdx >= _endIdx)

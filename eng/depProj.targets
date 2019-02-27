@@ -100,7 +100,7 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <Error Condition="'@(NuGetDeploy)' == ''" Text="Error no assets were resolved from NuGet packages." />
-    <Message Importance="High" Text="%(FullPath) (%(NuGetPackageId).%(NuGetPackageVersion)) -&gt; @(NuGetDeploy->'$(TargetDir)%(FileName)%(Extension)')" />
+    <Message Importance="High" Text="%(FullPath) (%(NuGetPackageId).%(NuGetPackageVersion)) -&gt; @(NuGetDeploy->'$(TargetDir)%(SubFolder)%(FileName)%(Extension)')" />
 
     <!-- Include marker files if an extension has been provided -->
     <!-- internal builds use this to distinguish files which have already been signed -->

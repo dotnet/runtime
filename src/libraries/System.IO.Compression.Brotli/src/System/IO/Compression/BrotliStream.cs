@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,7 +13,7 @@ namespace System.IO.Compression
     {
         private const int DefaultInternalBufferSize = (1 << 16) - 16; //65520;
         private Stream _stream;
-        private readonly byte[] _buffer;
+        private byte[] _buffer;
         private readonly bool _leaveOpen;
         private readonly CompressionMode _mode;
 
@@ -40,13 +40,13 @@ namespace System.IO.Compression
             _mode = mode;
             _stream = stream;
             _leaveOpen = leaveOpen;
-            _buffer = new byte[DefaultInternalBufferSize];
+            _buffer = ArrayPool<byte>.Shared.Rent(DefaultInternalBufferSize);
         }
 
         private void EnsureNotDisposed()
         {
             if (_stream == null)
-                throw new ObjectDisposedException("stream", SR.ObjectDisposed_StreamClosed);
+                throw new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_StreamClosed);
         }
 
         protected override void Dispose(bool disposing)
@@ -68,9 +68,7 @@ namespace System.IO.Compression
             }
             finally
             {
-                _stream = null;
-                _encoder.Dispose();
-                _decoder.Dispose();
+                ReleaseStateForDispose();
                 base.Dispose(disposing);
             }
         }
@@ -94,9 +92,24 @@ namespace System.IO.Compression
             }
             finally
             {
-                _stream = null;
-                _encoder.Dispose();
-                _decoder.Dispose();
+                ReleaseStateForDispose();
+            }
+        }
+
+        private void ReleaseStateForDispose()
+        {
+            _stream = null;
+            _encoder.Dispose();
+            _decoder.Dispose();
+
+            byte[] buffer = _buffer;
+            if (buffer != null)
+            {
+                _buffer = null;
+                if (!AsyncOperationIsActive)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 

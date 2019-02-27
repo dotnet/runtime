@@ -6,4 +6,12 @@
     <!-- use the most recent MS.NETCore.App we have from upstack -->
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- unsafe is part of the framework but we don't yet have a MicrosoftNETCoreAppPackageVersion with that change -->
+    <IgnoredReference Include="System.Runtime.CompilerServices.Unsafe"/>
+  </ItemGroup>
+  <Target Name="CheckForWorkaroundRemoval" AfterTargets="ResolveReferences">
+    <Error Condition="'%(Reference.FileName)' == 'System.Runtime.CompilerServices.Unsafe' AND '%(Reference.NuGetPackageId)' == 'Microsoft.NETCore.App'"
+           Text="Please remove IgnoredReference workaround from pkg\test\frameworkSettings\netcoreapp3.0\settings.targets" />
+  </Target>
 </Project>

@@ -31,13 +31,13 @@ namespace Microsoft.Win32.SafeHandles
             return retHandle;
         }
 
-        public static SafeGssNameHandle CreatePrincipal(string name)
+        public static SafeGssNameHandle CreateTarget(string name, bool isNtlmTarget)
         {
-            Debug.Assert(!string.IsNullOrEmpty(name), "Invalid principal passed to SafeGssNameHandle create");
+            Debug.Assert(!string.IsNullOrEmpty(name), "Invalid target name passed to SafeGssNameHandle create");
             SafeGssNameHandle retHandle;
             Interop.NetSecurityNative.Status minorStatus;
-            Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ImportPrincipalName(
-                out minorStatus, name, Encoding.UTF8.GetByteCount(name), out retHandle);
+            Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ImportTargetName(
+                out minorStatus, name, Encoding.UTF8.GetByteCount(name), isNtlmTarget, out retHandle);
 
             if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
             {
