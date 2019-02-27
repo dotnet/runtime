@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -71,6 +70,14 @@ namespace Microsoft.Win32.SafeHandles
     internal sealed class SafeSharedAsn1IntegerHandle : SafeInteriorHandle
     {
         private SafeSharedAsn1IntegerHandle() :
+            base(IntPtr.Zero, ownsHandle: true)
+        {
+        }
+    }
+
+    internal sealed class SafeSharedAsn1OctetStringHandle : SafeInteriorHandle
+    {
+        private SafeSharedAsn1OctetStringHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

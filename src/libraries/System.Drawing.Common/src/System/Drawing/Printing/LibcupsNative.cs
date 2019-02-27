@@ -15,10 +15,10 @@ namespace System.Drawing.Printing
         private static IntPtr LoadLibcups()
         {
             // We allow both "libcups.so" and "libcups.so.2" to be loaded.
-            IntPtr lib = Interop.Libdl.dlopen("libcups.so", Interop.Libdl.RTLD_NOW);
+            IntPtr lib = Interop.Libdl.dlopen("libcups.so", Interop.Libdl.RTLD_LAZY);
             if (lib == IntPtr.Zero)
             {
-                lib = Interop.Libdl.dlopen("libcups.so.2", Interop.Libdl.RTLD_NOW);
+                lib = Interop.Libdl.dlopen("libcups.so.2", Interop.Libdl.RTLD_LAZY);
             }
 
             return lib;

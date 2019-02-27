@@ -1,1 +1,0 @@
-this document has moved to [net-platform-standard.md](../architecture/net-platform-standard.md)

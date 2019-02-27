@@ -99,7 +99,7 @@ ResolvePkgProjReferences:
 To run a test from a single Build Pivot combination, specify all properties and build the `csproj`:
 
 ```
-dotnet msbuild System.Net.ServicePoint.Tests.csproj /t:rebuildandtest /p:TargetGroup=netcoreapp2.0 /p:Outerloop=true /p:xunitoptions=-showprogress /p:ConfigurationGroup=Debug
+dotnet msbuild System.Net.ServicePoint.Tests.csproj /t:rebuildandtest /p:TargetGroup=netcoreapp2.0 /p:OuterLoop=true /p:xunitoptions=-showprogress /p:ConfigurationGroup=Debug
 ```
 Will run the test using the following pivot values:
 * Architecture: AnyCPU

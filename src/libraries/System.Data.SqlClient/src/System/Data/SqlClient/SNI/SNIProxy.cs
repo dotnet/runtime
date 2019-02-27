@@ -24,13 +24,6 @@ namespace System.Data.SqlClient.SNI
         private const int DefaultSqlServerDacPort = 1434;
         private const string SqlServerSpnHeader = "MSSQLSvc";
 
-        internal class SspiClientContextResult
-        {
-            internal const uint OK = 0;
-            internal const uint Failed = 1;
-            internal const uint KerberosTicketMissing = 2;
-        }
-
         public static readonly SNIProxy Singleton = new SNIProxy();
 
         /// <summary>
@@ -238,7 +231,7 @@ namespace System.Data.SqlClient.SNI
             {
                 result = handle.SendAsync(clonedPacket, true);
             }
-            
+
             return result;
         }
 
