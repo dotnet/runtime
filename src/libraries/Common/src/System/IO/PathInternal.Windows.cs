@@ -144,58 +144,6 @@ namespace System.IO
                 && path[3] == '\\';
         }
 
-#if !NOSPAN
-        /// <summary>
-        /// Gets the length of the root of the path (drive, share, etc.).
-        /// </summary>
-        internal static int GetRootLength(ReadOnlySpan<char> path)
-        {
-            int i = 0;
-            int volumeSeparatorLength = 2;  // Length to the colon "C:"
-            int uncRootLength = 2;          // Length to the start of the server name "\\"
-
-            bool extendedSyntax = path.StartsWith(ExtendedDevicePathPrefix);
-            bool extendedUncSyntax = path.StartsWith(UncExtendedPathPrefix);
-            if (extendedSyntax)
-            {
-                // Shift the position we look for the root from to account for the extended prefix
-                if (extendedUncSyntax)
-                {
-                    // "\\" -> "\\?\UNC\"
-                    uncRootLength = UncExtendedPathPrefix.Length;
-                }
-                else
-                {
-                    // "C:" -> "\\?\C:"
-                    volumeSeparatorLength += ExtendedDevicePathPrefix.Length;
-                }
-            }
-
-            if ((!extendedSyntax || extendedUncSyntax) && path.Length > 0 && IsDirectorySeparator(path[0]))
-            {
-                // UNC or simple rooted path (e.g. "\foo", NOT "\\?\C:\foo")
-
-                i = 1; //  Drive rooted (\foo) is one character
-                if (extendedUncSyntax || (path.Length > 1 && IsDirectorySeparator(path[1])))
-                {
-                    // UNC (\\?\UNC\ or \\), scan past the next two directory separators at most
-                    // (e.g. to \\?\UNC\Server\Share or \\Server\Share\)
-                    i = uncRootLength;
-                    int n = 2; // Maximum separators to skip
-                    while (i < path.Length && (!IsDirectorySeparator(path[i]) || --n > 0)) i++;
-                }
-            }
-            else if (path.Length >= volumeSeparatorLength && path[volumeSeparatorLength - 1] == Path.VolumeSeparatorChar)
-            {
-                // Path is at least longer than where we expect a colon, and has a colon (\\?\A:, A:)
-                // If the colon is followed by a directory separator, move past it
-                i = volumeSeparatorLength;
-                if (path.Length >= volumeSeparatorLength + 1 && IsDirectorySeparator(path[volumeSeparatorLength])) i++;
-            }
-            return i;
-        }
- #endif
-
         /// <summary>
         /// Returns true if the path specified is relative to the current drive or working directory.
         /// Returns false if the path is fixed to a specific drive or UNC path.  This method does no

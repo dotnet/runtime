@@ -52,9 +52,7 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <Target Name="TestAllProjects"
-          DependsOnTargets="$(TestAllProjectsDependsOn)">
-
+  <Target Name="TestAllProjects" DependsOnTargets="FilterProjects">
     <PropertyGroup>
       <TestAllTarget Condition="'$(IntegrationTest)' == 'true'">IntegrationTest</TestAllTarget>
       <TestAllTarget Condition="'$(PerformanceTest)' == 'true'">PerformanceTest</TestAllTarget>
@@ -66,14 +64,14 @@
 
     <MSBuild Targets="$(TestAllTarget)"
              Projects="@(Project)"
-             Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Condition="'$(SerializeProjects)' == 'true' AND '%(Identity)' != ''"
+             Properties="BuildConfiguration=$(BuildConfiguration)"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(TestAllTarget)"
              Projects="@(Project)"
-             Condition="'$(SerializeProjects)'!='true'"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Condition="'$(SerializeProjects)' != 'true'"
+             Properties="BuildConfiguration=$(BuildConfiguration)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 
@@ -131,22 +129,14 @@
       CleanAllProjects;
       $(TraversalCleanDependsOn);
     </TraversalCleanDependsOn>
-
-    <TestAllProjectsDependsOn Condition="'$(BuildTests)' == 'true'">
-      BuildAllProjects;
-      $(TestAllProjectsDependsOn);
-    </TestAllProjectsDependsOn>
   </PropertyGroup>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
-
-  <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
-
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
+  <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
-  <Target Name="Test" />
   <Target Name="Restore" />
+  <Target Name="Test" />
 
 </Project>

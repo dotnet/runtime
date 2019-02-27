@@ -28,7 +28,6 @@
     <TestProjectFilter Condition="'$(Test)' == 'true'">Tests</TestProjectFilter>
     <TestProjectFilter Condition="'$(IntegrationTest)' == 'true'">IntegrationTests</TestProjectFilter>
     <TestProjectFilter Condition="'$(PerformanceTest)' == 'true'">PerformanceTests</TestProjectFilter>
-
     <_TestProjectFilter Condition="'$(TestProjectFilter)' != ''">.$(TestProjectFilter)</_TestProjectFilter>
     <!-- By default build all test project types to capture build errors in CI. -->
     <_TestProjectFilter Condition="'$(TestProjectFilter)' == '' or '$(BuildAllTests)' == 'true'">Tests</_TestProjectFilter>
@@ -36,8 +35,8 @@
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- Keep in sync with pattern for test projects in build.proj -->
-    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_TestProjectFilter).csproj" Exclude="@(TestProjectExclusions)" />
-    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_TestProjectFilter).vbproj" Exclude="@(TestProjectExclusions)" />
+    <Project Include="$(SourceDir)*\tests\**\*$(_TestProjectFilter).csproj" Exclude="@(TestProjectExclusions)" />
+    <Project Include="$(SourceDir)*\tests\**\*$(_TestProjectFilter).vbproj" Exclude="@(TestProjectExclusions)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
