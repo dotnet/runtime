@@ -11,6 +11,7 @@
 #cmakedefine01 HAVE_GETIFADDRS
 #cmakedefine01 HAVE_UTSNAME_DOMAINNAME
 #cmakedefine01 HAVE_STAT64
+#cmakedefine01 HAVE_VFORK
 #cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_STAT_BIRTHTIME
 #cmakedefine01 HAVE_STAT_TIMESPEC

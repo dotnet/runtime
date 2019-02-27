@@ -549,11 +549,6 @@ namespace System.Collections.Generic
                 _index = 0;
             }
 
-            private Enumerator(SerializationInfo info, StreamingContext context)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             public T Current
             {
                 get { return _current; }

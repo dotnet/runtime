@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class Libdl
     {
-        public const int RTLD_NOW = 0x002;
+        public const int RTLD_LAZY = 0x001;
 
         [DllImport(Libraries.Libdl)]
         public static extern IntPtr dlopen(string fileName, int flag);

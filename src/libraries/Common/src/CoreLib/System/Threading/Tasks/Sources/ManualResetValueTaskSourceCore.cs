@@ -80,7 +80,7 @@ namespace System.Threading.Tasks.Sources
         {
             ValidateToken(token);
             return
-                !_completed ? ValueTaskSourceStatus.Pending :
+                _continuation == null || !_completed ? ValueTaskSourceStatus.Pending :
                 _error == null ? ValueTaskSourceStatus.Succeeded :
                 _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
                 ValueTaskSourceStatus.Faulted;
@@ -94,7 +94,7 @@ namespace System.Threading.Tasks.Sources
             ValidateToken(token);
             if (!_completed)
             {
-                ManualResetValueTaskSourceCoreShared.ThrowInvalidOperationException();
+                ThrowHelper.ThrowInvalidOperationException();
             }
 
             _error?.Throw();
@@ -156,7 +156,7 @@ namespace System.Threading.Tasks.Sources
                 // Operation already completed, so we need to queue the supplied callback.
                 if (!ReferenceEquals(oldContinuation, ManualResetValueTaskSourceCoreShared.s_sentinel))
                 {
-                    ManualResetValueTaskSourceCoreShared.ThrowInvalidOperationException();
+                    ThrowHelper.ThrowInvalidOperationException();
                 }
 
                 switch (_capturedContext)
@@ -193,7 +193,7 @@ namespace System.Threading.Tasks.Sources
         {
             if (token != _version)
             {
-                ManualResetValueTaskSourceCoreShared.ThrowInvalidOperationException();
+                ThrowHelper.ThrowInvalidOperationException();
             }
         }
 
@@ -202,7 +202,7 @@ namespace System.Threading.Tasks.Sources
         {
             if (_completed)
             {
-                ManualResetValueTaskSourceCoreShared.ThrowInvalidOperationException();
+                ThrowHelper.ThrowInvalidOperationException();
             }
             _completed = true;
 
@@ -266,14 +266,11 @@ namespace System.Threading.Tasks.Sources
 
     internal static class ManualResetValueTaskSourceCoreShared // separated out of generic to avoid unnecessary duplication
     {
-        [StackTraceHidden]
-        internal static void ThrowInvalidOperationException() => throw new InvalidOperationException();
-
         internal static readonly Action<object> s_sentinel = CompletionSentinel;
         private static void CompletionSentinel(object _) // named method to aid debugging
         {
             Debug.Fail("The sentinel delegate should never be invoked.");
-            ThrowInvalidOperationException();
+            ThrowHelper.ThrowInvalidOperationException();
         }
     }
 }
