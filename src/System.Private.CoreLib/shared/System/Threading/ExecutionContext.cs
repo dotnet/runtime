@@ -54,7 +54,7 @@ namespace System.Threading
 
         public static ExecutionContext Capture()
         {
-            ExecutionContext executionContext = Thread.CurrentThread.m_ExecutionContext;
+            ExecutionContext executionContext = Thread.CurrentThread._executionContext;
             if (executionContext == null)
             {
                 executionContext = Default;
@@ -84,7 +84,7 @@ namespace System.Threading
         public static AsyncFlowControl SuppressFlow()
         {
             Thread currentThread = Thread.CurrentThread;
-            ExecutionContext executionContext = currentThread.m_ExecutionContext ?? Default;
+            ExecutionContext executionContext = currentThread._executionContext ?? Default;
             if (executionContext.m_isFlowSuppressed)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotSupressFlowMultipleTimes);
@@ -92,7 +92,7 @@ namespace System.Threading
 
             executionContext = executionContext.ShallowClone(isFlowSuppressed: true);
             var asyncFlowControl = new AsyncFlowControl();
-            currentThread.m_ExecutionContext = executionContext;
+            currentThread._executionContext = executionContext;
             asyncFlowControl.Initialize(currentThread);
             return asyncFlowControl;
         }
@@ -100,18 +100,18 @@ namespace System.Threading
         public static void RestoreFlow()
         {
             Thread currentThread = Thread.CurrentThread;
-            ExecutionContext executionContext = currentThread.m_ExecutionContext;
+            ExecutionContext executionContext = currentThread._executionContext;
             if (executionContext == null || !executionContext.m_isFlowSuppressed)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRestoreUnsupressedFlow);
             }
 
-            currentThread.m_ExecutionContext = executionContext.ShallowClone(isFlowSuppressed: false);
+            currentThread._executionContext = executionContext.ShallowClone(isFlowSuppressed: false);
         }
 
         public static bool IsFlowSuppressed()
         {
-            ExecutionContext executionContext = Thread.CurrentThread.m_ExecutionContext;
+            ExecutionContext executionContext = Thread.CurrentThread._executionContext;
             return executionContext != null && executionContext.m_isFlowSuppressed;
         }
 
@@ -140,7 +140,7 @@ namespace System.Threading
             // Capture references to Thread Contexts
             Thread currentThread0 = Thread.CurrentThread;
             Thread currentThread = currentThread0;
-            ExecutionContext previousExecutionCtx0 = currentThread0.m_ExecutionContext;
+            ExecutionContext previousExecutionCtx0 = currentThread0._executionContext;
             if (previousExecutionCtx0 != null && previousExecutionCtx0.m_isDefault)
             {
                 // Default is a null ExecutionContext internally
@@ -189,7 +189,7 @@ namespace System.Threading
             }
 
             ExecutionContext previousExecutionCtx1 = previousExecutionCtx;
-            ExecutionContext currentExecutionCtx1 = currentThread1.m_ExecutionContext;
+            ExecutionContext currentExecutionCtx1 = currentThread1._executionContext;
             if (currentExecutionCtx1 != previousExecutionCtx1)
             {
                 RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
@@ -210,7 +210,7 @@ namespace System.Threading
             // Capture references to Thread Contexts
             Thread currentThread0 = Thread.CurrentThread;
             Thread currentThread = currentThread0;
-            ExecutionContext previousExecutionCtx0 = currentThread0.m_ExecutionContext;
+            ExecutionContext previousExecutionCtx0 = currentThread0._executionContext;
             if (previousExecutionCtx0 != null && previousExecutionCtx0.m_isDefault)
             {
                 // Default is a null ExecutionContext internally
@@ -259,7 +259,7 @@ namespace System.Threading
             }
 
             ExecutionContext previousExecutionCtx1 = previousExecutionCtx;
-            ExecutionContext currentExecutionCtx1 = currentThread1.m_ExecutionContext;
+            ExecutionContext currentExecutionCtx1 = currentThread1._executionContext;
             if (currentExecutionCtx1 != previousExecutionCtx1)
             {
                 RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
@@ -298,7 +298,7 @@ namespace System.Threading
             // Enregister threadPoolThread as it crossed EH, and use enregistered variable
             Thread currentThread = threadPoolThread;
 
-            ExecutionContext currentExecutionCtx = currentThread.m_ExecutionContext;
+            ExecutionContext currentExecutionCtx = currentThread._executionContext;
 
             // Restore changed SynchronizationContext back to Default
             currentThread.SynchronizationContext = null;
@@ -322,7 +322,7 @@ namespace System.Threading
             Debug.Assert(executionContext != null && !executionContext.m_isDefault, "ExecutionContext argument is Default.");
 
             // Restore Non-Default context
-            Thread.CurrentThread.m_ExecutionContext = executionContext;
+            Thread.CurrentThread._executionContext = executionContext;
             if (executionContext.HasChangeNotifications)
             {
                 OnValuesChanged(previousExecutionCtx: null, executionContext);
@@ -339,7 +339,7 @@ namespace System.Threading
             Debug.Assert(contextToRestore != currentContext);
 
             // Restore changed ExecutionContext back to previous
-            currentThread.m_ExecutionContext = contextToRestore;
+            currentThread._executionContext = contextToRestore;
             if ((currentContext != null && currentContext.HasChangeNotifications) ||
                 (contextToRestore != null && contextToRestore.HasChangeNotifications))
             {
@@ -352,11 +352,11 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ResetThreadPoolThread(Thread currentThread)
         {
-            ExecutionContext currentExecutionCtx = currentThread.m_ExecutionContext;
+            ExecutionContext currentExecutionCtx = currentThread._executionContext;
 
             // Reset to defaults
             currentThread.SynchronizationContext = null;
-            currentThread.m_ExecutionContext = null;
+            currentThread._executionContext = null;
 
             if (currentExecutionCtx != null && currentExecutionCtx.HasChangeNotifications)
             {
@@ -364,7 +364,7 @@ namespace System.Threading
 
                 // Reset to defaults again without change notifications in case the Change handler changed the contexts
                 currentThread.SynchronizationContext = null;
-                currentThread.m_ExecutionContext = null;
+                currentThread._executionContext = null;
             }
         }
 
@@ -372,7 +372,7 @@ namespace System.Threading
         internal static void CheckThreadPoolAndContextsAreDefault()
         {
             Debug.Assert(Thread.CurrentThread.IsThreadPoolThread);
-            Debug.Assert(Thread.CurrentThread.m_ExecutionContext == null, "ThreadPool thread not on Default ExecutionContext.");
+            Debug.Assert(Thread.CurrentThread._executionContext == null, "ThreadPool thread not on Default ExecutionContext.");
             Debug.Assert(Thread.CurrentThread.SynchronizationContext == null, "ThreadPool thread not on Default SynchronizationContext.");
         }
 
@@ -470,7 +470,7 @@ namespace System.Threading
 
         internal static object GetLocalValue(IAsyncLocal local)
         {
-            ExecutionContext current = Thread.CurrentThread.m_ExecutionContext;
+            ExecutionContext current = Thread.CurrentThread._executionContext;
             if (current == null)
             {
                 return null;
@@ -482,7 +482,7 @@ namespace System.Threading
 
         internal static void SetLocalValue(IAsyncLocal local, object newValue, bool needChangeNotifications)
         {
-            ExecutionContext current = Thread.CurrentThread.m_ExecutionContext;
+            ExecutionContext current = Thread.CurrentThread._executionContext;
 
             object previousValue = null;
             bool hadPreviousValue = false;
@@ -540,7 +540,7 @@ namespace System.Threading
                 }
             }
 
-            Thread.CurrentThread.m_ExecutionContext = 
+            Thread.CurrentThread._executionContext = 
                 (!isFlowSuppressed && AsyncLocalValueMap.IsEmpty(newValues)) ?
                 null : // No values, return to Default context
                 new ExecutionContext(newValues, newChangeNotifications, isFlowSuppressed);
