@@ -124,6 +124,7 @@ namespace System.Text.Json.Tests
 
                 long consumed = json.BytesConsumed;
                 Assert.Equal(consumed, json.CurrentState.BytesConsumed);
+                Assert.Equal(default, json.Position);
 
                 // Skipping large JSON since slicing them (O(n^3)) is too slow.
                 if (type == TestCaseType.DeepTree || type == TestCaseType.BroadTree || type == TestCaseType.LotsOfNumbers
@@ -135,6 +136,8 @@ namespace System.Text.Json.Tests
                     written += length;
                     Assert.Equal(dataUtf8.Length - consumed, json.BytesConsumed);
                     Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+                    Assert.Equal(default, json.Position);
+                    Assert.Equal(default, json.CurrentState.Position);
 
                     Assert.Equal(outputSpan.Length, written);
                     string actualStr = Encoding.UTF8.GetString(outputArray);
@@ -166,6 +169,8 @@ namespace System.Text.Json.Tests
                         written += length;
                         Assert.Equal(dataUtf8.Length - consumedInner - consumed, json.BytesConsumed);
                         Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+                        Assert.Equal(default, json.Position);
+                        Assert.Equal(default, json.CurrentState.Position);
 
                         Assert.Equal(outputSpan.Length, written);
                         string actualStr = Encoding.UTF8.GetString(outputArray);
@@ -660,12 +665,16 @@ namespace System.Text.Json.Tests
                     ;
                 Assert.Equal(consumed, json.BytesConsumed);
                 Assert.Equal(consumed, json.CurrentState.BytesConsumed);
+                Assert.Equal(default, json.Position);
+                Assert.Equal(default, json.CurrentState.Position);
 
                 json = new Utf8JsonReader(dataUtf8.AsSpan((int)json.BytesConsumed), true, json.CurrentState);
                 while (json.Read())
                     ;
                 Assert.Equal(dataUtf8.Length - consumed, json.BytesConsumed);
                 Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+                Assert.Equal(default, json.Position);
+                Assert.Equal(default, json.CurrentState.Position);
             }
         }
 
@@ -802,6 +811,8 @@ namespace System.Text.Json.Tests
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+                    Assert.Equal(default, json.Position);
+                    Assert.Equal(default, json.CurrentState.Position);
                 }
             }
         }
@@ -827,6 +838,7 @@ namespace System.Text.Json.Tests
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+                    Assert.Equal(default, json.Position);
                 }
 
                 for (int i = 0; i < dataUtf8.Length; i++)
@@ -840,6 +852,9 @@ namespace System.Text.Json.Tests
 
                         long consumed = jsonSlice.BytesConsumed;
                         Assert.Equal(consumed, jsonSlice.CurrentState.BytesConsumed);
+                        Assert.Equal(default, json.Position);
+                        Assert.Equal(default, json.CurrentState.Position);
+
                         JsonReaderState jsonState = jsonSlice.CurrentState;
 
                         jsonSlice = new Utf8JsonReader(dataUtf8.AsSpan((int)consumed), isFinalBlock: true, jsonState);
@@ -858,6 +873,8 @@ namespace System.Text.Json.Tests
                         errorMessage = $"expectedBytePosition: {expectedBytePosition} | actual: {ex.BytePositionInLine} | index: {i} | option: {commentHandling}";
                         errorMessage += " | " + firstSegmentString + " | " + secondSegmentString;
                         Assert.True(expectedBytePosition == ex.BytePositionInLine, errorMessage);
+                        Assert.Equal(default, json.Position);
+                        Assert.Equal(default, json.CurrentState.Position);
                     }
                 }
             }

@@ -1,0 +1,19 @@
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup Condition="'$(ApplyPartialNgenOptimization)' == ''">
+     <ApplyPartialNgenOptimization Condition="'$(IsReferenceAssembly)' == 'true'">false</ApplyPartialNgenOptimization>
+     <ApplyPartialNgenOptimization Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' OR '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</ApplyPartialNgenOptimization>
+  </PropertyGroup>
+
+  <Target Name="SetApplyPartialNgenOptimization"
+          Condition="'$(ApplyPartialNgenOptimization)' == ''"
+          BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <_optimizationDataAssembly Include="$(IbcOptimizationDataDir)**\$(TargetFileName)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <ApplyPartialNgenOptimization Condition="'@(_optimizationDataAssembly)' != ''">true</ApplyPartialNgenOptimization>
+    </PropertyGroup>
+  </Target>
+
+</Project>

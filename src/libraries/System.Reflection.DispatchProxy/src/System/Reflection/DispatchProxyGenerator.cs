@@ -363,6 +363,11 @@ namespace System.Reflection
 
                 foreach (MethodInfo mi in iface.GetRuntimeMethods())
                 {
+                    // Skip regular/non-virtual instance methods, static methods, and methods that cannot be overriden
+                    // ("methods that cannot be overriden" includes default implementation of other interface methods).
+                    if (!mi.IsVirtual || mi.IsFinal)
+                        continue;
+
                     MethodBuilder mdb = AddMethodImpl(mi);
                     PropertyAccessorInfo associatedProperty;
                     if (propertyMap.TryGetValue(mi, out associatedProperty))
@@ -388,6 +393,13 @@ namespace System.Reflection
                 foreach (PropertyInfo pi in iface.GetRuntimeProperties())
                 {
                     PropertyAccessorInfo ai = propertyMap[pi.GetMethod ?? pi.SetMethod];
+
+                    // If we didn't make an overriden accessor above, this was a static property, non-virtual property,
+                    // or a default implementation of a property of a different interface. In any case, we don't need
+                    // to redeclare it.
+                    if (ai.GetMethodBuilder == null && ai.SetMethodBuilder == null)
+                        continue;
+
                     PropertyBuilder pb = _tb.DefineProperty(pi.Name, pi.Attributes, pi.PropertyType, pi.GetIndexParameters().Select(p => p.ParameterType).ToArray());
                     if (ai.GetMethodBuilder != null)
                         pb.SetGetMethod(ai.GetMethodBuilder);
@@ -398,6 +410,13 @@ namespace System.Reflection
                 foreach (EventInfo ei in iface.GetRuntimeEvents())
                 {
                     EventAccessorInfo ai = eventMap[ei.AddMethod ?? ei.RemoveMethod];
+
+                    // If we didn't make an overriden accessor above, this was a static event, non-virtual event,
+                    // or a default implementation of an event of a different interface. In any case, we don't
+                    // need to redeclare it.
+                    if (ai.AddMethodBuilder == null && ai.RemoveMethodBuilder == null && ai.RaiseMethodBuilder == null)
+                        continue;
+
                     EventBuilder eb = _tb.DefineEvent(ei.Name, ei.Attributes, ei.EventHandlerType);
                     if (ai.AddMethodBuilder != null)
                         eb.SetAddOnMethod(ai.AddMethodBuilder);
@@ -439,7 +458,9 @@ namespace System.Reflection
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     // args[i] = argi;
-                    if (!parameters[i].IsOut)
+                    bool isOutRef = parameters[i].IsOut && parameters[i].ParameterType.IsByRef && !parameters[i].IsIn;
+
+                    if (!isOutRef)
                     {
                         argsArr.BeginSet(i);
                         args.Get(i);

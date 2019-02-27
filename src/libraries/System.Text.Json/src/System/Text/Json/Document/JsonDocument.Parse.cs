@@ -14,6 +14,31 @@ namespace System.Text.Json
     {
         private const int UnseekableStreamInitialRentSize = 4096;
 
+        /// <summary>
+        ///   Parse memory as UTF-8-encoded text representing a single JSON value into a JsonDocument.
+        /// </summary>
+        /// <remarks>
+        ///   <para>
+        ///     The <see cref="ReadOnlyMemory{T}"/> value will be used for the entire lifetime of the
+        ///     JsonDocument object, and the caller must ensure that the data therein does not change during
+        ///     the object lifetime.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     Because the input is considered to be text, a UTF-8 Byte-Order-Mark (BOM) must not be present.
+        ///   </para>
+        /// </remarks>
+        /// <param name="utf8Json">JSON text to parse.</param>
+        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <returns>
+        ///   A JsonDocument representation of the JSON value.
+        /// </returns>
+        /// <exception cref="JsonReaderException">
+        ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="readerOptions"/> contains unsupported options.
+        /// </exception>
         public static JsonDocument Parse(ReadOnlyMemory<byte> utf8Json, JsonReaderOptions readerOptions = default)
         {
             CheckSupportedOptions(readerOptions);
@@ -21,6 +46,31 @@ namespace System.Text.Json
             return Parse(utf8Json, readerOptions, null);
         }
 
+        /// <summary>
+        ///   Parse a sequence as UTF-8-encoded text representing a single JSON value into a JsonDocument.
+        /// </summary>
+        /// <remarks>
+        ///   <para>
+        ///     The <see cref="ReadOnlySequence{T}"/> may be used for the entire lifetime of the
+        ///     JsonDocument object, and the caller must ensure that the data therein does not change during
+        ///     the object lifetime.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     Because the input is considered to be text, a UTF-8 Byte-Order-Mark (BOM) must not be present.
+        ///   </para>
+        /// </remarks>
+        /// <param name="utf8Json">JSON text to parse.</param>
+        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <returns>
+        ///   A JsonDocument representation of the JSON value.
+        /// </returns>
+        /// <exception cref="JsonReaderException">
+        ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="readerOptions"/> contains unsupported options.
+        /// </exception>
         public static JsonDocument Parse(ReadOnlySequence<byte> utf8Json, JsonReaderOptions readerOptions = default)
         {
             CheckSupportedOptions(readerOptions);
@@ -47,6 +97,21 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
+        ///   JsonDocument.  The Stream will be read to completion.
+        /// </summary>
+        /// <param name="utf8Json">JSON data to parse.</param>
+        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <returns>
+        ///   A JsonDocument representation of the JSON value.
+        /// </returns>
+        /// <exception cref="JsonReaderException">
+        ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="readerOptions"/> contains unsupported options.
+        /// </exception>
         public static JsonDocument Parse(Stream utf8Json, JsonReaderOptions readerOptions = default)
         {
             if (utf8Json == null)
@@ -71,6 +136,22 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
+        ///   JsonDocument.  The Stream will be read to completion.
+        /// </summary>
+        /// <param name="utf8Json">JSON data to parse.</param>
+        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>
+        ///   A Task to produce a JsonDocument representation of the JSON value.
+        /// </returns>
+        /// <exception cref="JsonReaderException">
+        ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="readerOptions"/> contains unsupported options.
+        /// </exception>
         public static Task<JsonDocument> ParseAsync(
             Stream utf8Json,
             JsonReaderOptions readerOptions = default,
@@ -106,6 +187,25 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        ///   Parse text representing a single JSON value into a JsonDocument.
+        /// </summary>
+        /// <remarks>
+        ///   The <see cref="ReadOnlyMemory{T}"/> value may be used for the entire lifetime of the
+        ///   JsonDocument object, and the caller must ensure that the data therein does not change during
+        ///   the object lifetime.
+        /// </remarks>
+        /// <param name="json">JSON text to parse.</param>
+        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <returns>
+        ///   A JsonDocument representation of the JSON value.
+        /// </returns>
+        /// <exception cref="JsonReaderException">
+        ///   <paramref name="json"/> does not represent a valid single JSON value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="readerOptions"/> contains unsupported options.
+        /// </exception>
         public static JsonDocument Parse(ReadOnlyMemory<char> json, JsonReaderOptions readerOptions = default)
         {
             CheckSupportedOptions(readerOptions);
@@ -130,6 +230,20 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        ///   Parse text representing a single JSON value into a JsonDocument.
+        /// </summary>
+        /// <param name="json">JSON text to parse.</param>
+        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <returns>
+        ///   A JsonDocument representation of the JSON value.
+        /// </returns>
+        /// <exception cref="JsonReaderException">
+        ///   <paramref name="json"/> does not represent a valid single JSON value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="readerOptions"/> contains unsupported options.
+        /// </exception>
         public static JsonDocument Parse(string json, JsonReaderOptions readerOptions = default)
         {
             if (json == null)

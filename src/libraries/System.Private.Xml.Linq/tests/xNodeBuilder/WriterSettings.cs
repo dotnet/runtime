@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Test.ModuleCore;
@@ -21,7 +22,7 @@ namespace CoreXml.Test.XLinq
                     XDocument d = new XDocument();
                     XmlWriter w = d.CreateWriter();
 
-                    TestLog.Equals(w.Settings.Encoding.ToString(), "System.Text.UTF8Encoding", "Incorrect default value of Encoding");
+                    TestLog.Compare(w.Settings.Encoding is UTF8Encoding, "Incorrect default value of Encoding");
                     TestLog.Equals(w.Settings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
                     TestLog.Equals(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value of NewLineHandling");
                     TestLog.Equals(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
@@ -40,7 +41,7 @@ namespace CoreXml.Test.XLinq
                     XElement d = new XElement("a");
                     XmlWriter w = d.CreateWriter();
 
-                    TestLog.Equals(w.Settings.Encoding.ToString(), "System.Text.UTF8Encoding", "Incorrect default value of Encoding");
+                    TestLog.Compare(w.Settings.Encoding is UTF8Encoding, "Incorrect default value of Encoding");
                     TestLog.Equals(w.Settings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
                     TestLog.Equals(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value of NewLineHandling");
                     TestLog.Equals(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
@@ -59,7 +60,7 @@ namespace CoreXml.Test.XLinq
                     XDocument d = new XDocument();
                     XmlWriter w = d.CreateWriter();
                     w.Dispose();
-                    TestLog.Equals(w.Settings.Encoding.ToString(), "System.Text.UTF8Encoding", "Incorrect default value of Encoding");
+                    TestLog.Compare(w.Settings.Encoding is UTF8Encoding, "Incorrect default value of Encoding");
                     TestLog.Equals(w.Settings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
                     TestLog.Equals(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value of NewLineHandling");
                     TestLog.Equals(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
@@ -77,7 +78,7 @@ namespace CoreXml.Test.XLinq
                     XElement d = new XElement("a");
                     XmlWriter w = d.CreateWriter();
                     w.Dispose();
-                    TestLog.Equals(w.Settings.Encoding.ToString(), "System.Text.UTF8Encoding", "Incorrect default value of Encoding");
+                    TestLog.Compare(w.Settings.Encoding is UTF8Encoding, "Incorrect default value of Encoding");
                     TestLog.Equals(w.Settings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
                     TestLog.Equals(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value of NewLineHandling");
                     TestLog.Equals(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
@@ -22,14 +21,12 @@ namespace System.Net.Security
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
             IsServer = false;
             RemoteCertRequired = true;
-            RemoteCertificateValidationCallback = sslClientAuthenticationOptions.RemoteCertificateValidationCallback;
             TargetHost = sslClientAuthenticationOptions.TargetHost;
 
             // Client specific options.
             CertSelectionDelegate = localCallback;
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
             ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
-            LocalCertificateSelectionCallback = sslClientAuthenticationOptions.LocalCertificateSelectionCallback;
         }
 
         internal SslAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
@@ -46,7 +43,6 @@ namespace System.Net.Security
             {
                 NetEventSource.Info(this, $"Server RemoteCertRequired: {RemoteCertRequired}.");
             }
-            RemoteCertificateValidationCallback = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
             TargetHost = string.Empty;
 
             // Server specific options.
@@ -59,8 +55,6 @@ namespace System.Net.Security
         internal X509CertificateCollection ClientCertificates { get; set; }
         internal List<SslApplicationProtocol> ApplicationProtocols { get; }
         internal bool IsServer { get; set; }
-        internal RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
-        internal LocalCertificateSelectionCallback LocalCertificateSelectionCallback { get; set; }
         internal X509Certificate ServerCertificate { get; set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
         internal X509RevocationMode CertificateRevocationCheckMode { get; set; }

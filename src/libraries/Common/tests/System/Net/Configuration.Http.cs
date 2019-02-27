@@ -23,11 +23,13 @@ namespace System.Net.Test.Common
             // don't support servers that use push right now.
             public static string Http2NoPushHost => GetValue("COREFX_HTTP2NOPUSHHOST", "www.microsoft.com");
 
+            // Domain server environment.
             public static string DomainJoinedHttpHost => GetValue("COREFX_DOMAINJOINED_HTTPHOST");
-
             public static string DomainJoinedProxyHost => GetValue("COREFX_DOMAINJOINED_PROXYHOST");
-
             public static string DomainJoinedProxyPort => GetValue("COREFX_DOMAINJOINED_PROXYPORT");
+
+            // Standalone server environment.
+            public static string WindowsServerHttpHost => GetValue("COREFX_WINDOWSSERVER_HTTPHOST");
 
             public static string SSLv2RemoteServer => GetValue("COREFX_HTTPHOST_SSL2", "https://www.ssllabs.com:10200/");
             public static string SSLv3RemoteServer => GetValue("COREFX_HTTPHOST_SSL3", "https://www.ssllabs.com:10300/");

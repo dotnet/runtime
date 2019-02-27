@@ -3120,7 +3120,8 @@ namespace System.Data.SqlClient
         // Dumps contents of buffer to SNI for network write.
         internal Task WritePacket(byte flushMode, bool canAccumulate = false)
         {
-            if ((_parser.State == TdsParserState.Closed) || (_parser.State == TdsParserState.Broken))
+            TdsParserState state = _parser.State;
+            if ((state == TdsParserState.Closed) || (state == TdsParserState.Broken))
             {
                 throw ADP.ClosedConnectionError();
             }
@@ -3130,7 +3131,7 @@ namespace System.Data.SqlClient
                 // However, since we don't know the version prior to login IsYukonOrNewer was always false prior to login
                 // So removing the IsYukonOrNewer check causes issues since the login packet happens to meet the rest of the conditions below
                 // So we need to avoid this check prior to login completing
-                _parser.State == TdsParserState.OpenLoggedIn &&
+                state == TdsParserState.OpenLoggedIn &&
                 !_bulkCopyOpperationInProgress && // ignore the condition checking for bulk copy
                     _outBytesUsed == (_outputHeaderLen + BitConverter.ToInt32(_outBuff, _outputHeaderLen))
                     && _outputPacketCount == 0

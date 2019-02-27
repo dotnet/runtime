@@ -31,13 +31,13 @@ namespace Microsoft.Win32.SafeHandles
             return retHandle;
         }
 
-        public static SafeGssNameHandle CreatePrincipal(string name)
+        public static SafeGssNameHandle CreateTarget(string name, bool isNtlmTarget)
         {
-            Debug.Assert(!string.IsNullOrEmpty(name), "Invalid principal passed to SafeGssNameHandle create");
+            Debug.Assert(!string.IsNullOrEmpty(name), "Invalid target name passed to SafeGssNameHandle create");
             SafeGssNameHandle retHandle;
             Interop.NetSecurityNative.Status minorStatus;
-            Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ImportPrincipalName(
-                out minorStatus, name, Encoding.UTF8.GetByteCount(name), out retHandle);
+            Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ImportTargetName(
+                out minorStatus, name, Encoding.UTF8.GetByteCount(name), isNtlmTarget, out retHandle);
 
             if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
             {
@@ -72,12 +72,22 @@ namespace Microsoft.Win32.SafeHandles
     /// </summary>
     internal class SafeGssCredHandle : SafeHandle
     {
+        private static readonly Lazy<bool> s_IsNtlmInstalled = new Lazy<bool>(InitIsNtlmInstalled);
+
         /// <summary>
         ///  returns the handle for the given credentials.
         ///  The method returns an invalid handle if the username is null or empty.
         /// </summary>
         public static SafeGssCredHandle Create(string username, string password, bool isNtlmOnly)
         {
+            if (isNtlmOnly && !s_IsNtlmInstalled.Value)
+            {
+                throw new Interop.NetSecurityNative.GssApiException(
+                    Interop.NetSecurityNative.Status.GSS_S_BAD_MECH,
+                    0,
+                    SR.net_gssapi_ntlm_missing_plugin);
+            }
+
             if (string.IsNullOrEmpty(username))
             {
                 return new SafeGssCredHandle();
@@ -100,12 +110,7 @@ namespace Microsoft.Win32.SafeHandles
                 if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
                 {
                     retHandle.Dispose();
-                    throw new Interop.NetSecurityNative.GssApiException(
-                        status,
-                        minorStatus,
-                        (status == Interop.NetSecurityNative.Status.GSS_S_BAD_MECH && isNtlmOnly) ?
-                            SR.net_gssapi_ntlm_missing_plugin :
-                            null);
+                    throw new Interop.NetSecurityNative.GssApiException(status, minorStatus, null);
                 }
             }
 
@@ -128,6 +133,11 @@ namespace Microsoft.Win32.SafeHandles
             Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ReleaseCred(out minorStatus, ref handle);
             SetHandle(IntPtr.Zero);
             return status == Interop.NetSecurityNative.Status.GSS_S_COMPLETE;
+        }
+
+        private static bool InitIsNtlmInstalled()
+        {
+            return Interop.NetSecurityNative.IsNtlmInstalled();
         }
     }
 

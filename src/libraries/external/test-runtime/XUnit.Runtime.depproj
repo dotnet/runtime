@@ -40,7 +40,6 @@
 
     <!-- for callstack line numbers -->
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.5.0" />
-    <PackageReference Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
 
     <!-- Test Data -->
@@ -62,7 +61,6 @@
     <PackageToInclude Condition="'$(TargetsUap)' != 'true'" Include="$(XUnitRunnerConsolePackageName)" />
     <PackageToInclude Include="Microsoft.DiaSymReader.Native" />
     <PackageToInclude Include="Newtonsoft.Json" />
-    <PackageToInclude Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" />
   </ItemGroup>
 
     <!-- Perf testing -->
@@ -124,7 +122,7 @@
   </Target>
 
   <!-- System.Data.SqlClient tests require sni.dll in the test folder -->
-  <ItemGroup Condition="'$(TargetsAot)'=='true'">
+  <ItemGroup Condition="'$(TargetsAot)' == 'true'">
     <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)" />
 
     <PackageToInclude Include="runtime.win-arm64.runtime.native.System.Data.SqlClient.sni"/>
@@ -138,13 +136,12 @@
           AfterTargets="AfterResolveReferences">
 
     <PropertyGroup>
-
       <UAPToolsFolder Condition="'$(UAPToolsFolder)'==''">$(PackagesDir)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\Tools\$(ArchGroup)</UAPToolsFolder>
       <UAPToolsFolder>$(UAPToolsFolder.Replace('/', '\'))</UAPToolsFolder>
     </PropertyGroup>
 
     <!-- Give a warning that the UAPToolsFolder is not set and that tests won't run -->
-    <Warning Condition="('$(UAPToolsFolder)'=='' or !Exists('$(UAPToolsFolder)')) AND '$(BuildAllConfigurations)' != 'true'" Text="Could not find the UAP Tools at '$(UAPToolsFolder)'. Please run sync." />
+    <Warning Condition="('$(UAPToolsFolder)'=='' or !Exists('$(UAPToolsFolder)')) AND '$(BuildAllConfigurations)' != 'true'" Text="Could not find the UAP Tools at '$(UAPToolsFolder)'. Please run restore." />
 
     <ItemGroup Condition="'$(UAPToolsFolder)'!=''">
       <RunnerFolderContents Include="$(UAPToolsFolder)\Runner\**\*" />
@@ -181,8 +178,6 @@
       <TestILCToolsPackageName Condition="'$(ArchGroup)' == 'arm'">$(TestILCToolsPackageName).armret</TestILCToolsPackageName>
       <TestILCFolder Condition="'$(TestILCFolder)' == ''">$(PackagesDir)$(TestILCToolsPackageName)\$(ProjectNTfsTestILCPackageVersion)\TestILC</TestILCFolder>
     </PropertyGroup>
-
-    <Warning Condition="('$(TestILCFolder)' == '' OR !Exists('$(TestILCFolder)')) AND '$(BuildAllConfigurations)' != 'true'" Text="Could not find the TestILC Tools at '$(TestILCFolder)'. Please run sync." />
 
     <ItemGroup Condition="Exists('$(TestILCFolder)')">
       <TestILCFolderContents Include="$(TestILCFolder)\**\*" />

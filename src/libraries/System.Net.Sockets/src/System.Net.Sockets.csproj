@@ -142,98 +142,98 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.accept.cs">
-      <Link>Interop\Windows\Winsock\Interop.accept.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.accept.cs">
+      <Link>Interop\Windows\WinSock\Interop.accept.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.bind.cs">
-      <Link>Interop\Windows\Winsock\Interop.bind.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.bind.cs">
+      <Link>Interop\Windows\WinSock\Interop.bind.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.closesocket.cs">
-      <Link>Interop\Windows\Winsock\Interop.closesocket.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.closesocket.cs">
+      <Link>Interop\Windows\WinSock\Interop.closesocket.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.getpeername.cs">
-      <Link>Interop\Windows\Winsock\Interop.getpeername.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.getpeername.cs">
+      <Link>Interop\Windows\WinSock\Interop.getpeername.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.getsockname.cs">
-      <Link>Interop\Windows\Winsock\Interop.getsockname.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.getsockname.cs">
+      <Link>Interop\Windows\WinSock\Interop.getsockname.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.getsockopt.cs">
-      <Link>Interop\Windows\Winsock\Interop.getsockopt.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.getsockopt.cs">
+      <Link>Interop\Windows\WinSock\Interop.getsockopt.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ioctlsocket.cs">
-      <Link>Interop\Windows\Winsock\Interop.ioctlsocket.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.ioctlsocket.cs">
+      <Link>Interop\Windows\WinSock\Interop.ioctlsocket.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.listen.cs">
-      <Link>Interop\Windows\Winsock\Interop.listen.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.listen.cs">
+      <Link>Interop\Windows\WinSock\Interop.listen.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.recv.cs">
-      <Link>Interop\Windows\Winsock\Interop.recv.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.recv.cs">
+      <Link>Interop\Windows\WinSock\Interop.recv.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.recvfrom.cs">
-      <Link>Interop\Windows\Winsock\Interop.recvfrom.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.recvfrom.cs">
+      <Link>Interop\Windows\WinSock\Interop.recvfrom.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.select.cs">
-      <Link>Interop\Windows\Winsock\Interop.select.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.select.cs">
+      <Link>Interop\Windows\WinSock\Interop.select.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.send.cs">
-      <Link>Interop\Windows\Winsock\Interop.send.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.send.cs">
+      <Link>Interop\Windows\WinSock\Interop.send.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.sendto.cs">
-      <Link>Interop\Windows\Winsock\Interop.sendto.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.sendto.cs">
+      <Link>Interop\Windows\WinSock\Interop.sendto.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.setsockopt.cs">
-      <Link>Interop\Windows\Winsock\Interop.setsockopt.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.setsockopt.cs">
+      <Link>Interop\Windows\WinSock\Interop.setsockopt.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.shutdown.cs">
-      <Link>Interop\Windows\Winsock\Interop.shutdown.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.shutdown.cs">
+      <Link>Interop\Windows\WinSock\Interop.shutdown.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.TransmitFile.cs">
-      <Link>Interop\Windows\Winsock\Interop.TransmitFile.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.TransmitFile.cs">
+      <Link>Interop\Windows\WinSock\Interop.TransmitFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WinsockBSD.cs">
-      <Link>Interop\Windows\Winsock\Interop.WinsockBSD.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WinsockBSD.cs">
+      <Link>Interop\Windows\WinSock\Interop.WinsockBSD.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WinsockAsync.cs">
-      <Link>Interop\Windows\Winsock\Interop.WinsockAsync.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WinsockAsync.cs">
+      <Link>Interop\Windows\WinSock\Interop.WinsockAsync.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAConnect.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSAConnect.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSAConnect.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSAConnect.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAGetOverlappedResult.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSAGetOverlappedResult.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSAGetOverlappedResult.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSAGetOverlappedResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAIoctl.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSAIoctl.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSAIoctl.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSAIoctl.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSARecv.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSARecv.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSARecv.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSARecv.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSARecvFrom.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSARecvFrom.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSARecvFrom.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSARecvFrom.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASend.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSASend.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSASend.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSASend.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASendTo.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSASendTo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSASendTo.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSASendTo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSASocketW.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSASocketW.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSASocketW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.WSASocketW.SafeCloseSocket.cs">
+      <Link>Interop\Windows\WinSock\Interop.WSASocketW.SafeCloseSocket.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs">
-      <Link>Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs">
+      <Link>Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeNativeOverlapped.cs">
-      <Link>Interop\Windows\Winsock\SafeNativeOverlapped.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\SafeNativeOverlapped.cs">
+      <Link>Interop\Windows\WinSock\SafeNativeOverlapped.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\WSABuffer.cs">
-      <Link>Interop\Windows\Winsock\WSABuffer.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinSock\WSABuffer.cs">
+      <Link>Interop\Windows\WinSock\WSABuffer.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs">
-      <Link>Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs">
+      <Link>Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\CompletionPortHelper.Windows.cs">
       <Link>Common\System\Net\CompletionPortHelper.Windows.cs</Link>

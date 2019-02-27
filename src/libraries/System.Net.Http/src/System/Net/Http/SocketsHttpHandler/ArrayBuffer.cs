@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Http
 {
@@ -16,10 +18,10 @@ namespace System.Net.Http
     // Commit(byteCount) will extend the ActiveSpan by [byteCount] bytes into the AvailableSpan.
     // Discard(byteCount) will discard [byteCount] bytes as the beginning of the ActiveSpan.
 
-    // TODO: ISSUE 31300: Use ArrayPool to pool buffers.
-
-    internal struct ArrayBuffer
+    [StructLayout(LayoutKind.Auto)]
+    internal struct ArrayBuffer : IDisposable
     {
+        private readonly bool _usePool;
         private byte[] _bytes;
         private int _activeStart;
         private int _availableStart;
@@ -27,22 +29,39 @@ namespace System.Net.Http
         // Invariants:
         // 0 <= _activeStart <= _availableStart <= bytes.Length
 
-        public ArrayBuffer(int initialSize)
+        public ArrayBuffer(int initialSize, bool usePool = false)
         {
-            _bytes = new byte[initialSize];
-
+            _usePool = usePool;
+            _bytes = usePool ? ArrayPool<byte>.Shared.Rent(initialSize) : new byte[initialSize];
             _activeStart = 0;
             _availableStart = 0;
         }
 
+        public void Dispose()
+        {
+            if (_usePool)
+            {
+                _activeStart = _availableStart = 0;
+
+                byte[] array = _bytes;
+                _bytes = null;
+
+                if (array != null)
+                {
+                    ArrayPool<byte>.Shared.Return(array);
+                }
+            }
+        }
+
         public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
-        public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, _bytes.Length - _availableStart);
+        public int AvailableLength => _bytes.Length - _availableStart;
+        public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, AvailableLength);
         public Memory<byte> ActiveMemory => new Memory<byte>(_bytes, _activeStart, _availableStart - _activeStart);
         public Memory<byte> AvailableMemory => new Memory<byte>(_bytes, _availableStart, _bytes.Length - _availableStart);
 
         public void Discard(int byteCount)
         {
-            Debug.Assert(byteCount <= ActiveSpan.Length);
+            Debug.Assert(byteCount <= ActiveSpan.Length, $"Expected {byteCount} <= {ActiveSpan.Length}");
             _activeStart += byteCount;
 
             if (_activeStart == _availableStart)
@@ -54,26 +73,26 @@ namespace System.Net.Http
 
         public void Commit(int byteCount)
         {
-            Debug.Assert(byteCount <= AvailableSpan.Length);
+            Debug.Assert(byteCount <= AvailableLength);
             _availableStart += byteCount;
         }
 
         // Ensure at least [byteCount] bytes to write to.
         public void EnsureAvailableSpace(int byteCount)
         {
-            if (byteCount <= AvailableSpan.Length)
+            if (byteCount <= AvailableLength)
             {
                 return;
             }
 
-            int totalFree = _activeStart + AvailableSpan.Length;
+            int totalFree = _activeStart + AvailableLength;
             if (byteCount <= totalFree)
             {
                 // We can free up enough space by just shifting the bytes down, so do so.
                 Buffer.BlockCopy(_bytes, _activeStart, _bytes, 0, ActiveSpan.Length);
                 _availableStart = ActiveSpan.Length;
                 _activeStart = 0;
-                Debug.Assert(byteCount <= AvailableSpan.Length);
+                Debug.Assert(byteCount <= AvailableLength);
                 return;
             }
 
@@ -85,18 +104,26 @@ namespace System.Net.Http
                 newSize *= 2;
             } while (newSize < desiredSize);
 
-            byte[] newBytes = new byte[newSize];
+            byte[] newBytes = _usePool ?
+                ArrayPool<byte>.Shared.Rent(newSize) :
+                new byte[newSize];
+            byte[] oldBytes = _bytes;
 
             if (ActiveSpan.Length != 0)
             {
-                Buffer.BlockCopy(_bytes, _activeStart, newBytes, 0, ActiveSpan.Length);
+                Buffer.BlockCopy(oldBytes, _activeStart, newBytes, 0, ActiveSpan.Length);
             }
 
             _availableStart = ActiveSpan.Length;
             _activeStart = 0;
-            _bytes = newBytes;
 
-            Debug.Assert(byteCount <= AvailableSpan.Length);
+            _bytes = newBytes;
+            if (_usePool)
+            {
+                ArrayPool<byte>.Shared.Return(oldBytes);
+            }
+
+            Debug.Assert(byteCount <= AvailableLength);
         }
     }
 }

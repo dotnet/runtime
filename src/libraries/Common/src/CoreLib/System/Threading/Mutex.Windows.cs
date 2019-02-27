@@ -78,7 +78,6 @@ namespace System.Threading
                 if (Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
 
-                // this is for passed through Win32Native Errors
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
             }
 
@@ -91,7 +90,7 @@ namespace System.Threading
         // in a Mutex's ACL is MUTEX_ALL_ACCESS (0x1F0001).
         public void ReleaseMutex()
         {
-            if (!Interop.Kernel32.ReleaseMutex(_waitHandle))
+            if (!Interop.Kernel32.ReleaseMutex(SafeWaitHandle))
             {
                 throw new ApplicationException(SR.Arg_SynchronizationLockException);
             }

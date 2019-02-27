@@ -23,6 +23,7 @@ namespace System.Text.Json
         private ReadOnlySpan<byte> _buffer;
 
         private bool _isFinalBlock;
+        private bool _isInputSequence;
 
         private long _lineNumber;
         private long _bytePositionInLine;
@@ -113,9 +114,9 @@ namespace System.Text.Json
             get
             {
                 // TODO: Cannot use Slice even though it would be faster: https://github.com/dotnet/corefx/issues/33291
-                return _currentPosition.GetObject() == null
-                    ? default
-                    : _sequence.GetPosition(BytesConsumed);
+                return _isInputSequence
+                    ? _sequence.GetPosition(BytesConsumed)
+                    : default;
             }
         }
 
@@ -140,6 +141,7 @@ namespace System.Text.Json
             _previousTokenType = _previousTokenType,
             _readerOptions = _readerOptions,
             _bitStack = _bitStack,
+            _sequencePosition = Position,
         };
 
         /// <summary>
@@ -159,6 +161,7 @@ namespace System.Text.Json
             _buffer = jsonData;
 
             _isFinalBlock = isFinalBlock;
+            _isInputSequence = false;
 
             // Note: We do not retain _bytesConsumed or _sequencePosition as they reset with the new input data
             _lineNumber = state._lineNumber;

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{29EF8D53-8E84-4E49-B90F-5950A2FE7D54}</ProjectGuid>
     <AssemblyName>System.Data.Common</AssemblyName>
@@ -195,6 +195,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="System\Data\Common\DbDataReader.cs" />
+    <Compile Include="System\Data\Common\DbDataReader.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\Data\Common\DbDataReaderExtensions.cs" />
     <Compile Include="System\Data\Common\DbDataRecord.cs" />
     <Compile Include="System\Data\Common\DbDataSourceEnumerator.cs" />

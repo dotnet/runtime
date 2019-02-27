@@ -20,7 +20,7 @@ namespace System.Net.Sockets
         }
 #endif
 
-        private const int NativeErrorToSocketErrorCount = 41;
+        private const int NativeErrorToSocketErrorCount = 42;
         private const int SocketErrorToNativeErrorCount = 40;
 
         // No Interop.Errors are included for the following SocketErrors, as there's no good mapping:
@@ -67,6 +67,7 @@ namespace System.Net.Sockets
             { Interop.Error.ENOTCONN, SocketError.NotConnected },
             { Interop.Error.ENOTSOCK, SocketError.NotSocket },
             { Interop.Error.ENOTSUP, SocketError.OperationNotSupported },
+            { Interop.Error.EPERM, SocketError.AccessDenied },
             { Interop.Error.EPIPE, SocketError.Shutdown },
             { Interop.Error.EPFNOSUPPORT, SocketError.ProtocolFamilyNotSupported },
             { Interop.Error.EPROTONOSUPPORT, SocketError.ProtocolNotSupported },
@@ -85,7 +86,7 @@ namespace System.Net.Sockets
             // SocketError.IOPending also maps closest to EINPROGRESS.  As such, roundtripping won't necessarily provide the original value 100% of the time,
             // but it's the best we can do given the mismatch between Interop.Error and SocketError.
 
-            { SocketError.AccessDenied, Interop.Error.EACCES},
+            { SocketError.AccessDenied, Interop.Error.EACCES}, // could also have been EPERM
             { SocketError.AddressAlreadyInUse, Interop.Error.EADDRINUSE  },
             { SocketError.AddressNotAvailable, Interop.Error.EADDRNOTAVAIL },
             { SocketError.AddressFamilyNotSupported, Interop.Error.EAFNOSUPPORT  },

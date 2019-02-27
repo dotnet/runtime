@@ -16,7 +16,8 @@ namespace System.IO
         {
             RowConfigReader rcr = new RowConfigReader(data);
             Assert.Equal("stringVal", rcr.GetNextValue("stringKey"));
-            Assert.Equal(12, rcr.GetNextValueAsInt32("intKey"));
+            Assert.Equal(int.MaxValue, rcr.GetNextValueAsInt32("intKey"));
+            Assert.Equal(long.MaxValue, rcr.GetNextValueAsInt64("longKey"));
         }
 
         [MemberData(nameof(BasicTestData))]
@@ -28,6 +29,7 @@ namespace System.IO
             string unused;
             Assert.False(rcr.TryGetNextValue("stringkey", out unused));
             Assert.False(rcr.TryGetNextValue("intkey", out unused));
+            Assert.False(rcr.TryGetNextValue("longkey", out unused));
         }
 
         [MemberData(nameof(BasicTestData))]
@@ -37,7 +39,8 @@ namespace System.IO
             // Use a case-insensitive comparer and use differently-cased keys.
             RowConfigReader rcr = new RowConfigReader(data, StringComparison.OrdinalIgnoreCase);
             Assert.Equal("stringVal", rcr.GetNextValue("stringkey"));
-            Assert.Equal(12, rcr.GetNextValueAsInt32("intkey"));
+            Assert.Equal(int.MaxValue, rcr.GetNextValueAsInt32("intkey"));
+            Assert.Equal(long.MaxValue, rcr.GetNextValueAsInt64("longkey"));
         }
 
         [MemberData(nameof(BasicTestData))]
@@ -45,7 +48,8 @@ namespace System.IO
         public static void StaticHelper(string data)
         {
             Assert.Equal("stringVal", RowConfigReader.ReadFirstValueFromString(data, "stringKey"));
-            Assert.Equal("12", RowConfigReader.ReadFirstValueFromString(data, "intKey"));
+            Assert.Equal(int.MaxValue.ToString(), RowConfigReader.ReadFirstValueFromString(data, "intKey"));
+            Assert.Equal(long.MaxValue.ToString(), RowConfigReader.ReadFirstValueFromString(data, "longKey"));
         }
 
         [InlineData("key")]
@@ -107,13 +111,15 @@ namespace System.IO
             yield return new[] { BasicDataWithTabs };
         }
 
-        private static string BasicData => string.Format(
-            "stringKey stringVal{0}intKey 12{0}",
-            Environment.NewLine);
+        private static string BasicData =>
+            $"stringKey stringVal{Environment.NewLine}" +
+            $"intKey {int.MaxValue}{Environment.NewLine}" +
+            $"longKey {long.MaxValue}{Environment.NewLine}";
 
-        private static string BasicDataWithTabs => string.Format(
-            "stringKey\t\t\tstringVal{0}intKey\t\t12{0}",
-            Environment.NewLine);
+        private static string BasicDataWithTabs =>
+            $"stringKey\t\t\tstringVal{Environment.NewLine}" +
+            $"intKey\t\t{int.MaxValue}{Environment.NewLine}" +
+            $"longKey\t\t{long.MaxValue}{Environment.NewLine}";
 
         private static IEnumerable<object[]> NewlineTestData()
         {

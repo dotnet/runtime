@@ -5,7 +5,7 @@
     <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <RuntimeIdGraphDefinitionFile>$(ProjectDir)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
-    <ProjectUrl>https://dot.net</ProjectUrl>
+    <ProjectUrl>https://github.com/dotnet/corefx</ProjectUrl>
     <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE.TXT</LicenseUrl>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
@@ -13,7 +13,7 @@
     <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
 
     <XmlDocPackage>Microsoft.Private.Intellisense</XmlDocPackage>
-    <XmlDocPackageVersion>3.0.0-preview1-27128-0</XmlDocPackageVersion>
+    <XmlDocPackageVersion>3.0.0-preview3-190214-0</XmlDocPackageVersion>
     <XmlDocFileRoot>$(PackagesDir)$(XmlDocPackage.ToLowerInvariant())/$(XmlDocPackageVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
     <XmlDocDir>$(BinDir)docs</XmlDocDir>
 
@@ -26,9 +26,9 @@
 
     <!-- by default all packages will use the same version which revs with respect to product version -->
     <PackageVersion Condition="'$(PackageVersion)' == ''">4.6.0</PackageVersion>
-    <!-- this must represent the major.minor.release version of the platforms package we're currently building 
-         pre-release will be appended during build -->
-    <PlatformPackageVersion>3.0.0</PlatformPackageVersion>
+    <!-- major.minor.release version of the platforms package we're currently building
+         Pre-release will be appended during build -->
+    <PlatformPackageVersion>$(ProductVersion)</PlatformPackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
     <SkipGenerationCheck>true</SkipGenerationCheck>
   </PropertyGroup>
@@ -67,4 +67,6 @@
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
   </ItemGroup>
+
+  <Import Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(MSBuildThisFileDirectory)disableUap.targets" />
 </Project>

@@ -12,9 +12,9 @@
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
-    <Compile Include="..\..\System.Diagnostics.Tracing\src\System\Diagnostics\Tracing\EventCounter.cs" />
     <Compile Include="*.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\*.cs" />
+    <Compile Remove="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\TraceLogging\*.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -50,6 +50,7 @@
   <ItemGroup Condition="'$(IncludeNativeFiles)' == 'true'">
     <!-- Include native -->
     <ExcludeNative Include="$(NativeBinDir)/*.lib" />
+    <ExcludeNative Include="$(NativeBinDir)/System.IO.Ports.Native.*" />
     <NativeFile Include="$(NativeBinDir)/*.*" Exclude="@(ExcludeNative)" />
     <!-- force a missing file if native build is absent -->
     <NativeFile Include="$(NativeBinDir)/MISSING_NATIVE_BUILD" Condition="'@(NativeFile)' == ''" />

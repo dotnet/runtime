@@ -4,6 +4,7 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -188,14 +189,8 @@ namespace System.Collections
 
         public bool this[int index]
         {
-            get
-            {
-                return Get(index);
-            }
-            set
-            {
-                Set(index, value);
-            }
+            get => Get(index);
+            set => Set(index, value);
         }
 
         /*=========================================================================
@@ -204,15 +199,13 @@ namespace System.Collections
         ** Exceptions: ArgumentOutOfRangeException if index < 0 or
         **             index >= GetLength().
         =========================================================================*/
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Get(int index)
         {
-            if ((uint)index >= (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
-            }
+            if ((uint)index >= (uint)m_length)
+                ThrowArgumentOutOfRangeException(index);
 
-            int elementIndex = Div32Rem(index, out int extraBits);
-            return (m_array[elementIndex] & (1 << extraBits)) != 0;
+            return (m_array[index >> 5] & (1 << index)) != 0;
         }
 
         /*=========================================================================
@@ -221,25 +214,23 @@ namespace System.Collections
         ** Exceptions: ArgumentOutOfRangeException if index < 0 or
         **             index >= GetLength().
         =========================================================================*/
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(int index, bool value)
         {
-            if ((uint)index >= (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
-            }
+            if ((uint)index >= (uint)m_length)
+                ThrowArgumentOutOfRangeException(index);
 
-            int elementIndex = Div32Rem(index, out int extraBits);
+            int bitMask = 1 << index;
+            ref int segment = ref m_array[index >> 5];
 
-            int newValue = m_array[elementIndex];
             if (value)
             {
-                newValue |= 1 << extraBits;
+                segment |= bitMask;
             }
             else
             {
-                newValue &= ~(1 << extraBits);
+                segment &= ~bitMask;
             }
-            m_array[elementIndex] = newValue;
 
             _version++;
         }
@@ -250,9 +241,11 @@ namespace System.Collections
         public void SetAll(bool value)
         {
             int fillValue = value ? -1 : 0;
-            for (int i = 0; i < m_array.Length; i++)
+            int[] array = m_array;
+
+            for (int i = 0; i < array.Length; i++)
             {
-                m_array[i] = fillValue;
+                array[i] = fillValue;
             }
 
             _version++;
@@ -403,9 +396,11 @@ namespace System.Collections
         =========================================================================*/
         public BitArray Not()
         {
-            for (int i = 0; i < m_array.Length; i++)
+            int[] array = m_array;
+
+            for (int i = 0; i < array.Length; i++)
             {
-                m_array[i] = ~m_array[i];
+                array[i] = ~array[i];
             }
 
             _version++;
@@ -449,7 +444,7 @@ namespace System.Collections
                         // is greater than or equal to the width in bits of the promoted left operand,
                         // https://docs.microsoft.com/en-us/cpp/c-language/bitwise-shift-operators?view=vs-2017
                         // However, the compiler protects us from undefined behaviour by constraining the
-                        // right operand to between 0 and width - 1 (inclusive), i.e. righ_operand = (right_operand % width).
+                        // right operand to between 0 and width - 1 (inclusive), i.e. right_operand = (right_operand % width).
                         uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
                         m_array[ints - 1] &= (int)mask;
                     }
@@ -743,6 +738,11 @@ namespace System.Collections
             uint quotient = (uint)number / 4;
             remainder = number & (4 - 1);   // equivalent to number % 4, since 4 is a power of 2
             return (int)quotient;
+        }
+
+        private static void ThrowArgumentOutOfRangeException(int index)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
         }
 
         private class BitArrayEnumeratorSimple : IEnumerator, ICloneable

@@ -953,6 +953,32 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             public int NonNullableProperty { get; set; }
             public int? NullableProperty { get; set; }
+
+            // Private properties should not be validated.
+
+            [Required]
+            private string PrivateSetOnlyProperty { set { } }
+
+            [Required]
+            protected string ProtectedSetOnlyProperty { set { } }
+
+            [Required]
+            internal string InternalSetOnlyProperty { set { } }
+
+            [Required]
+            protected internal string ProtectedInternalSetOnlyProperty { set { } }
+
+            [Required]
+            private string PrivateGetOnlyProperty { get; }
+
+            [Required]
+            protected string ProtectedGetOnlyProperty { get; }
+
+            [Required]
+            internal string InternalGetOnlyProperty { get; }
+
+            [Required]
+            protected internal string ProtectedInternalGetOnlyProperty { get; }
         }
 
         public enum TestEnum

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "varargs calling convention not supported on .NET Native")]
     public static class ArgIteratorTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsArgIteratorSupported))]
@@ -28,7 +29,7 @@ namespace System.Tests
             objArgs[1] = arg1;
             objArgs[2] = arg2;
             objArgs[3] = arg3;
-            
+
             // Walk all of the args in the variable part of the argument list.
             for (int i = 4; i < argCount; i++)
             {
