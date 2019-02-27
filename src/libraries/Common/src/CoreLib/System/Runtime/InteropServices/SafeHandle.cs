@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices
     // reliably guarantee handle release in the face of thread aborts.
 
     /// <summary>Represents a wrapper class for operating system handles.</summary>
-    public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
+    public abstract partial class SafeHandle : CriticalFinalizerObject, IDisposable
     {
         // IMPORTANT:
         // - Do not add or rearrange fields as the EE depends on this layout,

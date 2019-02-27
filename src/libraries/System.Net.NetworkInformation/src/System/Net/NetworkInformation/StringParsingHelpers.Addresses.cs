@@ -47,32 +47,35 @@ namespace System.Net.NetworkInformation
             List<IPAddress> collection = new List<IPAddress>();
             try
             {
-                string fileContents = File.ReadAllText(filePath);
-                int leaseIndex = -1;
-                int secondBrace = -1;
-                while ((leaseIndex = fileContents.IndexOf("lease", leaseIndex + 1, StringComparison.Ordinal)) != -1)
+                if (File.Exists(filePath)) // avoid an exception in most cases if path doesn't already exist
                 {
-                    int firstBrace = fileContents.IndexOf('{', leaseIndex);
-                    secondBrace = fileContents.IndexOf('}', leaseIndex);
-                    int blockLength = secondBrace - firstBrace;
-
-                    int interfaceIndex = fileContents.IndexOf("interface", firstBrace, blockLength, StringComparison.Ordinal);
-                    int afterName = fileContents.IndexOf(';', interfaceIndex);
-                    int beforeName = fileContents.LastIndexOf(' ', afterName);
-                    string interfaceName = fileContents.Substring(beforeName + 2, afterName - beforeName - 3);
-                    if (interfaceName != name)
+                    string fileContents = File.ReadAllText(filePath);
+                    int leaseIndex = -1;
+                    int secondBrace = -1;
+                    while ((leaseIndex = fileContents.IndexOf("lease", leaseIndex + 1, StringComparison.Ordinal)) != -1)
                     {
-                        continue;
-                    }
+                        int firstBrace = fileContents.IndexOf('{', leaseIndex);
+                        secondBrace = fileContents.IndexOf('}', leaseIndex);
+                        int blockLength = secondBrace - firstBrace;
 
-                    int indexOfDhcp = fileContents.IndexOf("dhcp-server-identifier", firstBrace, blockLength, StringComparison.Ordinal);
-                    int afterAddress = fileContents.IndexOf(';', indexOfDhcp);
-                    int beforeAddress = fileContents.LastIndexOf(' ', afterAddress);
-                    string dhcpAddressString = fileContents.Substring(beforeAddress + 1, afterAddress - beforeAddress - 1);
-                    IPAddress dhcpAddress;
-                    if (IPAddress.TryParse(dhcpAddressString, out dhcpAddress))
-                    {
-                        collection.Add(dhcpAddress);
+                        int interfaceIndex = fileContents.IndexOf("interface", firstBrace, blockLength, StringComparison.Ordinal);
+                        int afterName = fileContents.IndexOf(';', interfaceIndex);
+                        int beforeName = fileContents.LastIndexOf(' ', afterName);
+                        string interfaceName = fileContents.Substring(beforeName + 2, afterName - beforeName - 3);
+                        if (interfaceName != name)
+                        {
+                            continue;
+                        }
+
+                        int indexOfDhcp = fileContents.IndexOf("dhcp-server-identifier", firstBrace, blockLength, StringComparison.Ordinal);
+                        int afterAddress = fileContents.IndexOf(';', indexOfDhcp);
+                        int beforeAddress = fileContents.LastIndexOf(' ', afterAddress);
+                        string dhcpAddressString = fileContents.Substring(beforeAddress + 1, afterAddress - beforeAddress - 1);
+                        IPAddress dhcpAddress;
+                        if (IPAddress.TryParse(dhcpAddressString, out dhcpAddress))
+                        {
+                            collection.Add(dhcpAddress);
+                        }
                     }
                 }
             }
@@ -89,22 +92,25 @@ namespace System.Net.NetworkInformation
             List<IPAddress> collection = new List<IPAddress>();
             try
             {
-                string fileContents = File.ReadAllText(smbConfFilePath);
-                string label = "wins server = ";
-                int labelIndex = fileContents.IndexOf(label);
-                int labelLineStart = fileContents.LastIndexOf(Environment.NewLine, labelIndex, StringComparison.Ordinal);
-                if (labelLineStart < labelIndex)
+                if (File.Exists(smbConfFilePath)) // avoid an exception in most cases if path doesn't already exist
                 {
-                    int commentIndex = fileContents.IndexOf(';', labelLineStart, labelIndex - labelLineStart);
-                    if (commentIndex != -1)
+                    string fileContents = File.ReadAllText(smbConfFilePath);
+                    string label = "wins server = ";
+                    int labelIndex = fileContents.IndexOf(label);
+                    int labelLineStart = fileContents.LastIndexOf(Environment.NewLine, labelIndex, StringComparison.Ordinal);
+                    if (labelLineStart < labelIndex)
                     {
-                        return collection;
+                        int commentIndex = fileContents.IndexOf(';', labelLineStart, labelIndex - labelLineStart);
+                        if (commentIndex != -1)
+                        {
+                            return collection;
+                        }
                     }
+                    int endOfLine = fileContents.IndexOf(Environment.NewLine, labelIndex, StringComparison.Ordinal);
+                    string addressString = fileContents.Substring(labelIndex + label.Length, endOfLine - (labelIndex + label.Length));
+                    IPAddress address = IPAddress.Parse(addressString);
+                    collection.Add(address);
                 }
-                int endOfLine = fileContents.IndexOf(Environment.NewLine, labelIndex, StringComparison.Ordinal);
-                string addressString = fileContents.Substring(labelIndex + label.Length, endOfLine - (labelIndex + label.Length));
-                IPAddress address = IPAddress.Parse(addressString);
-                collection.Add(address);
             }
             catch
             {

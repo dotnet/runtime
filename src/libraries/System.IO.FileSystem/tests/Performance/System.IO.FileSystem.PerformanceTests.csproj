@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <ProjectGuid>{3C42F714-82AF-4A43-9B9C-744DE31B5C5D}</ProjectGuid>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>

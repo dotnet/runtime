@@ -420,7 +420,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(JoinOrderedLeftUnorderedRightData), new[] { 256, 512 })]
+        [MemberData(nameof(JoinOrderedLeftUnorderedRightData), new[] { 256 })]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve grouping of order-identical left keys through repartitioning (see https://github.com/dotnet/corefx/pull/27930#issuecomment-372084741)")]
         public static void Join_CustomComparator_LeftWithOrderingColisions_UnorderedRight_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {

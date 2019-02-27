@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RestoreSources>
+      https://dotnet.myget.org/F/dotnet-core-optimization-data/api/v3/index.json;
+      $(RestoreSources);
+    </RestoreSources>
+    <!-- Copy to IBC directory -->
+    <OutputPath>$(IbcOptimizationDataDir)</OutputPath>
+    <EnableBinPlacing>false</EnableBinPlacing>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- IBC data -->
+    <IBCPackage Include="$(CoreFxOptimizationDataPackageId)" Version="$(CoreFxOptimizationDataVersion)" AddDirectory="true" />
+    <PackageReference Include="@(IBCPackage)" GeneratePathProperty="true" />
+  </ItemGroup>
+  
+  <!-- IBC data packages don't follow NuGet conventions, so grab the contents
+       using the NuGet-generated-property that points to the restored package.  -->
+  <Target Name="GetIBCData"
+          Inputs="%(IBCPackage.Identity)"
+          Outputs="unused"
+          AfterTargets="ResolveReferences">
+    <ItemGroup>
+      <IBCPackage>
+        <!-- Assign metadata using the nuget convention for property naming -->
+        <PropertyName>Pkg$([System.String]::new('%(IBCPackage.Identity)').Replace('.', '_'))</PropertyName>
+      </IBCPackage>
+    </ItemGroup>
+    <PropertyGroup>
+      <!-- evaluate the package property -->
+      <_ibcPkgSrc>$(%(IBCPackage.PropertyName))</_ibcPkgSrc>
+      <_ibcPkgDest>%(IBCPackage.Identity)</_ibcPkgDest>
+      <_includeFileDir>%(IBCPackage.AddDirectory)</_includeFileDir>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(_ibcPkgSrc)')" Text="Package '%(IBCPackage.Identity)' was not restored!" />
+
+    <ItemGroup>
+      <_optimizationDataSourceFile Include="$(_ibcPkgSrc)\**\*.dll;$(_ibcPkgSrc)\**\*.ibc" 
+                                   NuGetPackageId="%(IBCPackage.Identity)"
+                                   NuGetPackageVersion="%(IBCPackage.Version)" />
+      <_optimizationDataSourceFile SubFolder="$(_ibcPkgDest)\%(RecursiveDir)" />
+      <_optimizationDataSourceFile Condition="'$(_includeFileDir)' == 'true'" SubFolder="%(SubFolder)%(FileName).dll\" />
+      <ReferenceCopyLocalPaths Include="@(_optimizationDataSourceFile)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

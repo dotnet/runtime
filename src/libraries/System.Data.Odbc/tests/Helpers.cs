@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 
 namespace System.Data.Odbc.Tests
 {
@@ -16,7 +17,7 @@ namespace System.Data.Odbc.Tests
 #if TargetsWindows
                 !PlatformDetection.IsWindowsNanoServer && (!PlatformDetection.IsWindowsServerCore || Environment.Is64BitProcess);
 #else
-                Interop.Libdl.dlopen(Interop.Libraries.Odbc32, Interop.Libdl.RTLD_NOW) != IntPtr.Zero;
+                NativeLibrary.TryLoad(Interop.Libraries.Odbc32, out _);
 #endif
     }
 }
