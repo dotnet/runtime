@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System
 {
@@ -111,7 +112,7 @@ namespace System
                 // and subtract once.
 
                 Debug.Assert(f != 0);
-                int lzcnt = BitOps.LeadingZeroCount(f);
+                int lzcnt = BitOperations.LeadingZeroCount(f);
                 return new DiyFp((f << lzcnt), (e - lzcnt));
             }
 
