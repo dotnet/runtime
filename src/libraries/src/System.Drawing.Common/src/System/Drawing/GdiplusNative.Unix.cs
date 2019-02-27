@@ -32,7 +32,7 @@ namespace System.Drawing
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
                     libraryName = "libgdiplus.dylib";
-                    lib = Interop.Libdl.dlopen(libraryName, Interop.Libdl.RTLD_NOW);
+                    lib = Interop.Libdl.dlopen(libraryName, Interop.Libdl.RTLD_LAZY);
                 }
                 else
                 {
@@ -41,10 +41,10 @@ namespace System.Drawing
                     // a global configuration setting. We prefer the "unversioned" shared object name, and fallback to
                     // the name suffixed with ".0".
                     libraryName = "libgdiplus.so";
-                    lib = Interop.Libdl.dlopen(libraryName, Interop.Libdl.RTLD_NOW);
+                    lib = Interop.Libdl.dlopen(libraryName, Interop.Libdl.RTLD_LAZY);
                     if (lib == IntPtr.Zero)
                     {
-                        lib = Interop.Libdl.dlopen("libgdiplus.so.0", Interop.Libdl.RTLD_NOW);
+                        lib = Interop.Libdl.dlopen("libgdiplus.so.0", Interop.Libdl.RTLD_LAZY);
                     }
                 }
 
@@ -58,7 +58,7 @@ namespace System.Drawing
                     {
                         var searchPath = Path.Combine(searchDirectory, libraryName);
 
-                        lib = Interop.Libdl.dlopen(searchPath, Interop.Libdl.RTLD_NOW);
+                        lib = Interop.Libdl.dlopen(searchPath, Interop.Libdl.RTLD_LAZY);
 
                         if (lib != IntPtr.Zero)
                         {

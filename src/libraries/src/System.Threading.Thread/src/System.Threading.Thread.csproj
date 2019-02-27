@@ -13,15 +13,9 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Threading\CompressedStack.cs">
       <Link>Common\CoreLib\System\Threading\CompressedStack.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Thread.cs">
-      <Link>Common\CoreLib\System\Threading\Thread.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Thread.Unix.cs" Condition="'$(TargetsUnix)' == 'true'">
-      <Link>Common\CoreLib\System\Threading\Thread.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Thread.Windows.cs" Condition="'$(TargetsWindows)' == 'true'">
-      <Link>Common\CoreLib\System\Threading\Thread.Windows.cs</Link>
-    </Compile>
+    <Compile Include="System\Threading\Thread.cs" />
+    <Compile Include="System\Threading\Thread.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="System\Threading\Thread.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Threading\ThreadExceptionEventArgs.cs" />
   </ItemGroup>
   <ItemGroup>

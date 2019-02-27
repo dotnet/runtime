@@ -1,7 +1,9 @@
 Compat issues with assembly netstandard:
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.ComponentModel.BackgroundWorker' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.SwitchLevelAttribute' exists on 'System.Diagnostics.BooleanSwitch' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.SwitchLevelAttribute' exists on 'System.Diagnostics.TraceSwitch' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.IO.FileSystemWatcher' in the contract but not the implementation.
 TypesMustExist : Type 'System.IO.Compression.BrotliDecoder' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Compression.BrotliEncoder' does not exist in the implementation but it does exist in the contract.
@@ -11,8 +13,6 @@ MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.GetModule()
 MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.SetMethodBody(System.Byte[], System.Int32, System.Byte[], System.Collections.Generic.IEnumerable<System.Reflection.Emit.ExceptionHandler>, System.Collections.Generic.IEnumerable<System.Int32>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.Signature.get()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.DynamicILInfo' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Emit.DynamicMethod.GetDynamicILInfo()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.EnumBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.CreateType()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
@@ -59,6 +59,9 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.TypeBuilder' does
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.TypeToken' does not exist in the implementation but it does exist in the contract.
 CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Method, Inherited=false)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Method, Inherited=false, AllowMultiple=false)]' in the implementation.
+CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xml.Serialization.XmlAnyAttributeAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]' in the implementation.
+CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xml.Serialization.XmlNamespaceDeclarationsAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]' in the implementation.
+MembersMustExist : Member 'System.Runtime.CompilerServices.RuntimeHelpers.GetSubArray<T>(T[], System.Range)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GenerateGuidForType(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GenerateProgIdForType(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetComObjectData(System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
@@ -66,6 +69,4 @@ MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetHINSTANCE(S
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetIDispatchForObject(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.GetTypedObjectForIUnknown(System.IntPtr, System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.SetComObjectData(System.Object, System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
-CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xml.Serialization.XmlAnyAttributeAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]' in the implementation.
-CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xml.Serialization.XmlNamespaceDeclarationsAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]' in the implementation.
-Total Issues: 69
+Total Issues: 70

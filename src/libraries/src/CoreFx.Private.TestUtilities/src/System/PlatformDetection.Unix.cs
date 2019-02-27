@@ -60,32 +60,25 @@ namespace System
         public static bool IsNetfx471OrNewer => false;
         public static bool IsNetfx472OrNewer => false;
 
-        public static bool IsDrawingSupported { get; } = GetGdiplusIsAvailable();
-        public static bool IsSoundPlaySupported { get; } = false;
+        public static bool SupportsSsl3 => (PlatformDetection.IsOSX || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion < new Version(1, 0, 2) && !PlatformDetection.IsDebian));
+
+        public static bool IsDrawingSupported { get; } =
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+#if netcoreapp30
+                ? NativeLibrary.TryLoad("libgdiplus.dylib", out _)
+                : NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
+#else
+                ? dlopen("libgdiplus.dylib", RTLD_LAZY) != IntPtr.Zero
+                : dlopen("libgdiplus.so", RTLD_LAZY) != IntPtr.Zero || dlopen("libgdiplus.so.0", RTLD_LAZY) != IntPtr.Zero;
+
+        public static bool IsInContainer => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/.dockerenv");
 
         [DllImport("libdl")]
         private static extern IntPtr dlopen(string libName, int flags);
-        public const int RTLD_NOW = 0x002;
+        private const int RTLD_LAZY = 0x001;
+#endif
 
-        private static bool GetGdiplusIsAvailable()
-        {
-            IntPtr nativeLib;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                nativeLib = dlopen("libgdiplus.dylib", RTLD_NOW);
-            }
-            else
-            {
-                nativeLib = dlopen("libgdiplus.so", RTLD_NOW);
-                if (nativeLib == IntPtr.Zero)
-                {
-                    nativeLib = dlopen("libgdiplus.so.0", RTLD_NOW);
-                }
-            }
-
-            return nativeLib != IntPtr.Zero;
-        }
+        public static bool IsSoundPlaySupported { get; } = false;
 
         public static Version OSXVersion { get; } = ToVersion(PlatformApis.GetOSVersion());
 
