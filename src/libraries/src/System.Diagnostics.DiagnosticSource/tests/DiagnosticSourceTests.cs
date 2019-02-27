@@ -501,7 +501,7 @@ namespace System.Diagnostics.Tests
         /// Stresses the AllListeners by having many threads be adding and removing.
         /// </summary>
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35539)]
         [InlineData(100, 100)] // run multiple times to stress it further
         [InlineData(100, 100)]
         [InlineData(100, 100)]

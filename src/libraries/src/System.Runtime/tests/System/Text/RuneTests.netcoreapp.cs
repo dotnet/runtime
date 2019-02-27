@@ -454,14 +454,14 @@ namespace System.Text.Tests
             // First, try with a buffer that's too short
 
             Span<byte> utf8Buffer = stackalloc byte[rune.Utf8SequenceLength - 1];
-            bool success = TryEncodeToUtf8Bytes_Fn(ref rune, utf8Buffer, out int bytesWritten);
+            bool success = rune.TryEncodeToUtf8Bytes(utf8Buffer, out int bytesWritten);
             Assert.False(success);
             Assert.Equal(0, bytesWritten);
 
             // Then, try with a buffer that's appropriately sized
 
             utf8Buffer = stackalloc byte[rune.Utf8SequenceLength];
-            success = TryEncodeToUtf8Bytes_Fn(ref rune, utf8Buffer, out bytesWritten);
+            success = rune.TryEncodeToUtf8Bytes(utf8Buffer, out bytesWritten);
             Assert.True(success);
             Assert.Equal(testData.Utf8Sequence.Length, bytesWritten);
             Assert.True(utf8Buffer.SequenceEqual(testData.Utf8Sequence));
@@ -469,19 +469,10 @@ namespace System.Text.Tests
             // Finally, try with a buffer that's too long (should succeed)
 
             utf8Buffer = stackalloc byte[rune.Utf8SequenceLength + 1];
-            success = TryEncodeToUtf8Bytes_Fn(ref rune, utf8Buffer, out bytesWritten);
+            success = rune.TryEncodeToUtf8Bytes(utf8Buffer, out bytesWritten);
             Assert.True(success);
             Assert.Equal(testData.Utf8Sequence.Length, bytesWritten);
             Assert.True(utf8Buffer.Slice(0, testData.Utf8Sequence.Length).SequenceEqual(testData.Utf8Sequence));
-        }
-
-        private delegate bool TryEncodeToUtf8Bytes_Del(ref Rune rune, Span<byte> destination, out int bytesWritten);
-        private static readonly TryEncodeToUtf8Bytes_Del TryEncodeToUtf8Bytes_Fn = CreateTryEncodeToUtf8BytesDelegate();
-
-        private static TryEncodeToUtf8Bytes_Del CreateTryEncodeToUtf8BytesDelegate()
-        {
-            var methodInfo = typeof(Rune).GetMethod("TryEncodeToUtf8Bytes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            return (TryEncodeToUtf8Bytes_Del)methodInfo.CreateDelegate(typeof(TryEncodeToUtf8Bytes_Del));
         }
     }
 }

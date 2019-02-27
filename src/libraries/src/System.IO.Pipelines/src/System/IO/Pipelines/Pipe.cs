@@ -141,10 +141,7 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumSize);
             }
 
-            lock (_sync)
-            {
-                AllocateWriteHeadUnsynchronized(sizeHint);
-            }
+            AllocateWriteHeadIfNeeded(sizeHint);
 
             return _writingMemory;
         }
@@ -161,43 +158,55 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumSize);
             }
 
-            lock (_sync)
-            {
-                AllocateWriteHeadUnsynchronized(sizeHint);
-            }
+            AllocateWriteHeadIfNeeded(sizeHint);
 
             return _writingMemory.Span;
         }
 
-        private void AllocateWriteHeadUnsynchronized(int sizeHint)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AllocateWriteHeadIfNeeded(int sizeHint)
         {
-            _operationState.BeginWrite();
-
-            if (_writingHead == null)
+            // If writing is currently active and enough space, don't need to take the lock to just set WritingActive.
+            // IsWritingActive is needed to prevent the reader releasing the writers memory when it fully consumes currently written.
+            if (!_operationState.IsWritingActive ||
+                _writingMemory.Length == 0 || _writingMemory.Length < sizeHint)
             {
-                // We need to allocate memory to write since nobody has written before
-                BufferSegment newSegment = AllocateSegment(sizeHint);
-
-                // Set all the pointers
-                _writingHead = _readHead = _readTail = newSegment;
+                AllocateWriteHeadSynchronized(sizeHint);
             }
-            else
+        }
+
+        private void AllocateWriteHeadSynchronized(int sizeHint)
+        {
+            lock (_sync)
             {
-                int bytesLeftInBuffer = _writingMemory.Length;
+                _operationState.BeginWrite();
 
-                if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
+                if (_writingHead == null)
                 {
-                    if (_buffered > 0)
-                    {
-                        // Flush buffered data to the segment
-                        _writingHead.End += _buffered;
-                        _buffered = 0;
-                    }
-
+                    // We need to allocate memory to write since nobody has written before
                     BufferSegment newSegment = AllocateSegment(sizeHint);
 
-                    _writingHead.SetNext(newSegment);
-                    _writingHead = newSegment;
+                    // Set all the pointers
+                    _writingHead = _readHead = _readTail = newSegment;
+                }
+                else
+                {
+                    int bytesLeftInBuffer = _writingMemory.Length;
+
+                    if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
+                    {
+                        if (_buffered > 0)
+                        {
+                            // Flush buffered data to the segment
+                            _writingHead.End += _buffered;
+                            _buffered = 0;
+                        }
+
+                        BufferSegment newSegment = AllocateSegment(sizeHint);
+
+                        _writingHead.SetNext(newSegment);
+                        _writingHead = newSegment;
+                    }
                 }
             }
         }
@@ -294,28 +303,20 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Advance(int bytesWritten)
         {
-            if (_writingHead == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NotWritingNoAlloc();
-            }
-
-            if (bytesWritten >= 0)
-            {
-                Debug.Assert(_writingHead.Next == null);
-
-                if (bytesWritten > _writingMemory.Length)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_AdvancingPastBufferSize();
-                }
-
-                _currentWriteLength += bytesWritten;
-                _buffered += bytesWritten;
-                _writingMemory = _writingMemory.Slice(bytesWritten);
-            }
-            else
+            if ((uint)bytesWritten > (uint)_writingMemory.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytesWritten);
             }
+
+            AdvanceCore(bytesWritten);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AdvanceCore(int bytesWritten)
+        {
+            _currentWriteLength += bytesWritten;
+            _buffered += bytesWritten;
+            _writingMemory = _writingMemory.Slice(bytesWritten);
         }
 
         internal ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken)
@@ -471,6 +472,7 @@ namespace System.IO.Pipelines
                             Debug.Assert(_readHead == null);
                             Debug.Assert(_readTail == null);
                             _writingHead = null;
+                            _writingMemory = default;
                         }
 
                         returnEnd = nextBlock;
@@ -898,6 +900,63 @@ namespace System.IO.Pipelines
             if (_readerCompletion.IsCompletedOrThrow())
             {
                 result._resultFlags |= ResultFlags.Completed;
+            }
+        }
+
+        internal ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        {
+            if (_writerCompletion.IsCompleted)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
+            }
+
+            // Allocate whatever the pool gives us so we can write, this also marks the
+            // state as writing
+            AllocateWriteHeadIfNeeded(0);
+
+            if (source.Length <= _writingMemory.Length)
+            {
+                source.CopyTo(_writingMemory);
+
+                AdvanceCore(source.Length);
+            }
+            else
+            {
+                // This is the multi segment copy
+                WriteMultiSegment(source.Span);
+            }
+
+            return FlushAsync(cancellationToken);
+        }
+
+        private void WriteMultiSegment(ReadOnlySpan<byte> source)
+        {
+            Span<byte> destination = _writingMemory.Span;
+
+            while (true)
+            {
+                int writable = Math.Min(destination.Length, source.Length);
+                source.Slice(0, writable).CopyTo(destination);
+                source = source.Slice(writable);
+                AdvanceCore(writable);
+
+                if (source.Length == 0)
+                {
+                    break;
+                }
+
+                // We filled the segment
+                _writingHead.End += writable;
+                _buffered = 0;
+
+                // This is optimized to use pooled memory. That's why we pass 0 instead of
+                // source.Length
+                BufferSegment newSegment = AllocateSegment(0);
+
+                _writingHead.SetNext(newSegment);
+                _writingHead = newSegment;
+
+                destination = _writingMemory.Span;
             }
         }
 

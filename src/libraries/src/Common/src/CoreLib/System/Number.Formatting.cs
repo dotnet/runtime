@@ -1723,6 +1723,11 @@ namespace System
                 case 'R':
                 case 'r':
                 {
+                    if (number.Kind != NumberBufferKind.FloatingPoint)
+                    {
+                        goto default;
+                    }
+
                     format = (char)(format - ('R' - 'G'));
                     Debug.Assert((format == 'G') || (format == 'g'));
                     goto case 'G';

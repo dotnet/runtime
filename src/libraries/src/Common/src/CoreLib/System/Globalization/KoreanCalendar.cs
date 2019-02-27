@@ -2,32 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Globalization
 {
-    /*=================================KoreanCalendar==========================
-    **
-    ** Korean calendar is based on the Gregorian calendar.  And the year is an offset to Gregorian calendar.
-    ** That is,
-    **      Korean year = Gregorian year + 2333.  So 2000/01/01 A.D. is Korean 4333/01/01
-    **
-    ** 0001/1/1 A.D. is Korean year 2334.
-    **
-    **  Calendar support range:
-    **      Calendar    Minimum     Maximum
-    **      ==========  ==========  ==========
-    **      Gregorian   0001/01/01   9999/12/31
-    **      Korean      2334/01/01  12332/12/31
-    ============================================================================*/
-
-
+    /// <summary>
+    /// Korean calendar is based on the Gregorian calendar.  And the year is an offset to Gregorian calendar.
+    /// That is,
+    ///      Korean year = Gregorian year + 2333.  So 2000/01/01 A.D. is Korean 4333/01/01
+    ///
+    /// 0001/1/1 A.D. is Korean year 2334.
+    /// </summary>
+    /// <remarks>
+    /// Calendar support range:
+    ///     Calendar    Minimum     Maximum
+    ///     ==========  ==========  ==========
+    ///     Gregorian   0001/01/01   9999/12/31
+    ///     Korean      2334/01/01  12332/12/31
+    /// </remarks>
     public class KoreanCalendar : Calendar
     {
-        //
-        // The era value for the current era.
-        //
-
         public const int KoreanEra = 1;
 
         // Since
@@ -36,40 +28,18 @@ namespace System.Globalization
         //    1 = 2334 + yearOffset
         //  So yearOffset = -2333
         // Gregorian year 2001 is Korean year 4334.
-
-        //m_EraInfo[0] = new EraInfo(1, new DateTime(1, 1, 1).Ticks, -2333, 2334, GregorianCalendar.MaxYear + 2333);
-
-        // Initialize our era info.
-        internal static EraInfo[] koreanEraInfo = new EraInfo[] {
-            new EraInfo( 1, 1, 1, 1, -2333, 2334, GregorianCalendar.MaxYear + 2333)   // era #, start year/month/day, yearOffset, minEraYear 
+        private static readonly EraInfo[] s_koreanEraInfo = new EraInfo[]
+        {
+            new EraInfo( 1, 1, 1, 1, -2333, 2334, GregorianCalendar.MaxYear + 2333)   // era #, start year/month/day, yearOffset, minEraYear
         };
 
-        internal GregorianCalendarHelper helper;
+        private readonly GregorianCalendarHelper _helper;
 
+        public override DateTime MinSupportedDateTime => DateTime.MinValue;
 
-        public override DateTime MinSupportedDateTime
-        {
-            get
-            {
-                return (DateTime.MinValue);
-            }
-        }
+        public override DateTime MaxSupportedDateTime => DateTime.MaxValue;
 
-        public override DateTime MaxSupportedDateTime
-        {
-            get
-            {
-                return (DateTime.MaxValue);
-            }
-        }
-
-        public override CalendarAlgorithmType AlgorithmType
-        {
-            get
-            {
-                return CalendarAlgorithmType.SolarCalendar;
-            }
-        }
+        public override CalendarAlgorithmType AlgorithmType => CalendarAlgorithmType.SolarCalendar;
 
         public KoreanCalendar()
         {
@@ -79,184 +49,142 @@ namespace System.Globalization
             }
             catch (ArgumentException e)
             {
-                throw new TypeInitializationException(this.GetType().ToString(), e);
+                throw new TypeInitializationException(GetType().ToString(), e);
             }
-            helper = new GregorianCalendarHelper(this, koreanEraInfo);
+
+            _helper = new GregorianCalendarHelper(this, s_koreanEraInfo);
         }
 
-        internal override CalendarId ID
-        {
-            get
-            {
-                return CalendarId.KOREA;
-            }
-        }
+        internal override CalendarId ID => CalendarId.KOREA;
 
 
         public override DateTime AddMonths(DateTime time, int months)
         {
-            return (helper.AddMonths(time, months));
+            return _helper.AddMonths(time, months);
         }
 
 
         public override DateTime AddYears(DateTime time, int years)
         {
-            return (helper.AddYears(time, years));
+            return _helper.AddYears(time, years);
         }
-
-        /*=================================GetDaysInMonth==========================
-        **Action: Returns the number of days in the month given by the year and month arguments.
-        **Returns: The number of days in the given month.
-        **Arguments:
-        **      year The year in Korean calendar.
-        **      month The month
-        **      era     The Japanese era value.
-        **Exceptions
-        **  ArgumentException  If month is less than 1 or greater * than 12.
-        ============================================================================*/
-
 
         public override int GetDaysInMonth(int year, int month, int era)
         {
-            return (helper.GetDaysInMonth(year, month, era));
+            return _helper.GetDaysInMonth(year, month, era);
         }
-
 
         public override int GetDaysInYear(int year, int era)
         {
-            return (helper.GetDaysInYear(year, era));
+            return _helper.GetDaysInYear(year, era);
         }
-
 
         public override int GetDayOfMonth(DateTime time)
         {
-            return (helper.GetDayOfMonth(time));
+            return _helper.GetDayOfMonth(time);
         }
-
 
         public override DayOfWeek GetDayOfWeek(DateTime time)
         {
-            return (helper.GetDayOfWeek(time));
+            return _helper.GetDayOfWeek(time);
         }
-
 
         public override int GetDayOfYear(DateTime time)
         {
-            return (helper.GetDayOfYear(time));
+            return _helper.GetDayOfYear(time);
         }
-
 
         public override int GetMonthsInYear(int year, int era)
         {
-            return (helper.GetMonthsInYear(year, era));
+            return _helper.GetMonthsInYear(year, era);
         }
-
 
         public override int GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
-            return (helper.GetWeekOfYear(time, rule, firstDayOfWeek));
+            return _helper.GetWeekOfYear(time, rule, firstDayOfWeek);
         }
-
 
         public override int GetEra(DateTime time)
         {
-            return (helper.GetEra(time));
+            return _helper.GetEra(time);
         }
 
         public override int GetMonth(DateTime time)
         {
-            return (helper.GetMonth(time));
+            return _helper.GetMonth(time);
         }
-
 
         public override int GetYear(DateTime time)
         {
-            return (helper.GetYear(time));
+            return _helper.GetYear(time);
         }
-
 
         public override bool IsLeapDay(int year, int month, int day, int era)
         {
-            return (helper.IsLeapDay(year, month, day, era));
+            return _helper.IsLeapDay(year, month, day, era);
         }
-
 
         public override bool IsLeapYear(int year, int era)
         {
-            return (helper.IsLeapYear(year, era));
+            return _helper.IsLeapYear(year, era);
         }
-
-        // Returns  the leap month in a calendar year of the specified era. This method returns 0
-        // if this calendar does not have leap month, or this year is not a leap year.
-        //
 
         public override int GetLeapMonth(int year, int era)
         {
-            return (helper.GetLeapMonth(year, era));
+            return _helper.GetLeapMonth(year, era);
         }
-
 
         public override bool IsLeapMonth(int year, int month, int era)
         {
-            return (helper.IsLeapMonth(year, month, era));
+            return _helper.IsLeapMonth(year, month, era);
         }
 
 
         public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
         {
-            return (helper.ToDateTime(year, month, day, hour, minute, second, millisecond, era));
+            return _helper.ToDateTime(year, month, day, hour, minute, second, millisecond, era);
         }
 
 
-        public override int[] Eras
-        {
-            get
-            {
-                return (helper.Eras);
-            }
-        }
+        public override int[] Eras => _helper.Eras;
 
-        private const int DEFAULT_TWO_DIGIT_YEAR_MAX = 4362;
+        private const int DefaultTwoDigitYearMax = 4362;
 
 
         public override int TwoDigitYearMax
         {
             get
             {
-                if (twoDigitYearMax == -1)
+                if (_twoDigitYearMax == -1)
                 {
-                    twoDigitYearMax = GetSystemTwoDigitYearSetting(ID, DEFAULT_TWO_DIGIT_YEAR_MAX);
+                    _twoDigitYearMax = GetSystemTwoDigitYearSetting(ID, DefaultTwoDigitYearMax);
                 }
-                return (twoDigitYearMax);
-            }
 
+                return _twoDigitYearMax;
+            }
             set
             {
                 VerifyWritable();
-                if (value < 99 || value > helper.MaxYear)
+                if (value < 99 || value > _helper.MaxYear)
                 {
                     throw new ArgumentOutOfRangeException(
-                                "year",
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
-                                    SR.ArgumentOutOfRange_Range,
-                                    99,
-                                    helper.MaxYear));
+                        nameof(value),
+                        value,
+                        SR.Format(SR.ArgumentOutOfRange_Range, 99, _helper.MaxYear));
                 }
-                twoDigitYearMax = value;
+
+                _twoDigitYearMax = value;
             }
         }
-
 
         public override int ToFourDigitYear(int year)
         {
             if (year < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(year),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            return (helper.ToFourDigitYear(year, this.TwoDigitYearMax));
+            return _helper.ToFourDigitYear(year, TwoDigitYearMax);
         }
     }
 }

@@ -56,8 +56,12 @@
     <RepoTool Include="dotnet-reportgenerator-globaltool" Version="$(DotNetReportGeneratorGlobalToolPackageVersion)" />
   </ItemGroup>
 
+  <!--
+    Temporarily opt-in as dotnet restore interactive doesn't seem to work.
+    https://github.com/NuGet/Home/issues/7812. Use nuget restore meanwhile.
+  -->
   <Target Name="InitOptionalTools"
-          Condition="'$(OptionalToolSource)' != ''"
+          Condition="'$(RestoreInternalTools)' == 'true'"
           AfterTargets="Restore">
 
     <PropertyGroup>
@@ -65,7 +69,7 @@
       <OptionalToolProjectPath>$(OptionalToolDir)Tools.csproj</OptionalToolProjectPath>
     </PropertyGroup>
 
-    <Exec Command="$(DotNetCmd) restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources"
+    <Exec Command="$(DotNetCmd) restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources /p:TargetGroup=$(TargetGroup)"
           WorkingDirectory="$(RepoRoot)" />
 
   </Target>

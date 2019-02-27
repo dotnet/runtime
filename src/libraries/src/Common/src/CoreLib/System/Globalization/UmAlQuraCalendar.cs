@@ -6,26 +6,26 @@ using System.Diagnostics;
 
 namespace System.Globalization
 {
-    /*
-    **  Calendar support range:
-    **      Calendar    Minimum     Maximum
-    **      ==========  ==========  ==========
-    **      Gregorian   1900/04/30   2077/05/13
-    **      UmAlQura    1318/01/01   1500/12/30
-    */
-
+    /// <remarks>
+    /// Calendar support range:
+    ///     Calendar    Minimum     Maximum
+    ///     ==========  ==========  ==========
+    ///     Gregorian   1900/04/30   2077/05/13
+    ///     UmAlQura    1318/01/01   1500/12/30
+    /// </remarks>
     public partial class UmAlQuraCalendar : Calendar
     {
-        internal const int MinCalendarYear = 1318;
-        internal const int MaxCalendarYear = 1500;
+        private const int MinCalendarYear = 1318;
+        private const int MaxCalendarYear = 1500;
 
-        internal struct DateMapping
+        private struct DateMapping
         {
             internal DateMapping(int MonthsLengthFlags, int GYear, int GMonth, int GDay)
             {
                 HijriMonthsLengthFlags = MonthsLengthFlags;
                 GregorianDate = new DateTime(GYear, GMonth, GDay);
             }
+
             internal int HijriMonthsLengthFlags;
             internal DateTime GregorianDate;
         }
@@ -37,7 +37,7 @@ namespace System.Globalization
             short[] rawData = new short[]
             {
                 //These data is taken from Tables/Excel/UmAlQura.xls please make sure that the two places are in sync
-                /*  DaysPerM     GY      GM     GD     D1   D2   D3   D4   D5   D6   D7   D8   D9   D10  D11  D12    
+                /*  DaysPerM     GY      GM     GD     D1   D2   D3   D4   D5   D6   D7   D8   D9   D10  D11  D12
                 1318*/0x02EA,    1900,     4,    30,/* 0    1    0    1    0    1    1    1    0    1    0    0    4/30/1900
                 1319*/0x06E9,    1901,     4,    19,/* 1    0    0    1    0    1    1    1    0    1    1    0    4/19/1901
                 1320*/0x0ED2,    1902,     4,     9,/* 0    1    0    0    1    0    1    1    0    1    1    1    4/9/1902
@@ -236,60 +236,27 @@ namespace System.Globalization
 
         public const int UmAlQuraEra = 1;
 
-        internal const int DateCycle = 30;
-        internal const int DatePartYear = 0;
-        internal const int DatePartDayOfYear = 1;
-        internal const int DatePartMonth = 2;
-        internal const int DatePartDay = 3;
+        private const int DatePartYear = 0;
+        private const int DatePartDayOfYear = 1;
+        private const int DatePartMonth = 2;
+        private const int DatePartDay = 3;
 
+        private static readonly DateTime s_minDate = new DateTime(1900, 4, 30);
+        private static readonly DateTime s_maxDate = new DateTime((new DateTime(2077, 11, 16, 23, 59, 59, 999)).Ticks + 9999);
 
-        // This is the minimal Gregorian date that we support in the UmAlQuraCalendar.
-        internal static DateTime minDate = new DateTime(1900, 4, 30);
-        internal static DateTime maxDate = new DateTime((new DateTime(2077, 11, 16, 23, 59, 59, 999)).Ticks + 9999);
+        public override DateTime MinSupportedDateTime => s_minDate;
 
-        public override DateTime MinSupportedDateTime
-        {
-            get
-            {
-                return (minDate);
-            }
-        }
+        public override DateTime MaxSupportedDateTime => s_maxDate;
 
-        public override DateTime MaxSupportedDateTime
-        {
-            get
-            {
-                return (maxDate);
-            }
-        }
-
-        public override CalendarAlgorithmType AlgorithmType
-        {
-            get
-            {
-                return CalendarAlgorithmType.LunarCalendar;
-            }
-        }
+        public override CalendarAlgorithmType AlgorithmType => CalendarAlgorithmType.LunarCalendar;
 
         public UmAlQuraCalendar()
         {
         }
 
-        internal override CalendarId BaseCalendarID
-        {
-            get
-            {
-                return (CalendarId.HIJRI);
-            }
-        }
+        internal override CalendarId BaseCalendarID => CalendarId.HIJRI;
 
-        internal override CalendarId ID
-        {
-            get
-            {
-                return (CalendarId.UMALQURA);
-            }
-        }
+        internal override CalendarId ID => CalendarId.UMALQURA;
 
         protected override int DaysInYearBeforeMinSupportedYear
         {
@@ -301,31 +268,21 @@ namespace System.Globalization
             }
         }
 
-        /*==========================ConvertHijriToGregorian==========================
-        ** Purpose: convert Hdate(year,month,day) to Gdate(year,month,day)                               
-        ** Arguments:                                                                                                                
-        ** Input/Ouput: Hijrah  date: year:yh, month:mh, day:dh                                                  
-        ** Output: Gregorian date: year:yg, month:mg, day:dg , day of week:dayweek                   
-        **       and returns flag found:1 not found:0                                                                      
-        =========================ConvertHijriToGregorian============================*/
-        private static void ConvertHijriToGregorian(int HijriYear, int HijriMonth, int HijriDay, ref int yg, ref int mg, ref int dg)
+        private static void ConvertHijriToGregorian(int HijriYear, int HijriMonth, int HijriDay, out int yg, out int mg, out int dg)
         {
             Debug.Assert((HijriYear >= MinCalendarYear) && (HijriYear <= MaxCalendarYear), "Hijri year is out of range.");
             Debug.Assert(HijriMonth >= 1, "Hijri month is out of range.");
             Debug.Assert(HijriDay >= 1, "Hijri day is out of range.");
-            int index, b, nDays = HijriDay - 1;
-            DateTime dt;
+            int nDays = HijriDay - 1;
 
-
-            index = HijriYear - MinCalendarYear;
-            dt = s_hijriYearInfo[index].GregorianDate;
-
-
-            b = s_hijriYearInfo[index].HijriMonthsLengthFlags;
+            int index = HijriYear - MinCalendarYear;
+            DateTime dt = s_hijriYearInfo[index].GregorianDate;
+            int b = s_hijriYearInfo[index].HijriMonthsLengthFlags;
 
             for (int m = 1; m < HijriMonth; m++)
             {
-                nDays = nDays + 29 + (b & 1);   /* Add the months lengths before mh */
+                // Add the months lengths before mh
+                nDays = nDays + 29 + (b & 1);
                 b = b >> 1;
             }
 
@@ -333,33 +290,24 @@ namespace System.Globalization
             dt.GetDatePart(out yg, out mg, out dg);
         }
 
-        /*=================================GetAbsoluteDateUmAlQura==========================
-        **Action: Gets the Absolute date for the given UmAlQura date.  The absolute date means
-        **       the number of days from January 1st, 1 A.D.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
         private static long GetAbsoluteDateUmAlQura(int year, int month, int day)
         {
-            //Caller should check the validaty of year, month and day.
-
-            int yg = 0, mg = 0, dg = 0;
-            ConvertHijriToGregorian(year, month, day, ref yg, ref mg, ref dg);
+            ConvertHijriToGregorian(year, month, day, out int yg, out int mg, out int dg);
             return GregorianCalendar.GetAbsoluteDate(yg, mg, dg);
         }
 
         internal static void CheckTicksRange(long ticks)
         {
-            if (ticks < minDate.Ticks || ticks > maxDate.Ticks)
+            if (ticks < s_minDate.Ticks || ticks > s_maxDate.Ticks)
             {
                 throw new ArgumentOutOfRangeException(
-                            "time",
-                            string.Format(
-                                CultureInfo.InvariantCulture,
-                                SR.ArgumentOutOfRange_CalendarRange,
-                                minDate,
-                                maxDate));
+                    "time",
+                    ticks,
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        SR.ArgumentOutOfRange_CalendarRange,
+                        s_minDate,
+                        s_maxDate));
             }
         }
 
@@ -367,7 +315,7 @@ namespace System.Globalization
         {
             if (era != CurrentEra && era != UmAlQuraEra)
             {
-                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
+                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
         }
 
@@ -377,12 +325,9 @@ namespace System.Globalization
             if (year < MinCalendarYear || year > MaxCalendarYear)
             {
                 throw new ArgumentOutOfRangeException(
-                            nameof(year),
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.ArgumentOutOfRange_Range,
-                                MinCalendarYear,
-                                MaxCalendarYear));
+                    nameof(year),
+                    year,
+                    SR.Format(SR.ArgumentOutOfRange_Range, MinCalendarYear, MaxCalendarYear));
             }
         }
 
@@ -391,29 +336,18 @@ namespace System.Globalization
             CheckYearRange(year, era);
             if (month < 1 || month > 12)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
+                throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
             }
         }
 
-        /*========================ConvertGregorianToHijri============================
-        ** Purpose: convert DateTime to Hdate(year,month,day)                                                   
-        ** Arguments:                                                                                                                
-        ** Input: DateTime                                                                                                         
-        ** Output: Hijrah  date: year:yh, month:mh, day:dh                                                          
-        ============================================================================*/
-        private static void ConvertGregorianToHijri(DateTime time, ref int HijriYear, ref int HijriMonth, ref int HijriDay)
+        private static void ConvertGregorianToHijri(DateTime time, out int HijriYear, out int HijriMonth, out int HijriDay)
         {
-            int index, b, DaysPerThisMonth;
-            double nDays;
-            TimeSpan ts;
-            int yh1 = 0, mh1 = 0, dh1 = 0;
-
-            Debug.Assert((time.Ticks >= minDate.Ticks) && (time.Ticks <= maxDate.Ticks), "Gregorian date is out of range.");
+            Debug.Assert((time.Ticks >= s_minDate.Ticks) && (time.Ticks <= s_maxDate.Ticks), "Gregorian date is out of range.");
 
             // Find the index where we should start our search by quessing the Hijri year that we will be in HijriYearInfo.
             // A Hijri year is 354 or 355 days.  Use 355 days so that we will search from a lower index.
 
-            index = (int)((time.Ticks - minDate.Ticks) / Calendar.TicksPerDay) / 355;
+            int index = (int)((time.Ticks - s_minDate.Ticks) / Calendar.TicksPerDay) / 355;
             do
             {
             } while (time.CompareTo(s_hijriYearInfo[++index].GregorianDate) > 0); //while greater
@@ -423,20 +357,19 @@ namespace System.Globalization
                 index--;
             }
 
-            ts = time.Subtract(s_hijriYearInfo[index].GregorianDate);
-            yh1 = index + MinCalendarYear;
+            TimeSpan ts = time.Subtract(s_hijriYearInfo[index].GregorianDate);
+            int yh1 = index + MinCalendarYear;
+            int mh1 = 1;
+            int dh1 = 1;
+            double nDays = ts.TotalDays;
+            int b = s_hijriYearInfo[index].HijriMonthsLengthFlags;
+            int daysPerThisMonth = 29 + (b & 1);
 
-            mh1 = 1;
-            dh1 = 1;
-            nDays = ts.TotalDays;
-            b = s_hijriYearInfo[index].HijriMonthsLengthFlags;
-            DaysPerThisMonth = 29 + (b & 1);
-
-            while (nDays >= DaysPerThisMonth)
+            while (nDays >= daysPerThisMonth)
             {
-                nDays -= DaysPerThisMonth;
+                nDays -= daysPerThisMonth;
                 b = b >> 1;
-                DaysPerThisMonth = 29 + (b & 1);
+                daysPerThisMonth = 29 + (b & 1);
                 mh1++;
             }
             dh1 += (int)nDays;
@@ -446,76 +379,50 @@ namespace System.Globalization
             HijriYear = yh1;
         }
 
-        /*=================================GetDatePart==========================
-        **Action: Returns a given date part of this <i>DateTime</i>. This method is used
-        **       to compute the year, day-of-year, month, or day part.
-        **Returns:
-        **Arguments:
-        **Exceptions:  ArgumentException if part is incorrect.
-        **Notes:
-        **      First, we get the absolute date (the number of days from January 1st, 1 A.C) for the given ticks.
-        **      Use the formula (((AbsoluteDate - 226894) * 33) / (33 * 365 + 8)) + 1, we can a rough value for the UmAlQura year.
-        **      In order to get the exact UmAlQura year, we compare the exact absolute date for UmAlQuraYear and (UmAlQuraYear + 1).
-        **      From here, we can get the correct UmAlQura year.
-        ============================================================================*/
-
-        internal virtual int GetDatePart(DateTime time, int part)
+        /// <summary>
+        /// First, we get the absolute date (the number of days from January 1st, 1 A.C) for the given ticks.
+        /// Use the formula (((AbsoluteDate - 226894) * 33) / (33 * 365 + 8)) + 1, we can a rough value for the UmAlQura year.
+        /// In order to get the exact UmAlQura year, we compare the exact absolute date for UmAlQuraYear and (UmAlQuraYear + 1).
+        /// From here, we can get the correct UmAlQura year.
+        /// </summary>
+        private int GetDatePart(DateTime time, int part)
         {
-            int UmAlQuraYear = 0;              // UmAlQura year
-            int UmAlQuraMonth = 0;             // UmAlQura month
-            int UmAlQuraDay = 0;               // UmAlQura day
             long ticks = time.Ticks;
             CheckTicksRange(ticks);
 
-            ConvertGregorianToHijri(time, ref UmAlQuraYear, ref UmAlQuraMonth, ref UmAlQuraDay);
+            ConvertGregorianToHijri(time, out int UmAlQuraYear, out int UmAlQuraMonth, out int UmAlQuraDay);
 
             if (part == DatePartYear)
-                return (UmAlQuraYear);
-
+            {
+                return UmAlQuraYear;
+            }
             if (part == DatePartMonth)
-                return (UmAlQuraMonth);
-
+            {
+                return UmAlQuraMonth;
+            }
             if (part == DatePartDay)
-                return (UmAlQuraDay);
-
+            {
+                return UmAlQuraDay;
+            }
             if (part == DatePartDayOfYear)
+            {
                 return (int)(GetAbsoluteDateUmAlQura(UmAlQuraYear, UmAlQuraMonth, UmAlQuraDay) - GetAbsoluteDateUmAlQura(UmAlQuraYear, 1, 1) + 1);
+            }
 
             // Incorrect part value.
             throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
         }
-
-        // Returns the DateTime resulting from adding the given number of
-        // months to the specified DateTime. The result is computed by incrementing
-        // (or decrementing) the year and month parts of the specified DateTime by
-        // value months, and, if required, adjusting the day part of the
-        // resulting date downwards to the last day of the resulting month in the
-        // resulting year. The time-of-day part of the result is the same as the
-        // time-of-day part of the specified DateTime.
-        //
-        // In more precise terms, considering the specified DateTime to be of the
-        // form y / m / d + t, where y is the
-        // year, m is the month, d is the day, and t is the
-        // time-of-day, the result is y1 / m1 / d1 + t,
-        // where y1 and m1 are computed by adding value months
-        // to y and m, and d1 is the largest value less than
-        // or equal to d that denotes a valid day in month m1 of year
-        // y1.
-        //
-
 
         public override DateTime AddMonths(DateTime time, int months)
         {
             if (months < -120000 || months > 120000)
             {
                 throw new ArgumentOutOfRangeException(
-                            nameof(months),
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.ArgumentOutOfRange_Range,
-                                -120000,
-                                120000));
+                    nameof(months),
+                    months,
+                    SR.Format(SR.ArgumentOutOfRange_Range, -120000, 120000));
             }
+
             // Get the date in UmAlQura calendar.
             int y = GetDatePart(time, DatePartYear);
             int m = GetDatePart(time, DatePartMonth);
@@ -541,167 +448,101 @@ namespace System.Globalization
                     d = days;
                 }
             }
+
             CheckYearRange(y, UmAlQuraEra);
             DateTime dt = new DateTime(GetAbsoluteDateUmAlQura(y, m, d) * TicksPerDay + time.Ticks % TicksPerDay);
             Calendar.CheckAddResult(dt.Ticks, MinSupportedDateTime, MaxSupportedDateTime);
-            return (dt);
+            return dt;
         }
-
-        // Returns the DateTime resulting from adding the given number of
-        // years to the specified DateTime. The result is computed by incrementing
-        // (or decrementing) the year part of the specified DateTime by value
-        // years. If the month and day of the specified DateTime is 2/29, and if the
-        // resulting year is not a leap year, the month and day of the resulting
-        // DateTime becomes 2/28. Otherwise, the month, day, and time-of-day
-        // parts of the result are the same as those of the specified DateTime.
-        //
-
 
         public override DateTime AddYears(DateTime time, int years)
         {
-            return (AddMonths(time, years * 12));
+            return AddMonths(time, years * 12);
         }
-
-        // Returns the day-of-month part of the specified DateTime. The returned
-        // value is an integer between 1 and 31.
-        //
-
 
         public override int GetDayOfMonth(DateTime time)
         {
-            return (GetDatePart(time, DatePartDay));
+            return GetDatePart(time, DatePartDay);
         }
-
-        // Returns the day-of-week part of the specified DateTime. The returned value
-        // is an integer between 0 and 6, where 0 indicates Sunday, 1 indicates
-        // Monday, 2 indicates Tuesday, 3 indicates Wednesday, 4 indicates
-        // Thursday, 5 indicates Friday, and 6 indicates Saturday.
-        //
-
 
         public override DayOfWeek GetDayOfWeek(DateTime time)
         {
-            return ((DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7));
+            return (DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7);
         }
-
-        // Returns the day-of-year part of the specified DateTime. The returned value
-        // is an integer between 1 and 354 or 355.
-        //
-
 
         public override int GetDayOfYear(DateTime time)
         {
-            return (GetDatePart(time, DatePartDayOfYear));
+            return GetDatePart(time, DatePartDayOfYear);
         }
-
-        /*
-        internal bool CouldBeLeapYear(int year)
-        {
-            return ((((year * 11) + 14) % 30) < 11);
-        }
-        */
-
-        // Returns the number of days in the month given by the year and
-        // month arguments.
-        //
-
 
         public override int GetDaysInMonth(int year, int month, int era)
         {
             CheckYearMonthRange(year, month, era);
 
             if ((s_hijriYearInfo[year - MinCalendarYear].HijriMonthsLengthFlags & (1 << month - 1)) == 0)
+            {
                 return 29;
+            }
             else
+            {
                 return 30;
+            }
         }
 
         internal static int RealGetDaysInYear(int year)
         {
-            int days = 0, b;
+            int days = 0;
 
             Debug.Assert((year >= MinCalendarYear) && (year <= MaxCalendarYear), "Hijri year is out of range.");
 
-            b = s_hijriYearInfo[year - MinCalendarYear].HijriMonthsLengthFlags;
+            int b = s_hijriYearInfo[year - MinCalendarYear].HijriMonthsLengthFlags;
 
             for (int m = 1; m <= 12; m++)
             {
                 days = days + 29 + (b & 1);   /* Add the months lengths before mh */
                 b = b >> 1;
             }
+
             Debug.Assert((days == 354) || (days == 355), "Hijri year has to be 354 or 355 days.");
             return days;
         }
 
-        // Returns the number of days in the year given by the year argument for the current era.
-        //
-
-
         public override int GetDaysInYear(int year, int era)
         {
             CheckYearRange(year, era);
-            return (RealGetDaysInYear(year));
+            return RealGetDaysInYear(year);
         }
-
-        // Returns the era for the specified DateTime value.
-
 
         public override int GetEra(DateTime time)
         {
             CheckTicksRange(time.Ticks);
-            return (UmAlQuraEra);
+            return UmAlQuraEra;
         }
 
-
-
-        public override int[] Eras
-        {
-            get
-            {
-                return (new int[] { UmAlQuraEra });
-            }
-        }
-
-        // Returns the month part of the specified DateTime. The returned value is an
-        // integer between 1 and 12.
-        //
-
+        public override int[] Eras => new int[] { UmAlQuraEra };
 
         public override int GetMonth(DateTime time)
         {
-            return (GetDatePart(time, DatePartMonth));
+            return GetDatePart(time, DatePartMonth);
         }
-
-        // Returns the number of months in the specified year and era.
-
 
         public override int GetMonthsInYear(int year, int era)
         {
             CheckYearRange(year, era);
-            return (12);
+            return 12;
         }
-
-        // Returns the year part of the specified DateTime. The returned value is an
-        // integer between MinCalendarYear and MaxCalendarYear.
-        //
-
 
         public override int GetYear(DateTime time)
         {
-            return (GetDatePart(time, DatePartYear));
+            return GetDatePart(time, DatePartYear);
         }
-
-        // Checks whether a given day in the specified era is a leap day. This method returns true if
-        // the date is a leap day, or false if not.
-        //
-
 
         public override bool IsLeapDay(int year, int month, int day, int era)
         {
             if (day >= 1 && day <= 29)
             {
                 CheckYearMonthRange(year, month, era);
-                return (false);
+                return false;
             }
 
             // The year/month/era value checking is done in GetDaysInMonth().
@@ -709,55 +550,30 @@ namespace System.Globalization
             if (day < 1 || day > daysInMonth)
             {
                 throw new ArgumentOutOfRangeException(
-                            nameof(day),
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.ArgumentOutOfRange_Day,
-                                daysInMonth,
-                                month));
+                    nameof(day),
+                    day,
+                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
             }
-            return (false);
+            return false;
         }
-
-        // Returns  the leap month in a calendar year of the specified era. This method returns 0
-        // if this calendar does not have leap month, or this year is not a leap year.
-        //
-
 
         public override int GetLeapMonth(int year, int era)
         {
             CheckYearRange(year, era);
-            return (0);
+            return 0;
         }
-
-        // Checks whether a given month in the specified era is a leap month. This method returns true if
-        // month is a leap month, or false if not.
-        //
-
 
         public override bool IsLeapMonth(int year, int month, int era)
         {
             CheckYearMonthRange(year, month, era);
-            return (false);
+            return false;
         }
-
-        // Checks whether a given year in the specified era is a leap year. This method returns true if
-        // year is a leap year, or false if not.
-        //
-
 
         public override bool IsLeapYear(int year, int era)
         {
             CheckYearRange(year, era);
-            if (RealGetDaysInYear(year) == 355)
-                return true;
-            else
-                return false;
+            return RealGetDaysInYear(year) == 355;
         }
-
-        // Returns the date and time converted to a DateTime value.  Throws an exception if the n-tuple is invalid.
-        //
-
 
         public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
         {
@@ -773,86 +589,70 @@ namespace System.Globalization
             if (day < 1 || day > daysInMonth)
             {
                 throw new ArgumentOutOfRangeException(
-                           nameof(day),
-                           string.Format(
-                               CultureInfo.CurrentCulture,
-                               SR.ArgumentOutOfRange_Day,
-                               daysInMonth,
-                               month));
+                    nameof(day),
+                    day,
+                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
             }
         DayInRang:
             long lDate = GetAbsoluteDateUmAlQura(year, month, day);
-
-            if (lDate >= 0)
-            {
-                return (new DateTime(lDate * GregorianCalendar.TicksPerDay + TimeToTicks(hour, minute, second, millisecond)));
-            }
-            else
+            if (lDate < 0)
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
             }
+
+            return new DateTime(lDate * GregorianCalendar.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 
-        private const int DEFAULT_TWO_DIGIT_YEAR_MAX = 1451;
-
-
+        private const int DefaultTwoDigitYearMax = 1451;
 
         public override int TwoDigitYearMax
         {
             get
             {
-                if (twoDigitYearMax == -1)
+                if (_twoDigitYearMax == -1)
                 {
-                    twoDigitYearMax = GetSystemTwoDigitYearSetting(ID, DEFAULT_TWO_DIGIT_YEAR_MAX);
+                    _twoDigitYearMax = GetSystemTwoDigitYearSetting(ID, DefaultTwoDigitYearMax);
                 }
-                return (twoDigitYearMax);
-            }
 
+                return _twoDigitYearMax;
+            }
             set
             {
                 if (value != 99 && (value < MinCalendarYear || value > MaxCalendarYear))
                 {
                     throw new ArgumentOutOfRangeException(
-                                nameof(value),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
-                                    SR.ArgumentOutOfRange_Range,
-                                    MinCalendarYear,
-                                    MaxCalendarYear));
+                        nameof(value),
+                        value,
+                        SR.Format(SR.ArgumentOutOfRange_Range, MinCalendarYear, MaxCalendarYear));
                 }
+
                 VerifyWritable();
                 // We allow year 99 to be set so that one can make ToFourDigitYearMax a no-op by setting TwoDigitYearMax to 99.
-                twoDigitYearMax = value;
+                _twoDigitYearMax = value;
             }
         }
-
-
 
         public override int ToFourDigitYear(int year)
         {
             if (year < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(year),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (year < 100)
             {
-                return (base.ToFourDigitYear(year));
+                return base.ToFourDigitYear(year);
             }
 
-            if ((year < MinCalendarYear) || (year > MaxCalendarYear))
+            if (year < MinCalendarYear || year > MaxCalendarYear)
             {
                 throw new ArgumentOutOfRangeException(
-                            nameof(year),
-                            string.Format(
-                                    CultureInfo.CurrentCulture,
-                                    SR.ArgumentOutOfRange_Range,
-                                    MinCalendarYear,
-                                    MaxCalendarYear));
+                    nameof(year),
+                    year,
+                    SR.Format(SR.ArgumentOutOfRange_Range, MinCalendarYear, MaxCalendarYear));
             }
-            return (year);
+
+            return year;
         }
     }
 }
-
