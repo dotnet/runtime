@@ -166,6 +166,15 @@
   <data name="AppDomain_AppBaseNotSet" xml:space="preserve">
     <value>The ApplicationBase must be set before retrieving this property.</value>
   </data>
+  <data name="AppDomain_Name" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="AppDomain_NoContextPolicies" xml:space="preserve">
+    <value>There are no context policies.</value>
+  </data>
+  <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
+    <value>Default principal object cannot be set twice.</value>
+  </data>
   <data name="AmbiguousImplementationException_NullMessage" xml:space="preserve">
     <value>Ambiguous implementation found.</value>
   </data>
@@ -225,6 +234,9 @@
   </data>
   <data name="Arg_CannotMixComparisonInfrastructure" xml:space="preserve">
     <value>The usage of IKeyComparer and IHashCodeProvider/IComparer interfaces cannot be mixed; use one or the other.</value>
+  </data>
+  <data name="Arg_CannotUnloadAppDomainException" xml:space="preserve">
+    <value>Attempt to unload the AppDomain failed.</value>
   </data>
   <data name="Arg_CATypeResolutionFailed" xml:space="preserve">
     <value>Failed to resolve type from string "{0}" which was embedded in custom attribute blob.</value>
@@ -547,6 +559,9 @@
   <data name="Arg_MustBeType" xml:space="preserve">
     <value>Type must be a type provided by the runtime.</value>
   </data>
+  <data name="Arg_MustBeTrue" xml:space="preserve">
+    <value>Argument must be true.</value>
+  </data>
   <data name="Arg_MustBeUInt16" xml:space="preserve">
     <value>Object must be of type UInt16.</value>
   </data>
@@ -825,6 +840,9 @@
   </data>
   <data name="Argument_ArraysInvalid" xml:space="preserve">
     <value>Array or pointer types are not valid.</value>
+  </data>
+  <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
+    <value>Attribute names must be unique.</value>
   </data>
   <data name="Argument_BadAttributeOnInterfaceMethod" xml:space="preserve">
     <value>Interface method must be abstract and virtual.</value>
@@ -1137,6 +1155,18 @@
   </data>
   <data name="Argument_InvalidDigitSubstitution" xml:space="preserve">
     <value>The DigitSubstitution property must be of a valid member of the DigitShapes enumeration. Valid entries include Context, NativeNational or None.</value>
+  </data>
+  <data name="Argument_InvalidElementName" xml:space="preserve">
+    <value>Invalid element name '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidElementTag" xml:space="preserve">
+    <value>Invalid element tag '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidElementText" xml:space="preserve">
+    <value>Invalid element text '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidElementValue" xml:space="preserve">
+    <value>Invalid element value '{0}'.</value>
   </data>
   <data name="Argument_InvalidEnum" xml:space="preserve">
     <value>The Enum type should contain one and only one instance field.</value>
@@ -1602,6 +1632,9 @@
   </data>
   <data name="ArgumentNull_Buffer" xml:space="preserve">
     <value>Buffer cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_Child" xml:space="preserve">
+    <value>Cannot have a null child.</value>
   </data>
   <data name="ArgumentNull_Collection" xml:space="preserve">
     <value>Collection cannot be null.</value>
@@ -2644,6 +2677,9 @@
   <data name="InvalidOperation_TypeNotCreated" xml:space="preserve">
     <value>Type has not been created.</value>
   </data>
+  <data name="InvalidOperation_UnderlyingArrayListChanged" xml:space="preserve">
+    <value>This range in the underlying list is invalid. A possible cause is that elements were removed.</value>
+  </data>
   <data name="InvalidOperation_UnknownEnumType" xml:space="preserve">
     <value>Unknown enum type.</value>
   </data>
@@ -2992,6 +3028,9 @@
   <data name="NotSupported_PIAInAppxProcess" xml:space="preserve">
     <value>A Primary Interop Assembly is not supported in AppX.</value>
   </data>
+  <data name="NotSupported_RangeCollection" xml:space="preserve">
+    <value>The specified operation is not supported on Ranges.</value>
+  </data>
   <data name="NotSupported_Reading" xml:space="preserve">
     <value>Accessor does not support reading.</value>
   </data>
@@ -3186,6 +3225,24 @@
   </data>
   <data name="PlatformNotSupported_IExpando" xml:space="preserve">
     <value>Marshalling an IDispatchEx to an IReflect or IExpando is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_AppDomains" xml:space="preserve">
+    <value>Secondary AppDomains are not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_CAS" xml:space="preserve">
+    <value>Code Access Security is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_AppDomain_ResMon" xml:space="preserve">
+    <value>AppDomain resource monitoring is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_Principal" xml:space="preserve">
+    <value>Windows Principal functionality is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_ThreadAbort" xml:space="preserve">
+    <value>Thread abort is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_ThreadSuspend" xml:space="preserve">
+    <value>Thread suspend is not supported on this platform.</value>
   </data>
   <data name="Policy_CannotLoadSemiTrustAssembliesDuringInit" xml:space="preserve">
     <value>All assemblies loaded as part of AppDomain initialization must be fully trusted.</value>
@@ -3489,6 +3546,15 @@
   </data>
   <data name="TaskT_TransitionToFinal_AlreadyCompleted" xml:space="preserve">
     <value>An attempt was made to transition a task to a final state when it had already completed.</value>
+  </data>
+  <data name="Thread_ApartmentState_ChangeFailed" xml:space="preserve">
+    <value>Failed to set the specified COM apartment state.</value>
+  </data>
+  <data name="Thread_GetSetCompressedStack_NotSupported" xml:space="preserve">
+    <value>Use CompressedStack.(Capture/Run) instead.</value>
+  </data>
+  <data name="Thread_Operation_RequiresCurrentThread" xml:space="preserve">
+    <value>This operation must be performed on the same thread as that represented by the Thread instance.</value>
   </data>
   <data name="Threading_AbandonedMutexException" xml:space="preserve">
     <value>The wait completed due to an abandoned mutex.</value>

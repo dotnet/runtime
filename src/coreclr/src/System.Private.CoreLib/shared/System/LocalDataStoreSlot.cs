@@ -6,6 +6,9 @@ using System.Threading;
 
 namespace System
 {
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Threading.Thread")]
+#endif
     public sealed class LocalDataStoreSlot
     {
         internal LocalDataStoreSlot(ThreadLocal<object> data)

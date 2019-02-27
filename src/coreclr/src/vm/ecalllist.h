@@ -620,28 +620,6 @@ FCFuncStart(gMathFFuncs)
     FCIntrinsic("Tanh", COMSingle::Tanh, CORINFO_INTRINSIC_Tanh)
 FCFuncEnd()
 
-FCFuncStart(gRuntimeThreadFuncs)
-    FCFuncElement("get_IsAlive", ThreadNative::IsAlive)
-    FCFuncElement("IsBackgroundNative", ThreadNative::IsBackground)
-    FCFuncElement("SetBackgroundNative", ThreadNative::SetBackground)
-    FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
-    FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
-    FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
-    QCFuncElement("GetCurrentOSThreadId", ThreadNative::GetCurrentOSThreadId)
-    FCFuncElement("GetThreadStateNative", ThreadNative::GetThreadState)
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
-    FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-#ifdef FEATURE_COMINTEROP
-    FCFuncElement("DisableComObjectEagerCleanup", ThreadNative::DisableComObjectEagerCleanup)
-#endif // FEATURE_COMINTEROP
-    FCFuncElement("InterruptInternal", ThreadNative::Interrupt)
-    FCFuncElement("JoinInternal", ThreadNative::Join)
-    QCFuncElement("GetOptimalMaxSpinWaitsPerSpinIterationInternal", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
-    FCFuncElement("GetCurrentProcessorNumber", ThreadNative::GetCurrentProcessorNumber)
-FCFuncEnd()
-
 FCFuncStart(gThreadFuncs)
     FCDynamic("InternalGetCurrentThread", CORINFO_INTRINSIC_Illegal, ECall::InternalGetCurrentThread)
     FCFuncElement("StartInternal", ThreadNative::Start)
@@ -658,6 +636,25 @@ FCFuncStart(gThreadFuncs)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     FCFuncElement("StartupSetApartmentStateInternal", ThreadNative::StartupSetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    FCFuncElement("get_IsAlive", ThreadNative::IsAlive)
+    FCFuncElement("IsBackgroundNative", ThreadNative::IsBackground)
+    FCFuncElement("SetBackgroundNative", ThreadNative::SetBackground)
+    FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
+    FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
+    FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
+    QCFuncElement("GetCurrentOSThreadId", ThreadNative::GetCurrentOSThreadId)
+    FCFuncElement("GetThreadStateNative", ThreadNative::GetThreadState)
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
+    FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+#ifdef FEATURE_COMINTEROP
+    FCFuncElement("DisableComObjectEagerCleanup", ThreadNative::DisableComObjectEagerCleanup)
+#endif // FEATURE_COMINTEROP
+    FCFuncElement("Interrupt", ThreadNative::Interrupt)
+    FCFuncElement("Join", ThreadNative::Join)
+    QCFuncElement("GetOptimalMaxSpinWaitsPerSpinIterationInternal", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
+    FCFuncElement("GetCurrentProcessorNumber", ThreadNative::GetCurrentProcessorNumber)
 FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
@@ -1269,7 +1266,6 @@ FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelp
 FCClassElement("RuntimeImports", "System.Runtime", gRuntimeImportsFuncs)
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
 FCClassElement("RuntimeModule", "System.Reflection", gCOMModuleFuncs)
-FCClassElement("RuntimeThread", "Internal.Runtime.Augments", gRuntimeThreadFuncs)
 FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 FCClassElement("SafeTypeNameParserHandle", "System", gSafeTypeNameParserHandle)

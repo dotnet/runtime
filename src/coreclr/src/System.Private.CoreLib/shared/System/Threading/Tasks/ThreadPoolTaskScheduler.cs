@@ -17,8 +17,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Text;
 
-using Internal.Runtime.Augments;
-
 namespace System.Threading.Tasks
 {
     /// <summary>
@@ -47,7 +45,7 @@ namespace System.Threading.Tasks
             if ((options & TaskCreationOptions.LongRunning) != 0)
             {
                 // Run LongRunning tasks on their own dedicated thread.
-                RuntimeThread thread = RuntimeThread.Create(s_longRunningThreadWork);
+                Thread thread = new Thread(s_longRunningThreadWork);
                 thread.IsBackground = true; // Keep this thread from blocking process shutdown
                 thread.Start(task);
             }

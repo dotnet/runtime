@@ -2,35 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-/*=============================================================================
-**
-**
-**
-** Purpose: Class for creating and managing a thread.
-**
-**
-=============================================================================*/
-
-using Internal.Runtime.Augments;
+using System;
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    using System.Runtime.InteropServices;
-    using System;
-    using System.Globalization;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Diagnostics;
-
     internal class ThreadHelper
     {
         private Delegate _start;
+        internal CultureInfo _startCulture;
+        internal CultureInfo _startUICulture;
         private object _startArg = null;
         private ExecutionContext _executionContext = null;
+
         internal ThreadHelper(Delegate start)
         {
-            _start = start;
+            _start = start; 
         }
 
         internal void SetExecutionContextHelper(ExecutionContext ec)
@@ -53,10 +44,28 @@ namespace System.Threading
             }
         }
 
+        private void InitializeCulture()
+        {
+            if (_startCulture != null)
+            {
+                CultureInfo.CurrentCulture = _startCulture;
+                _startCulture = null;
+            }
+
+            if (_startUICulture != null)
+            {
+                CultureInfo.CurrentUICulture = _startUICulture;
+                _startUICulture = null;
+            }
+        }
+
         // call back helper
         internal void ThreadStart(object obj)
         {
             _startArg = obj;
+
+            InitializeCulture();
+
             ExecutionContext context = _executionContext;
             if (context != null)
             {
@@ -71,6 +80,8 @@ namespace System.Threading
         // call back helper
         internal void ThreadStart()
         {
+            InitializeCulture();
+
             ExecutionContext context = _executionContext;
             if (context != null)
             {
@@ -93,7 +104,7 @@ namespace System.Threading
         }
     }
 
-    internal sealed class Thread : RuntimeThread
+    public sealed partial class Thread
     {
         /*=========================================================================
         ** Data accessed from managed code that needs to be defined in
@@ -143,51 +154,27 @@ namespace System.Threading
         **
         ** Exceptions: ArgumentNullException if start == null.
         =========================================================================*/
-        public Thread(ThreadStart start)
+        private void Create(ThreadStart start)
         {
-            if (start == null)
-            {
-                throw new ArgumentNullException(nameof(start));
-            }
             SetStartHelper((Delegate)start, 0);  //0 will setup Thread with default stackSize
         }
 
-        internal Thread(ThreadStart start, int maxStackSize)
+        private void Create(ThreadStart start, int maxStackSize)
         {
-            if (start == null)
-            {
-                throw new ArgumentNullException(nameof(start));
-            }
-            if (0 > maxStackSize)
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             SetStartHelper((Delegate)start, maxStackSize);
         }
-        public Thread(ParameterizedThreadStart start)
+
+        private void Create(ParameterizedThreadStart start)
         {
-            if (start == null)
-            {
-                throw new ArgumentNullException(nameof(start));
-            }
             SetStartHelper((Delegate)start, 0);
         }
 
-        internal Thread(ParameterizedThreadStart start, int maxStackSize)
+        private void Create(ParameterizedThreadStart start, int maxStackSize)
         {
-            if (start == null)
-            {
-                throw new ArgumentNullException(nameof(start));
-            }
-            if (0 > maxStackSize)
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             SetStartHelper((Delegate)start, maxStackSize);
         }
 
-        public override int GetHashCode()
-        {
-            return _managedThreadId;
-        }
-
-        public extern new int ManagedThreadId
+        public extern int ManagedThreadId
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
@@ -215,7 +202,7 @@ namespace System.Threading
         **
         ** Exceptions: ThreadStateException if the thread has already been started.
         =========================================================================*/
-        public new void Start(object parameter)
+        public void Start(object parameter)
         {
             //In the case of a null delegate (second call to start on same thread)
             //    StartInternal method will take care of the error reporting
@@ -230,7 +217,7 @@ namespace System.Threading
             Start();
         }
 
-        public new void Start()
+        public void Start()
         {
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
             // Eagerly initialize the COM Apartment state of the thread if we're allowed to.
@@ -250,6 +237,21 @@ namespace System.Threading
             }
 
             StartInternal();
+        }
+
+        private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
+        {
+            Debug.Assert(m_Delegate != null);
+
+            ThreadHelper t = (ThreadHelper)(m_Delegate.Target);
+            if (uiCulture)
+            {
+                t._startUICulture = value;
+            }
+            else
+            {
+                t._startCulture = value;
+            }
         }
 
         internal ExecutionContext ExecutionContext
@@ -285,19 +287,10 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SleepInternal(int millisecondsTimeout);
 
-        public static new void Sleep(int millisecondsTimeout)
+        public static void Sleep(int millisecondsTimeout)
         {
             SleepInternal(millisecondsTimeout);
         }
-
-        public static void Sleep(TimeSpan timeout)
-        {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            Sleep((int)tm);
-        }
-
 
         /* wait for a length of time proportional to 'iterations'.  Each iteration is should
            only take a few machine instructions.  Calling this API is preferable to coding
@@ -306,7 +299,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SpinWaitInternal(int iterations);
 
-        public static new void SpinWait(int iterations)
+        public static void SpinWait(int iterations)
         {
             SpinWaitInternal(iterations);
         }
@@ -314,12 +307,12 @@ namespace System.Threading
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool YieldInternal();
 
-        internal static new bool Yield()
+        public static bool Yield()
         {
             return YieldInternal();
         }
 
-        public static new Thread CurrentThread => t_currentThread ?? InitializeCurrentThread();
+        public static Thread CurrentThread => t_currentThread ?? InitializeCurrentThread();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
@@ -369,18 +362,9 @@ namespace System.Threading
         private extern void StartupSetApartmentStateInternal();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-        /*
-         *  This returns a unique id to identify an appdomain.
-         */
-        internal static int GetDomainID()
-        {
-            return 1;
-        }
-
-
         // Retrieves the name of the thread.
         //
-        public new string Name
+        public string Name
         {
             get
             {
@@ -402,6 +386,242 @@ namespace System.Threading
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InformThreadNameChange(ThreadHandle t, string name, int len);
 
+        /*=========================================================================
+        ** Returns true if the thread has been started and is not dead.
+        =========================================================================*/
+        public extern bool IsAlive
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
+        }
+
+        /*=========================================================================
+        ** Return whether or not this thread is a background thread.  Background
+        ** threads do not affect when the Execution Engine shuts down.
+        **
+        ** Exceptions: ThreadStateException if the thread is dead.
+        =========================================================================*/
+        public bool IsBackground
+        {
+            get { return IsBackgroundNative(); }
+            set { SetBackgroundNative(value); }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern bool IsBackgroundNative();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern void SetBackgroundNative(bool isBackground);
+
+        /*=========================================================================
+        ** Returns true if the thread is a threadpool thread.
+        =========================================================================*/
+        public extern bool IsThreadPoolThread
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
+        }
+
+        /*=========================================================================
+        ** Returns the priority of the thread.
+        **
+        ** Exceptions: ThreadStateException if the thread is dead.
+        =========================================================================*/
+        public ThreadPriority Priority
+        {
+            get { return (ThreadPriority)GetPriorityNative(); }
+            set { SetPriorityNative((int)value); }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern int GetPriorityNative();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern void SetPriorityNative(int priority);
+
+        /*=========================================================================
+        ** Returns the operating system identifier for the current thread.
+        =========================================================================*/
+        internal static ulong CurrentOSThreadId
+        {
+            get
+            {
+                return GetCurrentOSThreadId();
+            }
+        }
+
+        [DllImport(JitHelpers.QCall)]
+        private static extern ulong GetCurrentOSThreadId();
+
+        /*=========================================================================
+        ** Return the thread state as a consistent set of bits.  This is more
+        ** general then IsAlive or IsBackground.
+        =========================================================================*/
+        public ThreadState ThreadState
+        {
+            get { return (ThreadState)GetThreadStateNative(); }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern int GetThreadStateNative();
+
+        public ApartmentState GetApartmentState()
+        {
+#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
+            return (ApartmentState)GetApartmentStateNative();
+#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
+            Debug.Assert(false); // the Thread class in CoreFX should have handled this case
+            return ApartmentState.MTA;
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        }
+
+        /*=========================================================================
+        ** An unstarted thread can be marked to indicate that it will host a
+        ** single-threaded or multi-threaded apartment.
+        =========================================================================*/
+        public bool TrySetApartmentStateUnchecked(ApartmentState state)
+        {
+#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
+            return SetApartmentStateHelper(state, false);
+#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
+            Debug.Assert(false); // the Thread class in CoreFX should have handled this case
+            return false;
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        }
+
+#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        internal bool SetApartmentStateHelper(ApartmentState state, bool fireMDAOnMismatch)
+        {
+            ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state, fireMDAOnMismatch);
+
+            // Special case where we pass in Unknown and get back MTA.
+            //  Once we CoUninitialize the thread, the OS will still
+            //  report the thread as implicitly in the MTA if any
+            //  other thread in the process is CoInitialized.
+            if ((state == System.Threading.ApartmentState.Unknown) && (retState == System.Threading.ApartmentState.MTA))
+                return true;
+
+            if (retState != state)
+                return false;
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern int GetApartmentStateNative();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern int SetApartmentStateNative(int state, bool fireMDAOnMismatch);
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+#if FEATURE_COMINTEROP
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern void DisableComObjectEagerCleanup();
+#else // !FEATURE_COMINTEROP
+        public void DisableComObjectEagerCleanup()
+        {
+        }
+#endif // FEATURE_COMINTEROP
+
+        /// <summary>
+        /// Interrupts a thread that is inside a Wait(), Sleep() or Join().  If that
+        /// thread is not currently blocked in that manner, it will be interrupted
+        /// when it next begins to block.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern void Interrupt();
+
+        /// <summary>
+        /// Waits for the thread to die or for timeout milliseconds to elapse.
+        /// </summary>
+        /// <returns>
+        /// Returns true if the thread died, or false if the wait timed out. If
+        /// -1 is given as the parameter, no timeout will occur.
+        /// </returns>
+        /// <exception cref="ArgumentException">if timeout &lt; -1 (Timeout.Infinite)</exception>
+        /// <exception cref="ThreadInterruptedException">if the thread is interrupted while waiting</exception>
+        /// <exception cref="ThreadStateException">if the thread has not been started yet</exception>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern bool Join(int millisecondsTimeout);
+
+        private static int s_optimalMaxSpinWaitsPerSpinIteration;
+
+        [DllImport(JitHelpers.QCall)]
+        private static extern int GetOptimalMaxSpinWaitsPerSpinIterationInternal();
+
+        /// <summary>
+        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
+        /// appropriate for the processor.
+        /// </summary>
+        internal static int OptimalMaxSpinWaitsPerSpinIteration
+        {
+            get
+            {
+                if (s_optimalMaxSpinWaitsPerSpinIteration != 0)
+                {
+                    return s_optimalMaxSpinWaitsPerSpinIteration;
+                }
+
+                // This is done lazily because the first call to the function below in the process triggers a measurement that
+                // takes a nontrivial amount of time if the measurement has not already been done in the backgorund.
+                // See Thread::InitializeYieldProcessorNormalized(), which describes and calculates this value.
+                s_optimalMaxSpinWaitsPerSpinIteration = GetOptimalMaxSpinWaitsPerSpinIterationInternal();
+                Debug.Assert(s_optimalMaxSpinWaitsPerSpinIteration > 0);
+                return s_optimalMaxSpinWaitsPerSpinIteration;
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int GetCurrentProcessorNumber();
+
+        // The upper bits of t_currentProcessorIdCache are the currentProcessorId. The lower bits of
+        // the t_currentProcessorIdCache are counting down to get it periodically refreshed.
+        // TODO: Consider flushing the currentProcessorIdCache on Wait operations or similar 
+        // actions that are likely to result in changing the executing core
+        [ThreadStatic]
+        private static int t_currentProcessorIdCache;
+
+        private const int ProcessorIdCacheShift = 16;
+        private const int ProcessorIdCacheCountDownMask = (1 << ProcessorIdCacheShift) - 1;
+        private const int ProcessorIdRefreshRate = 5000;
+
+        private static int RefreshCurrentProcessorId()
+        {
+            int currentProcessorId = GetCurrentProcessorNumber();
+
+            // On Unix, GetCurrentProcessorNumber() is implemented in terms of sched_getcpu, which
+            // doesn't exist on all platforms.  On those it doesn't exist on, GetCurrentProcessorNumber()
+            // returns -1.  As a fallback in that case and to spread the threads across the buckets
+            // by default, we use the current managed thread ID as a proxy.
+            if (currentProcessorId < 0) currentProcessorId = Environment.CurrentManagedThreadId;
+
+            // Add offset to make it clear that it is not guaranteed to be 0-based processor number
+            currentProcessorId += 100;
+
+            Debug.Assert(ProcessorIdRefreshRate <= ProcessorIdCacheCountDownMask);
+
+            // Mask with int.MaxValue to ensure the execution Id is not negative
+            t_currentProcessorIdCache = ((currentProcessorId << ProcessorIdCacheShift) & int.MaxValue) | ProcessorIdRefreshRate;
+
+            return currentProcessorId;
+        }
+
+        // Cached processor id used as a hint for which per-core stack to access. It is periodically
+        // refreshed to trail the actual thread core affinity.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetCurrentProcessorId()
+        {
+            int currentProcessorIdCache = t_currentProcessorIdCache--;
+            if ((currentProcessorIdCache & ProcessorIdCacheCountDownMask) == 0)
+                return RefreshCurrentProcessorId();
+            return (currentProcessorIdCache >> ProcessorIdCacheShift);
+        }
+
+        internal void ResetThreadPoolThread()
+        {
+            // Currently implemented in unmanaged method Thread::InternalReset and
+            // called internally from the ThreadPool in NotifyWorkItemComplete.
+        }
     } // End of class Thread
 
     // declaring a local var of this enum type and passing it by ref into a function that needs to do a

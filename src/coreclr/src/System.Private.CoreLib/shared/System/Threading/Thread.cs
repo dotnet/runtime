@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -11,36 +10,26 @@ using System.Security.Principal;
 
 namespace System.Threading
 {
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Threading.Thread")]
+#endif
     public sealed partial class Thread : CriticalFinalizerObject
     {
-        [ThreadStatic]
-        private static Thread t_currentThread;
         private static AsyncLocal<IPrincipal> s_asyncLocalPrincipal;
 
-        private readonly RuntimeThread _runtimeThread;
-        private Delegate _start;
-        private CultureInfo _startCulture;
-        private CultureInfo _startUICulture;
-
-        private Thread(RuntimeThread runtimeThread)
-        {
-            Debug.Assert(runtimeThread != null);
-            _runtimeThread = runtimeThread;
-        }
-
         public Thread(ThreadStart start)
+            : this()
         {
             if (start == null)
             {
                 throw new ArgumentNullException(nameof(start));
             }
 
-            _runtimeThread = RuntimeThread.Create(ThreadMain_ThreadStart);
-            Debug.Assert(_runtimeThread != null);
-            _start = start;
+            Create(start);
         }
 
         public Thread(ThreadStart start, int maxStackSize)
+            : this()
         {
             if (start == null)
             {
@@ -48,27 +37,25 @@ namespace System.Threading
             }
             if (maxStackSize < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonnegativeNumber);
+                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            _runtimeThread = RuntimeThread.Create(ThreadMain_ThreadStart, maxStackSize);
-            Debug.Assert(_runtimeThread != null);
-            _start = start;
+            Create(start, maxStackSize);
         }
 
         public Thread(ParameterizedThreadStart start)
+            : this()
         {
             if (start == null)
             {
                 throw new ArgumentNullException(nameof(start));
             }
 
-            _runtimeThread = RuntimeThread.Create(ThreadMain_ParameterizedThreadStart);
-            Debug.Assert(_runtimeThread != null);
-            _start = start;
+            Create(start);
         }
 
         public Thread(ParameterizedThreadStart start, int maxStackSize)
+            : this()
         {
             if (start == null)
             {
@@ -76,57 +63,10 @@ namespace System.Threading
             }
             if (maxStackSize < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonnegativeNumber);
+                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            _runtimeThread = RuntimeThread.Create(ThreadMain_ParameterizedThreadStart, maxStackSize);
-            Debug.Assert(_runtimeThread != null);
-            _start = start;
-        }
-
-        private Delegate InitializeNewThread()
-        {
-            t_currentThread = this;
-
-            Delegate start = _start;
-            _start = null;
-
-            if (_startCulture != null)
-            {
-                CultureInfo.CurrentCulture = _startCulture;
-                _startCulture = null;
-            }
-
-            if (_startUICulture != null)
-            {
-                CultureInfo.CurrentUICulture = _startUICulture;
-                _startUICulture = null;
-            }
-
-            return start;
-        }
-
-        private void ThreadMain_ThreadStart()
-        {
-            ((ThreadStart)InitializeNewThread())();
-        }
-
-        private void ThreadMain_ParameterizedThreadStart(object parameter)
-        {
-            ((ParameterizedThreadStart)InitializeNewThread())(parameter);
-        }
-
-        public static Thread CurrentThread
-        {
-            get
-            {
-                Thread currentThread = t_currentThread;
-                if (currentThread == null)
-                {
-                    t_currentThread = currentThread = new Thread(RuntimeThread.CurrentThread);
-                }
-                return currentThread;
-            }
+            Create(start, maxStackSize);
         }
 
         private void RequireCurrentThread()
@@ -137,17 +77,17 @@ namespace System.Threading
             }
         }
 
-        private void SetCultureOnUnstartedThread(CultureInfo value, ref CultureInfo culture)
+        private void SetCultureOnUnstartedThread(CultureInfo value, bool uiCulture)
         {
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            if ((_runtimeThread.ThreadState & ThreadState.Unstarted) == 0)
+            if ((ThreadState & ThreadState.Unstarted) == 0)
             {
                 throw new InvalidOperationException(SR.Thread_Operation_RequiresCurrentThread);
             }
-            culture = value;
+            SetCultureOnUnstartedThreadNoCheck(value, uiCulture);
         }
 
         public CultureInfo CurrentCulture
@@ -161,7 +101,7 @@ namespace System.Threading
             {
                 if (this != CurrentThread)
                 {
-                    SetCultureOnUnstartedThread(value, ref _startCulture);
+                    SetCultureOnUnstartedThread(value, uiCulture: false);
                     return;
                 }
                 CultureInfo.CurrentCulture = value;
@@ -179,7 +119,7 @@ namespace System.Threading
             {
                 if (this != CurrentThread)
                 {
-                    SetCultureOnUnstartedThread(value, ref _startUICulture);
+                    SetCultureOnUnstartedThread(value, uiCulture: true);
                     return;
                 }
                 CultureInfo.CurrentUICulture = value;
@@ -209,15 +149,6 @@ namespace System.Threading
                 s_asyncLocalPrincipal.Value = value;
             }
         }
-
-        public ExecutionContext ExecutionContext => ExecutionContext.Capture();
-        public bool IsAlive => _runtimeThread.IsAlive;
-        public bool IsBackground { get { return _runtimeThread.IsBackground; } set { _runtimeThread.IsBackground = value; } }
-        public bool IsThreadPoolThread => _runtimeThread.IsThreadPoolThread;
-        public int ManagedThreadId => _runtimeThread.ManagedThreadId;
-        public string Name { get { return _runtimeThread.Name; } set { _runtimeThread.Name = value; } }
-        public ThreadPriority Priority { get { return _runtimeThread.Priority; } set { _runtimeThread.Priority = value; } }
-        public ThreadState ThreadState => _runtimeThread.ThreadState;
 
         public void Abort()
         {
@@ -297,16 +228,6 @@ namespace System.Threading
             return TrySetApartmentStateUnchecked(state);
         }
 
-        private static int ToTimeoutMilliseconds(TimeSpan timeout)
-        {
-            var timeoutMilliseconds = (long)timeout.TotalMilliseconds;
-            if (timeoutMilliseconds < -1 || timeoutMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_TimeoutMilliseconds);
-            }
-            return (int)timeoutMilliseconds;
-        }
-
         [Obsolete("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
         public CompressedStack GetCompressedStack()
         {
@@ -319,21 +240,13 @@ namespace System.Threading
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
-        public static int GetCurrentProcessorId() => RuntimeThread.GetCurrentProcessorId();
         public static AppDomain GetDomain() => AppDomain.CurrentDomain;
-        public static int GetDomainID() => GetDomain().Id;
+        public static int GetDomainID() => 1;
         public override int GetHashCode() => ManagedThreadId;
-        public void Interrupt() => _runtimeThread.Interrupt();
-        public void Join() => _runtimeThread.Join();
-        public bool Join(int millisecondsTimeout) => _runtimeThread.Join(millisecondsTimeout);
-        public bool Join(TimeSpan timeout) => Join(ToTimeoutMilliseconds(timeout));
+        public void Join() => Join(-1);
+        public bool Join(TimeSpan timeout) => Join(WaitHandle.ToTimeoutMilliseconds(timeout));
         public static void MemoryBarrier() => Interlocked.MemoryBarrier();
-        public static void Sleep(int millisecondsTimeout) => RuntimeThread.Sleep(millisecondsTimeout);
-        public static void Sleep(TimeSpan timeout) => Sleep(ToTimeoutMilliseconds(timeout));
-        public static void SpinWait(int iterations) => RuntimeThread.SpinWait(iterations);
-        public static bool Yield() => RuntimeThread.Yield();
-        public void Start() => _runtimeThread.Start();
-        public void Start(object parameter) => _runtimeThread.Start(parameter);
+        public static void Sleep(TimeSpan timeout) => Sleep(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         public static byte VolatileRead(ref byte address) => Volatile.Read(ref address);
         public static double VolatileRead(ref double address) => Volatile.Read(ref address);
