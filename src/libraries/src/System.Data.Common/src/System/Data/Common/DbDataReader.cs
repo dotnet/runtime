@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Data.Common
 {
-    public abstract class DbDataReader : MarshalByRefObject, IDataReader, IEnumerable
+    public abstract partial class DbDataReader : MarshalByRefObject, IDataReader, IEnumerable
     {
         protected DbDataReader() : base() { }
 

@@ -40,7 +40,7 @@ namespace System.Globalization
                     return null;
                 }
 
-                if (dt < JapaneseCalendar.calendarMinValue)
+                if (dt < s_calendarMinValue)
                 {
                     // only populate the Eras that are valid JapaneseCalendar date times
                     break;

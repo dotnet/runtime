@@ -378,14 +378,10 @@ namespace System.Net.Http
                         // If it succeeds in verifying the cert chain, we're done. Employing this instead of 
                         // our custom implementation will need to be revisited if we ever decide to introduce a 
                         // "disallowed" store that enables users to "untrust" certs the system trusts.
-                        int sslResult = Interop.Crypto.X509VerifyCert(storeCtx);
-                        if (sslResult == 1)
+                        if (Interop.Crypto.X509VerifyCert(storeCtx))
                         {
                             return true;
                         }
-
-                        // X509_verify_cert can return < 0 in the case of programmer error
-                        Debug.Assert(sslResult == 0, "Unexpected error from X509_verify_cert: " + sslResult);
                     }
 
                     // Either OpenSSL verification failed, or there was a server validation callback

@@ -59,6 +59,18 @@ namespace System.Text
         }
 
         /// <summary>
+        /// Creates a <see cref="Rune"/> from the provided UTF-16 surrogate pair.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// If <paramref name="highSurrogate"/> does not represent a UTF-16 high surrogate code point
+        /// or <paramref name="lowSurrogate"/> does not represent a UTF-16 low surrogate code point.
+        /// </exception>
+        public Rune(char highSurrogate, char lowSurrogate)
+            : this((uint)char.ConvertToUtf32(highSurrogate, lowSurrogate), false)
+        {
+        }
+
+        /// <summary>
         /// Creates a <see cref="Rune"/> from the provided Unicode scalar value.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -365,6 +377,36 @@ namespace System.Text
         }
 
         /// <summary>
+        /// Attempts to create a <see cref="Rune"/> from the provided UTF-16 surrogate pair.
+        /// Returns <see langword="false"/> if the input values don't represent a well-formed UTF-16surrogate pair.
+        /// </summary>
+        public static bool TryCreate(char highSurrogate, char lowSurrogate, out Rune result)
+        {
+            // First, extend both to 32 bits, then calculate the offset of
+            // each candidate surrogate char from the start of its range.
+
+            uint highSurrogateOffset = (uint)highSurrogate - CharUnicodeInfo.HIGH_SURROGATE_START;
+            uint lowSurrogateOffset = (uint)lowSurrogate - CharUnicodeInfo.LOW_SURROGATE_START;
+
+            // This is a single comparison which allows us to check both for validity at once since
+            // both the high surrogate range and the low surrogate range are the same length.
+            // If the comparison fails, we call to a helper method to throw the correct exception message.
+
+            if ((highSurrogateOffset | lowSurrogateOffset) <= CharUnicodeInfo.HIGH_SURROGATE_RANGE)
+            {
+                // The 0x40u << 10 below is to account for uuuuu = wwww + 1 in the surrogate encoding.
+                result = UnsafeCreate((highSurrogateOffset << 10) + ((uint)lowSurrogate - CharUnicodeInfo.LOW_SURROGATE_START) + (0x40u << 10));
+                return true;
+            }
+            else
+            {
+                // Didn't have a high surrogate followed by a low surrogate.
+                result = default;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Attempts to create a <see cref="Rune"/> from the provided input value.
         /// </summary>
         public static bool TryCreate(int value, out Rune result) => TryCreate((uint)value, out result);
@@ -435,7 +477,6 @@ namespace System.Text
         /// The <see cref="Utf8SequenceLength"/> property can be queried ahead of time to determine
         /// the required size of the <paramref name="destination"/> buffer.
         /// </remarks>
-        // ** This is public so it can be unit tested but isn't yet exposed via the reference assemblies. **
         public bool TryEncodeToUtf8Bytes(Span<byte> destination, out int bytesWritten)
         {
             // TODO: Optimize some of these writes by using BMI2 instructions.

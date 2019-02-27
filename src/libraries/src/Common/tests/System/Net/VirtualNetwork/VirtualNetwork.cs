@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
 {
@@ -26,7 +26,13 @@ namespace System.Net.Test.Common
         public bool DisableConnectionBreaking { get; set; } = false;
         private bool _connectionBroken = false;
 
-        public void ReadFrame(bool server, out byte[] buffer)
+        public byte[] ReadFrame(bool server) =>
+            ReadFrameCoreAsync(server, sync: true).GetAwaiter().GetResult();
+
+        public Task<byte[]> ReadFrameAsync(bool server) =>
+            ReadFrameCoreAsync(server, sync: false);
+
+        private async Task<byte[]> ReadFrameCoreAsync(bool server, bool sync)
         {
             if (_connectionBroken)
             {
@@ -47,7 +53,10 @@ namespace System.Net.Test.Common
                 packetQueue = _serverWriteQueue;
             }
 
-            if (!semaphore.Wait(WaitForReadDataTimeoutMilliseconds))
+            bool successfulWait = sync ?
+                semaphore.Wait(WaitForReadDataTimeoutMilliseconds) :
+                await semaphore.WaitAsync(WaitForReadDataTimeoutMilliseconds).ConfigureAwait(false);
+            if (!successfulWait)
             {
                 throw new TimeoutException("VirtualNetwork: Timeout reading the next frame.");
             }
@@ -57,25 +66,30 @@ namespace System.Net.Test.Common
                 throw new VirtualNetworkConnectionBroken();
             }
 
-            bool dequeueSucceeded = false;
             int remainingTries = 3;
             int backOffDelayMilliseconds = 2;
 
             do
             {
-                dequeueSucceeded = packetQueue.TryDequeue(out buffer);
-                if (dequeueSucceeded)
+                if (packetQueue.TryDequeue(out byte[] buffer))
                 {
-                    break;
+                    return buffer;
                 }
 
                 remainingTries--;
                 backOffDelayMilliseconds *= backOffDelayMilliseconds;
-                Thread.Sleep(backOffDelayMilliseconds);
+                if (sync)
+                {
+                    Thread.Sleep(backOffDelayMilliseconds);
+                }
+                else
+                {
+                    await Task.Delay(backOffDelayMilliseconds).ConfigureAwait(false);
+                }
             }
-            while (!dequeueSucceeded && (remainingTries > 0));
+            while (remainingTries > 0);
 
-            Debug.Assert(dequeueSucceeded, "Packet queue: TryDequeue failed.");
+            throw new InvalidOperationException("Packet queue: TryDequeue failed.");
         }
 
         public void WriteFrame(bool server, byte[] buffer)
@@ -99,10 +113,7 @@ namespace System.Net.Test.Common
                 packetQueue = _clientWriteQueue;
             }
 
-            byte[] innerBuffer = new byte[buffer.Length];
-            buffer.CopyTo(innerBuffer, 0);
-
-            packetQueue.Enqueue(innerBuffer);
+            packetQueue.Enqueue(buffer.AsSpan().ToArray());
             semaphore.Release();
         }
 
