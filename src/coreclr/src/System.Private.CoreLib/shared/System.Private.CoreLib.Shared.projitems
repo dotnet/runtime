@@ -49,7 +49,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\AttributeUsageAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\BadImageFormatException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\BitConverter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\BitOps.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Boolean.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPoolEventSource.cs" />
@@ -370,6 +369,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberToFloatingPointBits.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BitOperations.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Hashing\HashHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NullReferenceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Object.cs" />
