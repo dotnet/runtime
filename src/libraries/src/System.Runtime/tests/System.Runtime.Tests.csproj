@@ -247,7 +247,7 @@
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\BindingFlagsDoNotWrap.netcoreapp.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.netcoreapp.cs" />
-    <Compile Include="System\Reflection\IsCollectibleTests.cs" />
+    <Compile Include="System\Reflection\IsCollectibleTests.cs" Condition="'$(TargetGroup)' != 'uapaot'"/><!-- missing method 'AssemblyLoadContext..ctor(bool) -->
     <Compile Include="System\Reflection\MethodBaseTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\SignatureTypes.netcoreapp.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.netcoreapp.cs" />
@@ -267,6 +267,8 @@
     <Compile Include="System\ArgIteratorTests.netcoreapp.cs" />
     <Compile Include="System\DoubleTests.netcoreapp.cs" />
     <Compile Include="System\SingleTests.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)\..\tests\System\RealFormatterTestsBase.netcoreapp.cs" Link="System\RealFormatterTestsBase.netcoreapp.cs" />
+    <Compile Include="System\RealFormatterTests.netcoreapp.cs" />
     <Compile Include="$(CommonPath)\..\tests\System\RealParserTestsBase.netcoreapp.cs" Link="System\RealParserTestsBase.netcoreapp.cs" />
     <Compile Include="System\RealParserTests.netcoreapp.cs" />
   </ItemGroup>
@@ -304,8 +306,7 @@
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj">
       <Name>TestCollectibleAssembly</Name>
     </ProjectReference>
-    <Reference Include="TestModule\System.Reflection.TestModule.dll">
-    </Reference>
+    <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

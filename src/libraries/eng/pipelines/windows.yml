@@ -39,6 +39,7 @@ jobs:
               _architecture: x86
               _framework: netfx
               _helixQueues: $(uapNetfxQueues)
+              _skipPublishPackages: true # In NETFX leg we don't produce packages
 
             UWP_CoreCLR_x64_Debug:
               _BuildConfig: Debug
@@ -53,12 +54,14 @@ jobs:
               _architecture: x64
               _framework: netcoreapp
               _helixQueues: $(netcoreappWindowsQueues)+$(nanoQueues)
+              _publishTests: true
 
             x86_Release:
               _BuildConfig: Release
               _architecture: x86
               _framework: netcoreapp
               _helixQueues: $(netcoreappWindowsQueues)
+              _publishTests: true
 
             NETFX_x86_Release:
               _BuildConfig: Release
@@ -123,12 +126,12 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
           - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ClientRS4.ES.Open
           - nanoQueues: Windows.10.Nano.Amd64.Open
-          - uapNetfxQueues: Windows.10.Amd64.ClientRS4.Open
-        
+          - uapNetfxQueues: Windows.10.Amd64.ClientRS5.Open
+
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - netcoreappWindowsQueues: Windows.7.Amd64+Windows.81.Amd64+Windows.10.Amd64.Core+Windows.10.Amd64.ClientRS4
           - nanoQueues: Windows.10.Nano.Amd64
-          - uapNetfxQueues: Windows.10.Amd64.ClientRS4
+          - uapNetfxQueues: Windows.10.Amd64.ClientRS5
           - windowsArmQueue: Windows.10.Arm64
 
     # There is no point of running legs without outerloop tests, when in an outerloop build.
@@ -166,6 +169,7 @@ jobs:
         enableMicrobuild: ${{ parameters.isOfficialBuild }}
 
         variables:
+          - _outerloop: false
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             - allConfigurationsQueues: Windows.10.Amd64.ClientRS4.Open
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -173,30 +177,27 @@ jobs:
 
         customBuildSteps:
           - script: build.cmd
+                    -restore
+                    -build
+                    -configuration $(_BuildConfig)
                     -ci
-                    -$(_framework)
-                    /p:ArchGroup=$(_architecture)
-                    /p:ConfigurationGroup=$(_BuildConfig)
+                    -buildtests
+                    -allconfigurations
+                    -arch $(_architecture)
                     /p:RuntimeOS=win10
+                    /p:ArchiveTests=Packages
                     $(_windowsOfficialBuildArguments)
                     $(_msbuildCommonParameters)
-            displayName: Build Packages
-          - script: build.cmd
-                    -ci
-                    -test
-                    -$(_framework)
-                    /p:ArchGroup=$(_architecture)
-                    /p:ConfigurationGroup=$(_BuildConfig)
-                    /p:ArchiveTests=true
-            displayName: Build test projects
+            displayName: Build Packages and Tests
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
             - script: build.cmd
+                      -restore
+                      -build
+                      -configuration $(_BuildConfig)
                       -ci
-                      -test
-                      /p:TargetGroup=netstandard
-                      /p:ArchGroup=$(_architecture)
-                      /p:ConfigurationGroup=$(_BuildConfig)
-                      /p:SkipTests=true
+                      -buildtests
+                      -framework netstandard
+                      -arch $(_architecture)
               displayName: Build Netstandard Test Suite
 
       # TODO: UAPAOT official builds should send to helix using continuation runner.

@@ -348,6 +348,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.GetIntegerBytes.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.GetIntegerBytes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Nid.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Nid.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs</Link>
     </Compile>
@@ -362,6 +365,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs12.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs12.cs</Link>

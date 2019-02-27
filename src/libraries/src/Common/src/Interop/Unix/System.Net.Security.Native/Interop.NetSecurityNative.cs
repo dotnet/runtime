@@ -36,11 +36,12 @@ internal static partial class Interop
             int inputNameByteCount,
             out SafeGssNameHandle outputName);
 
-        [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ImportPrincipalName")]
-        internal static extern Status ImportPrincipalName(
+        [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ImportTargetName")]
+        internal static extern Status ImportTargetName(
             out Status minorStatus,
             string inputName,
             int inputNameByteCount,
+            bool isNtlmTarget,
             out SafeGssNameHandle outputName);
 
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ReleaseName")]
@@ -76,13 +77,15 @@ internal static partial class Interop
             bool isNtlmOnly,
             IntPtr cbt,
             int cbtSize,
-            SafeGssNameHandle targetName,
+            bool isNtlmFallback,
+            SafeGssNameHandle targetNameKerberos,
+            SafeGssNameHandle targetNameNtlm,
             uint reqFlags,
             byte[] inputBytes,
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
-            out int isNtlmUsed);
+            out bool isNtlmUsed);
 
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_AcceptSecContext")]
         internal static extern Status AcceptSecContext(

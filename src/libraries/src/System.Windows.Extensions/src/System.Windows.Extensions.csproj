@@ -30,26 +30,26 @@
     <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.MessageBeep.cs">
       <Link>Common\Interop\Windows\User32\Interop.MessageBeep.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.MMCKINFO.cs">
-      <Link>Common\Interop\Windows\winmm\Interop.MMCKINFO.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.MMCKINFO.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.MMCKINFO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioAscend.cs">
-      <Link>Common\Interop\Windows\winmm\Interop.mmioAscend.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioAscend.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioAscend.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioClose.cs">
-      <Link>Common\Interop\Windows\winmm\Interop.mmioClose.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioClose.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioClose.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioDescend.cs">
-      <Link>Common\Interop\Windows\winmm\Interop.mmioDescend.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioDescend.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioDescend.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioRead.cs">
-      <Link>Common\Interop\Windows\winmm\Interop.mmioRead.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioRead.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioRead.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.mmioOpen.cs">
-      <Link>Common\Interop\Windows\winmm\Interop.mmioOpen.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.mmioOpen.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.mmioOpen.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\winmm\Interop.PlaySound.cs">
-      <Link>Common\Interop\Windows\winmm\Interop.PlaySound.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\WinMm\Interop.PlaySound.cs">
+      <Link>Common\Interop\Windows\WinMm\Interop.PlaySound.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>

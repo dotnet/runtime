@@ -12,13 +12,28 @@ namespace System.Net.Security
 {
     internal sealed class SafeDeleteNegoContext : SafeDeleteContext
     {
-        private SafeGssNameHandle _targetName;
+        private SafeGssNameHandle _targetNameKerberos;
+        private SafeGssNameHandle _targetNameNtlm;
         private SafeGssContextHandle _context;
+        private bool _isNtlmFallback;
         private bool _isNtlmUsed;
 
-        public SafeGssNameHandle TargetName
+        public SafeGssNameHandle TargetNameKerberos
         {
-            get { return _targetName; }
+            get { return _targetNameKerberos; }
+        }
+
+        public SafeGssNameHandle TargetNameNtlm
+        {
+            get { return _targetNameNtlm; }
+        }
+
+        // Property represents if SPNEGO needed to fall back from Kerberos to NTLM when
+        // generating initial context token.
+        public bool IsNtlmFallback
+        {
+            get { return _isNtlmFallback; }
+            set { _isNtlmFallback = value; }
         }
 
         // Property represents if final protocol negotiated is Ntlm or not.
@@ -38,7 +53,8 @@ namespace System.Net.Security
             Debug.Assert((null != credential), "Null credential in SafeDeleteNegoContext");
             try
             {
-                _targetName = SafeGssNameHandle.CreatePrincipal(targetName);
+                _targetNameKerberos = SafeGssNameHandle.CreateTarget(targetName, isNtlmTarget: false);
+                _targetNameNtlm = SafeGssNameHandle.CreateTarget(targetName, isNtlmTarget: true);
             }
             catch
             {
@@ -68,10 +84,16 @@ namespace System.Net.Security
                     _context = null;
                 }
 
-                if (_targetName != null)
+                if (_targetNameKerberos != null)
                 {
-                    _targetName.Dispose();
-                    _targetName = null;
+                    _targetNameKerberos.Dispose();
+                    _targetNameKerberos = null;
+                }
+
+                if (_targetNameNtlm != null)
+                {
+                    _targetNameNtlm.Dispose();
+                    _targetNameNtlm = null;
                 }
             }
             base.Dispose(disposing);

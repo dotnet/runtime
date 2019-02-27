@@ -45,12 +45,34 @@
     <PackageReference Include="System.Runtime.Analyzers" Version="1.1.0" />
     <PackageReference Include="System.Runtime.InteropServices.Analyzers" Version="1.1.0" />
     <PackageReference Include="System.Security.Cryptography.Hashing.Algorithms.Analyzers" Version="1.1.0" />
+
+    <!-- Include the Roslyn Compilers -->
+    <PackageReference Include="Microsoft.Net.Compilers" Version="$(MicrosoftNetCompilersVersion)" PrivateAssets="all" ExcludeAssets="Build" GeneratePathProperty="true" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.NETCore.Compilers" Version="$(MicrosoftNETCoreCompilersVersion)" PrivateAssets="all" ExcludeAssets="Build" GeneratePathProperty="true" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <ItemGroup>
     <RepoTool Include="coverlet.console" Version="$(CoverletConsolePackageVersion)" />
     <RepoTool Include="dotnet-reportgenerator-globaltool" Version="$(DotNetReportGeneratorGlobalToolPackageVersion)" />
   </ItemGroup>
+
+  <!--
+    Temporarily opt-in as dotnet restore interactive doesn't seem to work.
+    https://github.com/NuGet/Home/issues/7812. Use nuget restore meanwhile.
+  -->
+  <Target Name="InitOptionalTools"
+          Condition="'$(RestoreInternalTools)' == 'true'"
+          AfterTargets="Restore">
+
+    <PropertyGroup>
+      <OptionalToolDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common', 'internal'))</OptionalToolDir>
+      <OptionalToolProjectPath>$(OptionalToolDir)Tools.csproj</OptionalToolProjectPath>
+    </PropertyGroup>
+
+    <Exec Command="$(DotNetCmd) restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources /p:TargetGroup=$(TargetGroup)"
+          WorkingDirectory="$(RepoRoot)" />
+
+  </Target>
 
   <Target Name="InitTools" AfterTargets="Restore">
 
@@ -66,7 +88,7 @@
 
     <Exec Condition="!Exists('$(BuildToolsSemaphore)')"
           Command="$(InitToolsCmdLine) &gt; &quot;$(RepoRoot)init-tools.log&quot;" />
-    <Touch Files="$(BuildToolsSemaphore)" 
+    <Touch Files="$(BuildToolsSemaphore)"
            AlwaysCreate="true" />
     <OnError ExecuteTargets="DumpInitToolsLog" />
 
@@ -101,13 +123,13 @@
           Command="$(DotNetCmd) tool install --tool-path &quot;$(GlobalToolsDir)&quot; %(RepoTool.Identity) --version %(RepoTool.Version) --add-source https:%2F%2Fapi.nuget.org/v3/index.json"
           WorkingDirectory="$(RepoRoot)"
           ContinueOnError="WarnAndContinue" />
-    
+
   </Target>
 
   <Target Name="DumpInitToolsLog">
 
     <Message Text="Init-tools failed dumping log file $(RepoRoot)init-tools.log" />
-    <Message Condition="Exists('$(RepoRoot)init-tools.log')" 
+    <Message Condition="Exists('$(RepoRoot)init-tools.log')"
              Text="$([System.IO.File]::ReadAllText('$(RepoRoot)init-tools.log'))" />
 
   </Target>

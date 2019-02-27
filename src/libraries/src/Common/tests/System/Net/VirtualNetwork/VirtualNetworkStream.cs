@@ -13,9 +13,8 @@ namespace System.Net.Test.Common
         private readonly VirtualNetwork _network;
         private MemoryStream _readStream;
         private readonly bool _isServer;
-        private object _readStreamLock = new object();
+        private SemaphoreSlim _readStreamLock = new SemaphoreSlim(1, 1);
         private TaskCompletionSource<object> _flushTcs;
-        private bool _isFlushed;
 
         public VirtualNetworkStream(VirtualNetwork network, bool isServer)
         {
@@ -25,55 +24,17 @@ namespace System.Net.Test.Common
 
         public bool Disposed { get; private set; }
 
-        public override bool CanRead
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool CanRead => true;
 
-        public override bool CanSeek
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool CanSeek => false;
 
-        public override bool CanWrite
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool CanWrite => true;
 
-        public override long Length
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override long Length => throw new NotImplementedException();
 
-        public override long Position
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
+        public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
-            set
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override void Flush()
-        {
-            _isFlushed = true;
-        }
+        public override void Flush() => HasBeenSyncFlushed = true;
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
@@ -86,7 +47,7 @@ namespace System.Net.Test.Common
             return _flushTcs.Task;
         }
 
-        public bool HasBeenSyncFlushed => _isFlushed;
+        public bool HasBeenSyncFlushed { get; private set; }
 
         public void CompleteAsyncFlush()
         {
@@ -99,52 +60,67 @@ namespace System.Net.Test.Common
             _flushTcs = null;
         }
 
-        public override void SetLength(long value)
-        {
-            throw new NotImplementedException();
-        }
+        public override void SetLength(long value) => throw new NotImplementedException();
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotImplementedException();
-        }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            lock (_readStreamLock)
+            _readStreamLock.Wait();
+            try
             {
                 if (_readStream == null || (_readStream.Position >= _readStream.Length))
                 {
-                    byte[] innerBuffer;
-
-                    _network.ReadFrame(_isServer, out innerBuffer);
-                    _readStream = new MemoryStream(innerBuffer);
+                    _readStream = new MemoryStream(_network.ReadFrame(_isServer));
                 }
 
                 return _readStream.Read(buffer, offset, count);
+            }
+            finally
+            {
+                _readStreamLock.Release();
+            }
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            await _readStreamLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                if (_readStream == null || (_readStream.Position >= _readStream.Length))
+                {
+                    _readStream = new MemoryStream(await _network.ReadFrameAsync(_isServer).ConfigureAwait(false));
+                }
+
+                return await _readStream.ReadAsync(buffer, offset, count).ConfigureAwait(false);
+            }
+            finally
+            {
+                _readStreamLock.Release();
             }
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            byte[] innerBuffer = new byte[count];
-
-            Buffer.BlockCopy(buffer, offset, innerBuffer, 0, count);
-            _network.WriteFrame(_isServer, innerBuffer);
-        }
-
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled<int>(cancellationToken) :
-                Task.Run(() => Read(buffer, offset, count));
+            _network.WriteFrame(_isServer, buffer.AsSpan(offset, count).ToArray());
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled<int>(cancellationToken) :
-                Task.Run(() => Write(buffer, offset, count));
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            try
+            {
+                Write(buffer, offset, count);
+                return Task.CompletedTask;
+            }
+            catch (Exception exc)
+            {
+                return Task.FromException(exc);
+            }
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>

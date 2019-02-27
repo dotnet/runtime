@@ -5,25 +5,48 @@
 namespace System.Buffers
 {
     /// <summary>
-    /// Represents a <typeparam name="T"/> sink
+    /// Represents an output sink into which <typeparam name="T"/> data can be written.
     /// </summary>
     public interface IBufferWriter<T>
     {
         /// <summary>
-        /// Notifies <see cref="IBufferWriter{T}"/> that <paramref name="count"/> amount of data was written to <see cref="Span{T}"/>/<see cref="Memory{T}"/>
+        /// Notifies <see cref="IBufferWriter{T}"/> that <paramref name="count"/> amount of data was written to the output <see cref="Span{T}"/>/<see cref="Memory{T}"/>
         /// </summary>
+        /// <remarks>
+        /// You must request a new buffer after calling Advance to continue writing more data and cannot write to a previously acquired buffer.
+        /// </remarks>
         void Advance(int count);
 
         /// <summary>
-        /// Requests the <see cref="Memory{T}"/> that is at least <paramref name="sizeHint"/> in size if possible, otherwise returns maximum available memory.
-        /// If <paramref name="sizeHint"/> is equal to <code>0</code>, currently available memory would get returned.
+        /// Returns a <see cref="Memory{T}"/> to write to that is at least the requested length (specified by <paramref name="sizeHint"/>).
+        /// If no <paramref name="sizeHint"/> is provided (or it's equal to <code>0</code>), some non-empty buffer is returned.
         /// </summary>
+        /// <remarks>
+        /// This must never return an empty <see cref="Memory{T}"/> but it can throw
+        /// if the requested buffer size is not available.
+        /// </remarks>
+        /// <remarks>
+        /// There is no guarantee that successive calls will return the same buffer or the same-sized buffer.
+        /// </remarks>
+        /// <remarks>
+        /// You must request a new buffer after calling Advance to continue writing more data and cannot write to a previously acquired buffer.
+        /// </remarks>
         Memory<T> GetMemory(int sizeHint = 0);
 
         /// <summary>
-        /// Requests the <see cref="Span{T}"/> that is at least <paramref name="sizeHint"/> in size if possible, otherwise returns maximum available memory.
-        /// If <paramref name="sizeHint"/> is equal to <code>0</code>, currently available memory would get returned.
+        /// Returns a <see cref="Span{T}"/> to write to that is at least the requested length (specified by <paramref name="sizeHint"/>).
+        /// If no <paramref name="sizeHint"/> is provided (or it's equal to <code>0</code>), some non-empty buffer is returned.
         /// </summary>
+        /// <remarks>
+        /// This must never return an empty <see cref="Span{T}"/> but it can throw
+        /// if the requested buffer size is not available.
+        /// </remarks>
+        /// <remarks>
+        /// There is no guarantee that successive calls will return the same buffer or the same-sized buffer.
+        /// </remarks>
+        /// <remarks>
+        /// You must request a new buffer after calling Advance to continue writing more data and cannot write to a previously acquired buffer.
+        /// </remarks>
         Span<T> GetSpan(int sizeHint = 0);
     }
 }

@@ -2,57 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 namespace System.Globalization
 {
-    /*
-    **  Calendar support range:
-    **      Calendar               Minimum             Maximum
-    **      ==========             ==========          ==========
-    **      Gregorian              1960/01/28          2050/01/22
-    **      JapaneseLunisolar      1960/01/01          2049/12/29
-    */
-
+    /// <remarks>
+    /// Calendar support range:
+    ///     Calendar               Minimum             Maximum
+    ///     ==========             ==========          ==========
+    ///     Gregorian              1960/01/28          2050/01/22
+    ///     JapaneseLunisolar      1960/01/01          2049/12/29
+    /// </remarks>
     public class JapaneseLunisolarCalendar : EastAsianLunisolarCalendar
     {
-        //
-        // The era value for the current era.
-        //
-
         public const int JapaneseEra = 1;
 
-        internal GregorianCalendarHelper helper;
+        private readonly GregorianCalendarHelper _helper;
 
-        internal const int MIN_LUNISOLAR_YEAR = 1960;
-        internal const int MAX_LUNISOLAR_YEAR = 2049;
+        private const int MinLunisolarYear = 1960;
+        private const int MaxLunisolarYear = 2049;
 
-        internal const int MIN_GREGORIAN_YEAR = 1960;
-        internal const int MIN_GREGORIAN_MONTH = 1;
-        internal const int MIN_GREGORIAN_DAY = 28;
+        private static readonly DateTime s_minDate = new DateTime(1960, 1, 28);
+        private static readonly DateTime s_maxDate = new DateTime((new DateTime(2050, 1, 22, 23, 59, 59, 999)).Ticks + 9999);
 
-        internal const int MAX_GREGORIAN_YEAR = 2050;
-        internal const int MAX_GREGORIAN_MONTH = 1;
-        internal const int MAX_GREGORIAN_DAY = 22;
+        public override DateTime MinSupportedDateTime => s_minDate;
 
-        internal static DateTime minDate = new DateTime(MIN_GREGORIAN_YEAR, MIN_GREGORIAN_MONTH, MIN_GREGORIAN_DAY);
-        internal static DateTime maxDate = new DateTime((new DateTime(MAX_GREGORIAN_YEAR, MAX_GREGORIAN_MONTH, MAX_GREGORIAN_DAY, 23, 59, 59, 999)).Ticks + 9999);
-
-        public override DateTime MinSupportedDateTime
-        {
-            get
-            {
-                return (minDate);
-            }
-        }
-
-
-        public override DateTime MaxSupportedDateTime
-        {
-            get
-            {
-                return (maxDate);
-            }
-        }
+        public override DateTime MaxSupportedDateTime => s_maxDate;
+        
         protected override int DaysInYearBeforeMinSupportedYear
         {
             get
@@ -63,8 +37,8 @@ namespace System.Globalization
         }
 
         // Data for years 1960-2049 matches output of Calendrical Calculations [1] and published calendar tables [2].
-        // [1] Reingold, Edward M, and Nachum Dershowitz. Calendrical Calculations: The Ultimate Edition. Cambridge [etc.: Cambridge University Press, 2018. Print. 
-        // [2] Nishizawa, Yūsō. Rekijitsu Taikan: Meiji Kaireki 1873-Nen-2100-Nen Shinkyūreki, Kanshi Kyūsei Rokuyō Taishō. Tōkyō: Shin Jinbutsu Ōraisha, 1994. Print. 
+        // [1] Reingold, Edward M, and Nachum Dershowitz. Calendrical Calculations: The Ultimate Edition. Cambridge [etc.: Cambridge University Press, 2018. Print.
+        // [2] Nishizawa, Yūsō. Rekijitsu Taikan: Meiji Kaireki 1873-Nen-2100-Nen Shinkyūreki, Kanshi Kyūsei Rokuyō Taishō. Tōkyō: Shin Jinbutsu Ōraisha, 1994. Print.
         private static readonly int[,] s_yinfo =
         {
 /*Y           LM  Lmon  Lday    DaysPerMonth               D1   D2   D3   D4   D5   D6   D7   D8   D9   D10  D11  D12  D13  #Days
@@ -160,73 +134,42 @@ namespace System.Globalization
 2049     */ { 00,   02,   02,   0b1010110110100000 }, /*   30   29   30   29   30   30   29   30   30   29   30   29        355
          */ };
 
-        internal override int MinCalendarYear
-        {
-            get
-            {
-                return (MIN_LUNISOLAR_YEAR);
-            }
-        }
+        internal override int MinCalendarYear => MinLunisolarYear;
 
-        internal override int MaxCalendarYear
-        {
-            get
-            {
-                return (MAX_LUNISOLAR_YEAR);
-            }
-        }
+        internal override int MaxCalendarYear => MaxLunisolarYear;
 
-        internal override DateTime MinDate
-        {
-            get
-            {
-                return (minDate);
-            }
-        }
+        internal override DateTime MinDate => s_minDate;
 
-        internal override DateTime MaxDate
-        {
-            get
-            {
-                return (maxDate);
-            }
-        }
+        internal override DateTime MaxDate => s_maxDate;
 
-        internal override EraInfo[] CalEraInfo
-        {
-            get
-            {
-                return (JapaneseCalendar.GetEraInfo());
-            }
-        }
+        internal override EraInfo[] CalEraInfo => JapaneseCalendar.GetEraInfo();
 
         internal override int GetYearInfo(int lunarYear, int index)
         {
-            if ((lunarYear < MIN_LUNISOLAR_YEAR) || (lunarYear > MAX_LUNISOLAR_YEAR))
+            if (lunarYear < MinLunisolarYear || lunarYear > MaxLunisolarYear)
             {
                 throw new ArgumentOutOfRangeException(
-                            "year",
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.ArgumentOutOfRange_Range,
-                                MIN_LUNISOLAR_YEAR,
-                                MAX_LUNISOLAR_YEAR));
+                    "year",
+                    lunarYear,
+                    SR.Format(SR.ArgumentOutOfRange_Range, MinLunisolarYear, MaxLunisolarYear));
             }
 
-            return s_yinfo[lunarYear - MIN_LUNISOLAR_YEAR, index];
+            return s_yinfo[lunarYear - MinLunisolarYear, index];
         }
 
         internal override int GetYear(int year, DateTime time)
         {
-            return helper.GetYear(year, time);
+            return _helper.GetYear(year, time);
         }
 
         internal override int GetGregorianYear(int year, int era)
         {
-            return helper.GetGregorianYear(year, era);
+            return _helper.GetGregorianYear(year, era);
         }
 
-        // Trim off the eras that are before our date range
+        /// <summary>
+        /// Trim off the eras that are before our date range
+        /// </summary>
         private static EraInfo[] TrimEras(EraInfo[] baseEras)
         {
             EraInfo[] newEras = new EraInfo[baseEras.Length];
@@ -237,7 +180,7 @@ namespace System.Globalization
             {
                 // If this one's minimum year is bigger than our maximum year
                 // then we can't use it.
-                if (baseEras[i].yearOffset + baseEras[i].minEraYear >= MAX_LUNISOLAR_YEAR)
+                if (baseEras[i].yearOffset + baseEras[i].minEraYear >= MaxLunisolarYear)
                 {
                     // skip this one.
                     continue;
@@ -245,7 +188,7 @@ namespace System.Globalization
 
                 // If this one's maximum era is less than our minimum era
                 // then we've gotten too low in the era #s, so we're done
-                if (baseEras[i].yearOffset + baseEras[i].maxEraYear < MIN_LUNISOLAR_YEAR)
+                if (baseEras[i].yearOffset + baseEras[i].maxEraYear < MinLunisolarYear)
                 {
                     break;
                 }
@@ -258,44 +201,21 @@ namespace System.Globalization
             // If we didn't copy any then something was wrong, just return base
             if (newIndex == 0) return baseEras;
 
-            // Resize the output array
             Array.Resize(ref newEras, newIndex);
             return newEras;
         }
 
-        // Construct an instance of JapaneseLunisolar calendar.
         public JapaneseLunisolarCalendar()
         {
-            helper = new GregorianCalendarHelper(this, TrimEras(JapaneseCalendar.GetEraInfo()));
+            _helper = new GregorianCalendarHelper(this, TrimEras(JapaneseCalendar.GetEraInfo()));
         }
 
-        public override int GetEra(DateTime time)
-        {
-            return (helper.GetEra(time));
-        }
+        public override int GetEra(DateTime time) => _helper.GetEra(time);
 
-        internal override CalendarId BaseCalendarID
-        {
-            get
-            {
-                return (CalendarId.JAPAN);
-            }
-        }
+        internal override CalendarId BaseCalendarID => CalendarId.JAPAN;
 
-        internal override CalendarId ID
-        {
-            get
-            {
-                return (CalendarId.JAPANESELUNISOLAR);
-            }
-        }
+        internal override CalendarId ID => CalendarId.JAPANESELUNISOLAR;
 
-        public override int[] Eras
-        {
-            get
-            {
-                return (helper.Eras);
-            }
-        }
+        public override int[] Eras => _helper.Eras;
     }
 }

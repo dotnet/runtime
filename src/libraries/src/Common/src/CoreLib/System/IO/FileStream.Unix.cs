@@ -109,7 +109,17 @@ namespace System.IO
             {
                 // Truncate the file now if the file mode requires it. This ensures that the file only will be truncated
                 // if opened successfully.
-                CheckFileCall(Interop.Sys.FTruncate(_fileHandle, 0));
+                if (Interop.Sys.FTruncate(_fileHandle, 0) < 0)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    if (errorInfo.Error != Interop.Error.EBADF && errorInfo.Error != Interop.Error.EINVAL)
+                    {
+                        // We know the file descriptor is valid and we know the size argument to FTruncate is correct,
+                        // so if EBADF or EINVAL is returned, it means we're dealing with a special file that can't be
+                        // truncated.  Ignore the error in such cases; in all others, throw.
+                        throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
+                    }
+                }
             }
         }
 

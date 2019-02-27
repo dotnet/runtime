@@ -264,10 +264,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                     cmd.ExecuteNonQuery();
                     DataTestUtility.AssertEqualsWithDescription(
-                        "141.42135623731", ((Point)(p.Value)).Distance().ToString(),
+                        "141.4213562373095", ((Point)(p.Value)).Distance().ToString(),
                         "Unexpected distance value.");
                     DataTestUtility.AssertEqualsWithDescription(
-                        "141.42135623731", ((Point)(p.Value)).Distance().ToString(),
+                        "141.4213562373095", ((Point)(p.Value)).Distance().ToString(),
                         "Unexpected distance value after reading out param again.");
 
                     cmd.Parameters.Clear();
@@ -275,7 +275,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     cmd.CommandText = "select * from " + tableName;
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        string expectedValue = "   newcity, p.X = 100, p.Y = 100, p.Distance() = 141.42135623731" + Environment.NewLine;
+                        string expectedValue = "   newcity, p.X = 100, p.Y = 100, p.Distance() = 141.4213562373095" + Environment.NewLine;
                         DataTestUtility.AssertEqualsWithDescription(
                             expectedValue, UdtTestHelpers.DumpReaderString(reader, false),
                             "Unexpected reader dump string.");
@@ -305,7 +305,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         "beaverton", reader.GetValue(0),
                         "Unexpected reader value.");
                     DataTestUtility.AssertEqualsWithDescription(
-                        "14.8660687473185", ((Point)reader.GetValue(1)).Distance().ToString(),
+                        "14.866068747318506", ((Point)reader.GetValue(1)).Distance().ToString(),
                         "Unexpected distance value.");
 
                     reader.Read();
@@ -359,13 +359,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     "FieldType[1] = Point" + Environment.NewLine +
                     "   redmond, p.X =   3, p.Y =   3, p.Distance() = 5" + Environment.NewLine +
                     "  bellevue, p.X =   6, p.Y =   6, p.Distance() = 10" + Environment.NewLine +
-                    "   seattle, p.X =  10, p.Y =  10, p.Distance() = 14.8660687473185" + Environment.NewLine +
+                    "   seattle, p.X =  10, p.Y =  10, p.Distance() = 14.866068747318506" + Environment.NewLine +
                     "  portland, p.X =  20, p.Y =  20, p.Distance() = 25" + Environment.NewLine +
                     "        LA, p.X =   3, p.Y =   3, p.Distance() = 5" + Environment.NewLine +
                     "       SFO, p.X =   6, p.Y =   6, p.Distance() = 10" + Environment.NewLine +
-                    " beaverton, p.X =  10, p.Y =  10, p.Distance() = 14.8660687473185" + Environment.NewLine +
+                    " beaverton, p.X =  10, p.Y =  10, p.Distance() = 14.866068747318506" + Environment.NewLine +
                     "  new york, p.X =  20, p.Y =  20, p.Distance() = 25" + Environment.NewLine +
-                    "     yukon, p.X =  20, p.Y =  20, p.Distance() = 32.0156211871642" + Environment.NewLine;
+                    "     yukon, p.X =  20, p.Y =  20, p.Distance() = 32.01562118716424" + Environment.NewLine;
 
                 using (SqlDataReader reader = cmd.ExecuteReader())
                 {
@@ -403,14 +403,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         "Unexpected reader values.");
 
                     string expectedLineValues =
-                        "1, IsNull = False, Length = 2.82842712474619" + Environment.NewLine +
-                        "2, IsNull = False, Length = 2.82842712474619" + Environment.NewLine +
-                        "3, IsNull = False, Length = 9.8488578017961" + Environment.NewLine +
-                        "4, IsNull = False, Length = 214.107449660212" + Environment.NewLine +
-                        "5, IsNull = False, Length = 2.82842712474619" + Environment.NewLine +
-                        "6, IsNull = False, Length = 2.82842712474619" + Environment.NewLine +
-                        "7, IsNull = False, Length = 9.8488578017961" + Environment.NewLine +
-                        "8, IsNull = False, Length = 214.107449660212" + Environment.NewLine;
+                        "1, IsNull = False, Length = 2.8284271247461903" + Environment.NewLine +
+                        "2, IsNull = False, Length = 2.8284271247461903" + Environment.NewLine +
+                        "3, IsNull = False, Length = 9.848857801796104" + Environment.NewLine +
+                        "4, IsNull = False, Length = 214.1074496602115" + Environment.NewLine +
+                        "5, IsNull = False, Length = 2.8284271247461903" + Environment.NewLine +
+                        "6, IsNull = False, Length = 2.8284271247461903" + Environment.NewLine +
+                        "7, IsNull = False, Length = 9.848857801796104" + Environment.NewLine +
+                        "8, IsNull = False, Length = 214.1074496602115" + Environment.NewLine;
 
                     builder = new StringBuilder();
                     while (reader.Read())
@@ -454,13 +454,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         "FieldType[1] = Point" + Environment.NewLine +
                         "   redmond, p.X =   3, p.Y =   3, p.Distance() = 5" + Environment.NewLine +
                         "  bellevue, p.X =   6, p.Y =   6, p.Distance() = 10" + Environment.NewLine +
-                        "   seattle, p.X =  10, p.Y =  10, p.Distance() = 14.8660687473185" + Environment.NewLine +
+                        "   seattle, p.X =  10, p.Y =  10, p.Distance() = 14.866068747318506" + Environment.NewLine +
                         "  portland, p.X =  20, p.Y =  20, p.Distance() = 25" + Environment.NewLine +
                         "        LA, p.X =   3, p.Y =   3, p.Distance() = 5" + Environment.NewLine +
                         "       SFO, p.X =   6, p.Y =   6, p.Distance() = 10" + Environment.NewLine +
-                        " beaverton, p.X =  10, p.Y =  10, p.Distance() = 14.8660687473185" + Environment.NewLine +
+                        " beaverton, p.X =  10, p.Y =  10, p.Distance() = 14.866068747318506" + Environment.NewLine +
                         "  new york, p.X =  20, p.Y =  20, p.Distance() = 25" + Environment.NewLine +
-                        "     yukon, p.X =  20, p.Y =  20, p.Distance() = 32.0156211871642" + Environment.NewLine;
+                        "     yukon, p.X =  20, p.Y =  20, p.Distance() = 32.01562118716424" + Environment.NewLine;
 
                     DataTestUtility.AssertEqualsWithDescription(
                     expectedReaderValues, UdtTestHelpers.DumpReaderString(reader),

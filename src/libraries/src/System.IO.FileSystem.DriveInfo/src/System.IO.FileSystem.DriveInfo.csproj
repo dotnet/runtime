@@ -23,22 +23,22 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetDriveType.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetDriveType.cs">
       <Link>Common\Interop\Windows\Interop.GetDriveType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetVolumeInformation.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs">
       <Link>Common\Interop\Windows\Interop.GetVolumeInformation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetLogicalDrives.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs">
       <Link>Common\Interop\Windows\Interop.GetLogicalDrives.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetDiskFreeSpaceEx.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetDiskFreeSpaceEx.cs">
       <Link>Common\Interop\Windows\Interop.GetDiskFreeSpaceEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MaxLengths.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MaxLengths.cs">
       <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetVolumeLabel.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetVolumeLabel.cs">
       <Link>Common\Interop\Windows\Interop.SetVolumeLabel.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
@@ -47,7 +47,7 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FileOperations.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FileOperations.cs">
       <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">

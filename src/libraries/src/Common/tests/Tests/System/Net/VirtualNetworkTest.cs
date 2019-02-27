@@ -30,8 +30,7 @@ namespace System.Net.Test.Common
 
                 network.WriteFrame(i % 2 == 0, writeFrame);
 
-                byte [] readFrame;
-                network.ReadFrame(i % 2 == 1, out readFrame);
+                byte [] readFrame = network.ReadFrame(i % 2 == 1);
 
                 uint readChecksum = Fletcher32.Checksum(readFrame, 0, readFrame.Length);
 
@@ -66,8 +65,7 @@ namespace System.Net.Test.Common
                 int delayMilliseconds = rnd.Next(0, 1000);
                 await Task.Delay(delayMilliseconds);
 
-                byte[] readFrame;
-                network.ReadFrame(i % 2 == 1, out readFrame);
+                byte[] readFrame = network.ReadFrame(i % 2 == 1);
 
                 uint readChecksum = Fletcher32.Checksum(readFrame, 0, readFrame.Length);
 

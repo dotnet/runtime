@@ -29,7 +29,6 @@
     <Compile Include="System\DirectoryServices\AccountManagement\PasswordInfo.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\MatchType.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\CredentialTypes.cs" />
-    <Compile Include="System\DirectoryServices\AccountManagement\RejectedClaimChange.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\ContextType.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\ContextOptions.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\SidType.cs" />
@@ -89,7 +88,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LookupAccountSid.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs</Link>
     </Compile>
   </ItemGroup>

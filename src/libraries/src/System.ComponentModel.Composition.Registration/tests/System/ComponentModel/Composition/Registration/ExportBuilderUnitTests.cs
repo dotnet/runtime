@@ -68,6 +68,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void ExportInterfaceWithTypeOf1()
         {
             var ctx = new RegistrationBuilder();
@@ -83,6 +84,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void ExportInterfaceWithTypeOf2()
         {
             var ctx = new RegistrationBuilder();
@@ -98,6 +100,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void ExportInheritedInterfaceWithImplements1()
         {
             var ctx = new RegistrationBuilder();
@@ -113,6 +116,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void ExportInheritedInterfaceWithImplements2()
         {
             var ctx = new RegistrationBuilder();

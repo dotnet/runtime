@@ -268,7 +268,7 @@ namespace System.Data.SqlClient
                 {
                     _SqlMetaData colMetaData = metaData[index];
 
-                    if (!colMetaData.isHidden)
+                    if (!colMetaData.IsHidden)
                     {
                         SqlCollation collation = colMetaData.collation;
 
@@ -278,17 +278,17 @@ namespace System.Data.SqlClient
 
                         if (SqlDbType.Xml == colMetaData.type)
                         {
-                            typeSpecificNamePart1 = colMetaData.xmlSchemaCollectionDatabase;
-                            typeSpecificNamePart2 = colMetaData.xmlSchemaCollectionOwningSchema;
-                            typeSpecificNamePart3 = colMetaData.xmlSchemaCollectionName;
+                            typeSpecificNamePart1 = colMetaData.xmlSchemaCollection?.Database;
+                            typeSpecificNamePart2 = colMetaData.xmlSchemaCollection?.OwningSchema;
+                            typeSpecificNamePart3 = colMetaData.xmlSchemaCollection?.Name;
                         }
                         else if (SqlDbType.Udt == colMetaData.type)
                         {
                             Connection.CheckGetExtendedUDTInfo(colMetaData, true); // Ensure that colMetaData.udtType is set
 
-                            typeSpecificNamePart1 = colMetaData.udtDatabaseName;
-                            typeSpecificNamePart2 = colMetaData.udtSchemaName;
-                            typeSpecificNamePart3 = colMetaData.udtTypeName;
+                            typeSpecificNamePart1 = colMetaData.udt?.DatabaseName;
+                            typeSpecificNamePart2 = colMetaData.udt?.SchemaName;
+                            typeSpecificNamePart3 = colMetaData.udt?.TypeName;
                         }
 
                         int length = colMetaData.length;
@@ -310,7 +310,7 @@ namespace System.Data.SqlClient
                                 colMetaData.scale,
                                 (null != collation) ? collation.LCID : _defaultLCID,
                                 (null != collation) ? collation.SqlCompareOptions : SqlCompareOptions.None,
-                                colMetaData.udtType,
+                                colMetaData.udt?.Type,
                                 false, // isMultiValued
                                 null, // fieldmetadata
                                 null, // extended properties
@@ -318,18 +318,19 @@ namespace System.Data.SqlClient
                                 typeSpecificNamePart1,
                                 typeSpecificNamePart2,
                                 typeSpecificNamePart3,
-                                colMetaData.isNullable,
+                                colMetaData.IsNullable,
                                 colMetaData.serverName,
                                 colMetaData.catalogName,
                                 colMetaData.schemaName,
                                 colMetaData.tableName,
                                 colMetaData.baseColumn,
-                                colMetaData.isKey,
-                                colMetaData.isIdentity,
-                                0 == colMetaData.updatability,
-                                colMetaData.isExpression,
-                                colMetaData.isDifferentName,
-                                colMetaData.isHidden);
+                                colMetaData.IsKey,
+                                colMetaData.IsIdentity,
+                                colMetaData.IsReadOnly,
+                                colMetaData.IsExpression,
+                                colMetaData.IsDifferentName,
+                                colMetaData.IsHidden
+                            );
                     }
                 }
             }
@@ -573,14 +574,14 @@ namespace System.Data.SqlClient
                     if (col.type == SqlDbType.Udt)
                     { // Additional metadata for UDTs.
                         Debug.Assert(Connection.IsKatmaiOrNewer, "Invalid Column type received from the server");
-                        schemaRow[udtAssemblyQualifiedName] = col.udtAssemblyQualifiedName;
+                        schemaRow[udtAssemblyQualifiedName] = col.udt?.AssemblyQualifiedName;
                     }
                     else if (col.type == SqlDbType.Xml)
                     { // Additional metadata for Xml.
                         Debug.Assert(Connection.IsKatmaiOrNewer, "Invalid DataType (Xml) for the column");
-                        schemaRow[xmlSchemaCollectionDatabase] = col.xmlSchemaCollectionDatabase;
-                        schemaRow[xmlSchemaCollectionOwningSchema] = col.xmlSchemaCollectionOwningSchema;
-                        schemaRow[xmlSchemaCollectionName] = col.xmlSchemaCollectionName;
+                        schemaRow[xmlSchemaCollectionDatabase] = col.xmlSchemaCollection?.Database;
+                        schemaRow[xmlSchemaCollectionOwningSchema] = col.xmlSchemaCollection?.OwningSchema;
+                        schemaRow[xmlSchemaCollectionName] = col.xmlSchemaCollection?.Name;
                     }
                 }
                 else
@@ -613,19 +614,19 @@ namespace System.Data.SqlClient
                     schemaRow[scale] = col.metaType.Scale;
                 }
 
-                schemaRow[allowDBNull] = col.isNullable;
+                schemaRow[allowDBNull] = col.IsNullable;
 
                 // If no ColInfo token received, do not set value, leave as null.
                 if (_browseModeInfoConsumed)
                 {
-                    schemaRow[isAliased] = col.isDifferentName;
-                    schemaRow[isKey] = col.isKey;
-                    schemaRow[isHidden] = col.isHidden;
-                    schemaRow[isExpression] = col.isExpression;
+                    schemaRow[isAliased] = col.IsDifferentName;
+                    schemaRow[isKey] = col.IsKey;
+                    schemaRow[isHidden] = col.IsHidden;
+                    schemaRow[isExpression] = col.IsExpression;
                 }
 
-                schemaRow[isIdentity] = col.isIdentity;
-                schemaRow[isAutoIncrement] = col.isIdentity;
+                schemaRow[isIdentity] = col.IsIdentity;
+                schemaRow[isAutoIncrement] = col.IsIdentity;
 
                 schemaRow[isLong] = col.metaType.IsLong;
 
@@ -641,8 +642,8 @@ namespace System.Data.SqlClient
                     schemaRow[isRowVersion] = false;
                 }
 
-                schemaRow[isReadOnly] = (0 == col.updatability);
-                schemaRow[isColumnSet] = col.isColumnSet;
+                schemaRow[isReadOnly] = col.IsReadOnly;
+                schemaRow[isColumnSet] = col.IsColumnSet;
 
                 if (!string.IsNullOrEmpty(col.serverName))
                 {
@@ -1095,7 +1096,7 @@ namespace System.Data.SqlClient
                 {
                     indexMap[i] = _metaData.visibleColumns;
 
-                    if (!(_metaData[i].isHidden))
+                    if (!(_metaData[i].IsHidden))
                     {
                         _metaData.visibleColumns++;
                     }
@@ -1148,7 +1149,7 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    dataTypeName = metaData.udtDatabaseName + "." + metaData.udtSchemaName + "." + metaData.udtTypeName;
+                    dataTypeName = metaData.udt?.DatabaseName + "." + metaData.udt?.SchemaName + "." + metaData.udt?.TypeName;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -1221,7 +1222,7 @@ namespace System.Data.SqlClient
                 if (metaData.type == SqlDbType.Udt)
                 {
                     Connection.CheckGetExtendedUDTInfo(metaData, false);
-                    fieldType = metaData.udtType;
+                    fieldType = metaData.udt?.Type;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
@@ -1301,7 +1302,7 @@ namespace System.Data.SqlClient
                 if (metaData.type == SqlDbType.Udt)
                 {
                     Connection.CheckGetExtendedUDTInfo(metaData, false);
-                    providerSpecificFieldType = metaData.udtType;
+                    providerSpecificFieldType = metaData.udt?.Type;
                 }
                 else
                 {
@@ -4968,10 +4969,10 @@ namespace System.Data.SqlClient
 
                 if (_browseModeInfoConsumed)
                 {
-                    dbColumn.SqlIsAliased = col.isDifferentName;
-                    dbColumn.SqlIsKey = col.isKey;
-                    dbColumn.SqlIsHidden = col.isHidden;
-                    dbColumn.SqlIsExpression = col.isExpression;
+                    dbColumn.SqlIsAliased = col.IsDifferentName;
+                    dbColumn.SqlIsKey = col.IsKey;
+                    dbColumn.SqlIsHidden = col.IsHidden;
+                    dbColumn.SqlIsExpression = col.IsExpression;
                 }
 
                 dbColumn.SqlDataType = GetFieldTypeInternal(col);

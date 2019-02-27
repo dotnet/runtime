@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
@@ -61,53 +61,53 @@
     <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ClearEventLog.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.ClearEventLog.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.ClearEventLog.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.ClearEventLog.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CloseEventLog.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.CloseEventLog.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.CloseEventLog.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.CloseEventLog.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.DeregisterEventSource.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.DeregisterEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.GetNumberOfEventLogRecords.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.GetNumberOfEventLogRecords.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.GetNumberOfEventLogRecords.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.GetNumberOfEventLogRecords.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.GetOldestEventLogRecord.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.GetOldestEventLogRecord.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.GetOldestEventLogRecord.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.GetOldestEventLogRecord.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LookupAccountSid.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.LookupAccountSid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.NotifyChangeEventLog.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.NotifyChangeEventLog.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.NotifyChangeEventLog.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.NotifyChangeEventLog.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenEventLog.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.OpenEventLog.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.OpenEventLog.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.OpenEventLog.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ReadEventLog.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.ReadEventLog.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.ReadEventLog.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.ReadEventLog.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.RegisterEventSource.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.RegisterEventSource.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegisterEventSource.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.RegisterEventSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ReportEvent.cs">
-      <Link>Common\Interop\Windows\advapi32\Interop.ReportEvent.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.ReportEvent.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.ReportEvent.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Constants.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.Constants.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.Constants.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage_SafeLibraryHandle.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage_SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FreeLibrary.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.FreeLibrary.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WaitForSingleObject.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.WaitForSingleObject.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>

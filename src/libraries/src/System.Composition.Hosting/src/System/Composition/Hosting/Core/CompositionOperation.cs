@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Composition.Hosting.Core
@@ -84,10 +85,7 @@ namespace System.Composition.Hosting.Core
 
         internal void EnterSharingLock(object sharingLock)
         {
-            if (sharingLock == null)
-            {
-                throw new ArgumentException(SR.Sharing_Lock_Required);
-            }
+            Debug.Assert(sharingLock != null, "Expected a sharing lock to be passed.");
 
             if (_sharingLock == null)
             {

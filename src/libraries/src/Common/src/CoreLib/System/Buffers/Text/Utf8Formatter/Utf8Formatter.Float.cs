@@ -61,32 +61,14 @@ namespace System.Buffers.Text
 
         private static bool TryFormatFloatingPoint<T>(T value, Span<byte> destination, out int bytesWritten, StandardFormat format) where T : IFormattable, ISpanFormattable
         {
-            if (format.IsDefault)
+            Span<char> formatText = stackalloc char[0];
+
+            if (!format.IsDefault)
             {
-                format = 'G';
+                formatText = stackalloc char[StandardFormat.FormatStringLength];
+                int formatTextLength = format.Format(formatText);
+                formatText = formatText.Slice(0, formatTextLength);
             }
-
-            switch (format.Symbol)
-            {
-                case 'g':
-                case 'G':
-                    if (format.Precision != StandardFormat.NoPrecision)
-                        throw new NotSupportedException(SR.Argument_GWithPrecisionNotSupported);
-                    break;
-
-                case 'f':
-                case 'F':
-                case 'e':
-                case 'E':
-                    break;
-
-                default:
-                    return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
-            }
-            
-            Span<char> formatText = stackalloc char[StandardFormat.FormatStringLength];
-            int formattedLength = format.Format(formatText);
-            formatText = formatText.Slice(0, formattedLength);
 
             // We first try to format into a stack-allocated buffer, and if it succeeds, we can avoid
             // all allocation.  If that fails, we fall back to allocating strings.  If it proves impactful,
@@ -98,7 +80,7 @@ namespace System.Buffers.Text
             ReadOnlySpan<char> utf16Text = stackalloc char[0];
 
             // Try to format into the stack buffer.  If we're successful, we can avoid all allocations.
-            if (value.TryFormat(stackBuffer, out formattedLength, formatText, CultureInfo.InvariantCulture))
+            if (value.TryFormat(stackBuffer, out int formattedLength, formatText, CultureInfo.InvariantCulture))
             {
                 utf16Text = stackBuffer.Slice(0, formattedLength);
             }

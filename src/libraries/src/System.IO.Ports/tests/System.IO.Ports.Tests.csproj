@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{4259DCE9-3480-40BB-B08A-64A2D446264B}</ProjectGuid>
-    <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <Configurations>netfx-Debug;netfx-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->

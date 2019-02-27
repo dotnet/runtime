@@ -14,6 +14,10 @@
     -->
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
 
+    <!-- We use the compiler toolset that comes from NuGet Packages rather than the SDK built-in.
+    This one sets UseSharedCompilation to false by default. -->
+    <UseSharedCompilation>true</UseSharedCompilation>
+
     <ToolSetCommonDirectory>$(MSBuildThisFileDirectory)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))">true</IsSourceProject>
   </PropertyGroup>
@@ -166,16 +170,6 @@
     </RestoreSources>
   </PropertyGroup>
 
-  <!--
-    Add all the RestoreSources to the OptionalRestoreSource items as well so any
-    common package references can correctly be resolved as well.
-  -->
-  <ItemGroup>
-    <OptionalRestoreSource Include="$(RestoreSources)">
-      <Uri>%(Identity)</Uri>
-    </OptionalRestoreSource>
-  </ItemGroup>
-
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
@@ -230,9 +224,6 @@
     <TargetsNetFx Condition="$(TargetGroup.StartsWith('net4')) OR '$(TargetGroup)' == 'netfx'">true</TargetsNetFx>
   </PropertyGroup>
 
-  <!-- Import packaging props -->
-  <Import Project="$(RepositoryEngineeringDir)Packaging.props"/>
-
   <!-- set properties for each vertical -->
   <PropertyGroup>
     <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' AND ('$(_bc_TargetGroup)'=='netcoreapp' OR '$(_bc_TargetGroup)'=='netcoreappaot' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
@@ -252,11 +243,18 @@
       OutputPath setup
   -->
   <PropertyGroup>
-    <ImportNetSdkFromRepoToolset>false</ImportNetSdkFromRepoToolset>
     <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  
+  <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
+    <Copyright>$(CopyrightNetFoundation)</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <!-- Import packaging props -->
+  <Import Project="$(RepositoryEngineeringDir)Packaging.props"/>
 
   <!-- Set the kind of PDB to Portable and turn on SourceLink (fetching source from GitHub) -->
   <PropertyGroup>
@@ -272,6 +270,11 @@
     <EnableSourceLink Condition="'$(HostArch)' == 'Arm' OR '$(HostArch)' == 'Arm64'">false</EnableSourceLink>
     <!-- Disable source link on local builds. -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <!-- Embed IBC data on Windows release builds, if IBCMerge isn't available this will just log the commandline -->
+    <EnablePartialNgenOptimization Condition="'$(EnablePartialNgenOptimization)' == '' and '$(OS)' == 'Windows_NT' and '$(ConfigurationGroup)' == 'Release'">true</EnablePartialNgenOptimization>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -307,7 +310,9 @@
 
   <!-- Language configuration -->
   <PropertyGroup>
-    <LangVersion>latest</LangVersion> <!-- default to allowing all language features -->
+    <!-- default to allowing all language features -->
+    <LangVersion>latest</LangVersion>
+    <LangVersion Condition="'$(Language)' == 'C#'">8.0</LangVersion>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict</Features>
     <WarningLevel>4</WarningLevel>
@@ -356,6 +361,8 @@
     <NetStandard21RefPath>$(RefRootPath)netstandard2.1/</NetStandard21RefPath>
     <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
     <GlobalToolsDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tools'))</GlobalToolsDir>
+    <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
+    <ILAsmToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ilasm'))</ILAsmToolPath>
 
     <!-- Helix properties -->
     <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
@@ -433,10 +440,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <OptionalToolingProjectPath>$(ProjectDir)\external\test-runtime\optional.csproj</OptionalToolingProjectPath>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
     <SkipTests Condition="'$(SkipTests)' == '' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
 
@@ -451,7 +454,6 @@
   <!-- Test properties for full build. -->
   <PropertyGroup Condition="'$(BuildAllProjects)' == 'true'">
     <GenerateFullCoverageReport Condition="'$(GenerateFullCoverageReport)' == ''">true</GenerateFullCoverageReport>
-    <Performance Condition="'$(Performance)' == ''">false</Performance>
   </PropertyGroup>
 
   <!-- TODO: Fix VB test project reference to Test SDK. -->
@@ -477,4 +479,9 @@
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' AND '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
+
+  <!-- Import the Roslyn Compiler Toolset props -->
+  <Import Project="$(PkgMicrosoft_Net_Compilers)/build/Microsoft.Net.Compilers.props" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <Import Project="$(PkgMicrosoft_NETCore_Compilers)/build/Microsoft.NETCore.Compilers.props" Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+
 </Project>

@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
         internal const string RootStoreName = "Root";
         internal const string IntermediateCAStoreName = "CA";
         internal const string DisallowedStoreName = "Disallowed";
+        internal const string MyStoreName = "My";
 
         private IStorePal _storePal;
 
@@ -56,7 +57,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Name = DisallowedStoreName;
                     break;
                 case StoreName.My:
-                    Name = "My";
+                    Name = MyStoreName;
                     break;
                 case StoreName.Root:
                     Name = RootStoreName;
