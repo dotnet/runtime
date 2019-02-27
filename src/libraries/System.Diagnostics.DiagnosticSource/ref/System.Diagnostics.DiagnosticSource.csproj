@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{3DF9A5D5-3D4B-4378-9B55-CFA6AC0114D9}</ProjectGuid>
     <Configurations>net45-Debug;net45-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'netfx'">
     <DefineConstants>$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS</DefineConstants>
@@ -11,10 +12,19 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard1.1'">
     <Compile Include="System.Diagnostics.DiagnosticSourceActivity.cs" />
+    <Reference Include="System.Memory" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="netstandard" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.1' or '$(TargetGroup)' == 'netstandard1.3'">
     <Reference Include="System.Runtime" />
   </ItemGroup>

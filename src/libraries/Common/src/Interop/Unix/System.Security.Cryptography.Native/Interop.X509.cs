@@ -92,6 +92,21 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509IssuerNameHash")]
         internal static extern ulong X509IssuerNameHash(SafeX509Handle x);
 
+        [DllImport(Libraries.CryptoNative)]
+        private static extern SafeSharedAsn1OctetStringHandle CryptoNative_X509FindExtensionData(
+            SafeX509Handle x,
+            int extensionNid);
+
+        internal static SafeSharedAsn1OctetStringHandle X509FindExtensionData(SafeX509Handle x, int extensionNid)
+        {
+            CheckValidOpenSslHandle(x);
+
+            return SafeInteriorHandle.OpenInteriorHandle(
+                (handle, arg) => CryptoNative_X509FindExtensionData(handle, arg),
+                x,
+                extensionNid);
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetExtCount")]
         internal static extern int X509GetExtCount(SafeX509Handle x);
 
@@ -112,8 +127,8 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509ExtensionGetCritical(IntPtr ex);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCreate")]
-        internal static extern SafeX509StoreHandle X509StoreCreate();
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ChainNew")]
+        internal static extern SafeX509StoreHandle X509ChainNew(SafeX509StackHandle systemTrust, string userTrustPath);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreDestory")]
         internal static extern void X509StoreDestory(IntPtr v);
@@ -128,7 +143,15 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreSetRevocationFlag")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool X509StoreSetRevocationFlag(SafeX509StoreHandle ctx, X509RevocationFlag revocationFlag);
+        private static extern bool CryptoNative_X509StoreSetRevocationFlag(SafeX509StoreHandle ctx, X509RevocationFlag revocationFlag);
+
+        internal static void X509StoreSetRevocationFlag(SafeX509StoreHandle ctx, X509RevocationFlag revocationFlag)
+        {
+            if (!CryptoNative_X509StoreSetRevocationFlag(ctx, revocationFlag))
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxInit")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -138,11 +161,49 @@ internal static partial class Interop
             SafeX509Handle x509,
             SafeX509StackHandle extraCerts);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509VerifyCert")]
-        internal static extern int X509VerifyCert(SafeX509StoreCtxHandle ctx);
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_X509VerifyCert(SafeX509StoreCtxHandle ctx);
+
+        internal static bool X509VerifyCert(SafeX509StoreCtxHandle ctx)
+        {
+            int result = CryptoNative_X509VerifyCert(ctx);
+
+            if (result < 0)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return result != 0;
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetError")]
         internal static extern X509VerifyStatusCode X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_X509StoreCtxReset(SafeX509StoreCtxHandle ctx);
+
+        internal static void X509StoreCtxReset(SafeX509StoreCtxHandle ctx)
+        {
+            if (CryptoNative_X509StoreCtxReset(ctx) != 1)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_X509StoreCtxRebuildChain(SafeX509StoreCtxHandle ctx);
+
+        internal static bool X509StoreCtxRebuildChain(SafeX509StoreCtxHandle ctx)
+        {
+            int result = CryptoNative_X509StoreCtxRebuildChain(ctx);
+
+            if (result < 0)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return result != 0;
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetErrorDepth")]
         internal static extern int X509StoreCtxGetErrorDepth(SafeX509StoreCtxHandle ctx);
