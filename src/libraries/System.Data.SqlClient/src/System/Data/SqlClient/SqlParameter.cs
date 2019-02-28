@@ -60,7 +60,7 @@ namespace System.Data.SqlClient
         private enum SqlParameterFlags : short
         {
             None = 0,
-            IsNullable = 1<< 1,
+            IsNullable = 1 << 1,
             IsNull = 1 << 2,
             IsSqlParameterSqlType = 1 << 3,
             CoercedValueIsSqlType = 1 << 4,
@@ -244,12 +244,12 @@ namespace System.Data.SqlClient
             set
             {
                 bool collectionIsNull = _xmlSchemaCollection != null;
+                if (collectionIsNull)
+                {
+                    _xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
+                }
                 if (value != null || collectionIsNull)
                 {
-                    if (collectionIsNull)
-                    {
-                        _xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
-                    }
                     _xmlSchemaCollection.Database = value;
                 }
             }
@@ -264,12 +264,12 @@ namespace System.Data.SqlClient
             set
             {
                 bool collectionIsNull = _xmlSchemaCollection != null;
+                if (collectionIsNull)
+                {
+                    _xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
+                }
                 if (value != null || collectionIsNull)
                 {
-                    if (collectionIsNull)
-                    {
-                        _xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
-                    }
                     _xmlSchemaCollection.OwningSchema = value;
                 }
             }
@@ -284,12 +284,12 @@ namespace System.Data.SqlClient
             set
             {
                 bool collectionIsNull = _xmlSchemaCollection != null;
+                if (collectionIsNull)
+                {
+                    _xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
+                }
                 if (value != null || collectionIsNull)
                 {
-                    if (collectionIsNull)
-                    {
-                        _xmlSchemaCollection = new SqlMetaDataXmlSchemaCollection();
-                    }
                     _xmlSchemaCollection.Name = value;
                 }
             }
@@ -1678,7 +1678,14 @@ namespace System.Data.SqlClient
 
         private void Set(SqlParameterFlags flag, bool value)
         {
-            _flags = value ? _flags | flag : _flags & ~flag;
+            if (value)
+            {
+                _flags |= flag;
+            }
+            else
+            {
+                _flags &= ~flag;
+            }
         }
 
         internal void Validate(int index, bool isCommandProc)
