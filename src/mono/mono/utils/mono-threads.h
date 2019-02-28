@@ -811,6 +811,9 @@ mono_win32_leave_blocking_io_call (THREAD_INFO_TYPE *info, HANDLE io_handle);
 
 void
 mono_win32_interrupt_wait (PVOID thread_info, HANDLE native_thread_handle, DWORD tid);
+
+void
+mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 #endif
 
 #endif /* __MONO_THREADS_H__ */
