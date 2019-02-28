@@ -23,7 +23,6 @@ parameters:
   #     _helixQueues: Windows.Amd64 (Only needed if submitToHelix -> true.) -- Queues should be separated by + if multiple.
 
   # Required: as part of the variables object, the following values need to be passed:
-  #     _skipTests: true | false
   #     _outerloop: true | false
 
   # Optional: _publishTests -> Boolean -> Publish test assets to blob storage if true.
@@ -76,6 +75,7 @@ jobs:
               - name: ${{ pair.key }}
                 value: ${{ pair.value }}
 
+        - _msbuildCommonParameters: ''
         - _archiveTestsParameter: ''
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -84,36 +84,28 @@ jobs:
           - group: DotNet-Internal-Tools-Feed
           - group: DotNet-Blob-Feed
 
-        - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-          - _msbuildCommonParameters: ''
-
         - ${{ if eq(job.submitToHelix, 'true') }}:
           - group: DotNet-HelixApi-Access
           - _archiveTestsParameter: /p:ArchiveTests=Tests
 
+        - _args: -restore -build -configuration $(_BuildConfig) -ci -buildtests -arch $(_architecture) -framework $(_framework) $(_archiveTestsParameter)
+        - _commonArguments: $(_args)
+        - _windowsOfficialBuildArguments: ''
+
         # Windows variables
         - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
           - _buildScript: build.cmd
-          - _commonArguments: -restore -build -configuration $(_BuildConfig) -ci -buildtests -arch $(_architecture)
           - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
-
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _windowsOfficialBuildArguments: -sign
                                               /p:DotNetSignType=$(_SignType)
 
-          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            - _windowsOfficialBuildArguments: ''
-
         # Non-Windows variables
         - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
           - _buildScript: ${{ job.buildScriptPrefix }}./build.sh
-          - _args: --restore --build --configuration $(_BuildConfig) --ci --buildtests --arch $(_architecture)
-          - _commonArguments: $(_args)
-          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _commonArguments: $(_args) --stripSymbols
-
           - _msbuildCommand: ${{ job.buildScriptPrefix }}./eng/common/msbuild.sh --warnaserror false --ci
-          - _windowsOfficialBuildArguments: ''
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - _commonArguments: $(_args) -stripSymbols
 
         - ${{ if and(eq(job.enableMicrobuild, 'true'), eq(parameters.isOfficialBuild, 'true')) }}:
           - _TeamName: DotNetCore
@@ -165,9 +157,7 @@ jobs:
           - ${{ if eq(job.customBuildSteps[0], '') }}:
             - script: $(_buildScript)
                     $(_commonArguments)
-                    -f $(_framework)
                     /p:OuterLoop=$(_outerloop)
-                    $(_archiveTestsParameter)
                     ${{ job.buildExtraArguments }}
                     $(_msbuildCommonParameters)
                     $(_windowsOfficialBuildArguments)
