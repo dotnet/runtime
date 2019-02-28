@@ -70,7 +70,6 @@
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
 #include "oavariant.h"
-#include "registration.h"
 #include "mngstdinterfaces.h"
 #include "extensibleclassfactory.h"
 #endif // FEATURE_COMINTEROP

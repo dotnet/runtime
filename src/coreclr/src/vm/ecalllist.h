@@ -843,17 +843,6 @@ FCFuncStart(gInteropNativeLibraryFuncs)
     QCFuncElement("GetSymbol", NativeLibraryNative::GetSymbol)
 FCFuncEnd()
 
-#ifdef FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMINTEROP_MANAGED_ACTIVATION
-FCFuncStart(gRegistrationFuncs)
-    FCFuncElement("RegisterTypeForComClientsNative", RegisterTypeForComClientsNative)
-    FCFuncElement("RegisterTypeForComClientsExNative", RegisterTypeForComClientsExNative)
-FCFuncEnd()
-#endif // FEATURE_COMINTEROP_MANAGED_ACTIVATION
-
-#endif // FEATURE_COMINTEROP
-
 FCFuncStart(gTypeLoadExceptionFuncs)
     QCFuncElement("GetTypeLoadExceptionMessage", GetTypeLoadExceptionMessage)
 FCFuncEnd()
@@ -1251,11 +1240,6 @@ FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
 FCClassElement("PunkSafeHandle", "System.Reflection.Emit", gSymWrapperCodePunkSafeHandleFuncs)
 FCClassElement("RegisteredWaitHandleSafe", "System.Threading", gRegisteredWaitHandleFuncs)
-#ifdef FEATURE_COMINTEROP
-#ifdef FEATURE_COMINTEROP_MANAGED_ACTIVATION
-FCClassElement("RegistrationServices", "System.Runtime.InteropServices", gRegistrationFuncs)
-#endif // FEATURE_COMINTEROP_MANAGED_ACTIVATION
-#endif // FEATURE_COMINTEROP
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 #ifdef FEATURE_COMINTEROP
