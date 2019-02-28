@@ -627,9 +627,13 @@ typedef enum
 
     COR_PRF_HIGH_DISABLE_TIERED_COMPILATION         = 0x00000008,
 
+    COR_PRF_HIGH_BASIC_GC                           = 0x00000010,
+
     COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE              = 0,
 
-    COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS,
+    COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | 
+                                                      COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS | 
+                                                      COR_PRF_HIGH_BASIC_GC,
 
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
     // Trying to change any of these flags elsewhere will result in a
