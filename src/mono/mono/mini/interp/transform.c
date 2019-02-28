@@ -1610,7 +1610,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				 */
 				if ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
 					/* managed pointer on the stack, we need to deref that puppy */
-					ADD_CODE (td, MINT_LDIND_I);
+					/* Always load the entire stackval, to handle also the case where the enum has long storage */
+					ADD_CODE (td, MINT_LDIND_I8);
 					ADD_CODE (td, csignature->param_count);
 				}
 				if (mint_type (m_class_get_byval_arg (constrained_class)) == MINT_TYPE_VT) {
