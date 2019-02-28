@@ -195,11 +195,23 @@
       <_crossGenArgs Include="-JITPath $(_jitPath)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_partialCrossgenFlag>0</_partialCrossgenFlag>
+    </PropertyGroup>
+
+    <!-- Measurements show that doing partial crossgen on these assemblies captures a lot of the potential size saving. -->
+    <PropertyGroup Condition="'$(OSGroup)' == 'Linux'">
+      <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.ComponentModel.TypeConverter'">1</_partialCrossgenFlag>
+      <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.Linq.Expressions'">1</_partialCrossgenFlag>
+      <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.Private.DataContractSerialization'">1</_partialCrossgenFlag>
+      <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.Private.Xml'">1</_partialCrossgenFlag>
+    </PropertyGroup>
+
     <MakeDir Directories="$(_crossGenIntermediatePath)" />
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('%(_filesToCrossGen.CrossGenedPath)'))" />
     <WriteLinesToFile File="$(_crossGenResponseFile)" Lines="@(_crossGenArgs)" Overwrite="true" />
 
-    <Exec Command="$(_crossGenPath) @$(_crossGenResponseFile)" WorkingDirectory="$(_clrDirectory)" EnvironmentVariables="COMPlus_PartialNGen=0" />
+    <Exec Command="$(_crossGenPath) @$(_crossGenResponseFile)" WorkingDirectory="$(_clrDirectory)" EnvironmentVariables="COMPlus_PartialNGen=$(_partialCrossgenFlag)" />
   </Target>
 
   <Target Name="CreateCrossGenSymbols"
