@@ -33,218 +33,102 @@
       <DisabledProjects Include="Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
     </ItemGroup>
 
-    <!-- Test build is divided in slices which can be created within Test Group
-         Priority 0 tests are build using Test Group 1 with 2 subgroups or slices -->
-
-    <ItemGroup Condition="$(__TestGroupToBuild) == '1' And $(TestBuildSlice) == '1'">
-      <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
+    <ItemGroup>
+      <AllProjects Include="*\**\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="*\**\*.ilproj" Exclude="@(DisabledProjects)" />
     </ItemGroup>
 
-    <ItemGroup Condition="$(__TestGroupToBuild) == '1' And $(TestBuildSlice) == '2'">
-      <Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
+    <!-- All the test projects are partitioned into the test groups as defined below.
+         Each of the test groups is meant to be built by a separate MSBuild invocation with specified $(__TestGroupToBuild) property. -->
+
+    <ItemGroup Condition=" '$(CLRTestPriorityToBuild)' == '0' ">
+      <!-- Group number k consists of all the test projects P such that _GroupStartsWith(k) <= P.Identity < _GroupStartsWith(k+1).
+           In other words, ItemGroup _GroupStartsWith defines boundaries between the test groups. -->
+
+      <!-- MSBuild does not allow specifying an item with empty identity but if it was possible Group number 1 would be defined as follows:
+
+      <_GroupStartsWith Include="">
+        <GroupNumber>1</GroupNumber>
+      </_GroupStartsWith> -->
+
+      <_GroupStartsWith Include="JIT\Methodical\Boxing\callconv\_relinstance_il.ilproj">
+        <GroupNumber>2</GroupNumber>
+      </_GroupStartsWith>
+
+      <_GroupStartsWith Include="JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b35351\b35351.ilproj">
+        <GroupNumber>3</GroupNumber>
+      </_GroupStartsWith>
     </ItemGroup>
 
-    <!-- Test build is divided in slices which can be created within Test Group
-         Priority 1 or higher tests are build using Test Group 2 with 16 subgroups or slices -->    
+    <Error Condition=" '$(CLRTestPriorityToBuild)' == '0' And ($(__TestGroupToBuild) &lt; 1 Or $(__TestGroupToBuild) &gt; 3) " Text="__TestGroupToBuild property must be between 1 and 3 for Pri0." />
 
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '1')">
-      <Project Include="baseservices\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="Common\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>      
-      <Project Include="baseservices\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="Common\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>      
+    <ItemGroup Condition=" '$(CLRTestPriorityToBuild)' == '1' ">
+      <!-- See above for explanation.
+      <_GroupStartsWith Include="">
+        <GroupNumber>1</GroupNumber>
+      </_GroupStartsWith> -->
+
+      <_GroupStartsWith Include="JIT\CodeGenBringUpTests\DblNeg_ro.csproj">
+        <GroupNumber>2</GroupNumber>
+      </_GroupStartsWith>
+
+      <_GroupStartsWith Include="JIT\Directed\shift\uint32_d.csproj">
+        <GroupNumber>3</GroupNumber>
+      </_GroupStartsWith>
+
+      <_GroupStartsWith Include="JIT\Methodical\AsgOp\r8\r8flat_cs_r.csproj">
+        <GroupNumber>4</GroupNumber>
+      </_GroupStartsWith>
+
+      <_GroupStartsWith Include="JIT\Methodical\eh\finallyexec\tryCatchFinallyThrow_nonlocalexit4_ro.csproj">
+        <GroupNumber>5</GroupNumber>
+      </_GroupStartsWith>
+
+      <_GroupStartsWith Include="JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b25701\b25701.ilproj">
+        <GroupNumber>6</GroupNumber>
+      </_GroupStartsWith>
+
+      <_GroupStartsWith Include="JIT\Regression\JitBlue\GitHub_19171\GitHub_19171.csproj">
+        <GroupNumber>7</GroupNumber>
+      </_GroupStartsWith>
+
+      <_GroupStartsWith Include="JIT\jit64\valuetypes\nullable\box-unbox\value\box-unbox-value030.csproj">
+        <GroupNumber>8</GroupNumber>
+      </_GroupStartsWith>
+
+      <_GroupStartsWith Include="Loader\classloader\TypeGeneratorTests\TypeGeneratorTest225\Generated225.ilproj">
+        <GroupNumber>9</GroupNumber>
+      </_GroupStartsWith>
+
+      <_GroupStartsWith Include="Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtualNewslot.csproj">
+        <GroupNumber>10</GroupNumber>
+      </_GroupStartsWith>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '2')">
-      <Project Include="CoreMangLib\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="CoreMangLib\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
+    <Error Condition=" '$(CLRTestPriorityToBuild)' == '1' And ($(__TestGroupToBuild) &lt; 1 Or $(__TestGroupToBuild) &gt; 10)" Text="__TestGroupToBuild property must be between 1 and 10 for Pri1." />
+
+    <PropertyGroup>
+      <!-- This computes lower inclusive and upper exclusive boundaries for Group number $(__TestGroupToBuild). -->
+      <_GroupStartsWith>@(_GroupStartsWith->WithMetadataValue("GroupNumber", $(__TestGroupToBuild)))</_GroupStartsWith>
+      <_GroupEndsWithExcl>@(_GroupStartsWith->WithMetadataValue("GroupNumber", $([MSBuild]::Add($(__TestGroupToBuild), 1))))</_GroupEndsWithExcl>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <AllProjects>
+        <InGroup>True</InGroup>
+      </AllProjects>
+
+      <AllProjects Condition=" '$(_GroupStartsWith)' != '' And $([System.StringComparer]::Ordinal.Compare($(_GroupStartsWith), %(Identity))) &gt; 0 ">
+        <InGroup>False</InGroup>
+      </AllProjects>
+
+      <AllProjects Condition=" '$(_GroupEndsWithExcl)' != '' And $([System.StringComparer]::Ordinal.Compare(%(Identity), $(_GroupEndsWithExcl))) &gt;= 0 ">
+        <InGroup>False</InGroup>
+      </AllProjects>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '3')">
-      <Project Include="E*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="GC\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="hosting\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="Interop\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="E*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="GC\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="hosting\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="Interop\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '4')">
-      <Project Include="JIT\B*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\C*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\Directed\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>      
-    </ItemGroup>
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '5')">
-      <Project Include="JIT\B*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\C*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\Directed\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>    
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '6')">
-      <Project Include="JIT\Generics\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\*Intrinsics\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>      
-      <Project Include="JIT\Generics\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\*Intrinsics\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '7')">
-      <Project Include="JIT\IL_Conformance\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\IL_Conformance\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '8')">
-      <Project Include="JIT\jit64\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\jit64\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '9')">
-      <Project Include="JIT\Methodical\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '10')">
-      <Project Include="JIT\Methodical\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>    
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '11')">
-      <Project Include="JIT\opt\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\Performance\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\S*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>            
-      <Project Include="JIT\opt\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\Performance\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="JIT\S*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '12')">
-      <Project Include="JIT\R*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '13')">
-      <Project Include="JIT\R*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>    
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '14')">
-      <Project Include="Loader\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '15')">
-      <Project Include="Loader\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>    
-
-    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '16')">
-      <Project Include="m*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="p*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="r*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="s*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="t*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>            
-      <Project Include="m*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="p*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="r*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="s*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="t*\**\*.ilproj" Exclude="@(DisabledProjects)">
+    <ItemGroup>
+      <Project Include="@(AllProjects->WithMetadataValue('InGroup', 'True'))">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>
