@@ -7,6 +7,9 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Threading\ThreadExceptionEventArgs.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsAOT)'=='true'"> <!-- TODO: Remove once AOT builds are updated with moved types -->
     <Compile Include="$(CommonPath)\CoreLib\System\LocalDataStoreSlot.cs">
       <Link>Common\CoreLib\System\LocalDataStoreSlot.cs</Link>
     </Compile>
@@ -16,12 +19,11 @@
     <Compile Include="System\Threading\Thread.cs" />
     <Compile Include="System\Threading\Thread.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="System\Threading\Thread.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="System\Threading\ThreadExceptionEventArgs.cs" />
+    <Reference Include="System.Security.Principal" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
-    <ProjectReference Include="..\..\System.Security.Principal\src\System.Security.Principal.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
   </ItemGroup>
   <ItemGroup>
