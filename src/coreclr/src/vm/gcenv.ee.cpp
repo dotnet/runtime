@@ -742,7 +742,7 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
 void GCToEEInterface::DiagUpdateGenerationBounds()
 {
 #ifdef GC_PROFILING
-    if (CORProfilerTrackGC())
+    if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
         UpdateGenerationBounds();
 #endif // GC_PROFILING
 }
@@ -750,9 +750,16 @@ void GCToEEInterface::DiagUpdateGenerationBounds()
 void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent)
 {
 #ifdef GC_PROFILING
+    // We were only doing generation bounds and GC finish callback for non concurrent GCs so
+    // I am keeping that behavior to not break profilers. But if BasicGC monitoring is enabled
+    // we will do these for all GCs.
     if (!fConcurrent)
     {
         GCProfileWalkHeap();
+    }
+
+    if (CORProfilerTrackBasicGC() || (!fConcurrent && CORProfilerTrackGC()))
+    {
         DiagUpdateGenerationBounds();
         GarbageCollectionFinishedCallback();
     }
