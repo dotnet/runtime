@@ -397,14 +397,14 @@ namespace System.Threading
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
             (ApartmentState)GetApartmentStateNative();
 #else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            ApartmentState.MTA;
+            ApartmentState.Unknown;
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
         /// single-threaded or multi-threaded apartment.
         /// </summary>
-        public bool TrySetApartmentStateUnchecked(ApartmentState state) =>
+        private bool TrySetApartmentStateUnchecked(ApartmentState state) =>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
             SetApartmentStateHelper(state, false);
 #else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
