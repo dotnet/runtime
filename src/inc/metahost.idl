@@ -1085,14 +1085,6 @@ library CLRMetaHost
     // 2. ICLRRuntimeInfo::GetProcAddress("ExeMain")
     // 3. ExeMain() - TODO: Add a hosting API to execute an EXE?
 
-    // Scenario: COM activation
-    // 1. <get version info from registry>
-    // 2. ICLRMetaHostPolicy::GetRequestedRuntime
-    // 3. ICLRRuntimeInfo::GetInterface(IID_ICLRRuntimeHost)
-    // 4. ICLRRuntimeHost::Start
-    // 5. ICLRRuntimeInfo::GetProcAddress("ClrCreateManagedInstance")
-    // 6. pClrCreateManagedInstance()
-
     // Scenario: Hosting with custom policy
     // 1. ICLRMetaHost::GetFileVersion
     // 2. ICLRMetaHost::EnumerateInstalledRuntimes

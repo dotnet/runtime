@@ -568,7 +568,6 @@ list(APPEND VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
     # These should not be included for Linux
     classcompat.cpp
-    classfactory.cpp
     clrprivbinderwinrt.cpp
     clrprivtypecachewinrt.cpp
     comcache.cpp
