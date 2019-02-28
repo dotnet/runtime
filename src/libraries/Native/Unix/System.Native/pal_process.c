@@ -9,6 +9,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <grp.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -144,6 +145,64 @@ static void ExitChild(int pipeToParent, int error)
     _exit(error != 0 ? error : EXIT_FAILURE);
 }
 
+static int compare_groups(const void * a, const void * b)
+{
+    // Cast to signed because we need a signed return value.
+    // It's okay to changed signedness (groups are uint), we just need an order.
+    return *(const int32_t*)a - *(const int32_t*)b;
+}
+
+static int SetGroups(uint32_t* userGroups, int32_t userGroupsLength, uint32_t* processGroups)
+{
+#ifdef __linux__
+    size_t platformGroupsLength = Int32ToSizeT(userGroupsLength);
+#else // BSD
+    int platformGroupsLength = userGroupsLength;
+#endif
+    int rv = setgroups(platformGroupsLength, userGroups);
+
+    // We fall back to using the current process' groups, if they are a subset of the user groups.
+    // We do this to support a user setting UserName to himself but not having setgroups permissions.
+    // And for dealing with platforms with low NGROUP_MAX (e.g. 16 on OSX).
+    if (rv == -1 && ((errno == EPERM) ||
+                     (errno == EINVAL && userGroupsLength > NGROUPS_MAX)))
+    {
+        int processGroupsLength = getgroups(userGroupsLength, processGroups);
+        if (processGroupsLength >= 0)
+        {
+            if (userGroupsLength == 0)
+            {
+                // calling setgroups with zero size returns number of groups.
+                rv = processGroupsLength == 0 ? 0 : -1;
+            }
+            else
+            {
+                rv = 0;
+                // sort the groups so we can efficiently search them.
+                qsort(userGroups, (size_t)userGroupsLength, sizeof(uint32_t), compare_groups);
+                for (int i = 0; i < processGroupsLength; i++)
+                {
+                    bool isUserGroup = NULL != bsearch(&processGroups[i], userGroups, (size_t)userGroupsLength, sizeof(uint32_t), compare_groups);
+                    if (!isUserGroup)
+                    {
+                        rv = -1;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Truncate on platforms with a low NGROUPS_MAX.
+    if (rv == -1 && (errno == EINVAL && userGroupsLength > NGROUPS_MAX))
+    {
+        platformGroupsLength = NGROUPS_MAX;
+        rv = setgroups(platformGroupsLength, userGroups);
+    }
+
+    return rv;
+}
+
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -154,6 +213,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t setCredentials,
                                       uint32_t userId,
                                       uint32_t groupId,
+                                      uint32_t* groups,
+                                      int32_t groupsLength,
                                       int32_t* childPid,
                                       int32_t* stdinFd,
                                       int32_t* stdoutFd,
@@ -165,6 +226,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     bool success = true;
     int stdinFds[2] = {-1, -1}, stdoutFds[2] = {-1, -1}, stderrFds[2] = {-1, -1}, waitForChildToExecPipe[2] = {-1, -1};
     pid_t processId = -1;
+    uint32_t* getGroupsBuffer = NULL;
     int thread_cancel_state;
     sigset_t signal_set;
     sigset_t old_signal_set;
@@ -174,7 +236,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     // Validate arguments
     if (NULL == filename || NULL == argv || NULL == envp || NULL == stdinFd || NULL == stdoutFd ||
-        NULL == stderrFd || NULL == childPid)
+        NULL == stderrFd || NULL == childPid || (groupsLength > 0 && groups == NULL))
     {
         assert(false && "null argument.");
         errno = EINVAL;
@@ -188,6 +250,16 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         errno = EINVAL;
         success = false;
         goto done;
+    }
+
+    if (setCredentials && groupsLength > 0)
+    {
+        getGroupsBuffer = malloc(sizeof(uint32_t) * Int32ToSizeT(groupsLength));
+        if (getGroupsBuffer == NULL)
+        {
+            success = false;
+            goto done;
+        }
     }
 
     // Make sure we can find and access the executable. exec will do this, of course, but at that point it's already
@@ -315,7 +387,9 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
         if (setCredentials)
         {
-            if (setgid(groupId) == -1 || setuid(userId) == -1)
+            if (SetGroups(groups, groupsLength, getGroupsBuffer) == -1 ||
+                setgid(groupId) == -1 ||
+                setuid(userId) == -1)
             {
                 ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
             }
@@ -412,6 +486,8 @@ done:;
 
     // Restore thread cancel state
     pthread_setcancelstate(thread_cancel_state, &thread_cancel_state);
+  
+    free(getGroupsBuffer);
 
     return success ? 0 : -1;
 }
