@@ -26,18 +26,18 @@
 
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreClrCurrentRef>f31086500dc58cefe7b1275300f6fc07b38c1bcc</CoreClrCurrentRef>
-    <BuildToolsCurrentRef>fc12d73e8ea045517fde9b4bd1c89065917a5413</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>fc12d73e8ea045517fde9b4bd1c89065917a5413</PgoDataCurrentRef>
-    <IbcDataCurrentRef>fc12d73e8ea045517fde9b4bd1c89065917a5413</IbcDataCurrentRef>
+    <CoreClrCurrentRef>9ff62111734d641ece5e5ccb873f2a463675d81b</CoreClrCurrentRef>
+    <BuildToolsCurrentRef>9ff62111734d641ece5e5ccb873f2a463675d81b</BuildToolsCurrentRef>
+    <PgoDataCurrentRef>9ff62111734d641ece5e5ccb873f2a463675d81b</PgoDataCurrentRef>
+    <IbcDataCurrentRef>9ff62111734d641ece5e5ccb873f2a463675d81b</IbcDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <PgoDataPackageVersion>99.99.99-master-20190208.1</PgoDataPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27316-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20190227.1</PgoDataPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview4-27427-72</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <XunitPackageVersion>2.4.1</XunitPackageVersion>
-    <IbcDataPackageVersion>99.99.99-master-20190208.1</IbcDataPackageVersion>
+    <IbcDataPackageVersion>99.99.99-master-20190227.1</IbcDataPackageVersion>
     <IbcMergePackageVersion>4.6.0-alpha-00001</IbcMergePackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.36</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
@@ -52,7 +52,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>3.0.0-preview1-03715-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>3.0.0-preview1-03723-01</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
