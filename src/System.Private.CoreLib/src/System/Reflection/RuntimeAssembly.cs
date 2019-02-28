@@ -29,7 +29,7 @@ namespace System.Reflection
 
         #endregion
 
-        private class ManifestResourceStream : UnmanagedMemoryStream
+        private sealed class ManifestResourceStream : UnmanagedMemoryStream
         {
             private RuntimeAssembly _manifestAssembly;
 
