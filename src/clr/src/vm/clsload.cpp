@@ -840,8 +840,7 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
             continue;
 
 #ifdef FEATURE_READYTORUN
-        if (nhTable == nhCaseSensitive && pCurrentClsModule->IsReadyToRun() && pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes() &&
-            pCurrentClsModule->GetAvailableClassHash() == NULL)
+        if (nhTable == nhCaseSensitive && pCurrentClsModule->IsReadyToRun() && pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes())
         {
             // For R2R modules, we only search the hashtable of token types stored in the module's image, and don't fallback
             // to searching m_pAvailableClasses or m_pAvailableClassesCaseIns (in fact, we don't even allocate them for R2R modules).
@@ -4185,15 +4184,6 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
 #endif
 
     CrstHolder ch(&m_AvailableClassLock);
-
-    // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
-    // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
-    // in memory hashtable as usual.
-    if (!pModule->IsResource() && pModule->GetAvailableClassHash() == NULL)
-    {
-        LazyPopulateCaseSensitiveHashTables();
-    }
-
     AddAvailableClassHaveLock(
         pModule, 
         classdef, 
@@ -4390,15 +4380,6 @@ VOID ClassLoader::AddExportedTypeDontHaveLock(Module *pManifestModule,
     CONTRACTL_END
 
     CrstHolder ch(&m_AvailableClassLock);
-        
-    // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
-    // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
-    // in memory hashtable as usual.
-    if (!pManifestModule->IsResource() && pManifestModule->GetAvailableClassHash() == NULL)
-    {
-        LazyPopulateCaseSensitiveHashTables();
-    }
-
     AddExportedTypeHaveLock(
         pManifestModule,
         cl,

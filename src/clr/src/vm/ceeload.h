@@ -1627,11 +1627,6 @@ private:
     BOOL                            m_nativeImageProfiling;
     CORCOMPILE_METHOD_PROFILE_LIST *m_methodProfileList;
 
-#if PROFILING_SUPPORTED_DATA 
-    DWORD                   m_dwTypeCount;
-    DWORD                   m_dwExportedTypeCount;
-#endif // PROFILING_SUPPORTED_DATA
-
 #if defined(FEATURE_COMINTEROP)
         public:
 
@@ -2530,8 +2525,6 @@ public:
                                                DEBUGGER_INFO_MASK_PRIV) >>
                                               DEBUGGER_INFO_SHIFT_PRIV);
     }
-
-    void UpdateNewlyAddedTypes();
 
 #ifdef PROFILING_SUPPORTED
     BOOL IsProfilerNotified() {LIMITED_METHOD_CONTRACT;  return (m_dwTransientFlags & IS_PROFILER_NOTIFIED) != 0; }
