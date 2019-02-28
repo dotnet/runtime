@@ -8,7 +8,7 @@ then
   rm -r $tasksFolder
 fi
 
-dotNetTool=$__scriptpath/../dotnet.sh
+dotNetTool=$__scriptpath/../../eng/dotnet.sh
 # create integration packages
 $dotNetTool restore $__scriptpath/../../illink.sln
 $dotNetTool pack $__scriptpath/../../illink.sln

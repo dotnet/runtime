@@ -1,0 +1,13 @@
+<Project>
+
+  <PropertyGroup Condition=" '$(ArcadeBuild)' == 'true' ">
+    <NoWarn>$(NoWarn);0618</NoWarn>
+    <!-- Signing properties from cecil are overridden by Arcade
+         because cecil imports the .NET SDK (and hence Arcade) in a
+         nonstandard way, so set them again here. -->
+    <SignAssembly>true</SignAssembly>
+    <PublicSign>true</PublicSign>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)cecil/cecil.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+</Project>

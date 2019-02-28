@@ -15,5 +15,5 @@ if not defined VisualStudioVersion (
 )
 
 :Run
-powershell -NoProfile -ExecutionPolicy unrestricted -Command "%~dp0dotnet.ps1 -- %*"
+powershell -NoProfile -ExecutionPolicy unrestricted -Command "%~dp0..\eng\dotnet.ps1 -- %*"
 exit /b %ERRORLEVEL%
