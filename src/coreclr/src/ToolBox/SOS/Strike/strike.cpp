@@ -4273,13 +4273,32 @@ void ResolveContinuation(CLRDATA_ADDRESS* contAddr)
                 }
             }
 
-            // If it was, or if it's storing an action, try to follow through to the action's target.
+            // If we now have an Action, try to follow through to the delegate's target.
             if ((offset = GetObjFieldOffset(contObj.GetAddress(), contObj.GetMT(), W("_target"))) != 0)
             {
                 MOVE(*contAddr, contObj.GetAddress() + offset);
                 if (sos::IsObject(*contAddr, false))
                 {
                     contObj = TO_TADDR(*contAddr);
+
+                    // In some cases, the delegate's target might be a ContinuationWrapper, in which case we want to unwrap that as well.
+                    if (_wcsncmp(contObj.GetTypeName(), W("System.Runtime.CompilerServices.AsyncMethodBuilderCore+ContinuationWrapper"), 74) == 0 &&
+                        (offset = GetObjFieldOffset(contObj.GetAddress(), contObj.GetMT(), W("_continuation"))) != 0)
+                    {
+                        MOVE(*contAddr, contObj.GetAddress() + offset);
+                        if (sos::IsObject(*contAddr, false))
+                        {
+                            contObj = TO_TADDR(*contAddr);
+                            if ((offset = GetObjFieldOffset(contObj.GetAddress(), contObj.GetMT(), W("_target"))) != 0)
+                            {
+                                MOVE(*contAddr, contObj.GetAddress() + offset);
+                                if (sos::IsObject(*contAddr, false))
+                                {
+                                    contObj = TO_TADDR(*contAddr);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
