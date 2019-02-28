@@ -675,7 +675,7 @@ if %__BuildCoreLib% EQU 1 (
         set IbcMergePath=%__PackagesDir%\microsoft.dotnet.ibcmerge\!__IbcMergeVersion!\lib\net45\ibcmerge.exe
         if exist !IbcMergePath! (
             echo %__MsgPrefix%Optimizing using IBC training data
-            set OptimizationDataDir=%__PackagesDir%\optimization.%__BuildOS%-%__BuildArch%.IBC.CoreCLR\!__IbcOptDataVersion!\data\
+            set OptimizationDataDir=%__PackagesDir%\optimization.%__BuildOS%-%__BuildArch%.IBC.CoreCLR\!__IbcOptDataVersion!\data\System.Private.CoreLib\
             set InputAssemblyFile=!OptimizationDataDir!System.Private.CoreLib.dll
             set TargetOptimizationDataFile=!OptimizationDataDir!System.Private.CoreLib.pgo
 
