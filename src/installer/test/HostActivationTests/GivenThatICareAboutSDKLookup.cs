@@ -398,7 +398,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SDKLookup
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.399", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.2400, 9999.3.3004");
+            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.2400", "9999.3.3004");
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: 9999.3.57, 9999.3.4-dummy, 9999.3.300, 9999.7.304-global-dummy, 9999.3.304, 9999.3.399, 9999.3.399-dummy, 9999.3.400, 9999.3.2400, 9999.3.3004
