@@ -14,12 +14,6 @@
     <PackageReference Include="microsoft.dotnet.buildtools.coreclr">
       <Version>1.0.4-prerelease</Version>
     </PackageReference>
-    <PackageReference Include="$(FeedTasksPackage)">
-      <Version>$(FeedTasksPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="$(PublishSymbolsPackage)">
-      <Version>$(PublishSymbolsPackageVersion)</Version>
-    </PackageReference>
     <PackageReference Include="$(ILLinkTasksPackage)">
       <Version>$(ILLinkTasksPackageVersion)</Version>
     </PackageReference>

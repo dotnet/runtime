@@ -49,18 +49,6 @@
     <BaselineMicrosoftNetCoreAppPackageVersion>2.1.0-preview3-26416-01</BaselineMicrosoftNetCoreAppPackageVersion>
   </PropertyGroup>
 
-  <!-- Package versions used as toolsets -->
-  <PropertyGroup>
-    <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>3.0.0-preview1-03723-01</FeedTasksPackageVersion>
-  </PropertyGroup>
-
-  <!-- Publish symbol build task package -->
-  <PropertyGroup>
-    <PublishSymbolsPackage>Microsoft.SymbolUploader.Build.Task</PublishSymbolsPackage>
-    <PublishSymbolsPackageVersion>1.0.0-beta-63604-05</PublishSymbolsPackageVersion>
-  </PropertyGroup>
-
   <!-- Package dependency verification/auto-upgrade configuration. -->
   <PropertyGroup>
     <BaseDotNetBuildInfo>build-info/dotnet/</BaseDotNetBuildInfo>
