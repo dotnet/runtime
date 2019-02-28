@@ -150,7 +150,11 @@ internal static partial class Interop
             Debug.Assert(chain != null, "X509Chain should not be null");
             Debug.Assert(chain.ChainElements.Count > 0, "chain.Build should have already been called");
 
-            for (int i = chain.ChainElements.Count - 2; i > 0; i--)
+            // Don't count the last item (the root)
+            int stop = chain.ChainElements.Count - 1;
+
+            // Don't include the first item (the cert whose private key we have)
+            for (int i = 1; i < stop; i++)
             {
                 SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain.ChainElements[i].Certificate.Handle);
                 Crypto.CheckValidOpenSslHandle(dupCertHandle);
