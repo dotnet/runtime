@@ -312,7 +312,7 @@
   <PropertyGroup>
     <!-- default to allowing all language features -->
     <LangVersion>latest</LangVersion>
-    <LangVersion Condition="'$(Language)' == 'C#'">8.0</LangVersion>
+    <LangVersion Condition="'$(Language)' == 'C#'">preview</LangVersion>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict</Features>
     <WarningLevel>4</WarningLevel>
