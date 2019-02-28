@@ -40,6 +40,9 @@
 #include <sys/systemcfg.h>
 #endif
 
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (mathf, "System", "MathF")
+
 #define FORCE_INDIR_CALL 1
 
 enum {
@@ -62,6 +65,7 @@ enum {
 	PPC_ISA_2X            = 1 << 3,
 	PPC_ISA_64            = 1 << 4,
 	PPC_MOVE_FPR_GPR      = 1 << 5,
+	PPC_ISA_2_03          = 1 << 6,
 	PPC_HW_CAP_END
 };
 
@@ -552,6 +556,9 @@ mono_arch_init (void)
 
 	if (mono_hwcap_ppc_is_isa_2x)
 		cpu_hw_caps |= PPC_ISA_2X;
+
+	if (mono_hwcap_ppc_is_isa_2_03)
+		cpu_hw_caps |= PPC_ISA_2_03;
 
 	if (mono_hwcap_ppc_is_isa_64)
 		cpu_hw_caps |= PPC_ISA_64;
@@ -4214,6 +4221,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 #endif
 		}
+		case OP_ROUND:
+			ppc_frind (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_PPC_TRUNC:
+			ppc_frizd (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_PPC_CEIL:
+			ppc_fripd (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_PPC_FLOOR:
+			ppc_frimd (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_ABS:
+			ppc_fabsd (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_SQRTF:
+			ppc_fsqrtsd (code, ins->dreg, ins->sreg1);
+			break;
 		case OP_SQRT:
 			ppc_fsqrtd (code, ins->dreg, ins->sreg1);
 			break;
@@ -4235,6 +4260,39 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FREM:
 			/* emulated */
 			g_assert_not_reached ();
+			break;
+		/* These min/max require POWER5 */
+		case OP_IMIN:
+			ppc_cmp (code, 0, 0, ins->sreg1, ins->sreg2);
+			ppc_isellt (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IMIN_UN:
+			ppc_cmpl (code, 0, 0, ins->sreg1, ins->sreg2);
+			ppc_isellt (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IMAX:
+			ppc_cmp (code, 0, 0, ins->sreg1, ins->sreg2);
+			ppc_iselgt (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_IMAX_UN:
+			ppc_cmpl (code, 0, 0, ins->sreg1, ins->sreg2);
+			ppc_iselgt (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		CASE_PPC64 (OP_LMIN)
+			ppc_cmpl (code, 0, 1, ins->sreg1, ins->sreg2);
+			ppc_isellt (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		CASE_PPC64 (OP_LMIN_UN)
+			ppc_cmpl (code, 0, 1, ins->sreg1, ins->sreg2);
+			ppc_isellt (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		CASE_PPC64 (OP_LMAX)
+			ppc_cmp (code, 0, 1, ins->sreg1, ins->sreg2);
+			ppc_iselgt (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		CASE_PPC64 (OP_LMAX_UN)
+			ppc_cmpl (code, 0, 1, ins->sreg1, ins->sreg2);
+			ppc_iselgt (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FCOMPARE:
 			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
@@ -5610,8 +5668,106 @@ mono_arch_get_cie_program (void)
 MonoInst*
 mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	/* FIXME: */
-	return NULL;
+	MonoInst *ins = NULL;
+	int opcode = 0;
+
+	if (cmethod->klass == mono_class_try_get_math_class ()) {
+		if (strcmp (cmethod->name, "Sqrt") == 0) {
+			opcode = OP_SQRT;
+		} else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
+			opcode = OP_ABS;
+		}
+
+		if (opcode && fsig->param_count == 1) {
+			MONO_INST_NEW (cfg, ins, opcode);
+			ins->type = STACK_R8;
+			ins->dreg = mono_alloc_freg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+
+		/* Check for Min/Max for (u)int(32|64) */
+		opcode = 0;
+		if (cpu_hw_caps & PPC_ISA_2_03) {
+			if (strcmp (cmethod->name, "Min") == 0) {
+				if (fsig->params [0]->type == MONO_TYPE_I4)
+					opcode = OP_IMIN;
+				if (fsig->params [0]->type == MONO_TYPE_U4)
+					opcode = OP_IMIN_UN;
+#ifdef __mono_ppc64__
+				else if (fsig->params [0]->type == MONO_TYPE_I8)
+					opcode = OP_LMIN;
+				else if (fsig->params [0]->type == MONO_TYPE_U8)
+					opcode = OP_LMIN_UN;
+#endif
+			} else if (strcmp (cmethod->name, "Max") == 0) {
+				if (fsig->params [0]->type == MONO_TYPE_I4)
+					opcode = OP_IMAX;
+				if (fsig->params [0]->type == MONO_TYPE_U4)
+					opcode = OP_IMAX_UN;
+#ifdef __mono_ppc64__
+				else if (fsig->params [0]->type == MONO_TYPE_I8)
+					opcode = OP_LMAX;
+				else if (fsig->params [0]->type == MONO_TYPE_U8)
+					opcode = OP_LMAX_UN;
+#endif
+			}
+			/*
+			 * TODO: Floating point version with fsel, but fsel has
+			 * some peculiarities (need a scratch reg unless
+			 * comparing with 0, NaN/Inf behaviour (then MathF too)
+			 */
+		}
+
+		if (opcode && fsig->param_count == 2) {
+			MONO_INST_NEW (cfg, ins, opcode);
+			ins->type = fsig->params [0]->type == MONO_TYPE_I4 ? STACK_I4 : STACK_I8;
+			ins->dreg = mono_alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->sreg2 = args [1]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+
+		/* Rounding instructions */
+		opcode = 0;
+		if ((cpu_hw_caps & PPC_ISA_2X) && (fsig->param_count == 1) && (fsig->params [0]->type == MONO_TYPE_R8)) {
+			/*
+			 * XXX: sysmath.c and frin imply round is a little bit
+			 * more complicated than expected? but amd64 does this?
+			 * (also, no float versions of these ops, but frsp
+			 * could be preprended?)
+			 */
+			if (!strcmp (cmethod->name, "Round"))
+				opcode = OP_ROUND;
+			else if (!strcmp (cmethod->name, "Floor"))
+				opcode = OP_PPC_FLOOR;
+			else if (!strcmp (cmethod->name, "Ceiling"))
+				opcode = OP_PPC_CEIL;
+			else if (!strcmp (cmethod->name, "Truncate"))
+				opcode = OP_PPC_TRUNC;
+			if (opcode != 0) {
+				MONO_INST_NEW (cfg, ins, opcode);
+				ins->type = STACK_R8;
+				ins->dreg = mono_alloc_freg (cfg);
+				ins->sreg1 = args [0]->dreg;
+				MONO_ADD_INS (cfg->cbb, ins);
+			}
+		}
+	}
+	if (cmethod->klass == mono_class_try_get_mathf_class ()) {
+		if (strcmp (cmethod->name, "Sqrt") == 0) {
+			opcode = OP_SQRTF;
+		} /* XXX: POWER has no single-precision normal FPU abs? */
+
+		if (opcode && fsig->param_count == 1) {
+			MONO_INST_NEW (cfg, ins, opcode);
+			ins->type = STACK_R4;
+			ins->dreg = mono_alloc_freg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+	return ins;
 }
 
 host_mgreg_t

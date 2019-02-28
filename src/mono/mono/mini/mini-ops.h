@@ -1205,7 +1205,10 @@ MINI_OP(OP_AMD64_SAVE_SP_TO_LMF,         "amd64_save_sp_to_lmf", NONE, NONE, NON
 #if  defined(TARGET_POWERPC)
 MINI_OP(OP_PPC_SUBFIC,             "ppc_subfic", IREG, IREG, NONE)
 MINI_OP(OP_PPC_SUBFZE,             "ppc_subfze", IREG, IREG, NONE)
-MINI_OP(OP_PPC_CHECK_FINITE,           "ppc_check_finite", NONE, IREG, NONE)
+MINI_OP(OP_PPC_CHECK_FINITE,       "ppc_check_finite", NONE, IREG, NONE)
+MINI_OP(OP_PPC_CEIL,               "ppc_ceil", FREG, FREG, NONE)
+MINI_OP(OP_PPC_FLOOR,              "ppc_floor", FREG, FREG, NONE)
+MINI_OP(OP_PPC_TRUNC,              "ppc_trunc", FREG, FREG, NONE)
 #endif
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
