@@ -10,6 +10,5 @@
     <file src="ILLink.Tasks.targets" target="build" />
     <file src="ILLink.CrossGen.targets" target="build" />
     <file src="netcoreapp2.0/**/*.dll" target="tools" />
-    <file src="net46/**/*.dll" target="tools" />
   </files>
 </package>

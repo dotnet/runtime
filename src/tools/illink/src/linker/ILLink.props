@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.0;net46</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' != 'Windows_NT' ">netcoreapp2.0</TargetFrameworks>
+    <!-- net46 build is disabled until cecil uses SDK-style projects. -->
+    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
     <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

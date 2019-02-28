@@ -3,5 +3,5 @@
 REM restore.sh will bootstrap the cli and ultimately call "dotnet
 REM restore". Dependencies of the linker will get restored as well.
 
-@call %~dp0dotnet.cmd restore %~dp0..\illink.sln %*
+@call powershell %~dp0..\eng\common\msbuild.ps1 /t:Restore %~dp0..\illink.sln %*
 @exit /b %ERRORLEVEL%
