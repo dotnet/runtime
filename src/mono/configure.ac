@@ -400,6 +400,18 @@ case "$host" in
 		use_sigposix=yes
 		with_sigaltstack=no
 		;;
+	*-*-fuchsia*)
+		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
+		AC_DEFINE(HOST_FUCHSIA,1,[Targeting the Fuchsia platform])
+		fuchsia=true
+		with_tls=pthread
+		with_sigaltstack=yes
+		with_static_mono=no
+		support_boehm=no
+		with_gc=sgen
+		mono_cv_uscore=yes
+		mono_cv_clang=no
+		;;
 	*-*-aix*|*-*-os400*)
 		dnl Set up a 64-bit build
 		CPPFLAGS="$CPPFLAGS -maix64 -DGC_AIX_THREADS -D_ALL_SOURCE -D_THREAD_SAFE -D_LARGE_FILES -D_REENTRANT"
@@ -4393,6 +4405,11 @@ if test "x$host" != "x$target"; then
 		arch_target=riscv64
 		target_mach=no
 		with_tls=pthread
+		;;
+	x86_64-google-fuchsia)
+		TARGET=AMD64
+		target_win32=nop
+		AC_DEFINE(HOST_FUCHSIA,1,[Targeting the Fuchsia platform])
 		;;
 	*)
 		AC_MSG_ERROR([Cross compiling is not supported for target $target])
