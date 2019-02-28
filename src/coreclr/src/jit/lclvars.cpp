@@ -2020,11 +2020,24 @@ bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& 
     //
     // TODO-CQ: Right now we only promote an actual SIMD typed field, which would cause
     // a nested SIMD type to fail promotion.
-    if (fieldSize == 0 || fieldSize != TARGET_POINTER_SIZE || varTypeIsFloating(fieldVarType))
+    if (fieldSize == 0 || fieldSize > TARGET_POINTER_SIZE || varTypeIsFloating(fieldVarType))
     {
         JITDUMP("Promotion blocked: struct contains struct field with one field,"
                 " but that field has invalid size or type");
         return false;
+    }
+
+    if (fieldSize != TARGET_POINTER_SIZE)
+    {
+        unsigned outerFieldOffset = compHandle->getFieldOffset(fieldInfo.fldHnd);
+
+        if ((outerFieldOffset % fieldSize) != 0)
+        {
+            JITDUMP("Promotion blocked: struct contains struct field with one field,"
+                    " but the outer struct offset %u is not a multiple of the inner field size %u",
+                    outerFieldOffset, fieldSize);
+            return false;
+        }
     }
 
     // Insist this wrapped field occupy all of its parent storage.
