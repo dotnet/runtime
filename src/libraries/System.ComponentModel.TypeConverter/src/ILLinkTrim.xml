@@ -10,5 +10,7 @@
       <method name="GetLicenseInteropHelperType" />
     </type>
     <type fullname="System.ComponentModel.LicenseManager/LicenseInteropHelper" />
+    <type fullname="System.ComponentModel.LicenseManager/CLRLicenseContext" />
+    <type fullname="System.ComponentModel.LicenseManager/LicInfoHelperLicenseContext" />
   </assembly>
 </linker>
