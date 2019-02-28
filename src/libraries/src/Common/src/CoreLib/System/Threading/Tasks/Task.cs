@@ -1971,7 +1971,7 @@ namespace System.Threading.Tasks
             }
 
 #if CORERT
-            RuntimeAugments.ReportUnhandledException(edi.SourceException);
+            RuntimeExceptionHelpers.ReportUnhandledException(edi.SourceException);
 #else
 
 #if FEATURE_COMINTEROP
