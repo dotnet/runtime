@@ -6857,7 +6857,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(BaseDomain *pDomainFilter,
         // fGetReJitIDs=false except in the case that an appdomain is being unloaded (which I 
         // think never happens in .NET core) 
         // 
-        // Issue #XXXX tracks the work to fix the IL->Native mapping.  
+        // Issue #22904 tracks the work to fix the IL->Native mapping.  
         if ((rejitID != 0) || (codeStart == PCODEToPINSTR(pMD->GetNativeCode())))
         {
             // Send any supplemental events requested for this MethodID
