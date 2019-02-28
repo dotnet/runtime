@@ -5,7 +5,7 @@ class Driver
 {
 	public static void Main ()
 	{
-		Console.Out.WriteLine ("Out");
-		Console.Error.WriteLine ("Error");
+		Console.Out.WriteLine ("Testing Console.Out");
+		Console.Error.WriteLine ("Testing Console.Error");
 	}
 }
