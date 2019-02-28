@@ -501,56 +501,107 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        /// <summary>
-        /// Tests when running as a normal user and starting a new process as the same user
-        /// works as expected.
-        /// </summary>
-        [Fact]
-        public void TestStartWithNormalUser()
+        private static int CheckUserAndGroupIds(string userId, string groupId, string groupIdsJoined, string checkGroupsExact)
         {
-            TestStartWithUserName(GetCurrentRealUserName());
+            Assert.Equal(userId, getuid().ToString());
+            Assert.Equal(userId, geteuid().ToString());
+            Assert.Equal(groupId, getgid().ToString());
+            Assert.Equal(groupId, getegid().ToString());
+
+            if (bool.Parse(checkGroupsExact))
+            {
+                Assert.Equal(groupIdsJoined, string.Join(",", GetGroups()));
+            }
+            else
+            {
+                uint[] groups = groupIdsJoined.Split(',').Select(s => uint.Parse(s)).ToArray();
+                Assert.Subset(new HashSet<uint>(groups), new HashSet<uint>(GetGroups()));
+            }
+
+            return SuccessExitCode;
+        }
+
+        [Fact]
+        public unsafe void TestCheckChildProcessUserAndGroupIds()
+        {
+            string userName = GetCurrentRealUserName();
+            string userId = GetUserId(userName);
+            string userGroupId = GetUserGroupId(userName);
+            string userGroupIds = GetUserGroupIds(userName);
+            // If this test runs as the user, we expect to be able to match the user groups exactly.
+            // Except on OSX, where getgrouplist may return a list of groups truncated to NGROUPS_MAX.
+            bool checkGroupsExact = userId == geteuid().ToString() &&
+                                    !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+            // Start as username
+            var invokeOptions = new RemoteInvokeOptions();
+            invokeOptions.StartInfo.UserName = userName;
+            using (RemoteInvokeHandle handle = RemoteInvoke(CheckUserAndGroupIds, userId, userGroupId, userGroupIds, checkGroupsExact.ToString(),
+                                                            invokeOptions))
+            { }
         }
 
         /// <summary>
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process doesn't have elevated privileges.
         /// </summary>
-        [Fact]
+        [Theory]
         [OuterLoop("Needs sudo access")]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
-        public void TestStartWithRootUser()
+        [InlineData(true)]
+        [InlineData(false)]
+        public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
         {
-            RunTestAsSudo(TestStartWithUserName, GetCurrentRealUserName());
-        }
-
-        public static int TestStartWithUserName(string realUserName)
-        {
-            Assert.NotNull(realUserName);
-            Assert.NotEqual("root", realUserName);
-
-            using (ProcessTests testObject = new ProcessTests())
+            Func<string, string, int> runsAsRoot = (string username, string useRootGroupsArg) =>
             {
-                using (Process p = testObject.CreateProcessPortable(GetCurrentEffectiveUserId))
+                // Verify we are root
+                Assert.Equal(0U, getuid());
+                Assert.Equal(0U, geteuid());
+                Assert.Equal(0U, getgid());
+                Assert.Equal(0U, getegid());
+
+                string userId = GetUserId(username);
+                string userGroupId = GetUserGroupId(username);
+                string userGroupIds = GetUserGroupIds(username);
+
+                if (bool.Parse(useRootGroupsArg))
                 {
-                    p.StartInfo.UserName = realUserName;
-                    Assert.True(p.Start());
-
-                    p.WaitForExit();
-
-                    // since the process was started with the current real user, even if this test
-                    // was run with 'sudo', the child process will be run as the normal real user.
-                    // Assert that the effective user of the child process was never 'root'
-                    // and was the real user of this process.
-                    Assert.NotEqual(0, p.ExitCode);
+                    uint rootGroups = 0;
+                    int setGroupsRv = setgroups(1, &rootGroups);
+                    Assert.Equal(0, setGroupsRv);
                 }
 
-                return 0;
-            }
+                // On systems with a low value of NGROUPS_MAX (e.g 16 on OSX), the groups may be truncated.
+                // On Linux NGROUPS_MAX is 65536, so we expect to see every group.
+                bool checkGroupsExact = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+
+                // Start as username
+                var invokeOptions = new RemoteInvokeOptions();
+                invokeOptions.StartInfo.UserName = username;
+                using (RemoteInvokeHandle handle = RemoteInvoke(CheckUserAndGroupIds, userId, userGroupId, userGroupIds, checkGroupsExact.ToString(), invokeOptions))
+                { }
+
+                return SuccessExitCode;
+            };
+
+            // Start as root
+            string userName = GetCurrentRealUserName();
+            using (RemoteInvokeHandle handle = RemoteInvoke(runsAsRoot, userName, useRootGroups.ToString(),
+                                                            new RemoteInvokeOptions { RunAsSudo = true }))
+            { }
         }
 
-        public static int GetCurrentEffectiveUserId()
+        private static string GetUserId(string username)
+            => StartAndReadToEnd("id", new[] { "-u", username }).Trim('\n');
+
+        private static string GetUserGroupId(string username)
+            => StartAndReadToEnd("id", new[] { "-g", username }).Trim('\n');
+
+        private static string GetUserGroupIds(string username)
         {
-            return (int)geteuid();
+            string[] groupIds = StartAndReadToEnd("id", new[] { "-G", username })
+                                    .Split(new[] { ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            return string.Join(",", groupIds.Select(s => uint.Parse(s)).OrderBy(id => id));
         }
 
         private static string GetCurrentRealUserName()
@@ -563,18 +614,6 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual("root", realUserName);
 
             return realUserName;
-        }
-
-        /// <summary>
-        /// Tests when running as root and starting a new process as a normal user,
-        /// the new process can't elevate back to root.
-        /// </summary>
-        [Fact]
-        [OuterLoop("Needs sudo access")]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
-        public void TestStartWithRootUserCannotElevate()
-        {
-            RunTestAsSudo(TestStartWithUserNameCannotElevate, GetCurrentRealUserName());
         }
 
         /// <summary>
@@ -762,52 +801,14 @@ namespace System.Diagnostics.Tests
             return (int)referenCountField.GetValue(waitState);
         }
 
-        public static int TestStartWithUserNameCannotElevate(string realUserName)
-        {
-            Assert.NotNull(realUserName);
-            Assert.NotEqual("root", realUserName);
-
-            using (ProcessTests testObject = new ProcessTests())
-            {
-                using (Process p = testObject.CreateProcessPortable(SetEffectiveUserIdToRoot))
-                {
-                    p.StartInfo.UserName = realUserName;
-                    Assert.True(p.Start());
-
-                    p.WaitForExit();
-
-                    // seteuid(0) should not have succeeded, thus the exit code should be non-zero
-                    Assert.NotEqual(0, p.ExitCode);
-                }
-
-                return 0;
-            }
-        }
-
-        public static int SetEffectiveUserIdToRoot()
-        {
-            return seteuid(0);
-        }
-
         private void RunTestAsSudo(Func<string, int> testMethod, string arg)
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions()
             {
-                Start = false,
                 RunAsSudo = true
             };
-            Process p = null;
             using (RemoteInvokeHandle handle = RemoteInvoke(testMethod, arg, options))
-            {
-                p = handle.Process;
-                handle.Process = null;
-            }
-            AddProcessForDispose(p);
-
-            p.Start();
-            p.WaitForExit();
-
-            Assert.Equal(0, p.ExitCode);
+            { }
         }
 
         [DllImport("libc")]
@@ -815,9 +816,42 @@ namespace System.Diagnostics.Tests
 
         [DllImport("libc")]
         private static extern uint geteuid();
+        [DllImport("libc")]
+        private static extern uint getuid();
+        [DllImport("libc")]
+        private static extern uint getegid();
+        [DllImport("libc")]
+        private static extern uint getgid();
+
+        [DllImport("libc", SetLastError = true)]
+        private unsafe static extern int getgroups(int size, uint* list);
+
+        private unsafe static uint[] GetGroups()
+        {
+            int maxSize = 128;
+            Span<uint> groups = stackalloc uint[maxSize];
+            fixed (uint* pGroups = groups)
+            {
+                int rv = getgroups(maxSize, pGroups);
+                if (rv == -1)
+                {
+                    // If this throws with EINVAL, maxSize should be increased.
+                    throw new Win32Exception();
+                }
+
+                uint[] groupsArray = groups.Slice(0, rv).ToArray();
+                // Order the groups, so we can use them with xUnit's Assert.Equal.
+                Array.Sort(groupsArray);
+
+                return groupsArray;
+            }
+        }
 
         [DllImport("libc")]
         private static extern int seteuid(uint euid);
+
+        [DllImport("libc")]
+        private static unsafe extern int setgroups(int length, uint* groups);
 
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
 
@@ -829,6 +863,23 @@ namespace System.Diagnostics.Tests
             int mode = Convert.ToInt32("744", 8);
             Assert.Equal(0, chmod(filename, mode));
             return filename;
+        }
+
+        private static string StartAndReadToEnd(string filename, string[] arguments)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = filename,
+                RedirectStandardOutput = true
+            };
+            foreach (var arg in arguments)
+            {
+                psi.ArgumentList.Add(arg);
+            }
+            using (Process process = Process.Start(psi))
+            {
+                return process.StandardOutput.ReadToEnd();
+            }
         }
     }
 }
