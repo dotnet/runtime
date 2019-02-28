@@ -5,10 +5,5 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace System.Diagnostics
-{
-    public sealed partial class ProcessStartInfo
-    {
-        public string PasswordInClearText { get { throw null; } set { } }
-    }
-}
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.SecureString))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.SecureStringMarshal))]

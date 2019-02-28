@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Reflection.Context
 {
     public abstract partial class CustomReflectionContext : System.Reflection.ReflectionContext

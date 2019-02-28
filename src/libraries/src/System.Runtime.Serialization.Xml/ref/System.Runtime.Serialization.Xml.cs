@@ -5,8 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.InvalidDataContractException))]
-
 namespace System.Runtime.Serialization
 {
     public abstract partial class DataContractResolver
@@ -47,14 +45,13 @@ namespace System.Runtime.Serialization
     }
     public static partial class DataContractSerializerExtensions
     {
-        public static System.Runtime.Serialization.ISerializationSurrogateProvider GetSerializationSurrogateProvider(this DataContractSerializer serializer) { throw null; }
-        public static void SetSerializationSurrogateProvider(this DataContractSerializer serializer, System.Runtime.Serialization.ISerializationSurrogateProvider provider)  { }
+        public static System.Runtime.Serialization.ISerializationSurrogateProvider GetSerializationSurrogateProvider(this System.Runtime.Serialization.DataContractSerializer serializer) { throw null; }
+        public static void SetSerializationSurrogateProvider(this System.Runtime.Serialization.DataContractSerializer serializer, System.Runtime.Serialization.ISerializationSurrogateProvider provider) { }
     }
     public partial class DataContractSerializerSettings
     {
         public DataContractSerializerSettings() { }
         public System.Runtime.Serialization.DataContractResolver DataContractResolver { get { throw null; } set { } }
-//CODEDOM        public System.Runtime.Serialization.IDataContractSurrogate DataContractSurrogate { get { throw null; } set { } }
         public bool IgnoreExtensionDataObject { get { throw null; } set { } }
         public System.Collections.Generic.IEnumerable<System.Type> KnownTypes { get { throw null; } set { } }
         public int MaxItemsInObjectGraph { get { throw null; } set { } }
@@ -63,37 +60,9 @@ namespace System.Runtime.Serialization
         public System.Xml.XmlDictionaryString RootNamespace { get { throw null; } set { } }
         public bool SerializeReadOnlyTypes { get { throw null; } set { } }
     }
-    public static partial class XmlSerializableServices
-    {
-        public static void AddDefaultSchema(System.Xml.Schema.XmlSchemaSet schemas, System.Xml.XmlQualifiedName typeQName) { }
-        public static System.Xml.XmlNode[] ReadNodes(System.Xml.XmlReader xmlReader) { throw null; }
-        public static void WriteNodes(System.Xml.XmlWriter xmlWriter, System.Xml.XmlNode[] nodes) { }
-    }
-    public static partial class XPathQueryGenerator
-    {
-        public static string CreateFromDataContractSerializer(System.Type type, System.Reflection.MemberInfo[] pathToMember, System.Text.StringBuilder rootElementXpath, out System.Xml.XmlNamespaceManager namespaces) { throw null; }
-        public static string CreateFromDataContractSerializer(System.Type type, System.Reflection.MemberInfo[] pathToMember, out System.Xml.XmlNamespaceManager namespaces) { throw null; }
-    }
-    public partial class XsdDataContractExporter
-    {
-        public XsdDataContractExporter() { }
-        public XsdDataContractExporter(System.Xml.Schema.XmlSchemaSet schemas) { }
-        public System.Runtime.Serialization.ExportOptions Options { get { throw null; } set { } }
-        public System.Xml.Schema.XmlSchemaSet Schemas { get { throw null; } }
-        public bool CanExport(System.Collections.Generic.ICollection<System.Reflection.Assembly> assemblies) { throw null; }
-        public bool CanExport(System.Collections.Generic.ICollection<System.Type> types) { throw null; }
-        public bool CanExport(System.Type type) { throw null; }
-        public void Export(System.Collections.Generic.ICollection<System.Reflection.Assembly> assemblies) { }
-        public void Export(System.Collections.Generic.ICollection<System.Type> types) { }
-        public void Export(System.Type type) { }
-        public System.Xml.XmlQualifiedName GetRootElementName(System.Type type) { throw null; }
-        public System.Xml.Schema.XmlSchemaType GetSchemaType(System.Type type) { throw null; }
-        public System.Xml.XmlQualifiedName GetSchemaTypeName(System.Type type) { throw null; }
-    }
     public partial class ExportOptions
     {
         public ExportOptions() { }
-        //CODEDOM        public System.Runtime.Serialization.IDataContractSurrogate DataContractSurrogate { get { throw null; } set { } }
         public System.Collections.ObjectModel.Collection<System.Type> KnownTypes { get { throw null; } }
     }
     public sealed partial class ExtensionDataObject
@@ -123,6 +92,33 @@ namespace System.Runtime.Serialization
         public virtual void WriteObjectContent(System.Xml.XmlWriter writer, object graph) { }
         public abstract void WriteStartObject(System.Xml.XmlDictionaryWriter writer, object graph);
         public virtual void WriteStartObject(System.Xml.XmlWriter writer, object graph) { }
+    }
+    public static partial class XmlSerializableServices
+    {
+        public static void AddDefaultSchema(System.Xml.Schema.XmlSchemaSet schemas, System.Xml.XmlQualifiedName typeQName) { }
+        public static System.Xml.XmlNode[] ReadNodes(System.Xml.XmlReader xmlReader) { throw null; }
+        public static void WriteNodes(System.Xml.XmlWriter xmlWriter, System.Xml.XmlNode[] nodes) { }
+    }
+    public static partial class XPathQueryGenerator
+    {
+        public static string CreateFromDataContractSerializer(System.Type type, System.Reflection.MemberInfo[] pathToMember, System.Text.StringBuilder rootElementXpath, out System.Xml.XmlNamespaceManager namespaces) { throw null; }
+        public static string CreateFromDataContractSerializer(System.Type type, System.Reflection.MemberInfo[] pathToMember, out System.Xml.XmlNamespaceManager namespaces) { throw null; }
+    }
+    public partial class XsdDataContractExporter
+    {
+        public XsdDataContractExporter() { }
+        public XsdDataContractExporter(System.Xml.Schema.XmlSchemaSet schemas) { }
+        public System.Runtime.Serialization.ExportOptions Options { get { throw null; } set { } }
+        public System.Xml.Schema.XmlSchemaSet Schemas { get { throw null; } }
+        public bool CanExport(System.Collections.Generic.ICollection<System.Reflection.Assembly> assemblies) { throw null; }
+        public bool CanExport(System.Collections.Generic.ICollection<System.Type> types) { throw null; }
+        public bool CanExport(System.Type type) { throw null; }
+        public void Export(System.Collections.Generic.ICollection<System.Reflection.Assembly> assemblies) { }
+        public void Export(System.Collections.Generic.ICollection<System.Type> types) { }
+        public void Export(System.Type type) { }
+        public System.Xml.XmlQualifiedName GetRootElementName(System.Type type) { throw null; }
+        public System.Xml.Schema.XmlSchemaType GetSchemaType(System.Type type) { throw null; }
+        public System.Xml.XmlQualifiedName GetSchemaTypeName(System.Type type) { throw null; }
     }
 }
 namespace System.Xml

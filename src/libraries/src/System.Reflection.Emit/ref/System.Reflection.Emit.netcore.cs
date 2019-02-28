@@ -15,15 +15,15 @@ namespace System.Reflection.Emit
     public sealed partial class EnumBuilder : System.Type
     {
         public override bool IsByRefLike { get { throw null; } }
-        public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsSZArray { get { throw null; } }
+        public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsVariableBoundArray { get { throw null; } }
     }
     public sealed partial class GenericTypeParameterBuilder : System.Type
     {
         public override bool IsByRefLike { get { throw null; } }
-        public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsSZArray { get { throw null; } }
+        public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsVariableBoundArray { get { throw null; } }
     }
     public partial class ModuleBuilder : System.Reflection.Module
@@ -35,8 +35,8 @@ namespace System.Reflection.Emit
     {
         public System.Type CreateType() { throw null; }
         public override bool IsByRefLike { get { throw null; } }
-        public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsSZArray { get { throw null; } }
+        public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsVariableBoundArray { get { throw null; } }
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[] parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet) { throw null; }
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[] parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet) { throw null; }

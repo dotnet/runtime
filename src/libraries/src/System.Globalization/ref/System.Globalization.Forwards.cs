@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// These types were moved down to System.Runtime
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.Calendar))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.CalendarWeekRule))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.CompareOptions))]

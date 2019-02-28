@@ -4,7 +4,6 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Net.Mime.cs" />
     <Compile Include="System.Net.Mail.cs" />
   </ItemGroup>
   <ItemGroup>

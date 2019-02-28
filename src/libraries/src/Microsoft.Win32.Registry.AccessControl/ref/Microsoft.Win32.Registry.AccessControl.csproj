@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Win32.Registry.AccessControl.cs" />
+    <Compile Include="Microsoft.Win32.Registry.AccessControl.Forwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />

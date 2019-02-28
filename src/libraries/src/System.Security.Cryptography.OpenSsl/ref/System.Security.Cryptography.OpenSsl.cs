@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
         public ECDiffieHellmanOpenSsl(System.IntPtr handle) { }
         public ECDiffieHellmanOpenSsl(System.Security.Cryptography.ECCurve curve) { }
         public ECDiffieHellmanOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) { }
-        public override System.Security.Cryptography.ECDiffieHellmanPublicKey PublicKey { get; }
+        public override System.Security.Cryptography.ECDiffieHellmanPublicKey PublicKey { get { throw null; } }
         public override byte[] DeriveKeyFromHash(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] secretPrepend, byte[] secretAppend) { throw null; }
         public override byte[] DeriveKeyFromHmac(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] hmacKey, byte[] secretPrepend, byte[] secretAppend) { throw null; }
         public override byte[] DeriveKeyMaterial(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
@@ -91,8 +91,8 @@ namespace System.Security.Cryptography
     {
         public SafeEvpPKeyHandle(System.IntPtr handle, bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
+        public static long OpenSslVersion { get { throw null; } }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateHandle() { throw null; }
         protected override bool ReleaseHandle() { throw null; }
-        public static long OpenSslVersion { get; }
     }
 }

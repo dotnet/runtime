@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Permissions.cs" />
+    <Compile Include="System.Security.Permissions.Forwards.cs" />
     <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">

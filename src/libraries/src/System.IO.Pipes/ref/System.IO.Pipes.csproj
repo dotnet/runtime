@@ -5,7 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Pipes.cs" />
-    <Compile Include="System.IO.Pipes.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />

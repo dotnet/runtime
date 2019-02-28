@@ -5,9 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Runtime.Serialization;
-using System.Security.Authentication.ExtendedProtection;
-
 namespace System.Net
 {
     public delegate System.Net.AuthenticationSchemes AuthenticationSchemeSelector(System.Net.HttpListenerRequest httpRequest);
@@ -16,11 +13,15 @@ namespace System.Net
         public HttpListener() { }
         public System.Net.AuthenticationSchemes AuthenticationSchemes { get { throw null; } set { } }
         public System.Net.AuthenticationSchemeSelector AuthenticationSchemeSelectorDelegate { get { throw null; } set { } }
+        public System.Security.Authentication.ExtendedProtection.ServiceNameCollection DefaultServiceNames { get { throw null; } }
+        public System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy ExtendedProtectionPolicy { get { throw null; } set { } }
+        public System.Net.HttpListener.ExtendedProtectionSelector ExtendedProtectionSelectorDelegate { get { throw null; } set { } }
         public bool IgnoreWriteExceptions { get { throw null; } set { } }
         public bool IsListening { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public System.Net.HttpListenerPrefixCollection Prefixes { get { throw null; } }
         public string Realm { get { throw null; } set { } }
+        public System.Net.HttpListenerTimeoutManager TimeoutManager { get { throw null; } }
         public bool UnsafeConnectionNtlmAuthentication { get { throw null; } set { } }
         public void Abort() { }
         public System.IAsyncResult BeginGetContext(System.AsyncCallback callback, object state) { throw null; }
@@ -28,18 +29,14 @@ namespace System.Net
         public System.Net.HttpListenerContext EndGetContext(System.IAsyncResult asyncResult) { throw null; }
         public System.Net.HttpListenerContext GetContext() { throw null; }
         public System.Threading.Tasks.Task<System.Net.HttpListenerContext> GetContextAsync() { throw null; }
-        public ServiceNameCollection DefaultServiceNames { get { throw null; } }
-        public ExtendedProtectionPolicy ExtendedProtectionPolicy { get { throw null; } set { } }
-        public ExtendedProtectionSelector ExtendedProtectionSelectorDelegate { get { throw null; } set { } }
-        public HttpListenerTimeoutManager TimeoutManager { get { throw null; } }
-        public delegate ExtendedProtectionPolicy ExtendedProtectionSelector(HttpListenerRequest request);
         public void Start() { }
         public void Stop() { }
         void System.IDisposable.Dispose() { }
+        public delegate System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy ExtendedProtectionSelector(System.Net.HttpListenerRequest request);
     }
     public partial class HttpListenerBasicIdentity : System.Security.Principal.GenericIdentity
     {
-        public HttpListenerBasicIdentity(string username, string password) : base(default(string)) { }
+        public HttpListenerBasicIdentity(string username, string password) : base (default(System.Security.Principal.GenericIdentity)) { }
         public virtual string Password { get { throw null; } }
     }
     public sealed partial class HttpListenerContext
@@ -51,15 +48,15 @@ namespace System.Net
         public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol) { throw null; }
         public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, System.TimeSpan keepAliveInterval) { throw null; }
         public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, System.TimeSpan keepAliveInterval, System.ArraySegment<byte> internalBuffer) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, TimeSpan keepAliveInterval) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, System.TimeSpan keepAliveInterval) { throw null; }
     }
     public partial class HttpListenerException : System.ComponentModel.Win32Exception
     {
         public HttpListenerException() { }
         public HttpListenerException(int errorCode) { }
         public HttpListenerException(int errorCode, string message) { }
-        protected HttpListenerException(SerializationInfo serializationInfo, StreamingContext streamingContext) { }
-        public override int ErrorCode { get; }
+        protected HttpListenerException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+        public override int ErrorCode { get { throw null; } }
     }
     public partial class HttpListenerPrefixCollection : System.Collections.Generic.ICollection<string>, System.Collections.Generic.IEnumerable<string>, System.Collections.IEnumerable
     {
@@ -142,19 +139,19 @@ namespace System.Net
     public partial class HttpListenerTimeoutManager
     {
         internal HttpListenerTimeoutManager() { }
-        public TimeSpan DrainEntityBody { get { throw null; } set { } }
-        public TimeSpan EntityBody { get { throw null; } set { } }
-        public TimeSpan HeaderWait { get { throw null; } set { } }
-        public TimeSpan IdleConnection { get { throw null; } set { } }
+        public System.TimeSpan DrainEntityBody { get { throw null; } set { } }
+        public System.TimeSpan EntityBody { get { throw null; } set { } }
+        public System.TimeSpan HeaderWait { get { throw null; } set { } }
+        public System.TimeSpan IdleConnection { get { throw null; } set { } }
         public long MinSendBytesPerSecond { get { throw null; } set { } }
-        public TimeSpan RequestQueue { get { throw null; } set { } }
+        public System.TimeSpan RequestQueue { get { throw null; } set { } }
     }
 }
 namespace System.Net.WebSockets
 {
     public partial class HttpListenerWebSocketContext : System.Net.WebSockets.WebSocketContext
     {
-        private HttpListenerWebSocketContext() { }
+        internal HttpListenerWebSocketContext() { }
         public override System.Net.CookieCollection CookieCollection { get { throw null; } }
         public override System.Collections.Specialized.NameValueCollection Headers { get { throw null; } }
         public override bool IsAuthenticated { get { throw null; } }

@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Reflection.Emit
 {
     public partial class CustomAttributeBuilder
@@ -59,7 +58,7 @@ namespace System.Reflection.Emit
     }
     public partial struct Label
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Reflection.Emit.Label obj) { throw null; }
         public override int GetHashCode() { throw null; }
