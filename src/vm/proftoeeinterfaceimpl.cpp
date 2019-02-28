@@ -9661,12 +9661,12 @@ HRESULT ProfToEEInterfaceImpl::ApplyMetaData(
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers, (LF_CORPROF, LL_INFO1000, "**PROF: ApplyMetaData.\n"));
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach, (LF_CORPROF, LL_INFO1000, "**PROF: ApplyMetaData.\n"));
 
     if (moduleId == NULL)
     {
