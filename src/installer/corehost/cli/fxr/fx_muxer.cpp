@@ -257,7 +257,7 @@ void fx_muxer_t::display_missing_framework_error(
     trace::error(_X(""));
     trace::error(_X("You can resolve the problem by installing the specified framework and/or SDK."));
     trace::error(_X(""));
-    trace::error(_X("The .NET Core framework can be found at:"));
+    trace::error(_X("The .NET Core frameworks can be found at:"));
     trace::error(_X("  - %s"), DOTNET_CORE_DOWNLOAD_URL);
 }
 
