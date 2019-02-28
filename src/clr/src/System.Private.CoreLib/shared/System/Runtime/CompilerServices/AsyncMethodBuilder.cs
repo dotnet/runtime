@@ -1100,10 +1100,10 @@ namespace System.Runtime.CompilerServices
         /// (like the action after that (which is also a ContinuationWrapper and thus form a linked list).  
         ///  We also store that task if the action is associate with at task.  
         /// </summary>
-        private sealed class ContinuationWrapper
+        private sealed class ContinuationWrapper // SOS DumpAsync command depends on this name
         {
             private readonly Action<Action, Task> _invokeAction; // This wrapper is an action that wraps another action, this is that Action.  
-            internal readonly Action _continuation;              // This is continuation which will happen after m_invokeAction  (and is probably a ContinuationWrapper)
+            internal readonly Action _continuation;              // This is continuation which will happen after m_invokeAction  (and is probably a ContinuationWrapper). SOS DumpAsync command depends on this name.
             internal readonly Task _innerTask;                   // If the continuation is logically going to invoke a task, this is that task (may be null)
 
             internal ContinuationWrapper(Action continuation, Action<Action, Task> invokeAction, Task innerTask)
