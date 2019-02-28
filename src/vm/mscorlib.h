@@ -834,11 +834,11 @@ DEFINE_CLASS(STACKCRAWMARK,         Threading,       StackCrawlMark)
 #endif
 
 DEFINE_CLASS_U(Threading,              Thread,                     ThreadBaseObject)
-DEFINE_FIELD_U(m_Name,                     ThreadBaseObject,   m_Name)
-DEFINE_FIELD_U(m_Delegate,                 ThreadBaseObject,   m_Delegate)
-DEFINE_FIELD_U(m_ThreadStartArg,           ThreadBaseObject,   m_ThreadStartArg)
-DEFINE_FIELD_U(DONT_USE_InternalThread,    ThreadBaseObject,   m_InternalThread)
-DEFINE_FIELD_U(m_Priority,                 ThreadBaseObject,   m_Priority)
+DEFINE_FIELD_U(_name,                     ThreadBaseObject,   m_Name)
+DEFINE_FIELD_U(_delegate,                 ThreadBaseObject,   m_Delegate)
+DEFINE_FIELD_U(_threadStartArg,           ThreadBaseObject,   m_ThreadStartArg)
+DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
+DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               INTERNAL_GET_CURRENT_THREAD,             InternalGetCurrentThread,                    SM_RetIntPtr)
 
