@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.TypeExtensions.cs" />
+    <Compile Include="System.Reflection.TypeExtensions.Forwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />

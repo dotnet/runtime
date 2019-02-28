@@ -11,14 +11,14 @@ namespace System.Diagnostics
     {
         public Activity(string operationName) { }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> Baggage { get { throw null; } }
-        public static Activity Current
+        public static System.Diagnostics.Activity Current
         {
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
+            [System.Security.SecuritySafeCriticalAttribute]
 #endif
             get { throw null; }
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
-       [System.Security.SecuritySafeCriticalAttribute]
+            [System.Security.SecuritySafeCriticalAttribute]
 #endif
             set { }
         }
@@ -53,11 +53,10 @@ namespace System.Diagnostics
         Unknown = (byte)0,
         W3C = (byte)2,
     }
-
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
+    [System.Security.SecuritySafeCriticalAttribute]
 #endif
-    public partial struct ActivitySpanId : IEquatable<ActivitySpanId>
+    public partial struct ActivitySpanId : System.IEquatable<System.Diagnostics.ActivitySpanId>
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -73,11 +72,10 @@ namespace System.Diagnostics
         public static bool operator !=(in System.Diagnostics.ActivitySpanId spanId1, in System.Diagnostics.ActivitySpanId spandId2) { throw null; }
         public override string ToString() { throw null; }
     }
-
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
+    [System.Security.SecuritySafeCriticalAttribute]
 #endif
-    public partial struct ActivityTraceId : IEquatable<ActivityTraceId>
+    public partial struct ActivityTraceId : System.IEquatable<System.Diagnostics.ActivityTraceId>
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -95,7 +93,7 @@ namespace System.Diagnostics
     }
     public abstract partial class DiagnosticSource
     {
-        public Activity StartActivity(Activity activity, object args) { throw null; }
-        public void StopActivity(Activity activity, object args) { }
+        public System.Diagnostics.Activity StartActivity(System.Diagnostics.Activity activity, object args) { throw null; }
+        public void StopActivity(System.Diagnostics.Activity activity, object args) { }
     }
 }

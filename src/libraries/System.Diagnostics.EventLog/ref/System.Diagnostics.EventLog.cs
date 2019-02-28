@@ -33,7 +33,7 @@ namespace System.Diagnostics
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool EnableRaisingEvents { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public System.Diagnostics.EventLogEntryCollection Entries { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.ReadOnlyAttribute(true)]
@@ -46,7 +46,7 @@ namespace System.Diagnostics
         [System.ComponentModel.SettingsBindableAttribute(true)]
         public string MachineName { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public long MaximumKilobytes { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public int MinimumRetentionDays { get { throw null; } }
@@ -139,17 +139,6 @@ namespace System.Diagnostics
         SuccessAudit = 8,
         Warning = 2,
     }
-    public partial class EventSourceCreationData
-    {
-        public EventSourceCreationData(string source, string logName) { }
-        public int CategoryCount { get { throw null; } set { } }
-        public string CategoryResourceFile { get { throw null; } set { } }
-        public string LogName { get { throw null; } set { } }
-        public string MachineName { get { throw null; } set { } }
-        public string MessageResourceFile { get { throw null; } set { } }
-        public string ParameterResourceFile { get { throw null; } set { } }
-        public string Source { get { throw null; } set { } }
-    }
     public sealed partial class EventLogTraceListener : System.Diagnostics.TraceListener
     {
         public EventLogTraceListener() { }
@@ -171,6 +160,17 @@ namespace System.Diagnostics
         public override void TraceEvent(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType severity, int id, string format, params object[] args) { }
         public override void Write(string message) { }
         public override void WriteLine(string message) { }
+    }
+    public partial class EventSourceCreationData
+    {
+        public EventSourceCreationData(string source, string logName) { }
+        public int CategoryCount { get { throw null; } set { } }
+        public string CategoryResourceFile { get { throw null; } set { } }
+        public string LogName { get { throw null; } set { } }
+        public string MachineName { get { throw null; } set { } }
+        public string MessageResourceFile { get { throw null; } set { } }
+        public string ParameterResourceFile { get { throw null; } set { } }
+        public string Source { get { throw null; } set { } }
     }
     public enum OverflowAction
     {
@@ -212,13 +212,13 @@ namespace System.Diagnostics.Eventing.Reader
         public System.Diagnostics.Eventing.Reader.EventLogType LogType { get { throw null; } }
         public long MaximumSizeInBytes { get { throw null; } set { } }
         public string OwningProviderName { get { throw null; } }
-        public System.Nullable<int> ProviderBufferSize { get { throw null; } }
-        public System.Nullable<System.Guid> ProviderControlGuid { get { throw null; } }
-        public System.Nullable<long> ProviderKeywords { get { throw null; } set { } }
-        public System.Nullable<int> ProviderLatency { get { throw null; } }
-        public System.Nullable<int> ProviderLevel { get { throw null; } set { } }
-        public System.Nullable<int> ProviderMaximumNumberOfBuffers { get { throw null; } }
-        public System.Nullable<int> ProviderMinimumNumberOfBuffers { get { throw null; } }
+        public int? ProviderBufferSize { get { throw null; } }
+        public System.Guid? ProviderControlGuid { get { throw null; } }
+        public long? ProviderKeywords { get { throw null; } set { } }
+        public int? ProviderLatency { get { throw null; } }
+        public int? ProviderLevel { get { throw null; } set { } }
+        public int? ProviderMaximumNumberOfBuffers { get { throw null; } }
+        public int? ProviderMinimumNumberOfBuffers { get { throw null; } }
         public System.Collections.Generic.IEnumerable<string> ProviderNames { get { throw null; } }
         public string SecurityDescriptor { get { throw null; } set { } }
         public void Dispose() { }
@@ -236,14 +236,14 @@ namespace System.Diagnostics.Eventing.Reader
     public sealed partial class EventLogInformation
     {
         internal EventLogInformation() { }
-        public System.Nullable<int> Attributes { get { throw null; } }
-        public System.Nullable<System.DateTime> CreationTime { get { throw null; } }
-        public System.Nullable<long> FileSize { get { throw null; } }
-        public System.Nullable<bool> IsLogFull { get { throw null; } }
-        public System.Nullable<System.DateTime> LastAccessTime { get { throw null; } }
-        public System.Nullable<System.DateTime> LastWriteTime { get { throw null; } }
-        public System.Nullable<long> OldestRecordNumber { get { throw null; } }
-        public System.Nullable<long> RecordCount { get { throw null; } }
+        public int? Attributes { get { throw null; } }
+        public System.DateTime? CreationTime { get { throw null; } }
+        public long? FileSize { get { throw null; } }
+        public bool? IsLogFull { get { throw null; } }
+        public System.DateTime? LastAccessTime { get { throw null; } }
+        public System.DateTime? LastWriteTime { get { throw null; } }
+        public long? OldestRecordNumber { get { throw null; } }
+        public long? RecordCount { get { throw null; } }
     }
     public partial class EventLogInvalidDataException : System.Diagnostics.Eventing.Reader.EventLogException
     {
@@ -322,32 +322,32 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogRecord : System.Diagnostics.Eventing.Reader.EventRecord
     {
         internal EventLogRecord() { }
-        public override System.Nullable<System.Guid> ActivityId { get { throw null; } }
+        public override System.Guid? ActivityId { get { throw null; } }
         public override System.Diagnostics.Eventing.Reader.EventBookmark Bookmark { get { throw null; } }
         public string ContainerLog { get { throw null; } }
         public override int Id { get { throw null; } }
-        public override System.Nullable<long> Keywords { get { throw null; } }
+        public override long? Keywords { get { throw null; } }
         public override System.Collections.Generic.IEnumerable<string> KeywordsDisplayNames { get { throw null; } }
-        public override System.Nullable<byte> Level { get { throw null; } }
+        public override byte? Level { get { throw null; } }
         public override string LevelDisplayName { get { throw null; } }
         public override string LogName { get { throw null; } }
         public override string MachineName { get { throw null; } }
         public System.Collections.Generic.IEnumerable<int> MatchedQueryIds { get { throw null; } }
-        public override System.Nullable<short> Opcode { get { throw null; } }
+        public override short? Opcode { get { throw null; } }
         public override string OpcodeDisplayName { get { throw null; } }
-        public override System.Nullable<int> ProcessId { get { throw null; } }
+        public override int? ProcessId { get { throw null; } }
         public override System.Collections.Generic.IList<System.Diagnostics.Eventing.Reader.EventProperty> Properties { get { throw null; } }
-        public override System.Nullable<System.Guid> ProviderId { get { throw null; } }
+        public override System.Guid? ProviderId { get { throw null; } }
         public override string ProviderName { get { throw null; } }
-        public override System.Nullable<int> Qualifiers { get { throw null; } }
-        public override System.Nullable<long> RecordId { get { throw null; } }
-        public override System.Nullable<System.Guid> RelatedActivityId { get { throw null; } }
-        public override System.Nullable<int> Task { get { throw null; } }
+        public override int? Qualifiers { get { throw null; } }
+        public override long? RecordId { get { throw null; } }
+        public override System.Guid? RelatedActivityId { get { throw null; } }
+        public override int? Task { get { throw null; } }
         public override string TaskDisplayName { get { throw null; } }
-        public override System.Nullable<int> ThreadId { get { throw null; } }
-        public override System.Nullable<System.DateTime> TimeCreated { get { throw null; } }
+        public override int? ThreadId { get { throw null; } }
+        public override System.DateTime? TimeCreated { get { throw null; } }
         public override System.Security.Principal.SecurityIdentifier UserId { get { throw null; } }
-        public override System.Nullable<byte> Version { get { throw null; } }
+        public override byte? Version { get { throw null; } }
         protected override void Dispose(bool disposing) { }
         public override string FormatDescription() { throw null; }
         public override string FormatDescription(System.Collections.Generic.IEnumerable<object> values) { throw null; }
@@ -425,30 +425,30 @@ namespace System.Diagnostics.Eventing.Reader
     public abstract partial class EventRecord : System.IDisposable
     {
         protected EventRecord() { }
-        public abstract System.Nullable<System.Guid> ActivityId { get; }
+        public abstract System.Guid? ActivityId { get; }
         public abstract System.Diagnostics.Eventing.Reader.EventBookmark Bookmark { get; }
         public abstract int Id { get; }
-        public abstract System.Nullable<long> Keywords { get; }
+        public abstract long? Keywords { get; }
         public abstract System.Collections.Generic.IEnumerable<string> KeywordsDisplayNames { get; }
-        public abstract System.Nullable<byte> Level { get; }
+        public abstract byte? Level { get; }
         public abstract string LevelDisplayName { get; }
         public abstract string LogName { get; }
         public abstract string MachineName { get; }
-        public abstract System.Nullable<short> Opcode { get; }
+        public abstract short? Opcode { get; }
         public abstract string OpcodeDisplayName { get; }
-        public abstract System.Nullable<int> ProcessId { get; }
+        public abstract int? ProcessId { get; }
         public abstract System.Collections.Generic.IList<System.Diagnostics.Eventing.Reader.EventProperty> Properties { get; }
-        public abstract System.Nullable<System.Guid> ProviderId { get; }
+        public abstract System.Guid? ProviderId { get; }
         public abstract string ProviderName { get; }
-        public abstract System.Nullable<int> Qualifiers { get; }
-        public abstract System.Nullable<long> RecordId { get; }
-        public abstract System.Nullable<System.Guid> RelatedActivityId { get; }
-        public abstract System.Nullable<int> Task { get; }
+        public abstract int? Qualifiers { get; }
+        public abstract long? RecordId { get; }
+        public abstract System.Guid? RelatedActivityId { get; }
+        public abstract int? Task { get; }
         public abstract string TaskDisplayName { get; }
-        public abstract System.Nullable<int> ThreadId { get; }
-        public abstract System.Nullable<System.DateTime> TimeCreated { get; }
+        public abstract int? ThreadId { get; }
+        public abstract System.DateTime? TimeCreated { get; }
         public abstract System.Security.Principal.SecurityIdentifier UserId { get; }
-        public abstract System.Nullable<byte> Version { get; }
+        public abstract byte? Version { get; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public abstract string FormatDescription();

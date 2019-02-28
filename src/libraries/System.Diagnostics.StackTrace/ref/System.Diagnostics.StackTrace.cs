@@ -9,20 +9,20 @@ namespace System.Diagnostics
 {
     public partial class StackFrame
     {
+        public const int OFFSET_UNKNOWN = -1;
         public StackFrame() { }
         public StackFrame(bool fNeedFileInfo) { }
         public StackFrame(int skipFrames) { }
         public StackFrame(int skipFrames, bool fNeedFileInfo) { }
         public StackFrame(string fileName, int lineNumber) { }
         public StackFrame(string fileName, int lineNumber, int colNumber) { }
-        public const int OFFSET_UNKNOWN = -1;
         public virtual int GetFileColumnNumber() { throw null; }
         public virtual int GetFileLineNumber() { throw null; }
         public virtual string GetFileName() { throw null; }
         public virtual int GetILOffset() { throw null; }
         public virtual System.Reflection.MethodBase GetMethod() { throw null; }
-        public override string ToString() { throw null; }
         public virtual int GetNativeOffset() { throw null; }
+        public override string ToString() { throw null; }
     }
     public static partial class StackFrameExtensions
     {
@@ -38,7 +38,7 @@ namespace System.Diagnostics
         public const int METHODS_TO_SKIP = 0;
         public StackTrace() { }
         public StackTrace(bool fNeedFileInfo) { }
-        public StackTrace(StackFrame frame) { }
+        public StackTrace(System.Diagnostics.StackFrame frame) { }
         public StackTrace(System.Exception e) { }
         public StackTrace(System.Exception e, bool fNeedFileInfo) { }
         public StackTrace(System.Exception e, int skipFrames) { }
@@ -46,8 +46,8 @@ namespace System.Diagnostics
         public StackTrace(int skipFrames) { }
         public StackTrace(int skipFrames, bool fNeedFileInfo) { }
         public virtual int FrameCount { get { throw null; } }
-        public virtual System.Diagnostics.StackFrame[] GetFrames() { throw null; }
         public virtual System.Diagnostics.StackFrame GetFrame(int index) { throw null; }
+        public virtual System.Diagnostics.StackFrame[] GetFrames() { throw null; }
         public override string ToString() { throw null; }
     }
 }

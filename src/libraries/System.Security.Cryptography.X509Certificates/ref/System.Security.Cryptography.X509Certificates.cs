@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void AddIpAddress(System.Net.IPAddress ipAddress) { }
         public void AddUri(System.Uri uri) { }
         public void AddUserPrincipalName(string upn) { }
-        public System.Security.Cryptography.X509Certificates.X509Extension Build(bool critical=false) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Extension Build(bool critical = false) { throw null; }
     }
     public sealed partial class X500DistinguishedName : System.Security.Cryptography.AsnEncodedData
     {

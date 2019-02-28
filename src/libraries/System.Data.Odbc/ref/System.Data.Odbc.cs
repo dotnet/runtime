@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the http://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace System.Data.Odbc
 {
@@ -12,7 +15,7 @@ namespace System.Data.Odbc
         public OdbcCommand(string cmdText, System.Data.Odbc.OdbcConnection connection, System.Data.Odbc.OdbcTransaction transaction) { }
         public override string CommandText { get { throw null; } set { } }
         public override int CommandTimeout { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute((System.Data.CommandType)(1))]
+        [System.ComponentModel.DefaultValueAttribute(System.Data.CommandType.Text)]
         public override System.Data.CommandType CommandType { get { throw null; } set { } }
         public new System.Data.Odbc.OdbcConnection Connection { get { throw null; } set { } }
         protected override System.Data.Common.DbConnection DbConnection { get { throw null; } set { } }
@@ -21,14 +24,14 @@ namespace System.Data.Odbc
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(true)]
         [System.ComponentModel.DesignOnlyAttribute(true)]
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool DesignTimeVisible { get { throw null; } set { } }
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(2))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public new System.Data.Odbc.OdbcParameterCollection Parameters { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public new System.Data.Odbc.OdbcTransaction Transaction { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute((System.Data.UpdateRowSource)(3))]
+        [System.ComponentModel.DefaultValueAttribute(System.Data.UpdateRowSource.Both)]
         public override System.Data.UpdateRowSource UpdatedRowSource { get { throw null; } set { } }
         public override void Cancel() { }
         protected override System.Data.Common.DbParameter CreateDbParameter() { throw null; }
@@ -71,21 +74,21 @@ namespace System.Data.Odbc
         public OdbcConnection(string connectionString) { }
         public override string ConnectionString { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(15)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public new int ConnectionTimeout { get { throw null; } set { } }
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public override string Database { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public override string DataSource { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public string Driver { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public override string ServerVersion { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public override System.Data.ConnectionState State { get { throw null; } }
         public event System.Data.Odbc.OdbcInfoMessageEventHandler InfoMessage { add { } remove { } }
         protected override System.Data.Common.DbTransaction BeginDbTransaction(System.Data.IsolationLevel isolationLevel) { throw null; }
@@ -113,7 +116,7 @@ namespace System.Data.Odbc
         public override void Clear() { }
         public override bool ContainsKey(string keyword) { throw null; }
         public override bool Remove(string keyword) { throw null; }
-        public override bool TryGetValue(string keyword, out object value) { value = default(object); throw null; }
+        public override bool TryGetValue(string keyword, out object value) { throw null; }
     }
     public sealed partial class OdbcDataAdapter : System.Data.Common.DbDataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
@@ -244,16 +247,16 @@ namespace System.Data.Odbc
         public OdbcParameter() { }
         public OdbcParameter(string name, System.Data.Odbc.OdbcType type) { }
         public OdbcParameter(string name, System.Data.Odbc.OdbcType type, int size) { }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public OdbcParameter(string parameterName, System.Data.Odbc.OdbcType odbcType, int size, System.Data.ParameterDirection parameterDirection, bool isNullable, byte precision, byte scale, string srcColumn, System.Data.DataRowVersion srcVersion, object value) { }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public OdbcParameter(string parameterName, System.Data.Odbc.OdbcType odbcType, int size, System.Data.ParameterDirection parameterDirection, byte precision, byte scale, string sourceColumn, System.Data.DataRowVersion sourceVersion, bool sourceColumnNullMapping, object value) { }
         public OdbcParameter(string name, System.Data.Odbc.OdbcType type, int size, string sourcecolumn) { }
         public OdbcParameter(string name, object value) { }
         public override System.Data.DbType DbType { get { throw null; } set { } }
         public override System.Data.ParameterDirection Direction { get { throw null; } set { } }
         public override bool IsNullable { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute((System.Data.Odbc.OdbcType)(11))]
+        [System.ComponentModel.DefaultValueAttribute(System.Data.Odbc.OdbcType.NChar)]
         [System.Data.Common.DbProviderSpecificTypePropertyAttribute(true)]
         public System.Data.Odbc.OdbcType OdbcType { get { throw null; } set { } }
         public override string ParameterName { get { throw null; } set { } }
@@ -277,10 +280,10 @@ namespace System.Data.Odbc
         public override bool IsReadOnly { get { throw null; } }
         public override bool IsSynchronized { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public new System.Data.Odbc.OdbcParameter this[int index] { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
-        [System.ComponentModel.DesignerSerializationVisibilityAttribute((System.ComponentModel.DesignerSerializationVisibility)(0))]
+        [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public new System.Data.Odbc.OdbcParameter this[string parameterName] { get { throw null; } set { } }
         public override object SyncRoot { get { throw null; } }
         public System.Data.Odbc.OdbcParameter Add(System.Data.Odbc.OdbcParameter value) { throw null; }
@@ -288,7 +291,7 @@ namespace System.Data.Odbc
         public System.Data.Odbc.OdbcParameter Add(string parameterName, System.Data.Odbc.OdbcType odbcType) { throw null; }
         public System.Data.Odbc.OdbcParameter Add(string parameterName, System.Data.Odbc.OdbcType odbcType, int size) { throw null; }
         public System.Data.Odbc.OdbcParameter Add(string parameterName, System.Data.Odbc.OdbcType odbcType, int size, string sourceColumn) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated.  Use AddWithValue(String parameterName, Object value).  https://go.microsoft.com/fwlink/?linkid=14202", false)]
         public System.Data.Odbc.OdbcParameter Add(string parameterName, object value) { throw null; }
         public override void AddRange(System.Array values) { }

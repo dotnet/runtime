@@ -5,19 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XmlNodeOrder))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.IXPathNavigable))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XmlSortOrder))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XmlCaseOrder))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XmlDataType))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XPathResultType))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XPathExpression))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XPathItem))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XPathNamespaceScope))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XPathNavigator))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XPathNodeIterator))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.XPath.XPathNodeType))]
-
 namespace System.Xml.XPath
 {
     public partial class XPathDocument : System.Xml.XPath.IXPathNavigable

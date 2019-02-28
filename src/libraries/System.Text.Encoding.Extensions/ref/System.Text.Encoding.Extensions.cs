@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Text
 {
     public partial class ASCIIEncoding : System.Text.Encoding
@@ -39,9 +38,9 @@ namespace System.Text
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark) { }
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes) { }
         public override bool Equals(object value) { throw null; }
-        public override int GetByteCount(char[] chars, int index, int count) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
+        public override int GetByteCount(char[] chars, int index, int count) { throw null; }
         public override int GetByteCount(string s) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount) { throw null; }

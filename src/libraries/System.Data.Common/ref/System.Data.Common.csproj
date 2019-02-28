@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Common.cs" />
+    <Compile Include="System.Data.Common.Forwards.cs" />
     <Compile Include="System.Data.Common.manual.cs" />
     <Compile Include="System.Data.Common.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
   </ItemGroup>

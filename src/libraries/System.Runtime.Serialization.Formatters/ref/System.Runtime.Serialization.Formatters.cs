@@ -5,18 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System;
-using System.Collections;
-
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.NonSerializedAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.SerializableAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.IDeserializationCallback))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.IFormatterConverter))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.ISerializable))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.SerializationEntry))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.SerializationInfo))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.SerializationInfoEnumerator))]
-
 namespace System.Runtime.Serialization
 {
     [System.CLSCompliantAttribute(false)]
@@ -155,7 +143,7 @@ namespace System.Runtime.Serialization
         public virtual System.Runtime.Serialization.ISerializationSurrogate GetSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context, out System.Runtime.Serialization.ISurrogateSelector selector) { throw null; }
         public virtual void RemoveSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context) { }
     }
-} // end of System.Runtime.Serialization
+}
 namespace System.Runtime.Serialization.Formatters
 {
     public enum FormatterAssemblyStyle
@@ -179,7 +167,7 @@ namespace System.Runtime.Serialization.Formatters
         Full = 3,
         Low = 2,
     }
-} // end of System.Runtime.Serialization.Formatters
+}
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     public sealed partial class BinaryFormatter : System.Runtime.Serialization.IFormatter
@@ -195,4 +183,4 @@ namespace System.Runtime.Serialization.Formatters.Binary
         public object Deserialize(System.IO.Stream serializationStream) { throw null; }
         public void Serialize(System.IO.Stream serializationStream, object graph) { }
     }
-} // end of System.Runtime.Serialization.Formatters.Binary
+}

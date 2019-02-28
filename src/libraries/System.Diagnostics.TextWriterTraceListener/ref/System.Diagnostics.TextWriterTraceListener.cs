@@ -5,10 +5,9 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Diagnostics
 {
-    public class ConsoleTraceListener : System.Diagnostics.TextWriterTraceListener
+    public partial class ConsoleTraceListener : System.Diagnostics.TextWriterTraceListener
     {
         public ConsoleTraceListener() { }
         public ConsoleTraceListener(bool useErrorStream) { }
@@ -23,11 +22,11 @@ namespace System.Diagnostics
         public DelimitedListTraceListener(string fileName) { }
         public DelimitedListTraceListener(string fileName, string name) { }
         public string Delimiter { get { throw null; } set { } }
+        protected override string[] GetSupportedAttributes() { throw null; }
         public override void TraceData(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, object data) { }
         public override void TraceData(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object[] data) { }
         public override void TraceEvent(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string message) { }
         public override void TraceEvent(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string format, params object[] args) { }
-        protected override string[] GetSupportedAttributes() { throw null; }
     }
     public partial class TextWriterTraceListener : System.Diagnostics.TraceListener
     {
