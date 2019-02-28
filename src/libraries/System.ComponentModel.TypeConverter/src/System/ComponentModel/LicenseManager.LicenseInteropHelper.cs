@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Design;
+using System.Collections;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -10,12 +11,76 @@ namespace System.ComponentModel
 {
     public sealed partial class LicenseManager
     {
+        // A private implementation of a LicenseContext used for instantiating
+        // managed objects exposed to COM. It has memory for the license key
+        // of a single Type.
+        private class CLRLicenseContext : LicenseContext
+        {
+            private readonly Type _type;
+            private string _key;
+
+            private CLRLicenseContext(Type type, LicenseUsageMode mode)
+            {
+                UsageMode = mode;
+                _type = type;
+            }
+
+            public static CLRLicenseContext CreateDesignContext(Type type)
+            {
+                return new CLRLicenseContext(type, LicenseUsageMode.Designtime);
+            }
+
+            public static CLRLicenseContext CreateRuntimeContext(Type type, string key)
+            {
+                var cxt = new CLRLicenseContext(type, LicenseUsageMode.Runtime);
+                if (key != null)
+                {
+                    cxt.SetSavedLicenseKey(type, key);
+                }
+
+                return cxt;
+            }
+
+            public override LicenseUsageMode UsageMode { get; }
+
+            public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly)
+            {
+                if (type == _type)
+                {
+                    return _key;
+                }
+
+                return null;
+            }
+
+            public override void SetSavedLicenseKey(Type type, string key)
+            {
+                if (type == _type)
+                {
+                    _key = key;
+                }
+            }
+        }
+
+        // Used from IClassFactory2 when retrieving LicInfo
+        private class LicInfoHelperLicenseContext : LicenseContext
+        {
+            private Hashtable _savedLicenseKeys = new Hashtable();
+
+            public bool Contains(string assemblyName) => _savedLicenseKeys.Contains(assemblyName);
+
+            public override LicenseUsageMode UsageMode => LicenseUsageMode.Designtime;
+
+            public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly) => null;
+
+            public override void SetSavedLicenseKey(Type type, string key)
+            {
+                _savedLicenseKeys[type.AssemblyQualifiedName] = key;
+            }
+        }
+
         // This is a helper class that supports the CLR's IClassFactory2 marshaling
         // support.
-        //
-        // When a managed object is exposed to COM, the CLR invokes
-        // AllocateAndValidateLicense() to set up the appropriate
-        // license context and instantiate the object.
         //
         // When the CLR consumes an unmanaged COM object, the CLR invokes
         // GetCurrentContextInfo() to figure out the licensing context
@@ -24,115 +89,34 @@ namespace System.ComponentModel
         // requests the class factory for a runtime license key and invokes
         // SaveKeyInCurrentContext() to stash a copy in the current licensing
         // context
+        //
         private class LicenseInteropHelper
         {
-            // Define some common HRESULTs.
-            private const int S_OK = 0;
-            private const int E_NOTIMPL = unchecked((int)0x80004001);
-            private const int CLASS_E_NOTLICENSED = unchecked((int)0x80040112);
-            private const int E_FAIL = unchecked((int)0x80000008);
-            private DesigntimeLicenseContext _helperContext;
             private LicenseContext _savedLicenseContext;
             private Type _savedType;
-            // The CLR invokes this whenever a COM client invokes
-            // IClassFactory::CreateInstance() or IClassFactory2::CreateInstanceLic()
-            // on a managed that has a LicenseProvider custom attribute.
-            //
-            // If we are being entered because of a call to ICF::CreateInstance(),
-            // fDesignTime will be "true".
-            //
-            // If we are being entered because of a call to ICF::CreateInstanceLic(),
-            // fDesignTime will be "false" and bstrKey will point a non-null
-            // license key.
-            private static object AllocateAndValidateLicense(RuntimeTypeHandle rth, IntPtr bstrKey, int fDesignTime)
+
+            // Used to validate a type and retrieve license details
+            // when activating a managed COM server from an IClassFactory2 instance.
+            public static bool ValidateAndRetrieveLicenseDetails(
+                LicenseContext context,
+                Type type,
+                out License license,
+                out string licenseKey)
             {
-                Type type = Type.GetTypeFromHandle(rth);
-                CLRLicenseContext licensecontext = new CLRLicenseContext(fDesignTime != 0 ? LicenseUsageMode.Designtime : LicenseUsageMode.Runtime, type);
-                if (fDesignTime == 0 && bstrKey != (IntPtr)0)
+                if (context == null)
                 {
-                    licensecontext.SetSavedLicenseKey(type, Marshal.PtrToStringBSTR(bstrKey));
+                    context = LicenseManager.CurrentContext;
                 }
-                try
-                {
-                    return LicenseManager.CreateWithContext(type, licensecontext);
-                }
-                catch (LicenseException lexp)
-                {
-                    throw new COMException(lexp.Message, CLASS_E_NOTLICENSED);
-                }
+
+                return LicenseManager.ValidateInternalRecursive(
+                    context,
+                    type,
+                    instance: null,
+                    allowExceptions: false,
+                    out license,
+                    out licenseKey);
             }
-            // The CLR invokes this whenever a COM client invokes
-            // IClassFactory2::RequestLicKey on a managed class.
-            //
-            // This method should return the appropriate HRESULT and set pbstrKey
-            // to the licensing key.
-            private static int RequestLicKey(RuntimeTypeHandle rth, ref IntPtr pbstrKey)
-            {
-                Type type = Type.GetTypeFromHandle(rth);
-                License license;
-                string licenseKey;
-                // license will be null, since we passed no instance,
-                // however we can still retrieve the "first" license
-                // key from the file. This really will only
-                // work for simple COM-compatible license providers
-                // like LicFileLicenseProvider that don't require the
-                // instance to grant a key.
-                //
-                if (!LicenseManager.ValidateInternalRecursive(LicenseManager.CurrentContext,
-                                                              type,
-                                                              null,
-                                                              false,
-                                                              out license,
-                                                              out licenseKey))
-                {
-                    return E_FAIL;
-                }
-                if (licenseKey == null)
-                {
-                    return E_FAIL;
-                }
-                pbstrKey = Marshal.StringToBSTR(licenseKey);
-                if (license != null)
-                {
-                    license.Dispose();
-                    license = null;
-                }
-                return S_OK;
-            }
-            // The CLR invokes this whenever a COM client invokes
-            // IClassFactory2::GetLicInfo on a managed class.
-            //
-            // COM normally doesn't expect this function to fail so this method
-            // should only throw in the case of a catastrophic error (stack, memory, etc.)
-            private void GetLicInfo(RuntimeTypeHandle rth, ref int pRuntimeKeyAvail, ref int pLicVerified)
-            {
-                pRuntimeKeyAvail = 0;
-                pLicVerified = 0;
-                Type type = Type.GetTypeFromHandle(rth);
-                License license;
-                string licenseKey;
-                if (_helperContext == null)
-                {
-                    _helperContext = new DesigntimeLicenseContext();
-                }
-                else
-                {
-                    _helperContext._savedLicenseKeys.Clear();
-                }
-                if (LicenseManager.ValidateInternalRecursive(_helperContext, type, null, false, out license, out licenseKey))
-                {
-                    if (_helperContext._savedLicenseKeys.Contains(type.AssemblyQualifiedName))
-                    {
-                        pRuntimeKeyAvail = 1;
-                    }
-                    if (license != null)
-                    {
-                        license.Dispose();
-                        license = null;
-                        pLicVerified = 1;
-                    }
-                }
-            }
+
             // The CLR invokes this when instantiating an unmanaged COM
             // object. The purpose is to decide which classfactory method to
             // use.
@@ -168,6 +152,7 @@ namespace System.ComponentModel
                     bstrKey = Marshal.StringToBSTR(key);
                 }
             }
+            
             // The CLR invokes this when instantiating a licensed COM
             // object inside a designtime license context.
             // It's purpose is to save away the license key that the CLR
@@ -177,31 +162,6 @@ namespace System.ComponentModel
                 if (bstrKey != (IntPtr)0)
                 {
                     _savedLicenseContext.SetSavedLicenseKey(_savedType, Marshal.PtrToStringBSTR(bstrKey));
-                }
-            }
-            // A private implementation of a LicenseContext used for instantiating
-            // managed objects exposed to COM. It has memory for the license key
-            // of a single Type.
-            internal class CLRLicenseContext : LicenseContext
-            {
-                private Type _type;
-                private string _key;
-                public CLRLicenseContext(LicenseUsageMode usageMode, Type type)
-                {
-                    UsageMode = usageMode;
-                    _type = type;
-                }
-                public override LicenseUsageMode UsageMode { get; }
-                public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly)
-                {
-                    return type == _type ? _key : null;
-                }
-                public override void SetSavedLicenseKey(Type type, string key)
-                {
-                    if (type == _type)
-                    {
-                        _key = key;
-                    }
                 }
             }
         }
