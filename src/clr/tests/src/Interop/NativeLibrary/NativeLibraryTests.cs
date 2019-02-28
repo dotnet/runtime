@@ -7,8 +7,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using TestLibrary;
 
-using Console = Internal.Console;
-
 enum TestResult {
     Success,
     ReturnFailure,
@@ -105,10 +103,13 @@ public class NativeLibraryTest
             success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, null),
                 (TestLibrary.Utilities.IsWindows) ? TestResult.Success : TestResult.ReturnFailure);
 
-            if (TestLibrary.Utilities.IsWindows)
+            // Check for loading a native binary in the system32 directory.
+            // The choice of the binary is arbitrary, and may not be available on
+            // all Windows platforms (ex: Nano server)
+            libName = "url.dll";
+            if (TestLibrary.Utilities.IsWindows && 
+                File.Exists(Path.Combine(Environment.SystemDirectory, libName)))
             {
-                libName = GetWin32LibName();
-
                 // Calls on a valid library from System32 directory
                 success &= EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.System32));
                 success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.System32));
@@ -144,7 +145,13 @@ public class NativeLibraryTest
             success &= EXPECT(FreeLibrary(handle));
 
             // Double Free
-            success &= EXPECT(FreeLibrary(handle), TestResult.InvalidOperation);
+            if (TestLibrary.Utilities.IsWindows)
+            {
+                // The FreeLibrary() implementation simply calls the appropriate OS API
+                // with the supplied handle. Not all OSes consistently return an error 
+                // when a library is double-freed.
+                success &= EXPECT(FreeLibrary(handle), TestResult.InvalidOperation);
+            }
 
             // Null Free
             success &= EXPECT(FreeLibrary(IntPtr.Zero));
@@ -188,11 +195,6 @@ public class NativeLibraryTest
     static string GetNativeLibraryPlainName()
     {
         return "NativeLibrary";
-    }
-
-    static string GetWin32LibName()
-    {
-        return "msi.dll";
     }
 
     static string GetNativeLibraryName()
