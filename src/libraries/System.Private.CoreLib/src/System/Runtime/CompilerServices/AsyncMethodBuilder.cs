@@ -1011,7 +1011,7 @@ namespace System.Runtime.CompilerServices
             // Capture references to Thread Contexts
             Thread currentThread0 = Thread.CurrentThread;
             Thread currentThread = currentThread0;
-            ExecutionContext previousExecutionCtx0 = currentThread0.ExecutionContext;
+            ExecutionContext previousExecutionCtx0 = currentThread0._executionContext;
 
             // Store current ExecutionContext and SynchronizationContext as "previousXxx".
             // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
@@ -1036,7 +1036,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 ExecutionContext previousExecutionCtx1 = previousExecutionCtx;
-                ExecutionContext currentExecutionCtx1 = currentThread1.ExecutionContext;
+                ExecutionContext currentExecutionCtx1 = currentThread1._executionContext;
                 if (previousExecutionCtx1 != currentExecutionCtx1)
                 {
                     ExecutionContext.RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);

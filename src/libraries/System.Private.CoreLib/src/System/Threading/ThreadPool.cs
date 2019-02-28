@@ -558,7 +558,7 @@ namespace System.Threading
                 Thread currentThread = tl.currentThread;
 
                 // Start on clean ExecutionContext and SynchronizationContext
-                currentThread.ExecutionContext = null;
+                currentThread._executionContext = null;
                 currentThread.SynchronizationContext = null;
 
                 //
