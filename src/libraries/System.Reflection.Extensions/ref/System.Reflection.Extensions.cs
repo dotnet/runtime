@@ -5,7 +5,3 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-// Types moved down into System.Runtime
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.CustomAttributeExtensions))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.InterfaceMapping))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.RuntimeReflectionExtensions))]

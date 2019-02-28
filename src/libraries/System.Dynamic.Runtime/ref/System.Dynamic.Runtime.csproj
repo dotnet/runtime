@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Dynamic.Runtime.cs" />
+    <Compile Include="System.Dynamic.Runtime.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

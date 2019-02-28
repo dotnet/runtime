@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Runtime.Serialization
 {
     public partial class DateTimeFormat
@@ -29,15 +28,11 @@ namespace System.Runtime.Serialization.Json
     {
         public DataContractJsonSerializer(System.Type type) { }
         public DataContractJsonSerializer(System.Type type, System.Collections.Generic.IEnumerable<System.Type> knownTypes) { }
-//CODEDOM        public DataContractJsonSerializer(System.Type type, System.Collections.Generic.IEnumerable<System.Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, System.Runtime.Serialization.IDataContractSurrogate dataContractSurrogate, bool alwaysEmitTypeInformation) { }
         public DataContractJsonSerializer(System.Type type, System.Runtime.Serialization.Json.DataContractJsonSerializerSettings settings) { }
         public DataContractJsonSerializer(System.Type type, string rootName) { }
         public DataContractJsonSerializer(System.Type type, string rootName, System.Collections.Generic.IEnumerable<System.Type> knownTypes) { }
-//CODEDOM        public DataContractJsonSerializer(System.Type type, string rootName, System.Collections.Generic.IEnumerable<System.Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, System.Runtime.Serialization.IDataContractSurrogate dataContractSurrogate, bool alwaysEmitTypeInformation) { }
         public DataContractJsonSerializer(System.Type type, System.Xml.XmlDictionaryString rootName) { }
         public DataContractJsonSerializer(System.Type type, System.Xml.XmlDictionaryString rootName, System.Collections.Generic.IEnumerable<System.Type> knownTypes) { }
-//CODEDOM        public DataContractJsonSerializer(System.Type type, System.Xml.XmlDictionaryString rootName, System.Collections.Generic.IEnumerable<System.Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, System.Runtime.Serialization.IDataContractSurrogate dataContractSurrogate, bool alwaysEmitTypeInformation) { }
-//CODEDOM        public System.Runtime.Serialization.IDataContractSurrogate DataContractSurrogate { get { throw null; } }
         public System.Runtime.Serialization.DateTimeFormat DateTimeFormat { get { throw null; } }
         public System.Runtime.Serialization.EmitTypeInformation EmitTypeInformation { get { throw null; } }
         public bool IgnoreExtensionDataObject { get { throw null; } }
@@ -65,7 +60,6 @@ namespace System.Runtime.Serialization.Json
     public partial class DataContractJsonSerializerSettings
     {
         public DataContractJsonSerializerSettings() { }
-//CODEDOM        public System.Runtime.Serialization.IDataContractSurrogate DataContractSurrogate { get { throw null; } set { } }
         public System.Runtime.Serialization.DateTimeFormat DateTimeFormat { get { throw null; } set { } }
         public System.Runtime.Serialization.EmitTypeInformation EmitTypeInformation { get { throw null; } set { } }
         public bool IgnoreExtensionDataObject { get { throw null; } set { } }

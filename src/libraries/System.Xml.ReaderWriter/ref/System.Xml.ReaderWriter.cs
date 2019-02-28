@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Xml
 {
     public enum ConformanceLevel
@@ -30,11 +29,11 @@ namespace System.Xml
         Indented = 1,
         None = 0,
     }
-    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
     public partial interface IApplicationResourceStreamResolver
     {
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         System.IO.Stream GetApplicationResourceStream(System.Uri relativeUri);
     }
@@ -870,11 +869,11 @@ namespace System.Xml
         public virtual string ReadElementContentAsString(string localName, string namespaceURI) { throw null; }
         [System.Diagnostics.DebuggerStepThroughAttribute]
         public virtual System.Threading.Tasks.Task<string> ReadElementContentAsStringAsync() { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual string ReadElementString() { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual string ReadElementString(string name) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual string ReadElementString(string localname, string ns) { throw null; }
         public virtual void ReadEndElement() { }
         public virtual string ReadInnerXml() { throw null; }
@@ -886,7 +885,7 @@ namespace System.Xml
         public virtual void ReadStartElement() { }
         public virtual void ReadStartElement(string name) { }
         public virtual void ReadStartElement(string localname, string ns) { }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual string ReadString() { throw null; }
         public virtual System.Xml.XmlReader ReadSubtree() { throw null; }
         public virtual bool ReadToDescendant(string name) { throw null; }
@@ -938,11 +937,8 @@ namespace System.Xml
     }
     public partial class XmlSecureResolver : System.Xml.XmlResolver
     {
-//CAS        public XmlSecureResolver(System.Xml.XmlResolver resolver, System.Security.PermissionSet permissionSet) { }
-//CAS        public XmlSecureResolver(System.Xml.XmlResolver resolver, System.Security.Policy.Evidence evidence) { }
         public XmlSecureResolver(System.Xml.XmlResolver resolver, string securityUrl) { }
         public override System.Net.ICredentials Credentials { set { } }
-//CAS        public static System.Security.Policy.Evidence CreateEvidenceForUrl(string securityUrl) { throw null; }
         public override object GetEntity(System.Uri absoluteUri, string role, System.Type ofObjectToReturn) { throw null; }
         public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string role, System.Type ofObjectToReturn) { throw null; }
         public override System.Uri ResolveUri(System.Uri baseUri, string relativeUri) { throw null; }
@@ -980,7 +976,7 @@ namespace System.Xml
         public override void WriteContentTo(System.Xml.XmlWriter w) { }
         public override void WriteTo(System.Xml.XmlWriter w) { }
     }
-    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class XmlTextReader : System.Xml.XmlReader, System.Xml.IXmlLineInfo, System.Xml.IXmlNamespaceResolver
     {
         protected XmlTextReader() { }
@@ -1060,7 +1056,7 @@ namespace System.Xml
         string System.Xml.IXmlNamespaceResolver.LookupNamespace(string prefix) { throw null; }
         string System.Xml.IXmlNamespaceResolver.LookupPrefix(string namespaceName) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class XmlTextWriter : System.Xml.XmlWriter
     {
         public XmlTextWriter(System.IO.Stream w, System.Text.Encoding encoding) { }
@@ -1407,22 +1403,22 @@ namespace System.Xml.Schema
         public const string InstanceNamespace = "http://www.w3.org/2001/XMLSchema-instance";
         public const string Namespace = "http://www.w3.org/2001/XMLSchema";
         public XmlSchema() { }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaForm)(0))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaForm.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("attributeFormDefault")]
         public System.Xml.Schema.XmlSchemaForm AttributeFormDefault { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaObjectTable AttributeGroups { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaObjectTable Attributes { get { throw null; } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaDerivationMethod)(256))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaDerivationMethod.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("blockDefault")]
         public System.Xml.Schema.XmlSchemaDerivationMethod BlockDefault { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaForm)(0))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaForm.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("elementFormDefault")]
         public System.Xml.Schema.XmlSchemaForm ElementFormDefault { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaObjectTable Elements { get { throw null; } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaDerivationMethod)(256))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaDerivationMethod.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("finalDefault")]
         public System.Xml.Schema.XmlSchemaDerivationMethod FinalDefault { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
@@ -1500,7 +1496,7 @@ namespace System.Xml.Schema
         public XmlSchemaAny() { }
         [System.Xml.Serialization.XmlAttributeAttribute("namespace")]
         public string Namespace { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaContentProcessing)(0))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaContentProcessing.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("processContents")]
         public System.Xml.Schema.XmlSchemaContentProcessing ProcessContents { get { throw null; } set { } }
     }
@@ -1509,7 +1505,7 @@ namespace System.Xml.Schema
         public XmlSchemaAnyAttribute() { }
         [System.Xml.Serialization.XmlAttributeAttribute("namespace")]
         public string Namespace { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaContentProcessing)(0))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaContentProcessing.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("processContents")]
         public System.Xml.Schema.XmlSchemaContentProcessing ProcessContents { get { throw null; } set { } }
     }
@@ -1536,7 +1532,7 @@ namespace System.Xml.Schema
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.Xml.Serialization.XmlAttributeAttribute("fixed")]
         public string FixedValue { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaForm)(0))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaForm.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("form")]
         public System.Xml.Schema.XmlSchemaForm Form { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("name")]
@@ -1549,7 +1545,7 @@ namespace System.Xml.Schema
         public System.Xml.Schema.XmlSchemaSimpleType SchemaType { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("type")]
         public System.Xml.XmlQualifiedName SchemaTypeName { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaUse)(0))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaUse.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("use")]
         public System.Xml.Schema.XmlSchemaUse Use { get { throw null; } set { } }
     }
@@ -1676,7 +1672,7 @@ namespace System.Xml.Schema
         public System.Xml.Schema.XmlSchemaObjectTable AttributeUses { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaAnyAttribute AttributeWildcard { get { throw null; } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaDerivationMethod)(256))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaDerivationMethod.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("block")]
         public System.Xml.Schema.XmlSchemaDerivationMethod Block { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
@@ -1780,7 +1776,7 @@ namespace System.Xml.Schema
     public partial class XmlSchemaElement : System.Xml.Schema.XmlSchemaParticle
     {
         public XmlSchemaElement() { }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaDerivationMethod)(256))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaDerivationMethod.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("block")]
         public System.Xml.Schema.XmlSchemaDerivationMethod Block { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
@@ -1797,7 +1793,7 @@ namespace System.Xml.Schema
         [System.ObsoleteAttribute("This property has been deprecated. Please use ElementSchemaType property that returns a strongly typed element type. https://go.microsoft.com/fwlink/?linkid=14202")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object ElementType { get { throw null; } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaDerivationMethod)(256))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaDerivationMethod.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("final")]
         public System.Xml.Schema.XmlSchemaDerivationMethod Final { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
@@ -1805,7 +1801,7 @@ namespace System.Xml.Schema
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.Xml.Serialization.XmlAttributeAttribute("fixed")]
         public string FixedValue { get { throw null; } set { } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaForm)(0))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaForm.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("form")]
         public System.Xml.Schema.XmlSchemaForm Form { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
@@ -2252,7 +2248,7 @@ namespace System.Xml.Schema
         public System.Xml.Schema.XmlSchemaDatatype Datatype { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaDerivationMethod DerivedBy { get { throw null; } }
-        [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaDerivationMethod)(256))]
+        [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaDerivationMethod.None)]
         [System.Xml.Serialization.XmlAttributeAttribute("final")]
         public System.Xml.Schema.XmlSchemaDerivationMethod Final { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
@@ -2421,17 +2417,17 @@ namespace System.Xml.Serialization
 {
     public partial interface IXmlSerializable
     {
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         System.Xml.Schema.XmlSchema GetSchema();
         void ReadXml(System.Xml.XmlReader reader);
         void WriteXml(System.Xml.XmlWriter writer);
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624), AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=false)]
     public partial class XmlAnyAttributeAttribute : System.Attribute
     {
         public XmlAnyAttributeAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624), AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=true)]
     public partial class XmlAnyElementAttribute : System.Attribute
     {
         public XmlAnyElementAttribute() { }
@@ -2441,7 +2437,7 @@ namespace System.Xml.Serialization
         public string Namespace { get { throw null; } set { } }
         public int Order { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
     public partial class XmlAttributeAttribute : System.Attribute
     {
         public XmlAttributeAttribute() { }
@@ -2454,7 +2450,7 @@ namespace System.Xml.Serialization
         public string Namespace { get { throw null; } set { } }
         public System.Type Type { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624), AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=true)]
     public partial class XmlElementAttribute : System.Attribute
     {
         public XmlElementAttribute() { }
@@ -2469,23 +2465,24 @@ namespace System.Xml.Serialization
         public int Order { get { throw null; } set { } }
         public System.Type Type { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(256))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field)]
     public partial class XmlEnumAttribute : System.Attribute
     {
         public XmlEnumAttribute() { }
         public XmlEnumAttribute(string name) { }
         public string Name { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
     public partial class XmlIgnoreAttribute : System.Attribute
     {
         public XmlIgnoreAttribute() { }
-    }[System.AttributeUsageAttribute((System.AttributeTargets)(10624), AllowMultiple=false)]
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=false)]
     public partial class XmlNamespaceDeclarationsAttribute : System.Attribute
     {
         public XmlNamespaceDeclarationsAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(9244))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct)]
     public partial class XmlRootAttribute : System.Attribute
     {
         public XmlRootAttribute() { }
@@ -2495,7 +2492,7 @@ namespace System.Xml.Serialization
         public bool IsNullable { get { throw null; } set { } }
         public string Namespace { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1036))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Struct)]
     public sealed partial class XmlSchemaProviderAttribute : System.Attribute
     {
         public XmlSchemaProviderAttribute(string methodName) { }
@@ -2511,7 +2508,7 @@ namespace System.Xml.Serialization
         public void Add(string prefix, string ns) { }
         public System.Xml.XmlQualifiedName[] ToArray() { throw null; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
     public partial class XmlTextAttribute : System.Attribute
     {
         public XmlTextAttribute() { }
@@ -2754,8 +2751,6 @@ namespace System.Xml.Xsl
         public XslCompiledTransform() { }
         public XslCompiledTransform(bool enableDebug) { }
         public System.Xml.XmlWriterSettings OutputSettings { get { throw null; } }
-//CODEDOM        public System.CodeDom.Compiler.TempFileCollection TemporaryFiles { get { throw null; } }
-//REFEMIT        public static System.CodeDom.Compiler.CompilerErrorCollection CompileToType(System.Xml.XmlReader stylesheet, System.Xml.Xsl.XsltSettings settings, System.Xml.XmlResolver stylesheetResolver, bool debug, System.Reflection.Emit.TypeBuilder typeBuilder, string scriptAssemblyPath) { throw null; }
         public void Load(System.Reflection.MethodInfo executeMethod, byte[] queryData, System.Type[] earlyBoundTypes) { }
         public void Load(string stylesheetUri) { }
         public void Load(string stylesheetUri, System.Xml.Xsl.XsltSettings settings, System.Xml.XmlResolver stylesheetResolver) { }
@@ -2837,13 +2832,10 @@ namespace System.Xml.Xsl
         public void Load(string url, System.Xml.XmlResolver resolver) { }
         public void Load(System.Xml.XmlReader stylesheet) { }
         public void Load(System.Xml.XmlReader stylesheet, System.Xml.XmlResolver resolver) { }
-//CAS        public void Load(System.Xml.XmlReader stylesheet, System.Xml.XmlResolver resolver, System.Security.Policy.Evidence evidence) { }
         public void Load(System.Xml.XPath.IXPathNavigable stylesheet) { }
         public void Load(System.Xml.XPath.IXPathNavigable stylesheet, System.Xml.XmlResolver resolver) { }
-//CAS        public void Load(System.Xml.XPath.IXPathNavigable stylesheet, System.Xml.XmlResolver resolver, System.Security.Policy.Evidence evidence) { }
         public void Load(System.Xml.XPath.XPathNavigator stylesheet) { }
         public void Load(System.Xml.XPath.XPathNavigator stylesheet, System.Xml.XmlResolver resolver) { }
-//CAS        public void Load(System.Xml.XPath.XPathNavigator stylesheet, System.Xml.XmlResolver resolver, System.Security.Policy.Evidence evidence) { }
         public void Transform(string inputfile, string outputfile) { }
         public void Transform(string inputfile, string outputfile, System.Xml.XmlResolver resolver) { }
         public System.Xml.XmlReader Transform(System.Xml.XPath.IXPathNavigable input, System.Xml.Xsl.XsltArgumentList args) { throw null; }

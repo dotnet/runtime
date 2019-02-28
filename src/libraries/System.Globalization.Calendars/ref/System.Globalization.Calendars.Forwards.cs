@@ -21,5 +21,3 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.TaiwanLunisolarCalendar))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.ThaiBuddhistCalendar))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Globalization.UmAlQuraCalendar))]
-
-

@@ -106,7 +106,7 @@ namespace System.Runtime.Caching
     }
     public partial class MemoryCache : System.Runtime.Caching.ObjectCache, System.Collections.IEnumerable, System.IDisposable
     {
-        public MemoryCache(string name, System.Collections.Specialized.NameValueCollection config=null) { }
+        public MemoryCache(string name, System.Collections.Specialized.NameValueCollection config = null) { }
         public MemoryCache(string name, System.Collections.Specialized.NameValueCollection config, bool ignoreConfigSection) { }
         public long CacheMemoryLimit { get { throw null; } }
         public static System.Runtime.Caching.MemoryCache Default { get { throw null; } }
@@ -117,22 +117,22 @@ namespace System.Runtime.Caching
         public System.TimeSpan PollingInterval { get { throw null; } }
         public override bool Add(System.Runtime.Caching.CacheItem item, System.Runtime.Caching.CacheItemPolicy policy) { throw null; }
         public override System.Runtime.Caching.CacheItem AddOrGetExisting(System.Runtime.Caching.CacheItem item, System.Runtime.Caching.CacheItemPolicy policy) { throw null; }
-        public override object AddOrGetExisting(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName=null) { throw null; }
-        public override object AddOrGetExisting(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName=null) { throw null; }
-        public override bool Contains(string key, string regionName=null) { throw null; }
-        public override System.Runtime.Caching.CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(System.Collections.Generic.IEnumerable<string> keys, string regionName=null) { throw null; }
+        public override object AddOrGetExisting(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName = null) { throw null; }
+        public override object AddOrGetExisting(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName = null) { throw null; }
+        public override bool Contains(string key, string regionName = null) { throw null; }
+        public override System.Runtime.Caching.CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(System.Collections.Generic.IEnumerable<string> keys, string regionName = null) { throw null; }
         public void Dispose() { }
-        public override object Get(string key, string regionName=null) { throw null; }
-        public override System.Runtime.Caching.CacheItem GetCacheItem(string key, string regionName=null) { throw null; }
-        public override long GetCount(string regionName=null) { throw null; }
+        public override object Get(string key, string regionName = null) { throw null; }
+        public override System.Runtime.Caching.CacheItem GetCacheItem(string key, string regionName = null) { throw null; }
+        public override long GetCount(string regionName = null) { throw null; }
         protected override System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> GetEnumerator() { throw null; }
-        public long GetLastSize(string regionName=null) { throw null; }
-        public override System.Collections.Generic.IDictionary<string, object> GetValues(System.Collections.Generic.IEnumerable<string> keys, string regionName=null) { throw null; }
-        public object Remove(string key, System.Runtime.Caching.CacheEntryRemovedReason reason, string regionName=null) { throw null; }
-        public override object Remove(string key, string regionName=null) { throw null; }
+        public long GetLastSize(string regionName = null) { throw null; }
+        public override System.Collections.Generic.IDictionary<string, object> GetValues(System.Collections.Generic.IEnumerable<string> keys, string regionName = null) { throw null; }
+        public object Remove(string key, System.Runtime.Caching.CacheEntryRemovedReason reason, string regionName = null) { throw null; }
+        public override object Remove(string key, string regionName = null) { throw null; }
         public override void Set(System.Runtime.Caching.CacheItem item, System.Runtime.Caching.CacheItemPolicy policy) { }
-        public override void Set(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName=null) { }
-        public override void Set(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName=null) { }
+        public override void Set(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName = null) { }
+        public override void Set(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName = null) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public long Trim(int percent) { throw null; }
     }
@@ -146,23 +146,23 @@ namespace System.Runtime.Caching
         public abstract object this[string key] { get; set; }
         public abstract string Name { get; }
         public virtual bool Add(System.Runtime.Caching.CacheItem item, System.Runtime.Caching.CacheItemPolicy policy) { throw null; }
-        public virtual bool Add(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName=null) { throw null; }
-        public virtual bool Add(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName=null) { throw null; }
+        public virtual bool Add(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName = null) { throw null; }
+        public virtual bool Add(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName = null) { throw null; }
         public abstract System.Runtime.Caching.CacheItem AddOrGetExisting(System.Runtime.Caching.CacheItem value, System.Runtime.Caching.CacheItemPolicy policy);
-        public abstract object AddOrGetExisting(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName=null);
-        public abstract object AddOrGetExisting(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName=null);
-        public abstract bool Contains(string key, string regionName=null);
-        public abstract System.Runtime.Caching.CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(System.Collections.Generic.IEnumerable<string> keys, string regionName=null);
-        public abstract object Get(string key, string regionName=null);
-        public abstract System.Runtime.Caching.CacheItem GetCacheItem(string key, string regionName=null);
-        public abstract long GetCount(string regionName=null);
+        public abstract object AddOrGetExisting(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName = null);
+        public abstract object AddOrGetExisting(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName = null);
+        public abstract bool Contains(string key, string regionName = null);
+        public abstract System.Runtime.Caching.CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(System.Collections.Generic.IEnumerable<string> keys, string regionName = null);
+        public abstract object Get(string key, string regionName = null);
+        public abstract System.Runtime.Caching.CacheItem GetCacheItem(string key, string regionName = null);
+        public abstract long GetCount(string regionName = null);
         protected abstract System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> GetEnumerator();
-        public abstract System.Collections.Generic.IDictionary<string, object> GetValues(System.Collections.Generic.IEnumerable<string> keys, string regionName=null);
+        public abstract System.Collections.Generic.IDictionary<string, object> GetValues(System.Collections.Generic.IEnumerable<string> keys, string regionName = null);
         public virtual System.Collections.Generic.IDictionary<string, object> GetValues(string regionName, params string[] keys) { throw null; }
-        public abstract object Remove(string key, string regionName=null);
+        public abstract object Remove(string key, string regionName = null);
         public abstract void Set(System.Runtime.Caching.CacheItem item, System.Runtime.Caching.CacheItemPolicy policy);
-        public abstract void Set(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName=null);
-        public abstract void Set(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName=null);
+        public abstract void Set(string key, object value, System.DateTimeOffset absoluteExpiration, string regionName = null);
+        public abstract void Set(string key, object value, System.Runtime.Caching.CacheItemPolicy policy, string regionName = null);
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }

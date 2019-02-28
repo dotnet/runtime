@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Net.NetworkInformation
 {
     public enum DuplicateAddressDetectionState
@@ -205,6 +204,17 @@ namespace System.Net.NetworkInformation
         public abstract long UnicastPacketsReceived { get; }
         public abstract long UnicastPacketsSent { get; }
     }
+    public abstract partial class IPv4InterfaceProperties
+    {
+        protected IPv4InterfaceProperties() { }
+        public abstract int Index { get; }
+        public abstract bool IsAutomaticPrivateAddressingActive { get; }
+        public abstract bool IsAutomaticPrivateAddressingEnabled { get; }
+        public abstract bool IsDhcpEnabled { get; }
+        public abstract bool IsForwardingEnabled { get; }
+        public abstract int Mtu { get; }
+        public abstract bool UsesWins { get; }
+    }
     public abstract partial class IPv4InterfaceStatistics
     {
         protected IPv4InterfaceStatistics() { }
@@ -220,17 +230,6 @@ namespace System.Net.NetworkInformation
         public abstract long OutputQueueLength { get; }
         public abstract long UnicastPacketsReceived { get; }
         public abstract long UnicastPacketsSent { get; }
-    }
-    public abstract partial class IPv4InterfaceProperties
-    {
-        protected IPv4InterfaceProperties() { }
-        public abstract int Index { get; }
-        public abstract bool IsAutomaticPrivateAddressingActive { get; }
-        public abstract bool IsAutomaticPrivateAddressingEnabled { get; }
-        public abstract bool IsDhcpEnabled { get; }
-        public abstract bool IsForwardingEnabled { get; }
-        public abstract int Mtu { get; }
-        public abstract bool UsesWins { get; }
     }
     public abstract partial class IPv6InterfaceProperties
     {
@@ -280,12 +279,12 @@ namespace System.Net.NetworkInformation
     }
     public partial class NetworkChange
     {
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public NetworkChange() { }
         public static event System.Net.NetworkInformation.NetworkAddressChangedEventHandler NetworkAddressChanged { add { } remove { } }
         public static event System.Net.NetworkInformation.NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged { add { } remove { } }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(System.Net.NetworkInformation.NetworkChange nc) { }
     }

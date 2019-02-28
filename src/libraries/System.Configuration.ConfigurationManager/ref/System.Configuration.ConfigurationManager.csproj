@@ -5,7 +5,7 @@
     <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Configuration.cs" />
+    <Compile Include="System.Configuration.ConfigurationManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />

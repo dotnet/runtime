@@ -16,7 +16,7 @@ namespace System.Threading.Tasks.Dataflow
         public System.Threading.Tasks.Task Completion { get { throw null; } }
         public int InputCount { get { throw null; } }
         public void Complete() { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]public bool Post(TInput item) { throw null; }
+        public bool Post(TInput item) { throw null; }
         void System.Threading.Tasks.Dataflow.IDataflowBlock.Fault(System.Exception exception) { }
         System.Threading.Tasks.Dataflow.DataflowMessageStatus System.Threading.Tasks.Dataflow.ITargetBlock<TInput>.OfferMessage(System.Threading.Tasks.Dataflow.DataflowMessageHeader messageHeader, TInput messageValue, System.Threading.Tasks.Dataflow.ISourceBlock<TInput> source, bool consumeToAccept) { throw null; }
         public override string ToString() { throw null; }
@@ -160,7 +160,7 @@ namespace System.Threading.Tasks.Dataflow
     }
     public readonly partial struct DataflowMessageHeader : System.IEquatable<System.Threading.Tasks.Dataflow.DataflowMessageHeader>
     {
-        private readonly int _dummy;
+        private readonly int _dummyPrimitive;
         public DataflowMessageHeader(long id) { throw null; }
         public long Id { get { throw null; } }
         public bool IsValid { get { throw null; } }

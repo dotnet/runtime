@@ -49,12 +49,19 @@ namespace System
 
         public static bool SupportsSsl3 => GetSsl3Support();
 
+        // >= Windows 10 Anniversary Update
         public static bool IsWindows10Version1607OrGreater => 
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
+        
+         // >= Windows 10 Creators Update
         public static bool IsWindows10Version1703OrGreater => 
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 15063;
+        
+        // >= Windows 10 Fall Creators Update
         public static bool IsWindows10Version1709OrGreater => 
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 16299;
+        
+        // >= Windows 10 April 2018 Update
         public static bool IsWindows10Version1803OrGreater =>
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 17134;
 
