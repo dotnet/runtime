@@ -296,19 +296,18 @@ REM See https://github.com/Microsoft/msbuild/issues/2993
 
 set __SkipPackageRestore=false
 set __SkipTargetingPackBuild=false
-set __BuildLoopCount=2
-set __TestGroupToBuild=1
+set __NumberOfTestGroups=3
 
-if %__Priority% GTR 0 (set __BuildLoopCount=16&set __TestGroupToBuild=2)
-echo %__MsgPrefix%Building tests group %__TestGroupToBuild% with %__BuildLoopCount% subgroups
+if %__Priority% GTR 0 (set __NumberOfTestGroups=10)
+echo %__MsgPrefix%Building tests divided into %__NumberOfTestGroups% test groups
 
-for /l %%G in (1, 1, %__BuildLoopCount%) do (
+for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
 
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%";Append=!__AppendToLog!
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%";Append=!__AppendToLog!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%";Append=!__AppendToLog!
 
-    set TestBuildSlice=%%G
+    set __TestGroupToBuild=%%G
     echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%
 
     call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% !__PriorityArg! %__UnprocessedBuildArgs%

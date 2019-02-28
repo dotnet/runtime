@@ -312,22 +312,21 @@ build_MSBuild_projects()
         # __SkipPackageRestore and __SkipTargetingPackBuild used  to control build by tests/src/dirs.proj
         export __SkipPackageRestore=false
         export __SkipTargetingPackBuild=false
-        export __BuildLoopCount=2
-        export __TestGroupToBuild=1
+        export __NumberOfTestGroups=3
+
         __AppendToLog=false
 
         if [ -n "$__priority1" ]; then
-            export __BuildLoopCount=16
-            export __TestGroupToBuild=2
+            export __NumberOfTestGroups=10
         fi
 
-        for (( slice=1 ; slice <= __BuildLoopCount; slice = slice + 1 ))
+        for (( testGroupToBuild=1 ; testGroupToBuild <= __NumberOfTestGroups; testGroupToBuild = testGroupToBuild + 1 ))
         do
             __msbuildLog="\"/flp:Verbosity=normal;LogFile=${__BuildLog};Append=${__AppendToLog}\""
             __msbuildWrn="\"/flp1:WarningsOnly;LogFile=${__BuildWrn};Append=${__AppendToLog}\""
             __msbuildErr="\"/flp2:ErrorsOnly;LogFile=${__BuildErr};Append=${__AppendToLog}\""
 
-            export TestBuildSlice=$slice
+            export __TestGroupToBuild=$testGroupToBuild
 
             # Generate build command
             buildArgs=("/nologo" "/verbosity:minimal" "/clp:Summary")
@@ -341,7 +340,7 @@ build_MSBuild_projects()
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
             nextCommand="\"$__ProjectRoot/dotnet.sh\" msbuild ${buildArgs[@]}"
-            echo "Building step '$stepName' slice=$slice via $nextCommand"
+            echo "Building step '$stepName' testGroupToBuild=$testGroupToBuild via $nextCommand"
             eval $nextCommand
 
             # Make sure everything is OK
