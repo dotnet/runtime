@@ -16,14 +16,17 @@ usage()
 {
   echo "Default if no actions are passed in: --restore --build"
   echo ""
-  echo "CoreFX specific settings:"
-  echo "  --buildtests             Build test projects"
+  echo "CoreFx specific actions:"
+  echo "  --buildtests             Build test projects in the solution"
+  echo "  --clean                  Clean the solution"
+  echo ""
+  echo "CoreFx specific options:"
   echo "  --framework              The target group assemblies are built for (short: -f)"
   echo "  --os                     The operating system assemblies are built for"
   echo "  --allconfigurations      Build packages for all build configurations"
   echo "  --coverage               Collect code coverage when testing"
   echo "  --outerloop              Include tests which are marked as OuterLoop"
-  echo "  --arch                   The architecture group"
+  echo "  --arch                   The architecture group (x86, x64, arm, etc.)"
   echo ""
 }
 
@@ -32,54 +35,65 @@ extraargs=''
 checkedPossibleDirectoryToBuild=false
 
 # Check if an action is passed in
-declare -a actions=("-r" "--restore" "-b" "--build" "--rebuild" "--deploy" "--deployDeps" "--test" "--integrationTest" "--performanceTest" "--sign" "--publish" "--buildtests")
-actInt=($(comm -12 <(printf '%s\n' "${actions[@]}" | sort) <(printf '%s\n' "$@" | sort)))
+declare -a actions=("r" "restore" "b" "build" "rebuild" "deploy" "deployDeps" "test" "integrationTest" "performanceTest" "sign" "publish" "buildtests")
+actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 if [ ${#actInt[@]} -eq 0 ]; then
-    arguments="--restore --build"
+    arguments="-restore -build"
 fi
 
-while (($# > 0)); do
-  lowerI="$(echo $1 | awk '{print tolower($0)}')"
-  case $lowerI in
-     --help|-h)
+while [[ $# > 0 ]]; do
+  opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
+  case "$opt" in
+     -help|-h)
       usage
       "$scriptroot/common/build.sh" --help
       exit 0
       ;;
-     --arch)
+     -clean)
+      artifactsPath="$scriptroot/../artifacts"
+      if [ -d "$artifactsPath" ]; then
+        rm -rf $artifactsPath
+        echo "Artifacts directory deleted."
+      fi
+      if [ ${#actInt[@]} -eq 0 ]; then
+        exit 0
+      fi
+      shift 1
+      ;;
+     -arch)
       arguments="$arguments /p:ArchGroup=$2"
       shift 2
       ;;
-     --configuration|-c)
-      arguments="$arguments /p:ConfigurationGroup=$2 --configuration $2"
+     -configuration|-c)
+      arguments="$arguments /p:ConfigurationGroup=$2 -configuration $2"
       shift 2
       ;;
-     --framework|-f)
+     -framework|-f)
       val="$(echo "$2" | awk '{print tolower($0)}')"
       arguments="$arguments /p:TargetGroup=$val"
       shift 2
       ;;
-     --os)
+     -os)
       arguments="$arguments /p:OSGroup=$2"
       shift 2
       ;;
-     --allconfigurations)
+     -allconfigurations)
       arguments="$arguments /p:BuildAllConfigurations=true"
       shift 1
       ;;
-     --buildtests)
+     -buildtests)
       arguments="$arguments /p:BuildTests=true"
       shift 1
       ;;
-     --outerloop)
+     -outerloop)
       arguments="$arguments /p:OuterLoop=true"
       shift 1
       ;;
-     --coverage)
+     -coverage)
       arguments="$arguments /p:Coverage=true"
       shift 1
       ;;
-     --stripsymbols)
+     -stripsymbols)
       arguments="$arguments /p:BuildNativeStripSymbols=true"
       shift 1
       ;;

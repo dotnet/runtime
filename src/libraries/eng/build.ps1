@@ -9,20 +9,24 @@ Param(
   [switch] $coverage,
   [switch] $outerloop,
   [string] $arch,
+  [switch] $clean,
   [switch][Alias('h')]$help,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 function Print-Usage() {
     Write-Host "Default if no actions are passed in: -restore -build"
     Write-Host ""
-    Write-Host "CoreFX specific settings:"
-    Write-Host "  -buildtests             Build test projects"
+    Write-Host "CoreFx specific actions:"
+    Write-Host "  -buildtests             Build test projects in the solution"
+    Write-Host "  -clean                  Clean the solution"
+    Write-Host ""
+    Write-Host "CoreFx specific options:"
     Write-Host "  -framework              The target group assemblies are built for (short: -f)"
     Write-Host "  -os                     The operating system assemblies are built for"
     Write-Host "  -allconfigurations      Build packages for all build configurations"
     Write-Host "  -coverage               Collect code coverage when testing"
     Write-Host "  -outerloop              Include tests which are marked as OuterLoop"
-    Write-Host "  -arch                   The architecture group"
+    Write-Host "  -arch                   The architecture group (x86, x64, arm, etc.)"
     Write-Host ""
 }
 
@@ -37,6 +41,17 @@ $actions = "r","restore","b","build","rebuild","deploy","deployDeps","test","int
 $actionPassedIn = @(Compare-Object -ReferenceObject @($PSBoundParameters.Keys) -DifferenceObject $actions -ExcludeDifferent -IncludeEqual).Length -ne 0
 if ($null -ne $properties -and $actionPassedIn -ne $true) {
   $actionPassedIn = @(Compare-Object -ReferenceObject $properties -DifferenceObject $actions.ForEach({ "-" + $_ }) -ExcludeDifferent -IncludeEqual).Length -ne 0
+}
+
+if ($clean) {
+  $artifactsPath = "$PSScriptRoot\..\artifacts"
+  if(Test-Path $artifactsPath) {
+    Remove-Item -Recurse -Force $artifactsPath
+    Write-Host "Artifacts directory deleted."
+  }
+  if (!$actionPassedIn) {
+    exit 0
+  }
 }
 
 if (!$actionPassedIn) {
@@ -63,6 +78,7 @@ foreach ($argument in $PSBoundParameters.Keys)
   switch($argument)
   {
     "buildtests"        { $arguments += " /p:BuildTests=true" }
+    "clean"             { }
     "configuration"     { $arguments += " /p:ConfigurationGroup=$($PSBoundParameters[$argument]) -configuration $($PSBoundParameters[$argument])" }
     "framework"         { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())"}
     "os"                { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
