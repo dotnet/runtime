@@ -3,12 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System
 {
-    [ClassInterface(ClassInterfaceType.AutoDispatch)]
-    [ComVisible(true)]
     public partial class Object
     {
         // Returns a Type object which represent this object instance.
