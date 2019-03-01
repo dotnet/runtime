@@ -82,7 +82,10 @@ namespace System.Diagnostics.Tracing
             }
             else if (command.Command == EventCommand.Disable)
             {
-                _timer.Change(Timeout.Infinite, Timeout.Infinite);  // disable the timer from running until System.Runtime is re-enabled
+                if (_timer != null)
+                {
+                    _timer.Change(Timeout.Infinite, Timeout.Infinite);  // disable the timer from running until System.Runtime is re-enabled
+                }
             }
         }
 
