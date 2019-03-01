@@ -29,6 +29,16 @@ namespace System.Reflection
 
         #endregion
 
+        private sealed class ManifestResourceStream : UnmanagedMemoryStream
+        {
+            private RuntimeAssembly _manifestAssembly;
+
+            internal unsafe ManifestResourceStream(RuntimeAssembly manifestAssembly, byte* pointer, long length, long capacity, FileAccess access) : base(pointer, length, capacity, access)
+            {
+                _manifestAssembly = manifestAssembly;
+            }
+        }
+
         internal object SyncRoot
         {
             get
@@ -227,7 +237,7 @@ namespace System.Reflection
 
             if (pbInMemoryResource != null)
             {
-                return new UnmanagedMemoryStream(pbInMemoryResource, length, length, FileAccess.Read);
+                return new ManifestResourceStream(this, pbInMemoryResource, length, length, FileAccess.Read);
             }
 
             return null;
