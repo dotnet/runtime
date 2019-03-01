@@ -511,7 +511,15 @@ typedef enum {
 
 struct _MonoThreadInfo;
 
+#ifdef ENABLE_NETCORE
+/*
+ * There is only one thread object, MonoInternalThread is aliased to MonoThread,
+ * thread->internal_thread points to itself.
+ */
+struct _MonoThread {
+#else
 struct _MonoInternalThread {
+#endif
 	MonoObject  obj;
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
 	MonoThreadHandle *handle;
@@ -555,6 +563,11 @@ struct _MonoInternalThread {
 	gint32 self_suspended; // TRUE | FALSE
 
 	gsize thread_state;
+#ifdef ENABLE_NETCORE
+	struct _MonoThread *internal_thread;
+	MonoObject *start_obj;
+	MonoException *pending_exception;
+#else
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to this structure.
@@ -562,7 +575,7 @@ struct _MonoInternalThread {
 	 * same field there.
 	 */
 	gsize unused2;
-
+#endif
 	/* This is used only to check that we are in sync between the representation
 	 * of MonoInternalThread in native and InternalThread in managed
 	 *
@@ -570,12 +583,16 @@ struct _MonoInternalThread {
 	gpointer last;
 };
 
+#ifdef ENABLE_NETCORE
+#define _MonoInternalThread _MonoThread
+#else
 struct _MonoThread {
 	MonoObject obj;
 	MonoInternalThread *internal_thread;
 	MonoObject *start_obj;
 	MonoException *pending_exception;
 };
+#endif
 
 typedef struct {
 	guint32 state;

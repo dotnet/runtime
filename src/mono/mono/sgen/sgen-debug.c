@@ -953,10 +953,12 @@ is_xdomain_ref_allowed (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 	MonoObject *ref = *ptr;
 	size_t offset = (char*)(ptr) - (char*)o;
 
+#ifndef ENABLE_NETCORE
 	if (o->vtable->klass == mono_defaults.thread_class && offset == G_STRUCT_OFFSET (MonoThread, internal_thread))
 		return TRUE;
 	if (o->vtable->klass == mono_defaults.internal_thread_class && offset == G_STRUCT_OFFSET (MonoInternalThread, current_appcontext))
 		return TRUE;
+#endif
 
 #ifndef DISABLE_REMOTING
 	if (m_class_get_supertypes (mono_defaults.real_proxy_class) && mono_class_has_parent_fast (o->vtable->klass, mono_defaults.real_proxy_class) &&
