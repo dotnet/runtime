@@ -6430,6 +6430,13 @@ mono_threads_summarize_execute (MonoContext *ctx, gchar **out, MonoStackHash *ha
 	MonoNativeThreadId current = mono_native_thread_id_get ();
 	gboolean this_thread_controls = summarizer_state_init (&state, current, &current_idx);
 
+	if (state.nthreads == 0) {
+		if (!silent)
+			g_async_safe_printf("No threads attached to runtime.\n");
+		memset (&state, 0, sizeof (state));
+		return FALSE;
+	}
+
 	if (this_thread_controls) {
 		mono_summarize_timeline_phase_log (MonoSummarySuspendHandshake);
 		state.silent = silent;
