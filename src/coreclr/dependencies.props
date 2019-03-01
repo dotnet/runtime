@@ -28,19 +28,15 @@
   <PropertyGroup>
     <CoreClrCurrentRef>9ff62111734d641ece5e5ccb873f2a463675d81b</CoreClrCurrentRef>
     <BuildToolsCurrentRef>9ff62111734d641ece5e5ccb873f2a463675d81b</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>9ff62111734d641ece5e5ccb873f2a463675d81b</PgoDataCurrentRef>
-    <IbcDataCurrentRef>9ff62111734d641ece5e5ccb873f2a463675d81b</IbcDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <PgoDataPackageVersion>99.99.99-master-20190227.1</PgoDataPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview4-27427-72</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <XunitPackageVersion>2.4.1</XunitPackageVersion>
-    <IbcDataPackageVersion>99.99.99-master-20190227.1</IbcDataPackageVersion>
-    <IbcMergePackageVersion>4.6.0-alpha-00001</IbcMergePackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.36</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
+    <IbcMergePackageVersion>4.6.0-alpha-00001</IbcMergePackageVersion>
     <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
 
     <!-- Scenario tests install this version of Microsoft.NetCore.App, then patch coreclr binaries via xcopy. At the moment it is
@@ -71,15 +67,7 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="PgoData">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)/PGO</BuildInfoPath>
-      <CurrentRef>$(PgoDataCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="IbcData">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)/IBC</BuildInfoPath>
-      <CurrentRef>$(IbcDataCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
-
+    
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>
@@ -98,16 +86,6 @@
        <Path>$(MSBuildThisFileFullPath)</Path>
        <ElementName>FeedTasksPackageVersion</ElementName>
        <PackageId>$(FeedTasksPackage)</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="PgoData">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>PgoDataPackageVersion</ElementName>
-      <PackageId>optimization.PGO.CoreCLR</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="IbcData">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>IbcDataPackageVersion</ElementName>
-      <PackageId>optimization.IBC.CoreCLR</PackageId>
     </XmlUpdateStep>
     <UpdateStep Include="ILAsm">
       <UpdaterType>File</UpdaterType>
