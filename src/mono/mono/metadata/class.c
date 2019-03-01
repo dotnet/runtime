@@ -3529,8 +3529,13 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
 	g_assert (result);
+	if (klass == oklass) {
+		*result = TRUE;
+		return;
+	}
+
+	MONO_REQ_GC_UNSAFE_MODE;
 	/*FIXME this will cause a lot of irrelevant stuff to be loaded.*/
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);

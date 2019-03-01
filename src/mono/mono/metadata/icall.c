@@ -239,58 +239,62 @@ ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value
 }
 
 static void
-array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
+array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle, guint32 pos, MonoError *error)
 {
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
-	gpointer *ea, *va;
+	gpointer *ea = NULL, *va = NULL;
 
 	guint64 u64 = 0;
 	gint64 i64 = 0;
 	gdouble r64 = 0;
-
-	uint32_t arr_gchandle = 0;
-	uint32_t value_gchandle = 0;
+	gboolean castOk = FALSE;
 
 	error_init (error);
 
-	if (!MONO_HANDLE_IS_NULL (value))
-		vc = mono_handle_class (value);
+	if (!MONO_HANDLE_IS_NULL (value_handle))
+		vc = mono_handle_class (value_handle);
 	else
 		vc = NULL;
 
-	ac = mono_handle_class (arr);
+	ac = mono_handle_class (arr_handle);
 	ec = m_class_get_element_class (ac);
-
 	esize = mono_array_element_size (ac);
-	ea = (gpointer*)mono_array_handle_pin_with_size (arr, esize, pos, &arr_gchandle);
 
 	if (mono_class_is_nullable (ec)) {
-		mono_nullable_init_from_handle ((guint8*)ea, value, ec);
+		MONO_ENTER_NO_SAFEPOINTS;
+		ea = (gpointer*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (arr_handle), esize, pos);
+		if (!MONO_HANDLE_IS_NULL (value_handle))
+			va = (gpointer*) mono_object_unbox_internal (MONO_HANDLE_RAW (value_handle));
+		mono_nullable_init_unboxed ((guint8*)ea, va, ec);
+		MONO_EXIT_NO_SAFEPOINTS;
 		goto leave;
 	}
 
-	if (MONO_HANDLE_IS_NULL (value)) {
+	if (MONO_HANDLE_IS_NULL (value_handle)) {
+		MONO_ENTER_NO_SAFEPOINTS;
+		ea = (gpointer*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (arr_handle), esize, pos);
 		mono_gc_bzero_atomic (ea, esize);
+		MONO_EXIT_NO_SAFEPOINTS;
 		goto leave;
 	}
 
 #define NO_WIDENING_CONVERSION G_STMT_START{				\
 		mono_error_set_argument (error, "value", "not a widening conversion"); \
-		goto leave;							\
+		break;							\
 	}G_STMT_END
 
 #define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{			\
 		if (esize < vsize + (extra)) {				\
 			mono_error_set_argument (error, "value", "not a widening conversion"); \
-			goto leave;						\
+			break;						\
 		}							\
 	}G_STMT_END
 
 #define INVALID_CAST G_STMT_START{					\
 		mono_get_runtime_callbacks ()->set_cast_details (vc, ec); \
 		mono_error_set_invalid_cast (error);			\
-		goto leave;							\
+		break;							\
 	}G_STMT_END
 
 	MonoTypeEnum et;
@@ -323,6 +327,7 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 			NO_WIDENING_CONVERSION;
+			break;
 		default:
 			INVALID_CAST;
 		}
@@ -330,33 +335,39 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 	default:
 		break;
 	}
+	if (!is_ok (error))
+		goto leave;
 
-	MonoObjectHandle inst;
-	inst = mono_object_handle_isinst (value, ec, error);
-	goto_if_nok (error, leave);
-	gboolean castOk;
-	castOk = !MONO_HANDLE_IS_NULL (inst);
+	castOk = mono_object_handle_isinst_mbyref_raw (value_handle, ec, error);
+	if (!is_ok (error))
+		goto leave;
 
 	if (!m_class_is_valuetype (ec)) {
 		if (!castOk)
 			INVALID_CAST;
-		MONO_HANDLE_ARRAY_SETREF (arr, pos, value);
+		if (is_ok (error))
+			MONO_HANDLE_ARRAY_SETREF (arr_handle, pos, value_handle);
 		goto leave;
 	}
 
 	if (castOk) {
-		va = (gpointer*)mono_object_handle_pin_unbox (value, &value_gchandle);
+		MONO_ENTER_NO_SAFEPOINTS;
+		ea = (gpointer*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (arr_handle), esize, pos);
+		va = (gpointer*) mono_object_unbox_internal (MONO_HANDLE_RAW (value_handle));
 		if (m_class_has_references (ec))
 			mono_value_copy_internal (ea, va, ec);
 		else
 			mono_gc_memmove_atomic (ea, va, esize);
+		MONO_EXIT_NO_SAFEPOINTS;
+
 		goto leave;
 	}
 
 	if (!m_class_is_valuetype (vc))
 		INVALID_CAST;
 
-	va = (gpointer*)mono_object_handle_pin_unbox (value, &value_gchandle);
+	if (!is_ok (error))
+		goto leave;
 
 	vsize = mono_class_value_size (vc, NULL);
 
@@ -375,7 +386,7 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 	case MONO_TYPE_CHAR: \
 		CHECK_WIDENING_CONVERSION(0); \
 		*(etype *) ea = (etype) u64; \
-		goto leave; \
+		break; \
 	/* You can't assign a signed value to an unsigned array. */ \
 	case MONO_TYPE_I1: \
 	case MONO_TYPE_I2: \
@@ -385,6 +396,10 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 	case MONO_TYPE_R4: \
 	case MONO_TYPE_R8: \
 		NO_WIDENING_CONVERSION; \
+		break; \
+	default: \
+		INVALID_CAST; \
+		break; \
 	} \
 }G_STMT_END
 
@@ -396,7 +411,7 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 	case MONO_TYPE_I8: \
 		CHECK_WIDENING_CONVERSION(0); \
 		*(etype *) ea = (etype) i64; \
-		goto leave; \
+		break; \
 	/* You can assign an unsigned value to a signed array if the array's */ \
 	/* element size is larger than the value size. */ \
 	case MONO_TYPE_U1: \
@@ -406,11 +421,15 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 	case MONO_TYPE_CHAR: \
 		CHECK_WIDENING_CONVERSION(1); \
 		*(etype *) ea = (etype) u64; \
-		goto leave; \
+		break; \
 	/* You can't assign a floating point number to an integer array. */ \
 	case MONO_TYPE_R4: \
 	case MONO_TYPE_R8: \
 		NO_WIDENING_CONVERSION; \
+		break; \
+	default: \
+		INVALID_CAST; \
+		break; \
 	} \
 }G_STMT_END
 
@@ -420,7 +439,7 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 	case MONO_TYPE_R8: \
 		CHECK_WIDENING_CONVERSION(0); \
 		*(etype *) ea = (etype) r64; \
-		goto leave; \
+		break; \
 	/* All integer values fit into a floating point array, so we don't */ \
 	/* need to CHECK_WIDENING_CONVERSION here. */ \
 	case MONO_TYPE_I1: \
@@ -428,16 +447,25 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 	case MONO_TYPE_I4: \
 	case MONO_TYPE_I8: \
 		*(etype *) ea = (etype) i64; \
-		goto leave; \
+		break; \
 	case MONO_TYPE_U1: \
 	case MONO_TYPE_U2: \
 	case MONO_TYPE_U4: \
 	case MONO_TYPE_U8: \
 	case MONO_TYPE_CHAR: \
 		*(etype *) ea = (etype) u64; \
-		goto leave; \
+		break; \
+	default: \
+		INVALID_CAST; \
+		break; \
 	} \
 }G_STMT_END
+
+	MONO_ENTER_NO_SAFEPOINTS;
+	g_assert (!MONO_HANDLE_IS_NULL (value_handle));
+	g_assert (m_class_is_valuetype (vc));
+	va = (gpointer*) mono_object_unbox_internal (MONO_HANDLE_RAW (value_handle));
+	ea = (gpointer*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (arr_handle), esize, pos);
 
 	switch (vt) {
 	case MONO_TYPE_U1:
@@ -488,41 +516,55 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 			NO_WIDENING_CONVERSION;
+			break;
 		default:
 			INVALID_CAST;
 		}
 		break;
 	}
-
 	/* If we can't do a direct copy, let's try a widening conversion. */
-	switch (et) {
-	case MONO_TYPE_CHAR:
-		ASSIGN_UNSIGNED (guint16);
-	case MONO_TYPE_U1:
-		ASSIGN_UNSIGNED (guint8);
-	case MONO_TYPE_U2:
-		ASSIGN_UNSIGNED (guint16);
-	case MONO_TYPE_U4:
-		ASSIGN_UNSIGNED (guint32);
-	case MONO_TYPE_U8:
-		ASSIGN_UNSIGNED (guint64);
-	case MONO_TYPE_I1:
-		ASSIGN_SIGNED (gint8);
-	case MONO_TYPE_I2:
-		ASSIGN_SIGNED (gint16);
-	case MONO_TYPE_I4:
-		ASSIGN_SIGNED (gint32);
-	case MONO_TYPE_I8:
-		ASSIGN_SIGNED (gint64);
-	case MONO_TYPE_R4:
-		ASSIGN_REAL (gfloat);
-	case MONO_TYPE_R8:
-		ASSIGN_REAL (gdouble);
+
+	if (is_ok (error)) {
+		switch (et) {
+		case MONO_TYPE_CHAR:
+			ASSIGN_UNSIGNED (guint16);
+			break;
+		case MONO_TYPE_U1:
+			ASSIGN_UNSIGNED (guint8);
+			break;
+		case MONO_TYPE_U2:
+			ASSIGN_UNSIGNED (guint16);
+			break;
+		case MONO_TYPE_U4:
+			ASSIGN_UNSIGNED (guint32);
+			break;
+		case MONO_TYPE_U8:
+			ASSIGN_UNSIGNED (guint64);
+			break;
+		case MONO_TYPE_I1:
+			ASSIGN_SIGNED (gint8);
+			break;
+		case MONO_TYPE_I2:
+			ASSIGN_SIGNED (gint16);
+			break;
+		case MONO_TYPE_I4:
+			ASSIGN_SIGNED (gint32);
+			break;
+		case MONO_TYPE_I8:
+			ASSIGN_SIGNED (gint64);
+			break;
+		case MONO_TYPE_R4:
+			ASSIGN_REAL (gfloat);
+			break;
+		case MONO_TYPE_R8:
+			ASSIGN_REAL (gdouble);
+			break;
+		default:
+			INVALID_CAST;
+		}
 	}
 
-	INVALID_CAST;
-	/* Not reached, INVALID_CAST does fall thru. */
-	g_assert_not_reached ();
+	MONO_EXIT_NO_SAFEPOINTS;
 
 #undef INVALID_CAST
 #undef NO_WIDENING_CONVERSION
@@ -530,9 +572,8 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 #undef ASSIGN_UNSIGNED
 #undef ASSIGN_SIGNED
 #undef ASSIGN_REAL
+
 leave:
-	mono_gchandle_free_internal (arr_gchandle);
-	mono_gchandle_free_internal (value_gchandle);
 	return;
 }
 
