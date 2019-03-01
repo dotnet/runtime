@@ -1,9 +1,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <RuntimeIdGraphDefinitionFile>$(ProjectDir)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
+    <PackageDescriptionFile>$(RepoRoot)pkg/descriptions.json</PackageDescriptionFile>
+    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <RuntimeIdGraphDefinitionFile>$(RepoRoot)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
     <ProjectUrl>https://github.com/dotnet/corefx</ProjectUrl>
     <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE.TXT</LicenseUrl>
@@ -15,7 +15,7 @@
     <XmlDocPackage>Microsoft.Private.Intellisense</XmlDocPackage>
     <XmlDocPackageVersion>3.0.0-preview3-190214-0</XmlDocPackageVersion>
     <XmlDocFileRoot>$(PackagesDir)$(XmlDocPackage.ToLowerInvariant())/$(XmlDocPackageVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
-    <XmlDocDir>$(BinDir)docs</XmlDocDir>
+    <XmlDocDir>$(ArtifactsBinDir)docs</XmlDocDir>
 
     <!-- By default the packaging targets will package desktop facades as ref,
          but we don't use this as we now build partial-reference-facades. -->
@@ -63,7 +63,7 @@
 
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
     <File Condition="'$(IncludeDesignerMarker)' != 'false'"
-          Include="$(ProjectDir)pkg/useSharedDesignerContext.txt">
+          Include="$(RepoRoot)pkg/useSharedDesignerContext.txt">
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
   </ItemGroup>

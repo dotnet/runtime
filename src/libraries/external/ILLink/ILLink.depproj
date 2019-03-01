@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
-    <OutputPath>$(ToolsDir)ILLink</OutputPath>
+    <OutputPath>$(ILLinkDir)</OutputPath>
     <EnableBinPlacing>false</EnableBinPlacing>
     <ILLinkTasksPackageId>illink.tasks</ILLinkTasksPackageId>
     <ILLinkTasksPackageVersion>0.1.5-preview-1461378</ILLinkTasksPackageVersion>

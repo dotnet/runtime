@@ -67,7 +67,7 @@
 
   <Target Name="IncludeFiles">
     <PropertyGroup>
-      <_projectDirLength>$(ProjectDir.Length)</_projectDirLength>
+      <_repoRootLength>$(RepoRoot.Length)</_repoRootLength>
     </PropertyGroup>
 
     <ItemGroup>
@@ -90,7 +90,7 @@
       <!-- Set targetpath for sources to be under src so that it is excluded from the lib package -->
       <File Condition="'%(File.IsSourceCodeFile)' == 'true'">
         <TargetPath>src</TargetPath>
-        <TargetPath Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(ProjectDir)'))">src/$([System.String]::Copy('%(FullPath)').Substring($(_projectDirLength)).Replace('\', '/'))</TargetPath>
+        <TargetPath Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(RepoRoot)'))">src/$([System.String]::Copy('%(FullPath)').Substring($(_repoRootLength)).Replace('\', '/'))</TargetPath>
       </File>
     </ItemGroup>
   </Target>

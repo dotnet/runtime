@@ -6,7 +6,7 @@
 
   <Import Project="harvestPackages.props" />
 
-  <Import Project="$(ProjectDir)pkg/baseline/baseline.props" />
+  <Import Project="$(RepoRoot)pkg/baseline/baseline.props" />
 
   <!--
     Custom target to update the stable versions. Ideally we would just run this target as part of the build but
