@@ -11,6 +11,8 @@
     <ComputeNETCoreBuildOutputFiles>false</ComputeNETCoreBuildOutputFiles>
     <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
 
+    <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
+
     <!--
       The Microsoft.NET.Sdk defaults the AssemblySearchPaths earlier than buildtools, so default
       the correct search paths here. We are rather restrictive by design - only ref assemblies should
