@@ -1626,6 +1626,7 @@ Thread::Thread()
     memset(&m_activityId, 0, sizeof(m_activityId));
 #endif // FEATURE_PERFTRACING
     m_HijackReturnKind = RT_Illegal;
+    m_DeserializationTracker = NULL;
 }
 
 //--------------------------------------------------------------------
@@ -2640,6 +2641,11 @@ Thread::~Thread()
     {
         // Destroy any handles that we're using to hold onto exception objects
         SafeSetThrowables(NULL);
+
+        if (m_DeserializationTracker != NULL)
+        {
+            DestroyGlobalStrongHandle(m_DeserializationTracker);
+        }
 
         DestroyShortWeakHandle(m_ExposedObject);
         DestroyStrongHandle(m_StrongHndToExposedObject);
@@ -9396,3 +9402,30 @@ ULONGLONG Thread::QueryThreadProcessorUsage()
     return ullCurrentUsage - ullPreviousUsage;
 }
 #endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
+
+OBJECTHANDLE Thread::GetOrCreateDeserializationTracker()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+#if !defined (DACCESS_COMPILE)
+    if (m_DeserializationTracker != NULL)
+    {
+        return m_DeserializationTracker;
+    }
+
+    _ASSERTE(this == GetThread());
+
+    MethodTable* pMT = MscorlibBinder::GetClass(CLASS__DESERIALIZATION_TRACKER);
+    m_DeserializationTracker = CreateGlobalStrongHandle(AllocateObject(pMT));
+
+    _ASSERTE(m_DeserializationTracker != NULL);
+#endif // !defined (DACCESS_COMPILE)
+
+    return m_DeserializationTracker;
+}
