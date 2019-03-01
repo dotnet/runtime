@@ -4647,7 +4647,11 @@ namespace System.Diagnostics.Tracing
             {
                 if (!m_osThreadId.HasValue)
                 {
+#if ES_BUILD_STANDALONE
+                    m_osThreadId = (long)Interop.Kernel32.GetCurrentThreadId();
+#else
                     m_osThreadId = (long)Thread.CurrentOSThreadId;
+#endif
                 }
 
                 return m_osThreadId.Value;
