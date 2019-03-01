@@ -17887,7 +17887,8 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
     }
     else if (HWIntrinsicInfo::MaybeMemoryLoad(gtHWIntrinsicId))
     {
-        // Some AVX intrinsic (without HW_Category_MemoryLoad) also have MemoryLoad semantics
+        // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
+
         if (category == HW_Category_SIMDScalar)
         {
             // Avx2.BroadcastScalarToVector128/256 have vector and pointer overloads both, e.g.,
@@ -17906,26 +17907,9 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
             {
                 return false;
             }
-            else // We have 3 or more operands/args
+            else if (HWIntrinsicInfo::isAVX2GatherIntrinsic(gtHWIntrinsicId))
             {
-                // All the Avx2.Gather* are "load" instructions
-                if (HWIntrinsicInfo::isAVX2GatherIntrinsic(gtHWIntrinsicId))
-                {
-                    return true;
-                }
-
-                GenTreeArgList* argList = gtOp.gtOp1->AsArgList();
-
-                // Avx/Avx2.InsertVector128 have vector and pointer overloads both, e.g.,
-                // Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, byte index)
-                // Vector256<sbyte> InsertVector128(Vector256<sbyte> value, sbyte* address, byte index)
-                // So, we need to check the second argument's type is memory-reference (TYP_I_IMPL) or not
-                if ((gtHWIntrinsicId == NI_AVX_InsertVector128 || gtHWIntrinsicId == NI_AVX2_InsertVector128) &&
-                    (argList->Rest()->Current()->TypeGet() == TYP_I_IMPL)) // Is the type of the second arg TYP_I_IMPL?
-                {
-                    // This is Avx/Avx2.InsertVector128
-                    return true;
-                }
+                return true;
             }
         }
     }
@@ -17946,11 +17930,8 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
     else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) &&
              (category == HW_Category_IMM || category == HW_Category_Scalar))
     {
-        // Some AVX intrinsic (without HW_Category_MemoryStore) also have MemoryStore semantics
+        // Some intrinsics (without HW_Category_MemoryStore) also have MemoryStore semantics
 
-        // Avx/Avx2.InsertVector128 have vector and pointer overloads both, e.g.,
-        // Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, byte index)
-        // void ExtractVector128(sbyte* address, Vector256<sbyte> value, byte index)
         // Bmi2/Bmi2.X64.MultiplyNoFlags may return the lower half result by a out argument
         // unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low)
         //
@@ -17959,8 +17940,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
         {
             switch (gtHWIntrinsicId)
             {
-                case NI_AVX_ExtractVector128:
-                case NI_AVX2_ExtractVector128:
                 case NI_BMI2_MultiplyNoFlags:
                 case NI_BMI2_X64_MultiplyNoFlags:
                     return true;
