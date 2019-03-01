@@ -431,6 +431,9 @@ namespace System.Net.Http
                     {
                         nestedCount--;
                     }
+
+                    // after nested call we continue with parsing
+                    continue;
                 }
 
                 if (input[current] == closeChar)
