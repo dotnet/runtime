@@ -458,6 +458,9 @@ namespace System.Diagnostics
         /// </summary>
         public ref ActivitySpanId SpanId
         {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
             get
             {
                 if (!_spanIdSet)
@@ -485,6 +488,9 @@ namespace System.Diagnostics
         /// </summary>
         public ref ActivityTraceId TraceId
         {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
             get
             {
                 if (!_traceIdSet)
@@ -505,12 +511,27 @@ namespace System.Diagnostics
         /// </summary>
         public ref ActivitySpanId ParentSpanId
         {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
             get
             {
-                if (!_parentSpanIdSet && _parentId != null && IsW3CId(_parentId))
+                if (!_parentSpanIdSet)
                 {
-                    _parentSpanId = new ActivitySpanId(_parentId.AsSpan(36, 16));
-                    _parentSpanIdSet = true;
+                    if (_parentId != null && IsW3CId(_parentId))
+                    {
+                        try
+                        {
+                            _parentSpanId = new ActivitySpanId(_parentId.AsSpan(36, 16));
+                        }
+                        catch  { }
+                        _parentSpanIdSet = true;
+                    }
+                    else if (Parent != null && Parent.IdFormat == ActivityIdFormat.W3C)
+                    { 
+                        _parentSpanId = Parent.SpanId;
+                        _parentSpanIdSet = true;
+                    }
                 }
                 return ref _parentSpanId;
             }
@@ -584,11 +605,25 @@ namespace System.Diagnostics
             if (!_traceIdSet)
             {
                 if (Parent != null && Parent.IdFormat == ActivityIdFormat.W3C)
+                {
                     _traceId = Parent.TraceId;
+                }
                 else if (_parentId != null && IsW3CId(_parentId))
-                    _traceId = new ActivityTraceId(_parentId.AsSpan(3, 32));
+                {
+                    try
+                    {
+                        _traceId = new ActivityTraceId(_parentId.AsSpan(3, 32));
+                    }
+                    catch
+                    {
+                        _traceId = ActivityTraceId.NewTraceId();
+                    }
+                }
                 else
+                {
                     _traceId = ActivityTraceId.NewTraceId();
+                }
+
                 _traceIdSet = true;
             }
             // Create a new SpanID. 
@@ -944,8 +979,6 @@ namespace System.Diagnostics
         {
             if ('0' <= c && c <= '9')
                 return (byte)(c - '0');
-            if ('A' <= c && c <= 'F')
-                return (byte)(c - ('A' - 10));
             if ('a' <= c && c <= 'f')
                 return (byte)(c - ('a' - 10));
             throw new ArgumentOutOfRangeException("idData");
@@ -955,7 +988,7 @@ namespace System.Diagnostics
             val &= 0xF;
             if (val <= 9)
                 return (char)('0' + val);
-            return (char)(('A' - 10) + val);
+            return (char)(('a' - 10) + val);
         }
         #endregion
 
