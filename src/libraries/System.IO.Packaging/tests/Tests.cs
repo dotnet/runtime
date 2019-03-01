@@ -873,7 +873,7 @@ namespace System.IO.Packaging.Tests
                     }
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2420,7 +2420,7 @@ namespace System.IO.Packaging.Tests
                 }
                 Assert.Equal(sumLen, 44768);
             }
-			fiGuidName.Delete();
+            fiGuidName.Delete();
         }
 
         private string NL = Environment.NewLine;
@@ -2437,7 +2437,7 @@ namespace System.IO.Packaging.Tests
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.Truncate, FileAccess.ReadWrite);
             });
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2452,7 +2452,7 @@ namespace System.IO.Packaging.Tests
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.Truncate, FileAccess.Write);
             });
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2467,7 +2467,7 @@ namespace System.IO.Packaging.Tests
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.Truncate, FileAccess.Read);
             });
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2692,7 +2692,7 @@ namespace System.IO.Packaging.Tests
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.OpenOrCreate, FileAccess.Write);
             });
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2706,7 +2706,7 @@ namespace System.IO.Packaging.Tests
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.OpenOrCreate, FileAccess.Read);
             });
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -2813,7 +2813,7 @@ namespace System.IO.Packaging.Tests
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.Open, FileAccess.Write);
             });
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3077,7 +3077,7 @@ namespace System.IO.Packaging.Tests
                     Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3104,7 +3104,7 @@ namespace System.IO.Packaging.Tests
                     }
                 });
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3130,7 +3130,7 @@ namespace System.IO.Packaging.Tests
                     }
                 });
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3159,7 +3159,7 @@ namespace System.IO.Packaging.Tests
                     Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3191,7 +3191,7 @@ namespace System.IO.Packaging.Tests
                     }
                 });
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3220,7 +3220,7 @@ namespace System.IO.Packaging.Tests
                     Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3231,7 +3231,7 @@ namespace System.IO.Packaging.Tests
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.CreateNew, FileAccess.Write);
             });
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3242,7 +3242,7 @@ namespace System.IO.Packaging.Tests
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.CreateNew, FileAccess.Read);
             });
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3251,7 +3251,7 @@ namespace System.IO.Packaging.Tests
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
             // opening the package attempts to read the package, and no permissions.
             AssertExtensions.Throws<ArgumentException>(null, () => Package.Open(tempGuidName.FullName, FileMode.Create, FileAccess.Write));
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3280,7 +3280,7 @@ namespace System.IO.Packaging.Tests
                     Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3309,7 +3309,7 @@ namespace System.IO.Packaging.Tests
                     Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3338,7 +3338,7 @@ namespace System.IO.Packaging.Tests
                     Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3367,7 +3367,7 @@ namespace System.IO.Packaging.Tests
                     Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3396,7 +3396,7 @@ namespace System.IO.Packaging.Tests
                     Assert.Equal(2, xd.DescendantNodes().Count());
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3424,7 +3424,7 @@ namespace System.IO.Packaging.Tests
                     });
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3447,7 +3447,7 @@ namespace System.IO.Packaging.Tests
                     sw.Write(s_DocumentXml);
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3471,7 +3471,7 @@ namespace System.IO.Packaging.Tests
                     Assert.Equal(0, partStream.Length);
                 }
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3497,7 +3497,7 @@ namespace System.IO.Packaging.Tests
                     }
                 });
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3531,7 +3531,7 @@ namespace System.IO.Packaging.Tests
                     Stream partStream = packagePartDocument.GetStream(FileMode.Append, FileAccess.Read);
                 });
             }
-			tempGuidName.Delete();
+            tempGuidName.Delete();
         }
 
         [Fact]
@@ -3636,6 +3636,110 @@ namespace System.IO.Packaging.Tests
 
                 package.PackageProperties.Version = null;
                 Assert.Null(package.PackageProperties.Version);
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write")]
+        public void CreateWithFileAccessWrite()
+        {
+            string[] fileNames = new [] { "file1.txt", "file2.txt", "file3.txt" };
+
+            using (Stream stream = new MemoryStream())
+            {
+                using (Package package = Package.Open(stream, FileMode.Create, FileAccess.Write))
+                {
+                    foreach (string fileName in fileNames)
+                    {
+                        PackagePart part = package.CreatePart(PackUriHelper.CreatePartUri(new Uri(fileName, UriKind.Relative)),
+                                                              System.Net.Mime.MediaTypeNames.Text.Plain,
+                                                              CompressionOption.Fast);
+                        using (StreamWriter writer = new StreamWriter(part.GetStream(), Encoding.ASCII))
+                        {
+                            // just write the filename as content
+                            writer.Write(fileName);
+                        }
+                    }
+                }
+
+                // reopen for read and validate the content
+                stream.Seek(0, SeekOrigin.Begin);
+                using (Package readPackage = Package.Open(stream))
+                {
+                    foreach (string fileName in fileNames)
+                    {
+                        PackagePart part = readPackage.GetPart(PackUriHelper.CreatePartUri(new Uri(fileName, UriKind.Relative)));
+
+                        using (Stream partStream = part.GetStream())
+                        using (StreamReader reader = new StreamReader(partStream, Encoding.ASCII))
+                        {
+                            Assert.Equal(fileName.Length, partStream.Length);
+                            Assert.Equal(fileName, reader.ReadToEnd());
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void VeryLargePart()
+        {
+            // FileAccess.Write is important, this tells ZipPackage to open the underlying ZipArchive in 
+            // ZipArchiveMode.Create mode as opposed to ZipArchiveMode.Update
+            // When ZipArchive is opened in Create it will write entries directly to the zip stream
+            // When ZipArchive is opened in Update it will write uncompressed data to memory until 
+            // the archive is closed.
+            using (Stream stream = new MemoryStream())
+            {
+                Uri partUri = PackUriHelper.CreatePartUri(new Uri("test.bin", UriKind.Relative));
+
+                // should compress *very well*
+                byte[] buffer =  new byte[1024 * 1024];
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = (byte)(i % 2);
+                }
+                
+                const long SizeInMb = 6 * 1024; // 6GB
+                long totalLength = SizeInMb * buffer.Length;
+
+                // issue on desktop we cannot use FileAccess.Write on a ZipArchive
+                using (Package package = Package.Open(stream, FileMode.Create, PlatformDetection.IsFullFramework ? FileAccess.ReadWrite : FileAccess.Write))
+                {
+                    PackagePart part = package.CreatePart(partUri,
+                                                          System.Net.Mime.MediaTypeNames.Application.Octet,
+                                                          CompressionOption.Fast);
+
+
+                    using (Stream partStream = part.GetStream())
+                    {
+                        for (long i = 0; i < SizeInMb; i++)
+                        {
+                            partStream.Write(buffer, 0, buffer.Length);
+                        }
+                    }
+                }
+
+                // reopen for read and make sure we can get the part length & data matches
+                stream.Seek(0, SeekOrigin.Begin);
+                using (Package readPackage = Package.Open(stream))
+                {
+                    PackagePart part = readPackage.GetPart(partUri);
+
+                    using (Stream partStream = part.GetStream())
+                    {
+                        Assert.Equal(totalLength, partStream.Length);
+                        byte[] readBuffer = new byte[buffer.Length];
+                        for (long i = 0; i < SizeInMb; i++)
+                        {
+                            int actualRead = partStream.Read(readBuffer, 0, readBuffer.Length);
+
+                            Assert.Equal(actualRead, readBuffer.Length);
+                            Assert.True(buffer.AsSpan().SequenceEqual(readBuffer));
+                        }
+                    }
+                }
             }
         }
 
