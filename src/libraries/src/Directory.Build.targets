@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
   <PropertyGroup>
-    <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
-
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <FileAlignment Condition="'$(FileAlignment)' == '512'"></FileAlignment>
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'"></ErrorReport>

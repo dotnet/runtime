@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
-    <Project Include="$(ProjectDir)pkg\test\testPackages.proj" />
+    <Project Include="$(RepoRoot)pkg\test\testPackages.proj" />
   </ItemGroup>
 
   <Target Name="BinPlaceXUnitRuntimeForNetstandardSuite"

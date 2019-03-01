@@ -22,7 +22,7 @@
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <ItemGroup>
-    <PackageReference Include="$(BuildToolsPackage)" Version="$(BuildToolsPackageVersion)" />
+    <PackageReference Include="$(BuildToolsPackage)" Version="$(BuildToolsPackageVersion)" GeneratePathProperty="true" />
     <PackageReference Include="$(PublishSymbolsPackage)" Version="$(PublishSymbolsPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.SourceRewriter" Version="$(MicrosoftDotNetSourceRewriterPackageVersion)" />
@@ -71,26 +71,6 @@
 
     <Exec Command="$(DotNetCmd) restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources /p:TargetGroup=$(TargetGroup)"
           WorkingDirectory="$(RepoRoot)" />
-
-  </Target>
-
-  <Target Name="InitTools" AfterTargets="Restore">
-
-    <PropertyGroup>
-      <ToolsDir Condition="'$(ToolsDir)' == ''">$(RepoRoot)Tools</ToolsDir>
-      <BuildToolsSemaphore>$([MSBuild]::NormalizePath('$(ToolsDir)', '$(BuildToolsPackageVersion).init-tools.completed'))</BuildToolsSemaphore>
-      <PackagesDir>$(NuGetPackageRoot)</PackagesDir>
-      <BuildToolsPackageDir Condition="'$(BuildToolsPackageDir)' == ''">$([MSBuild]::NormalizeDirectory('$(PackagesDir)', '$(BuildToolsPackage)', '$(BuildToolsPackageVersion)', 'lib'))</BuildToolsPackageDir>
-      <CmdExt>cmd</CmdExt>
-      <CmdExt Condition="'$(OS)' != 'Windows_NT'">sh</CmdExt>
-      <InitToolsCmdLine>"$(BuildToolsPackageDir)init-tools.$(CmdExt)" "$(RepoRoot)" $(DotNetCmd) "$(ToolsDir)" "$(PackagesDir.TrimEnd('\'))"</InitToolsCmdLine>
-    </PropertyGroup>
-
-    <Exec Condition="!Exists('$(BuildToolsSemaphore)')"
-          Command="$(InitToolsCmdLine) &gt; &quot;$(RepoRoot)init-tools.log&quot;" />
-    <Touch Files="$(BuildToolsSemaphore)"
-           AlwaysCreate="true" />
-    <OnError ExecuteTargets="DumpInitToolsLog" />
 
   </Target>
 
