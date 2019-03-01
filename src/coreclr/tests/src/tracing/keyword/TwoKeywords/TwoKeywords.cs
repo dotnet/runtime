@@ -15,39 +15,33 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 
 namespace Tracing.Tests
 {
-    public static class TraceControlTest
+    public static class TwoKeywordsTest
     {
         public static int Main(string[] args)
         {
-            return new TraceControlTraceTest().Execute();
+            return new TwoKeywordsTraceTest().Execute();
         }
     }
 
-    public class TraceControlTraceTest : AbstractTraceTest
+    public class TwoKeywordsTraceTest : AbstractTraceTest
     {
         private bool pass;
 
-        private static string ConfigFileContents = @"
-OutputPath=.
-CircularMB=2048
-Providers=*:0xFFFFFFFFFFFFFFFF:5:
-";
         protected override string GetConfigFileContents()
         {
-            return ConfigFileContents;
+            return @"
+OutputPath=.
+CircularMB=2048
+Providers=My-Simple-Event-Source:0xFFFFFFFFFFFFFFFF:5:Key1=Value1;Key2=Value2
+";;
         }
 
-        protected override void InstallValidationCallbacks(TraceEventDispatcher trace)
+        public override void OnEventCommand(object sender, EventCommandEventArgs command)
         {
-            string gcReasonInduced = GCReason.Induced.ToString();
-            trace.Clr.GCTriggered += delegate (GCTriggeredTraceData data)
+            if (command.Command == EventCommand.Enable)
             {
-                if (gcReasonInduced.Equals(data.Reason.ToString()))
-                {
-                    Console.WriteLine("Detected an induced GC");
-                    pass = true;
-                }
-            };
+                this.pass = (command.Arguments.Count == 2);
+            }
         }
 
         protected override bool Pass()
