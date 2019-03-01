@@ -150,7 +150,7 @@ DumpDataTarget::ReadVirtual(
     /* [optional][out] */ ULONG32 *done)
 {
     assert(m_fd != -1);
-    size_t read = pread64(m_fd, buffer, size, (off64_t)(ULONG_PTR)address);
+    ssize_t read = pread64(m_fd, buffer, size, (off64_t)(ULONG_PTR)address);
     if (read == -1)
     {
         *done = 0;
@@ -215,7 +215,7 @@ DumpDataTarget::GetThreadContext(
     memset(context, 0, contextSize);
     for (const ThreadInfo* thread : m_crashInfo->Threads())
     {
-        if (thread->Tid() == threadID)
+        if (thread->Tid() == (pid_t)threadID)
         {
             thread->GetThreadContext(contextFlags, reinterpret_cast<CONTEXT*>(context));
             return S_OK;
