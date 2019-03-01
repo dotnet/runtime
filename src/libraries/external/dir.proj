@@ -1,5 +1,6 @@
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="../Directory.Build.props" />
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
 
   <PropertyGroup>
     <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>
@@ -21,5 +22,5 @@
     <Project Condition="'$(ILLinkTrimAssembly)' != 'false'" Include="ILLink/ILLink.depproj" />
   </ItemGroup>
 
-  <Import Project="../dir.traversal.targets" />
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
 </Project>
