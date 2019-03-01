@@ -63,7 +63,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         [Theory]
         [InlineData(typeof(CustomValidator), "SomeMethod")]
-        [InlineData(typeof(CustomValidator), nameof(CustomValidator.ValidationMethodDerivedReturnTypeReturnsSomeError))]
         [InlineData(null, null)]
         [InlineData(typeof(string), "")]
         [InlineData(typeof(int), " \t\r\n")]
