@@ -134,7 +134,7 @@ public:
     UCHAR operator[](int index)
     {
         int realIndex = m_offset + index;
-        UNWINDER_ASSERT(realIndex < sizeof(m_buffer));
+        UNWINDER_ASSERT(realIndex < (int)sizeof(m_buffer));
         return m_buffer[realIndex];
     }
 };
