@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Threading
 {
@@ -334,6 +335,9 @@ namespace System.Threading
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InformThreadNameChange(ThreadHandle t, string name, int len);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern DeserializationTracker GetThreadDeserializationTracker(ref StackCrawlMark stackMark);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
         public extern bool IsAlive
