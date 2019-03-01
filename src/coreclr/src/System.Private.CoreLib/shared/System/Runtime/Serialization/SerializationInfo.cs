@@ -49,7 +49,9 @@ namespace System.Runtime.Serialization
         // Returns true if deserialization is currently in progress
         public static bool DeserializationInProgress
         {
+#if CORECLR
             [DynamicSecurityMethod] // Methods containing StackCrawlMark local var must be marked DynamicSecurityMethod
+#endif
             get
             {
                 if (AsyncDeserializationInProgress.Value)
@@ -129,8 +131,10 @@ namespace System.Runtime.Serialization
         // Declares that the current thread and async context have begun deserialization.
         // In this state, if the SerializationGuard or other related AppContext switches are set,
         // actions likely to be dangerous during deserialization, such as starting a process will be blocked.
-        // Returns a DeserializationToken that must be disposed to remove the deserialization state.        
+        // Returns a DeserializationToken that must be disposed to remove the deserialization state.
+#if CORECLR
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var must be marked DynamicSecurityMethod
+#endif
         public static DeserializationToken StartDeserialization()
         {
             if (LocalAppContextSwitches.SerializationGuard)
