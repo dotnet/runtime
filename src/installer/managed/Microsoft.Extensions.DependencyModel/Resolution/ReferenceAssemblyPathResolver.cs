@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.DotNet.PlatformAbstractions;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
 {
@@ -26,8 +25,8 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal ReferenceAssemblyPathResolver(IFileSystem fileSystem, IEnvironment environment)
             : this(fileSystem,
-                GetDefaultReferenceAssembliesPath(fileSystem, RuntimeEnvironment.OperatingSystemPlatform, environment),
-                GetFallbackSearchPaths(fileSystem, RuntimeEnvironment.OperatingSystemPlatform, environment))
+                GetDefaultReferenceAssembliesPath(fileSystem, environment),
+                GetFallbackSearchPaths(fileSystem, environment))
         {
         }
 
@@ -84,9 +83,9 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             return false;
         }
 
-        internal static string[] GetFallbackSearchPaths(IFileSystem fileSystem, Platform platform, IEnvironment environment)
+        internal static string[] GetFallbackSearchPaths(IFileSystem fileSystem, IEnvironment environment)
         {
-            if (platform != Platform.Windows)
+            if (!environment.IsWindows())
             {
                 return new string[0];
             }
@@ -100,7 +99,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             return new[] { net20Dir };
         }
 
-        internal static string GetDefaultReferenceAssembliesPath(IFileSystem fileSystem, Platform platform, IEnvironment environment)
+        internal static string GetDefaultReferenceAssembliesPath(IFileSystem fileSystem, IEnvironment environment)
         {
             // Allow setting the reference assemblies path via an environment variable
             var referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem); 
@@ -109,7 +108,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 return referenceAssembliesPath;
             }
 
-            if (platform != Platform.Windows)
+            if (!environment.IsWindows())
             {
                 // There is no reference assemblies path outside of windows
                 // The environment variable can be used to specify one

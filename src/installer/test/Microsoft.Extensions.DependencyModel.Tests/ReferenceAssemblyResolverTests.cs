@@ -34,17 +34,18 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public void UsesEnvironmentVariableForDefaultPath()
         {
             var environment = EnvironmentMockBuilder.Create()
+                .SetIsWindows(true)
                 .AddVariable("DOTNET_REFERENCE_ASSEMBLIES_PATH", ReferencePath)
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, Platform.Windows, environment);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, environment);
             result.Should().Be(ReferencePath);
         }
 
         [Fact]
         public void LooksOnlyOnEnvironmentVariableOnNonWindows()
         {
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, Platform.Linux, EnvironmentMockBuilder.Empty);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, EnvironmentMockBuilder.Empty);
             result.Should().BeNull();
         }
 
@@ -52,11 +53,12 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public void ReturnsProgramFiles86AsDefaultLocationOnWin64()
         {
             var environment = EnvironmentMockBuilder.Create()
+                .SetIsWindows(true)
                 .AddVariable("ProgramFiles(x86)", "Program Files (x86)")
                 .AddVariable("ProgramFiles", "Program Files")
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, Platform.Windows, environment);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, environment);
             result.Should().Be(Path.Combine("Program Files (x86)", "Reference Assemblies", "Microsoft", "Framework"));
         }
 
@@ -64,10 +66,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public void ReturnsProgramFilesAsDefaultLocationOnWin32()
         {
             var environment = EnvironmentMockBuilder.Create()
+                .SetIsWindows(true)
                 .AddVariable("ProgramFiles", "Program Files")
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, Platform.Windows, environment);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(FileSystemMockBuilder.Empty, environment);
             result.Should().Be(Path.Combine("Program Files", "Reference Assemblies", "Microsoft", "Framework"));
         }
 
@@ -80,10 +83,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Build();
 
             var environment = EnvironmentMockBuilder.Create()
+                .SetIsWindows(true)
                 .AddVariable("WINDIR", "Windows")
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetFallbackSearchPaths(fileSystem, Platform.Windows, environment);
+            var result = ReferenceAssemblyPathResolver.GetFallbackSearchPaths(fileSystem, environment);
             result.Should().Contain(net20Path);
         }
 
