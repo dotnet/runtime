@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     public class EnvironmentMockBuilder
     {
         private Dictionary<string, string> _variables = new Dictionary<string, string>();
+        private bool _isWindows;
 
         internal static IEnvironment Empty { get; } = Create().Build();
 
@@ -23,18 +24,26 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             return this;
         }
 
+        public EnvironmentMockBuilder SetIsWindows(bool value)
+        {
+            _isWindows = value;
+            return this;
+        }
+
         internal IEnvironment Build()
         {
-            return new EnvironmentMock(_variables);
+            return new EnvironmentMock(_variables, _isWindows);
         }
 
         private class EnvironmentMock : IEnvironment
         {
             private Dictionary<string, string> _variables;
+            private bool _isWindows;
 
-            public EnvironmentMock(Dictionary<string, string> variables)
+            public EnvironmentMock(Dictionary<string, string> variables, bool isWindows)
             {
                 _variables = variables;
+                _isWindows = isWindows;
             }
 
             public string GetEnvironmentVariable(string name)
@@ -42,6 +51,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 string value = null;
                 _variables.TryGetValue(name, out value);
                 return value;
+            }
+
+            public bool IsWindows()
+            {
+                return _isWindows;
             }
         }
     }

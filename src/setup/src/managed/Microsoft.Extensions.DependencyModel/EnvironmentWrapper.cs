@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -12,6 +13,11 @@ namespace Microsoft.Extensions.DependencyModel
         public string GetEnvironmentVariable(string name)
         {
             return Environment.GetEnvironmentVariable(name);
+        }
+
+        public bool IsWindows()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         }
     }
 }
