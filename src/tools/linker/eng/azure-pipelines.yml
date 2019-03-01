@@ -1,0 +1,68 @@
+variables:
+- name: _BuildConfig
+  value: Release
+- name: _BuildArgs
+  value: /p:OfficialBuildId=$(Build.BuildNumber)
+         /p:ArcadeBuild=true
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+  # Provide HelixApiAccessToken for telemetry
+  - group: DotNet-HelixApi-Access
+
+
+jobs:
+- template: /eng/common/templates/jobs/jobs.yml
+  parameters:
+
+    enableTelemetry: true # send helix telemetry
+    helixRepo: mono/linker
+    enablePublishBuildArtifacts: true # publish build logs to pipeline storage
+    # enablePublishTestResults
+    enablePublishBuildAssets: true # generate build manifests and publish to BAR in internal builds
+    enableMicrobuild: true # only affects internal builds
+
+    jobs:
+
+    - job: Windows_NT
+      pool:
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          name: Hosted VS2017
+        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+          name: dotnet-internal-temp
+      ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+        variables:
+        - group: DotNet-Blob-Feed
+        - _DotNetPublishToBlobFeed: true
+        - _TeamName: .NET # required by microbuild install step
+        # _SignType is used in the arcade templates that install microbuild.
+        - DotNetSignType: $(_SignType) # DotNetSignType defaults to real if not specified
+        - _PublishArgs: /p:DotNetPublishToBlobFeed=$(_DotNetPublishToBlobFeed)
+                        /p:DotNetPublishBlobFeedUrl=https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+                        /p:DotNetPublishBlobFeedKey=$(dotnetfeed-storage-access-key-1)
+      steps:
+      - checkout: self
+        submodules: true
+      - script: eng\common\cibuild.cmd -projects $(Build.SourcesDirectory)\illink.sln
+                -configuration $(_BuildConfig) $(_BuildArgs) $(_PublishArgs)
+        displayName: Build and publish illink.sln $(_BuildConfig)
+
+    - job: Linux
+      pool:
+        name: Hosted Ubuntu 1604
+      steps:
+      - checkout: self
+        submodules: true
+      - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
+                --configuration $(_BuildConfig) $(_BuildArgs)
+        displayName: Build illink.sln $(_BuildConfig)
+
+    - job: macOS
+      pool:
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          name: Hosted MacOS
+        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+          name: Hosted Mac Internal
+      steps:
+      - checkout: self
+        submodules: true
+      - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
+                --configuration $(_BuildConfig) $(_BuildArgs)
