@@ -26,7 +26,9 @@ pgo_pattern_str = r'coffgrp(?:\s+[0-9A-F]+){4}\s+\((\S*)\)'
 pgo_pattern = re.compile(pgo_pattern_str)
 
 def was_compiled_with_pgo(filename):
-    headers = subprocess.check_output(["link", "/dump", "/headers", filename])
+    # When running on Python 3, check_output returns a bytes object, which we need to
+    # decode to a string object.
+    headers = subprocess.check_output(["link", "/dump", "/headers", filename]).decode('utf-8')
     
     match = pgo_pattern.search(headers)
 
