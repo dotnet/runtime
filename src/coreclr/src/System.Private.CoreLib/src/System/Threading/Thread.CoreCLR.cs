@@ -408,7 +408,7 @@ namespace System.Threading
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
             SetApartmentStateHelper(state, false);
 #else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            false;
+            state == ApartmentState.Unknown;
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
