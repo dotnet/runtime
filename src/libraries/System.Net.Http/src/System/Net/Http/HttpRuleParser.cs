@@ -431,9 +431,12 @@ namespace System.Net.Http
                     {
                         nestedCount--;
                     }
+
+                    // after nested call we continue with parsing
+                    continue;
                 }
 
-                if (current < input.Length &&  input[current] == closeChar)
+                if (input[current] == closeChar)
                 {
                     length = current - startIndex + 1;
                     return HttpParseResult.Parsed;
