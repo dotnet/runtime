@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
     // is passed to the MethodWriter.
     // Labels are created by using ILGenerator.CreateLabel and their position is set
     // by using ILGenerator.MarkLabel.
-    public struct Label
+    public struct Label : IEquatable<Label>
     {
         internal int m_label;
 
