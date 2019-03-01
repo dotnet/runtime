@@ -9,16 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="optimization.PGO.CoreCLR" Version="$(PgoDataPackageVersion)" Condition="'$(PgoDataPackageVersion)'!=''" />
-    <PackageReference Include="optimization.IBC.CoreCLR" Version="$(IbcDataPackageVersion)" Condition="'$(IbcDataPackageVersion)'!=''" />
+    <PackageReference Include="optimization.PGO.CoreCLR" Version="$(optimizationPGOCoreCLRVersion)" Condition="'$(optimizationPGOCoreCLRVersion)'!=''" />
+    <PackageReference Include="optimization.IBC.CoreCLR" Version="$(optimizationIBCCoreCLRVersion)" Condition="'$(optimizationIBCCoreCLRVersion)'!=''" />
   </ItemGroup>
 
   <Target Name="DumpPgoDataPackageVersion">
-    <Message Importance="high" Text="$(PgoDataPackageVersion)" />
+    <Message Importance="high" Text="$(optimizationPGOCoreCLRVersion)" />
   </Target>
 
   <Target Name="DumpIbcDataPackageVersion">
-    <Message Importance="high" Text="$(IbcDataPackageVersion)" />
+    <Message Importance="high" Text="$(optimizationIBCCoreCLRVersion)" />
   </Target>
 
 </Project>
