@@ -18,6 +18,7 @@
   <!-- Package names if they are used in more then one location in the repo -->
   <PropertyGroup>
     <MicrosoftDotNetXUnitExtensionsPackage>Microsoft.DotNet.XUnitExtensions</MicrosoftDotNetXUnitExtensionsPackage>
+    <NETStandardLibraryPackageId>NETStandard.Library</NETStandardLibraryPackageId>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Arcade dependencies -->
@@ -44,5 +45,7 @@
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview4.19151.3</MicrosoftNETCorePlatformsPackageVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19126.1</NETStandardLibraryPackageVersion>
+    <!-- dotnet-optimization dependencies -->
+    <optimizationwindowsntx64IBCCoreFxPackageVersion>99.99.99-master-20190227.1</optimizationwindowsntx64IBCCoreFxPackageVersion>
   </PropertyGroup>
 </Project>
