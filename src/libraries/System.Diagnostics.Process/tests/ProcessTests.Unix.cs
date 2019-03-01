@@ -508,14 +508,15 @@ namespace System.Diagnostics.Tests
             Assert.Equal(groupId, getgid().ToString());
             Assert.Equal(groupId, getegid().ToString());
 
+            var expectedGroups = new HashSet<uint>(groupIdsJoined.Split(',').Select(s => uint.Parse(s)));
+
             if (bool.Parse(checkGroupsExact))
             {
-                Assert.Equal(groupIdsJoined, string.Join(",", GetGroups()));
+                Assert.Equal(expectedGroups, GetGroups());
             }
             else
             {
-                uint[] groups = groupIdsJoined.Split(',').Select(s => uint.Parse(s)).ToArray();
-                Assert.Subset(new HashSet<uint>(groups), new HashSet<uint>(GetGroups()));
+                Assert.Subset(expectedGroups, GetGroups());
             }
 
             return SuccessExitCode;
@@ -826,7 +827,7 @@ namespace System.Diagnostics.Tests
         [DllImport("libc", SetLastError = true)]
         private unsafe static extern int getgroups(int size, uint* list);
 
-        private unsafe static uint[] GetGroups()
+        private unsafe static HashSet<uint> GetGroups()
         {
             int maxSize = 128;
             Span<uint> groups = stackalloc uint[maxSize];
@@ -839,11 +840,8 @@ namespace System.Diagnostics.Tests
                     throw new Win32Exception();
                 }
 
-                uint[] groupsArray = groups.Slice(0, rv).ToArray();
-                // Order the groups, so we can use them with xUnit's Assert.Equal.
-                Array.Sort(groupsArray);
-
-                return groupsArray;
+                // Return this as a HashSet to filter out duplicates.
+                return new HashSet<uint>(groups.Slice(0, rv).ToArray());
             }
         }
 
