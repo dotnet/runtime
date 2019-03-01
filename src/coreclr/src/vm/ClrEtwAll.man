@@ -453,7 +453,7 @@
                       <map value="0x8" message="$(string.RuntimePublisher.GCHandleKind.SizedRefMessage)"/>
                     </valueMap>
 
-                  <!-- BitMaps -->
+                    <!-- BitMaps -->
                     <bitMap name="ModuleRangeTypeMap">
                         <map value="0x4" message="$(string.RuntimePublisher.ModuleRangeTypeMap.ColdRangeMessage)"/>
                     </bitMap>
@@ -474,6 +474,9 @@
                         <map value= "0x2" message="$(string.RuntimePublisher.Module.NativeMapMessage)"/>
                         <map value= "0x4" message="$(string.RuntimePublisher.Module.DynamicMapMessage)"/>
                         <map value= "0x8" message="$(string.RuntimePublisher.Module.ManifestMapMessage)"/>
+                        <map value= "0x10" message="$(string.RuntimePublisher.Module.IbcOptimizedMapMessage)"/>
+                        <map value= "0x20" message="$(string.RuntimePublisher.Module.ReadyToRunModuleMapMessage)"/>
+                        <map value= "0x40" message="$(string.RuntimePublisher.Module.PartialReadyToRunModuleMapMessage)"/>
                     </bitMap>
                     <bitMap name="MethodFlagsMap">
                         <map value="0x1" message="$(string.RuntimePublisher.Method.DynamicMapMessage)"/>
@@ -967,7 +970,7 @@
                         </GCAllocationTick_V3>
                       </UserData>
                   </template>
-                  
+
                   <template tid="GCCreateConcurrentThread">
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
@@ -1169,7 +1172,7 @@
                         </SetGCHandle>
                       </UserData>
                     </template>
-                    
+
                     <template tid="GCTriggered">
                         <data name="Reason" inType="win:UInt32" map="GCReasonMap" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
@@ -1196,7 +1199,7 @@
                         <data name="Data" inType="win:Binary" length="DataSize" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                     </template>
-                    
+
                     <template tid="IncreaseMemoryPressure">
                         <data name="BytesAllocated" inType="win:UInt64" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
@@ -1650,8 +1653,8 @@
                                 <ReJITID> %8 </ReJITID>
                             </MethodLoadUnload_V2>
                         </UserData>
-                    </template>                  
-                  
+                    </template>
+
                     <template tid="MethodLoadUnloadVerbose">
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
@@ -1732,7 +1735,7 @@
                             </MethodLoadUnloadVerbose_V2>
                         </UserData>
                     </template>
-                  
+
                     <template tid="MethodJittingStarted">
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
@@ -1966,7 +1969,7 @@
                             </MethodJitTailCallFailedAnsi>
                         </UserData>
                     </template>
-                    
+
                     <template tid="MethodILToNativeMap">
                       <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                       <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
@@ -2328,7 +2331,7 @@
                         </GCBulkMovedObjectRanges>
                       </UserData>
                     </template>
-                  
+
                     <template tid="GCGenerationRange">
                       <data name="Generation"           inType="win:UInt8"    />
                       <data name="RangeStart"           inType="win:Pointer" outType="win:HexInt64"  />
@@ -2540,27 +2543,27 @@
                            keywords ="GCHeapDumpKeyword"  opcode="GCBulkRootConditionalWeakTableElementEdge"
                            task="GarbageCollection"
                            symbol="GCBulkRootConditionalWeakTableElementEdge" message="$(string.RuntimePublisher.GCBulkRootConditionalWeakTableElementEdgeEventMessage)"/>
-                    
+
                     <event value="18" version="0" level="win:Informational"  template="GCBulkNode"
                            keywords ="GCHeapDumpKeyword"  opcode="GCBulkNode"
                            task="GarbageCollection"
                            symbol="GCBulkNode" message="$(string.RuntimePublisher.GCBulkNodeEventMessage)"/>
-                    
+
                     <event value="19" version="0" level="win:Informational"  template="GCBulkEdge"
                            keywords ="GCHeapDumpKeyword"  opcode="GCBulkEdge"
                            task="GarbageCollection"
                            symbol="GCBulkEdge" message="$(string.RuntimePublisher.GCBulkEdgeEventMessage)"/>
-                    
+
                     <event value="20" version="0" level="win:Informational"  template="GCSampledObjectAllocation"
                            keywords ="GCSampledObjectAllocationHighKeyword"  opcode="GCSampledObjectAllocation"
                            task="GarbageCollection"
                            symbol="GCSampledObjectAllocationHigh" message="$(string.RuntimePublisher.GCSampledObjectAllocationHighEventMessage)"/>
-                    
+
                     <event value="21" version="0" level="win:Informational"  template="GCBulkSurvivingObjectRanges"
                            keywords ="GCHeapSurvivalAndMovementKeyword"  opcode="GCBulkSurvivingObjectRanges"
                            task="GarbageCollection"
                            symbol="GCBulkSurvivingObjectRanges" message="$(string.RuntimePublisher.GCBulkSurvivingObjectRangesEventMessage)"/>
-                    
+
                     <event value="22" version="0" level="win:Informational"  template="GCBulkMovedObjectRanges"
                            keywords ="GCHeapSurvivalAndMovementKeyword"  opcode="GCBulkMovedObjectRanges"
                            task="GarbageCollection"
@@ -2570,7 +2573,7 @@
                            keywords ="GCHeapSurvivalAndMovementKeyword"  opcode="GCGenerationRange"
                            task="GarbageCollection"
                            symbol="GCGenerationRange" message="$(string.RuntimePublisher.GCGenerationRangeEventMessage)"/>
-                  
+
                     <event value="25" version="0" level="win:Informational"  template="GCMark"
                            keywords ="GCKeyword"  opcode="GCMarkStackRoots"
                            task="GarbageCollection"
@@ -2613,7 +2616,7 @@
                            keywords ="GCSampledObjectAllocationLowKeyword"  opcode="GCSampledObjectAllocation"
                            task="GarbageCollection"
                            symbol="GCSampledObjectAllocationLow" message="$(string.RuntimePublisher.GCSampledObjectAllocationLowEventMessage)"/>
-                    
+
 
                     <event value="33" version="0" level="win:Verbose" template="PinObjectAtGCTime"
                            keywords="GCKeyword"
@@ -2760,58 +2763,58 @@
 
                     <!-- CLR private ThreadPool events -->
                     <event value="60" version="0" level="win:Verbose"  template="ThreadPoolWorkingThreadCount"
-                           keywords="ThreadingKeyword" 
+                           keywords="ThreadingKeyword"
                            opcode="win:Start"
                            task="ThreadPoolWorkingThreadCount"
                            symbol="ThreadPoolWorkingThreadCount" message="$(string.RuntimePublisher.ThreadPoolWorkingThreadCountEventMessage)"/>
 
                     <event value="61" version="0" level="win:Verbose"  template="ThreadPoolWork"
-                           keywords="ThreadingKeyword ThreadTransferKeyword" 
+                           keywords="ThreadingKeyword ThreadTransferKeyword"
                            task="ThreadPool"
                            opcode="Enqueue"
-                           symbol="ThreadPoolEnqueue" 
+                           symbol="ThreadPoolEnqueue"
                            message="$(string.RuntimePublisher.ThreadPoolEnqueueEventMessage)"/>
 
                     <event value="62" version="0" level="win:Verbose"  template="ThreadPoolWork"
-                           keywords="ThreadingKeyword ThreadTransferKeyword" 
+                           keywords="ThreadingKeyword ThreadTransferKeyword"
                            task="ThreadPool"
                            opcode="Dequeue"
-                           symbol="ThreadPoolDequeue" 
+                           symbol="ThreadPoolDequeue"
                            message="$(string.RuntimePublisher.ThreadPoolDequeueEventMessage)"/>
 
                     <event value="63" version="0" level="win:Verbose"  template="ThreadPoolIOWorkEnqueue"
-                           keywords="ThreadingKeyword ThreadTransferKeyword" 
+                           keywords="ThreadingKeyword ThreadTransferKeyword"
                            task="ThreadPool"
                            opcode="IOEnqueue"
-                           symbol="ThreadPoolIOEnqueue" 
+                           symbol="ThreadPoolIOEnqueue"
                            message="$(string.RuntimePublisher.ThreadPoolIOEnqueueEventMessage)"/>
 
                     <event value="64" version="0" level="win:Verbose"  template="ThreadPoolIOWork"
-                           keywords="ThreadingKeyword ThreadTransferKeyword" 
+                           keywords="ThreadingKeyword ThreadTransferKeyword"
                            task="ThreadPool"
                            opcode="IODequeue"
-                           symbol="ThreadPoolIODequeue" 
+                           symbol="ThreadPoolIODequeue"
                            message="$(string.RuntimePublisher.ThreadPoolIODequeueEventMessage)"/>
 
                     <event value="65" version="0" level="win:Verbose"  template="ThreadPoolIOWork"
-                           keywords="ThreadingKeyword" 
+                           keywords="ThreadingKeyword"
                            task="ThreadPool"
                            opcode="IOPack"
-                           symbol="ThreadPoolIOPack" 
+                           symbol="ThreadPoolIOPack"
                            message="$(string.RuntimePublisher.ThreadPoolIOPackEventMessage)"/>
 
                     <event value="70" version="0" level="win:Informational"  template="ThreadStartWork"
-                           keywords="ThreadingKeyword ThreadTransferKeyword" 
+                           keywords="ThreadingKeyword ThreadTransferKeyword"
                            task="Thread"
                            opcode="Creating"
-                           symbol="ThreadCreating" 
+                           symbol="ThreadCreating"
                            message="$(string.RuntimePublisher.ThreadCreatingEventMessage)"/>
 
                     <event value="71" version="0" level="win:Informational"  template="ThreadStartWork"
-                           keywords="ThreadingKeyword ThreadTransferKeyword" 
+                           keywords="ThreadingKeyword ThreadTransferKeyword"
                            task="Thread"
                            opcode="Running"
-                           symbol="ThreadRunning" 
+                           symbol="ThreadRunning"
                            message="$(string.RuntimePublisher.ThreadRunningEventMessage)"/>
 
                     <!-- CLR Exception events -->
@@ -2834,7 +2837,7 @@
                            keywords ="ExceptionKeyword"  opcode="win:Stop"
                            task="ExceptionCatch"
                            symbol="ExceptionCatchStop" message="$(string.RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage)"/>
-                  
+
                     <event value="252" version="0" level="win:Informational"  template="ExceptionHandling"
                            keywords ="ExceptionKeyword"  opcode="win:Start"
                            task="ExceptionFinally"
@@ -2844,7 +2847,7 @@
                            keywords ="ExceptionKeyword"  opcode="win:Stop"
                            task="ExceptionFinally"
                            symbol="ExceptionFinallyStop" message="$(string.RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage)"/>
-                  
+
                     <event value="254" version="0" level="win:Informational"  template="ExceptionHandling"
                            keywords ="ExceptionKeyword"  opcode="win:Start"
                            task="ExceptionFilter"
@@ -2854,12 +2857,12 @@
                            keywords ="ExceptionKeyword"  opcode="win:Stop"
                            task="ExceptionFilter"
                            symbol="ExceptionFilterStop" message="$(string.RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage)"/>
-                  
+
                     <event value="256" version="0" level="win:Informational"
                            keywords ="ExceptionKeyword"  opcode="win:Stop"
                            task="Exception"
                            symbol="ExceptionThrownStop" message="$(string.RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage)"/>
-                           
+
                     <!-- CLR Contention events -->
                     <event value="81" version="0" level="win:Informational"
                            opcode="win:Start"
@@ -2965,7 +2968,7 @@
                            keywords ="JitKeyword NGenKeyword" opcode="MethodLoad"
                            task="CLRMethod"
                            symbol="MethodLoad_V2" message="$(string.RuntimePublisher.MethodLoad_V2EventMessage)"/>
-                  
+
                     <event value="142" version="0" level="win:Informational"  template="MethodLoadUnload"
                            keywords ="JitKeyword NGenKeyword" opcode="MethodUnload"
                            task="CLRMethod"
@@ -2980,7 +2983,7 @@
                            keywords ="JitKeyword NGenKeyword" opcode="MethodUnload"
                            task="CLRMethod"
                            symbol="MethodUnload_V2" message="$(string.RuntimePublisher.MethodUnload_V2EventMessage)"/>
-                  
+
                     <event value="143" version="0" level="win:Informational"  template="MethodLoadUnloadVerbose"
                            keywords ="JitKeyword NGenKeyword" opcode="MethodLoadVerbose"
                            task="CLRMethod"
@@ -2995,7 +2998,7 @@
                            keywords ="JitKeyword NGenKeyword" opcode="MethodLoadVerbose"
                            task="CLRMethod"
                            symbol="MethodLoadVerbose_V2" message="$(string.RuntimePublisher.MethodLoadVerbose_V2EventMessage)"/>
-                  
+
                     <event value="144" version="0" level="win:Informational"  template="MethodLoadUnloadVerbose"
                            keywords ="JitKeyword NGenKeyword" opcode="MethodUnloadVerbose"
                            task="CLRMethod"
@@ -3010,7 +3013,7 @@
                            keywords ="JitKeyword NGenKeyword" opcode="MethodUnloadVerbose"
                            task="CLRMethod"
                            symbol="MethodUnloadVerbose_V2" message="$(string.RuntimePublisher.MethodUnloadVerbose_V2EventMessage)"/>
-                  
+
                     <event value="145" version="0" level="win:Verbose"  template="MethodJittingStarted"
                            keywords ="JitKeyword" opcode="MethodJittingStarted"
                            task="CLRMethod"
@@ -3099,7 +3102,7 @@
                            keywords ="LoaderKeyword PerfTrackKeyword" opcode="ModuleLoad"
                            task="CLRLoader"
                            symbol="ModuleLoad_V2" message="$(string.RuntimePublisher.ModuleLoad_V2EventMessage)"/>
-                  
+
                     <event value="153" version="0" level="win:Informational"  template="ModuleLoadUnload"
                            keywords ="LoaderKeyword" opcode="ModuleUnload"
                            task="CLRLoader"
@@ -3206,7 +3209,7 @@
                            opcode="win:Start"
                            task="CLRRuntimeInformation"
                            symbol="RuntimeInformationStart" message="$(string.RuntimePublisher.RuntimeInformationEventMessage)"/>
-                           
+
                     <!-- Additional GC events 200-239 -->
                     <event value="200" version="0" level="win:Verbose" template="IncreaseMemoryPressure"
                            keywords="GCKeyword" opcode="IncreaseMemoryPressure"
@@ -3243,25 +3246,25 @@
                            keywords="DebuggerKeyword" opcode="win:Start"
                            task="DebugIPCEvent"
                            symbol="DebugIPCEventStart" />
-                    <event value="241" version="0" level="win:Informational" 
+                    <event value="241" version="0" level="win:Informational"
                            keywords="DebuggerKeyword" opcode="win:Stop"
                            task="DebugIPCEvent"
                            symbol="DebugIPCEventEnd" />
-                    <event value="242" version="0" level="win:Informational" 
+                    <event value="242" version="0" level="win:Informational"
                            keywords="DebuggerKeyword" opcode="win:Start"
                            task="DebugExceptionProcessing"
                            symbol="DebugExceptionProcessingStart" />
-                    <event value="243" version="0" level="win:Informational" 
+                    <event value="243" version="0" level="win:Informational"
                            keywords="DebuggerKeyword" opcode="win:Stop"
                            task="DebugExceptionProcessing"
                            symbol="DebugExceptionProcessingEnd" />
 
                     <!-- CLR Code Symbol Emission events 260-269 -->
                     <event value="260" version="0" level="win:Verbose" template="CodeSymbols"
-                           keywords="CodeSymbolsKeyword" opcode="win:Start" 
+                           keywords="CodeSymbolsKeyword" opcode="win:Start"
                            task="CodeSymbols"
                            symbol="CodeSymbols" message="$(string.RuntimePublisher.CodeSymbolsEventMessage)"/>
-                    
+
                    <event value="270" version="0" level="win:Informational"  template="EventSource"
                            keywords="EventSourceKeyword"
                            symbol="EventSource" />
@@ -3385,6 +3388,9 @@
                         <map value= "0x2" message="$(string.RundownPublisher.Module.NativeMapMessage)"/>
                         <map value= "0x4" message="$(string.RundownPublisher.Module.DynamicMapMessage)"/>
                         <map value= "0x8" message="$(string.RundownPublisher.Module.ManifestMapMessage)"/>
+                        <map value= "0x10" message="$(string.RundownPublisher.Module.IbcOptimizedMapMessage)"/>
+                        <map value= "0x20" message="$(string.RundownPublisher.Module.ReadyToRunModuleMapMessage)"/>
+                        <map value= "0x40" message="$(string.RundownPublisher.Module.PartialReadyToRunModuleMapMessage)"/>
                     </bitMap>
                     <bitMap name="MethodFlagsMap">
                         <map value="0x1" message="$(string.RundownPublisher.Method.DynamicMapMessage)"/>
@@ -3716,8 +3722,8 @@
                                 <ReJITID> %8 </ReJITID>
                             </MethodLoadUnloadRundown_V2>
                         </UserData>
-                    </template>                  
-                  
+                    </template>
+
                     <template tid="MethodLoadUnloadRundownVerbose">
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
@@ -3798,7 +3804,7 @@
                             </MethodLoadUnloadRundownVerbose_V2>
                         </UserData>
                     </template>
-                  
+
                     <template tid="MethodILToNativeMapRundown">
                       <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                       <data name="ReJITID" inType="win:UInt64" outType="win:HexInt64" />
@@ -3896,7 +3902,7 @@
                            keywords ="JitRundownKeyword NGenRundownKeyword" opcode="MethodDCStart"
                            task="CLRMethodRundown"
                            symbol="MethodDCStart_V2" message="$(string.RundownPublisher.MethodDCStart_V2EventMessage)"/>
-                  
+
                     <event value="142" version="0" level="win:Informational"  template="MethodLoadUnloadRundown"
                            keywords ="JitRundownKeyword NGenRundownKeyword" opcode="MethodDCEnd"
                            task="CLRMethodRundown"
@@ -3926,7 +3932,7 @@
                            keywords ="JitRundownKeyword NGenRundownKeyword" opcode="MethodDCStartVerbose"
                            task="CLRMethodRundown"
                            symbol="MethodDCStartVerbose_V2" message="$(string.RundownPublisher.MethodDCStartVerbose_V2EventMessage)"/>
-                  
+
                     <event value="144" version="0" level="win:Informational"  template="MethodLoadUnloadRundownVerbose"
                            keywords ="JitRundownKeyword NGenRundownKeyword" opcode="MethodDCEndVerbose"
                            task="CLRMethodRundown"
@@ -3941,7 +3947,7 @@
                            keywords ="JitRundownKeyword NGenRundownKeyword" opcode="MethodDCEndVerbose"
                            task="CLRMethodRundown"
                            symbol="MethodDCEndVerbose_V2" message="$(string.RundownPublisher.MethodDCEndVerbose_V2EventMessage)"/>
-                  
+
                     <event value="145" version="0" level="win:Informational"
                            keywords ="JitRundownKeyword JittedMethodILToNativeMapRundownKeyword NGenRundownKeyword LoaderRundownKeyword" opcode="DCStartComplete"
                            task="CLRMethodRundown"
@@ -3993,7 +3999,7 @@
                            task="CLRMethodRundown"
                            symbol="MethodDCEndILToNativeMap"
                            message="$(string.RundownPublisher.MethodDCEndILToNativeMapEventMessage)"/>
-                  
+
                     <!-- CLR Loader Rundown Events -->
                     <event value="151" version="0" level="win:Informational"  template="DomainModuleLoadUnloadRundown"
                            keywords ="LoaderRundownKeyword" opcode="DomainModuleDCStart"
@@ -5165,7 +5171,7 @@
                         <data name="Operation" inType="win:UnicodeString" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                     </template>
-                    
+
                     <template tid="PinPlugAtGCTime">
                         <data name="PlugStart" inType="win:Pointer" />
                         <data name="PlugEnd" inType="win:Pointer" />
@@ -5321,7 +5327,7 @@
                             </DynamicTypeUseStringAndInt>
                         </UserData>
                     </template>
-                    
+
                 </templates>
 
                 <!--Events-->
@@ -6108,7 +6114,7 @@
                            task="TransparencyComputation"
                            symbol="TokenTransparencyComputationEnd" message="$(string.PrivatePublisher.TokenTransparencyComputationEndEventMessage)" />
 
-                    <event value="188" version="0" level="win:Informational" template="NgenBindEvent" 
+                    <event value="188" version="0" level="win:Informational" template="NgenBindEvent"
                            keywords="PrivateFusionKeyword" opcode="NgenBind"
                            task="CLRNgenBinder"
                            symbol="NgenBindEvent" message="$(string.PrivatePublisher.NgenBinderMessage)"/>
@@ -6120,25 +6126,25 @@
                            symbol="FailFast" message="$(string.PrivatePublisher.FailFastEventMessage)"/>
 
                     <event value="192" version="0" level="win:Verbose"  template="PrvFinalizeObject"
-                           keywords ="GCPrivateKeyword" 
+                           keywords ="GCPrivateKeyword"
                            opcode="PrvFinalizeObject"
                            task="GarbageCollectionPrivate"
                            symbol="PrvFinalizeObject" message="$(string.PrivatePublisher.FinalizeObjectEventMessage)"/>
 
                     <event value="193" version="0" level="win:Verbose"  template="CCWRefCountChangeAnsi"
-                           keywords="InteropPrivateKeyword"  
+                           keywords="InteropPrivateKeyword"
                            opcode="CCWRefCountChange"
                            task="GarbageCollectionPrivate"
                            symbol="CCWRefCountChangeAnsi" message="$(string.PrivatePublisher.CCWRefCountChangeEventMessage)"/>
 
                     <event value="194" version="0" level="win:Verbose"  template="PrvSetGCHandle"
-                           keywords="GCHandlePrivateKeyword"  
+                           keywords="GCHandlePrivateKeyword"
                            opcode="SetGCHandle"
                            task="GarbageCollectionPrivate"
                            symbol="PrvSetGCHandle" message="$(string.PrivatePublisher.SetGCHandleEventMessage)"/>
 
                     <event value="195" version="0" level="win:Verbose"  template="PrvDestroyGCHandle"
-                           keywords="GCHandlePrivateKeyword"  
+                           keywords="GCHandlePrivateKeyword"
                            opcode="DestroyGCHandle"
                            task="GarbageCollectionPrivate"
                            symbol="PrvDestroyGCHandle" message="$(string.PrivatePublisher.DestroyGCHandleEventMessage)"/>
@@ -6160,7 +6166,7 @@
                            symbol="PinPlugAtGCTime" message="$(string.PrivatePublisher.PinPlugAtGCTimeEventMessage)"/>
 
                     <event value="200" version="0" level="win:Verbose"  template="CCWRefCountChange"
-                           keywords="InteropPrivateKeyword"  
+                           keywords="InteropPrivateKeyword"
                            opcode="CCWRefCountChange"
                            task="GarbageCollectionPrivate"
                            symbol="CCWRefCountChange" message="$(string.PrivatePublisher.CCWRefCountChangeEventMessage)"/>
@@ -6176,7 +6182,7 @@
                     <event value="202" version="0" level="win:Informational" template="MulticoreJitMethodCodeReturnedPrivate"
                            keywords="MulticoreJitPrivateKeyword" opcode="MethodCodeReturned"
                            task="CLRMulticoreJit" symbol="MulticoreJitMethodCodeReturned" message="$(string.PrivatePublisher.MulticoreJitMethodCodeReturnedMessage)" />
-                    
+
                     <!-- CLR Private Dynamic Type Usage events NOTE: These are not used anymore. They are kept around for backcompat with traces that might have already contained these -->
                     <event value="400" version="0" level="win:Informational" template="DynamicTypeUsePrivate"
                            keywords="DynamicTypeUsageKeyword"
@@ -6187,7 +6193,7 @@
 
                     <event value="401" version="0" level="win:Informational" template="DynamicTypeUseTwoParametersPrivate"
                            keywords="DynamicTypeUsageKeyword"
-                           symbol="WinRTUnbox" 
+                           symbol="WinRTUnbox"
                            task="DynamicTypeUsage"
                            opcode="WinRTUnbox"
                            message="$(string.PrivatePublisher.WinRTUnboxMessage)" />
@@ -6205,7 +6211,7 @@
                            task="DynamicTypeUsage"
                            opcode="RCWVariance"
                            message="$(string.PrivatePublisher.RcwVarianceMessage)" />
-                           
+
                     <event value="404" version="0" level="win:Informational" template="DynamicTypeUseTwoParametersPrivate"
                            keywords="DynamicTypeUsageKeyword"
                            symbol="RCWIEnumerableCasting"
@@ -6521,7 +6527,7 @@
                 <string id="PrivatePublisher.BGC2ndNonConBeginEventMessage" value="ClrInstanceID=%1"/>
                 <string id="PrivatePublisher.BGC2ndNonConEndEventMessage" value="ClrInstanceID=%1"/>
                 <string id="PrivatePublisher.BGC2ndConBeginEventMessage" value="ClrInstanceID=%1"/>
-                <string id="PrivatePublisher.BGC1stSweepEndEventMessage" value="GenNumber=%1;ClrInstanceID=%2"/>                
+                <string id="PrivatePublisher.BGC1stSweepEndEventMessage" value="GenNumber=%1;ClrInstanceID=%2"/>
                 <string id="PrivatePublisher.BGC2ndConEndEventMessage" value="ClrInstanceID=%1"/>
                 <string id="PrivatePublisher.BGCPlanEndEventMessage" value="ClrInstanceID=%1"/>
                 <string id="PrivatePublisher.BGCSweepEndEventMessage" value="ClrInstanceID=%1"/>
@@ -6552,7 +6558,7 @@
 
                 <string id="PrivatePublisher.AllocRequestEventMessage" value="LoaderHeapPtr=%1;%nMemoryAddress=%2;%nRequestSize=%3;%nClrInstanceID=%4" />
                 <string id="PrivatePublisher.ModuleRangeLoadEventMessage" value="ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5;%nIBCType=%6;%nSectionType=%7" />
-                <string id="PrivatePublisher.MulticoreJitCommonEventMessage" value="ClrInstanceID=%1;%String1=%2;%nString2=%3;%nInt1=%4;%nInt2=%5;%nInt3=%6" />                
+                <string id="PrivatePublisher.MulticoreJitCommonEventMessage" value="ClrInstanceID=%1;%String1=%2;%nString2=%3;%nInt1=%4;%nInt2=%5;%nInt3=%6" />
                 <string id="PrivatePublisher.MulticoreJitMethodCodeReturnedMessage" value="ClrInstanceID=%1;%nModuleID=%2;%nMethodID=%3" />
 
                 <string id="PrivatePublisher.IInspectableRuntimeClassNameMessage" value="TypeName=%1;%nClrInstanceID=%2" />
@@ -6568,7 +6574,7 @@
                 <string id="PrivatePublisher.ConvertToCallbackMessage" value="TypeName=%1;%nSecondType=%2;%nClrInstanceID=%3" />
                 <string id="PrivatePublisher.BeginCreateManagedReferenceMessage" value="ClrInstanceID=%1" />
                 <string id="PrivatePublisher.EndCreateManagedReferenceMessage" value="ClrInstanceID=%1" />
-                
+
                 <!-- Task Messages -->
                 <string id="RuntimePublisher.GarbageCollectionTaskMessage" value="GC" />
                 <string id="RuntimePublisher.WorkerThreadCreationTaskMessage" value="WorkerThreadCreationV2" />
@@ -6621,7 +6627,7 @@
 
                 <string id="StressPublisher.StressTaskMessage" value="StressLog" />
                 <string id="StressPublisher.StackTaskMessage" value="ClrStack" />
-                
+
                 <!-- Map Messages -->
                 <string id="RuntimePublisher.AppDomain.DefaultMapMessage" value="Default" />
                 <string id="RuntimePublisher.AppDomain.ExecutableMapMessage" value="Executable" />
@@ -6634,6 +6640,9 @@
                 <string id="RuntimePublisher.Module.NativeMapMessage" value="Native" />
                 <string id="RuntimePublisher.Module.DynamicMapMessage" value="Dynamic" />
                 <string id="RuntimePublisher.Module.ManifestMapMessage" value="Manifest" />
+                <string id="RuntimePublisher.Module.IbcOptimizedMapMessage" value="IbcOptimized" />
+                <string id="RuntimePublisher.Module.ReadyToRunModuleMapMessage" value="ReadyToRunModule" />
+                <string id="RuntimePublisher.Module.PartialReadyToRunModuleMapMessage" value="PartialReadyToRunModule" />
                 <string id="RuntimePublisher.Method.DynamicMapMessage" value="Dynamic" />
                 <string id="RuntimePublisher.Method.GenericMapMessage" value="Generic" />
                 <string id="RuntimePublisher.Method.HasSharedGenericCodeMapMessage" value="HasSharedGenericCode" />
@@ -6751,6 +6760,9 @@
                 <string id="RundownPublisher.Module.NativeMapMessage" value="Native" />
                 <string id="RundownPublisher.Module.DynamicMapMessage" value="Dynamic" />
                 <string id="RundownPublisher.Module.ManifestMapMessage" value="Manifest" />
+                <string id="RundownPublisher.Module.IbcOptimizedMapMessage" value="IbcOptimized" />
+                <string id="RundownPublisher.Module.ReadyToRunModuleMapMessage" value="ReadyToRunModule" />
+                <string id="RundownPublisher.Module.PartialReadyToRunModuleMapMessage" value="PartialReadyToRunModule" />
                 <string id="RundownPublisher.Method.DynamicMapMessage" value="Dynamic" />
                 <string id="RundownPublisher.Method.GenericMapMessage" value="Generic" />
                 <string id="RundownPublisher.Method.HasSharedGenericCodeMapMessage" value="HasSharedGenericCode" />
@@ -7038,7 +7050,7 @@
                 <string id="PrivatePublisher.BGC1stConEndOpcodeMessage" value="BGC1stConStop" />
                 <string id="PrivatePublisher.BGC2ndNonConEndOpcodeMessage" value="BGC2ndNonConStop" />
                 <string id="PrivatePublisher.BGC2ndConBeginOpcodeMessage" value="BGC2ndConStart" />
-                <string id="PrivatePublisher.BGC1stSweepEndOpcodeMessage" value="BGC1stSweepEnd" />                
+                <string id="PrivatePublisher.BGC1stSweepEndOpcodeMessage" value="BGC1stSweepEnd" />
                 <string id="PrivatePublisher.BGC2ndConEndOpcodeMessage" value="BGC2ndConStop" />
                 <string id="PrivatePublisher.BGCPlanEndOpcodeMessage" value="BGCPlanStop" />
                 <string id="PrivatePublisher.BGCSweepEndOpcodeMessage" value="BGCSweepStop" />
