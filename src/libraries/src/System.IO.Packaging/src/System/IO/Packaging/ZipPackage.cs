@@ -669,15 +669,16 @@ namespace System.IO.Packaging
                         _contentTypeZipArchiveEntry = _zipArchive.CreateEntry(s_contentTypesFile, _cachedCompressionLevel);
                         _contentTypeStreamExists = true;
                     }
-
-                    // delete and re-create entry for content part.  When writing this, the stream will not truncate the content
-                    // if the XML is shorter than the existing content part.
-                    var contentTypefullName = _contentTypeZipArchiveEntry.FullName;
-                    var thisArchive = _contentTypeZipArchiveEntry.Archive;
-                    _zipStreamManager.Close(_contentTypeZipArchiveEntry);
-                    _contentTypeZipArchiveEntry.Delete();
-                    _contentTypeZipArchiveEntry = thisArchive.CreateEntry(contentTypefullName);
-
+                    else
+                    {
+                        // delete and re-create entry for content part.  When writing this, the stream will not truncate the content
+                        // if the XML is shorter than the existing content part.
+                        var contentTypefullName = _contentTypeZipArchiveEntry.FullName;
+                        var thisArchive = _contentTypeZipArchiveEntry.Archive;
+                        _zipStreamManager.Close(_contentTypeZipArchiveEntry);
+                        _contentTypeZipArchiveEntry.Delete();
+                        _contentTypeZipArchiveEntry = thisArchive.CreateEntry(contentTypefullName);
+                    }
 
                     using (Stream s = _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite))
                     {

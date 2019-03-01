@@ -51,33 +51,33 @@ namespace System.IO.Packaging
         }
 
         public override void Write(
-	        byte[] buffer,
-	        int offset,
-	        int count
+            byte[] buffer,
+            int offset,
+            int count
         )
         {
             _baseStream.Write(buffer, offset, count);
         }
 
         public override int Read(
-	        byte[] buffer,
-	        int offset,
-	        int count
+            byte[] buffer,
+            int offset,
+            int count
         )
         {
             return _baseStream.Read(buffer, offset, count);
         }
 
         public override void SetLength(
-	        long value
+            long value
         )
         {
             _baseStream.SetLength(value);
         }
 
         public override long Seek(
-	        long offset,
-	        SeekOrigin origin
+            long offset,
+            SeekOrigin origin
         )
         {
             return _baseStream.Seek(offset, origin);
@@ -100,34 +100,16 @@ namespace System.IO.Packaging
             }
         }
 
-        // For some strange reason, if the package FileAccess == Read,
-        // then can't get length from the stream.  Not supported.
-        // The workaround - write the stream to a memory stream, then return the length of the
-        // memory stream.
         public override long Length
         {
             get {
+                // ZipArchiveEntry's read stream doesn't provide a length since it's a raw DeflateStream
+                // Return length from the archive entry.
                 if (_packageFileAccess == FileAccess.Read)
-                {
-                    using (MemoryStream ms = new MemoryStream())
-                    using (Stream zs = _zipArchiveEntry.Open())
-                    {
-                        CopyStream(zs, ms);
-                        return ms.Length;
-                    }
-                }
+                    return _zipArchiveEntry.Length;
                 else
                     return _baseStream.Length;
             }
-        }
-
-        private static void CopyStream(Stream source, Stream target)
-        {
-            const int BufSize = 0x4096;
-            byte[] buf = new byte[BufSize];
-            int bytesRead = 0;
-            while ((bytesRead = source.Read(buf, 0, BufSize)) > 0)
-                target.Write(buf, 0, bytesRead);
         }
 
         public override bool CanSeek
