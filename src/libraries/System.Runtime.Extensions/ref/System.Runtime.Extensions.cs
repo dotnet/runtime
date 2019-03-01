@@ -772,6 +772,8 @@ namespace System
     }
     public static partial class Math
     {
+        public const double E = 2.7182818284590451;
+        public const double PI = 3.1415926535897931;
         public static decimal Abs(decimal value) { throw null; }
         public static double Abs(double value) { throw null; }
         public static short Abs(short value) { throw null; }
@@ -883,6 +885,8 @@ namespace System
     }
     public static partial class MathF
     {
+        public const float E = 2.71828175f;
+        public const float PI = 3.14159274f;
         public static float Abs(float x) { throw null; }
         public static float Acos(float x) { throw null; }
         public static float Acosh(float x) { throw null; }
