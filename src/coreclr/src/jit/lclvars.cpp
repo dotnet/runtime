@@ -2007,19 +2007,13 @@ bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& 
     var_types   fieldVarType = JITtype2varType(fieldCorType);
     unsigned    fieldSize    = genTypeSize(fieldVarType);
 
-    // Do not promote if either not a primitive type or size equal to ptr size on
-    // target or a struct containing a single floating-point field.
+    // Do not promote if the field is not a primitive type, is floating-point,
+    // or is not properly aligned.
     //
     // TODO-PERF: Structs containing a single floating-point field on Amd64
     // need to be passed in integer registers. Right now LSRA doesn't support
     // passing of floating-point LCL_VARS in integer registers.  Enabling promotion
     // of such structs results in an assert in lsra right now.
-    //
-    // TODO-PERF: Right now promotion is confined to struct containing a ptr sized
-    // field (int/uint/ref/byref on 32-bits and long/ulong/ref/byref on 64-bits).
-    // Though this would serve the purpose of promoting Span<T> containing ByReference<T>,
-    // this can be extended to other primitive types as long as they are aligned at their
-    // natural boundary.
     //
     // TODO-CQ: Right now we only promote an actual SIMD typed field, which would cause
     // a nested SIMD type to fail promotion.
