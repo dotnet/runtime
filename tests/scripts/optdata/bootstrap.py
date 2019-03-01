@@ -41,8 +41,8 @@ def get_buildos():
 def get_optdata_version(tool):
     """Returns the version string specified in project file for the given tool."""
     element_name = {
-        'IBC': 'IbcDataPackageVersion',
-        'PGO': 'PgoDataPackageVersion',
+        'IBC': 'optimizationIBCCoreCLRVersion',
+        'PGO': 'optimizationPGOCoreCLRVersion',
     }[tool]
     root = ET.parse(ORIGIN_FILE)
     return root.findtext('./PropertyGroup/{}'.format(element_name))

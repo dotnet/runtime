@@ -11,12 +11,16 @@
     <MicrosoftPrivateCoreFxNETCoreAppVersion>4.6.0-preview4.19118.1</MicrosoftPrivateCoreFxNETCoreAppVersion>
     <MicrosoftNETCorePlatformsVersion>3.0.0-preview4.19118.1</MicrosoftNETCorePlatformsVersion>
     <MicrosoftNETCoreAppVersion>3.0.0-preview4-27427-1</MicrosoftNETCoreAppVersion>
+    <optimizationIBCCoreCLRVersion>99.99.99-master-20190227.1</optimizationIBCCoreCLRVersion>
+    <optimizationPGOCoreCLRVersion>99.99.99-master-20190227.1</optimizationPGOCoreCLRVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
     <MicrosoftPrivateCoreFxNETCoreAppPackage>Microsoft.Private.CoreFx.NETCoreApp</MicrosoftPrivateCoreFxNETCoreAppPackage>
     <MicrosoftNETCorePlatformsPackage>Microsoft.NETCore.Platforms</MicrosoftNETCorePlatformsPackage>
     <MicrosoftNETCoreAppPackage>Microsoft.NETCore.App</MicrosoftNETCoreAppPackage>
+    <optimizationIBCCoreCLRPackage>optimization.IBC.CoreCLR</optimizationIBCCoreCLRPackage>
+    <optimizationPGOCoreCLRPackage>optimization.PGO.CoreCLR</optimizationPGOCoreCLRPackage>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Override signing package version. Current version breaks signing SPC, remove

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build"
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
   <ItemGroup>
@@ -32,21 +33,14 @@
     target, which runs automatically before "Sync". Since no "Sync" target actually exists, go ahead and define one now so that
     the tools are fetched before "Build".
   -->
-  <Target Name="Sync" BeforeTargets="Build"
-    DependsOnTargets="RestoreOptData;RestoreNETCorePlatforms" />
+  <Target Name="Sync" BeforeTargets="Build" DependsOnTargets="RestoreOptData;RestoreNETCorePlatforms" />
 
   <Target Name="RestoreOptData" Condition="'$(RestoreDuringBuild)'=='true' and '$(BuildType)'=='Release'">
-    <PropertyGroup>
-      <_OptimizationDataFeed Condition="'$(DotNetBuildOffline)' != 'true'">--source https://dotnet.myget.org/F/dotnet-core-optimization-data/api/v3/index.json</_OptimizationDataFeed>
-    </PropertyGroup>
-
-    <Exec Command="$(DotnetRestoreCommand) $(_OptimizationDataFeed) $(SourceDir).nuget/optdata/optdata.csproj"
-          StandardOutputImportance="Low" />
+    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj" StandardOutputImportance="Low" />
   </Target>
 
   <Target Name="RestoreNETCorePlatforms" Condition="'$(RestoreDuringBuild)'=='true'">
-    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/init/init.csproj"
-          StandardOutputImportance="Low" />
+    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/init/init.csproj" StandardOutputImportance="Low" />
   </Target>
 
   <Target Name="CleanAllProjects">
