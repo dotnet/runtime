@@ -4,25 +4,20 @@
 #include <stdarg.h>
 #include "native.h"
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wvarargs"
-#endif
-
-MCC_API VType1 sum(float first, ...) {
+MCC_API VType1 sum(double first, ...) {
     VType1 result;
 
     int count = 0;
     float sum = 0.0;
-    float val = first;
+    double val = first;
     va_list args;
 
     // initialize variable arguments.
     va_start(args, first);
-    while (val != (float)-1) {
-        sum += val;
+    while (val != (double)-1) {
+        sum += (float)val;
         count++;
-        val = va_arg(args, float);
+        val = va_arg(args, double);
     }
     // reset variable arguments.
     va_end(args);
@@ -53,7 +48,3 @@ MCC_API VType1 sum(float first, ...) {
 
     return result;
 }
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif

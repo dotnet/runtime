@@ -179,7 +179,7 @@ struct TransitionBlock
         LIMITED_METHOD_CONTRACT;
 
 #if defined(UNIX_AMD64_ABI)
-        return offset >= sizeof(TransitionBlock);
+        return offset >= (int)sizeof(TransitionBlock);
 #else        
         int ofsArgRegs = GetOffsetOfArgumentRegisters();
 

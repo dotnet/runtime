@@ -374,7 +374,7 @@ void ChangeNumberSequential(NumberSequential* p)
 
 bool IsCorrectNumberSequential(NumberSequential* p)
 {
-	if(p->i32 != (-0x7fffffff - 1) || p->ui32 != 0xffffffff || p->s1 != -0x8000 || p->us1 != 0xffff || p->b != 0 || 
+	if(p->i32 != (-0x7fffffff - 1) || p->ui32 != 0xffffffff || p->s1 != -0x8000 || p->us1 != 0xffff || p->b != 0 ||
 		p->sb != 0x7f ||p->i16 != -0x8000 || p->ui16 != 0xffff || p->i64 != -1234567890 ||
 		p->ui64 != 1234567890 || (p->sgl) != 32.0 || p->d != 3.2)
 	{
