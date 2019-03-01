@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
 
   <PropertyGroup>
     <!-- When building through build-tests.cmd tests.builds is the main project that is being built. We set IsTestProject to true when the project path has /tests/.
@@ -53,5 +53,5 @@
              ContinueOnError="ErrorAndStop" />
   </Target>
 
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.traversal.targets))"  />
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
 </Project>
