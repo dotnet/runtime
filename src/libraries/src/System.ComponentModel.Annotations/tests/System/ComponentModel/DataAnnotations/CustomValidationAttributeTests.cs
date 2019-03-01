@@ -74,6 +74,14 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(method, attribute.Method);
         }
 
+        [Theory]
+        [InlineData(typeof(CustomValidator), nameof(CustomValidator.ValidationMethodDerivedReturnTypeReturnsSomeError))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full .NET Frameworks had a restriction, that prevented to use custom ValidationResult. .NET Core allows to return class derived from ValidatioResult")]
+        public static void Ctor_Type_String_IgnoreNetFramework(Type validatorType, string method)
+        {
+            Ctor_Type_String(validatorType, method);
+        }
+
         [Fact]
         public void FormatErrorMessage_NotPerformedValidation_ContainsName()
         {
@@ -180,6 +188,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full .NET Frameworks had a restriction, that prevented to use custom ValidationResult. .NET Core allows to return class derived from ValidatioResult")]
         public static void GetValidationResult_MethodReturnDerivedValidationResult_ReturnsExpected()
         {
             CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.ValidationMethodDerivedReturnTypeReturnsSomeError));
