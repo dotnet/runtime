@@ -24,10 +24,10 @@ namespace Microsoft.Extensions.Logging.EventSource
         protected override void OnEventCommand(System.Diagnostics.Tracing.EventCommandEventArgs command) { }
         public static partial class Keywords
         {
-            public const System.Diagnostics.Tracing.EventKeywords FormattedMessage = (System.Diagnostics.Tracing.EventKeywords)(long)4;
-            public const System.Diagnostics.Tracing.EventKeywords JsonMessage = (System.Diagnostics.Tracing.EventKeywords)(long)8;
-            public const System.Diagnostics.Tracing.EventKeywords Message = (System.Diagnostics.Tracing.EventKeywords)(long)2;
-            public const System.Diagnostics.Tracing.EventKeywords Meta = (System.Diagnostics.Tracing.EventKeywords)(long)1;
+            public const System.Diagnostics.Tracing.EventKeywords FormattedMessage = (System.Diagnostics.Tracing.EventKeywords)(4);
+            public const System.Diagnostics.Tracing.EventKeywords JsonMessage = (System.Diagnostics.Tracing.EventKeywords)(8);
+            public const System.Diagnostics.Tracing.EventKeywords Message = (System.Diagnostics.Tracing.EventKeywords)(2);
+            public const System.Diagnostics.Tracing.EventKeywords Meta = (System.Diagnostics.Tracing.EventKeywords)(1);
         }
     }
 }
