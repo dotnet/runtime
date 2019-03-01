@@ -6854,7 +6854,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(BaseDomain *pDomainFilter,
         // let all the data in one go (in particular the debug data is set latter).  
         //
         // Note that currently the  rejitID variable is likely always 0 because it seems that
-        // fGetReJitIDs=false except in the case that an appdomain is being unloaded (which I 
+        // fGetReJitIDs=false except in the case that an appdomain is being unloaded (which I
         // think never happens in .NET core) 
         // 
         // Issue #22904 tracks the work to fix the IL->Native mapping.  
