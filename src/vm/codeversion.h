@@ -452,7 +452,7 @@ private:
     HRESULT UpdateJumpStampHelper(BYTE* pbCode, INT64 i64OldValue, INT64 i64NewValue, BOOL fContentionPossible);
 #endif
     PTR_MethodDesc m_pMethodDesc;
-    
+
     enum MethodDescVersioningStateFlags
     {
         JumpStampMask = 0x3,
@@ -582,7 +582,7 @@ public:
     void EnterLock();
     void LeaveLock();
 #endif
-    
+
 #ifdef DEBUG
     BOOL LockOwnedByCurrentThread() const;
 #endif
@@ -642,7 +642,7 @@ private:
 
     //closed MethodDesc -> MethodDescVersioningState
     MethodDescVersioningStateHash m_methodDescVersioningStateMap;
-    
+
     CrstExplicitInit m_crstTable;
 };
 
