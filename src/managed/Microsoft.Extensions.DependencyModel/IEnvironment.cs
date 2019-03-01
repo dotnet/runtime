@@ -6,5 +6,6 @@ namespace Microsoft.Extensions.DependencyModel
     internal interface IEnvironment
     {
         string GetEnvironmentVariable(string name);
+        bool IsWindows();
     }
 }

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.DotNet.PlatformAbstractions;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
 {
@@ -35,10 +34,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             _nugetPackageDirectories = nugetPackageDirectories;
         }
 
-        private static string[] GetDefaultProbeDirectories(IEnvironment environment) =>
-            GetDefaultProbeDirectories(RuntimeEnvironment.OperatingSystemPlatform, environment);
-
-        internal static string[] GetDefaultProbeDirectories(Platform osPlatform, IEnvironment environment)
+        internal static string[] GetDefaultProbeDirectories(IEnvironment environment)
         {
 #if !NETSTANDARD1_3            
 #if NETSTANDARD1_6
@@ -47,38 +43,37 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             var probeDirectories = AppDomain.CurrentDomain.GetData("PROBING_DIRECTORIES");
 #endif
 
-           var listOfDirectories = probeDirectories as string;
+            var listOfDirectories = probeDirectories as string;
 
-           if (!string.IsNullOrEmpty(listOfDirectories))
-           {
-               return listOfDirectories.Split(new char [] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries );
-           }
+            if (!string.IsNullOrEmpty(listOfDirectories))
+            {
+                return listOfDirectories.Split(new char[] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
+            }
 #endif
 
-           var packageDirectory = environment.GetEnvironmentVariable("NUGET_PACKAGES");
+            var packageDirectory = environment.GetEnvironmentVariable("NUGET_PACKAGES");
 
-           if (!string.IsNullOrEmpty(packageDirectory))
-           {
-               return new string[] { packageDirectory };
-           }
+            if (!string.IsNullOrEmpty(packageDirectory))
+            {
+                return new string[] { packageDirectory };
+            }
 
-           string basePath;
-           if (osPlatform == Platform.Windows)
-           {
-               basePath = environment.GetEnvironmentVariable("USERPROFILE");
-           }
-           else
-           {
-               basePath = environment.GetEnvironmentVariable("HOME");
-           }
+            string basePath;
+            if (environment.IsWindows())
+            {
+                basePath = environment.GetEnvironmentVariable("USERPROFILE");
+            }
+            else
+            {
+                basePath = environment.GetEnvironmentVariable("HOME");
+            }
 
-           if (string.IsNullOrEmpty(basePath))
-           {
-               return new string[] { string.Empty };
-           }
+            if (string.IsNullOrEmpty(basePath))
+            {
+                return new string[] { string.Empty };
+            }
 
-           return new string[] { Path.Combine(basePath, ".nuget", "packages") };
-
+            return new string[] { Path.Combine(basePath, ".nuget", "packages") };
         }
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
