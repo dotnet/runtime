@@ -119,7 +119,7 @@ pal::hresult_t coreclr_t::create(
 }
 
 coreclr_t::coreclr_t(host_handle_t host_handle, domain_id_t domain_id)
-    : _is_shutdown{}
+    : _is_shutdown{ false }
     , _host_handle{ host_handle }
     , _domain_id{ domain_id }
 {
@@ -169,11 +169,11 @@ pal::hresult_t coreclr_t::shutdown(int* latchedExitCode)
 {
     assert(g_coreclr != nullptr && coreclr_shutdown != nullptr);
 
-    bool is_false = false;
+    std::lock_guard<std::mutex> lock{ _shutdown_lock };
 
     // If already shut down return success since the result
     // has already been reported to a previous caller.
-    if (!_is_shutdown.compare_exchange_strong(is_false, true))
+    if (_is_shutdown)
     {
         if (latchedExitCode != nullptr)
             *latchedExitCode = StatusCode::Success;
@@ -181,6 +181,7 @@ pal::hresult_t coreclr_t::shutdown(int* latchedExitCode)
         return StatusCode::Success;
     }
 
+    _is_shutdown = true;
     return coreclr_shutdown(_host_handle, _domain_id, latchedExitCode);
 }
 
