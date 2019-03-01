@@ -1769,29 +1769,6 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
-        case NI_AVX_ExtractVector128:
-        case NI_AVX2_ExtractVector128:
-        {
-            GenTree* lastOp = impPopStack().val;
-            assert(lastOp->IsCnsIntOrI() || mustExpand);
-            GenTree* vectorOp = impSIMDPopStack(TYP_SIMD32);
-            if (sig->numArgs == 2)
-            {
-                baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-                retNode  = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, lastOp, intrinsic, baseType, 32);
-            }
-            else
-            {
-                assert(sig->numArgs == 3);
-                op1                                    = impPopStack().val;
-                CORINFO_ARG_LIST_HANDLE secondArg      = info.compCompHnd->getArgNext(sig->args);
-                CORINFO_CLASS_HANDLE    secondArgClass = info.compCompHnd->getArgClass(sig, secondArg);
-                baseType                               = getBaseTypeOfSIMDType(secondArgClass);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, vectorOp, lastOp, intrinsic, baseType, 32);
-            }
-            break;
-        }
-
         case NI_AVX2_PermuteVar8x32:
         {
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);

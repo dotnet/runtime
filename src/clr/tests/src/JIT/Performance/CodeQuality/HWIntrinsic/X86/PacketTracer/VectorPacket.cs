@@ -58,9 +58,9 @@ internal struct VectorPacket256
         Vector256<float> m03 = LoadVector128(&vectors[0]).ToVector256(); // load lower halves
         Vector256<float> m14 = LoadVector128(&vectors[4]).ToVector256();
         Vector256<float> m25 = LoadVector128(&vectors[8]).ToVector256();
-        m03 = InsertVector128(m03, &vectors[12], 1);  // load higher halves
-        m14 = InsertVector128(m14, &vectors[16], 1);
-        m25 = InsertVector128(m25, &vectors[20], 1);
+        m03 = InsertVector128(m03, LoadVector128(&vectors[12]), 1);  // load higher halves
+        m14 = InsertVector128(m14, LoadVector128(&vectors[16]), 1);
+        m25 = InsertVector128(m25, LoadVector128(&vectors[20]), 1);
 
         var xy = Shuffle(m14, m25, 2 << 6 | 1 << 4 | 3 << 2 | 2);
         var yz = Shuffle(m03, m14, 1 << 6 | 0 << 4 | 2 << 2 | 1);
