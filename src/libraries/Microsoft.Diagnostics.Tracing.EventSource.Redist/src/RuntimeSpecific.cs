@@ -243,19 +243,3 @@ namespace System.Diagnostics.Tracing
         }
     }
 }
-
-#if ES_BUILD_STANDALONE
-namespace Internal.Runtime.Augments
-{
-    internal static class RuntimeThread
-    {
-        internal static ulong CurrentOSThreadId
-        {
-            get { return GetCurrentThreadId(); }
-        }
-
-        [DllImport("kernel32.dll")]
-        private static extern uint GetCurrentThreadId();
-    }
-}
-#endif
