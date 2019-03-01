@@ -5,13 +5,6 @@
     <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
     <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <AssemblyName>ILLink.CustomSteps</AssemblyName>
-    <OutputType>Library</OutputType>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <ProjectGuid>{275C1D10-168A-4AC4-8F3E-AD969F580B9C}</ProjectGuid>
   </PropertyGroup>
 
   <ItemGroup>
