@@ -288,16 +288,10 @@ def main(args):
 
     # Gather up some arguments to pass to the different build scripts.
 
-    config_args = '-c Release /p:OSGroup=%s /p:ArchGroup=%s' % (clr_os, arch)
-    
-    if Is_windows:
-        config_args += ' -restore -build -buildtests'
-        if not no_run_tests:
-            config_args += ' -test'
-    else:
-        config_args += ' --restore --build --buildtests'
-        if not no_run_tests:
-            config_args += ' --test'
+    config_args = '-restore -build -buildtests -configuration Release -os %s -arch %s' % (clr_os, arch)
+
+    if not no_run_tests:
+        config_args += ' -test'
 
     build_args = config_args
 
