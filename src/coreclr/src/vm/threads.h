@@ -4970,6 +4970,12 @@ public:
         m_HijackReturnKind = returnKind;
     }
 #endif // FEATURE_HIJACK
+
+public:
+    OBJECTHANDLE GetOrCreateDeserializationTracker();
+
+private:
+    OBJECTHANDLE m_DeserializationTracker;
 };
 
 // End of class Thread

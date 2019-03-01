@@ -455,7 +455,7 @@ DEFINE_CLASS(IOBJECTREFERENCE,      Serialization,          IObjectReference)
 DEFINE_CLASS(IDESERIALIZATIONCB,    Serialization,          IDeserializationCallback)
 DEFINE_CLASS(STREAMING_CONTEXT,     Serialization,          StreamingContext)
 DEFINE_CLASS(SERIALIZATION_INFO,    Serialization,          SerializationInfo)
-
+DEFINE_CLASS(DESERIALIZATION_TRACKER, Serialization, DeserializationTracker)
 
 
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)

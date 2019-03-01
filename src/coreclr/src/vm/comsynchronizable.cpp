@@ -1423,6 +1423,29 @@ BOOL QCALLTYPE ThreadNative::YieldThread()
     return ret;
 }
 
+FCIMPL1(Object*, ThreadNative::GetThreadDeserializationTracker, StackCrawlMark* stackMark)
+{
+    FCALL_CONTRACT;
+    OBJECTREF refRetVal = NULL;
+    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal)
+
+    // To avoid reflection trying to bypass deserialization tracking, check the caller
+    // and only allow SerializationInfo to call into this method.
+    MethodTable* pCallerMT = SystemDomain::GetCallersType(stackMark);
+    if (pCallerMT != MscorlibBinder::GetClass(CLASS__SERIALIZATION_INFO))
+    {
+        COMPlusThrowArgumentException(W("stackMark"), NULL);
+    }
+
+    Thread* pThread = GetThread();
+
+    refRetVal = ObjectFromHandle(pThread->GetOrCreateDeserializationTracker());
+
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(refRetVal);
+}
+FCIMPLEND
 
 FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
 {

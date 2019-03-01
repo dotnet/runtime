@@ -19,6 +19,7 @@ namespace System.Reflection
         private static object s_syncRootLoadFrom = new object();
         private static List<string> s_LoadFromAssemblyList = new List<string>();
         private static object s_syncLoadFromAssemblyList = new object();
+        private static int s_cachedSerializationSwitch = 0;
 
         private static Assembly LoadFromResolveHandler(object sender, ResolveEventArgs args)
         {
@@ -162,6 +163,9 @@ namespace System.Reflection
             if (ApplicationModel.IsUap)
                 throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.Load(byte[], ...)"));
 #endif
+
+            SerializationInfo.ThrowIfDeserializationInProgress("AllowAssembliesFromByteArrays", 
+                ref s_cachedSerializationSwitch);
 
             AssemblyLoadContext alc = new IndividualAssemblyLoadContext();
             MemoryStream assemblyStream = new MemoryStream(rawAssembly);
