@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>CoreFx.Private.TestUtilities</AssemblyName>
     <ProjectGuid>{EBDB0247-CA43-4226-B7A1-8FEF21061D09}</ProjectGuid>
-    <RuntimeProjectFile>$(ProjectDir)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
+    <RuntimeProjectFile>$(RepoRoot)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
     <ClsCompliant>false</ClsCompliant>
     <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

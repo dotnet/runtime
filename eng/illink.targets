@@ -10,8 +10,8 @@
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' == 'core'">$(ToolsDir)ILLink/netcoreapp2.0/ILLink.Tasks.dll</ILLinkTasksPath>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' != 'core'">$(ToolsDir)ILLink/net46/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' == 'core'">$(ILLinkDir)netcoreapp2.0/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' != 'core'">$(ILLinkDir)net46/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
     <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
@@ -36,15 +36,15 @@
   --> 
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
     <BinPlaceConfiguration Include="$(BuildConfiguration)">
-      <RuntimePath>$(BinDir)ILLinkTrimAssembly/$(BuildConfiguration)/trimmed</RuntimePath>
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
     </BinPlaceConfiguration>
     <BinPlaceConfiguration Include="$(BuildConfiguration)">
-      <RuntimePath>$(BinDir)ILLinkTrimAssembly/$(BuildConfiguration)/reports</RuntimePath>
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
     </BinPlaceConfiguration>
     <BinPlaceConfiguration Include="$(BuildConfiguration)">
-      <RuntimePath>$(BinDir)ILLinkTrimAssembly/$(BuildConfiguration)/pretrimmed</RuntimePath>
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
     </BinPlaceConfiguration>
   </ItemGroup>
