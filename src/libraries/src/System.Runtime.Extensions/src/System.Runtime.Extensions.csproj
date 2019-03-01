@@ -38,36 +38,6 @@
     <Compile Include="System\Security\Permissions\SecurityAttribute.cs" />
     <Compile Include="System\Security\Permissions\SecurityPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\SecurityPermissionFlag.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\AppDomain.cs">
-      <Link>Common\CoreLib\System\AppDomain.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\AppDomainSetup.cs">
-      <Link>Common\CoreLib\System\AppDomainSetup.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\CannotUnloadAppDomainException.cs">
-      <Link>Common\CoreLib\System\CannotUnloadAppDomainException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Collections\ArrayList.cs">
-      <Link>Common\CoreLib\System\Collections\ArrayList.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Security\IPermission.cs">
-      <Link>Common\CoreLib\System\Security\IPermission.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Security\ISecurityEncodable.cs">
-      <Link>Common\CoreLib\System\Security\ISecurityEncodable.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Security\IStackWalk.cs">
-      <Link>Common\CoreLib\System\Security\IStackWalk.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Security\SecurityElement.cs">
-      <Link>Common\CoreLib\System\Security\SecurityElement.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Security\Permissions\PermissionState.cs">
-      <Link>Common\CoreLib\System\Security\Permissions\PermissionState.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Security\PermissionSet.cs">
-      <Link>Common\CoreLib\System\Security\PermissionSet.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
@@ -205,10 +175,42 @@
       <Link>Common\System\IO\PersistedFiles.Unix.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsAOT)'=='true'"> <!-- TODO: Remove once uapaot builds are updated with moved types -->
+    <Compile Include="$(CommonPath)\CoreLib\System\AppDomain.cs">
+      <Link>Common\CoreLib\System\AppDomain.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\AppDomainSetup.cs">
+      <Link>Common\CoreLib\System\AppDomainSetup.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\CannotUnloadAppDomainException.cs">
+      <Link>Common\CoreLib\System\CannotUnloadAppDomainException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Collections\ArrayList.cs">
+      <Link>Common\CoreLib\System\Collections\ArrayList.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\IPermission.cs">
+      <Link>Common\CoreLib\System\Security\IPermission.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\ISecurityEncodable.cs">
+      <Link>Common\CoreLib\System\Security\ISecurityEncodable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\IStackWalk.cs">
+      <Link>Common\CoreLib\System\Security\IStackWalk.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\SecurityElement.cs">
+      <Link>Common\CoreLib\System\Security\SecurityElement.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\Permissions\PermissionState.cs">
+      <Link>Common\CoreLib\System\Security\Permissions\PermissionState.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Security\PermissionSet.cs">
+      <Link>Common\CoreLib\System\Security\PermissionSet.cs</Link>
+    </Compile>
+    <Reference Include="System.Security.Principal" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
-    <ProjectReference Include="..\..\System.Security.Principal\src\System.Security.Principal.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'uap'">
