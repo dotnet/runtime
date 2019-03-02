@@ -1251,6 +1251,59 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        public static void HonorReaderOptionsMaxDepth()
+        {
+            const int OkayCount = 65;
+            string okayJson = new string('[', OkayCount) + "2" + new string(']', OkayCount);
+            int depth = 0;
+
+            using (JsonDocument doc = JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = OkayCount }))
+            {
+                JsonElement root = doc.RootElement;
+                Assert.Equal(JsonValueType.Array, root.Type);
+
+                JsonElement cur = root;
+
+                while (cur.Type == JsonValueType.Array)
+                {
+                    Assert.Equal(1, cur.GetArrayLength());
+                    cur = cur[0];
+                    depth++;
+                }
+
+                Assert.Equal(JsonValueType.Number, cur.Type);
+                Assert.Equal(2, cur.GetInt32());
+                Assert.Equal(OkayCount, depth);
+            }
+
+            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = 32 }));
+            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(okayJson));
+            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = 0 }));
+            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = 64 }));
+        }
+
+        [Fact]
+        public static void LargeMaxDepthIsAllowed()
+        {
+            // MaxDepthOverflow * 8 > int.MaxValue
+            const int MaxDepthOverflow = 1 << 28; //268_435_456;
+
+            string okayJson = "[]";
+
+            using (JsonDocument doc = JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = MaxDepthOverflow }))
+            {
+                JsonElement root = doc.RootElement;
+                Assert.Equal(JsonValueType.Array, root.Type);
+            }
+
+            using (JsonDocument doc = JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = int.MaxValue }))
+            {
+                JsonElement root = doc.RootElement;
+                Assert.Equal(JsonValueType.Array, root.Type);
+            }
+        }
+
+        [Fact]
         public static Task EnableComments()
         {
             string json = "3";

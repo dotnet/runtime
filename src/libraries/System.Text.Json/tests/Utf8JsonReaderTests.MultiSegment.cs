@@ -167,7 +167,7 @@ namespace System.Text.Json.Tests
 
                 SpanSequenceStatesAreEqualInvalidJson(dataUtf8, sequence, maxDepth, commentHandling);
 
-                var state = new JsonReaderState(maxDepth: maxDepth, options: new JsonReaderOptions { CommentHandling = commentHandling });
+                var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
                 var json = new Utf8JsonReader(sequence, isFinalBlock: true, state);
 
                 try
@@ -195,7 +195,7 @@ namespace System.Text.Json.Tests
 
                 SpanSequenceStatesAreEqualInvalidJson(dataUtf8, sequence, maxDepth, commentHandling);
 
-                var state = new JsonReaderState(maxDepth: maxDepth, options: new JsonReaderOptions { CommentHandling = commentHandling });
+                var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
                 var json = new Utf8JsonReader(sequence, isFinalBlock: true, state);
 
                 try
@@ -233,10 +233,10 @@ namespace System.Text.Json.Tests
 
         private static void SpanSequenceStatesAreEqualInvalidJson(byte[] dataUtf8, ReadOnlySequence<byte> sequence, int maxDepth, JsonCommentHandling commentHandling)
         {
-            var stateSpan = new JsonReaderState(maxDepth: maxDepth, options: new JsonReaderOptions { CommentHandling = commentHandling });
+            var stateSpan = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
             var jsonSpan = new Utf8JsonReader(dataUtf8, isFinalBlock: true, stateSpan);
 
-            var stateSequence = new JsonReaderState(maxDepth: maxDepth, options: new JsonReaderOptions { CommentHandling = commentHandling });
+            var stateSequence = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
             var jsonSequence = new Utf8JsonReader(sequence, isFinalBlock: true, stateSequence);
 
             try

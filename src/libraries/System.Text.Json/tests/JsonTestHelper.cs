@@ -115,7 +115,7 @@ namespace System.Text.Json.Tests
 
         public static byte[] ReturnBytesHelper(byte[] data, out int length, JsonCommentHandling commentHandling = JsonCommentHandling.Disallow, int maxDepth = 64)
         {
-            var state = new JsonReaderState(maxDepth: maxDepth, options: new JsonReaderOptions { CommentHandling = commentHandling });
+            var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
             var reader = new Utf8JsonReader(data, true, state);
             return ReaderLoop(data.Length, out length, ref reader);
         }
@@ -123,7 +123,7 @@ namespace System.Text.Json.Tests
         public static byte[] SequenceReturnBytesHelper(byte[] data, out int length, JsonCommentHandling commentHandling = JsonCommentHandling.Disallow, int maxDepth = 64)
         {
             ReadOnlySequence<byte> sequence = CreateSegments(data);
-            var state = new JsonReaderState(maxDepth: maxDepth, options: new JsonReaderOptions { CommentHandling = commentHandling });
+            var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
             var reader = new Utf8JsonReader(sequence, true, state);
             return ReaderLoop(data.Length, out length, ref reader);
         }
