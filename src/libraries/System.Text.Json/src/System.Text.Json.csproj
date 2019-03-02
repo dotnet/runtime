@@ -17,6 +17,7 @@
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
+    <Compile Include="System\Text\Json\ThrowHelper.Serialization.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.DbRow.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.MetadataDb.cs" />
@@ -39,6 +40,72 @@
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.cs" />
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.MultiSegment.cs" />
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
+    <Compile Include="System\Text\Json\Serialization\ArrayBufferWriter.cs" />
+    <Compile Include="System\Text\Json\Serialization\ClassMaterializer.cs" />
+    <Compile Include="System\Text\Json\Serialization\ClassType.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\DefaultArrayConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\DefaultConverters.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\DefaultEnumConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterBoolean.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterBooleanNullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterByte.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterByteNullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterChar.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterCharNullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterDateTime.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterDateTimeNullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterDecimal.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterDecimalNullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterDouble.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterDoubleNullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInfoInt16.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt16Nullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt32.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt32Nullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt64.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt64Nullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterSByte.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterSByteNullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterSingle.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterSingleNullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterString.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterUInt16.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterUInt16Nullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterUInt32.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterUInt32Nullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterUInt64.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterUInt64Nullable.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonClassInfo.AddProperty.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonEnumerableConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonPropertyInfo.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfTClassTProperty.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfTProperty.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleArray.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Stream.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleValue.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleObject.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.String.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Helpers.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleNull.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Span.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.ByteArray.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Stream.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.HandleEnumerable.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.HandleObject.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.String.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.HandleValue.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
+    <Compile Include="System\Text\Json\Serialization\Policies\JsonValueConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\PropertyRef.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReflectionEmitMaterializer.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReflectionMaterializer.cs" />
+    <Compile Include="System\Text\Json\Serialization\WriteStack.cs" />
+    <Compile Include="System\Text\Json\Serialization\WriteStackFrame.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Escaping.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Transcoding.cs" />
@@ -71,24 +138,30 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNETStandard)' != 'true'">
+    <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Reflection.Primitives" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 
   <!-- The Source Package will call into this target in order to retrieve the compiled resources file as
        it will need to be part of the source package contents. -->
   <Target Name="GetSourcesToPackage" Returns="@(_sourceToPackage)" DependsOnTargets="Compile">
-
       <PropertyGroup>
         <_sourcePackageName>Microsoft.Bcl.Json.Sources</_sourcePackageName>
         <_sourcePackageTargetLines><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -110,8 +183,8 @@
 
       <ItemGroup>
         <_sourceToExclude Include="@(Compile)" Condition="$([System.String]::Copy('%(Compile.Identity)').ToLower().EndsWith('assemblyinfo.cs'))" />
-        <_sourceToPackage Include="@(Compile->'%(FullPath)')" PackagePath="contentFiles/cs/netstandard2.0/$(_sourcePackageName)/%(FileName)%(Extension)" Exclude="@(_sourceToExclude)"/>
-        <_sourceToPackage Condition="'%(Extension)' == '.resx'" Include="@(EmbeddedResource->'%(FullPath)')"  PackagePath="build/netstandard2.0/%(FileName)%(Extension)" />
+        <_sourceToPackage Include="@(Compile->'%(FullPath)')" PackagePath="contentFiles/cs/netstandard2.0/$(_sourcePackageName)/%(FileName)%(Extension)" Exclude="@(_sourceToExclude)" />
+        <_sourceToPackage Condition="'%(Extension)' == '.resx'" Include="@(EmbeddedResource->'%(FullPath)')" PackagePath="build/netstandard2.0/%(FileName)%(Extension)" />
         <_sourceToPackage Include="$(_generatedSourcePackageTargetPath)" PackagePath="build/netstandard2.0/$(_targetsFileName)" />
         <_sourceToPackage Include="$(MSBuildThisFileDirectory)../source_package/README.md" PackagePath="build/netstandard2.0/README.md" />
       </ItemGroup>

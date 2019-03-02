@@ -2,6 +2,10 @@
   <PropertyGroup>
     <ProjectGuid>{5F553243-042C-45C0-8E49-C739131E11C3}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <!-- For the inbox library (that is shipping with the product), this should always be true. -->
+    <!-- BUILDING_INBOX_LIBRARY is only false when building for netstandard to validate that the sources are netstandard compatible. -->
+    <!-- This is meant to help with producing a source package and not to ship a netstandard compatible binary. -->
+    <DefineConstants Condition="'$(TargetsNETStandard)' != 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
@@ -19,6 +23,24 @@
     <Compile Include="JsonTestHelper.cs" />
     <Compile Include="JsonWriterStateTests.cs" />
     <Compile Include="ResizableArray.cs" />
+    <Compile Include="Serialization\Array.ReadTests.cs" />
+    <Compile Include="Serialization\Array.WriteTests.cs" />
+    <Compile Include="Serialization\CyclicTests.cs" />
+    <Compile Include="Serialization\EnumTests.cs" />
+    <Compile Include="Serialization\Null.ReadTests.cs" />
+    <Compile Include="Serialization\Null.WriteTests.cs" />
+    <Compile Include="Serialization\PolymorphicTests.cs" />
+    <Compile Include="Serialization\PropertyVisibilityTests.cs" />
+    <Compile Include="Serialization\SpanTests.cs" />
+    <Compile Include="Serialization\Stream.ReadTests.cs" />
+    <Compile Include="Serialization\Stream.WriteTests.cs" />
+    <Compile Include="Serialization\String.ReadTests.cs" />
+    <Compile Include="Serialization\String.WriteTests.cs" />
+    <Compile Include="Serialization\TestClasses.cs" />
+    <Compile Include="Serialization\TestClasses.Polymorphic.cs" />
+    <Compile Include="Serialization\TestData.cs" />
+    <Compile Include="Serialization\Value.ReadTests.cs" />
+    <Compile Include="Serialization\Value.WriteTests.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />
