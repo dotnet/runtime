@@ -152,7 +152,7 @@ namespace System.Threading
             // so that they won't "leak" back into caller.
             // These variables will cross EH so be forced to stack
             ExecutionContext previousExecutionCtx = previousExecutionCtx0;
-            SynchronizationContext previousSyncCtx = currentThread0.SynchronizationContext;
+            SynchronizationContext previousSyncCtx = currentThread0._synchronizationContext;
 
             if (executionContext != null && executionContext.m_isDefault)
             {
@@ -182,10 +182,10 @@ namespace System.Threading
             SynchronizationContext previousSyncCtx1 = previousSyncCtx;
             Thread currentThread1 = currentThread;
             // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
-            if (currentThread1.SynchronizationContext != previousSyncCtx1)
+            if (currentThread1._synchronizationContext != previousSyncCtx1)
             {
                 // Restore changed SynchronizationContext back to previous
-                currentThread1.SynchronizationContext = previousSyncCtx1;
+                currentThread1._synchronizationContext = previousSyncCtx1;
             }
 
             ExecutionContext previousExecutionCtx1 = previousExecutionCtx;
@@ -222,7 +222,7 @@ namespace System.Threading
             // so that they won't "leak" back into caller.
             // These variables will cross EH so be forced to stack
             ExecutionContext previousExecutionCtx = previousExecutionCtx0;
-            SynchronizationContext previousSyncCtx = currentThread0.SynchronizationContext;
+            SynchronizationContext previousSyncCtx = currentThread0._synchronizationContext;
 
             if (executionContext != null && executionContext.m_isDefault)
             {
@@ -252,10 +252,10 @@ namespace System.Threading
             SynchronizationContext previousSyncCtx1 = previousSyncCtx;
             Thread currentThread1 = currentThread;
             // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
-            if (currentThread1.SynchronizationContext != previousSyncCtx1)
+            if (currentThread1._synchronizationContext != previousSyncCtx1)
             {
                 // Restore changed SynchronizationContext back to previous
-                currentThread1.SynchronizationContext = previousSyncCtx1;
+                currentThread1._synchronizationContext = previousSyncCtx1;
             }
 
             ExecutionContext previousExecutionCtx1 = previousExecutionCtx;
@@ -301,7 +301,7 @@ namespace System.Threading
             ExecutionContext currentExecutionCtx = currentThread._executionContext;
 
             // Restore changed SynchronizationContext back to Default
-            currentThread.SynchronizationContext = null;
+            currentThread._synchronizationContext = null;
             if (currentExecutionCtx != null)
             {
                 // The EC always needs to be reset for this overload, as it will flow back to the caller if it performs 
@@ -355,7 +355,7 @@ namespace System.Threading
             ExecutionContext currentExecutionCtx = currentThread._executionContext;
 
             // Reset to defaults
-            currentThread.SynchronizationContext = null;
+            currentThread._synchronizationContext = null;
             currentThread._executionContext = null;
 
             if (currentExecutionCtx != null && currentExecutionCtx.HasChangeNotifications)
@@ -363,7 +363,7 @@ namespace System.Threading
                 OnValuesChanged(currentExecutionCtx, nextExecutionCtx: null);
 
                 // Reset to defaults again without change notifications in case the Change handler changed the contexts
-                currentThread.SynchronizationContext = null;
+                currentThread._synchronizationContext = null;
                 currentThread._executionContext = null;
             }
         }
@@ -373,7 +373,7 @@ namespace System.Threading
         {
             Debug.Assert(Thread.CurrentThread.IsThreadPoolThread);
             Debug.Assert(Thread.CurrentThread._executionContext == null, "ThreadPool thread not on Default ExecutionContext.");
-            Debug.Assert(Thread.CurrentThread.SynchronizationContext == null, "ThreadPool thread not on Default SynchronizationContext.");
+            Debug.Assert(Thread.CurrentThread._synchronizationContext == null, "ThreadPool thread not on Default SynchronizationContext.");
         }
 
         internal static void OnValuesChanged(ExecutionContext previousExecutionCtx, ExecutionContext nextExecutionCtx)
