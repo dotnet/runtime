@@ -743,19 +743,16 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 // NumaNodeInfo 
 //******************************************************************************
 #if !defined(FEATURE_REDHAWK)
-/*static*/ NumaNodeInfo::PGNHNN NumaNodeInfo::m_pGetNumaHighestNodeNumber = NULL;
-/*static*/ NumaNodeInfo::PVAExN NumaNodeInfo::m_pVirtualAllocExNuma = NULL;
 
 /*static*/ LPVOID NumaNodeInfo::VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T dwSize,
                          DWORD allocType, DWORD prot, DWORD node)
 {
-    return (*m_pVirtualAllocExNuma)(hProc, lpAddr, dwSize, allocType, prot, node);
+    return ::VirtualAllocExNuma(hProc, lpAddr, dwSize, allocType, prot, node);
 }
-/*static*/ NumaNodeInfo::PGNPNEx NumaNodeInfo::m_pGetNumaProcessorNodeEx = NULL;
 
 /*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no)
 {
-    return (*m_pGetNumaProcessorNodeEx)(proc_no, node_no);
+    return ::GetNumaProcessorNodeEx(proc_no, node_no);
 }
 #endif
 
@@ -778,20 +775,8 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     if (hMod == NULL)
         return FALSE;
 
-    m_pGetNumaHighestNodeNumber = (PGNHNN) GetProcAddress(hMod, "GetNumaHighestNodeNumber");
-    if (m_pGetNumaHighestNodeNumber == NULL)
-        return FALSE;
-
     // fail to get the highest numa node number
-    if (!m_pGetNumaHighestNodeNumber(&highest) || (highest == 0))
-        return FALSE;
-
-    m_pGetNumaProcessorNodeEx = (PGNPNEx) GetProcAddress(hMod, "GetNumaProcessorNodeEx");
-    if (m_pGetNumaProcessorNodeEx == NULL)
-        return FALSE;
-
-    m_pVirtualAllocExNuma = (PVAExN) GetProcAddress(hMod, "VirtualAllocExNuma");
-    if (m_pVirtualAllocExNuma == NULL)
+    if (!::GetNumaHighestNodeNumber(&highest) || (highest == 0))
         return FALSE;
 
     return TRUE;
@@ -814,37 +799,37 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 // NumaNodeInfo 
 //******************************************************************************
 #if !defined(FEATURE_REDHAWK)
-/*static*/ CPUGroupInfo::PGLPIEx CPUGroupInfo::m_pGetLogicalProcessorInformationEx = NULL;
-/*static*/ CPUGroupInfo::PSTGA   CPUGroupInfo::m_pSetThreadGroupAffinity = NULL;
-/*static*/ CPUGroupInfo::PGTGA   CPUGroupInfo::m_pGetThreadGroupAffinity = NULL;
-/*static*/ CPUGroupInfo::PGCPNEx CPUGroupInfo::m_pGetCurrentProcessorNumberEx = NULL;
-/*static*/ CPUGroupInfo::PGST    CPUGroupInfo::m_pGetSystemTimes = NULL;
 /*static*/ //CPUGroupInfo::PNTQSIEx CPUGroupInfo::m_pNtQuerySystemInformationEx = NULL;
 
-/*static*/ BOOL CPUGroupInfo::GetLogicalProcessorInformationEx(DWORD relationship,
+/*static*/ BOOL CPUGroupInfo::GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
                          SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count)
 {
     LIMITED_METHOD_CONTRACT;
-    return (*m_pGetLogicalProcessorInformationEx)(relationship, slpiex, count);
+    return ::GetLogicalProcessorInformationEx(relationship, slpiex, count);
 }
 
 /*static*/ BOOL CPUGroupInfo::SetThreadGroupAffinity(HANDLE h, 
                         GROUP_AFFINITY *groupAffinity, GROUP_AFFINITY *previousGroupAffinity)
 {
     LIMITED_METHOD_CONTRACT;
-    return (*m_pSetThreadGroupAffinity)(h, groupAffinity, previousGroupAffinity);
+    return ::SetThreadGroupAffinity(h, groupAffinity, previousGroupAffinity);
 }
 
 /*static*/ BOOL CPUGroupInfo::GetThreadGroupAffinity(HANDLE h, GROUP_AFFINITY *groupAffinity)
 {
     LIMITED_METHOD_CONTRACT;
-    return (*m_pGetThreadGroupAffinity)(h, groupAffinity);
+    return ::GetThreadGroupAffinity(h, groupAffinity);
 }
 
 /*static*/ BOOL CPUGroupInfo::GetSystemTimes(FILETIME *idleTime, FILETIME *kernelTime, FILETIME *userTime)
 {
     LIMITED_METHOD_CONTRACT;
-    return (*m_pGetSystemTimes)(idleTime, kernelTime, userTime);
+
+#ifndef FEATURE_PAL    
+    return ::GetSystemTimes(idleTime, kernelTime, userTime);
+#else
+    return FALSE;
+#endif
 }
 #endif
 
@@ -856,53 +841,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ CPU_Group_Info *CPUGroupInfo::m_CPUGroupInfoArray = NULL;
 /*static*/ LONG CPUGroupInfo::m_initialization = 0;
 /*static*/ bool CPUGroupInfo::s_hadSingleProcessorAtStartup = false;
-
-// Check and setup function pointers for >64 LP Support
-/*static*/ BOOL CPUGroupInfo::InitCPUGroupInfoAPI()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
-#ifndef FEATURE_PAL    
-    HMODULE hMod = GetModuleHandleW(WINDOWS_KERNEL32_DLLNAME_W);
-#else
-    HMODULE hMod = GetCLRModule();
-#endif
-    if (hMod == NULL)
-        return FALSE;
-
-    m_pGetLogicalProcessorInformationEx = (PGLPIEx)GetProcAddress(hMod, "GetLogicalProcessorInformationEx");
-    if (m_pGetLogicalProcessorInformationEx == NULL)
-        return FALSE;
-
-    m_pSetThreadGroupAffinity = (PSTGA)GetProcAddress(hMod, "SetThreadGroupAffinity");
-    if (m_pSetThreadGroupAffinity == NULL)
-        return FALSE;
-
-    m_pGetThreadGroupAffinity = (PGTGA)GetProcAddress(hMod, "GetThreadGroupAffinity");
-    if (m_pGetThreadGroupAffinity == NULL)
-        return FALSE;
-
-    m_pGetCurrentProcessorNumberEx = (PGCPNEx)GetProcAddress(hMod, "GetCurrentProcessorNumberEx");
-    if (m_pGetCurrentProcessorNumberEx == NULL)
-        return FALSE;
-
-#ifndef FEATURE_PAL    
-    m_pGetSystemTimes = (PGST)GetProcAddress(hMod, "GetSystemTimes");
-    if (m_pGetSystemTimes == NULL)
-        return FALSE;
-#endif
-    
-    return TRUE;
-#else
-    return FALSE;
-#endif
-}
 
 #if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
 // Calculate greatest common divisor
@@ -955,7 +893,7 @@ DWORD LCM(DWORD u, DWORD v)
         return FALSE;
 
     pSLPIEx = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)bBuffer;
-    if (!m_pGetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx))
+    if (!::GetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx))
     {
         delete[] bBuffer;
         return FALSE;
@@ -1040,9 +978,6 @@ DWORD LCM(DWORD u, DWORD v)
     BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
 
     if (!enableGCCPUGroups)
-        return;
-
-    if (!InitCPUGroupInfoAPI())
         return;
 
     if (!InitCPUGroupInfoArray())
@@ -1167,7 +1102,7 @@ retry:
     proc_no.Group=0;
     proc_no.Number=0;
     proc_no.Reserved=0;
-    (*m_pGetCurrentProcessorNumberEx)(&proc_no);
+    ::GetCurrentProcessorNumberEx(&proc_no);
 
     DWORD fullNumber = 0;
     for (WORD i = 0; i < proc_no.Group; i++)
