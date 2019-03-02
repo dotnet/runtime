@@ -115,6 +115,12 @@ namespace Internal.Runtime.InteropServices
             }
 
             Type classType = FindClassType(cxt.ClassId, cxt.AssemblyPath, cxt.AssemblyName, cxt.TypeName);
+
+            if (LicenseInteropProxy.HasLicense(classType))
+            {
+                return new LicenseClassFactory(cxt.ClassId, classType);
+            }
+
             return new BasicClassFactory(cxt.ClassId, classType);
         }
 
@@ -250,15 +256,66 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         }
 
         [ComVisible(true)]
-        internal class BasicClassFactory : IClassFactory2
+        private class BasicClassFactory : IClassFactory
         {
-            private readonly Guid classId;
-            private readonly Type classType;
+            private readonly Guid _classId;
+            private readonly Type _classType;
 
             public BasicClassFactory(Guid clsid, Type classType)
             {
-                this.classId = clsid;
-                this.classType = classType;
+                _classId = clsid;
+                _classType = classType;
+            }
+
+            public static void ValidateInterfaceRequest(Type classType, ref Guid riid, object outer)
+            {
+                Debug.Assert(classType != null);
+                if (riid == Marshal.IID_IUnknown)
+                {
+                    return;
+                }
+
+                // Aggregation can only be done when requesting IUnknown.
+                if (outer != null)
+                {
+                    const int CLASS_E_NOAGGREGATION = unchecked((int)0x80040110);
+                    throw new COMException(string.Empty, CLASS_E_NOAGGREGATION);
+                }
+
+                bool found = false;
+
+                // Verify the class implements the desired interface
+                foreach (Type i in classType.GetInterfaces())
+                {
+                    if (i.GUID == riid)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    // E_NOINTERFACE
+                    throw new InvalidCastException();
+                }
+            }
+
+            public static object CreateAggregatedObject(object pUnkOuter, object comObject)
+            {
+                Debug.Assert(pUnkOuter != null && comObject != null);
+                IntPtr outerPtr = Marshal.GetIUnknownForObject(pUnkOuter);
+
+                try
+                {
+                    IntPtr innerPtr = Marshal.CreateAggregatedObject(outerPtr, comObject);
+                    return Marshal.GetObjectForIUnknown(innerPtr);
+                }
+                finally
+                {
+                    // Decrement the above 'Marshal.GetIUnknownForObject()'
+                    Marshal.ReleaseComObject(pUnkOuter);
+                }
             }
 
             public void CreateInstance(
@@ -266,41 +323,12 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
                 ref Guid riid,
                 [MarshalAs(UnmanagedType.Interface)] out object ppvObject)
             {
-                if (riid != Marshal.IID_IUnknown)
-                {
-                    bool found = false;
+                BasicClassFactory.ValidateInterfaceRequest(_classType, ref riid, pUnkOuter);
 
-                    // Verify the class implements the desired interface
-                    foreach (Type i in this.classType.GetInterfaces())
-                    {
-                        if (i.GUID == riid)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found)
-                    {
-                        // E_NOINTERFACE
-                        throw new InvalidCastException();
-                    }
-                }
-
-                ppvObject = Activator.CreateInstance(this.classType);
+                ppvObject = Activator.CreateInstance(_classType);
                 if (pUnkOuter != null)
                 {
-                    try
-                    {
-                        IntPtr outerPtr = Marshal.GetIUnknownForObject(pUnkOuter);
-                        IntPtr innerPtr = Marshal.CreateAggregatedObject(outerPtr, ppvObject);
-                        ppvObject = Marshal.GetObjectForIUnknown(innerPtr);
-                    }
-                    finally
-                    {
-                        // Decrement the above 'Marshal.GetIUnknownForObject()'
-                        Marshal.ReleaseComObject(pUnkOuter);
-                    }
+                    ppvObject = BasicClassFactory.CreateAggregatedObject(pUnkOuter, ppvObject);
                 }
             }
 
@@ -308,15 +336,50 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
             {
                 // nop
             }
+        }
 
-            public void GetLicInfo(ref LICINFO pLicInfo)
+        [ComVisible(true)]
+        private class LicenseClassFactory : IClassFactory2
+        {
+            private readonly LicenseInteropProxy _licenseProxy = new LicenseInteropProxy();
+            private readonly Guid _classId;
+            private readonly Type _classType;
+
+            public LicenseClassFactory(Guid clsid, Type classType)
             {
-                throw new NotImplementedException();
+                _classId = clsid;
+                _classType = classType;
+            }
+
+            public void CreateInstance(
+                [MarshalAs(UnmanagedType.Interface)] object pUnkOuter,
+                ref Guid riid,
+                [MarshalAs(UnmanagedType.Interface)] out object ppvObject)
+            {
+                CreateInstanceInner(pUnkOuter, ref riid, key: null, isDesignTime: true, out ppvObject);
+            }
+
+            public void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock)
+            {
+                // nop
+            }
+
+            public void GetLicInfo(ref LICINFO licInfo)
+            {
+                bool runtimeKeyAvail;
+                bool licVerified;
+                _licenseProxy.GetLicInfo(_classType, out runtimeKeyAvail, out licVerified);
+
+                // The LICINFO is a struct with a DWORD size field and two BOOL fields. Each BOOL
+                // is typedef'd from a DWORD, therefore the size is manually computed as below.
+                licInfo.cbLicInfo = sizeof(int) + sizeof(int) + sizeof(int);
+                licInfo.fRuntimeKeyAvail = runtimeKeyAvail;
+                licInfo.fLicVerified = licVerified;
             }
 
             public void RequestLicKey(int dwReserved, [MarshalAs(UnmanagedType.BStr)] out string pBstrKey)
             {
-                throw new NotImplementedException();
+                pBstrKey = _licenseProxy.RequestLicKey(_classType);
             }
 
             public void CreateInstanceLic(
@@ -326,7 +389,184 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
                 [MarshalAs(UnmanagedType.BStr)] string bstrKey,
                 [MarshalAs(UnmanagedType.Interface)] out object ppvObject)
             {
-                throw new NotImplementedException();
+                Debug.Assert(pUnkReserved == null);
+                CreateInstanceInner(pUnkOuter, ref riid, bstrKey, isDesignTime: false, out ppvObject);
+            }
+
+            private void CreateInstanceInner(
+                object pUnkOuter,
+                ref Guid riid,
+                string key,
+                bool isDesignTime,
+                out object ppvObject)
+            {
+                BasicClassFactory.ValidateInterfaceRequest(_classType, ref riid, pUnkOuter);
+
+                ppvObject = _licenseProxy.AllocateAndValidateLicense(_classType, key, isDesignTime);
+                if (pUnkOuter != null)
+                {
+                    ppvObject = BasicClassFactory.CreateAggregatedObject(pUnkOuter, ppvObject);
+                }
+            }
+        }
+
+        // This is a helper class that supports the CLR's IClassFactory2 marshaling
+        // support.
+        //
+        // When a managed object is exposed to COM, the CLR invokes
+        // AllocateAndValidateLicense() to set up the appropriate
+        // license context and instantiate the object.
+        private class LicenseInteropProxy
+        {
+            private static readonly Type s_licenseAttrType;
+            private static readonly Type s_licenseExceptionType;
+
+            private MethodInfo _createWithContext;
+            private MethodInfo _validateTypeAndReturnDetails;
+            private MethodInfo _createDesignContext;
+            private MethodInfo _createRuntimeContext;
+
+            private Type _licInfoHelper;
+            private MethodInfo _licInfoHelperContains;
+
+            static LicenseInteropProxy()
+            {
+                s_licenseAttrType = Type.GetType("System.ComponentModel.LicenseProviderAttribute, System.ComponentModel.TypeConverter", throwOnError: false);
+                s_licenseExceptionType = Type.GetType("System.ComponentModel.LicenseException, System.ComponentModel.TypeConverter", throwOnError: false);
+            }
+
+            public LicenseInteropProxy()
+            {
+                Type licManager = Type.GetType("System.ComponentModel.LicenseManager, System.ComponentModel.TypeConverter", throwOnError: true);
+
+                Type licContext = Type.GetType("System.ComponentModel.LicenseContext, System.ComponentModel.TypeConverter", throwOnError: true);
+                _createWithContext = licManager.GetMethod("CreateWithContext", new[] { typeof(Type), licContext });
+
+                Type interopHelper = licManager.GetNestedType("LicenseInteropHelper", BindingFlags.NonPublic);
+                _validateTypeAndReturnDetails = interopHelper.GetMethod("ValidateAndRetrieveLicenseDetails", BindingFlags.Static | BindingFlags.Public);
+
+                Type clrLicContext = licManager.GetNestedType("CLRLicenseContext", BindingFlags.NonPublic);
+                _createDesignContext = clrLicContext.GetMethod("CreateDesignContext", BindingFlags.Static | BindingFlags.Public);
+                _createRuntimeContext = clrLicContext.GetMethod("CreateRuntimeContext", BindingFlags.Static | BindingFlags.Public);
+
+                _licInfoHelper = licManager.GetNestedType("LicInfoHelperLicenseContext", BindingFlags.NonPublic);
+                _licInfoHelperContains = _licInfoHelper.GetMethod("Contains", BindingFlags.Instance | BindingFlags.Public);
+            }
+
+            // Determine if the type supports licensing
+            public static bool HasLicense(Type type)
+            {
+                // If the attribute type can't be found, then the type
+                // definitely doesn't support licensing.
+                if (s_licenseAttrType == null)
+                {
+                    return false;
+                }
+
+                return type.IsDefined(s_licenseAttrType, inherit: true);
+            }
+
+            // The CLR invokes this whenever a COM client invokes
+            // IClassFactory2::GetLicInfo on a managed class.
+            //
+            // COM normally doesn't expect this function to fail so this method
+            // should only throw in the case of a catastrophic error (stack, memory, etc.)
+            public void GetLicInfo(Type type, out bool runtimeKeyAvail, out bool licVerified)
+            {
+                runtimeKeyAvail = false;
+                licVerified = false;
+
+                // Types are as follows:
+                // LicenseContext, Type, out License, out string
+                object licContext = Activator.CreateInstance(_licInfoHelper);
+                var parameters = new object[] { licContext, type, /* out */ null, /* out */ null };
+                bool isValid = (bool)_validateTypeAndReturnDetails.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+                if (!isValid)
+                {
+                    return;
+                }
+
+                var license = (IDisposable)parameters[2];
+                if (license != null)
+                {
+                    license.Dispose();
+                    licVerified = true;
+                }
+
+                parameters = new object[] { type.AssemblyQualifiedName };
+                runtimeKeyAvail = (bool)_licInfoHelperContains.Invoke(licContext, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+            }
+
+            // The CLR invokes this whenever a COM client invokes
+            // IClassFactory2::RequestLicKey on a managed class.
+            public string RequestLicKey(Type type)
+            {
+                // License will be null, since we passed no instance,
+                // however we can still retrieve the "first" license
+                // key from the file. This really will only
+                // work for simple COM-compatible license providers
+                // like LicFileLicenseProvider that don't require the
+                // instance to grant a key.
+
+                // Types are as follows:
+                // LicenseContext, Type, out License, out string
+                var parameters = new object[] { /* use global LicenseContext */ null, type, /* out */ null, /* out */ null };
+                bool isValid = (bool)_validateTypeAndReturnDetails.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+                if (!isValid)
+                {
+                    throw new COMException(); //E_FAIL
+                }
+
+                var license = (IDisposable)parameters[2];
+                if (license != null)
+                {
+                    license.Dispose();
+                }
+
+                string licenseKey = (string)parameters[3];
+                if (licenseKey == null)
+                {
+                    throw new COMException(); //E_FAIL
+                }
+
+                return licenseKey;
+            }
+
+            // The CLR invokes this whenever a COM client invokes
+            // IClassFactory::CreateInstance() or IClassFactory2::CreateInstanceLic()
+            // on a managed that has a LicenseProvider custom attribute.
+            //
+            // If we are being entered because of a call to ICF::CreateInstance(),
+            // "isDesignTime" will be "true".
+            //
+            // If we are being entered because of a call to ICF::CreateInstanceLic(),
+            // "isDesignTime" will be "false" and "key" will point to a non-null
+            // license key.
+            public object AllocateAndValidateLicense(Type type, string key, bool isDesignTime)
+            {
+                object[] parameters;
+                object licContext;
+                if (isDesignTime)
+                {
+                    parameters = new object[] { type };
+                    licContext = _createDesignContext.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+                }
+                else
+                {
+                    parameters = new object[] { type, key };
+                    licContext = _createRuntimeContext.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+                }
+
+                try
+                {
+                    parameters = new object[] { type, licContext };
+                    return _createWithContext.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+                }
+                catch (Exception exception) when (exception.GetType() == s_licenseExceptionType)
+                {
+                    const int CLASS_E_NOTLICENSED = unchecked((int)0x80040112);
+                    throw new COMException(exception.Message, CLASS_E_NOTLICENSED);
+                }
             }
         }
     }
