@@ -79,7 +79,7 @@ echo "Running init-tools.sh"
 $scriptDir/../init-tools.sh
 
 dotnetToolsDir=$scriptDir/../Tools
-dotnetCmd=${dotnetToolsDir}/dotnetcli/dotnet
+dotnetCmd=$scriptDir/dotnet.sh
 packageDir=${scriptDir}/../packages
 csprojPath=${scriptDir}/src/Common/stress_dependencies/stress_dependencies.csproj
 

@@ -55,7 +55,7 @@ fi
 pushd linker/corebuild
 ./restore.sh -r $rid
 cd ../linker
-../corebuild/Tools/dotnetcli/dotnet publish -r $rid -c netcore_Release
+../corebuild/dotnet.sh publish -r $rid -c netcore_Release
 popd
 
 dir=$(pwd)

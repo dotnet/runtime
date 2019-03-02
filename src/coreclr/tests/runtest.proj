@@ -370,7 +370,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <ExceptionForDepsJson Include="microsoft.netcore.app" />
 
       <!-- TODO: We should see about generating this from scratch instead of relying on a previous deps file as a template -->
-      <_sharedFrameworkDepsJson Include="$(ToolsDir)dotnetcli\shared\Microsoft.NETCore.App\*\Microsoft.NETCore.App.deps.json" />
+      <_sharedFrameworkDepsJson Include="$(DotnetCliPath)\shared\Microsoft.NETCore.App\*\Microsoft.NETCore.App.deps.json" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -415,9 +415,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <ItemGroup>
       <CoreCLRBinaries Include="$(CORE_ROOT)\**\*.*" Exclude="$(CORE_ROOT)\**\@(CoreCLRBinariesToExclude -> '%(Identity)' )" />
-      <HostFxFile Include="$(ToolsDir)\dotnetcli\**\$(HostFxrFileName).$(HostFxrFileExtension)" />
-      <DotnetExe Include="$(ToolsDir)\dotnetcli\$(DotnetExecutableName)" />
-      <HostPolicyFile Include="$(ToolsDir)\dotnetcli\**\$(HostPolicyFileName).$(HostPolicyExtension)" />
+      <HostFxFile Include="$(DotnetCliPath)\**\$(HostFxrFileName).$(HostFxrFileExtension)" />
+      <DotnetExe Include="$(DotnetCliPath)\$(DotnetExecutableName)" />
+      <HostPolicyFile Include="$(DotnetCliPath)\**\$(HostPolicyFileName).$(HostPolicyExtension)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(HostFxFile)"

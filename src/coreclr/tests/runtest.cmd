@@ -7,22 +7,6 @@ set "__MsgPrefix=RUNTEST: "
 
 set __ThisScriptDir="%~dp0"
 
-if /I "%PROCESSOR_ARCHITECTURE%"=="arm64" goto :skip_vs_setup
-if /I "%PROCESSOR_ARCHITECTURE%"=="arm" goto :skip_vs_setup
-
-REM If we're running in the x86 WoW layer on Windows arm64, we still don't check for VS.
-if /I "%PROCESSOR_ARCHITEW6432%"=="arm64" goto :skip_vs_setup
-
-call "%__ThisScriptDir%"\..\setup_vs_tools.cmd
-if NOT '%ERRORLEVEL%' == '0' exit /b 1
-
-if defined VS160COMNTOOLS (
-    set __VSVersion=vs2019
-) else if defined VS150COMNTOOLS (
-    set __VSVersion=vs2017
-)
-:skip_vs_setup
-
 :: Set the default arguments
 set __BuildArch=x64
 set __BuildType=Debug
@@ -36,7 +20,7 @@ set "__RootBinDir=%__ProjectDir%\..\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set __ToolsDir=%__ProjectDir%\..\Tools
-set "DotNetCli=%__ToolsDir%\dotnetcli\dotnet.exe"
+set "DotNetCli=%__ProjectDir%\..\dotnet.cmd"
 
 set __Sequential=
 set __msbuildExtraArgs=
@@ -234,26 +218,6 @@ echo !NEXTCMD!
 exit /b %ERRORLEVEL%
 
 :SetupMSBuildAndCallRuntestProj
-
-:: Set up msbuild and tools environment. Check if msbuild and VS exist.
-
-if /i "%__VSVersion%" == "vs2019" (
-    set "__VSToolsRoot=%VS160COMNTOOLS%"
-    set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
-) else if /i "%__VSVersion%" == "vs2017" (
-    set "__VSToolsRoot=%VS150COMNTOOLS%"
-    set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
-)
-
-:: Does VS really exist?
-if not exist "%__VSToolsRoot%\..\IDE\devenv.exe"      goto NoVS
-if not exist "%__VCToolsRoot%\vcvarsall.bat"          goto NoVS
-if not exist "%__VSToolsRoot%\VsDevCmd.bat"           goto NoVS
-
-if not defined VSINSTALLDIR (
-    echo %__MsgPrefix%Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
-    exit /b 1
-)
 
 :: Note: We've disabled node reuse because it causes file locking issues.
 ::       The issue is that we extend the build with our own targets which
@@ -719,9 +683,4 @@ echo Examples:
 echo   %0 x86 checked
 echo   %0 x64 checked GenerateLayoutOnly
 echo   %0 x64 release
-exit /b 1
-
-:NoVS
-echo Visual Studio 2017 or 2019 ^(Community is free^) is a prerequisite to build this repository.
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
