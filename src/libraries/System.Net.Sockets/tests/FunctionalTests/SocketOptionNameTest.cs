@@ -87,6 +87,11 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
+            if (PlatformDetection.IsRedHatFamily6)
+            {
+                return; // [ActiveIssue(34809)]
+            }
+
             // On all platforms, index 0 means "any interface"
             await MulticastInterface_Set_Helper(0);
         }
@@ -154,9 +159,9 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
-            if (PlatformDetection.IsFedora || PlatformDetection.IsRedHatFamily7 || PlatformDetection.IsOSX)
+            if (PlatformDetection.IsRedHatFamily6)
             {
-                return; // [ActiveIssue(24008)]
+                return; // [ActiveIssue(34809)]
             }
 
             // On all platforms, index 0 means "any interface"
