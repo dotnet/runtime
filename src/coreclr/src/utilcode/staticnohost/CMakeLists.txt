@@ -9,4 +9,7 @@ add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 
 if(CLR_CMAKE_PLATFORM_UNIX)
   target_link_libraries(utilcodestaticnohost  nativeresourcestring)
+  if(CLR_CMAKE_PLATFORM_DARWIN)
+    target_link_libraries(utilcodestaticnohost  coreclrpal)
+  endif(CLR_CMAKE_PLATFORM_DARWIN)
 endif(CLR_CMAKE_PLATFORM_UNIX)
