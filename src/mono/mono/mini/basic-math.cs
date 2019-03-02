@@ -176,6 +176,9 @@ class Tests
 			return 5;
 		if (Math.Min ((long)-100, (long)-101) != -101)
 			return 6;
+		// this will trip if Min is accidentally using unsigned/logical comparison
+		if (Math.Min((long)-100000000000L, (long)0L) != (long)-100000000000L)
+			return 7;
 		return 0;
 	}
 
@@ -192,6 +195,9 @@ class Tests
 			return 5;
 		if (Math.Max ((long)-100, (long)-101) != -100)
 			return 6;
+		// this will trip if Max is accidentally using unsigned/logical comparison
+		if (Math.Max((long)-100000000000L, (long)0L) != (long)0L)
+			return 7;
 		return 0;
 	}
 

@@ -4279,7 +4279,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_iselgt (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		CASE_PPC64 (OP_LMIN)
-			ppc_cmpl (code, 0, 1, ins->sreg1, ins->sreg2);
+			ppc_cmp (code, 0, 1, ins->sreg1, ins->sreg2);
 			ppc_isellt (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		CASE_PPC64 (OP_LMIN_UN)
@@ -5732,14 +5732,17 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 		opcode = 0;
 		if ((cpu_hw_caps & PPC_ISA_2X) && (fsig->param_count == 1) && (fsig->params [0]->type == MONO_TYPE_R8)) {
 			/*
-			 * XXX: sysmath.c and frin imply round is a little bit
-			 * more complicated than expected? but amd64 does this?
+			 * XXX: sysmath.c and the POWER ISA documentation for
+			 * frin[.] imply rounding is a little more complicated
+			 * than expected; the semantics are slightly different,
+			 * so just "frin." isn't a drop-in replacement. Floor,
+			 * Truncate, and Ceiling seem to work normally though.
 			 * (also, no float versions of these ops, but frsp
 			 * could be preprended?)
 			 */
-			if (!strcmp (cmethod->name, "Round"))
-				opcode = OP_ROUND;
-			else if (!strcmp (cmethod->name, "Floor"))
+			//if (!strcmp (cmethod->name, "Round"))
+			//	opcode = OP_ROUND;
+			if (!strcmp (cmethod->name, "Floor"))
 				opcode = OP_PPC_FLOOR;
 			else if (!strcmp (cmethod->name, "Ceiling"))
 				opcode = OP_PPC_CEIL;

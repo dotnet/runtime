@@ -6165,7 +6165,15 @@ elif case $host_os in aix*|os400*) true;; *) false;; esac; then
 	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
 	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
 	MONO_NATIVE_CFLAGS=$CFLAGS
-	MONO_NATIVE_LDFLAGS=$LDFLAGS
+	dnl flock in AIX exists in libbsd (not the same as freedesktop.org
+	dnl libbsd) which Mono.Native needs.
+	dnl Because of the way that the library is built by default, unresolved
+	dnl references are kept and resolved at runtime. Often, the dependency
+	dnl chain means libbsd is loaded anyways, but not necessarily. It's
+	dnl better to explicitly link it, even though it has it shadows libc's
+	dnl ioctl with its own. (As for the other unresolved imports, those
+	dnl should be provided by the Mono runtime loaded.)
+	MONO_NATIVE_LDFLAGS="$LDFLAGS -lbsd"
 
 	mono_native=yes
 	mono_native_compat=no
