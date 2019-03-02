@@ -25,6 +25,8 @@ struct __declspec(uuid("98cc27f0-d521-4f79-8b63-e980e3a92974"))
 /* interface */ IAggregationTesting;
 struct __declspec(uuid("E6D72BA7-0936-4396-8A69-3B76DA1108DA"))
 /* interface */ IColorTesting;
+struct __declspec(uuid("6C9E230E-411F-4219-ABFD-E71F2B84FD50"))
+/* interface */ ILicenseTesting;
 
 //
 // Smart pointer typedef declarations
@@ -38,6 +40,7 @@ _COM_SMARTPTR_TYPEDEF(IDispatchTesting, __uuidof(IDispatchTesting));
 _COM_SMARTPTR_TYPEDEF(IEventTesting, __uuidof(IEventTesting));
 _COM_SMARTPTR_TYPEDEF(IAggregationTesting, __uuidof(IAggregationTesting));
 _COM_SMARTPTR_TYPEDEF(IColorTesting, __uuidof(IColorTesting));
+_COM_SMARTPTR_TYPEDEF(ILicenseTesting, __uuidof(ILicenseTesting));
 
 //
 // Type library items
@@ -484,6 +487,16 @@ IColorTesting : public IUnknown
 
     virtual HRESULT STDMETHODCALLTYPE GetRed(
         _Out_ _Ret_ OLE_COLOR* color) = 0;
+};
+
+struct __declspec(uuid("6C9E230E-411F-4219-ABFD-E71F2B84FD50"))
+ILicenseTesting : IUnknown
+{
+    virtual HRESULT STDMETHODCALLTYPE SetNextDenyLicense(_In_ VARIANT_BOOL denyLicense) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE GetLicense(_Out_ BSTR *lic) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE SetNextLicense(_In_z_ LPCOLESTR lic) = 0;
 };
 
 #pragma pack(pop)
