@@ -380,7 +380,7 @@ def build_perfharness(coreclrRepo, sandboxDir, extension, dotnetEnv):
         dotnetEnv (str{}): environment for dotnet
     """
     # Confirm dotnet works
-    dotnet = os.path.join(coreclrRepo, 'Tools', 'dotnetcli', 'dotnet' + extension)
+    dotnet = os.path.join(coreclrRepo, '.dotnet', 'dotnet' + extension)
     runArgs = [dotnet,
             '--info'
             ]

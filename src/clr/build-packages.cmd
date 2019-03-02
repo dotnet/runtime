@@ -33,6 +33,11 @@ if [!processedArgs!]==[] (
 
 :ArgsDone
 
+call "%__ProjectDir%"\setup_vs_tools.cmd
+
+REM setup_vs_tools.cmd will correctly echo error message.
+if NOT '%ERRORLEVEL%' == '0' exit /b 1
+
 call %__ProjectDir%/dotnet.cmd msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
   /p:__BuildOS=Windows_NT /flp:v=detailed;Append;LogFile=build-packages.log^
   /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^

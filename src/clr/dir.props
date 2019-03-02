@@ -73,7 +73,7 @@
     <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget\</PackagesBinDir>
 
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools\</ToolsDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli\</DotnetCliPath>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir).dotnet\</DotnetCliPath>
     <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
     <BuildToolsSemaphore Condition="'$(BuildToolsSemaphore)' == ''">$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll</BuildToolsSemaphore>
 

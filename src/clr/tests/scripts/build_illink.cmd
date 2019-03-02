@@ -22,7 +22,7 @@ if defined doCLone (
 pushd linker\corebuild
 call restore.cmd -r %rid%
 cd ..\linker
-..\corebuild\Tools\dotnetcli\dotnet.exe publish -r %rid% -c netcore_Release
+..\corebuild\dotnet.cmd publish -r %rid% -c netcore_Release
 popd
 
 echo Built %cd%\linker\linker\bin\netcore_Release\netcoreapp2.0\%rid%\publish\illink.exe

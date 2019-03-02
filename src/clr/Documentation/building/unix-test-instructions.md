@@ -24,17 +24,13 @@ Please note that this builds the Priority 0 tests. To build priority 1:
 
 During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under `coreclr/Tools`. It is possible to use `coreclr/Tools/MSBuild.dll` as you would normally use MSBuild with a few caveats.
 
-Note that `coreclr/Tools/msbuild.sh` exists as well to make the call shorter.
+Note that `coreclr/dotnet.sh` exists as well to make the call shorter.
 
 **!! Note !! -- Passing /p:__BuildOs=[OSX|Linux] is required.** 
 
 ## Building an Individual Test Example
 
->`coreclr/Tools/msbuild.sh /maxcpucount  coreclr/tests/src/JIT/CodeGenBringUpTests/Array1.csproj /p:__BuildType=Release /p:__BuildOS=OSX`
-
-Or
-
->`coreclr/Tools/dotnetcli/dotnet coreclr/Tools/MSBuild.dll /maxcpucount coreclr/tests/src/JIT/CodeGenBringUpTests/Array1.csproj /p:__BuildType=Release /p:__BuildOS=OSX`
+>`coreclr/dotnet.sh msbuild /maxcpucount  coreclr/tests/src/JIT/CodeGenBringUpTests/Array1.csproj /p:__BuildType=Release /p:__BuildOS=OSX`
 
 ## Aarch64/armhf multi-arch
 

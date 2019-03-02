@@ -11,10 +11,10 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CoreClrDir>..\..\..\..\..\..\</CoreClrDir>
     <R2RDumpCommand>$(CoreClrDir)bin\Product\$(BuildOS).$(BuildArch).$(BuildType)\netcoreapp2.0\R2RDump.dll</R2RDumpCommand>
-    <DotnetToolCommand>$(CoreClrDir)Tools\dotnetcli\dotnet</DotnetToolCommand>
+    <DotnetToolCommand>$(CoreClrDir).dotnet\dotnet</DotnetToolCommand>
     <BashCoreClrDir>../../../../../../</BashCoreClrDir>
     <BashR2RDumpCommand>$(BashCoreClrDir)bin/Product/$(BuildOS).$(BuildArch).$(BuildType)/netcoreapp2.0/R2RDump.dll</BashR2RDumpCommand>
-    <BashDotnetToolCommand>$(BashCoreClrDir)Tools/dotnetcli/dotnet</BashDotnetToolCommand>
+    <BashDotnetToolCommand>$(CoreClrDir).dotnet/dotnet</BashDotnetToolCommand>
     <CLRTestExecutionArguments>$(CoreClrDir)tests\src\readytorun\r2rdump\files\$(BuildOS).$(BuildArch).$(BuildType)\</CLRTestExecutionArguments>
   
     <!-- Test unsupported outside of windows -->

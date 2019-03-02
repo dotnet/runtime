@@ -150,7 +150,7 @@ restore_optdata()
 
     if [ $__isMSBuildOnNETCoreSupported == 1 ]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-        local DotNetCli="$__ProjectRoot/Tools/dotnetcli/dotnet"
+        local DotNetCli="$__ProjectRoot/.dotnet/dotnet"
         if [ ! -f $DotNetCli ]; then
             source "$__ProjectRoot/init-tools.sh"
             if [ $? != 0 ]; then

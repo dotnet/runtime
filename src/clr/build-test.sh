@@ -64,7 +64,6 @@ build_test_wrappers()
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
         nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/runtest.proj\" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
-        echo "$nextCommand"
         eval $nextCommand
 
         if [ $? -ne 0 ]; then
@@ -587,7 +586,7 @@ __SourceDir="$__ProjectDir/src"
 __PackagesDir="$__ProjectDir/packages"
 __RootBinDir="$__ProjectDir/bin"
 __BuildToolsDir="$__ProjectDir/Tools"
-__DotNetCli="${__BuildToolsDir}/dotnetcli/dotnet"
+__DotNetCli="$__ProjectDir/dotnet.sh"
 __UnprocessedBuildArgs=
 __CommonMSBuildArgs=
 __MSBCleanBuildArgs=
@@ -878,9 +877,6 @@ fi
 initTargetDistroRid
 
 # Override tool directory
-
-__CoreClrVersion=1.1.0
-__sharedFxDir=$__BuildToolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__CoreClrVersion/
 
 if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
     build_Tests

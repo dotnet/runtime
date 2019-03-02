@@ -31,10 +31,8 @@ Note: The CoreCLR must be built prior to building an individual test. See first 
 
 ### Examples
 
-* Using the `msbuild.sh` script
-  * `coreclr/Tools/msbuild.sh /maxcpucount coreclr/tests/src/JIT/CodeGenBringUpTests/Array1.csproj /p:__BuildType=Release /p:__BuildOS=OSX`
-* Calling `MSBuild.dll` directly
-  * `coreclr/Tools/dotnetcli/dotnet coreclr/Tools/MSBuild.dll /maxcpucount coreclr/tests/src/JIT/CodeGenBringUpTests/Array1.csproj /p:__BuildType=Release /p:__BuildOS=OSX`
+* Using the `dotnet.sh` script
+  * `coreclr/dotnet.sh msbuild /maxcpucount coreclr/tests/src/JIT/CodeGenBringUpTests/Array1.csproj /p:__BuildType=Release /p:__BuildOS=OSX`
 
 ## Additional Documents
 
