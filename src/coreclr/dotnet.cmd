@@ -8,6 +8,12 @@ set "__ProjectDir=%~dp0"
 set Platform=
 set __ProjectDir=
 
+:: Don't resolve runtime, shared framework, or SDK from other locations to ensure build determinism
+set DOTNET_MULTILEVEL_LOOKUP=0
+
+:: Disable first run since we do not need all ASP.NET packages restored.
+set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+
 :: Restore the Tools directory
 call %~dp0init-tools.cmd
 if NOT [%ERRORLEVEL%]==[0] (
