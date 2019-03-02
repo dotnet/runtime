@@ -46,5 +46,22 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInRangeInclusive(int value, int lowerBound, int upperBound)
             => (uint)(value - lowerBound) <= (uint)(upperBound - lowerBound);
+
+        /// <summary>
+        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
+        /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsInRangeInclusive(double value, double lowerBound, double upperBound)
+            // For floating-point, do a direct comparison as it is more accurate than subtracting.
+            => (value >= lowerBound) && (value <= upperBound);
+
+        /// <summary>
+        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
+        /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsInRangeInclusive(JsonTokenType value, JsonTokenType lowerBound, JsonTokenType upperBound)
+            => (value - lowerBound) <= (upperBound - lowerBound);
     }
 }

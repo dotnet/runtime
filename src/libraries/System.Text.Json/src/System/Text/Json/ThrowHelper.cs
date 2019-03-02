@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
-    internal static class ThrowHelper
+    internal static partial class ThrowHelper
     {
         public static ArgumentException GetArgumentException_MaxDepthMustBePositive()
         {
