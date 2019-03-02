@@ -11,7 +11,7 @@
     <MicrosoftPrivateCoreFxNETCoreAppVersion>4.6.0-preview4.19151.4</MicrosoftPrivateCoreFxNETCoreAppVersion>
     <MicrosoftNETCorePlatformsVersion>3.0.0-preview4.19151.4</MicrosoftNETCorePlatformsVersion>
     <MicrosoftNETCoreAppVersion>3.0.0-preview4-27427-1</MicrosoftNETCoreAppVersion>
-    <optimizationIBCCoreCLRVersion>99.99.99-master-20190227.1</optimizationIBCCoreCLRVersion>
+    <optimizationIBCCoreCLRVersion>99.99.99-master-20190302.1</optimizationIBCCoreCLRVersion>
     <optimizationPGOCoreCLRVersion>99.99.99-master-20190301.2</optimizationPGOCoreCLRVersion>
   </PropertyGroup>
   <!--Package names-->
