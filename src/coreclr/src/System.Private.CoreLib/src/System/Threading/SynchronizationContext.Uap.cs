@@ -15,7 +15,7 @@ namespace System.Threading
         {
             get
             {
-                SynchronizationContext context = Thread.CurrentThread.SynchronizationContext;
+                SynchronizationContext context = Thread.CurrentThread._synchronizationContext;
 
                 if (context == null && ApplicationModel.IsUap)
                     context = GetWinRTContext();
