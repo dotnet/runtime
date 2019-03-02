@@ -17,6 +17,9 @@ namespace System.Threading
     {
         private static AsyncLocal<IPrincipal> s_asyncLocalPrincipal;
 
+        [ThreadStatic]
+        private static Thread t_currentThread;
+
         public Thread(ThreadStart start)
             : this()
         {
@@ -90,6 +93,8 @@ namespace System.Threading
             SetCultureOnUnstartedThreadNoCheck(value, uiCulture);
         }
 
+        partial void ThreadNameChanged(string value);
+
         public CultureInfo CurrentCulture
         {
             get
@@ -147,6 +152,29 @@ namespace System.Threading
                     Interlocked.CompareExchange(ref s_asyncLocalPrincipal, new AsyncLocal<IPrincipal>(), null);
                 }
                 s_asyncLocalPrincipal.Value = value;
+            }
+        }
+
+        public static Thread CurrentThread => t_currentThread ?? InitializeCurrentThread();
+
+        public ExecutionContext ExecutionContext => ExecutionContext.Capture();
+
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                lock (this)
+                {
+                    if (_name != null)
+                    {
+                        throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
+                    }
+
+                    _name = value;
+
+                    ThreadNameChanged(value);
+                }
             }
         }
 
@@ -297,7 +325,7 @@ namespace System.Threading
                 return new LocalDataStoreSlot(new ThreadLocal<object>());
             }
 
-            public static Dictionary<string, LocalDataStoreSlot> EnsureNameToSlotMap()
+            private static Dictionary<string, LocalDataStoreSlot> EnsureNameToSlotMap()
             {
                 Dictionary<string, LocalDataStoreSlot> nameToSlotMap = s_nameToSlotMap;
                 if (nameToSlotMap != null)
