@@ -13,7 +13,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_APPX && !ENABLE_WINRT
-        public static SynchronizationContext Current => Thread.CurrentThread.SynchronizationContext;
+        public static SynchronizationContext Current => Thread.CurrentThread._synchronizationContext;
 #endif
 
         protected void SetWaitNotificationRequired() => _requireWaitNotification = true;
@@ -55,7 +55,7 @@ namespace System.Threading
             return WaitHandle.WaitMultipleIgnoringSyncContext(waitHandles, waitAll, millisecondsTimeout);
         }
 
-        public static void SetSynchronizationContext(SynchronizationContext syncContext) => Thread.CurrentThread.SynchronizationContext = syncContext;
+        public static void SetSynchronizationContext(SynchronizationContext syncContext) => Thread.CurrentThread._synchronizationContext = syncContext;
 
         public virtual SynchronizationContext CreateCopy() => new SynchronizationContext();
     }
