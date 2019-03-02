@@ -1028,7 +1028,7 @@ def run_tests(host_os,
     """
 
     # Setup the dotnetcli location
-    dotnetcli_location = os.path.join(coreclr_repo_location, "Tools", "dotnetcli", "dotnet%s" % (".exe" if host_os == "Windows_NT" else ""))
+    dotnetcli_location = os.path.join(coreclr_repo_location, "dotnet%s" % (".cmd" if host_os == "Windows_NT" else ".sh"))
 
     # Set default per-test timeout to 15 minutes (in milliseconds).
     per_test_timeout = 15*60*1000
@@ -1388,7 +1388,7 @@ def setup_tools(host_os, coreclr_repo_location):
 
     is_windows = host_os == "Windows_NT"
 
-    dotnetcli_location = os.path.join(coreclr_repo_location, "Tools", "dotnetcli", "dotnet%s" % (".exe" if host_os == "Windows_NT" else ""))
+    dotnetcli_location = os.path.join(coreclr_repo_location, "dotnet%s" % (".cmd" if host_os == "Windows_NT" else ".sh"))
 
     if os.path.isfile(dotnetcli_location):
         setup = True
@@ -1593,7 +1593,7 @@ def setup_core_root(host_os,
     os.makedirs(core_root)
 
     # Setup the dotnetcli location
-    dotnetcli_location = os.path.join(coreclr_repo_location, "Tools", "dotnetcli", "dotnet%s" % (".exe" if host_os == "Windows_NT" else ""))
+    dotnetcli_location = os.path.join(coreclr_repo_location, "dotnet%s" % (".cmd" if host_os == "Windows_NT" else ".sh"))
 
     # Set global env variables.
     os.environ["__BuildLogRootName"] = "Restore_Product"
@@ -1874,7 +1874,7 @@ def build_test_wrappers(host_os,
     delete_existing_wrappers(to_unicode(test_location))
 
     # Setup the dotnetcli location
-    dotnetcli_location = os.path.join(coreclr_repo_location, "Tools", "dotnetcli", "dotnet%s" % (".exe" if host_os == "Windows_NT" else ""))
+    dotnetcli_location = os.path.join(coreclr_repo_location, "dotnet%s" % (".cmd" if host_os == "Windows_NT" else ".sh"))
 
     # Set global env variables.
     os.environ["__BuildLogRootName"] = "Tests_XunitWrapper"

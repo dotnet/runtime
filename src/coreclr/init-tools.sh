@@ -4,7 +4,7 @@ __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __init_tools_log="$__scriptpath/init-tools.log"
 __PACKAGES_DIR="$__scriptpath/packages"
 __TOOLRUNTIME_DIR="$__scriptpath/Tools"
-__DOTNET_PATH="$__TOOLRUNTIME_DIR/dotnetcli"
+__DOTNET_PATH="$__scriptpath/.dotnet"
 __DOTNET_CMD="$__DOTNET_PATH/dotnet"
 if [ -z "${__BUILDTOOLS_SOURCE:-}" ]; then __BUILDTOOLS_SOURCE=https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json; fi
 export __BUILDTOOLS_USE_CSPROJ=true
@@ -65,99 +65,81 @@ execute_with_retry() {
     return 0
 }
 
-if [ ! -e "$__DOTNET_PATH" ]; then
-    if [ -z "${__DOTNET_PKG:-}" ]; then
-        if [ "$(uname -m | grep "i[3456]86")" = "i686" ]; then
-            echo "Warning: build not supported on 32 bit Unix"
-        fi
+if [ "$(uname -m | grep "i[3456]86")" = "i686" ]; then
+    echo "Warning: build not supported on 32 bit Unix"
+fi
 
-        if [ "$(uname -m)" = "armhf" ] || [ "$(uname -m)" = "arm64" ] || [ "$(uname -m)" = "aarch64" ];  then
-            if [ "$(uname -m)" = "armhf" ]; then
-                __PKG_ARCH=arm
-            fi
-
-            if [ "$(uname -m)" = "arm64" ] || [ "$(uname -m)" = "aarch64" ]; then
-                __PKG_ARCH=arm64
-            fi
-        else
-            __PKG_ARCH=x64
-        fi
-
-        OSName=$(uname -s)
-        case $OSName in
-            Darwin)
-                OS=OSX
-                __PKG_RID=osx
-                ulimit -n 2048
-                # Format x.y.z as single integer with three digits for each part
-                VERSION=`sw_vers -productVersion| sed -e 's/\./ /g' | xargs printf "%03d%03d%03d"`
-                if [ "$VERSION" -lt 010012000 ]; then
-                    echo error: macOS version `sw_vers -productVersion` is too old. 10.12 is needed as minimum.
-                    exit 1
-                fi
-                ;;
-            FreeBSD)
-                __PKG_RID=freebsd
-                OS=FreeBSD
-                ;;
-            Linux)
-                __PKG_RID=linux
-                OS=Linux
-
-                if [ -e /etc/os-release ]; then
-                    source /etc/os-release
-                    if [[ $ID == "alpine" ]]; then
-                        __PKG_RID=linux-musl
-                    fi
-                elif [ -e /etc/redhat-release ]; then
-                    redhatRelease=$(</etc/redhat-release)
-                    if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
-                        __PKG_RID=rhel.6
-                    fi
-                fi
-                OSArch=$(uname -m)
-                if [ $OSArch == 'armv7l' ];then
-                    __PKG_ARCH=arm
-                elif [ $OSArch == 'aarch64' ]; then
-                    __PKG_ARCH=arm64
-                fi
-
-                ;;
-
-            *)
-            echo "Unsupported OS '$OSName' detected. Downloading linux-$__PKG_ARCH tools."
-                OS=Linux
-                __PKG_RID=linux
-                ;;
-        esac
-        __PKG_RID=$__PKG_RID-$__PKG_ARCH
-        __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID
+if [ "$(uname -m)" = "armhf" ] || [ "$(uname -m)" = "arm64" ] || [ "$(uname -m)" = "aarch64" ];  then
+    if [ "$(uname -m)" = "armhf" ]; then
+        __PKG_ARCH=arm
     fi
-    mkdir -p "$__DOTNET_PATH"
 
-    echo "Installing dotnet cli..."
-    __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.tar.gz"
+    if [ "$(uname -m)" = "arm64" ] || [ "$(uname -m)" = "aarch64" ]; then
+        __PKG_ARCH=arm64
+    fi
+else
+    __PKG_ARCH=x64
+fi
 
-    install_dotnet_cli() {
-        if [[ -z "${DotNetBootstrapCliTarPath-}" ]]; then
-            echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'"
-            rm -rf -- "$__DOTNET_PATH/*"
-            # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
-            if command -v curl > /dev/null; then
-                curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
-            else
-                wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
-            fi
-        else
-            echo "Copying '$DotNetBootstrapCliTarPath' to '$__DOTNET_PATH/dotnet.tar'"
-            cp $DotNetBootstrapCliTarPath $__DOTNET_PATH/dotnet.tar
+OSName=$(uname -s)
+case $OSName in
+    Darwin)
+        OS=OSX
+        __PKG_RID=osx
+        ulimit -n 2048
+        # Format x.y.z as single integer with three digits for each part
+        VERSION=`sw_vers -productVersion| sed -e 's/\./ /g' | xargs printf "%03d%03d%03d"`
+        if [ "$VERSION" -lt 010012000 ]; then
+            echo error: macOS version `sw_vers -productVersion` is too old. 10.12 is needed as minimum.
+            exit 1
         fi
-        cd "$__DOTNET_PATH"
-        tar -xf "$__DOTNET_PATH/dotnet.tar"
-    }
-    execute_with_retry install_dotnet_cli >> "$__init_tools_log" 2>&1
+        ;;
+    FreeBSD)
+        __PKG_RID=freebsd
+        OS=FreeBSD
+        ;;
+    Linux)
+        __PKG_RID=linux
+        OS=Linux
 
-    cd "$__scriptpath"
+        if [ -e /etc/os-release ]; then
+            source /etc/os-release
+            if [[ $ID == "alpine" ]]; then
+                __PKG_RID=linux-musl
+            fi
+        elif [ -e /etc/redhat-release ]; then
+            redhatRelease=$(</etc/redhat-release)
+            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
+                __PKG_RID=rhel.6
+            fi
+        fi
+        OSArch=$(uname -m)
+        if [ $OSArch == 'armv7l' ];then
+            __PKG_ARCH=arm
+        elif [ $OSArch == 'aarch64' ]; then
+            __PKG_ARCH=arm64
+        fi
+
+        ;;
+
+    *)
+    echo "Unsupported OS '$OSName' detected. Downloading linux-$__PKG_ARCH tools."
+        OS=Linux
+        __PKG_RID=linux
+        ;;
+esac
+__PKG_RID=$__PKG_RID-$__PKG_ARCH
+
+if [ ! -e "$__DOTNET_CMD" ]; then
+    source $__scriptpath/eng/configure-toolset.sh
+    source $__scriptpath/eng/common/tools.sh
+
+    InitializeBuildTool
+
+    if [ ! -e "$__DOTNET_CMD" ]; then
+        echo "ERROR: Ensure arcade dotnet install did not install dotnet at $__DOTNET_CMD"
+        exit 1
+    fi
 fi
 
 if [ ! -e "$__BUILD_TOOLS_PATH" ]; then
