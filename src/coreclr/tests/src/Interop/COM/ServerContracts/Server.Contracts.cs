@@ -273,6 +273,19 @@ namespace Server.Contract
         bool AreColorsEqual(Color managed, int native);
         Color GetRed();
     }
+
+    [ComVisible(true)]
+    [Guid("6C9E230E-411F-4219-ABFD-E71F2B84FD50")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface ILicenseTesting
+    {
+        void SetNextDenyLicense([MarshalAs(UnmanagedType.VariantBool)] bool denyLicense);
+
+        [return: MarshalAs(UnmanagedType.BStr)]
+        string GetLicense();
+
+        void SetNextLicense([MarshalAs(UnmanagedType.LPWStr)] string lic);
+    }
 }
 
 #pragma warning restore 618 // Must test deprecated features

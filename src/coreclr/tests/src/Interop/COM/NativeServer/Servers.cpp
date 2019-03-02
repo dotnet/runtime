@@ -214,5 +214,8 @@ STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Out_ LPVOID FA
     if (rclsid == __uuidof(ColorTesting))
         return ClassFactoryBasic<ColorTesting>::Create(riid, ppv);
 
+    if (rclsid == __uuidof(LicenseTesting))
+        return ClassFactoryLicense<LicenseTesting>::Create(riid, ppv);
+
     return CLASS_E_CLASSNOTAVAILABLE;
 }
