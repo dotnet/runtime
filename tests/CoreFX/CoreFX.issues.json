@@ -887,6 +887,14 @@
                     "name": "System.Tests.EnvironmentTests.Version_MatchesFixedVersion",
                     "reason": "outdated"
                 },
+                {
+                    "name": "System.Tests.AppDomainTests.ApplyPolicy",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.GetAssemblies",
+                    "reason": "outdated"
+                }
             ]
         }
     },
