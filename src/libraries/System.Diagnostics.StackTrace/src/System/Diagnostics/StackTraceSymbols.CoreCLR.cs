@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -48,7 +49,28 @@ namespace System.Diagnostics
         /// <param name="sourceFile">source file return</param>
         /// <param name="sourceLine">line number return</param>
         /// <param name="sourceColumn">column return</param>
-        internal void GetSourceLineInfo(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, 
+        internal void GetSourceLineInfo(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize,
+            IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
+            out string sourceFile, out int sourceLine, out int sourceColumn)
+        {
+            GetSourceLineInfo(null, assemblyPath, loadedPeAddress, loadedPeSize, inMemoryPdbAddress, inMemoryPdbSize, methodToken, ilOffset, out sourceFile, out sourceLine, out sourceColumn);
+        }
+
+        /// <summary>
+        /// Returns the source file and line number information for the method.
+        /// </summary>
+        /// <param name="assembly">Will be used by upcoming change</param>
+        /// <param name="assemblyPath">file path of the assembly or null</param>
+        /// <param name="loadedPeAddress">loaded PE image address or zero</param>
+        /// <param name="loadedPeSize">loaded PE image size</param>
+        /// <param name="inMemoryPdbAddress">in memory PDB address or zero</param>
+        /// <param name="inMemoryPdbSize">in memory PDB size</param>
+        /// <param name="methodToken">method token</param>
+        /// <param name="ilOffset">il offset of the stack frame</param>
+        /// <param name="sourceFile">source file return</param>
+        /// <param name="sourceLine">line number return</param>
+        /// <param name="sourceColumn">column return</param>
+        internal void GetSourceLineInfo(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, 
             IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset, 
             out string sourceFile, out int sourceLine, out int sourceColumn)
         {
