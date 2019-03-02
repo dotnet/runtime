@@ -9,16 +9,8 @@ using System.Threading;
 
 namespace System
 {
-    /// <summary>
-    /// Activator contains the Activation (CreateInstance/New) methods for late bound support.
-    /// </summary>
-    public static class Activator
+    public static partial class Activator
     {
-        internal const BindingFlags ConstructorDefault = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
-
-        public static object CreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture) =>
-            CreateInstance(type, bindingAttr, binder, args, culture, null);
-
         public static object CreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
         {
             if (type is null)
@@ -36,30 +28,7 @@ namespace System
                 throw new PlatformNotSupportedException(SR.NotSupported_ActivAttr);
 
             if (type.UnderlyingSystemType is RuntimeType rt)
-                return rt.CreateInstanceImpl(bindingAttr, binder, args, culture, activationAttributes);
-
-            throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
-        }
-
-        public static object CreateInstance(Type type, params object[] args) =>
-            CreateInstance(type, ConstructorDefault, null, args, null, null);
-
-        public static object CreateInstance(Type type, object[] args, object[] activationAttributes) =>
-            CreateInstance(type, ConstructorDefault, null, args, null, activationAttributes);
-
-        public static object CreateInstance(Type type) =>
-            CreateInstance(type, nonPublic: false);
-
-        public static object CreateInstance(Type type, bool nonPublic) =>
-            CreateInstance(type, nonPublic, wrapExceptions: true);
-
-        internal static object CreateInstance(Type type, bool nonPublic, bool wrapExceptions)
-        {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-
-            if (type.UnderlyingSystemType is RuntimeType rt)
-                return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, skipCheckThis: false, fillCache: true, wrapExceptions: wrapExceptions);
+                return rt.CreateInstanceImpl(bindingAttr, binder, args, culture);
 
             throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
         }
@@ -71,7 +40,7 @@ namespace System
             return CreateInstanceInternal(assemblyName,
                                           typeName,
                                           false,
-                                          Activator.ConstructorDefault,
+                                          ConstructorDefault,
                                           null,
                                           null,
                                           null,
@@ -101,13 +70,24 @@ namespace System
             return CreateInstanceInternal(assemblyName,
                                           typeName,
                                           false,
-                                          Activator.ConstructorDefault,
+                                          ConstructorDefault,
                                           null,
                                           null,
                                           null,
                                           activationAttributes,
                                           ref stackMark);
         }
+
+        internal static object CreateInstance(Type type, bool nonPublic, bool wrapExceptions)
+        {
+            if (type is null)
+                throw new ArgumentNullException(nameof(type));
+
+            if (type.UnderlyingSystemType is RuntimeType rt)
+                return rt.CreateInstanceDefaultCtor(publicOnly: !nonPublic, skipCheckThis: false, fillCache: true, wrapExceptions: wrapExceptions);
+
+            throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+        }        
 
         private static ObjectHandle CreateInstanceInternal(string assemblyString,
                                                            string typeName,
@@ -149,68 +129,12 @@ namespace System
 
             if (type == null)
             {                
-                type = assembly.GetType(typeName, true /*throwOnError*/, ignoreCase);
+                type = assembly.GetType(typeName, throwOnError: true, ignoreCase);
             }
 
-            object o = Activator.CreateInstance(type,
-                                                bindingAttr,
-                                                binder,
-                                                args,
-                                                culture,
-                                                activationAttributes);
+            object o = CreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
 
-            return (o != null) ? new ObjectHandle(o) : null;          
-        }
-
-        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName)
-        {
-            return CreateInstanceFrom(assemblyFile, typeName, null);
-        }
-
-        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
-        {
-            return CreateInstanceFromInternal(assemblyFile,
-                                              typeName,
-                                              ignoreCase,
-                                              bindingAttr,
-                                              binder,
-                                              args,
-                                              culture,
-                                              activationAttributes);
-        }
-
-        public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName, object[] activationAttributes)
-        {
-            return CreateInstanceFrom(assemblyFile,
-                                      typeName,
-                                      false,
-                                      Activator.ConstructorDefault,
-                                      null,
-                                      null,
-                                      null,
-                                      activationAttributes);
-        }
-
-        private static ObjectHandle CreateInstanceFromInternal(string assemblyFile,
-                                                               string typeName,
-                                                               bool ignoreCase,
-                                                               BindingFlags bindingAttr,
-                                                               Binder binder,
-                                                               object[] args,
-                                                               CultureInfo culture,
-                                                               object[] activationAttributes)
-        {
-            Assembly assembly = Assembly.LoadFrom(assemblyFile);
-            Type t = assembly.GetType(typeName, true, ignoreCase);
-
-            object o = Activator.CreateInstance(t,
-                                                bindingAttr,
-                                                binder,
-                                                args,
-                                                culture,
-                                                activationAttributes);
-
-            return (o != null) ? new ObjectHandle(o) : null;
+            return o != null ? new ObjectHandle(o) : null;          
         }
 
         public static T CreateInstance<T>()
