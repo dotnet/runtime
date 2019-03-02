@@ -1,3 +1,7 @@
+:: Windows CMake has a dependency on desktop msbuild.exe because it generates
+:: Visual Studio *.vcxproj solutions.
+:: This file has cmake in its name to avoid accidentally introducing
+:: another dependency on desktop msbuild.exe
 @if not defined _echo @echo off
 setlocal
 
@@ -12,12 +16,6 @@ if NOT '%ERRORLEVEL%' == '0' exit /b 1
 :: misleading value (such as 'MCD' in HP PCs) may lead to build breakage (issue: #69).
 set Platform=
 set __ProjectDir=
-
-:: Restore the Tools directory
-call %~dp0init-tools.cmd
-if NOT [%ERRORLEVEL%]==[0] (
-  exit /b 1
-)
 
 pushd %~dp0
 echo Running: msbuild.exe %*

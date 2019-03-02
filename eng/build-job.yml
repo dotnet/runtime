@@ -106,11 +106,6 @@ jobs:
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: ./build.sh $(buildConfig) $(archType) $(crossArg) -skiptests -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build product
-        ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-          env:
-            # init-tools.sh extracts an SDK from here to the Tools/dotnetcli folder instead of trying to restore it.
-            # Once we are using Arcade, use DotNetCoreSdkDir instead, as we do below.
-            DotNetBootstrapCliTarPath: /dotnet-sdk-freebsd-x64.tar
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
         displayName: Build product

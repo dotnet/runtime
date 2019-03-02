@@ -44,7 +44,7 @@
     <SourceDir>$(ProjectDir)src\</SourceDir>
     <PackagesDir>$(ProjectDir)..\packages\</PackagesDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)..\Tools\</ToolsDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli\</DotnetCliPath>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\.dotnet\</DotnetCliPath>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net46\</BuildToolsTaskDir>
     <OverrideToolHost Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</OverrideToolHost>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
