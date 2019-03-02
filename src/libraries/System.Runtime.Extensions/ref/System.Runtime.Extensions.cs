@@ -1656,6 +1656,38 @@ namespace System.Net
         public static byte[] UrlEncodeToBytes(byte[] value, int offset, int count) { throw null; }
     }
 }
+namespace System.Numerics
+{
+    public static class BitOperations
+    {
+        [System.CLSCompliantAttribute(false)]
+        public static int LeadingZeroCount(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int LeadingZeroCount(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int Log2(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int Log2(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int PopCount(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int PopCount(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint RotateLeft(uint value, int bitOffset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong RotateLeft(ulong value, int bitOffset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint RotateRight(uint value, int bitOffset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong RotateRight(ulong value, int bitOffset) { throw null; }
+        public static int TrailingZeroCount(int value) { throw null; }
+        public static int TrailingZeroCount(long value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int TrailingZeroCount(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int TrailingZeroCount(ulong value) { throw null; }
+    }
+}
 namespace System.Reflection
 {
     public partial class AssemblyNameProxy : System.MarshalByRefObject
