@@ -32,7 +32,6 @@ namespace System.Text.Json
             // Note: We do not retain _bytesConsumed or _sequencePosition as they reset with the new input data
             _lineNumber = state._lineNumber;
             _bytePositionInLine = state._bytePositionInLine;
-            _maxDepth = state._maxDepth == 0 ? JsonReaderState.DefaultMaxDepth : state._maxDepth; // If max depth is not set, revert to the default depth.
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
             _numberFormat = state._numberFormat;
@@ -40,6 +39,10 @@ namespace System.Text.Json
             _tokenType = state._tokenType;
             _previousTokenType = state._previousTokenType;
             _readerOptions = state._readerOptions;
+            if (_readerOptions.MaxDepth == 0)
+            {
+                _readerOptions.MaxDepth = JsonReaderOptions.DefaultMaxDepth;  // If max depth is not set, revert to the default depth.
+            }
             _bitStack = state._bitStack;
 
             _consumed = 0;

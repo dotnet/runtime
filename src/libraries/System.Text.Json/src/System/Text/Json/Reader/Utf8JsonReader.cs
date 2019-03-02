@@ -28,7 +28,6 @@ namespace System.Text.Json
         private long _lineNumber;
         private long _bytePositionInLine;
         private int _consumed;
-        private int _maxDepth;
         private bool _inObject;
         private bool _isNotPrimitive;
         internal char _numberFormat;
@@ -134,7 +133,6 @@ namespace System.Text.Json
             _lineNumber = _lineNumber,
             _bytePositionInLine = _bytePositionInLine,
             _bytesConsumed = BytesConsumed,
-            _maxDepth = _maxDepth,
             _inObject = _inObject,
             _isNotPrimitive = _isNotPrimitive,
             _numberFormat = _numberFormat,
@@ -168,7 +166,6 @@ namespace System.Text.Json
             // Note: We do not retain _bytesConsumed or _sequencePosition as they reset with the new input data
             _lineNumber = state._lineNumber;
             _bytePositionInLine = state._bytePositionInLine;
-            _maxDepth = state._maxDepth == 0 ? JsonReaderState.DefaultMaxDepth : state._maxDepth; // If max depth is not set, revert to the default depth.
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
             _numberFormat = state._numberFormat;
@@ -176,6 +173,10 @@ namespace System.Text.Json
             _tokenType = state._tokenType;
             _previousTokenType = state._previousTokenType;
             _readerOptions = state._readerOptions;
+            if (_readerOptions.MaxDepth == 0)
+            {
+                _readerOptions.MaxDepth = JsonReaderOptions.DefaultMaxDepth;  // If max depth is not set, revert to the default depth.
+            }
             _bitStack = state._bitStack;
 
             _consumed = 0;
@@ -216,7 +217,7 @@ namespace System.Text.Json
 
         private void StartObject()
         {
-            if (CurrentDepth >= _maxDepth)
+            if (CurrentDepth >= _readerOptions.MaxDepth)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ObjectDepthTooLarge);
 
             _bitStack.PushTrue();
@@ -241,7 +242,7 @@ namespace System.Text.Json
 
         private void StartArray()
         {
-            if (CurrentDepth >= _maxDepth)
+            if (CurrentDepth >= _readerOptions.MaxDepth)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ArrayDepthTooLarge);
 
             _bitStack.PushFalse();

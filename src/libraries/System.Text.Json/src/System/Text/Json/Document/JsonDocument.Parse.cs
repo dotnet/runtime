@@ -268,7 +268,7 @@ namespace System.Text.Json
                 new JsonReaderState(options: readerOptions));
 
             var database = new MetadataDb(utf8Json.Length);
-            var stack = new StackRowStack(JsonReaderState.DefaultMaxDepth * StackRow.Size);
+            var stack = new StackRowStack(JsonReaderOptions.DefaultMaxDepth * StackRow.Size);
 
             try
             {

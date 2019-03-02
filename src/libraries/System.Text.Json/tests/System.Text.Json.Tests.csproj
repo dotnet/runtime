@@ -15,7 +15,7 @@
     <Compile Include="InvalidBufferWriter.cs" />
     <Compile Include="JsonDocumentTests.cs" />
     <Compile Include="JsonNumberTestData.cs" />
-    <Compile Include="JsonReaderStateTests.cs" />
+    <Compile Include="JsonReaderStateAndOptionsTests.cs" />
     <Compile Include="JsonTestHelper.cs" />
     <Compile Include="JsonWriterStateTests.cs" />
     <Compile Include="ResizableArray.cs" />
