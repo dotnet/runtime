@@ -282,4 +282,25 @@
   <data name="ZeroDepthAtEnd" xml:space="preserve">
     <value>Expected CurrentDepth ({0}) to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed.</value>
   </data>
+  <data name="DeserializeCannotBeNull" xml:space="preserve">
+    <value>The JSON value from {0} cannot be null.</value>
+  </data>
+  <data name="DeserializeDataRemaining" xml:space="preserve">
+    <value>The provided data of length {0} has remaining bytes {1}.</value>
+  </data>
+  <data name="DeserializeUnableToConvertValue" xml:space="preserve">
+    <value>The JSON value from {0} could not be converted to {1}.</value>
+  </data>
+  <data name="DeserializeWrongType" xml:space="preserve">
+    <value>The specified type {0} must derive from the specific value's type {1}.</value>
+  </data>
+  <data name="SerializationInvalidBufferSize" xml:space="preserve">
+    <value>The value must be greater than zero or equal to -1.</value>
+  </data>
+  <data name="BufferWriterAdvancedTooFar" xml:space="preserve">
+    <value>Cannot advance past the end of the buffer, which has a size of {0}.</value>
+  </data>
+  <data name="EnumConverterNotImplemented" xml:space="preserve">
+    <value>EnumConverter is not yet supported on .NET Standard 2.0.</value>
+  </data>
 </root>
