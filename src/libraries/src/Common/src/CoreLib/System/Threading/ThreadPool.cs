@@ -559,7 +559,7 @@ namespace System.Threading
 
                 // Start on clean ExecutionContext and SynchronizationContext
                 currentThread._executionContext = null;
-                currentThread.SynchronizationContext = null;
+                currentThread._synchronizationContext = null;
 
                 //
                 // Loop until our quantum expires or there is no work.
