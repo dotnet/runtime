@@ -23,6 +23,7 @@
     <Compile Include="StringTesting.cs" />
     <Compile Include="ErrorMarshalTesting.cs" />
     <Compile Include="ColorTesting.cs" />
+    <Compile Include="LicenseTesting.cs" />
     <Compile Include="../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../ServerContracts/ServerGuids.cs" />
   </ItemGroup>
