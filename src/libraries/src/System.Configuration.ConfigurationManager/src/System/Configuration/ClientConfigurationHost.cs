@@ -309,7 +309,7 @@ namespace System.Configuration
         public override Stream OpenStreamForWrite(string streamName, string templateStreamName, ref object writeContext)
         {
             // only support files, not URIs
-            if (!IsFile(streamName)) throw ExceptionUtil.UnexpectedError("ClientConfigurationHost::OpenStreamForWrite");
+            if (!IsFile(streamName)) throw ExceptionUtil.UnexpectedError($"ClientConfigurationHost::OpenStreamForWrite '{streamName}' '{templateStreamName}'");
 
             return Host.OpenStreamForWrite(streamName, templateStreamName, ref writeContext);
         }
