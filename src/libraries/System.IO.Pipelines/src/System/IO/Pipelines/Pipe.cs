@@ -60,15 +60,20 @@ namespace System.IO.Pipelines
         private PipeCompletion _writerCompletion;
         private PipeCompletion _readerCompletion;
 
-        // The read head which is the extent of the IPipelineReader's consumed bytes
+        // Stores the last examined position, used to calculate how many bytes were to release
+        // for back pressure management
+        private BufferSegment _lastExamined;
+        private int _lastExaminedIndex;
+
+        // The read head which is the extent of the PipeReader's consumed bytes
         private BufferSegment _readHead;
         private int _readHeadIndex;
 
-        // The commit head which is the extent of the bytes available to the IPipelineReader to consume
+        // The commit head which is the extent of the bytes available to the PipeReader to consume
         private BufferSegment _readTail;
         private int _readTailIndex;
 
-        // The write head which is the extent of the IPipelineWriter's written bytes
+        // The write head which is the extent of the PipeWriter's written bytes
         private BufferSegment _writingHead;
         private Memory<byte> _writingMemory;
         private int _buffered;
@@ -125,6 +130,7 @@ namespace System.IO.Pipelines
             _writerAwaitable = new PipeAwaitable(completed: true, _useSynchronizationContext);
             _readTailIndex = 0;
             _readHeadIndex = 0;
+            _lastExaminedIndex = 0;
             _currentWriteLength = 0;
             _length = 0;
         }
@@ -187,7 +193,7 @@ namespace System.IO.Pipelines
                     BufferSegment newSegment = AllocateSegment(sizeHint);
 
                     // Set all the pointers
-                    _writingHead = _readHead = _readTail = newSegment;
+                    _writingHead = _readHead = _readTail = _lastExamined = newSegment;
                 }
                 else
                 {
@@ -427,6 +433,30 @@ namespace System.IO.Pipelines
                     examinedEverything = examinedIndex == _readTailIndex;
                 }
 
+                if (examinedSegment != null && _lastExamined != null)
+                {
+                    long examinedBytes = GetLength(_lastExamined, _lastExaminedIndex, examinedSegment, examinedIndex);
+                    long oldLength = _length;
+
+                    if (examinedBytes < 0)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_AdvanceToInvalidCursor();
+                    }
+
+                    _length -= examinedBytes;
+
+                    _lastExamined = examinedSegment;
+                    _lastExaminedIndex = examinedIndex;
+
+                    Debug.Assert(_length >= 0, "Length has gone negative");
+
+                    if (oldLength >= _resumeWriterThreshold &&
+                        _length < _resumeWriterThreshold)
+                    {
+                        _writerAwaitable.Complete(out completionData);
+                    }
+                }
+
                 if (consumedSegment != null)
                 {
                     if (_readHead == null)
@@ -437,17 +467,6 @@ namespace System.IO.Pipelines
 
                     returnStart = _readHead;
                     returnEnd = consumedSegment;
-
-                    // Check if we crossed _maximumSizeLow and complete backpressure
-                    long consumedBytes = GetLength(returnStart, _readHeadIndex, consumedSegment, consumedIndex);
-                    long oldLength = _length;
-                    _length -= consumedBytes;
-
-                    if (oldLength >= _resumeWriterThreshold &&
-                        _length < _resumeWriterThreshold)
-                    {
-                        _writerAwaitable.Complete(out completionData);
-                    }
 
                     // Check if we consumed entire last segment
                     // if we are going to return commit head we need to check that there is no writing operation that
@@ -473,6 +492,10 @@ namespace System.IO.Pipelines
                             Debug.Assert(_readTail == null);
                             _writingHead = null;
                             _writingMemory = default;
+
+                            // Anything we examined before is bogus since there are no more blocks in the linked list
+                            _lastExaminedIndex = 0;
+                            _lastExamined = null;
                         }
 
                         returnEnd = nextBlock;
@@ -488,11 +511,8 @@ namespace System.IO.Pipelines
                 // but only if writer is not completed yet
                 if (examinedEverything && !_writerCompletion.IsCompleted)
                 {
-                    // Prevent deadlock where reader awaits new data and writer await backpressure
-                    if (!_writerAwaitable.IsCompleted)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_BackpressureDeadlock(_resumeWriterThreshold);
-                    }
+                    Debug.Assert(_writerAwaitable.IsCompleted, "PipeWriter.FlushAsync is isn't completed and will deadlock");
+
                     _readerAwaitable.SetUncompleted();
                 }
 
@@ -760,6 +780,7 @@ namespace System.IO.Pipelines
                 _writingHead = null;
                 _readHead = null;
                 _readTail = null;
+                _lastExamined = null;
             }
         }
 
