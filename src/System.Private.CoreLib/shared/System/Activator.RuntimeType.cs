@@ -78,6 +78,9 @@ namespace System
                                           ref stackMark);
         }
 
+        public static object CreateInstance(Type type, bool nonPublic) =>
+            CreateInstance(type, nonPublic, wrapExceptions: true);
+
         internal static object CreateInstance(Type type, bool nonPublic, bool wrapExceptions)
         {
             if (type is null)
