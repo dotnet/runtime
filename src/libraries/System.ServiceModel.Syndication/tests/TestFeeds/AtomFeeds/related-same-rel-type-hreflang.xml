@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  entry with two atom:link elements with a rel attribute value of related that has the same type and hreflang attribute values
 Expect:       !DuplicateAtomLink{element:link,parent:entry}

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  source with zero atom:updated elements produces a warning
 Expect:       MissingSourceElement{element:updated,parent:source}

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  a source with two atom:link elements with a rel attribute value of "alternate" with the same type and hreflang attribute value produces an error
 Expect:       DuplicateAtomLink{parent:source}

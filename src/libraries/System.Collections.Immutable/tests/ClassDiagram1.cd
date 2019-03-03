@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<ClassDiagram MajorVersion="1" MinorVersion="1">
+﻿<ClassDiagram MajorVersion="1" MinorVersion="1">
   <Class Name="System.Collections.Immutable.Test.ImmutableListBuilderTest" Collapsed="true">
     <Position X="0.5" Y="6.25" Width="2" />
     <TypeIdentifier>

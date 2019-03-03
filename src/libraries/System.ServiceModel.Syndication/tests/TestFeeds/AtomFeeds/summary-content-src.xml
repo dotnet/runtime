@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  entry with an atom:summary and an atom:content that has a src attribute
 Expect:       !Error

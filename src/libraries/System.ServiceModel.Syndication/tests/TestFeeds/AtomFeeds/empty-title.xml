@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  an entry with an empty atom:title produces a warning
 Expect:       NotBlank{parent:entry,element:title}

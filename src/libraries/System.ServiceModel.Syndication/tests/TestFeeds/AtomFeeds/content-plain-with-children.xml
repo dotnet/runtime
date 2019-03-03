@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  content with a type of plain and children elements produces an error
 Expect:       UndefinedElement{parent:content}

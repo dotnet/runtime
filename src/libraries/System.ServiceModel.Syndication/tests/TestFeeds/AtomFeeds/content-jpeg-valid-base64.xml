@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  content with a type of jpeg and a value that is valid base64 produces no error
 Expect:       !Error

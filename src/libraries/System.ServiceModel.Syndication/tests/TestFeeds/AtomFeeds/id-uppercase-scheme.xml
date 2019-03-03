@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  id with a scheme in uppercase characters produces a warning
 Expect:       NonCanonicalURI{element:id,parent:feed}

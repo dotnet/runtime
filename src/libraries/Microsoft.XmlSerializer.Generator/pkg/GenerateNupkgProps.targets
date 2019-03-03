@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <PropertyGroup>
       <BuildDependsOn>
         GenerateNupkgProps;
@@ -16,7 +15,7 @@
   <Target Name="GenerateNupkgProps" DependsOnTargets="CalculatePackageVersion">
     <PropertyGroup>
       <PropsFileContents>
-&lt;Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"&gt;
+&lt;Project&gt;
   &lt;ItemGroup&gt;
     &lt;DotNetCliToolReference Include="$(Id)" Version="$(PackageVersion)" /&gt;
   &lt;/ItemGroup&gt;
