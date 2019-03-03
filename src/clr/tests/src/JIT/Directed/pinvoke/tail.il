@@ -15,22 +15,22 @@
   .class private auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static pinvokeimpl("user32" ansi winapi) 
+    .method private hidebysig static pinvokeimpl("user32menu" ansi winapi)
             native uint CreatePopupMenu() cil managed preservesig
     {
     }
-    .method private hidebysig static pinvokeimpl("user32" ansi winapi) 
+    .method private hidebysig static pinvokeimpl("user32menu" ansi winapi)
             bool  DestroyMenu(native uint hMenu) cil managed preservesig
     {
     }
-    .method private hidebysig static pinvokeimpl("user32" ansi winapi) 
+    .method private hidebysig static pinvokeimpl("user32menu" ansi winapi)
             bool  AppendMenu(native uint hMenu,
                              unsigned int32 uFlags,
                              unsigned int32 uID,
                              string item) cil managed preservesig
     {
     }
-    .method private hidebysig static pinvokeimpl("user32" ansi winapi) 
+    .method private hidebysig static pinvokeimpl("user32menu" ansi winapi)
             int32  GetMenuString(native uint  hMenu,
                                  unsigned int32 uIDItem,
                                  class [mscorlib]System.Text.StringBuilder data,
@@ -38,7 +38,7 @@
                                  unsigned int32 uFlag) cil managed preservesig
     {
     }
-    
+
     .method private hidebysig static native uint __CreatePopupMenu() cil managed
     {
     	tail. call      native uint JitTest.Test::CreatePopupMenu()
@@ -93,8 +93,8 @@
                                                int32,
                                                unsigned int32)
     }
-    
-    .method private hidebysig static int32 
+
+    .method private hidebysig static int32
             Main() cil managed
     {
       .entrypoint
@@ -211,7 +211,7 @@
       IL_00b0:  ret
     } // end of method Test::Main
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       .maxstack  8
