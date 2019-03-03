@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  link with a type attribute which does not match the syntax of a MIME media type produces an error
 Expect:       InvalidMIMEType{element:link,parent:entry}

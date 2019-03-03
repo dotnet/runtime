@@ -1,4 +1,4 @@
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <ItemGroup>
     <PackageIndex Include="$(MSBuildThisFileDirectory)packageIndex.json" />
   </ItemGroup>

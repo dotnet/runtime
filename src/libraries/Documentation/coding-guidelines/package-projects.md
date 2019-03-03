@@ -14,7 +14,6 @@ This is the simplest case.  The package project need only reference the single p
 
 Sample `System.Text.Encodings.Web.pkgproj`
 ```
-<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
@@ -33,7 +32,6 @@ These packages need to include placeholders for inbox platforms.  They should al
 
 Sample `System.Collections.Concurrent.pkgproj`
 ```
-<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
@@ -62,7 +60,6 @@ Framework specific libraries are effectively the same as the previous example.  
 
 Sample System.Net.Security.pkgproj
 ```
-<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
@@ -92,7 +89,6 @@ Sample System.Net.Security.pkgproj
 Sample \ref .builds file defining a constant used to filter API that were added on top of the netstandard1.7 ones and are available only in netcoreapp1.1:
 
 ```
-<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
@@ -122,8 +118,7 @@ Conditional compilation using the above-mentioned constant (from `ref\System.Net
 Sample \src .builds file (in this case the implementation is the same in both netcoreapp1.1 and netstandard1.7):
 
 ```
-<?xml version="1.0" encoding="utf-8"?>
-<Project>
+<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <Project Include="System.Net.Security.csproj">
@@ -151,7 +146,6 @@ These packages need to provide a different platform specific implementation on e
 
 Sample `System.IO.FileSystem.pkgproj`
 ```
-<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
@@ -173,7 +167,6 @@ Sample `System.IO.FileSystem.pkgproj`
 
 `win/System.IO.FileSystem.pkgproj`
 ```
-<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
@@ -202,7 +195,6 @@ Sample `System.IO.FileSystem.pkgproj`
 ```
 `unix/System.IO.FileSystem.pkgproj`
 ```
-<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 

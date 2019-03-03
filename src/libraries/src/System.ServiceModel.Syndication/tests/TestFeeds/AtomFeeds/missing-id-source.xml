@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  a source with zero atom:id elements produces a warning
 Expect:       MissingSourceElement{element:id,parent:source} 

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  a feed with two atom:entry elements with the same atom:id value produces a warning.
 Expect:       DuplicateEntries

@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk.IL">
+﻿<Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <ProjectGuid>{3B7489C4-65DB-4E69-BE01-F6234133400C}</ProjectGuid>

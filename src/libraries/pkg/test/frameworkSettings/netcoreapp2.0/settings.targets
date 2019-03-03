@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <ItemGroup Condition="'$(RuntimeIdentifier)' != ''">
     <!-- NETCoreApp2.0 had experimental versions of Span and ReadOnlySpan 
          which we don't match the final API nor were they ship-quality -->

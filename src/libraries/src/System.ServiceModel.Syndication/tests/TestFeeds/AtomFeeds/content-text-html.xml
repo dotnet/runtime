@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  usage of text/html to describe an html fragment
 Expect:       HtmlFragment{element:content}

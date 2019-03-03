@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  id with an explicit authority equivalent to the default produces a warning
 Expect:       NonCanonicalURI{element:id,parent:feed}

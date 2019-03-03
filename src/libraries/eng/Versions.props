@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0">
+<Project>
   <PropertyGroup>
     <!-- The .NET Core product branding version -->
     <ProductVersion>3.0.0</ProductVersion>

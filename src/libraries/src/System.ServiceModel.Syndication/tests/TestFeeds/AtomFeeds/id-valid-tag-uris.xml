@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  Valid Tag URIs, according to RFC 4151, should not produce errors
 Expect:       !InvalidTAG

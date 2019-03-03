@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  icon with content that is not a valid IRI reference produces an error
 Expect:       InvalidLink{element:icon,parent:feed}
