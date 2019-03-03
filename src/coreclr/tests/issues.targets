@@ -75,9 +75,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ExecInDefAppDom/ExecInDefAppDom/*">
             <Issue>Issue building native components for the test.</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/tail/*">
-            <Issue>13048</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/1514/interlockexchange/*">
             <Issue>22975</Issue>
         </ExcludeList>
