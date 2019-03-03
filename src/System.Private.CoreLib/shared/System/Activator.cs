@@ -36,11 +36,6 @@ namespace System
         public static object CreateInstance(Type type) =>
             CreateInstance(type, nonPublic: false);
 
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        public static object CreateInstance(Type type, bool nonPublic) =>
-            CreateInstance(type, nonPublic, wrapExceptions: true);
-
         public static ObjectHandle CreateInstanceFrom(string assemblyFile, string typeName) =>
             CreateInstanceFrom(assemblyFile, typeName, false, ConstructorDefault, null, null, null, null);
 
