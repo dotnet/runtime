@@ -638,12 +638,14 @@ get_current_thread_ptr_for_domain (MonoDomain *domain, MonoInternalThread *threa
 static void
 set_current_thread_for_domain (MonoDomain *domain, MonoInternalThread *thread, MonoThread *current)
 {
+#ifndef ENABLE_NETCORE
 	MonoThread **current_thread_ptr = get_current_thread_ptr_for_domain (domain, thread);
 
 	g_assert (current->obj.vtable->domain == domain);
 
 	g_assert (!*current_thread_ptr);
 	*current_thread_ptr = current;
+#endif
 }
 
 static MonoThread*
@@ -1223,6 +1225,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 			g_assert (cb);
 			mono_error_assert_ok (error);
 		}
+		mono_runtime_invoke_checked (cb, internal, NULL, error);
 #else
 		void *args [1];
 

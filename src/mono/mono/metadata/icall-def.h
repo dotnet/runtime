@@ -1043,8 +1043,10 @@ NOHANDLES(ICALL(ILOCK_20, "Increment(int&)", ves_icall_System_Threading_Interloc
 NOHANDLES(ICALL(ILOCK_21, "Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long))
 NOHANDLES(ICALL(ILOCK_22, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long))
 
+#ifndef ENABLE_NETCORE
 ICALL_TYPE(ITHREAD, "System.Threading.InternalThread", ITHREAD_1)
 HANDLES(ITHREAD_1, "Thread_free_internal", ves_icall_System_Threading_InternalThread_Thread_free_internal, void, 1, (MonoInternalThread))
+#endif
 
 ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_8)
 ICALL(MONIT_8, "Enter", ves_icall_System_Threading_Monitor_Monitor_Enter)
@@ -1078,18 +1080,19 @@ HANDLES(SEMA_3, "ReleaseSemaphore_internal", ves_icall_System_Threading_Semaphor
 ICALL_TYPE(THREAD, "System.Threading.Thread", THREAD_1)
 #ifdef ENABLE_NETCORE
 HANDLES(THREAD_1, "ClrState", ves_icall_System_Threading_Thread_ClrState, void, 2, (MonoInternalThread, guint32))
-HANDLES(THREAD_2, "GetState", ves_icall_System_Threading_Thread_GetState, guint32, 1, (MonoInternalThread))
-HANDLES(THREAD_3, "InitializeCurrentThread", ves_icall_System_Threading_Thread_GetCurrentThread, MonoThreadObject, 0, ())
+HANDLES(ITHREAD_2, "FreeInternal", ves_icall_System_Threading_InternalThread_Thread_free_internal, void, 1, (MonoInternalThread))
+HANDLES(THREAD_3, "GetState", ves_icall_System_Threading_Thread_GetState, guint32, 1, (MonoInternalThread))
 HANDLES(THREAD_4, "InitInternal", ves_icall_System_Threading_Thread_InitInternal, void, 1, (MonoThreadObject))
-HANDLES(THREAD_5, "InterruptInternal", ves_icall_System_Threading_Thread_Interrupt_internal, void, 1, (MonoThreadObject))
-HANDLES(THREAD_6, "JoinInternal", ves_icall_System_Threading_Thread_Join_internal, MonoBoolean, 2, (MonoThreadObject, int))
-ICALL(THREAD_7, "SetName", ves_icall_System_Threading_Thread_SetName_internal)
-HANDLES(THREAD_8, "SetPriority", ves_icall_System_Threading_Thread_SetPriority, void, 2, (MonoThreadObject, int))
-HANDLES(THREAD_9, "SetState", ves_icall_System_Threading_Thread_SetState, void, 2, (MonoInternalThread, guint32))
-HANDLES(THREAD_10, "SleepInternal", ves_icall_System_Threading_Thread_Sleep_internal, void, 1, (gint32))
-HANDLES(THREAD_11, "SpinWait_nop", ves_icall_System_Threading_Thread_SpinWait_nop, void, 0, ())
-HANDLES(RTTHREAD_12, "StartInternal", ves_icall_System_Threading_Thread_StartInternal, void, 1, (MonoThreadObject))
-NOHANDLES(ICALL(THREAD_13, "YieldInternal", ves_icall_System_Threading_Thread_YieldInternal))
+HANDLES(THREAD_5, "InitializeCurrentThread", ves_icall_System_Threading_Thread_GetCurrentThread, MonoThreadObject, 0, ())
+HANDLES(THREAD_6, "InterruptInternal", ves_icall_System_Threading_Thread_Interrupt_internal, void, 1, (MonoThreadObject))
+HANDLES(THREAD_7, "JoinInternal", ves_icall_System_Threading_Thread_Join_internal, MonoBoolean, 2, (MonoThreadObject, int))
+ICALL(THREAD_8, "SetName", ves_icall_System_Threading_Thread_SetName_internal)
+HANDLES(THREAD_9, "SetPriority", ves_icall_System_Threading_Thread_SetPriority, void, 2, (MonoThreadObject, int))
+HANDLES(THREAD_10, "SetState", ves_icall_System_Threading_Thread_SetState, void, 2, (MonoInternalThread, guint32))
+HANDLES(THREAD_11, "SleepInternal", ves_icall_System_Threading_Thread_Sleep_internal, void, 1, (gint32))
+HANDLES(THREAD_12, "SpinWait_nop", ves_icall_System_Threading_Thread_SpinWait_nop, void, 0, ())
+HANDLES(THREAD_13, "StartInternal", ves_icall_System_Threading_Thread_StartInternal, void, 1, (MonoThreadObject))
+NOHANDLES(ICALL(THREAD_14, "YieldInternal", ves_icall_System_Threading_Thread_YieldInternal))
 #else
 HANDLES(THREAD_1, "Abort_internal(System.Threading.InternalThread,object)", ves_icall_System_Threading_Thread_Abort, void, 2, (MonoInternalThread, MonoObject))
 HANDLES(THREAD_1a, "ByteArrayToCurrentDomain(byte[])", ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain, MonoArray, 1, (MonoArray))
