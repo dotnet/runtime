@@ -3,7 +3,7 @@ Developer Guide
 
 The repo can be built for the following platforms, using the provided setup and the following instructions.
 
-| Chip  | Windows  | Linux    | OS X     | FreeBSD  |
+| Chip  | Windows  | Linux    | macOS    | FreeBSD  |
 | :---- | :------: | :------: | :------: | :------: |
 | x64   | &#x2714; | &#x2714; | &#x2714; | &#x2714; |
 | x86   | &#x2714; |          |          |          |
