@@ -3,11 +3,12 @@ Developer Guide
 
 The repo can be built for the following platforms, using the provided setup and the following instructions.
 
-| Chip  | Windows | Linux | OS X | FreeBSD |
-| :---- | :-----: | :---: | :--: | :--: |
-| x64   | &#x25CF;| &#x25D2;| &#x25D2;| &#x25D2;|
-| x86   | &#x25EF;| &#x25EF;| &#x25EF;| &#x25EF;|
-| ARM32 | &#x25EF;| &#x25EF;| &#x25EF;| &#x25EF;|
+| Chip  | Windows  | Linux    | OS X     | FreeBSD  |
+| :---- | :------: | :------: | :------: | :------: |
+| x64   | &#x2714; | &#x2714; | &#x2714; | &#x2714; |
+| x86   | &#x2714; |          |          |          |
+| ARM   | &#x2714; | &#x2714; |          |          |
+| ARM64 |          | &#x2714; |          |          |
 |       | [Instructions](../building/windows-instructions.md) | [Instructions](../building/unix-instructions.md) | [Instructions](../building/unix-instructions.md) | [Instructions](../building/unix-instructions.md) |
 
 
@@ -20,6 +21,7 @@ For information about the different options that are available use the argument 
 ```
 build -h
 ```
+On Unix, arguments can be passed in with a single `-` or double hyphen `--`.
 
 ### Build
 The CoreFX build has two logical components, the native build which produces the "shims" (which provide a stable interface between the OS and managed code) and
@@ -40,19 +42,13 @@ For more details on the build configurations see [project-guidelines](../coding-
 
 **Note:** You can chain multiple actions together but the order of execution is fixed and does not relate to the position of the argument in the command.
 
-The most common workflow for developers is to call `build` from the root once (preceded by a `clean -all` if you have built previously) and then go and work on the individual library that you are trying to make changes for. On windows folks will usually open up the solution file in the root of that library directory and work in VS.
+The most common workflow for developers is to call `build` from the root once and then go and work on the individual library that you are trying to make changes for.
 
-By default build only builds the product libraries and none of the tests. If you want to build the tests you can call `build -buildtests`. If you want to run the tests you can call `build -test`, `build -integrationTest` or `build -performanceTest`. To build and run the tests combine both arguments: `build -buildtests -test`. To build both the product libraries and the test libraries pass `build -build -buildtests` to the command line. If you want to further configure which test libraries to build you can pass `/p:TestProjectFilter=Tests|IntegrationTests|PerformanceTests` to the command. 
+By default build only builds the product libraries and none of the tests. If you want to build the tests you can call `build -buildtests`. If you want to run the tests you can call `build -test` or `build -performanceTest`. To build and run the tests combine both arguments: `build -buildtests -test`. To build both the product libraries and the test libraries pass `build -build -buildtests` to the command line. If you want to further configure which test libraries to build you can pass `/p:TestProjectFilter=Tests|PerformanceTests` to the command. 
 
 If you invoke the build script without any argument the default arguments will be executed `-restore -build`. Note that -restore and -build are only implicit if no actions are passed in.
 
 **Examples**
-- Clean and build the product libraries
-```
-clean -all
-build
-```
-
 - Building in release mode for platform x64 (restore and build are implicit here as no actions are passed in)
 ```
 build -c Release -arch x64
@@ -75,6 +71,10 @@ build -framework uap
 build /p:BuildNative=false
 ```
 
+- Clean the entire solution
+```
+build -clean
+```
 ### Build Native
 The native build produces shims over libc, openssl, gssapi, libcurl and libz.
 The build system uses CMake (2.8.12 or higher) to generate Makefiles using clang (3.5 or higher).
