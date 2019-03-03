@@ -10,10 +10,10 @@ Param(
   [switch] $outerloop,
   [string] $arch,
   [switch] $clean,
-  [switch][Alias('h')]$help,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
-function Print-Usage() {
+
+function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -framework              Build framework: netcoreapp, netfx, uap or uapaot (short: -f)"
   Write-Host "  -configuration <value>  Build configuration: Debug or Release (short: -c)"
@@ -48,8 +48,8 @@ function Print-Usage() {
   Write-Host "The above arguments can be shortened as much as to be unambiguous (e.g. -con for configuration, -t for test, etc.)."
 }
 
-if ($help -or (($null -ne $properties) -and ($properties.Contains("/help") -or $properties.Contains("/?")))) {
-  Print-Usage
+# Exit if script has been dot-sourced
+if ($MyInvocation.InvocationName -eq ".") {
   exit 0
 }
 
