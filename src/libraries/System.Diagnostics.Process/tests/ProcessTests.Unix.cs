@@ -512,7 +512,7 @@ namespace System.Diagnostics.Tests
 
             if (bool.Parse(checkGroupsExact))
             {
-                Assert.Equal(expectedGroups, GetGroups());
+                AssertExtensions.Equal(expectedGroups, GetGroups());
             }
             else
             {
