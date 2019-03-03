@@ -1078,8 +1078,8 @@ HANDLES(SEMA_3, "ReleaseSemaphore_internal", ves_icall_System_Threading_Semaphor
 ICALL_TYPE(THREAD, "System.Threading.Thread", THREAD_1)
 #ifdef ENABLE_NETCORE
 HANDLES(THREAD_1, "ClrState", ves_icall_System_Threading_Thread_ClrState, void, 2, (MonoInternalThread, guint32))
-HANDLES(THREAD_2, "GetCurrentThread", ves_icall_System_Threading_Thread_GetCurrentThread, MonoThreadObject, 0, ())
-HANDLES(THREAD_3, "GetState", ves_icall_System_Threading_Thread_GetState, guint32, 1, (MonoInternalThread))
+HANDLES(THREAD_2, "GetState", ves_icall_System_Threading_Thread_GetState, guint32, 1, (MonoInternalThread))
+HANDLES(THREAD_3, "InitializeCurrentThread", ves_icall_System_Threading_Thread_GetCurrentThread, MonoThreadObject, 0, ())
 HANDLES(THREAD_4, "InitInternal", ves_icall_System_Threading_Thread_InitInternal, void, 1, (MonoThreadObject))
 HANDLES(THREAD_5, "InterruptInternal", ves_icall_System_Threading_Thread_Interrupt_internal, void, 1, (MonoThreadObject))
 HANDLES(THREAD_6, "JoinInternal", ves_icall_System_Threading_Thread_Join_internal, MonoBoolean, 2, (MonoThreadObject, int))
