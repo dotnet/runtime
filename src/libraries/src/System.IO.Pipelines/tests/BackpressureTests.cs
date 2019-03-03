@@ -30,39 +30,6 @@ namespace System.IO.Pipelines.Tests
         private readonly Pipe _pipe;
 
         [Fact]
-        public void AdvanceThrowsIfFlushActiveAndNotConsumedPastThreshold()
-        {
-            PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(PauseWriterThreshold);
-            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
-            Assert.False(flushAsync.IsCompleted);
-
-            ReadResult result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
-            SequencePosition consumed = result.Buffer.GetPosition(31);
-
-            var exception = Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(consumed, result.Buffer.End));
-            Assert.Contains("32", exception.Message);
-
-            _pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
-        }
-
-        [Fact]
-        public async Task AdvanceThrowsIfFlushActiveAndNotConsumedPastThresholdWhenFlushIsCanceled()
-        {
-            // Write over the threshold and cancel pending flush
-            _pipe.Writer.WriteEmpty(PauseWriterThreshold);
-            var task = _pipe.Writer.FlushAsync().AsTask();
-            _pipe.Writer.CancelPendingFlush();
-
-            await task;
-
-            // Examine to the end without releasing backpressure
-            var result = await _pipe.Reader.ReadAsync();
-
-            var exception = Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.End));
-            Assert.Contains("32", exception.Message);
-        }
-
-        [Fact]
         public void FlushAsyncAwaitableCompletesWhenReaderAdvancesUnderLow()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(PauseWriterThreshold);
@@ -77,6 +44,64 @@ namespace System.IO.Pipelines.Tests
             Assert.True(flushAsync.IsCompleted);
             FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
             Assert.False(flushResult.IsCompleted);
+        }
+
+        [Fact]
+        public void FlushAsyncAwaitableCompletesWhenReaderAdvancesExaminedUnderLow()
+        {
+            PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(PauseWriterThreshold);
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
+
+            Assert.False(flushAsync.IsCompleted);
+
+            ReadResult result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
+            SequencePosition examined = result.Buffer.GetPosition(33);
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, examined);
+
+            Assert.True(flushAsync.IsCompleted);
+            FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
+            Assert.False(flushResult.IsCompleted);
+        }
+
+        [Fact]
+        public async Task CanBufferPastPauseThresholdButGetPausedEachTime()
+        {
+            const int loops = 5;
+
+            async Task WriteLoopAsync()
+            {
+                for (int i = 0; i < loops; i++)
+                {
+                    _pipe.Writer.WriteEmpty(PauseWriterThreshold);
+
+                    ValueTask<FlushResult> flushTask = _pipe.Writer.FlushAsync();
+
+                    Assert.False(flushTask.IsCompleted);
+
+                    await flushTask;
+                }
+
+                _pipe.Writer.Complete();
+            }
+
+            Task writingTask = WriteLoopAsync();
+
+            while (true)
+            {
+                ReadResult result = await _pipe.Reader.ReadAsync();
+
+                if (result.IsCompleted)
+                {
+                    _pipe.Reader.AdvanceTo(result.Buffer.End);
+
+                    Assert.Equal(PauseWriterThreshold * loops, result.Buffer.Length);
+                    break;
+                }
+
+                _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.End);
+            }
+
+            await writingTask;
         }
 
         [Fact]
