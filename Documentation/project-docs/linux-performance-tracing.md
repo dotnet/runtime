@@ -92,7 +92,7 @@ need to fetch EXACTLY the right version of crossgen for the runtime you happen t
 using.  If you place the crossgen tool in the same directory as the .NET Runtime DLLs (e.g. libcoreclr.so), then perfcollect can
 find it and add the framework symbols to the trace file for you.
 
-Normally when you create a .NET application it just generates the DLL for the code you wrote, using a shared copy of the runtime
+Normally when you create a .NET application, it just generates the DLL for the code you wrote, using a shared copy of the runtime
 for the rest.   However you can also generate what is called a 'self-contained' version of an application and this contains all 
 runtime DLLs.  It turns out that the crossgen tool is part of the Nuget package that is used to create these self-contained apps, so
 one way of getting the right crossgen tool is to create a self contained package of any application.   
@@ -104,8 +104,8 @@ So you could do the following
    > dotnet new console
    > dotnet publish --self-contained -r linux-x64
    >```
-Which creates a new helloWorld application and builds it as a self-contained app.    The only subtlty here is that if you have
-multiple versions of the .NET Runtime installed the instructcions above will use the latest.  As long as your app also uses
+Which creates a new helloWorld application and builds it as a self-contained app.    The only subtlety here is that if you have
+multiple versions of the .NET Runtime installed, the instructions above will use the latest.  As long as your app also uses
 the latest (likely) then these instructions will work without modification.   
 
 As a side effect of creating the self-contained application the dotnet tool will download a nuget package 
@@ -127,11 +127,11 @@ issue should go away.   This only has to be one once per machine (until you upda
 
 ### Alternative: Turn off use of precompiled code
 
-If you don't have the abiltiy to update the .NET Rutnime (to add crossgen), or if the above procedure did not work
-for some reasion, there is another approach to getting framework symbols.   You can tell the runtime to simply 
-not use the precompiled framework code.   The all code will be Just in time compiled and the special crossgen tool
+If you don't have the abiltiy to update the .NET Runtime (to add crossgen), or if the above procedure did not work
+for some reason, there is another approach to getting framework symbols.   You can tell the runtime to simply 
+not use the precompiled framework code.   The code will be Just in time compiled and the special crossgen tool
 is not needed.   This works, but will increase startup time for your code by something like a second or two.  If you 
-can tolerate that (you probably can), then this is an alternative.   You were already setting envinronment variables
+can tolerate that (you probably can), then this is an alternative.   You were already setting environment variables
 in order to get symbols, you simply need to add one more.
 	> ```bash 
 	> export COMPlus_ZapDisable=1
