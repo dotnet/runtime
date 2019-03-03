@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" InitialTargets="_CheckForFiles;IncludeFiles;SetValidateFramework" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project InitialTargets="_CheckForFiles;IncludeFiles;SetValidateFramework">
 
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == '' AND '$(IncludeLibFiles)' != 'true'">true</IsLineupPackage>

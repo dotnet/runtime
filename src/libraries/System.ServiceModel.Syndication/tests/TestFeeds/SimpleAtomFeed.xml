@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<feed xml:base="http://mypage.com/" xmlns="http://www.w3.org/2005/Atom">
+﻿<feed xml:base="http://mypage.com/" xmlns="http://www.w3.org/2005/Atom">
   <title type="text">Contoso News</title>
   <subtitle type="text">&lt;div&gt;Most recent news from Contoso&lt;/div&gt;</subtitle>
   <id>123FeedID</id>

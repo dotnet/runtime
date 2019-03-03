@@ -1,4 +1,4 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
 <!-- The versions can be updated by running UpdateToLatestStablePackages target in harvestPackages.depproj -->
 <ItemGroup>
 <PackageReference Include="Microsoft.CSharp">

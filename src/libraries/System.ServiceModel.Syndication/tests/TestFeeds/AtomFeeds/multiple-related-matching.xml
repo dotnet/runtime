@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  a feed with two atom:link elements with a rel attribute value of related and with the same type and hreflang attribute value
 Expect:       !DuplicateAtomLink{parent:feed}

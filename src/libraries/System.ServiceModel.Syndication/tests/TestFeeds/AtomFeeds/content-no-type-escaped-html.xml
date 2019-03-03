@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  content with no type attribute and a value containing escaped html produces a warning
 Expect:       ContainsUndeclaredHTML{parent:entry,element:content}

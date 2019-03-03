@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <result xmlns:myObj="urn:my-object">
 	<A>27</A>
 	<B>23</B>

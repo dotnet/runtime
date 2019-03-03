@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  trackback:ping is only defined for feed entries
 Expect:       UndefinedElement{parent:feed,element:trackback:ping}

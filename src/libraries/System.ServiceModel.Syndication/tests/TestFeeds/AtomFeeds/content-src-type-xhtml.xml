@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  content with a src attribute and a type attribute of xhtml produces an error
 Expect:       InvalidValue{element:content,attr:type,parent:entry}

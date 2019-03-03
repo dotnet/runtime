@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  a source with two one atom:link elements with a rel attribute value of "alternate", but with different type and hreflang attribute values produces no error
 Expect:       !Error

@@ -164,8 +164,7 @@
   <Target Name="GetSourcesToPackage" Returns="@(_sourceToPackage)" DependsOnTargets="Compile">
       <PropertyGroup>
         <_sourcePackageName>Microsoft.Bcl.Json.Sources</_sourcePackageName>
-        <_sourcePackageTargetLines><![CDATA[<?xml version="1.0" encoding="utf-8"?>
-<Project>
+        <_sourcePackageTargetLines><![CDATA[<Project>
   <ItemGroup Condition="'%24(ExcludeEmbeddedResourceFromPackage)' != 'true'">@(EmbeddedResource->'
     <EmbeddedResource Include="%24(MSBuildThisFileDirectory)%(FileName)%(Extension)" Link="$(_sourcePackageName)/%(FileName)%(Extension)" ManifestResourceName="%(ManifestResourceName)" />', '')
   </ItemGroup>
