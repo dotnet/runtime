@@ -1831,6 +1831,8 @@ interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, M
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
 		field = (MonoClassField *) mono_method_get_wrapper_data (method, token);
 		*klass = field->parent;
+
+		mono_class_setup_fields (field->parent);
 	} else {
 		field = mono_field_from_token_checked (m_class_get_image (method->klass), token, klass, generic_context, error);
 		return_val_if_nok (error, NULL);
