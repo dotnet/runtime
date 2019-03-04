@@ -87,8 +87,8 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
     //  STACK_GROWS_DOWN_ON_ARGS_WALK
 
     //   <return address>  ;; lower memory                  
-    //   <varargs_cookie>         \
-    //   <argN>                    \
+    //   <varargs_cookie>         '\'
+    //   <argN>                    '\'
     //                              += sizeOfArgs     
     //                             /
     //   <arg1>                   /

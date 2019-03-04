@@ -872,8 +872,6 @@ typedef enum
 }
 PPFormatFlags;
 
-char* asString(CQuickBytes *out);
-
 PCCOR_SIGNATURE PrettyPrintType(
     PCCOR_SIGNATURE typePtr,            // type to convert,     
     CQuickBytes *out,                   // where to put the pretty printed string   
