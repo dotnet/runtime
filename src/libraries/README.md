@@ -87,8 +87,3 @@ Daily builds of .NET Core components are published to [dotnet-core MyGet gallery
 The latest version number of each library can be seen in that gallery.
 
 Note: See officially supported [OS versions](https://github.com/dotnet/core/blob/master/os-lifecycle-policy.md).
-
-### Code Coverage Status
-Click to see most recent result.
-
-[![code coverage](https://ci.dot.net/job/dotnet_corefx/job/master/job/code_coverage_windows/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/code_coverage_windows/Code_Coverage_Report)
