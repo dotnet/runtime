@@ -532,6 +532,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             if (_isSi)
             {
+                if (_objectManager == null)
+                {
+                    throw new SerializationException(SR.Serialization_CorruptedStream);
+                }
+
                 _objectManager.RecordDelayedFixup(objectId, name, idRef);
             }
             else
@@ -539,6 +544,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 int position = Position(name);
                 if (position != -1)
                 {
+                    if (_objectManager == null)
+                    {
+                        throw new SerializationException(SR.Serialization_CorruptedStream);
+                    }
+
                     _objectManager.RecordFixup(objectId, _cache._memberInfos[position], idRef);
                 }
             }
