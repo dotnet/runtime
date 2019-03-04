@@ -356,7 +356,7 @@ class EEClassLayoutInfo
 #endif // FEATURE_COMINTEROP
        BOOL fExplicitOffsets,       // explicit offsets?
        MethodTable *pParentMT,       // the loaded superclass
-       ULONG cMembers,              // total number of members (methods + fields)
+       ULONG cTotalFields,              // total number of fields (instance and static)
        HENUMInternal *phEnumField,  // enumerator for field
        Module* pModule,             // Module that defines the scope, loader and heap (for allocate FieldMarshalers)
        const SigTypeContext *pTypeContext,          // Type parameters for NStruct being loaded
