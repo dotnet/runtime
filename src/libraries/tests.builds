@@ -16,13 +16,6 @@
     <TraversalBuildDependsOn Condition="'$(BuildingUAPVertical)' == 'true'">MakeCommonResourcesPriFile;$(TraversalBuildDependsOn)</TraversalBuildDependsOn>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RunningSharedFrameworkValidation)' == 'true'">
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Data.Odbc.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.IO.Pipes.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.XmlSerializer.Generator.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Reflection.Context.Tests.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TestProjectFilter Condition="'$(Test)' == 'true'">Tests</TestProjectFilter>
     <TestProjectFilter Condition="'$(IntegrationTest)' == 'true'">IntegrationTests</TestProjectFilter>

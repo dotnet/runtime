@@ -117,10 +117,9 @@
   <!-- set up inputs for UpdateVSConfigurations in a target to avoid globbing all the time -->
   <Target Name="_setProjectsToUpdate" BeforeTargets="UpdateVSConfigurations">
     <ItemGroup>
-      <_projectsToExcludeFromUpdate Include="$(MSBuildThisFileDirectory)src/SharedFrameworkValidation/**/*.csproj" />
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" Exclude="@(_projectsToExcludeFromUpdate)" />
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*ilproj" Exclude="@(_projectsToExcludeFromUpdate)" />
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*vbproj" Exclude="@(_projectsToExcludeFromUpdate)" />
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" />
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*ilproj" />
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*vbproj" />
       <_solutionsToUpdateFiles Include="$(MSBuildThisFileDirectory)src/*/Directory.Build.props" />
       <SolutionsToUpdate Include="@(_solutionsToUpdateFiles->'%(RootDir)%(Directory)')" Exclude="@(_solutionsToExcludeFromUpdate)" />
     </ItemGroup>
