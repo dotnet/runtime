@@ -1871,6 +1871,9 @@ MonoVTable *
 mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass);
 
 gboolean
+mono_runtime_run_module_cctor (MonoImage *image, MonoDomain *domain, MonoError *error);
+
+gboolean
 mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error);
 
 void

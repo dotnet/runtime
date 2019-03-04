@@ -1266,6 +1266,20 @@ mono_jit_exec_internal (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
 	MONO_REQ_GC_UNSAFE_MODE;
 	ERROR_DECL (error);
 	MonoImage *image = mono_assembly_get_image_internal (assembly);
+
+    // We need to ensure that any module cctor for this image
+    // is run *before* we invoke the entry point
+    // For more information, see https://blogs.msdn.microsoft.com/junfeng/2005/11/19/module-initializer-a-k-a-module-constructor/
+    //
+    // This is required in order for tools like Costura
+    // (https://github.com/Fody/Costura) to work properly, as they inject
+    // a module initializer which sets up event handlers (e.g. AssemblyResolve)
+    // that allow the main method to run properly
+    if (!mono_runtime_run_module_cctor(image, domain, error)) {
+        g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
+        return 1;
+    }
+
 	MonoMethod *method;
 	guint32 entry = mono_image_get_entry_point (image);
 

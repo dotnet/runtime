@@ -385,6 +385,38 @@ unref_type_lock (TypeInitializationLock *lock)
 }
 
 /**
+ * mono_runtime_run_module_cctor:
+ * \param image the image whose module ctor to run
+ * \param domain the domain to load the module class vtable in
+ * \param error set on error
+ * This routine runs the module ctor for \p image, if it hasn't already run
+ */
+gboolean
+mono_runtime_run_module_cctor (MonoImage *image, MonoDomain *domain, MonoError *error) {
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	if (!image->checked_module_cctor) {
+		mono_image_check_for_module_cctor (image);
+		if (image->has_module_cctor) {
+			MonoClass *module_klass;
+			MonoVTable *module_vtable;
+
+			module_klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | 1, error);
+			if (!module_klass) {
+				return FALSE;
+			}
+
+			module_vtable = mono_class_vtable_checked (domain, module_klass, error);
+			if (!module_vtable)
+				return FALSE;
+			if (!mono_runtime_class_init_full (module_vtable, error))
+				return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+/**
  * mono_runtime_class_init_full:
  * \param vtable that neeeds to be initialized
  * \param error set on error
@@ -413,23 +445,8 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	klass = vtable->klass;
 
 	MonoImage *klass_image = m_class_get_image (klass);
-	if (!klass_image->checked_module_cctor) {
-		mono_image_check_for_module_cctor (klass_image);
-		if (klass_image->has_module_cctor) {
-			MonoClass *module_klass;
-			MonoVTable *module_vtable;
-
-			module_klass = mono_class_get_checked (klass_image, MONO_TOKEN_TYPE_DEF | 1, error);
-			if (!module_klass) {
-				return FALSE;
-			}
-				
-			module_vtable = mono_class_vtable_checked (vtable->domain, module_klass, error);
-			if (!module_vtable)
-				return FALSE;
-			if (!mono_runtime_class_init_full (module_vtable, error))
-				return FALSE;
-		}
+	if (!mono_runtime_run_module_cctor(klass_image, vtable->domain, error)) {
+		return FALSE;
 	}
 	method = mono_class_get_cctor (klass);
 	if (!method) {
