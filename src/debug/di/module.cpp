@@ -4988,7 +4988,7 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
         IfFailRet(CordbType::SigToType(GetModule(), &original, &inst, &pType));
 
         
-        IfFailRet(hr = pType->ReturnedByValue());
+        IfFailRet(pType->ReturnedByValue());
         if (hr == S_OK) // not S_FALSE
             return S_OK;
 
@@ -5001,7 +5001,7 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
         CordbType *pType = 0;
         IfFailRet(CordbType::SigToType(GetModule(), &original, &inst, &pType));
 
-        IfFailRet(hr = pType->ReturnedByValue());
+        IfFailRet(pType->ReturnedByValue());
         if (hr == S_OK) // not S_FALSE
             return S_OK;
 
