@@ -14,11 +14,11 @@ namespace System.Threading
     {
         #region interface to native per-AppDomain timer
 
+#if !FEATURE_PAL
         private static int TickCount
         {
             get
             {
-#if !FEATURE_PAL
                 // We need to keep our notion of time synchronized with the calls to SleepEx that drive
                 // the underlying native timer.  In Win8, SleepEx does not count the time the machine spends
                 // sleeping/hibernating.  Environment.TickCount (GetTickCount) *does* count that time,
@@ -38,12 +38,12 @@ namespace System.Threading
                     return (int)(uint)(time100ns / 10000);
                 }
                 else
-#endif
                 {
                     return Environment.TickCount;
                 }
             }
         }
+#endif
 
         // We use a SafeHandle to ensure that the native timer is destroyed when the AppDomain is unloaded.
         private sealed class AppDomainTimerSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
