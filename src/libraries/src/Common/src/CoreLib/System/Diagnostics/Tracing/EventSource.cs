@@ -1363,7 +1363,10 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_PERFTRACING
                 // Register the provider with EventPipe
                 var eventPipeProvider = new OverideEventProvider(this, EventProviderType.EventPipe);
-                eventPipeProvider.Register(this);
+                lock (EventListener.EventListenersLock)
+                {
+                    eventPipeProvider.Register(this);
+                }
 #endif
                 // Add the eventSource to the global (weak) list.  
                 // This also sets m_id, which is the index in the list. 
