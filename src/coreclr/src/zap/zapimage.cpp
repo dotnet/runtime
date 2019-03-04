@@ -1025,8 +1025,8 @@ HANDLE ZapImage::GenerateFile(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATU
     {    
         // Write the debug directory entry for the NGEN PDB
         RSDS rsds = {0};
-        
-        rsds.magic = 'SDSR';
+
+        rsds.magic = VAL32(0x53445352); // "SDSR";
         rsds.age = 1;
         // our PDB signature will be the same as our NGEN signature.  
         // However we want the printed version of the GUID to be be the same as the

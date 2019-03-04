@@ -65,6 +65,7 @@ static OpCode opcodes[] =
 
 static ULONG position = 0;
 static BYTE *pBuffer = NULL;
+static char* asString(CQuickBytes *out);
 
 // The UNALIGNED is because on IA64 alignment rules would prevent
 // us from reading a pointer from an unaligned source.
