@@ -73,20 +73,15 @@ if [ -z "$libInstallDir" ]; then
 fi
 
 # This script must be located in coreclr/tests.
-scriptDir=$(cd "$(dirname "$0")"; pwd -P)
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 echo "Running init-tools.sh"
-$scriptDir/../init-tools.sh
+"${scriptDir}"/../init-tools.sh
 
-dotnetToolsDir=$scriptDir/../Tools
-dotnetCmd=$scriptDir/dotnet.sh
-packageDir=${scriptDir}/../packages
-csprojPath=${scriptDir}/src/Common/stress_dependencies/stress_dependencies.csproj
+dotnet=$"${scriptDir}"/../.dotnet/dotnet
+packageDir="${scriptDir}"/../packages
+csprojPath="${scriptDir}"/src/Common/stress_dependencies/stress_dependencies.csproj
 
-# Check tool directory
-if [ ! -e $dotnetToolsDir ]; then
-    exit_with_error 1 'Directory containing dotnet commandline does not exist:'$dotnetToolsDir 
-fi
 if [ ! -e $dotnetCmd ]; then
     exit_with_error 1 'dotnet commandline does not exist:'$dotnetCmd
 fi
@@ -101,15 +96,73 @@ if [ ! -e $libInstallDir ]; then
     mkdir -p $libInstallDir
 fi
 
+# Use uname to determine what the OS is.
+OSName=$(uname -s)
+case $OSName in
+    Linux)
+        __BuildOS=Linux
+        __HostOS=Linux
+        ;;
+
+    Darwin)
+        __BuildOS=OSX
+        __HostOS=OSX
+        ;;
+
+    FreeBSD)
+        __BuildOS=FreeBSD
+        __HostOS=FreeBSD
+        ;;
+
+    OpenBSD)
+        __BuildOS=OpenBSD
+        __HostOS=OpenBSD
+        ;;
+
+    NetBSD)
+        __BuildOS=NetBSD
+        __HostOS=NetBSD
+        ;;
+
+    SunOS)
+        __BuildOS=SunOS
+        __HostOS=SunOS
+        ;;
+
+    *)
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
+        __BuildOS=Linux
+        __HostOS=Linux
+        ;;
+esac
+
+isPortable=0
+
+source "${scriptDir}"/../init-distro-rid.sh
+initDistroRidGlobal ${__BuildOS} x64 ${isPortable}
+
+# Hack, replace the rid to ubuntu.14.04 which has a valid non-portable
+# package.
+#
+# The CoreDisTools package is currently manually packaged and we only have
+# 14.04 and 16.04 packages. Use the oldest package which will work on newer
+# platforms.
+if [[ ${__DistroRid} == "ubuntu"* ]]; then
+   __DistroRid=ubuntu.14.04
+fi
+
 # Query runtime Id
-rid=`$dotnetCmd --info | grep 'RID:' | sed 's/^ *RID: *//g'`  
+rid=${__DistroRid}
+
+echo "Rid to be used: ${rid}"
+
 if [ -z "$rid" ]; then
     exit_with_error 1 "Failed to query runtime Id"
 fi    
 
 # Download the package
 echo Downloading CoreDisTools package
-bash -c -x "$dotnetCmd restore $csprojPath --source https://dotnet.myget.org/F/dotnet-core/ --packages $packageDir"
+bash -c -x "$dotnet restore $csprojPath --source https://dotnet.myget.org/F/dotnet-core/ --packages $packageDir"
 if [ $? -ne 0 ]
 then
     exit_with_error 1 "Failed to restore the package"
@@ -117,7 +170,7 @@ fi
 
 # Get library path
 libPath=`find $packageDir | grep $rid | grep -m 1 libcoredistools`
-if [ ! -e $libPath ] || [ -z "$libpath" ]; then
+if [ ! -e $libPath ] || [ -z "$libPath" ]; then
     exit_with_error 1 'Failed to locate the downloaded library'
 fi
 
