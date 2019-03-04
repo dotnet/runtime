@@ -1,3 +1,4 @@
+
 <Dependencies>
   <ProductDependencies>
     <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview4-27502-72">
@@ -26,9 +27,9 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>0f10c29471af71b020b0c1513f28356660df1eab</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview4.19153.2">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview4.19153.8">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>ce278ee840561e90b2c6bb9daaee5ff4b9cce293</Sha>
+      <Sha>7622efd2dbd363a632e00b6b95be4d990ea125de</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19128.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
