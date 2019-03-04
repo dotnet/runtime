@@ -22,15 +22,4 @@ endif()
 
 install(TARGETS ${DOTNET_PROJECT_NAME} DESTINATION bin)
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
-    target_link_libraries (${DOTNET_PROJECT_NAME} "pthread")
-endif()
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    target_link_libraries (${DOTNET_PROJECT_NAME} "dl")
-endif()
-
-# Specify the import library to link against for Arm32 build since the default set is minimal
-if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
-    target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib)
-endif()
+set_common_libs("exe")
