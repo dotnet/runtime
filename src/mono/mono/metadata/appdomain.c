@@ -776,6 +776,9 @@ leave:
 gboolean
 mono_domain_has_type_resolve (MonoDomain *domain)
 {
+#ifdef ENABLE_NETCORE
+	return FALSE;
+#else
 	static MonoClassField *field = NULL;
 	MonoObject *o;
 
@@ -790,6 +793,7 @@ mono_domain_has_type_resolve (MonoDomain *domain)
 
 	mono_field_get_value_internal ((MonoObject*)(domain->domain), field, &o);
 	return o != NULL;
+#endif
 }
 
 /**
