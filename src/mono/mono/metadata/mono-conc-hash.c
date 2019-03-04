@@ -165,6 +165,8 @@ rehash_table (MonoConcGHashTable *hash_table, int multiplier)
 	mono_memory_barrier ();
 	hash_table->table = new_table;
 	hash_table->overflow_count = (int)(new_table->table_size * LOAD_FACTOR);
+	hash_table->element_count -= hash_table->tombstone_count;
+	hash_table->tombstone_count = 0;
 	conc_table_lf_free (old_table);	
 }
 
