@@ -1084,10 +1084,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_CATCH_THROWABLE(ppThrowable)                                         \
     EX_CATCH                                                                    \
     {                                                                           \
-        if (NULL != ppThrowable)                                                \
-        {                                                                       \
-            *ppThrowable = GET_THROWABLE();                                     \
-        }                                                                       \
+        *ppThrowable = GET_THROWABLE();                                         \
     }                                                                           \
     EX_END_CATCH(SwallowAllExceptions)
 

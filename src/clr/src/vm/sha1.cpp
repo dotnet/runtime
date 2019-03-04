@@ -90,7 +90,7 @@ static void SHA1_block(SHA1_CTX *ctx)
                         //  (check cases B = 0 and B = 1)
 #define ROUND2(B, C, D) ((B ^ C ^ D) + sha1_round2)
 
-#define ROUND3(B, C, D) ((C & (B | D) | (B & D)) + sha1_round3)
+#define ROUND3(B, C, D) (((C & (B | D)) | (B & D)) + sha1_round3)
 
 #define ROUND4(B, C, D) ((B ^ C ^ D) + sha1_round4)
 
