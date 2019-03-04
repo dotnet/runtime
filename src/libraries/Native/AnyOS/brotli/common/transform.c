@@ -191,11 +191,11 @@ static int ToUpperCase(uint8_t* p) {
 }
 
 int BrotliTransformDictionaryWord(uint8_t* dst, const uint8_t* word, int len,
-    const BrotliTransforms* transforms, int transfom_idx) {
+    const BrotliTransforms* transforms, int transform_idx) {
   int idx = 0;
-  const uint8_t* prefix = BROTLI_TRANSFORM_PREFIX(transforms, transfom_idx);
-  uint8_t type = BROTLI_TRANSFORM_TYPE(transforms, transfom_idx);
-  const uint8_t* suffix = BROTLI_TRANSFORM_SUFFIX(transforms, transfom_idx);
+  const uint8_t* prefix = BROTLI_TRANSFORM_PREFIX(transforms, transform_idx);
+  uint8_t type = BROTLI_TRANSFORM_TYPE(transforms, transform_idx);
+  const uint8_t* suffix = BROTLI_TRANSFORM_SUFFIX(transforms, transform_idx);
   {
     int prefix_len = *prefix++;
     while (prefix_len--) { dst[idx++] = *prefix++; }
