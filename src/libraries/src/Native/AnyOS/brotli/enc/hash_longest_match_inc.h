@@ -154,8 +154,9 @@ static BROTLI_INLINE void FN(FindLongestMatch)(HasherHandle handle,
     const BrotliEncoderDictionary* dictionary,
     const uint8_t* BROTLI_RESTRICT data, const size_t ring_buffer_mask,
     const int* BROTLI_RESTRICT distance_cache, const size_t cur_ix,
-    const size_t max_length, const size_t max_backward, const size_t gap,
-    const size_t max_distance, HasherSearchResult* BROTLI_RESTRICT out) {
+    const size_t max_length, const size_t max_backward,
+    const size_t gap, const size_t max_distance,
+    HasherSearchResult* BROTLI_RESTRICT out) {
   HasherCommon* common = GetHasherCommon(handle);
   HashLongestMatch* self = FN(Self)(handle);
   uint16_t* num = FN(Num)(self);

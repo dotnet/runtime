@@ -202,8 +202,9 @@ static BROTLI_INLINE BackwardMatch* FN(StoreAndFindMatches)(
 static BROTLI_INLINE size_t FN(FindAllMatches)(HasherHandle handle,
     const BrotliEncoderDictionary* dictionary, const uint8_t* data,
     const size_t ring_buffer_mask, const size_t cur_ix,
-    const size_t max_length, const size_t max_backward, const size_t gap,
-    const BrotliEncoderParams* params, BackwardMatch* matches) {
+    const size_t max_length, const size_t max_backward,
+    const size_t gap, const BrotliEncoderParams* params,
+    BackwardMatch* matches) {
   BackwardMatch* const orig_matches = matches;
   const size_t cur_ix_masked = cur_ix & ring_buffer_mask;
   size_t best_len = 1;
