@@ -195,3 +195,12 @@ jobs:
             - jitstress1_tiered
             - jitstress2
             - jitstress2_tiered
+
+    # Publish Logs
+    - task: PublishPipelineArtifact@0
+      displayName: Publish Logs
+      inputs:
+        artifactName: ${{ format('testbuild_{0}_{1}_{2}_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        targetPath: $(Build.SourcesDirectory)/bin/Logs
+      continueOnError: true
+      condition: always()

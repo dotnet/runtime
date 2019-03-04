@@ -187,6 +187,14 @@ jobs:
           artifactName: ${{ format('build_{0}_{1}_{2}_nuget', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
           targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)/.nuget/pkg
 
+    # Publish Logs
+    - task: PublishPipelineArtifact@0
+      displayName: Publish Logs
+      inputs:
+        artifactName: ${{ format('build_{0}_{1}_{2}_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        targetPath: $(Build.SourcesDirectory)/bin/Logs
+      continueOnError: true
+      condition: always()
 
     # Kill tasks that hold onto files on Windows. Otherwise git clean
     # may fail for later jobs on the same agent.
