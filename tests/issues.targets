@@ -78,6 +78,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/tail/*">
             <Issue>13048</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/1514/interlockexchange/*">
+            <Issue>22975</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
@@ -247,6 +250,22 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- Windows specific excludes -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true'">
+         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i11/*">
+            <Issue>22974</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i10/*">
+            <Issue>22974</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i12/*">
+            <Issue>22974</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i13/*">
+            <Issue>22974</Issue>
+        </ExcludeList>
+    </ItemGroup>
+    
     <!-- Windows x64 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x64' and '$(TargetsWindows)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_18056/Bool_And_Op_cs_do/*">
