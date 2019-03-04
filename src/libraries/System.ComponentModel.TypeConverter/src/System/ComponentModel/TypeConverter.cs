@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.ComponentModel.Design.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -23,7 +24,8 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object in the given
         /// source type to the native type of the converter using the context.
         /// </summary>
-        public virtual bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) => false;
+        public virtual bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+            => sourceType == typeof(InstanceDescriptor);
 
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object to the given
@@ -50,6 +52,10 @@ namespace System.ComponentModel
         /// </summary>
         public virtual object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
+            if (value is InstanceDescriptor instanceDescriptor)
+            {
+                return instanceDescriptor.Invoke();
+            }
             throw GetConvertFromException(value);
         }
 
