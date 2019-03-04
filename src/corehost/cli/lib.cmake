@@ -13,7 +13,4 @@ add_library(${DOTNET_PROJECT_NAME} SHARED ${SOURCES} ${RESOURCES})
 
 set_target_properties(${DOTNET_PROJECT_NAME} PROPERTIES MACOSX_RPATH TRUE)
 
-# Specify the import library to link against for Arm32 build since the default set is minimal
-if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
-    target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib)
-endif()
+set_common_libs("lib")
