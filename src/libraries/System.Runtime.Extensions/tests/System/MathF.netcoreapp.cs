@@ -4,6 +4,7 @@
 
 using Xunit;
 using Xunit.Sdk;
+using System.Collections.Generic;
 
 namespace System.Tests
 {
@@ -1426,6 +1427,47 @@ namespace System.Tests
             AssertEqual(expectedResult, MathF.Pow(x, y), allowedVariance);
         }
 
+        public static IEnumerable<object[]> Round_Digits_TestData
+        {
+            get 
+            {
+                yield return new object[] {float.NaN, float.NaN, 3, MidpointRounding.ToEven};
+                yield return new object[] {float.PositiveInfinity, float.PositiveInfinity, 3, MidpointRounding.ToEven};
+                yield return new object[] {float.NegativeInfinity, float.NegativeInfinity, 3, MidpointRounding.ToEven};
+                yield return new object[] {0, 0, 3, MidpointRounding.ToEven};
+                yield return new object[] {3.42156f, 3.422f, 3, MidpointRounding.ToEven};
+                yield return new object[] {-3.42156f, -3.422f, 3, MidpointRounding.ToEven};
+
+                yield return new object[] {float.NaN, float.NaN, 3, MidpointRounding.AwayFromZero};
+                yield return new object[] {float.PositiveInfinity, float.PositiveInfinity, 3, MidpointRounding.AwayFromZero};
+                yield return new object[] {float.NegativeInfinity, float.NegativeInfinity, 3, MidpointRounding.AwayFromZero};
+                yield return new object[] {0, 0, 3, MidpointRounding.AwayFromZero};
+                yield return new object[] {3.42156f, 3.422f, 3, MidpointRounding.AwayFromZero};
+                yield return new object[] {-3.42156f, -3.422f, 3, MidpointRounding.AwayFromZero};
+
+                yield return new object[] {float.NaN, float.NaN, 3, MidpointRounding.ToZero};
+                yield return new object[] {float.PositiveInfinity, float.PositiveInfinity, 3, MidpointRounding.ToZero};
+                yield return new object[] {float.NegativeInfinity, float.NegativeInfinity, 3, MidpointRounding.ToZero};
+                yield return new object[] {0, 0, 3, MidpointRounding.ToZero};
+                yield return new object[] {3.42156f, 3.421f, 3, MidpointRounding.ToZero};
+                yield return new object[] {-3.42156f, -3.421f, 3, MidpointRounding.ToZero};
+
+                yield return new object[] {float.NaN, float.NaN, 3, MidpointRounding.ToNegativeInfinity};
+                yield return new object[] {float.PositiveInfinity, float.PositiveInfinity, 3, MidpointRounding.ToNegativeInfinity};
+                yield return new object[] {float.NegativeInfinity, float.NegativeInfinity, 3, MidpointRounding.ToNegativeInfinity};
+                yield return new object[] {0, 0, 3, MidpointRounding.ToNegativeInfinity};
+                yield return new object[] {3.42156f, 3.421f, 3, MidpointRounding.ToNegativeInfinity};
+                yield return new object[] {-3.42156f, -3.422f, 3, MidpointRounding.ToNegativeInfinity};
+
+                yield return new object[] {float.NaN, float.NaN, 3, MidpointRounding.ToPositiveInfinity};
+                yield return new object[] {float.PositiveInfinity, float.PositiveInfinity, 3, MidpointRounding.ToPositiveInfinity};
+                yield return new object[] {float.NegativeInfinity, float.NegativeInfinity, 3, MidpointRounding.ToPositiveInfinity};
+                yield return new object[] {0, 0, 3, MidpointRounding.ToPositiveInfinity};
+                yield return new object[] {3.42156f, 3.422f, 3, MidpointRounding.ToPositiveInfinity};
+                yield return new object[] {-3.42156f, -3.421f, 3, MidpointRounding.ToPositiveInfinity};
+              }
+        }
+
         [Fact]
         public static void Round()
         {
@@ -1439,15 +1481,22 @@ namespace System.Tests
             Assert.Equal(-2e7f, MathF.Round(-2e7f));
         }
 
-        [Fact]
-        public static void Round_Digits()
+        [Theory]
+        [InlineData(MidpointRounding.ToEven)]
+        [InlineData(MidpointRounding.AwayFromZero)]
+        [InlineData(MidpointRounding.ToNegativeInfinity)]
+        [InlineData(MidpointRounding.ToPositiveInfinity)]
+        public static void Round_Digits(MidpointRounding mode)
         {
-            AssertEqual(3.422f, MathF.Round(3.42156f, 3, MidpointRounding.AwayFromZero), CrossPlatformMachineEpsilon * 10);
-            AssertEqual(-3.422f, MathF.Round(-3.42156f, 3, MidpointRounding.AwayFromZero), CrossPlatformMachineEpsilon * 10);
-            Assert.Equal(0.0f, MathF.Round(0.0f, 3, MidpointRounding.AwayFromZero));
-            Assert.Equal(float.NaN, MathF.Round(float.NaN, 3, MidpointRounding.AwayFromZero));
-            Assert.Equal(float.PositiveInfinity, MathF.Round(float.PositiveInfinity, 3, MidpointRounding.AwayFromZero));
-            Assert.Equal(float.NegativeInfinity, MathF.Round(float.NegativeInfinity, 3, MidpointRounding.AwayFromZero));
+            Assert.Equal(float.PositiveInfinity, MathF.Round(float.PositiveInfinity, 3, mode));
+            Assert.Equal(float.NegativeInfinity, MathF.Round(float.NegativeInfinity, 3, mode));
+        }
+
+        [Theory]
+        [MemberData(nameof(Round_Digits_TestData))]
+        public static void Round_Digits(float x, float expected, int digits, MidpointRounding mode)
+        {
+           AssertEqual(expected, MathF.Round(x, digits, mode), CrossPlatformMachineEpsilon * 10);
         }
 
         [Theory]
