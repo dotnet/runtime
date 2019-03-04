@@ -149,9 +149,9 @@ static BROTLI_INLINE score_t BackwardReferencePenaltyUsingLastDistance(
 }
 
 static BROTLI_INLINE BROTLI_BOOL TestStaticDictionaryItem(
-    const BrotliEncoderDictionary* dictionary, size_t item, const uint8_t* data,
-    size_t max_length, size_t max_backward, size_t max_distance,
-    HasherSearchResult* out) {
+    const BrotliEncoderDictionary* dictionary, size_t item,
+    const uint8_t* data, size_t max_length, size_t max_backward,
+    size_t max_distance, HasherSearchResult* out) {
   size_t len;
   size_t word_idx;
   size_t offset;
@@ -208,7 +208,8 @@ static BROTLI_INLINE void SearchInStaticDictionary(
     self->dict_num_lookups++;
     if (item != 0) {
       BROTLI_BOOL item_matches = TestStaticDictionaryItem(
-          dictionary, item, data, max_length, max_backward, max_distance, out);
+          dictionary, item, data,
+          max_length, max_backward, max_distance, out);
       if (item_matches) {
         self->dict_num_matches++;
       }

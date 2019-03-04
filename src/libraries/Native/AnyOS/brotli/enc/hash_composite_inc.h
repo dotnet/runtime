@@ -121,13 +121,16 @@ static BROTLI_INLINE void FN(FindLongestMatch)(HasherHandle handle,
     const BrotliEncoderDictionary* dictionary,
     const uint8_t* BROTLI_RESTRICT data, const size_t ring_buffer_mask,
     const int* BROTLI_RESTRICT distance_cache, const size_t cur_ix,
-    const size_t max_length, const size_t max_backward, const size_t gap,
-    const size_t max_distance, HasherSearchResult* BROTLI_RESTRICT out) {
+    const size_t max_length, const size_t max_backward,
+    const size_t gap, const size_t max_distance,
+    HasherSearchResult* BROTLI_RESTRICT out) {
   HashComposite* self = FN(Self)(handle);
   FN_A(FindLongestMatch)(self->ha, dictionary, data, ring_buffer_mask,
-      distance_cache, cur_ix, max_length, max_backward, gap, max_distance, out);
+      distance_cache, cur_ix, max_length, max_backward, gap,
+      max_distance, out);
   FN_B(FindLongestMatch)(self->hb, dictionary, data, ring_buffer_mask,
-      distance_cache, cur_ix, max_length, max_backward, gap, max_distance, out);
+      distance_cache, cur_ix, max_length, max_backward, gap,
+      max_distance, out);
 }
 
 #undef HashComposite
