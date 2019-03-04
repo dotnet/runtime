@@ -38,3 +38,25 @@ if(WIN32 AND NOT SKIP_VERSIONING)
     list(APPEND RESOURCES ${CMAKE_CURRENT_LIST_DIR}/native.rc)
 endif()
 
+function(set_common_libs TargetType)
+
+    # Libraries used for exe projects
+    if (${TargetType} STREQUAL "exe")
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
+            target_link_libraries (${DOTNET_PROJECT_NAME} "pthread")
+        endif()
+
+        if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+            target_link_libraries (${DOTNET_PROJECT_NAME} "dl")
+        endif()
+    endif()
+
+    # Specify the import library to link against for Arm32 build since the default set is minimal
+    if (CLI_CMAKE_PLATFORM_ARCH_ARM)
+        if (WIN32)
+            target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib)
+        else()
+            target_link_libraries(${DOTNET_PROJECT_NAME} atomic.a)
+        endif()
+    endif()
+endfunction()
