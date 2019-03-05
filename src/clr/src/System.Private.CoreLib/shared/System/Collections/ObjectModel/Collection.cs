@@ -69,6 +69,8 @@ namespace System.Collections.ObjectModel
             InsertItem(index, item);
         }
 
+        public void AddRange(IEnumerable<T> collection) => InsertItemsRange(items.Count > 0 ? items.Count : 0, collection);
+
         public void Clear()
         {
             if (items.IsReadOnly)
@@ -114,6 +116,8 @@ namespace System.Collections.ObjectModel
             InsertItem(index, item);
         }
 
+        public void InsertRange(int index, IEnumerable<T> collection) => InsertItemsRange(index, collection);
+
         public bool Remove(T item)
         {
             if (items.IsReadOnly)
@@ -125,6 +129,14 @@ namespace System.Collections.ObjectModel
             if (index < 0) return false;
             RemoveItem(index);
             return true;
+        }
+
+        public void RemoveRange(int index, int count) => RemoveItemsRange(index, count);
+
+        public void ReplaceRange(int index, int count, IEnumerable<T> collection)
+        {
+            RemoveItemsRange(index, count);
+            InsertItemsRange(index, collection);
         }
 
         public void RemoveAt(int index)
@@ -160,6 +172,47 @@ namespace System.Collections.ObjectModel
         protected virtual void SetItem(int index, T item)
         {
             items[index] = item;
+        }
+
+        protected virtual void InsertItemsRange(int index, IEnumerable<T> collection)
+        {
+            if (collection == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.list);
+            }
+
+            if (items.IsReadOnly)
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
+            }
+
+            if (index < 0 || index > items.Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
+            }
+
+            int i = 0;
+            foreach (var item in collection)
+            {
+                Insert(index + i, item);
+                i++;
+            }
+        }
+
+        protected virtual void RemoveItemsRange(int index, int count)
+        {
+            if (items.IsReadOnly)
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
+            }
+
+            if (index < 0 || index > items.Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
+            }
+
+            for (int i = index; i < (index + count); i++)
+                RemoveAt(index);
         }
 
         bool ICollection<T>.IsReadOnly
