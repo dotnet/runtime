@@ -3363,7 +3363,7 @@ void Thread::DoAppropriateWaitWorkerAlertableHelper(WaitMode mode)
     }
     else
     {
-        HandleThreadInterrupt((mode & WaitMode_ADUnload) != 0);
+        HandleThreadInterrupt();
 
         // Safe to clear the interrupted state, no APC could have fired since we
         // reset m_UserInterrupt (which inhibits our APC callback from doing
@@ -3476,7 +3476,7 @@ retry:
 
         if (m_State & TS_Interrupted)
         {
-            HandleThreadInterrupt(mode & WaitMode_ADUnload);
+            HandleThreadInterrupt();
         }
         // We could be woken by some spurious APC or an EE APC queued to
         // interrupt us. In the latter case the TS_Interrupted bit will be set
@@ -3685,7 +3685,7 @@ retry:
 
         if ((m_State & TS_Interrupted))
         {
-            HandleThreadInterrupt(mode & WaitMode_ADUnload);
+            HandleThreadInterrupt();
         }
         if (millis != INFINITE)
         {
@@ -3799,7 +3799,7 @@ retry:
         // in the thread state bits. Otherwise we just go back to sleep again.
         if ((m_State & TS_Interrupted))
         {
-            HandleThreadInterrupt(FALSE);
+            HandleThreadInterrupt();
         }
         if (INFINITE != millis)
         {
@@ -4192,7 +4192,7 @@ void Thread::UserSleep(INT32 time)
     // If someone has interrupted us, we should not enter the wait.
     if (IsUserInterrupted())
     {
-        HandleThreadInterrupt(FALSE);
+        HandleThreadInterrupt();
     }
 
     ThreadStateHolder tsh(TRUE, TS_Interruptible | TS_Interrupted);
@@ -4213,7 +4213,7 @@ retry:
         // in the thread state bits. Otherwise we just go back to sleep again.
         if ((m_State & TS_Interrupted))
         {
-            HandleThreadInterrupt(FALSE);
+            HandleThreadInterrupt();
         }
 
         if (dwTime == INFINITE)
@@ -5962,7 +5962,7 @@ Retry:
 
 #endif // _DEBUG
 
-void Thread::HandleThreadInterrupt (BOOL fWaitForADUnload)
+void Thread::HandleThreadInterrupt ()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5973,9 +5973,7 @@ void Thread::HandleThreadInterrupt (BOOL fWaitForADUnload)
 
     if ((m_UserInterrupt & TI_Abort) != 0)
     {
-        // If the thread is waiting for AD unload to finish, and the thread is interrupted,
-        // we can start aborting.
-        HandleThreadAbort(fWaitForADUnload);
+        HandleThreadAbort();
     }
     if ((m_UserInterrupt & TI_Interrupt) != 0)
     {

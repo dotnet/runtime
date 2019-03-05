@@ -886,7 +886,6 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
         GCX_PREEMP();
 
         Thread *pThread = GetThread();
-        BOOL fADUnloadHelper = (pThread && pThread->HasThreadStateNC(Thread::TSNC_ADUnloadHelper));
 
         ULONGLONG startTime = CLRGetTickCount64();
         ULONGLONG endTime;
@@ -907,55 +906,23 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
             //----------------------------------------------------
             // Do appropriate wait and pump messages if necessary
             //----------------------------------------------------
-            //WaitForSingleObject(hEventFinalizerDone, INFINITE);
-
-            if (fADUnloadHelper)
-            {
-                timeout = GetEEPolicy()->GetTimeout(OPR_FinalizerRun);
-            }
 
             DWORD status = hEventFinalizerDone->Wait(timeout,TRUE);
             if (status != WAIT_TIMEOUT && !(g_FinalizerWaiterStatus & FWS_WaitInterrupt))
             {
                 return;
             }
-            if (!fADUnloadHelper)
+            // recalculate timeout
+            if (timeout != INFINITE)
             {
-                // recalculate timeout
-                if (timeout != INFINITE)
+                ULONGLONG curTime = CLRGetTickCount64();
+                if (curTime >= endTime)
                 {
-                    ULONGLONG curTime = CLRGetTickCount64();
-                    if (curTime >= endTime)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        timeout = (DWORD)(endTime - curTime);
-                    }
+                    return;
                 }
-            }
-            else
-            {
-                if (status == WAIT_TIMEOUT)
+                else
                 {
-                    ULONGLONG finalizeStartTime = GetObjFinalizeStartTime();
-                    if (finalizeStartTime)
-                    {
-                        if (CLRGetTickCount64() >= finalizeStartTime+timeout)
-                        {
-                            GCX_COOP();
-                            FinalizerThreadAbortOnTimeout();
-                        }
-                    }
-                }
-                if (endTime != MAXULONGLONG)
-                {
-                    ULONGLONG curTime = CLRGetTickCount64();
-                    if (curTime >= endTime)
-                    {
-                        return;
-                    }
+                    timeout = (DWORD)(endTime - curTime);
                 }
             }
         }

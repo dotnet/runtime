@@ -2550,11 +2550,6 @@ public:
             LOG((LF_APPDOMAIN, LL_INFO1000, "AppDomain::ThreadExit from [%d] (%8.8x) %S count %d\n",
                  this, GetId().m_dwId,
                  GetFriendlyNameForLogging(), GetThreadEnterCount()));
-#if _DEBUG_ADUNLOAD
-            printf("AppDomain::ThreadExit %x from [%d] (%8.8x) %S count %d\n",
-                   pThread->GetThreadId(), this, GetId().m_dwId,
-                   GetFriendlyNameForLogging(), GetThreadEnterCount());
-#endif
         }
     }
 #endif // DACCESS_COMPILE
@@ -2908,10 +2903,6 @@ private:
         while (lastStage !=stage) 
             lastStage = (Stage)FastInterlockCompareExchange((LONG*)&m_Stage,stage,lastStage);
     };
-    void UnwindThreads();
-    // Return TRUE if EE is stopped
-    // Return FALSE if more work is needed
-    BOOL StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnloadRequestThread);
 
     // List of unloaded LoaderAllocators, protected by code:GetLoaderAllocatorReferencesLock (for now)
     LoaderAllocator * m_pDelayedLoaderAllocatorUnloadList;

@@ -56,18 +56,6 @@ SPTR_IMPL (SyncBlockCache, SyncBlockCache, s_pSyncBlockCache);
 
 
 
-void SyncBlock::OnADUnload()
-{
-    WRAPPER_NO_CONTRACT;
-#ifdef EnC_SUPPORTED
-    if (m_pEnCInfo)
-    {
-        m_pEnCInfo->Cleanup();
-        m_pEnCInfo = NULL;
-    }
-#endif
-}
-
 #ifndef FEATURE_PAL
 // static
 SLIST_HEADER InteropSyncBlockInfo::s_InteropInfoStandbyList;
@@ -227,12 +215,6 @@ void InteropSyncBlockInfo::SetRawRCW(RCW* pRCW)
     }
 }
 #endif // FEATURE_COMINTEROP
-
-void UMEntryThunk::OnADUnload()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_pObjectHandle = NULL;
-}
 
 #endif // !DACCESS_COMPILE
 
@@ -729,12 +711,6 @@ VOID SyncBlockCache::CleanupSyncBlocksInAppDomain(AppDomain *pDomain)
 
             UMEntryThunk* umThunk=(UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
                 
-            if (umThunk && umThunk->GetDomainId()==id)
-            {
-                umThunk->OnADUnload();
-                STRESS_LOG1(LF_APPDOMAIN, LL_INFO100, "Thunk %x unloaded", umThunk);
-            }       
-
 #ifdef FEATURE_COMINTEROP
             {
                 // we need to take RCWCache lock to avoid the race with another thread which is 
@@ -757,13 +733,6 @@ VOID SyncBlockCache::CleanupSyncBlocksInAppDomain(AppDomain *pDomain)
                 }
             }                         
 #endif // FEATURE_COMINTEROP
-        }
-
-        // NOTE: this will only notify the sync block if it is non-agile and living in the unloading domain.
-        //  Agile objects that are still alive will not get notification!
-        if (pSyncBlock->GetAppDomainIndex() == index)
-        {
-            pSyncBlock->OnADUnload();
         }
     }
     STRESS_LOG1(LF_APPDOMAIN, LL_INFO100, "AD cleanup - %d sync blocks done", nb);

@@ -1239,7 +1239,7 @@ public:
         TSNC_OwnsSpinLock               = 0x00000400, // The thread owns a spinlock.
         TSNC_PreparingAbort             = 0x00000800, // Preparing abort.  This avoids recursive HandleThreadAbort call.
         TSNC_OSAlertableWait            = 0x00001000, // Preparing abort.  This avoids recursive HandleThreadAbort call.
-        TSNC_ADUnloadHelper             = 0x00002000, // This thread is AD Unload helper.
+        // unused                       = 0x00002000,
         TSNC_CreatingTypeInitException  = 0x00004000, // Thread is trying to create a TypeInitException
         // unused                       = 0x00008000,
         // unused                       = 0x00010000,
@@ -2079,11 +2079,7 @@ public:
 
     NOINLINE void RareDisablePreemptiveGC();
 
-    void HandleThreadAbort()
-    {
-        HandleThreadAbort(FALSE);
-    }
-    void HandleThreadAbort(BOOL fForce);  // fForce=TRUE only for a thread waiting to start AD unload
+    void HandleThreadAbort();
 
     void PreWorkForThreadAbort();
 
@@ -2725,8 +2721,6 @@ public:
     {
         UAC_Normal,
         UAC_Host,       // Called by host through IClrTask::Abort
-        UAC_WatchDog,   // Called by ADUnload helper thread
-        UAC_FinalizerTimeout,
     };
 
     HRESULT        UserAbort(ThreadAbortRequester requester,
@@ -2776,7 +2770,6 @@ private:
 public:
     void           UserInterrupt(ThreadInterruptMode mode);
 
-    void           SetAbortRequest(EEPolicy::ThreadAbortTypes abortType);  // Should only be called by ADUnload
     BOOL           ReadyForAbort()
     {
         return ReadyForAsyncException();
@@ -2874,15 +2867,8 @@ private:
     void RemoveAbortRequestBit();
 
 public:
-    void MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::ThreadAbortTypes abortType, BOOL fTentative = FALSE);
+    void MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::ThreadAbortTypes abortType);
     void UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce = TRUE);
-
-private:
-    static void ThreadAbortWatchDogAbort(Thread *pThread);
-    static void ThreadAbortWatchDogEscalate(Thread *pThread);
-
-public:
-    static void ThreadAbortWatchDog();
 
     static ULONGLONG GetNextSelfAbortEndTime()
     {
@@ -3634,7 +3620,7 @@ private:
         FastInterlockExchange(&m_UserInterrupt, 0);
     }
 
-    void        HandleThreadInterrupt(BOOL fWaitForADUnload);
+    void        HandleThreadInterrupt();
 
 public:
     static void WINAPI UserInterruptAPC(ULONG_PTR ignore);
