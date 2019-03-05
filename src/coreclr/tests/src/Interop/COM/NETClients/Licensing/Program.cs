@@ -131,9 +131,10 @@ namespace NetClient
 
             try
             {
-                ActivateLicensedObject();
-                ActivateUnderDesigntimeContext();
-                ActivateUnderRuntimeContext();
+                // Uncomment once https://github.com/dotnet/corefx/pull/35767 is in sync with coreclr repo
+                //ActivateLicensedObject();
+                //ActivateUnderDesigntimeContext();
+                //ActivateUnderRuntimeContext();
             }
             catch (Exception e)
             {

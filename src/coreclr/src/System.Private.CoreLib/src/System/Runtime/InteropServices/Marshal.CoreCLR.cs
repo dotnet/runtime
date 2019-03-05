@@ -741,15 +741,6 @@ namespace System.Runtime.InteropServices
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void BindMoniker(IMoniker pmk, uint grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out object ppvResult);
 
-        /// <summary>
-        /// Private method called from EE upon use of license/ICF2 marshaling.
-        /// </summary>
-        private static IntPtr LoadLicenseManager()
-        {
-            Type t = Type.GetType("System.ComponentModel.LicenseManager, System", throwOnError: true);
-            return t.TypeHandle.Value;
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ChangeWrapperHandleStrength(object otp, bool fIsWeak);
 
