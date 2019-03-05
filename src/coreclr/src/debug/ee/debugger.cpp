@@ -13619,7 +13619,6 @@ void Debugger::UnhandledHijackWorker(CONTEXT * pContext, EXCEPTION_RECORD * pRec
     // processed this unhandled exception.  Thus, we should not call into CLR UEF again if it is the case.
     if (pThread &&
         (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException) ||
-         pThread->HasThreadStateNC(Thread::TSNC_AppDomainContainUnhandled) ||
          fSOException))
     {
 
