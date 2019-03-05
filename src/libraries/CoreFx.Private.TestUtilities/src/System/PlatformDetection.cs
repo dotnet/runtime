@@ -38,7 +38,7 @@ namespace System
         public static bool IsNotArm64Process => !IsArm64Process;
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
-        public static bool IsArgIteratorSupported => IsWindows && IsNotArmNorArm64Process;
+        public static bool IsArgIteratorSupported => IsWindows && IsNotArmProcess;
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
 
         public static bool IsNotInAppContainer => !IsInAppContainer;
