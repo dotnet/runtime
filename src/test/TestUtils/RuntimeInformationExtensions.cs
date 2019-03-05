@@ -4,44 +4,31 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class RuntimeInformationExtensions
     {
-        public static string GetExeExtensionForCurrentOSPlatform()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return ".exe";
-            }
-            else
-            {
-                return "";
-            }
-        }
+        public static string GetExeFileNameForCurrentPlatform(string exeName) =>
+            exeName + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty);
 
-        public static string GetSharedLibraryExtensionForCurrentPlatform()
+        public static string GetSharedLibraryFileNameForCurrentPlatform(string libraryName)
         {
+            string prefix;
+            string suffix;
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return ".dll";
+                prefix = string.Empty;
+                suffix = ".dll";
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                return ".dylib";
+                prefix = "lib";
+                suffix = ".dylib";
             }
             else
             {
-                return ".so";
+                prefix = "lib";
+                suffix = ".so";
             }
-        }
 
-        public static string GetSharedLibraryPrefixForCurrentPlatform()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return "";
-            }
-            else
-            {
-                return "lib";
-            }
+            return prefix + libraryName + suffix;
         }
     }
 }

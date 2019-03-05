@@ -481,7 +481,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                     var fixture = PreviouslyPublishedAndRestoredPortableApiTestProjectFixture;
                     var hostpolicy = Path.Combine(
                         fixture.BuiltDotnet.GreatestVersionSharedFxPath,
-                        $"{fixture.SharedLibraryPrefix}hostpolicy{fixture.SharedLibraryExtension}");
+                        RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy"));
 
                     File.Copy(
                         hostpolicy,
