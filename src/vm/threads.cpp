@@ -7626,79 +7626,10 @@ void Thread::DoExtraWorkForFinalizer()
                 SEH handler from DispatchOuter
                 C++ handler from DispatchMiddle
 
-   And if there is an AppDomain transition before we call back to user code, we additionally get:
-
-                AppDomain transition -- contains its own handlers to terminate the first pass
-                                        and marshal the exception.
-
-                SEH handler from DispatchOuter
-                C++ handler from DispatchMiddle
-
-   Regardless of whether or not there is an AppDomain transition, we then have:
-
                 User code that obviously can throw.
-
-   So if we don't have an AD transition, or we take a fault before we successfully transition the
-   AppDomain, then the base-most DispatchOuter/Middle will deal with the exception.  This may
-   involve swallowing exceptions or it may involve Watson & debugger attach.  It will always
-   involve notifications to any AppDomain.UnhandledException event listeners.
-
-   But if we did transition the AppDomain, then any Watson, debugger attach and UnhandledException
-   events will occur in that AppDomain in the initial first pass.  So we get a good debugging
-   experience and we get notifications to the host that show which AppDomain is allowing exceptions
-   to go unhandled (so perhaps it can be unloaded or otherwise dealt with).
-
-   The trick is that if the exception goes unhandled at the process level, we would normally try
-   to fire AppDomain events and display the faulting exception on the console from two more
-   places.  These are the base-most DispatchOuter/Middle pair and the hook of the OS unhandled
-   exception handler at the base of the thread.
-
-   This is redundant and messy.  (There's no concern with getting a 2nd Watson because we only
-   do one of these per process anyway).  The solution for the base-most DispatchOuter/Middle is
-   to use the ManagedThreadCallState.flags to control whether the exception has already been
-   dealt with or not.  These flags cause the ThreadBaseRedirectingFilter to either do normal
-   "base of the thread" exception handling, or to ignore the exception because it has already
-   been reported in the AppDomain we transitioned to.
-
-   But turning off the reporting in the OS unhandled exception filter is harder.  We don't want
-   to flip a bit on the Thread to disable this, unless we can be sure we are only disabling
-   something we already reported, and that this thread will never recover from that situation and
-   start executing code again.  Here's the normal nightmare scenario with SEH:
-
-   1)  exception of type A is thrown
-   2)  All the filters in the 1st pass say they don't want an A
-   3)  The exception gets all the way out and is considered unhandled.  We report this "fact".
-   4)  Imagine we then set a bit that says this thread shouldn't report unhandled exceptions.
-   5)  The 2nd pass starts.
-   6)  Inside a finally, someone throws an exception of type B.
-   7)  A new 1st pass starts from the point of the throw, with a type B.
-   8)  Now a filter says "Yes, I will swallow exception B."
-   9)  We no longer have an unhandled exception, and execution continues merrily.
-
-   This is an unavoidable consequence of the 2-pass model.  If you report unhandled exceptions
-   in the 1st pass (for good debugging), you might find that this was premature and you don't
-   have an unhandled exception when you get to the 2nd pass.
-
-   But it would not be optimal if in step 4 we set a bit that says we should suppress normal
-   notifications and reporting on this thread, believing that the process will terminate.
-
-   The solution is to recognize that the base OS unhandled exception filter runs in two modes.
-   In the first mode, it operates as today and serves as our backstop.  In the second mode
-   it is fully redundant with the handlers pushed after the AppDomain transition, which are
-   completely containing the exception to the AD that it occurred in (for purposes of reporting).
-   So we just need a flag on the thread that says whether or not that set of handlers are pushed
-   and functioning.  That flag enables / disables the base exception reporting and is called
-   TSNC_AppDomainContainUnhandled
 
 */
 
-
-enum ManagedThreadCallStateFlags
-{
-    MTCSF_NormalBase,
-    MTCSF_ContainToAppDomain,
-    MTCSF_SuppressDuplicate,
-};
 
 struct ManagedThreadCallState
 {
@@ -7709,34 +7640,31 @@ struct ManagedThreadCallState
     ADCallBackFcnType   pTarget;
     LPVOID                       args;
     UnhandledExceptionLocation   filterType;
-    ManagedThreadCallStateFlags  flags;
     BOOL IsAppDomainEqual(AppDomain* pApp)
     {
         LIMITED_METHOD_CONTRACT;
         return bDomainIsAsID?(pApp->GetId()==pAppDomainId):(pUnsafeAppDomain==pApp);
     }
     ManagedThreadCallState(ADID AppDomainId,ADCallBackFcnType Target,LPVOID Args,
-                        UnhandledExceptionLocation   FilterType, ManagedThreadCallStateFlags  Flags):
+                        UnhandledExceptionLocation   FilterType):
           pAppDomainId(AppDomainId),
           pUnsafeAppDomain(NULL),
           bDomainIsAsID(TRUE),
           pTarget(Target),
           args(Args),
-          filterType(FilterType),
-          flags(Flags)
+          filterType(FilterType)
     {
         LIMITED_METHOD_CONTRACT;
     };
 protected:
     ManagedThreadCallState(AppDomain* AppDomain,ADCallBackFcnType Target,LPVOID Args,
-                        UnhandledExceptionLocation   FilterType, ManagedThreadCallStateFlags  Flags):
+                        UnhandledExceptionLocation   FilterType):
           pAppDomainId(ADID(0)),
           pUnsafeAppDomain(AppDomain),
           bDomainIsAsID(FALSE),
           pTarget(Target),
           args(Args),
-          filterType(FilterType),
-          flags(Flags)
+          filterType(FilterType)
     {
         LIMITED_METHOD_CONTRACT;
     };
@@ -7814,7 +7742,6 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
             {
                 GCX_COOP();
                 m_pThread->SetFrame(m_pEntryFrame);
-                m_pThread->ResetThreadStateNC(Thread::TSNC_AppDomainContainUnhandled);
             }
         };
 
@@ -7881,14 +7808,6 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
 
     TryParam * pRealParam = reinterpret_cast<TryParam *>(pParam);
     ManagedThreadCallState * _pCallState = pRealParam->m_pCallState;
-    ManagedThreadCallStateFlags flags = _pCallState->flags;
-
-    if (flags == MTCSF_SuppressDuplicate)
-    {
-        LOG((LF_EH, LL_INFO100, "ThreadBaseRedirectingFilter: setting TSNC_AppDomainContainUnhandled\n"));
-        GetThread()->SetThreadStateNC(Thread::TSNC_AppDomainContainUnhandled);
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
 
     LONG ret = -1;
 
@@ -7913,42 +7832,11 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
         NotifyOfCHFFilterWrapper(pExceptionInfo, pRealParam);
     }
 
-    // If we are containing unhandled exceptions to the AppDomain we transitioned into, and the
-    // exception is coming out, then this exception is going unhandled.  We have already done
-    // Watson and managed events, so suppress all filters below us.  Otherwise we are swallowing
-    // it and returning out of the AppDomain.
-    if (flags == MTCSF_ContainToAppDomain)
-    {
-        if(ret == EXCEPTION_CONTINUE_SEARCH)
-        {
-            _pCallState->flags = MTCSF_SuppressDuplicate;
-        }
-        else if(ret == EXCEPTION_EXECUTE_HANDLER)
-        {
-            _pCallState->flags = MTCSF_NormalBase;
-        }
-        // else if( EXCEPTION_CONTINUE_EXECUTION )  do nothing
-    }
-
     // Get the reference to the current thread..
     Thread *pCurThread = GetThread();
     _ASSERTE(pCurThread);
 
-    if (flags == MTCSF_ContainToAppDomain)
     {
-
-        if (((ManagedThreadCallState *) _pCallState)->flags == MTCSF_SuppressDuplicate)
-        {
-            // Set the flag that we have done unhandled exception processing
-            // for this managed thread that started in a non-default domain
-            LOG((LF_EH, LL_INFO100, "ThreadBaseRedirectingFilter: setting TSNC_AppDomainContainUnhandled\n"));
-            pCurThread->SetThreadStateNC(Thread::TSNC_AppDomainContainUnhandled);
-        }
-    }
-    else
-    {
-        _ASSERTE(flags == MTCSF_NormalBase);
-
         LOG((LF_EH, LL_INFO100, "ThreadBaseRedirectingFilter: setting TSNC_ProcessedUnhandledException\n"));
 
         //
@@ -8086,7 +7974,7 @@ static void ManagedThreadBase_FullTransitionWithAD(ADID pAppDomain,
     }
     CONTRACTL_END;
 
-    ManagedThreadCallState CallState(pAppDomain, pTarget, args, filterType, MTCSF_NormalBase);
+    ManagedThreadCallState CallState(pAppDomain, pTarget, args, filterType);
     ManagedThreadBase_DispatchOuter(&CallState);
 }
 
@@ -8105,7 +7993,7 @@ void ManagedThreadBase_NoADTransition(ADCallBackFcnType pTarget,
 
     AppDomain *pAppDomain = GetAppDomain();
 
-    ManagedThreadCallState CallState(pAppDomain, pTarget, NULL, filterType, MTCSF_NormalBase);
+    ManagedThreadCallState CallState(pAppDomain, pTarget, NULL, filterType);
 
     // self-describing, to create a pTurnAround data for eventual delivery to a subsequent AppDomain
     // transition.
@@ -8147,7 +8035,6 @@ void ManagedThreadBase::FinalizerAppDomain(AppDomain *pAppDomain,
 {
     WRAPPER_NO_CONTRACT;
     pTurnAround->InitForFinalizer(pAppDomain,pTarget,args);
-    _ASSERTE(pTurnAround->flags == MTCSF_NormalBase);
     ManagedThreadBase_DispatchInner(pTurnAround);
 }
 

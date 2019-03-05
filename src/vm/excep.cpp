@@ -4840,7 +4840,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
     // simply return back. See comment in threads.h for details for the flag
     // below.
     //
-    if (pThread && (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException) || pThread->HasThreadStateNC(Thread::TSNC_AppDomainContainUnhandled)))
+    if (pThread && pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
         // This assert shouldnt be hit in CoreCLR since:
         //
@@ -5241,8 +5241,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
     // various runtimes again.
     //
     // Thus, check if this UEF has already been invoked in context of this thread and runtime and if so, dont invoke it again.
-    if (GetThread() && (GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException) ||
-                        GetThread()->HasThreadStateNC(Thread::TSNC_AppDomainContainUnhandled)))
+    if (GetThread() && (GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException)))
     {
         LOG((LF_EH, LL_INFO10, "Exiting COMUnhandledExceptionFilter since we have already done UE processing for this thread!\n"));
         return retVal;
@@ -5471,11 +5470,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     const int buf_size = 128;
     WCHAR buf[buf_size] = {0};
 
-    // See detailed explanation of this flag in threads.cpp.  But the basic idea is that we already
-    // reported the exception in the AppDomain where it went unhandled, so we don't need to report
-    // it at the process level.
-    // Print the unhandled exception message.
-    if (!pThread->HasThreadStateNC(Thread::TSNC_AppDomainContainUnhandled))
     {
         EX_TRY
         {
@@ -5609,12 +5603,6 @@ BOOL NotifyAppDomainsOfUnhandledException(
         _ASSERTE(g_fEEShutDown);
         return FALSE;
     }
-
-    // See detailed explanation of this flag in threads.cpp.  But the basic idea is that we already
-    // reported the exception in the AppDomain where it went unhandled, so we don't need to report
-    // it at the process level.
-    if (pThread->HasThreadStateNC(Thread::TSNC_AppDomainContainUnhandled))
-        return FALSE;
 
     ThreadPreventAsyncHolder prevAsync;
 
