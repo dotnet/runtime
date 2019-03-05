@@ -192,6 +192,8 @@
     <_runtimeOS Condition="'$(_runtimeOS)' == 'tizen.5.0.0'">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
     <ToolRuntimeRID>$(_runtimeOS)-x64</ToolRuntimeRID>
+    <!-- We build linux-musl-arm on a ubuntu container, so we can't use the toolset build for alpine runtime. We need to use portable linux RID for our toolset in order to be able to use it. -->
+    <ToolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' AND $(ArchGroup.StartsWith('arm')) AND !$(HostArch.StartsWith('Arm'))">linux-x64</ToolRuntimeRID>
 
     <!-- There are no WebAssembly tools, so treat them as Windows -->
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'WebAssembly'">win-x64</ToolRuntimeRID>
