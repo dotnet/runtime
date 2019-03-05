@@ -764,8 +764,6 @@ public:
 
     void FreeUMEntryThunkOrInterceptStub();
 
-    void OnADUnload();
-
 #endif // DACCESS_COMPILE
 
     void* GetUMEntryThunk()
@@ -911,8 +909,6 @@ class SyncBlock
        LIMITED_METHOD_CONTRACT;
        return (m_Monitor.m_dwSyncIndex & SyncBlockPrecious) != 0;
    }
-
-   void OnADUnload();
 
     // True is the syncblock and its index are disposable. 
     // If new members are added to the syncblock, this 

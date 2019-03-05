@@ -14,8 +14,7 @@ enum WaitMode
     WaitMode_None =0x0,
     WaitMode_Alertable = 0x1,         // Can be waken by APC.  May pumping message.
     WaitMode_IgnoreSyncCtx = 0x2,     // Dispatch to synchronization context if existed.
-    WaitMode_ADUnload = 0x4,          // The block is to wait for AD unload start.  If it is interrupted by AD Unload, we can start aborting.
-    WaitMode_InDeadlock = 0x8,        // The wait can be terminated by host's deadlock detection
+    WaitMode_InDeadlock = 0x4,        // The wait can be terminated by host's deadlock detection
 };
 
 

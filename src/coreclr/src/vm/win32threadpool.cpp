@@ -1593,7 +1593,7 @@ BOOL ThreadpoolMgr::SetAppDomainRequestsActive(BOOL UnmanagedTP)
     return fShouldSignalEvent;
 }
 
-void ThreadpoolMgr::ClearAppDomainRequestsActive(BOOL UnmanagedTP, BOOL AdUnloading, LONG id)
+void ThreadpoolMgr::ClearAppDomainRequestsActive(BOOL UnmanagedTP, LONG id)
 //--------------------------------------------------------------------------
 //This function informs the thread scheduler that the kast request has been
 //dequeued on an appdomain, or it's the last unmanaged TP request. 
@@ -1625,22 +1625,15 @@ void ThreadpoolMgr::ClearAppDomainRequestsActive(BOOL UnmanagedTP, BOOL AdUnload
     } 
     else
     {
-       if (AdUnloading)
-       { 
-           pAdCount = PerAppDomainTPCountList::GetPerAppdomainCount(TPIndex(id));
-       }
-       else
-       {  
-           Thread* pCurThread = GetThread();
-           _ASSERTE( pCurThread);
+       Thread* pCurThread = GetThread();
+       _ASSERTE( pCurThread);
 
-           AppDomain* pAppDomain = pCurThread->GetDomain();
-           _ASSERTE(pAppDomain);
-        
-           TPIndex tpindex = pAppDomain->GetTPIndex();
+       AppDomain* pAppDomain = pCurThread->GetDomain();
+       _ASSERTE(pAppDomain);
+    
+       TPIndex tpindex = pAppDomain->GetTPIndex();
 
-           pAdCount = PerAppDomainTPCountList::GetPerAppdomainCount(tpindex);
-       } 
+       pAdCount = PerAppDomainTPCountList::GetPerAppdomainCount(tpindex);
 
         _ASSERTE(pAdCount);
     }

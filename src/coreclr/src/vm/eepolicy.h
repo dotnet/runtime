@@ -163,9 +163,6 @@ inline EEPolicy* GetEEPolicy()
     return (EEPolicy*)&g_EEPolicyInstance;
 }
 
-extern void FinalizerThreadAbortOnTimeout();
-extern ULONGLONG GetObjFinalizeStartTime();
-
 //
 // Use EEPOLICY_HANDLE_FATAL_ERROR when you have a situtation where the Runtime's internal state would be
 // inconsistent if execution were allowed to continue. This will apply the proper host's policy for fatal
