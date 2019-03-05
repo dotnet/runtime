@@ -9,11 +9,17 @@ using System.Configuration.Assemblies;
 using System.Runtime.Serialization;
 using System.Security;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 
 namespace System.Reflection
 {
     public abstract partial class Assembly : ICustomAttributeProvider, ISerializable
     {
+        private readonly static Dictionary<string, Assembly> s_loadfile = new Dictionary<string, Assembly>();
+        private readonly static List<string> s_loadFromAssemblyList = new List<string>();
+        private static bool s_loadFromHandlerSet;
+        private static int s_cachedSerializationSwitch;
+
         protected Assembly() { }
 
         public virtual IEnumerable<TypeInfo> DefinedTypes
@@ -200,6 +206,140 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(partialName));
 
             return Load(partialName);
+        }
+
+        // Loads the assembly with a COFF based IMAGE containing
+        // an emitted assembly. The assembly is loaded into a fully isolated ALC with resolution fully deferred to the AssemblyLoadContext.Default.
+        // The second parameter is the raw bytes representing the symbol store that matches the assembly.
+        public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore)
+        {
+            if (rawAssembly == null)
+                throw new ArgumentNullException(nameof(rawAssembly));
+
+            if (rawAssembly.Length == 0)
+                throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
+
+#if FEATURE_APPX
+            if (ApplicationModel.IsUap)
+                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.Load(byte[], ...)"));
+#endif
+
+            SerializationInfo.ThrowIfDeserializationInProgress("AllowAssembliesFromByteArrays",
+                ref s_cachedSerializationSwitch);
+
+            AssemblyLoadContext alc = new IndividualAssemblyLoadContext();
+            return alc.InternalLoad(rawAssembly, rawSymbolStore);
+        }
+
+        public static Assembly LoadFile(string path)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+#if FEATURE_APPX
+            if (ApplicationModel.IsUap)
+                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.LoadFile"));
+#endif
+
+            if (PathInternal.IsPartiallyQualified(path))
+            {
+                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(path));
+            }
+
+            string normalizedPath = Path.GetFullPath(path);
+
+            Assembly result;
+            lock (s_loadfile)
+            {
+                if (s_loadfile.TryGetValue(normalizedPath, out result))
+                    return result;
+
+                AssemblyLoadContext alc = new IndividualAssemblyLoadContext();
+                result = alc.LoadFromAssemblyPath(normalizedPath);
+                s_loadfile.Add(normalizedPath, result);
+            }
+            return result;
+        }
+
+        private static Assembly LoadFromResolveHandler(object sender, ResolveEventArgs args)
+        {
+            Assembly requestingAssembly = args.RequestingAssembly;
+            if (requestingAssembly == null)
+            {
+                return null;
+            }
+
+            // Requesting assembly for LoadFrom is always loaded in defaultContext - proceed only if that
+            // is the case.
+            if (AssemblyLoadContext.Default != AssemblyLoadContext.GetLoadContext(requestingAssembly))
+                return null;
+
+            // Get the path where requesting assembly lives and check if it is in the list
+            // of assemblies for which LoadFrom was invoked.
+            string requestorPath = Path.GetFullPath(requestingAssembly.Location);
+            if (string.IsNullOrEmpty(requestorPath))
+                return null;
+
+            lock (s_loadFromAssemblyList)
+            {
+                // If the requestor assembly was not loaded using LoadFrom, exit.
+                if (!s_loadFromAssemblyList.Contains(requestorPath))
+                    return null;
+            }
+
+            // Requestor assembly was loaded using loadFrom, so look for its dependencies
+            // in the same folder as it.
+            // Form the name of the assembly using the path of the assembly that requested its load.
+            AssemblyName requestedAssemblyName = new AssemblyName(args.Name);
+            string requestedAssemblyPath = Path.Combine(Path.GetDirectoryName(requestorPath), requestedAssemblyName.Name + ".dll");
+
+            try
+            {
+                // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.
+                return Assembly.LoadFrom(requestedAssemblyPath);
+            }
+            catch (FileNotFoundException)
+            {
+                // Catch FileNotFoundException when attempting to resolve assemblies via this handler to account for missing assemblies.
+                return null;
+            }
+        }
+
+        public static Assembly LoadFrom(string assemblyFile)
+        {
+            if (assemblyFile == null)
+                throw new ArgumentNullException(nameof(assemblyFile));
+            
+            string fullPath = Path.GetFullPath(assemblyFile);
+
+            if (!s_loadFromHandlerSet)
+            {
+                lock (s_loadFromAssemblyList)
+                {
+                    if (!s_loadFromHandlerSet)
+                    {
+                        AssemblyLoadContext.AssemblyResolve += LoadFromResolveHandler;
+                        s_loadFromHandlerSet = true;
+                    }
+                }
+            }
+
+            // Add the path to the LoadFrom path list which we will consult
+            // before handling the resolves in our handler.
+            lock(s_loadFromAssemblyList)
+            {
+                if (!s_loadFromAssemblyList.Contains(fullPath))
+                {
+                    s_loadFromAssemblyList.Add(fullPath);
+                }
+            }
+
+            return AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
+        }
+
+        public static Assembly LoadFrom(string assemblyFile, byte[] hashValue, AssemblyHashAlgorithm hashAlgorithm)
+        {
+            throw new NotSupportedException(SR.NotSupported_AssemblyLoadFromHash);
         }
 
         public static Assembly UnsafeLoadFrom(string assemblyFile) => LoadFrom(assemblyFile);
