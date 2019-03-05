@@ -69,7 +69,7 @@ namespace System.Collections.ObjectModel
             InsertItem(index, item);
         }
 
-        public void AddRange(IEnumerable<T> collection) => InsertItemsRange(items.Count > 0 ? items.Count : 0, collection);
+        public void AddRange(IEnumerable<T> collection) => InsertItemsRange(items.Count, collection);
 
         public void Clear()
         {
