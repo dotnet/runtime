@@ -264,6 +264,11 @@ namespace System.IO.Pipelines
 
         private void ReturnSegmentUnsynchronized(BufferSegment segment)
         {
+            Debug.Assert(segment != _readHead, "Returning _readHead segment that's in use!");
+            Debug.Assert(segment != _readTail, "Returning _readTail segment that's in use!");
+            Debug.Assert(segment != _writingHead, "Returning _writingHead segment that's in use!");
+            Debug.Assert(segment != _lastExamined, "Returning _lastExamined segment that's in use!");
+
             if (_pooledSegmentCount < _bufferSegmentPool.Length)
             {
                 _bufferSegmentPool[_pooledSegmentCount] = segment;
@@ -483,6 +488,14 @@ namespace System.IO.Pipelines
                         _readHead = nextBlock;
                         _readHeadIndex = 0;
 
+                        // Only update the last examined if the same as consumed
+                        if (consumedSegment == examinedSegment)
+                        {
+                            // The last examined index and the read head should be in sync
+                            _lastExamined = nextBlock;
+                            _lastExaminedIndex = 0;
+                        }
+
                         // Reset the writing head to null if it's the return block
                         // then null it out as we're about to reset that memory
                         if (_writingHead == returnEnd)
@@ -492,10 +505,6 @@ namespace System.IO.Pipelines
                             Debug.Assert(_readTail == null);
                             _writingHead = null;
                             _writingMemory = default;
-
-                            // Anything we examined before is bogus since there are no more blocks in the linked list
-                            _lastExaminedIndex = 0;
-                            _lastExamined = null;
                         }
 
                         returnEnd = nextBlock;

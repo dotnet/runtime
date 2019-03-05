@@ -126,6 +126,61 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task PooledSegmentsDontAffectLastExaminedSegment()
+        {
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            // This gets the end of the first block
+            SequencePosition position = result.Buffer.Slice(result.Buffer.Start, _pool.MaxBufferSize).End;
+
+            // This should return the first segment
+            _pipe.Reader.AdvanceTo(position);
+
+            // One block remaining
+            Assert.Equal(4096, _pipe.Length);
+
+            // This should use the segment that was returned
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.End);
+
+            Assert.Equal(0, _pipe.Length);
+        }
+
+        [Fact]
+        public async Task ExaminedAtSecondLastBlockWorks()
+        {
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            // This gets the end of the first block
+            SequencePosition position = result.Buffer.Slice(result.Buffer.Start, _pool.MaxBufferSize).End;
+
+            // This should return the first segment
+            _pipe.Reader.AdvanceTo(position, result.Buffer.GetPosition(_pool.MaxBufferSize * 2));
+
+            // One block remaining
+            Assert.Equal(4096, _pipe.Length);
+
+            // This should use the segment that was returned
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.End);
+
+            Assert.Equal(0, _pipe.Length);
+        }
+
+        [Fact]
         public async Task ExaminedLessThanBeforeThrows()
         {
             _pipe.Writer.WriteEmpty(10);
