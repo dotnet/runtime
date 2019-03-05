@@ -195,7 +195,9 @@ At this point, a number of analyses and transformations are done on the flowgrap
 
 At this point, a number of properties are computed on the IR, and must remain valid for the remaining phases. We will call this “normalization”
 
-* `lvaMarkLocalVars` – set the reference counts (raw and weighted) for lclVars, sort them, and determine which will be tracked (currently up to 128). Note that after this point any transformation that adds or removes lclVar references must update the reference counts.
+* `lvaMarkLocalVars` – if this jit is optimizing, set the reference counts (raw and weighted) for lclVars, sort them, and determine which
+will be tracked (currently up to 512). If not optimizing, all locals are given an implicit reference count of one. Reference counts are not incrementally
+maintained. They can be recomputed if accurate counts are needed.
 * `optOptimizeBools` – this optimizes Boolean expressions, and may change the flowgraph (why is it not done prior to reachability and dominators?)
 * Link the trees in evaluation order (setting `gtNext` and `gtPrev` fields): and `fgFindOperOrder()` and `fgSetBlockOrder()`.
 
@@ -492,7 +494,16 @@ TreeNodeInfo:
 
 ## LclVar phase-dependent properties
 
-Prior to normalization, the reference counts (`lvRefCnt` and `lvRefCntWtd`) are not valid. After normalization they must be updated when lclVar references are added or removed.
+LclVar ref counts track the number of uses and weighted used of a local in the jit IR. There are two sequences of phases over which ref counts are valid,
+tracked via `lvaRefCountState`: an early sequence (state `RCS_EARLY`) and the normal sequence (state `RCS_NORMAL`). Requests for ref counts via `lvRefCnt`
+and `lvRefCntWtd` must be aware of the ref count state.
+
+Before struct promotion the ref counts are invalid. Struct promotion enables `RCS_EARLY` and it and subsequent phases through morph compute and uses ref counts
+on some locals to guide some struct optimizations. After morph the counts go back to longer being valid.
+
+The `RCS_NORMAL` sequence begins at normalization. Ref counts are computed and generally available via for the rest of the compilation phases.
+The counts are not incrementally maintained and may go stale as the IR is optimized or transformed, or maybe very approximate if the jit is not optimizing.
+They can be recomputed via `lvaComputeRefCounts` at points where accurate counts are valuable. Currently this happens before and after lower.
 
 # Supporting technologies and components
 
