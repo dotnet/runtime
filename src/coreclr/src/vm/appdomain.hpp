@@ -2448,8 +2448,6 @@ public:
     }
 
     RCWRefCache *GetRCWRefCache();
-
-    MethodTable* GetLicenseInteropHelperMethodTable();
 #endif // FEATURE_COMINTEROP
 
     //****************************************************************************************
@@ -2995,9 +2993,6 @@ private:
 
     // this cache stores the RCW -> CCW references in this domain
     RCWRefCache *m_pRCWRefCache;
-    
-    // The method table used for LicenseInteropHelper
-    MethodTable*    m_pLicenseInteropHelperMT;
 #endif // FEATURE_COMINTEROP
 
     // The index of this app domain among existing app domains (starting from 1)
