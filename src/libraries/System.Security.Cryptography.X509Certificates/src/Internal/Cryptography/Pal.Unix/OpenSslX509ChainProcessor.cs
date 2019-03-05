@@ -570,7 +570,7 @@ namespace Internal.Cryptography.Pal
                     if (elementErrors.HasValue && elementErrors.Value.HasErrors)
                     {
                         List<X509ChainStatus> statusBuilder = new List<X509ChainStatus>();
-                        overallStatus = new List<X509ChainStatus>();
+                        overallStatus = overallStatus ?? new List<X509ChainStatus>();
 
                         AddElementStatus(elementErrors.Value, statusBuilder, overallStatus);
                         status = statusBuilder.ToArray();
