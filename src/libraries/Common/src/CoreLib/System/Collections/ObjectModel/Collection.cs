@@ -220,7 +220,7 @@ namespace System.Collections.ObjectModel
 
             for (int i = index; i < length; i++)
             {
-                RemoveAt(i);
+                RemoveAt(index);
             }
         }
 
