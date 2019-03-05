@@ -1,66 +1,38 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class TestProject : IDisposable
     {
-        private string _projectDirectory;
-        private string _projectName;
-        private string _outputDirectory;
-        private string _exeExtension;
-        private string _sharedLibraryExtension;
-        private string _sharedLibraryPrefix;
+        public string ProjectDirectory { get; }
+        public string ProjectName { get; }
 
-        private string _projectFile;
-        private string _projectAssetsJson;
-        private string _runtimeConfigJson;
-        private string _runtimeDevConfigJson;
-        private string _depsJson;
-        private string _appDll;
-        private string _appExe;
-        private string _hostPolicyDll;
-        private string _hostFxrDll;
-        private string _assemblyName;
-
-        public string ProjectDirectory => _projectDirectory;
-        public string ProjectName => _projectName;
-
-        public string OutputDirectory { get { return _outputDirectory; } set { _outputDirectory = value; } }
-        public string ExeExtension { get { return _exeExtension; } set { _exeExtension = value; } }
-        public string AssemblyName { get { return _assemblyName; } set { _assemblyName = value; } }
-        public string ProjectFile { get { return _projectFile; } set { _projectFile = value; } }
-        public string ProjectAssetsJson { get { return _projectAssetsJson; } set { _projectAssetsJson = value; } }
-        public string RuntimeConfigJson { get { return _runtimeConfigJson; } set { _runtimeConfigJson = value; } }
-        public string RuntimeDevConfigJson { get { return _runtimeDevConfigJson; } set { _runtimeDevConfigJson = value; } }
-        public string DepsJson { get { return _depsJson; } set { _depsJson = value; } }
-        public string AppDll { get { return _appDll; } set { _appDll = value; } }
-        public string AppExe { get { return _appExe; } set { _appExe = value; } }
-        public string HostPolicyDll { get { return _hostPolicyDll; } set { _hostPolicyDll = value; } }
-        public string HostFxrDll { get { return _hostFxrDll; } set { _hostFxrDll = value; } }
+        public string OutputDirectory { get; set; }
+        public string AssemblyName { get; set; }
+        public string ProjectFile { get; set; }
+        public string ProjectAssetsJson { get; set; }
+        public string RuntimeConfigJson { get; set; }
+        public string RuntimeDevConfigJson { get; set; }
+        public string DepsJson { get; set; }
+        public string AppDll { get; set; }
+        public string AppExe { get; set; }
+        public string HostPolicyDll { get; set; }
+        public string HostFxrDll { get; set; }
 
         public TestProject(
             string projectDirectory,
-            string exeExtension,
-            string sharedLibraryExtension,
-            string sharedLibraryPrefix,
             string outputDirectory = null,
             string assemblyName = null)
         {
-            _projectDirectory = projectDirectory;
-            _exeExtension = exeExtension;
-            _sharedLibraryExtension = sharedLibraryExtension;
-            _sharedLibraryPrefix = sharedLibraryPrefix;
-            _projectName = Path.GetFileName(_projectDirectory);
-            _assemblyName = assemblyName ?? _projectName;
-            _projectFile = Path.Combine(_projectDirectory, $"{_projectName}.csproj");
-            _projectAssetsJson = Path.Combine(_projectDirectory, "obj", "project.assets.json");
+            ProjectDirectory = projectDirectory;
+            ProjectName = Path.GetFileName(ProjectDirectory);
+            AssemblyName = assemblyName ?? ProjectName;
+            ProjectFile = Path.Combine(ProjectDirectory, $"{ProjectName}.csproj");
+            ProjectAssetsJson = Path.Combine(ProjectDirectory, "obj", "project.assets.json");
 
-            _outputDirectory = outputDirectory ?? Path.Combine(_projectDirectory, "bin");
-            if (Directory.Exists(_outputDirectory))
+            OutputDirectory = outputDirectory ?? Path.Combine(ProjectDirectory, "bin");
+            if (Directory.Exists(OutputDirectory))
             {
                 LoadOutputFiles();
             }
@@ -70,34 +42,34 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             if (!PreserveTestRuns())
             {
-                Directory.Delete(_projectDirectory, true);
+                Directory.Delete(ProjectDirectory, true);
             }
         }
 
         public void CopyProjectFiles(string directory)
         {
-            CopyRecursive(_projectDirectory, directory, overwrite: true);
+            CopyRecursive(ProjectDirectory, directory, overwrite: true);
         }
 
         public void LoadOutputFiles()
         {
-            _appDll = Path.Combine(_outputDirectory, $"{_assemblyName}.dll");
-            _appExe = Path.Combine(_outputDirectory, $"{_assemblyName}{_exeExtension}");
-            _depsJson = Path.Combine(_outputDirectory, $"{_assemblyName}.deps.json");
-            _runtimeConfigJson = Path.Combine(_outputDirectory, $"{_assemblyName}.runtimeconfig.json");
-            _runtimeDevConfigJson = Path.Combine(_outputDirectory, $"{_assemblyName}.runtimeconfig.dev.json");
-            _hostPolicyDll = Path.Combine(_outputDirectory, $"{_sharedLibraryPrefix}hostpolicy{_sharedLibraryExtension}");
-            _hostFxrDll = Path.Combine(_outputDirectory, $"{_sharedLibraryPrefix}hostfxr{_sharedLibraryExtension}");
+            AppDll = Path.Combine(OutputDirectory, $"{AssemblyName}.dll");
+            AppExe = Path.Combine(OutputDirectory, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AssemblyName));
+            DepsJson = Path.Combine(OutputDirectory, $"{AssemblyName}.deps.json");
+            RuntimeConfigJson = Path.Combine(OutputDirectory, $"{AssemblyName}.runtimeconfig.json");
+            RuntimeDevConfigJson = Path.Combine(OutputDirectory, $"{AssemblyName}.runtimeconfig.dev.json");
+            HostPolicyDll = Path.Combine(OutputDirectory, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy"));
+            HostFxrDll = Path.Combine(OutputDirectory, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
         }
 
         public bool IsRestored()
         {
-            if (string.IsNullOrEmpty(_projectAssetsJson))
+            if (string.IsNullOrEmpty(ProjectAssetsJson))
             {
                 return false;
             }
 
-            return File.Exists(_projectAssetsJson);
+            return File.Exists(ProjectAssetsJson);
         }
 
         private void CopyRecursive(string sourceDirectory, string destinationDirectory, bool overwrite = false)

@@ -460,8 +460,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                     throw new Exception("host or hostpolicy does not exist in test project output. Is this a standalone app?");
                 }
 
-                var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostpolicy{testProjectFixture.SharedLibraryExtension}");
-                var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionHostFxrPath, $"{testProjectFixture.SharedLibraryPrefix}hostfxr{testProjectFixture.SharedLibraryExtension}");
+                var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy"));
+                var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionHostFxrPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
 
                 File.Copy(dotnetHostPolicy, testProjectHostPolicy, true);
 

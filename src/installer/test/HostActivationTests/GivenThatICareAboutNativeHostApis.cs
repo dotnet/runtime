@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
-            var dotnetLocation = Path.Combine(dotnet.BinPath, $"dotnet{fixture.ExeExtension}");
+            var dotnetLocation = dotnet.DotnetExecutablePath;
             string[] args =
             {
                 "hostfxr_get_native_search_directories",
@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 appFixture.TestProject.DepsJson,
                 File.ReadAllLines(appFixture.TestProject.DepsJson) + "}");
 
-            var dotnetLocation = Path.Combine(dotnet.BinPath, $"dotnet{fixture.ExeExtension}");
+            var dotnetLocation = dotnet.DotnetExecutablePath;
             string[] args =
             {
                 "hostfxr_get_native_search_directories",
@@ -388,8 +388,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                     // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it next to the app dll.
                     var fixture = PreviouslyPublishedAndRestoredPortableApiTestProjectFixture;
                     var hostfxr = Path.Combine(
-                        fixture.BuiltDotnet.GreatestVersionHostFxrPath, 
-                        $"{fixture.SharedLibraryPrefix}hostfxr{fixture.SharedLibraryExtension}");
+                        fixture.BuiltDotnet.GreatestVersionHostFxrPath,
+                        RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
 
                     File.Copy(
                         hostfxr, 
