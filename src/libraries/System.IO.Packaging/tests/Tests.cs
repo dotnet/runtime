@@ -3644,6 +3644,8 @@ namespace System.IO.Packaging.Tests
         public void CreateWithFileAccessWrite()
         {
             string[] fileNames = new [] { "file1.txt", "file2.txt", "file3.txt" };
+            const string RelationshipType = "http://schemas.microsoft.com/relationships/contains";
+            const string PartRelationshipType = "http://schemas.microsoft.com/relationships/self";
 
             using (Stream stream = new MemoryStream())
             {
@@ -3651,7 +3653,8 @@ namespace System.IO.Packaging.Tests
                 {
                     foreach (string fileName in fileNames)
                     {
-                        PackagePart part = package.CreatePart(PackUriHelper.CreatePartUri(new Uri(fileName, UriKind.Relative)),
+                        Uri partUri = PackUriHelper.CreatePartUri(new Uri(fileName, UriKind.Relative));
+                        PackagePart part = package.CreatePart(partUri,
                                                               System.Net.Mime.MediaTypeNames.Text.Plain,
                                                               CompressionOption.Fast);
                         using (StreamWriter writer = new StreamWriter(part.GetStream(), Encoding.ASCII))
@@ -3659,6 +3662,8 @@ namespace System.IO.Packaging.Tests
                             // just write the filename as content
                             writer.Write(fileName);
                         }
+                        part.CreateRelationship(part.Uri, TargetMode.Internal, PartRelationshipType);
+                        package.CreateRelationship(part.Uri, TargetMode.Internal, RelationshipType);
                     }
                 }
 
@@ -3666,6 +3671,8 @@ namespace System.IO.Packaging.Tests
                 stream.Seek(0, SeekOrigin.Begin);
                 using (Package readPackage = Package.Open(stream))
                 {
+                    PackageRelationshipCollection packageRelationships = readPackage.GetRelationships();
+                    Assert.All(packageRelationships, relationship => Assert.Equal(RelationshipType, relationship.RelationshipType));
                     foreach (string fileName in fileNames)
                     {
                         PackagePart part = readPackage.GetPart(PackUriHelper.CreatePartUri(new Uri(fileName, UriKind.Relative)));
@@ -3676,6 +3683,12 @@ namespace System.IO.Packaging.Tests
                             Assert.Equal(fileName.Length, partStream.Length);
                             Assert.Equal(fileName, reader.ReadToEnd());
                         }
+                        
+                        PackageRelationshipCollection partRelationships = part.GetRelationshipsByType(PartRelationshipType);
+                        Assert.Single(partRelationships);
+                        Assert.All(partRelationships, relationship => Assert.Equal(PartRelationshipType, relationship.RelationshipType));
+
+                        Assert.Single(packageRelationships, relationship => relationship.TargetUri == part.Uri);
                     }
                 }
             }

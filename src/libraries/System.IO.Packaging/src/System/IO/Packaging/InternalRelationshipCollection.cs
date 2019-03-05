@@ -448,9 +448,6 @@ namespace System.IO.Packaging
             else
                 ValidateUniqueRelationshipId(id);
 
-            //Ensure the relationship part
-            EnsureRelationshipPart();
-
             // create and add
             PackageRelationship relationship = new PackageRelationship(_package, _sourcePart, targetUri, targetMode, relationshipType, id);
             _relationships.Add(relationship);
@@ -471,7 +468,10 @@ namespace System.IO.Packaging
             using (Stream partStream = part.GetStream())
             using (IgnoreFlushAndCloseStream s = new IgnoreFlushAndCloseStream(partStream))
             {
-                s.SetLength(0);    // truncate to resolve PS 954048
+                if (_package.FileOpenAccess != FileAccess.Write)
+                {
+                    s.SetLength(0);    // truncate to resolve PS 954048
+                }
 
                 // use UTF-8 encoding by default
                 using (XmlWriter writer = XmlWriter.Create(s, new XmlWriterSettings { Encoding = System.Text.Encoding.UTF8 }))
