@@ -207,6 +207,11 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
             }
 
+            if (count < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_ListInsert);
+            }
+
             int length = items.Count;
             if (index < items.Count - count)
             {
