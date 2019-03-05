@@ -8854,7 +8854,7 @@ calli_end:
 				break;
 			}
 
-			if (m_class_is_enumtype (klass) && !(val->type == STACK_I8 && TARGET_SIZEOF_VOID_P == 4)) {
+			if (m_class_is_enumtype (klass) && !mini_is_gsharedvt_klass (klass) && !(val->type == STACK_I8 && TARGET_SIZEOF_VOID_P == 4)) {
 				/* Can't do this with 64 bit enums on 32 bit since the vtype decomp pass is ran after the long decomp pass */
 				if (val->opcode == OP_ICONST) {
 					MONO_INST_NEW (cfg, ins, OP_BOX_ICONST);
