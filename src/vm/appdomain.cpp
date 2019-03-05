@@ -1828,47 +1828,6 @@ void BaseDomain::InitLargeHeapHandleTable()
 #endif
 }
 
-#ifdef FEATURE_COMINTEROP
-MethodTable* AppDomain::GetLicenseInteropHelperMethodTable()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if(m_pLicenseInteropHelperMT == NULL)
-    {
-        // Do this work outside of the lock so we don't have an unbreakable lock condition
-
-        TypeHandle licenseMgrTypeHnd;
-        MethodDescCallSite  loadLM(METHOD__MARSHAL__LOAD_LICENSE_MANAGER);
-
-        licenseMgrTypeHnd = (MethodTable*) loadLM.Call_RetLPVOID((ARG_SLOT*)NULL);
-
-        //
-        // Look up this method by name, because the type is actually declared in System.dll.  <TODO>@todo: why?</TODO>
-        //
-
-        MethodDesc *pGetLIHMD = MemberLoader::FindMethod(licenseMgrTypeHnd.AsMethodTable(),
-                "GetLicenseInteropHelperType", &gsig_SM_Void_RetIntPtr);
-        _ASSERTE(pGetLIHMD);
-
-        TypeHandle lihTypeHnd;
-
-        MethodDescCallSite getLIH(pGetLIHMD);
-        lihTypeHnd = (MethodTable*) getLIH.Call_RetLPVOID((ARG_SLOT*)NULL);
-
-        BaseDomain::LockHolder lh(this);
-
-        if(m_pLicenseInteropHelperMT == NULL)
-            m_pLicenseInteropHelperMT = lihTypeHnd.AsMethodTable();
-    }
-    return m_pLicenseInteropHelperMT;
-}
-#endif // FEATURE_COMINTEROP
-
 #endif // CROSSGEN_COMPILE
 
 //*****************************************************************************
@@ -3489,7 +3448,6 @@ AppDomain::AppDomain()
 #ifdef FEATURE_COMINTEROP
     m_pRCWCache = NULL;
     m_pRCWRefCache = NULL;
-    m_pLicenseInteropHelperMT = NULL;
     memset(m_rpCLRTypes, 0, sizeof(m_rpCLRTypes));
 #endif // FEATURE_COMINTEROP
 

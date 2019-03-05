@@ -104,18 +104,16 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     }
     CONTRACT_END;
 
-    HRESULT                       hr = S_OK;
-    SafeComHolder<IClassFactory2> pClassFact2   = NULL;
-    SafeComHolder<IUnknown>       pUnk          = NULL;
-    BSTRHolder                    bstrKey       = NULL;
+    HRESULT hr = S_OK;
+    SafeComHolder<IClassFactory2> pClassFact2 = NULL;
+    SafeComHolder<IUnknown> pUnk = NULL;
+    BSTRHolder bstrKey = NULL;
 
-    Thread *pThread = GetThread();
-
-    // Does this support licensing?
-    if (FAILED(SafeQueryInterface(pClassFact, IID_IClassFactory2, (IUnknown**)&pClassFact2)))
+    // If the class doesn't support licensing or if it is missing a managed
+    // type to use for querying a license, just use IClassFactory.
+    if (FAILED(SafeQueryInterface(pClassFact, IID_IClassFactory2, (IUnknown**)&pClassFact2))
+        || m_pClassMT == NULL)
     {
-        // not a licensed class - just createinstance the usual way.
-        // Create an instance of the object.
         FrameWithCookie<DebuggerExitFrame> __def;
         {
             GCX_PREEMP();
@@ -131,127 +129,109 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     }
     else
     {
-        if (m_pClassMT == NULL)
+        _ASSERTE(m_pClassMT != NULL);
+
+        // Get the type to query for licensing.
+        TypeHandle rth = TypeHandle(m_pClassMT);
+
+        struct
         {
-            // Create an instance of the object.
+            OBJECTREF pProxy;
+            OBJECTREF pType;
+        } gc;
+        gc.pProxy = NULL; // LicenseInteropProxy
+        gc.pType = NULL;
+
+        GCPROTECT_BEGIN(gc);
+
+        // Create an instance of the object
+        MethodDescCallSite createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE);
+        gc.pProxy = createObj.Call_RetOBJECTREF(NULL);
+        gc.pType = rth.GetManagedClassObject();
+
+        // Query the current licensing context
+        MethodDescCallSite getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO, &gc.pProxy);
+        CLR_BOOL fDesignTime = FALSE;
+        ARG_SLOT args[4];
+        args[0] = ObjToArgSlot(gc.pProxy);
+        args[1] = ObjToArgSlot(gc.pType);
+        args[2] = (ARG_SLOT)&fDesignTime;
+        args[3] = (ARG_SLOT)(BSTR*)&bstrKey;
+
+        getCurrentContextInfo.Call(args);
+
+        if (fDesignTime)
+        {
+            // If designtime, we're supposed to obtain the runtime license key
+            // from the component and save it away in the license context.
+            // (the design tool can then grab it and embedded it into the
+            //  app it is creating)
+            if (bstrKey != NULL)
+            {
+                // It's illegal for our helper to return a non-null bstrKey
+                // when the context is design-time. But we'll try to do the
+                // right thing anyway.
+                _ASSERTE(!"We're not supposed to get here, but we'll try to cope anyway.");
+                SysFreeString(bstrKey);
+                bstrKey = NULL;
+            }
+
+            {
+                GCX_PREEMP();
+                hr = pClassFact2->RequestLicKey(0, &bstrKey);
+            }
+
+            // E_NOTIMPL is not a true failure. It simply indicates that
+            // the component doesn't support a runtime license key.
+            if (hr == E_NOTIMPL)
+                hr = S_OK;
+
+            // Store the requested license key
+            if (SUCCEEDED(hr))
+            {
+                MethodDescCallSite saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT, &gc.pProxy);
+
+                args[0] = ObjToArgSlot(gc.pProxy);
+                args[1] = (ARG_SLOT)(BSTR)bstrKey;
+                saveKeyInCurrentContext.Call(args);
+            }
+        }
+
+        // Create the instance
+        if (SUCCEEDED(hr))
+        {
             FrameWithCookie<DebuggerExitFrame> __def;
             {
                 GCX_PREEMP();
-                hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
-                if (FAILED(hr) && punkOuter)
+                if (fDesignTime || bstrKey == NULL)
                 {
-                    hr = pClassFact->CreateInstance(NULL, IID_IUnknown, (void**)&pUnk);
-                    if (pfDidContainment)
-                        *pfDidContainment = TRUE;
+                    // Either it's design time, or the current context doesn't
+                    // supply a runtime license key.
+                    hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
+                    if (FAILED(hr) && punkOuter)
+                    {
+                        hr = pClassFact->CreateInstance(NULL, IID_IUnknown, (void**)&pUnk);
+                        if (pfDidContainment)
+                            *pfDidContainment = TRUE;
+                    }
+                }
+                else
+                {
+                    // It is runtime and we have a license key.
+                    _ASSERTE(bstrKey != NULL);
+                    hr = pClassFact2->CreateInstanceLic(punkOuter, NULL, IID_IUnknown, bstrKey, (void**)&pUnk);
+                    if (FAILED(hr) && punkOuter)
+                    {
+                        hr = pClassFact2->CreateInstanceLic(NULL, NULL, IID_IUnknown, bstrKey, (void**)&pUnk);
+                        if (pfDidContainment)
+                            *pfDidContainment = TRUE;
+                    }
                 }
             }
             __def.Pop();
         }
-        else
-        {
-            MethodTable *pHelperMT = pThread->GetDomain()->GetLicenseInteropHelperMethodTable();
-            MethodDesc *pMD = MemberLoader::FindMethod(pHelperMT, "GetCurrentContextInfo", &gsig_IM_LicenseInteropHelper_GetCurrentContextInfo);
-            MethodDescCallSite getCurrentContextInfo(pMD);
-            
-            TypeHandle rth = TypeHandle(m_pClassMT);
 
-            struct _gc {
-                OBJECTREF pHelper;
-                OBJECTREF pType;
-            } gc;
-            gc.pHelper = NULL; // LicenseInteropHelper
-            gc.pType   = NULL;
-
-            GCPROTECT_BEGIN(gc);
-
-            gc.pHelper = pHelperMT->Allocate();
-            gc.pType = rth.GetManagedClassObject();
-
-            // First, crack open the current licensing context.
-            INT32 fDesignTime = 0;
-            ARG_SLOT args[4];
-            args[0] = ObjToArgSlot(gc.pHelper);
-            args[1] = (ARG_SLOT)&fDesignTime;
-            args[2] = (ARG_SLOT)(BSTR*)&bstrKey;
-            args[3] = ObjToArgSlot(gc.pType);
-
-            getCurrentContextInfo.Call(args);
-    
-            if (fDesignTime)
-            {
-                // If designtime, we're supposed to obtain the runtime license key
-                // from the component and save it away in the license context
-                // (the design tool can then grab it and embedded it into the
-                // app it's creating.)
-
-                if (bstrKey != NULL) 
-                {
-                    // It's illegal for our helper to return a non-null bstrKey
-                    // when the context is design-time. But we'll try to do the
-                    // right thing anyway.
-                    _ASSERTE(!"We're not supposed to get here, but we'll try to cope anyway.");
-                    SysFreeString(bstrKey);
-                    bstrKey = NULL;
-                }
-
-                {
-                    GCX_PREEMP();
-                    hr = pClassFact2->RequestLicKey(0, &bstrKey);
-                }
-                
-                // E_NOTIMPL is not a true failure. It simply indicates that
-                // the component doesn't support a runtime license key.
-                if (hr == E_NOTIMPL)
-                    hr = S_OK;
-
-                if (SUCCEEDED(hr))
-                {
-                    MethodDesc *pMDSaveKey = MemberLoader::FindMethod(pHelperMT, "SaveKeyInCurrentContext", &gsig_IM_LicenseInteropHelper_SaveKeyInCurrentContext);
-                    MethodDescCallSite saveKeyInCurrentContext(pMDSaveKey);
-
-                    args[0] = ObjToArgSlot(gc.pHelper);
-                    args[1] = (ARG_SLOT)(BSTR)bstrKey;
-                    saveKeyInCurrentContext.Call(args);
-                }
-            }
-    
-            if (SUCCEEDED(hr))
-            {
-                FrameWithCookie<DebuggerExitFrame> __def;
-                {
-                    GCX_PREEMP();
-                    
-                    if (fDesignTime || bstrKey == NULL) 
-                    {
-                        // Either it's design time, or the current context doesn't
-                        // supply a runtime license key.
-                        hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
-                        if (FAILED(hr) && punkOuter)
-                        {
-                            hr = pClassFact->CreateInstance(NULL, IID_IUnknown, (void**)&pUnk);
-                            if (pfDidContainment)
-                                *pfDidContainment = TRUE;
-                        }
-                    }
-                    else
-                    {
-                        // It's runtime, and we do have a non-null license key.
-                        _ASSERTE(bstrKey != NULL);
-                        hr = pClassFact2->CreateInstanceLic(punkOuter, NULL, IID_IUnknown, bstrKey, (void**)&pUnk);
-                        if (FAILED(hr) && punkOuter)
-                        {
-                            hr = pClassFact2->CreateInstanceLic(NULL, NULL, IID_IUnknown, bstrKey, (void**)&pUnk);
-                            if (pfDidContainment)
-                                *pfDidContainment = TRUE;
-                        }
-            
-                    }
-                }
-                __def.Pop();
-            }
-
-            GCPROTECT_END();
-        }
+        GCPROTECT_END();
     }
 
     if (FAILED(hr))
