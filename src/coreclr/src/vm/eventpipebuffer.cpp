@@ -174,9 +174,17 @@ EventPipeEventInstance* EventPipeBuffer::GetNext(EventPipeEventInstance *pEvent,
             return NULL;
         }
 
-        // We have a pointer within the bounds of the buffer.
-        // Find the next event by skipping the current event with it's data payload immediately after the instance.
-        pNextInstance = (EventPipeEventInstance *)GetNextAlignedAddress(const_cast<BYTE *>(pEvent->GetData() + pEvent->GetDataLength()));
+        if (pEvent->GetData())
+        {
+            // We have a pointer within the bounds of the buffer.
+            // Find the next event by skipping the current event with it's data payload immediately after the instance.
+            pNextInstance = (EventPipeEventInstance *)GetNextAlignedAddress(const_cast<BYTE *>(pEvent->GetData() + pEvent->GetDataLength()));
+        }
+        else
+        {
+            // In case we do not have a payload, the next instance is right after the current instance
+            pNextInstance = (EventPipeEventInstance*)GetNextAlignedAddress((BYTE*)(pEvent + 1));
+        }
 
         // Check to see if we've reached the end of the written portion of the buffer.
         if((BYTE*)pNextInstance >= m_pCurrent)
