@@ -81,20 +81,8 @@ namespace System.ComponentModel
 
         // This is a helper class that supports the CLR's IClassFactory2 marshaling
         // support.
-        //
-        // When the CLR consumes an unmanaged COM object, the CLR invokes
-        // GetCurrentContextInfo() to figure out the licensing context
-        // and decide whether to call ICF::CreateInstance() (designtime) or
-        // ICF::CreateInstanceLic() (runtime). In the former case, it also
-        // requests the class factory for a runtime license key and invokes
-        // SaveKeyInCurrentContext() to stash a copy in the current licensing
-        // context
-        //
         private class LicenseInteropHelper
         {
-            private LicenseContext _savedLicenseContext;
-            private Type _savedType;
-
             // Used to validate a type and retrieve license details
             // when activating a managed COM server from an IClassFactory2 instance.
             public static bool ValidateAndRetrieveLicenseDetails(
@@ -118,51 +106,19 @@ namespace System.ComponentModel
             }
 
             // The CLR invokes this when instantiating an unmanaged COM
-            // object. The purpose is to decide which classfactory method to
+            // object. The purpose is to decide which IClassFactory method to
             // use.
-            //
-            // If the current context is design time, the CLR will
-            // use ICF::CreateInstance().
-            //
-            // If the current context is runtime and the current context
-            // exposes a non-null license key and the COM object supports
-            // IClassFactory2, the CLR will use ICF2::CreateInstanceLic().
-            // Otherwise, the CLR will use ICF::CreateInstance.
-            //
-            // Arguments:
-            //    ref int fDesignTime:   on exit, this will be set to indicate
-            //                           the nature of the current license context.
-            //    ref int bstrKey:       on exit, this will point to the
-            //                           licensekey saved inside the license context.
-            //                           (only if the license context is runtime)
-            //    RuntimeTypeHandle rth: the managed type of the wrapper
-            private void GetCurrentContextInfo(ref int fDesignTime, ref IntPtr bstrKey, RuntimeTypeHandle rth)
+            public static LicenseContext GetCurrentContextInfo(Type type, out bool isDesignTime, out string key)
             {
-                _savedLicenseContext = LicenseManager.CurrentContext;
-                _savedType = Type.GetTypeFromHandle(rth);
-                if (_savedLicenseContext.UsageMode == LicenseUsageMode.Designtime)
+                LicenseContext licContext = LicenseManager.CurrentContext;
+                isDesignTime = licContext.UsageMode == LicenseUsageMode.Designtime;
+                key = null;
+                if (!isDesignTime)
                 {
-                    fDesignTime = 1;
-                    bstrKey = (IntPtr)0;
+                    key = licContext.GetSavedLicenseKey(type, resourceAssembly: null);
                 }
-                else
-                {
-                    fDesignTime = 0;
-                    String key = _savedLicenseContext.GetSavedLicenseKey(_savedType, null);
-                    bstrKey = Marshal.StringToBSTR(key);
-                }
-            }
-            
-            // The CLR invokes this when instantiating a licensed COM
-            // object inside a designtime license context.
-            // It's purpose is to save away the license key that the CLR
-            // retrieved using RequestLicKey(). This license key can be NULL.
-            private void SaveKeyInCurrentContext(IntPtr bstrKey)
-            {
-                if (bstrKey != (IntPtr)0)
-                {
-                    _savedLicenseContext.SetSavedLicenseKey(_savedType, Marshal.PtrToStringBSTR(bstrKey));
-                }
+
+                return licContext;
             }
         }
     }
