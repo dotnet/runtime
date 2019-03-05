@@ -67,12 +67,12 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, Eve
         return false;
     }
 
-    // Calculate the location of the data payload.
-    BYTE *pDataDest = m_pCurrent + sizeof(EventPipeEventInstance);
-
     bool success = true;
     EX_TRY
     {
+        // Calculate the location of the data payload.
+        BYTE *pDataDest = payload.GetSize() == 0 ? NULL : m_pCurrent + sizeof(EventPipeEventInstance);
+
         // Placement-new the EventPipeEventInstance.
         // if pthread is NULL, it's likely we are running in something like a GC thread which is not a Thread object, so it can't have an activity ID set anyway
         EventPipeEventInstance *pInstance = new (m_pCurrent) EventPipeEventInstance(
@@ -83,7 +83,6 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, Eve
             payload.GetSize(),
             (pThread == NULL) ? NULL : pActivityId,
             pRelatedActivityId);
-       
 
         // Copy the stack if a separate stack trace was provided.
         if(pStack != NULL)
