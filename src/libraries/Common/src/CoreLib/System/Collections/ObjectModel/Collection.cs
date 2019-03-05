@@ -192,7 +192,7 @@ namespace System.Collections.ObjectModel
             }
 
             int i = 0;
-            foreach (var item in collection)
+            foreach (T item in collection)
             {
                 Insert(index + i, item);
                 i++;
