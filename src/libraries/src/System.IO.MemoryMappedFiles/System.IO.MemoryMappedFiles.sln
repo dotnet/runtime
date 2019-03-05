@@ -7,11 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.MemoryMappedFiles
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37} = {16EE5522-F387-4C9E-9EF2-B5134B043F37}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.MemoryMappedFiles.PerformanceTests", "tests\Performance\System.IO.MemoryMappedFiles.PerformanceTests.csproj", "{41CAE9F4-0FFB-4FD1-9413-039C3C561DEE}"
-	ProjectSection(ProjectDependencies) = postProject
-		{16EE5522-F387-4C9E-9EF2-B5134B043F37} = {16EE5522-F387-4C9E-9EF2-B5134B043F37}
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.MemoryMappedFiles", "src\System.IO.MemoryMappedFiles.csproj", "{16EE5522-F387-4C9E-9EF2-B5134B043F37}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F2740000-E771-4E54-9287-5A1FDF8872F4} = {F2740000-E771-4E54-9287-5A1FDF8872F4}
@@ -35,10 +30,6 @@ Global
 		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
 		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
 		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
-		{41CAE9F4-0FFB-4FD1-9413-039C3C561DEE}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
-		{41CAE9F4-0FFB-4FD1-9413-039C3C561DEE}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
-		{41CAE9F4-0FFB-4FD1-9413-039C3C561DEE}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
-		{41CAE9F4-0FFB-4FD1-9413-039C3C561DEE}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
@@ -53,7 +44,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
-		{41CAE9F4-0FFB-4FD1-9413-039C3C561DEE} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{F2740000-E771-4E54-9287-5A1FDF8872F4} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
