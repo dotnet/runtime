@@ -293,7 +293,7 @@ public:
     );
 
     static BOOL SetAppDomainRequestsActive(BOOL UnmanagedTP = FALSE);
-    static void ClearAppDomainRequestsActive(BOOL UnmanagedTP = FALSE, BOOL AdUnloading = FALSE, LONG index = -1);
+    static void ClearAppDomainRequestsActive(BOOL UnmanagedTP = FALSE,  LONG index = -1);
 
     static inline void UpdateLastDequeueTime()
     {

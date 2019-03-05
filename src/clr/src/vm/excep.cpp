@@ -4798,12 +4798,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
     }
 #endif
 
-#ifdef _DEBUG_ADUNLOAD
-    printf("%x InternalUnhandledExceptionFilter_Worker: Called for %x\n",
-           ((pThread == NULL) ? NULL : pThread->GetThreadId()), pExceptionInfo->ExceptionRecord->ExceptionCode);
-    fflush(stdout);
-#endif
-
     // This shouldn't be possible, but MSVC re-installs us... for now, just bail if this happens.
     if (g_fNoExceptions)
     {
