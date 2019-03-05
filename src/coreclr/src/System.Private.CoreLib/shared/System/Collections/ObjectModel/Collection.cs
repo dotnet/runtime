@@ -207,8 +207,12 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
             }
 
-            int indexCount = index + count;
-            int length = indexCount > items.Count ? items.Count : indexCount;
+            int length = items.Count;
+            if (index < items.Count - count)
+            {
+                length = index + count;
+            }
+
             for (int i = index; i < length; i++)
             {
                 RemoveAt(index);
