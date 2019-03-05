@@ -5854,7 +5854,7 @@ void gc_mechanisms::init_mechanisms()
     promotion = FALSE;//TRUE;
     compaction = TRUE;
 #ifdef FEATURE_LOH_COMPACTION
-    loh_compaction = gc_heap::should_compact_loh();
+    loh_compaction = gc_heap::loh_compaction_requested();
 #else
     loh_compaction = FALSE;
 #endif //FEATURE_LOH_COMPACTION
@@ -21365,10 +21365,10 @@ retry:
     }
 }
 
-BOOL gc_heap::should_compact_loh()
+BOOL gc_heap::loh_compaction_requested()
 {
     // If hard limit is specified GC will automatically decide if LOH needs to be compacted.
-    return (heap_hard_limit || loh_compaction_always_p || (loh_compaction_mode != loh_compaction_default));
+    return (loh_compaction_always_p || (loh_compaction_mode != loh_compaction_default));
 }
 
 inline
@@ -21538,7 +21538,7 @@ BOOL gc_heap::plan_loh()
 
 void gc_heap::compact_loh()
 {
-    assert (should_compact_loh());
+    assert (loh_compaction_requested() || heap_hard_limit);
 
     generation* gen        = large_object_generation;
     heap_segment* start_seg = heap_segment_rw (generation_start_segment (gen));
