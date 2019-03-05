@@ -133,11 +133,7 @@ namespace System.Collections.ObjectModel
 
         public void RemoveRange(int index, int count) => RemoveItemsRange(index, count);
 
-        public void ReplaceRange(int index, int count, IEnumerable<T> collection)
-        {
-            RemoveItemsRange(index, count);
-            InsertItemsRange(index, collection);
-        }
+        public void ReplaceRange(int index, int count, IEnumerable<T> collection) => ReplaceItemsRange(index, count, collection);
 
         public void RemoveAt(int index)
         {
@@ -211,10 +207,18 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
             }
 
-            for (int i = index; i < (index + count); i++)
+            int indexCount = index + count;
+            int length = indexCount > items.Count ? items.Count : indexCount;
+            for (int i = index; i < length; i++)
             {
                 RemoveAt(index);
             }
+        }
+
+        protected virtual void ReplaceItemsRange(int index, int count, IEnumerable<T> collection)
+        {
+            RemoveItemsRange(index, count);
+            InsertItemsRange(index, collection);
         }
 
         bool ICollection<T>.IsReadOnly
