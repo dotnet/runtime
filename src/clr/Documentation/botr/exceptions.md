@@ -301,5 +301,3 @@ Miscellaneous
 =============
 
 There are actually a lot of macros involved in EX_TRY. Most of them should never, ever, be used outside of the macro implementations.
-
-One set, BEGIN_EXCEPTION_GLUE / END_EXCEPTION_GLUE, deserves special mention. These were intended to be transitional macros, and were to be replaced with more appropriate macros in the Whidbey project. Of course, they worked just fine, and so they weren't all replaced. Ideally, all instances will be converted during a "cleanup" milestone, and the macros removed. In the meantime, any CLR dev tempted to use them should resist, and instead write EX_TRY/EX_CATCH/EX_CATCH_END or EX_CATCH_HRESULT.
