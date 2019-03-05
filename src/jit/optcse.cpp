@@ -2225,7 +2225,7 @@ public:
                 // these are appended to the sideEffList
 
                 // Afterwards the set of nodes in the 'sideEffectList' are preserved and
-                // all other nodes are removed and have their ref counts decremented
+                // all other nodes are removed.
                 //
                 exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
 
