@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -21,17 +20,7 @@ namespace System.Text.Json.Tests
             // Remove all formatting/indendation
             if (compactData)
             {
-                using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
-                {
-                    jsonReader.FloatParseHandling = FloatParseHandling.Decimal;
-                    JToken jtoken = JToken.ReadFrom(jsonReader);
-                    var stringWriter = new StringWriter();
-                    using (JsonTextWriter jsonWriter = new JsonTextWriter(stringWriter))
-                    {
-                        jtoken.WriteTo(jsonWriter);
-                        jsonString = stringWriter.ToString();
-                    }
-                }
+                jsonString = JsonTestHelper.GetCompactString(jsonString);
             }
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
@@ -79,8 +68,8 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TestCases))]
-        public static void TestPartialJsonReader(bool compactData, TestCaseType type, string jsonString)
+        [MemberData(nameof(LargeTestCases))]
+        public static void TestPartialLargeJsonReader(bool compactData, TestCaseType type, string jsonString)
         {
             // Skipping really large JSON since slicing them (O(n^2)) is too slow.
             if (type == TestCaseType.Json40KB || type == TestCaseType.Json400KB || type == TestCaseType.ProjectLockJson)
@@ -91,17 +80,7 @@ namespace System.Text.Json.Tests
             // Remove all formatting/indendation
             if (compactData)
             {
-                using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
-                {
-                    jsonReader.FloatParseHandling = FloatParseHandling.Decimal;
-                    JToken jtoken = JToken.ReadFrom(jsonReader);
-                    var stringWriter = new StringWriter();
-                    using (JsonTextWriter jsonWriter = new JsonTextWriter(stringWriter))
-                    {
-                        jtoken.WriteTo(jsonWriter);
-                        jsonString = stringWriter.ToString();
-                    }
-                }
+                jsonString = JsonTestHelper.GetCompactString(jsonString);
             }
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
@@ -126,15 +105,77 @@ namespace System.Text.Json.Tests
                 Assert.Equal(consumed, json.CurrentState.BytesConsumed);
                 Assert.Equal(default, json.Position);
 
-                // Skipping large JSON since slicing them (O(n^3)) is too slow.
-                if (type == TestCaseType.DeepTree || type == TestCaseType.BroadTree || type == TestCaseType.LotsOfNumbers
-                    || type == TestCaseType.LotsOfStrings || type == TestCaseType.Json4KB)
+                json = new Utf8JsonReader(dataUtf8.AsSpan((int)consumed), isFinalBlock: true, json.CurrentState);
+                output = JsonTestHelper.ReaderLoop(outputSpan.Length - written, out int length, ref json);
+                output.AsSpan(0, length).CopyTo(outputSpan.Slice(written));
+                written += length;
+                Assert.Equal(dataUtf8.Length - consumed, json.BytesConsumed);
+                Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+                Assert.Equal(default, json.Position);
+                Assert.Equal(default, json.CurrentState.Position);
+
+                Assert.Equal(outputSpan.Length, written);
+                string actualStr = Encoding.UTF8.GetString(outputArray);
+                Assert.Equal(expectedStr, actualStr);
+            }
+        }
+
+        [Theory]
+        // Skipping large JSON since slicing them (O(n^2)) is too slow.
+        [MemberData(nameof(SmallTestCases))]
+        public static void TestPartialJsonReader(bool compactData, TestCaseType type, string jsonString)
+        {
+            // Remove all formatting/indendation
+            if (compactData)
+            {
+                jsonString = JsonTestHelper.GetCompactString(jsonString);
+            }
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            byte[] result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out int outputLength);
+            var outputArray = new byte[outputLength];
+            Span<byte> outputSpan = outputArray;
+
+            Stream stream = new MemoryStream(dataUtf8);
+            TextReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, true);
+            string expectedStr = JsonTestHelper.NewtonsoftReturnStringHelper(reader);
+
+            for (int i = 0; i < dataUtf8.Length; i++)
+            {
+                JsonReaderState state = default;
+                var json = new Utf8JsonReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                byte[] output = JsonTestHelper.ReaderLoop(outputSpan.Length, out int firstLength, ref json);
+                output.AsSpan(0, firstLength).CopyTo(outputSpan);
+                int written = firstLength;
+
+                long consumed = json.BytesConsumed;
+                Assert.Equal(consumed, json.CurrentState.BytesConsumed);
+                Assert.Equal(default, json.Position);
+
+                for (long j = consumed; j < dataUtf8.Length - consumed; j++)
                 {
-                    json = new Utf8JsonReader(dataUtf8.AsSpan((int)consumed), isFinalBlock: true, json.CurrentState);
+                    // Need to re-initialize the state and reader to avoid using the previous state stack.
+                    state = default;
+                    json = new Utf8JsonReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                    while (json.Read())
+                        ;
+
+                    JsonReaderState jsonState = json.CurrentState;
+
+                    written = firstLength;
+                    json = new Utf8JsonReader(dataUtf8.AsSpan((int)consumed, (int)j), isFinalBlock: false, jsonState);
                     output = JsonTestHelper.ReaderLoop(outputSpan.Length - written, out int length, ref json);
                     output.AsSpan(0, length).CopyTo(outputSpan.Slice(written));
                     written += length;
-                    Assert.Equal(dataUtf8.Length - consumed, json.BytesConsumed);
+
+                    long consumedInner = json.BytesConsumed;
+                    Assert.Equal(consumedInner, json.CurrentState.BytesConsumed);
+                    json = new Utf8JsonReader(dataUtf8.AsSpan((int)(consumed + consumedInner)), isFinalBlock: true, json.CurrentState);
+                    output = JsonTestHelper.ReaderLoop(outputSpan.Length - written, out length, ref json);
+                    output.AsSpan(0, length).CopyTo(outputSpan.Slice(written));
+                    written += length;
+                    Assert.Equal(dataUtf8.Length - consumedInner - consumed, json.BytesConsumed);
                     Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
                     Assert.Equal(default, json.Position);
                     Assert.Equal(default, json.CurrentState.Position);
@@ -142,40 +183,6 @@ namespace System.Text.Json.Tests
                     Assert.Equal(outputSpan.Length, written);
                     string actualStr = Encoding.UTF8.GetString(outputArray);
                     Assert.Equal(expectedStr, actualStr);
-                }
-                else
-                {
-                    for (long j = consumed; j < dataUtf8.Length - consumed; j++)
-                    {
-                        // Need to re-initialize the state and reader to avoid using the previous state stack.
-                        state = default;
-                        json = new Utf8JsonReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
-                        while (json.Read())
-                            ;
-
-                        JsonReaderState jsonState = json.CurrentState;
-
-                        written = firstLength;
-                        json = new Utf8JsonReader(dataUtf8.AsSpan((int)consumed, (int)j), isFinalBlock: false, jsonState);
-                        output = JsonTestHelper.ReaderLoop(outputSpan.Length - written, out int length, ref json);
-                        output.AsSpan(0, length).CopyTo(outputSpan.Slice(written));
-                        written += length;
-
-                        long consumedInner = json.BytesConsumed;
-                        Assert.Equal(consumedInner, json.CurrentState.BytesConsumed);
-                        json = new Utf8JsonReader(dataUtf8.AsSpan((int)(consumed + consumedInner)), isFinalBlock: true, json.CurrentState);
-                        output = JsonTestHelper.ReaderLoop(outputSpan.Length - written, out length, ref json);
-                        output.AsSpan(0, length).CopyTo(outputSpan.Slice(written));
-                        written += length;
-                        Assert.Equal(dataUtf8.Length - consumedInner - consumed, json.BytesConsumed);
-                        Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
-                        Assert.Equal(default, json.Position);
-                        Assert.Equal(default, json.CurrentState.Position);
-
-                        Assert.Equal(outputSpan.Length, written);
-                        string actualStr = Encoding.UTF8.GetString(outputArray);
-                        Assert.Equal(expectedStr, actualStr);
-                    }
                 }
             }
         }
@@ -283,17 +290,7 @@ namespace System.Text.Json.Tests
             // Remove all formatting/indendation
             if (compactData)
             {
-                using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
-                {
-                    jsonReader.FloatParseHandling = FloatParseHandling.Decimal;
-                    JToken jtoken = JToken.ReadFrom(jsonReader);
-                    var stringWriter = new StringWriter();
-                    using (JsonTextWriter jsonWriter = new JsonTextWriter(stringWriter))
-                    {
-                        jtoken.WriteTo(jsonWriter);
-                        jsonString = stringWriter.ToString();
-                    }
-                }
+                jsonString = JsonTestHelper.GetCompactString(jsonString);
             }
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
@@ -313,6 +310,28 @@ namespace System.Text.Json.Tests
         [Theory]
         [MemberData(nameof(SpecialNumTestCases))]
         public static void TestPartialJsonReaderSpecialNumbers(TestCaseType type, string jsonString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                for (int i = 0; i < dataUtf8.Length; i++)
+                {
+                    var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                    var json = new Utf8JsonReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                    while (json.Read())
+                        ;
+
+                    long consumed = json.BytesConsumed;
+                    Assert.Equal(consumed, json.CurrentState.BytesConsumed);
+                }
+            }
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData(nameof(SpecialNumTestCases))]
+        public static void TestPartialJsonReaderSlicesSpecialNumbers(TestCaseType type, string jsonString)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -1769,6 +1788,54 @@ namespace System.Text.Json.Tests
                     new object[] { false, TestCaseType.ProjectLockJson, SR.ProjectLockJson},
                     new object[] { false, TestCaseType.Json400B, SR.Json400B},
                     new object[] { false, TestCaseType.Json4KB, SR.Json4KB},
+                    new object[] { false, TestCaseType.Json40KB, SR.Json40KB},
+                    new object[] { false, TestCaseType.Json400KB, SR.Json400KB}
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> SmallTestCases
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] { true, TestCaseType.Basic, SR.BasicJson},
+                    new object[] { true, TestCaseType.BasicLargeNum, SR.BasicJsonWithLargeNum}, // Json.NET treats numbers starting with 0 as octal (0425 becomes 277)
+                    new object[] { true, TestCaseType.FullSchema1, SR.FullJsonSchema1},
+                    new object[] { true, TestCaseType.HelloWorld, SR.HelloWorld},
+                    new object[] { true, TestCaseType.Json400B, SR.Json400B},
+
+                    new object[] { false, TestCaseType.Basic, SR.BasicJson},
+                    new object[] { false, TestCaseType.BasicLargeNum, SR.BasicJsonWithLargeNum}, // Json.NET treats numbers starting with 0 as octal (0425 becomes 277)
+                    new object[] { false, TestCaseType.FullSchema1, SR.FullJsonSchema1},
+                    new object[] { false, TestCaseType.HelloWorld, SR.HelloWorld},
+                    new object[] { false, TestCaseType.Json400B, SR.Json400B},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> LargeTestCases
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] { true, TestCaseType.BroadTree, SR.BroadTree}, // \r\n behavior is different between Json.NET and System.Text.Json
+                    new object[] { true, TestCaseType.DeepTree, SR.DeepTree},
+                    new object[] { true, TestCaseType.LotsOfNumbers, SR.LotsOfNumbers},
+                    new object[] { true, TestCaseType.LotsOfStrings, SR.LotsOfStrings},
+                    new object[] { true, TestCaseType.ProjectLockJson, SR.ProjectLockJson},
+                    new object[] { true, TestCaseType.Json400B, SR.Json400B},
+                    new object[] { true, TestCaseType.Json40KB, SR.Json40KB},
+                    new object[] { true, TestCaseType.Json400KB, SR.Json400KB},
+
+                    new object[] { false, TestCaseType.BroadTree, SR.BroadTree}, // \r\n behavior is different between Json.NET and System.Text.Json
+                    new object[] { false, TestCaseType.DeepTree, SR.DeepTree},
+                    new object[] { false, TestCaseType.LotsOfNumbers, SR.LotsOfNumbers},
+                    new object[] { false, TestCaseType.LotsOfStrings, SR.LotsOfStrings},
+                    new object[] { false, TestCaseType.ProjectLockJson, SR.ProjectLockJson},
+                    new object[] { false, TestCaseType.Json400B, SR.Json400B},
                     new object[] { false, TestCaseType.Json40KB, SR.Json40KB},
                     new object[] { false, TestCaseType.Json400KB, SR.Json400KB}
                 };
