@@ -2490,36 +2490,6 @@ Thanks for contributing to CLR Stress!
                 // opening <TestRun> tag.
                 continue;
             }
-            /*
-            if (input.Substring(0, 6) == "UNLOAD")
-            {
-                int adUnloadedIndex = input.IndexOf("AppDomain Unloaded: ");
-                DateTime thisTime = DateTime.Parse(input.Substring(4, adUnloadedIndex - 4));
-                string id = input.Substring(adUnloadedIndex + ("AppDomain Unloaded: ".Length));
-                int curTest = FindTestByID(id);
-
-                if (curTest != -1)
-                {
-                    // wait until the time is appropriate.
-                    if (baseTime == DateTime.MinValue)
-                    {
-                        baseTime = thisTime;    // this is the 1st run command, this is our base time.
-                        startTime = DateTime.Now;
-                    }
-                    else
-                    {
-                        if ((thisTime.Subtract(baseTime)) > (DateTime.Now.Subtract(startTime)))
-                        {
-                            // sleep for (thisTime - baseTime) - (DateTime.Now - startTime)
-                            Thread.Sleep((int)(thisTime.Subtract(baseTime).Subtract(DateTime.Now.Subtract(startTime)).Ticks / TimeSpan.TicksPerMillisecond));
-                        }
-                    }
-
-                    UnloadOnEvent(curTestSet.Tests[curTest].AppDomain, eReasonForUnload.Replay);
-                }
-            }
-             **/
-
         }
 
         while (_testsRunningCount != 0)	// let the user know what tests haven't finished...

@@ -6562,10 +6562,6 @@ HRESULT PrintSpecialThreads()
         {
             type += "Finalizer ";
         }
-        if (ThreadType & ThreadType_ADUnloadHelper)
-        {
-            type += "ADUnloadHelper ";
-        }
         if (ThreadType & ThreadType_ShutdownHelper)
         {
             type += "ShutdownHelper ";

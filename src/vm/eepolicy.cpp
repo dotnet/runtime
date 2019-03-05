@@ -666,12 +666,6 @@ EPolicyAction EEPolicy::DetermineResourceConstraintAction(Thread *pThread)
     {
         action = eThrowException;
     }
-    // If the current thread is AD unload helper thread, it should not block itself.
-    else if (pThread->HasThreadStateNC(Thread::TSNC_ADUnloadHelper) &&
-        action < eExitProcess) 
-    {
-        action = eThrowException;
-    }
     return action;
 }
 

@@ -174,45 +174,6 @@ void PerAppDomainTPCountList::ResetAppDomainIndex(TPIndex index)
 }
 
 //---------------------------------------------------------------------------
-//ResetAppDomainTPCounts: Resets the per-appdomain thread pool counts for a 
-//                        given AppDomain.  Don't clear the ADID until we can
-//                        safely recycle the TPIndex
-//
-//Arguments:
-//index - The index into the s_appDomainIndexList for the AppDomain we're 
-//        trying to clear
-//
-//Assumptions:
-//This function needs to be called from the AD unload thread after we make sure
-//that no more code is running in unmanaged code. ClearAppDomainRequestsActive
-//can be called from this function because no managed code is running (If 
-//managed code is running, this function needs to be called under a managed
-//per-appdomain lock). 
-//
-void PerAppDomainTPCountList::ResetAppDomainTPCounts(TPIndex index)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    IPerAppDomainTPCount * pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(index.m_dwIndex-1));
-    _ASSERTE(pAdCount);
-
-    STRESS_LOG2(LF_THREADPOOL, LL_INFO1000, "ResetAppDomainTPCounts: index %d pAdCount %p\n", index.m_dwIndex, pAdCount);
-    //Correct the thread pool counts, in case the appdomain was unloaded rudely.
-    if(pAdCount->IsRequestPending()) 
-    {
-        ThreadpoolMgr::ClearAppDomainRequestsActive(FALSE, TRUE, (LONG)index.m_dwIndex);
-    }
-    
-    pAdCount->ClearAppDomainRequestsActive(TRUE);
-}
-
-//---------------------------------------------------------------------------
 //AreRequestsPendingInAnyAppDomains checks to see if there any requests pending
 //in other appdomains. It also checks for pending unmanaged work requests. 
 //This function is called at end of thread quantum to see if the thread needs to
@@ -599,7 +560,7 @@ void ManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
 
 #ifndef DACCESS_COMPILE
         LONG count = VolatileLoad(&m_numRequestsPending);
-        while (count != ADUnloading)
+        while (true)
         {
             LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, count+1, count);
             if (prev == count)
@@ -613,7 +574,7 @@ void ManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
 #endif
 }
 
-void ManagedPerAppDomainTPCount::ClearAppDomainRequestsActive(BOOL bADU)
+void ManagedPerAppDomainTPCount::ClearAppDomainRequestsActive()
 {
     LIMITED_METHOD_CONTRACT;
     //This function should either be called by managed code or during AD unload, but before
@@ -622,23 +583,13 @@ void ManagedPerAppDomainTPCount::ClearAppDomainRequestsActive(BOOL bADU)
     _ASSERTE(m_index.m_dwIndex != UNUSED_THREADPOOL_INDEX);
     _ASSERTE(m_id.m_dwId != 0);
 
-    if (bADU)
+    LONG count = VolatileLoad(&m_numRequestsPending);
+    while (count > 0)
     {
-        VolatileStore(&m_numRequestsPending, ADUnloading);
-    }
-    else
-    {
-        LONG count = VolatileLoad(&m_numRequestsPending);
-        // Test is: count > 0 && count != ADUnloading
-        // Since:   const ADUnloading == -1
-        // Both are tested: (count > 0) means following also true  (count != ADUnloading)
-        while (count > 0)
-        {
-            LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, 0, count);
-            if (prev == count)
-                break;
-            count = prev;
-        }
+        LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, 0, count);
+        if (prev == count)
+            break;
+        count = prev;
     }
 }
 
@@ -646,9 +597,6 @@ bool ManagedPerAppDomainTPCount::TakeActiveRequest()
 {
     LIMITED_METHOD_CONTRACT;
     LONG count = VolatileLoad(&m_numRequestsPending);
-    // Test is: count > 0 && count != ADUnloading
-    // Since:   const ADUnloading == -1
-    // Both are tested: (count > 0) means following also true (count != ADUnloading)
     while (count > 0)
     {
         LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, count-1, count);
@@ -658,37 +606,6 @@ bool ManagedPerAppDomainTPCount::TakeActiveRequest()
     }
     return false;
 }
-
-void ManagedPerAppDomainTPCount::ClearAppDomainUnloading()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-    //
-    // While the AD was trying to unload, we may have queued some work.  We would not
-    // have added that work to this count, because the AD was unloading.  So we assume
-    // here that we have work to do.
-    //
-    // We set this to NumberOfProcessors because that's the maximum count that the AD
-    // might have tried to add.  It's OK for this count to be larger than the AD thinks
-    // it should be, but if it's smaller then we will be permanently out of sync with the
-    // AD.
-    //
-    VolatileStore(&m_numRequestsPending, (LONG)ThreadpoolMgr::NumberOfProcessors);
-    if (ThreadpoolMgr::IsInitialized())
-    {
-        ThreadpoolMgr::MaybeAddWorkingWorker();
-        ThreadpoolMgr::EnsureGateThreadRunning();
-    }
-#endif
-}
-
 
 #ifndef DACCESS_COMPILE
 
@@ -714,10 +631,6 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
         }
     }
 
-    //We are in a state where AppDomain Unload has begun, but not all threads have been
-    //forced out of the unloading domain. This check below will prevent us from getting
-    //unmanaged AD unloaded exceptions while trying to enter an unloaded appdomain. 
-    if (!IsAppDomainUnloading())
     {
         CONTRACTL
         {
@@ -773,11 +686,6 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
         _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
 
         *foundWork = true;
-    }
-    else 
-    {
-        __SwitchToThread(0, CALLER_LIMITS_SPINNING);
-        return;
     }
 }
 

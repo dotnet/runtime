@@ -331,8 +331,6 @@ public:
 
     void Terminate();
 
-    void OnADUnload();
-
     VOID RunTimeInit()
     {
         STANDARD_VM_CONTRACT;
