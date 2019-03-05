@@ -8,6 +8,7 @@
     <Reference Include="Microsoft.Extensions.Configuration"  />
     <Reference Include="Microsoft.Extensions.Configuration.FileExtensions"  />
     <Reference Include="Newtonsoft.Json"  />
+    <Reference Include="System.Threading.Tasks.Extensions"  />
     <Reference Include="System.Runtime.CompilerServices.Unsafe"  />
   </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
