@@ -1242,8 +1242,7 @@ public:
         TSNC_ADUnloadHelper             = 0x00002000, // This thread is AD Unload helper.
         TSNC_CreatingTypeInitException  = 0x00004000, // Thread is trying to create a TypeInitException
         // unused                       = 0x00008000,
-        TSNC_AppDomainContainUnhandled  = 0x00010000, // Used to control how unhandled exception reporting occurs.
-                                                      // See detailed explanation for this bit in threads.cpp
+        // unused                       = 0x00010000,
         TSNC_InRestoringSyncBlock       = 0x00020000, // The thread is restoring its SyncBlock for Object.Wait.
                                                       // After the thread is interrupted once, we turn off interruption
                                                       // at the beginning of wait.
