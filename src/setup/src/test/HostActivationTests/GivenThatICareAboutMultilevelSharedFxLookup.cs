@@ -1,5 +1,4 @@
-﻿using Microsoft.DotNet.InternalAbstractions;
-using Microsoft.DotNet.Cli.Build.Framework;
+﻿using Microsoft.DotNet.Cli.Build.Framework;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;

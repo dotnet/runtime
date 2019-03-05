@@ -15,118 +15,78 @@ namespace Microsoft.DotNet.CoreSetup.Test
     {
         private static readonly string s_testArtifactDirectoryEnvironmentVariable = "TEST_ARTIFACTS";
 
-        private string _testProjectName;
-        private string _exeExtension;
-        private string _sharedLibraryExtension;
-        private string _sharedLibraryPrefix;
-        private string _testProjectSourceDirectory;
         private string _testArtifactDirectory;
-        private string _currentRid;
-        private string _framework;
         private string _assemblyName;
-
-        private RepoDirectoriesProvider _repoDirectoriesProvider;
-
-        private DotNetCli _sdkDotnet;
-        private DotNetCli _builtDotnet;
-
         private TestProject _sourceTestProject;
-        private TestProject _testProject;
         private List<TestProject> _copiedTestProjects = new List<TestProject>();
 
-        public DotNetCli SdkDotnet => _sdkDotnet;
-        public DotNetCli BuiltDotnet => _builtDotnet;
-        public TestProject TestProject => _testProject;
+        public DotNetCli SdkDotnet { get; }
+        public DotNetCli BuiltDotnet { get; }
+        public TestProject TestProject { get; private set; }
 
-        public string CurrentRid => _currentRid;
-        public string ExeExtension => _exeExtension;
-        public string SharedLibraryExtension => _sharedLibraryExtension;
-        public string SharedLibraryPrefix => _sharedLibraryPrefix;
-        public string Framework => _framework;
-        public RepoDirectoriesProvider RepoDirProvider  => _repoDirectoriesProvider;
+        public string CurrentRid { get; private set; }
+        public string Framework { get; private set; }
+        public RepoDirectoriesProvider RepoDirProvider { get; }
+
         public TestProjectFixture(
             string testProjectName,
             RepoDirectoriesProvider repoDirectoriesProvider,
-            string exeExtension = null,
-            string sharedLibraryExtension = null,
-            string sharedLibraryPrefix= null,
-            string testProjectSourceDirectory = null,
-            string testArtifactDirectory = null,
-            string dotnetInstallPath = null,
-            string currentRid = null,
-            string builtDotnetOutputPath = null,
             string framework = null,
             string assemblyName = null)
         {
             ValidateRequiredDirectories(repoDirectoriesProvider);
 
-            _testProjectName = testProjectName;
-            _framework = framework ?? Environment.GetEnvironmentVariable("MNA_TFM");
+            Framework = framework ?? Environment.GetEnvironmentVariable("MNA_TFM");
 
-            _exeExtension = exeExtension ?? RuntimeInformationExtensions.GetExeExtensionForCurrentOSPlatform();
-            _sharedLibraryExtension = sharedLibraryExtension
-                ?? RuntimeInformationExtensions.GetSharedLibraryExtensionForCurrentPlatform();
-            _sharedLibraryPrefix = sharedLibraryPrefix
-                ?? RuntimeInformationExtensions.GetSharedLibraryPrefixForCurrentPlatform();
+            RepoDirProvider = repoDirectoriesProvider;
 
-            _repoDirectoriesProvider = repoDirectoriesProvider;
-
-            _testProjectSourceDirectory = testProjectSourceDirectory
-                ?? Path.Combine(repoDirectoriesProvider.RepoRoot, "src", "test", "Assets", "TestProjects");
             _testArtifactDirectory = _testArtifactDirectory
                 ?? Environment.GetEnvironmentVariable(s_testArtifactDirectoryEnvironmentVariable)
                 ?? Path.Combine(AppContext.BaseDirectory, s_testArtifactDirectoryEnvironmentVariable);
 
-            _sdkDotnet = new DotNetCli(dotnetInstallPath ?? repoDirectoriesProvider.DotnetSDK);
-            _currentRid = currentRid ?? repoDirectoriesProvider.TargetRID;
+            SdkDotnet = new DotNetCli(repoDirectoriesProvider.DotnetSDK);
+            CurrentRid = repoDirectoriesProvider.TargetRID;
 
-            _builtDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);
+            BuiltDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);
 
             _assemblyName = assemblyName;
 
-            InitializeTestProject(
-                _testProjectName,
-                _testProjectSourceDirectory,
+            var sourceTestProjectPath = Path.Combine(repoDirectoriesProvider.RepoRoot, "src", "test", "Assets", "TestProjects", testProjectName);
+            _sourceTestProject = new TestProject(
+                sourceTestProjectPath,
+                assemblyName: _assemblyName);
+
+            TestProject = CopyTestProject(
+                _sourceTestProject,
                 _testArtifactDirectory,
-                _exeExtension,
-                _sharedLibraryExtension,
-                _sharedLibraryPrefix,
                 _assemblyName);
         }
 
         public TestProjectFixture(TestProjectFixture fixtureToCopy)
         {
-            _testProjectName = fixtureToCopy._testProjectName;
-            _exeExtension = fixtureToCopy._exeExtension;
-            _sharedLibraryExtension = fixtureToCopy._sharedLibraryExtension;
-            _sharedLibraryPrefix = fixtureToCopy._sharedLibraryPrefix;
-            _repoDirectoriesProvider = fixtureToCopy._repoDirectoriesProvider;
-            _testProjectSourceDirectory = fixtureToCopy._testProjectSourceDirectory;
+            RepoDirProvider = fixtureToCopy.RepoDirProvider;
             _testArtifactDirectory = fixtureToCopy._testArtifactDirectory;
-            _sdkDotnet = fixtureToCopy._sdkDotnet;
-            _currentRid = fixtureToCopy._currentRid;
-            _builtDotnet = fixtureToCopy._builtDotnet;
+            SdkDotnet = fixtureToCopy.SdkDotnet;
+            CurrentRid = fixtureToCopy.CurrentRid;
+            BuiltDotnet = fixtureToCopy.BuiltDotnet;
             _sourceTestProject = fixtureToCopy._sourceTestProject;
-            _framework = fixtureToCopy._framework;
+            Framework = fixtureToCopy.Framework;
             _assemblyName = fixtureToCopy._assemblyName;
 
-            _testProject = CopyTestProject(
+            TestProject = CopyTestProject(
                 fixtureToCopy.TestProject,
                 _testArtifactDirectory,
-                _exeExtension,
-                _sharedLibraryExtension,
-                _sharedLibraryPrefix,
                 _assemblyName);
 
-            fixtureToCopy._copiedTestProjects.Add(_testProject);
+            fixtureToCopy._copiedTestProjects.Add(TestProject);
         }
 
         public void Dispose()
         {
-            if (_testProject != null)
+            if (TestProject != null)
             {
-                _testProject.Dispose();
-                _testProject = null;
+                TestProject.Dispose();
+                TestProject = null;
             }
 
             foreach (var project in _copiedTestProjects)
@@ -137,38 +97,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _copiedTestProjects.Clear();
         }
 
-        private void InitializeTestProject(
-            string testProjectName,
-            string testProjectSourceDirectory,
-            string testArtifactDirectory,
-            string exeExtension,
-            string sharedLibraryExtension,
-            string sharedLibraryPrefix,
-            string assemblyName)
-        {
-            var sourceTestProjectPath = Path.Combine(testProjectSourceDirectory, testProjectName);
-            _sourceTestProject = new TestProject(
-                sourceTestProjectPath,
-                exeExtension,
-                sharedLibraryExtension,
-                sharedLibraryPrefix,
-                assemblyName: assemblyName);
-
-            _testProject = CopyTestProject(
-                _sourceTestProject,
-                testArtifactDirectory,
-                exeExtension,
-                sharedLibraryExtension,
-                sharedLibraryPrefix,
-                assemblyName);
-        }
-
         private TestProject CopyTestProject(
             TestProject sourceTestProject,
             string testArtifactDirectory,
-            string exeExtension,
-            string sharedLibraryExtension,
-            string sharedLibraryPrefix,
             string assemblyName)
         {
             string copiedTestProjectDirectory = CalculateTestProjectDirectory(
@@ -181,9 +112,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             return new TestProject(
                 copiedTestProjectDirectory,
-                exeExtension,
-                sharedLibraryExtension,
-                sharedLibraryPrefix,
                 assemblyName: assemblyName);
         }
 
@@ -243,14 +171,16 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string framework = null,
             string outputDirectory = null)
         {
-            dotnet = dotnet ?? _sdkDotnet;
-            outputDirectory = outputDirectory ?? _testProject.OutputDirectory;
-            _testProject.OutputDirectory = outputDirectory;
-            framework = framework ?? _framework;
-            _framework = framework;
+            dotnet = dotnet ?? SdkDotnet;
+            outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
+            TestProject.OutputDirectory = outputDirectory;
+            framework = framework ?? Framework;
+            Framework = framework;
 
-            var buildArgs = new List<string>();
-            buildArgs.Add("--no-restore");
+            var buildArgs = new List<string>
+            {
+                "--no-restore"
+            };
 
             if (runtime != null)
             {
@@ -264,7 +194,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 buildArgs.Add(framework);
             }
 
-            buildArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
+            buildArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
 
             if (outputDirectory != null)
             {
@@ -273,15 +203,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             dotnet.Build(buildArgs.ToArray())
-                .WorkingDirectory(_testProject.ProjectDirectory)
-                .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
+                .WorkingDirectory(TestProject.ProjectDirectory)
+                .Environment("NUGET_PACKAGES", RepoDirProvider.NugetPackages)
                 .Environment("VERSION", "") // Generate with package version 1.0.0, not %VERSION%
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .EnsureSuccessful();
 
-            _testProject.LoadOutputFiles();
+            TestProject.LoadOutputFiles();
 
             return this;
         }
@@ -293,13 +223,16 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string manifest = null,
             string outputDirectory = null)
         {
-            dotnet = dotnet ?? _sdkDotnet;
-            outputDirectory = outputDirectory ?? _testProject.OutputDirectory;
-            framework = framework ?? _framework;
-            _framework = framework;
+            dotnet = dotnet ?? SdkDotnet;
+            outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
+            framework = framework ?? Framework;
+            Framework = framework;
 
-            var storeArgs = new List<string>();
-            storeArgs.Add("--runtime");
+            var storeArgs = new List<string>
+            {
+                "--runtime"
+            };
+
             if (runtime != null)
             {
                 storeArgs.Add(runtime);
@@ -331,21 +264,21 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 storeArgs.Add(outputDirectory);
             }
 
-            storeArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
-            storeArgs.Add($"/p:NETCoreAppFramework={_framework}");
+            storeArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            storeArgs.Add($"/p:NETCoreAppFramework={Framework}");
 
             // Ensure the project's OutputType isn't 'Exe', since that causes issues with 'dotnet store'
             storeArgs.Add("/p:OutputType=Library");
 
             dotnet.Store(storeArgs.ToArray())
-                .WorkingDirectory(_testProject.ProjectDirectory)
-                .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
+                .WorkingDirectory(TestProject.ProjectDirectory)
+                .Environment("NUGET_PACKAGES", RepoDirProvider.NugetPackages)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .EnsureSuccessful();
 
-            _testProject.LoadOutputFiles();
+            TestProject.LoadOutputFiles();
 
             return this;
         }
@@ -356,14 +289,16 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string framework = null,
             string outputDirectory = null)
         {
-            dotnet = dotnet ?? _sdkDotnet;
-            outputDirectory = outputDirectory ?? _testProject.OutputDirectory;
-            _testProject.OutputDirectory = outputDirectory;
-            framework = framework ?? _framework;
-            _framework = framework;
+            dotnet = dotnet ?? SdkDotnet;
+            outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
+            TestProject.OutputDirectory = outputDirectory;
+            framework = framework ?? Framework;
+            Framework = framework;
 
-            var publishArgs = new List<string>();
-            publishArgs.Add("--no-restore");
+            var publishArgs = new List<string>
+            {
+                "--no-restore"
+            };
 
             if (runtime != null)
             {
@@ -384,17 +319,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 publishArgs.Add(outputDirectory);
             }
 
-            publishArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
+            publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
 
             dotnet.Publish(publishArgs.ToArray())
-                .WorkingDirectory(_testProject.ProjectDirectory)
-                .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
+                .WorkingDirectory(TestProject.ProjectDirectory)
+                .Environment("NUGET_PACKAGES", RepoDirProvider.NugetPackages)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .EnsureSuccessful();
 
-            _testProject.LoadOutputFiles();
+            TestProject.LoadOutputFiles();
 
             return this;
         }
@@ -409,19 +344,19 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
             restoreArgs.Add("--disable-parallel");
 
-            restoreArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
-            restoreArgs.Add($"/p:NETCoreAppFramework={_framework}");
+            restoreArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            restoreArgs.Add($"/p:NETCoreAppFramework={Framework}");
 
             if (extraMSBuildProperties != null)
             {
                 restoreArgs.Add(extraMSBuildProperties);
             }
 
-            _sdkDotnet.Restore(restoreArgs.ToArray())
-                .WorkingDirectory(_testProject.ProjectDirectory)
+            SdkDotnet.Restore(restoreArgs.ToArray())
+                .WorkingDirectory(TestProject.ProjectDirectory)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
+                .Environment("NUGET_PACKAGES", RepoDirProvider.NugetPackages)
                 .Execute()
                 .EnsureSuccessful();
 
@@ -430,7 +365,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestored(params string[] fallbackSources)
         {
-            if ( ! _testProject.IsRestored())
+            if ( ! TestProject.IsRestored())
             {
                 RestoreProject(fallbackSources);
             }
@@ -440,7 +375,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestoredForRid(string rid, params string[] fallbackSources)
         {
-            if ( ! _testProject.IsRestored())
+            if ( ! TestProject.IsRestored())
             {
                 string extraMSBuildProperties = $"/p:TestTargetRid={rid}";
                 RestoreProject(fallbackSources, extraMSBuildProperties);
