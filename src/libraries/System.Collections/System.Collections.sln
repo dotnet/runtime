@@ -7,11 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Tests", 
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5} = {D5FF747F-7A0B-9003-885A-FE9A63E755E5}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.PerformanceTests", "tests\Performance\System.Collections.PerformanceTests.csproj", "{F2B47C9D-477E-4EB2-B7F9-D7563FCED117}"
-	ProjectSection(ProjectDependencies) = postProject
-		{D5FF747F-7A0B-9003-885A-FE9A63E755E5} = {D5FF747F-7A0B-9003-885A-FE9A63E755E5}
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections", "src\System.Collections.csproj", "{D5FF747F-7A0B-9003-885A-FE9A63E755E5}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C746D448-E7C3-4850-9CA7-D3F1FA49742F} = {C746D448-E7C3-4850-9CA7-D3F1FA49742F}
@@ -35,10 +30,6 @@ Global
 		{F5EB9630-AD29-4880-963F-F2D39C684D8A}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{F5EB9630-AD29-4880-963F-F2D39C684D8A}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{F5EB9630-AD29-4880-963F-F2D39C684D8A}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{F2B47C9D-477E-4EB2-B7F9-D7563FCED117}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{F2B47C9D-477E-4EB2-B7F9-D7563FCED117}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{F2B47C9D-477E-4EB2-B7F9-D7563FCED117}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{F2B47C9D-477E-4EB2-B7F9-D7563FCED117}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
@@ -53,7 +44,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F5EB9630-AD29-4880-963F-F2D39C684D8A} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
-		{F2B47C9D-477E-4EB2-B7F9-D7563FCED117} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{C746D448-E7C3-4850-9CA7-D3F1FA49742F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
