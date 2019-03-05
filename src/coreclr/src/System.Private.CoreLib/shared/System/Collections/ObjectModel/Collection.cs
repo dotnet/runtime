@@ -212,7 +212,9 @@ namespace System.Collections.ObjectModel
             }
 
             for (int i = index; i < (index + count); i++)
+            {
                 RemoveAt(index);
+            }
         }
 
         bool ICollection<T>.IsReadOnly
