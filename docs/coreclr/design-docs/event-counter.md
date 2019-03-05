@@ -34,24 +34,31 @@ We believe adding some new top-level types will satisfy these requests:
     class EventCounter {
         EventCounter(string name, EventSource eventSource);
         string DisplayName;
+        TimeSpan DisplayRateTimeScale;
         void WriteMetric(float metric);
-        
+        void AddMetaData(string key, string value);
     }
 
     class PollingCounter {
         PollingCounter(string name, EventSource eventSource Func<float> getMetricFunction);
         string DisplayName;
+        TimeSpan DisplayRateTimeScale;
+        void AddMetaData(string key, string value);
     }
 
     class IncrementingEventCounter {
         IncrementingEventCounter(string name, EventSource eventSource);
         string DisplayName;
-        Increment(float increment = 1);
+        TimeSpan DisplayRateTimeScale;
+        void Increment(float increment = 1);
+        void AddMetaData(string key, string value);
     }
 
     class IncrementingPollingCounter {
         IncrementingPollingCounter(string name, EventSource eventSource, Func<float> getCountFunction);
         string DisplayName;
+        TimeSpan DisplayRateTimeScale;
+        void AddMetaData(string key, string value);
     }
     
 
@@ -60,16 +67,18 @@ EventCounter does what it has always done, producing a set of 5 stats (Min/Max/M
 On the wire EventCounter and PollingCounter both produce an event with name "EventCounters" and example body:
     
     Payload = {
-        DisplayName: "Request Bytes"
+        DisplayName: "Request Bytes",
+        DisplayRateTimeScale: "1",
         Name: "request-bytes",
         Mean: 12.32,
-        StandardDeviation: 2.45
-        Count: 7
-        Min: -3.4
-        Max: 22.98
-        IntervalSec: 1.00324
-        Series: "Interval=1"
-        CounterType: "Mean"
+        StandardDeviation: 2.45,
+        Count: 7,
+        Min: -3.4,
+        Max: 22.98,
+        IntervalSec: 1.00324,
+        Series: "Interval=1",
+        CounterType: "Mean",
+        MetaData: "key1=value1,key2=value2,key3=value3"
     }
         
 
@@ -79,12 +88,14 @@ IncrementingEventCounter and IncrementingPollingCounter, unlike the previous two
 On the wire IncrementingEventCounter and IncrementingPollingCounter both produce an event with the name "EventCounters" and example body:
 
     Payload = {
-        DisplayName: "Exceptions Thrown"
-        Name: "exceptions-thrown"
-        Increment: 246
-        IntervalSec: 1.0043
-        Series: "Interval=1"
-        CounterType: "Sum"
+        DisplayName: "Exceptions Thrown",
+        DisplayRateTimeScale: "1",
+        Name: "exceptions-thrown",
+        Increment: 246,
+        IntervalSec: 1.0043,
+        Series: "Interval=1",
+        CounterType: "Sum",
+        MetaData: "key1=value1,key2=value2,key3=value3"
     }
 
 
@@ -99,4 +110,4 @@ For EventCounter and PollingCounter we expect simple viewers to use the display 
 
 ### Metadata
 
-I added fields for DisplayName and CounterType directly to the payload. Vance suggested adding a 'Metadata' field, which I would be OK with, but I see no benefit to using it for fields we can anticipate will exist in advance, and we already have strongly typed APIs that generate their values. In the future if we added an API that let EventCounter consumers set arbitrary key value pairs on the counter, that seems like the data we'd want to encode in a Metadata string.
+To add any optional metadata about the counters that we do not already provide a way of encoding, users can call the `AddMetaData(string key, string value)` API. This API exists on all variants of the Counter APIs, and allows users to add one or many key-value pairs of metadata, which is dumped to the Payload as a comma-separated string value. This API exists so that users can add any metadata about their Counter that is not known to us and is different from the ones we provide by default (i.e. `DisplayName`, `CounterType`, `DisplayRateTimeScale`).
