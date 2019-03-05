@@ -62,6 +62,13 @@
     <PackageToInclude Include="Newtonsoft.Json" />
   </ItemGroup>
 
+  <!-- Microsoft.Diagnostics.Tracing testing -->
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap' AND '$(TargetGroup)' != 'uapaot'">
+    <PackageReference Include="$(MicrosoftDiagnosticsTracingTraceEventPackageName)" Version="$(TraceEventPackageVersion)" />
+    
+    <PackageToInclude Include="$(MicrosoftDiagnosticsTracingTraceEventPackageName)"/>
+  </ItemGroup>
+
   <!-- Microsoft.NET.Test.SDK packages. -->
   <ItemGroup Condition="'$(EnableVSTestReferences)' == 'true'">
     <PackageReference Include="$(XUnitTestAdapterPackageId)" Version="$(XUnitPackageVersion)" />
