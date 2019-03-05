@@ -240,7 +240,6 @@ if defined __Priority (
     ) else (
         set __PassThroughArgs=-priority=%__Priority%
     )
-    set __UnprocessedBuildArgs=!__UnprocessedBuildArgs! /p:CLRTestPriorityToBuild=%__Priority%
 )
 
 if defined __BuildAll goto BuildAll
@@ -877,7 +876,11 @@ REM ============================================================================
 if %__BuildTests% EQU 1 (
     echo %__MsgPrefix%Commencing build of tests for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs%
+    set  __PriorityArg=
+    if defined __Priority (
+        set __PriorityArg=-priority=%__Priority%
+    )
+    set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% !__PriorityArg! %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
     !NEXTCMD!
 
