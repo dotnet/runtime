@@ -62,25 +62,6 @@
     <PackageToInclude Include="Newtonsoft.Json" />
   </ItemGroup>
 
-    <!-- Perf testing -->
-  <ItemGroup Condition="'$(TargetGroup)' != 'uap' AND '$(TargetGroup)' != 'uapaot'">
-    <PackageReference Include="xunit.performance.api" Version="$(XUnitPerformancePackageVersion)" />
-    <PackageReference Include="xunit.performance.core" Version="$(XUnitPerformancePackageVersion)" />
-    <PackageReference Include="xunit.performance.execution" Version="$(XUnitPerformancePackageVersion)" />
-    <PackageReference Include="xunit.performance.metrics" Version="$(XUnitPerformancePackageVersion)" />
-    <PackageReference Include="$(MicrosoftDiagnosticsTracingTraceEventPackageName)" Version="$(TraceEventPackageVersion)" />
-    <PackageReference Include="MarkdownLog.NS20" Version="0.10.1" />
-    <PackageReference Include="CommandLineParser.NS20" Version="2.3.1" />
-
-    <PackageToInclude Include="xunit.performance.core"/>
-    <PackageToInclude Include="xunit.performance.api"/>
-    <PackageToInclude Include="xunit.performance.execution"/>
-    <PackageToInclude Include="xunit.performance.metrics"/>
-    <PackageToInclude Include="$(MicrosoftDiagnosticsTracingTraceEventPackageName)"/>
-    <PackageToInclude Include="MarkdownLog.NS20"/>
-    <PackageToInclude Include="CommandLineParser.NS20" />
-  </ItemGroup>
-
   <!-- Microsoft.NET.Test.SDK packages. -->
   <ItemGroup Condition="'$(EnableVSTestReferences)' == 'true'">
     <PackageReference Include="$(XUnitTestAdapterPackageId)" Version="$(XUnitPackageVersion)" />
