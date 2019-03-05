@@ -7895,74 +7895,6 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLAS
     }
 }
 
-/*****************************************************************************
- *
- *  Helper passed to Compiler::fgWalkAllTreesPre() to decrement the LclVar usage counts
- *  The 'keepList'is either a single tree or a list of trees that are formed by
- *  one or more GT_COMMA nodes.  It is the kept side-effects as returned by the
- *  gtExtractSideEffList method.
- */
-
-/* static */
-Compiler::fgWalkResult Compiler::optRemoveTreeVisitor(GenTree** pTree, fgWalkData* data)
-{
-    GenTree*  tree     = *pTree;
-    Compiler* comp     = data->compiler;
-    GenTree*  keepList = (GenTree*)(data->pCallbackData);
-
-    // We may have a non-NULL side effect list that is being kept
-    //
-    if (keepList)
-    {
-        GenTree* keptTree = keepList;
-        while (keptTree->OperGet() == GT_COMMA)
-        {
-            assert(keptTree->OperKind() & GTK_SMPOP);
-            GenTree* op1 = keptTree->gtOp.gtOp1;
-            GenTree* op2 = keptTree->gtGetOp2();
-
-            // For the GT_COMMA case the op1 is part of the orginal CSE tree
-            // that is being kept because it contains some side-effect
-            //
-            if (tree == op1)
-            {
-                // This tree and all of its sub trees are being kept.
-                return WALK_SKIP_SUBTREES;
-            }
-
-            // For the GT_COMMA case the op2 are the remaining side-effects of the orginal CSE tree
-            // which can again be another GT_COMMA or the final side-effect part
-            //
-            keptTree = op2;
-        }
-        if (tree == keptTree)
-        {
-            // This tree and all of its sub trees are being kept.
-            return WALK_SKIP_SUBTREES;
-        }
-    }
-
-    return WALK_CONTINUE;
-}
-
-/*****************************************************************************
- *
- *  Routine called to decrement the LclVar ref counts when removing a tree
- *  during the remove RangeCheck phase.
- *  This method will decrement the refcounts for any LclVars used below 'deadTree',
- *  unless the node is found in the 'keepList' (which are saved side effects)
- *  The keepList is communicated using the walkData.pCallbackData field
- *  Also the compCurBB must be set to the current BasicBlock  which contains
- *  'deadTree' as we need to fetch the block weight when decrementing the ref counts.
- */
-
-void Compiler::optRemoveTree(GenTree* deadTree, GenTree* keepList)
-{
-    // We communicate this value using the walkData.pCallbackData field
-    //
-    fgWalkTreePre(&deadTree, optRemoveTreeVisitor, (void*)keepList);
-}
-
 //------------------------------------------------------------------------------
 // optRemoveRangeCheck : Given an array index node, mark it as not needing a range check.
 //
@@ -7993,13 +7925,9 @@ void Compiler::optRemoveRangeCheck(GenTree* tree, GenTree* stmt)
     }
 #endif
 
+    // Extract side effects
     GenTree* sideEffList = nullptr;
-
     gtExtractSideEffList(bndsChkTree, &sideEffList, GTF_ASG);
-
-    // Decrement the ref counts for any LclVars that are being deleted
-    //
-    optRemoveTree(bndsChkTree, sideEffList);
 
     // Just replace the bndsChk with a NOP as an operand to the GT_COMMA, if there are no side effects.
     tree->gtOp.gtOp1 = (sideEffList != nullptr) ? sideEffList : gtNewNothingNode();
