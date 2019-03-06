@@ -4,10 +4,8 @@
 
 using System;
 using System.Buffers;
-using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -32,7 +30,7 @@ namespace Internal.Cryptography.Pal
             DirectoryBasedStoreProvider.GetStorePath(X509Store.MyStoreName);
 
         private SafeX509Handle _leafHandle;
-        private readonly SafeX509StoreHandle _store;
+        private SafeX509StoreHandle _store;
         private readonly SafeX509StackHandle _untrustedLookup;
         private readonly SafeX509StoreCtxHandle _storeCtx;
         private readonly DateTime _verificationTime;
@@ -346,6 +344,20 @@ namespace Internal.Cryptography.Pal
                 Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
 
                 bool verify = Interop.Crypto.X509VerifyCert(_storeCtx);
+
+                if (workingChain.AbortedForSignatureError)
+                {
+                    Debug.Assert(!verify, "verify should have returned false for signature error");
+                    CloneChainForSignatureErrors();
+
+                    // Reset to a WorkingChain that won't fail.
+                    workingChain = new WorkingChain(abortOnSignatureError: false);
+                    workingCallback = workingChain.VerifyCallback;
+                    Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
+
+                    verify = Interop.Crypto.X509VerifyCert(_storeCtx);
+                }
+
                 GC.KeepAlive(workingCallback);
 
                 // Because our callback tells OpenSSL that every problem is ignorable, it should tell us that the
@@ -394,6 +406,18 @@ namespace Internal.Cryptography.Pal
 
             // The native resources are not needed any longer.
             Dispose();
+        }
+
+        private void CloneChainForSignatureErrors()
+        {
+            SafeX509StoreHandle newStore;
+            Interop.Crypto.X509StoreCtxResetForSignatureError(_storeCtx, out newStore);
+
+            if (newStore != null)
+            {
+                _store.Dispose();
+                _store = newStore;
+            }
         }
 
         private Interop.Crypto.X509VerifyStatusCode CheckOcsp()
@@ -876,7 +900,25 @@ namespace Internal.Cryptography.Pal
 
         private sealed class WorkingChain : IDisposable
         {
+            // OpenSSL 1.0 sets a "signature valid, don't check again" if we OK the signature error
+            // OpenSSL 1.1 does not.
+            private const long OpenSSL_1_1_0_RTM = 0x10100000L;
+            private static readonly bool s_defaultAbort = SafeEvpPKeyHandle.OpenSslVersion < OpenSSL_1_1_0_RTM;
+
             private ErrorCollection[] _errors;
+
+            internal bool AbortOnSignatureError { get; }
+            internal bool AbortedForSignatureError { get; private set; }
+
+            internal WorkingChain()
+                : this(s_defaultAbort)
+            {
+            }
+
+            internal WorkingChain(bool abortOnSignatureError)
+            {
+                AbortOnSignatureError = abortOnSignatureError;
+            }
 
             internal int LastError => _errors?.Length ?? 0;
 
@@ -906,6 +948,13 @@ namespace Internal.Cryptography.Pal
                     {
                         Interop.Crypto.X509VerifyStatusCode errorCode = Interop.Crypto.X509StoreCtxGetError(storeCtx);
                         int errorDepth = Interop.Crypto.X509StoreCtxGetErrorDepth(storeCtx);
+
+                        if (AbortOnSignatureError &&
+                            errorCode == Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_SIGNATURE_FAILURE)
+                        {
+                            AbortedForSignatureError = true;
+                            return 0;
+                        }
 
                         // We don't report "OK" as an error.
                         // For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
