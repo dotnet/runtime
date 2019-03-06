@@ -112,7 +112,7 @@ namespace System.Drawing
 
             if (width == null || height == null || !(width is float) || !(height is float))
             {
-                throw new ArgumentException(SR.Format(SR.PropertyValueInvalidEntry));
+                throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }
 
             return new SizeF((float)width, (float)height);

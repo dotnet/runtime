@@ -27,7 +27,7 @@ namespace System.Drawing
                 Gdip.CheckStatus(status);
                 if (lineCap == IntPtr.Zero)
                 {
-                    throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+                    throw new ArgumentException(SR.GdiplusInvalidParameter);
                 }
 
                 return CustomLineCap.CreateCustomLineCapObject(lineCap);
@@ -55,7 +55,7 @@ namespace System.Drawing
                 // If the CustomEndCap has never been set, this accessor should throw.
                 if (_cachedEndCap == null)
                 {
-                    throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+                    throw new ArgumentException(SR.GdiplusInvalidParameter);
                 }
 
                 return _cachedEndCap;

@@ -81,7 +81,7 @@ namespace System.Xml
 #if DEBUG
             object val = _pointers[pointer];
             if (val != (object)pointer)
-                Debug.Assert(false);
+                Debug.Fail("Pointer not present");
 #endif
         }
         // This function attaches the DataSet to XmlDataDocument
@@ -1092,7 +1092,7 @@ namespace System.Xml
                     return true;
 
                 case XmlNodeType.EntityReference:
-                    Debug.Assert(false);
+                    Debug.Fail("Found entity reference");
                     return false;
 
                 default:
@@ -1250,12 +1250,10 @@ namespace System.Xml
                                 // Nothing to do (the row already has an associated element as a fragment
                                 break;
                             case DataRowState.Detached:
-                                // We should not get rows in this state
-                                Debug.Assert(false);
+                                Debug.Fail("We should not get rows in this state");
                                 break;
                             default:
-                                // Unknown row state
-                                Debug.Assert(false);
+                                Debug.Fail("Unknown row state");
                                 break;
                         }
                     }
@@ -2068,11 +2066,11 @@ namespace System.Xml
                             break;
 
                         case DataRowAction.Delete:
-                            // DataRow is beeing deleted
+                            // DataRow is being deleted
                             //    - state transition from New (AKA PendingInsert) to Detached (AKA Created)
                             //    - state transition from Unchanged to Deleted (AKA PendingDelete)
                             //    - state transition from Modified (AKA PendingChange) to Delete (AKA PendingDelete)
-                            Debug.Assert(false);  // This should have been handled above, irrespective of ignoreDataSetEvents value (true or false)
+                            Debug.Fail("This should have been handled above, irrespective of ignoreDataSetEvents value (true or false)");
                             break;
 
                         case DataRowAction.Rollback:
@@ -2420,8 +2418,7 @@ namespace System.Xml
             }
             catch
             {
-                // We should not get any exceptions because we always handle data-type conversion
-                Debug.Assert(false);
+                Debug.Fail("We should not get any exceptions because we always handle data-type conversion");
                 throw;
             }
 #endif
@@ -2434,8 +2431,7 @@ namespace System.Xml
             }
             catch
             {
-                // We should not get any exceptions because DataSet.EnforceConstraints should be always off
-                Debug.Assert(false);
+                Debug.Fail("We should not get any exceptions because DataSet.EnforceConstraints should be always off");
                 throw;
             }
 #endif
@@ -2732,8 +2728,7 @@ namespace System.Xml
                     }
                     catch
                     {
-                        // We should not get any exceptions here
-                        Debug.Assert(false);
+                        Debug.Fail("We should not get any exceptions here");
                         throw;
                     }
 #endif
@@ -2761,15 +2756,13 @@ namespace System.Xml
                     }
                     catch
                     {
-                        // We should not get any exceptions here
-                        Debug.Assert(false);
+                        Debug.Fail("We should not get any exceptions here");
                         throw;
                     }
 #endif
                     break;
                 default:
-                    // Handle your case above
-                    Debug.Assert(false);
+                    Debug.Fail("Handle your case above");
                     break;
             }
             Debug.Assert(IsRowLive(rowElem.Row));
@@ -2796,8 +2789,7 @@ namespace System.Xml
                     }
                     catch
                     {
-                        // We should not get any exceptions here
-                        Debug.Assert(false);
+                        Debug.Fail("We should not get any exceptions here");
                         throw;
                     }
 #endif
@@ -2820,8 +2812,7 @@ namespace System.Xml
                     break;
 
                 default:
-                    // Handle your case above
-                    Debug.Assert(false);
+                    Debug.Fail("Handle your case above");
                     break;
             }
 

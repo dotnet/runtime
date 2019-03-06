@@ -156,7 +156,7 @@ namespace System.Drawing {
 
             if(x == null || y == null || 
                 !(x is int) || !(y is int)) {
-                throw new ArgumentException(SR.Format(SR.PropertyValueInvalidEntry));
+                throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }
     
             

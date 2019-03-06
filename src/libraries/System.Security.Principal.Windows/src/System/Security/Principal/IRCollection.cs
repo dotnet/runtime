@@ -210,7 +210,7 @@ namespace System.Security.Principal
                     // Rare case that we have defined a type of identity reference and not included it in the code logic above.  
                     // To avoid this we do not allow IdentityReference to be subclassed outside of the BCL.
                     // 
-                    Debug.Assert(false, "Source type is an IdentityReference type which has not been included in translation logic.");
+                    Debug.Fail("Source type is an IdentityReference type which has not been included in translation logic.");
                     throw new NotSupportedException();
                 }
             }
@@ -272,7 +272,7 @@ namespace System.Security.Principal
                         // Rare case that we have defined a type of identity reference and not included it in the code logic above.  
                         // To avoid this we do not allow IdentityReference to be subclassed outside of the BCL.
                         // 
-                        Debug.Assert(false, "Source type is an IdentityReference type which has not been included in translation logic.");
+                        Debug.Fail("Source type is an IdentityReference type which has not been included in translation logic.");
                         throw new NotSupportedException();
                     }
                 }
@@ -365,7 +365,7 @@ namespace System.Security.Principal
                         // Rare case that we have defined a type of identity reference and not included it in the code logic above.  
                         // To avoid this we do not allow IdentityReference to be subclassed outside of the BCL.
                         // 
-                        Debug.Assert(false, "Source type is an IdentityReference type which has not been included in translation logic.");
+                        Debug.Fail("Source type is an IdentityReference type which has not been included in translation logic.");
                         throw new NotSupportedException();
                     }
                 }

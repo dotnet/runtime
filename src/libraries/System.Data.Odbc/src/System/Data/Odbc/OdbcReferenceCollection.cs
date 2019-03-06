@@ -30,7 +30,7 @@ namespace System.Data.Odbc
                     }
                     else
                     {
-                        Debug.Assert(false, "shouldn't be here");
+                        Debug.Fail("shouldn't be here");
                     }
                     break;
                 case Closing:
@@ -40,11 +40,11 @@ namespace System.Data.Odbc
                     }
                     else
                     {
-                        Debug.Assert(false, "shouldn't be here");
+                        Debug.Fail("shouldn't be here");
                     }
                     break;
                 default:
-                    Debug.Assert(false, "shouldn't be here");
+                    Debug.Fail("shouldn't be here");
                     break;
             }
         }

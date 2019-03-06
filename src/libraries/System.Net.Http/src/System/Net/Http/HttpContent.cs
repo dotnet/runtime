@@ -391,7 +391,7 @@ namespace System.Net.Http
                 // This should only be hit when called directly; HttpClient/HttpClientHandler
                 // will not exceed this limit.
                 throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
-                    string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
                     SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
             }
 
@@ -510,7 +510,7 @@ namespace System.Net.Http
 
                 if (contentLength > maxBufferSize)
                 {
-                    error = new HttpRequestException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize));
+                    error = new HttpRequestException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize));
                     return null;
                 }
 

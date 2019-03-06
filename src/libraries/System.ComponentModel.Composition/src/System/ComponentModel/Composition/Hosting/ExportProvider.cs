@@ -106,13 +106,13 @@ namespace System.ComponentModel.Composition.Hosting
                 case ExportCardinalityCheckResult.Match:
                     return exports;
                 case ExportCardinalityCheckResult.NoExports:
-                    throw new ImportCardinalityMismatchException(string.Format(CultureInfo.CurrentCulture, SR.CardinalityMismatch_NoExports, definition.ToString()));
+                    throw new ImportCardinalityMismatchException(SR.Format(SR.CardinalityMismatch_NoExports, definition));
                 default:
                     if (result != ExportCardinalityCheckResult.TooManyExports)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
-                    throw new ImportCardinalityMismatchException(string.Format(CultureInfo.CurrentCulture, SR.CardinalityMismatch_TooManyExports_Constraint, definition.ToString()));
+                    throw new ImportCardinalityMismatchException(SR.Format(SR.CardinalityMismatch_TooManyExports_Constraint, definition));
             }
         }
 

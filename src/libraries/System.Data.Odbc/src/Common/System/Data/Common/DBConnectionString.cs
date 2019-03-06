@@ -172,7 +172,7 @@ namespace System.Data.Common
 #if DEBUG
                             else
                             {
-                                Debug.Assert(false, "empty restriction");
+                                Debug.Fail("empty restriction");
                             }
 #endif
                         }
@@ -314,7 +314,7 @@ namespace System.Data.Common
                     }
                     else
                     {
-                        Debug.Assert(false, string.Format("Unknown behavior for combined set: {0}", combinedSet._behavior));
+                        Debug.Fail($"Unknown behavior for combined set: {combinedSet._behavior}");
                     }
                 }
                 else if (componentSet._behavior == KeyRestrictionBehavior.PreventUsage)
@@ -335,12 +335,12 @@ namespace System.Data.Common
                     }
                     else
                     {
-                        Debug.Assert(false, string.Format("Unknown behavior for combined set: {0}", combinedSet._behavior));
+                        Debug.Fail($"Unknown behavior for combined set: {combinedSet._behavior}");
                     }
                 }
                 else
                 {
-                    Debug.Assert(false, string.Format("Unknown behavior for component set: {0}", componentSet._behavior));
+                    Debug.Fail($"Unknown behavior for component set: {componentSet._behavior}");
                 }
             }
         }
@@ -383,7 +383,7 @@ namespace System.Data.Common
                     }
                     break;
                 default:
-                    Debug.Assert(false, "invalid KeyRestrictionBehavior");
+                    Debug.Fail("invalid KeyRestrictionBehavior");
                     throw ADP.InvalidKeyRestrictionBehavior(_behavior);
             }
             return true;

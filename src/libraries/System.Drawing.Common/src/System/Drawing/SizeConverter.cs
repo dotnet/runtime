@@ -157,7 +157,7 @@ namespace System.Drawing {
 
             if(width == null || height == null || 
                 !(width is int) || !(height is int)) {
-                throw new ArgumentException(SR.Format(SR.PropertyValueInvalidEntry));
+                throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }
             return new Size((int)width,
                              (int)height);

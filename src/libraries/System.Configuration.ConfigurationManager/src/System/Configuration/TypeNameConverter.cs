@@ -25,7 +25,7 @@ namespace System.Configuration
         {
             Type result = TypeUtil.GetType((string)data, false);
 
-            if (result == null) throw new ArgumentException(string.Format(SR.Type_cannot_be_resolved, (string)data));
+            if (result == null) throw new ArgumentException(SR.Format(SR.Type_cannot_be_resolved, (string)data));
 
             return result;
         }

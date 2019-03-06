@@ -112,7 +112,7 @@ namespace System.Data
                                 value = -(SqlInt16)vl;
                                 break;
                             default:
-                                Debug.Assert(false, "Missing a type conversion");
+                                Debug.Fail("Missing a type conversion");
                                 value = DBNull.Value;
                                 break;
                         }

@@ -71,7 +71,7 @@ namespace System.Data.Common
             {
                 case AcceptRejectRule.None:
                 case AcceptRejectRule.Cascade:
-                    Debug.Assert(false, "valid AcceptRejectRule " + value.ToString());
+                    Debug.Fail("valid AcceptRejectRule " + value.ToString());
                     break;
             }
 #endif
@@ -86,7 +86,7 @@ namespace System.Data.Common
             {
                 case CatalogLocation.Start:
                 case CatalogLocation.End:
-                    Debug.Assert(false, "valid CatalogLocation " + value.ToString());
+                    Debug.Fail("valid CatalogLocation " + value.ToString());
                     break;
             }
 #endif
@@ -101,7 +101,7 @@ namespace System.Data.Common
                 case ConflictOption.CompareAllSearchableValues:
                 case ConflictOption.CompareRowVersion:
                 case ConflictOption.OverwriteChanges:
-                    Debug.Assert(false, "valid ConflictOption " + value.ToString());
+                    Debug.Fail("valid ConflictOption " + value.ToString());
                     break;
             }
 #endif
@@ -119,7 +119,7 @@ namespace System.Data.Common
                 case DataRowState.Added:
                 case DataRowState.Deleted:
                 case DataRowState.Modified:
-                    Debug.Assert(false, "valid DataRowState " + value.ToString());
+                    Debug.Fail("valid DataRowState " + value.ToString());
                     break;
             }
 #endif
@@ -134,7 +134,7 @@ namespace System.Data.Common
             {
                 case KeyRestrictionBehavior.PreventUsage:
                 case KeyRestrictionBehavior.AllowOnly:
-                    Debug.Assert(false, "valid KeyRestrictionBehavior " + value.ToString());
+                    Debug.Fail("valid KeyRestrictionBehavior " + value.ToString());
                     break;
             }
 #endif
@@ -150,7 +150,7 @@ namespace System.Data.Common
                 case LoadOption.OverwriteChanges:
                 case LoadOption.PreserveChanges:
                 case LoadOption.Upsert:
-                    Debug.Assert(false, "valid LoadOption " + value.ToString());
+                    Debug.Fail("valid LoadOption " + value.ToString());
                     break;
             }
 #endif
@@ -166,7 +166,7 @@ namespace System.Data.Common
                 case MissingMappingAction.Passthrough:
                 case MissingMappingAction.Ignore:
                 case MissingMappingAction.Error:
-                    Debug.Assert(false, "valid MissingMappingAction " + value.ToString());
+                    Debug.Fail("valid MissingMappingAction " + value.ToString());
                     break;
             }
 #endif
@@ -183,7 +183,7 @@ namespace System.Data.Common
                 case MissingSchemaAction.Ignore:
                 case MissingSchemaAction.Error:
                 case MissingSchemaAction.AddWithKey:
-                    Debug.Assert(false, "valid MissingSchemaAction " + value.ToString());
+                    Debug.Fail("valid MissingSchemaAction " + value.ToString());
                     break;
             }
 #endif
@@ -199,7 +199,7 @@ namespace System.Data.Common
                 case Rule.Cascade:
                 case Rule.SetNull:
                 case Rule.SetDefault:
-                    Debug.Assert(false, "valid Rule " + value.ToString());
+                    Debug.Fail("valid Rule " + value.ToString());
                     break;
             }
 #endif
@@ -214,7 +214,7 @@ namespace System.Data.Common
             {
                 case SchemaType.Source:
                 case SchemaType.Mapped:
-                    Debug.Assert(false, "valid SchemaType " + value.ToString());
+                    Debug.Fail("valid SchemaType " + value.ToString());
                     break;
             }
 #endif
@@ -232,7 +232,7 @@ namespace System.Data.Common
                 case StatementType.Update:
                 case StatementType.Delete:
                 case StatementType.Batch:
-                    Debug.Assert(false, "valid StatementType " + value.ToString());
+                    Debug.Fail("valid StatementType " + value.ToString());
                     break;
             }
 #endif
@@ -249,7 +249,7 @@ namespace System.Data.Common
                 case UpdateStatus.ErrorsOccurred:
                 case UpdateStatus.SkipAllRemainingRows:
                 case UpdateStatus.SkipCurrentRow:
-                    Debug.Assert(false, "valid UpdateStatus " + value.ToString());
+                    Debug.Fail("valid UpdateStatus " + value.ToString());
                     break;
             }
 #endif
@@ -278,7 +278,7 @@ namespace System.Data.Common
         //
         internal static Exception WrongType(Type got, Type expected)
         {
-            return Argument(SR.Format(SR.SQL_WrongType, got.ToString(), expected.ToString()));
+            return Argument(SR.Format(SR.SQL_WrongType, got, expected));
         }
 
         //
@@ -458,7 +458,7 @@ namespace System.Data.Common
                         goto default;
 #if DEBUG
                     case StatementType.Select:
-                        Debug.Assert(false, "shouldn't be here");
+                        Debug.Fail("shouldn't be here");
                         goto default;
 #endif
                     default:
@@ -493,10 +493,10 @@ namespace System.Data.Common
                         break;
 #if DEBUG
                     case StatementType.Select:
-                        Debug.Assert(false, "shouldn't be here");
+                        Debug.Fail("shouldn't be here");
                         goto default;
                     case StatementType.Batch:
-                        Debug.Assert(false, "isRowUpdatingCommand should have been true");
+                        Debug.Fail("isRowUpdatingCommand should have been true");
                         goto default;
 #endif
                     default:
@@ -590,7 +590,7 @@ namespace System.Data.Common
 #if DEBUG
                 case StatementType.Select:
                 case StatementType.Insert:
-                    Debug.Assert(false, "should be here");
+                    Debug.Fail("should be here");
                     goto default;
 #endif
                 default:
@@ -626,7 +626,7 @@ namespace System.Data.Common
                         break;
 #if DEBUG
                     case StatementType.Batch:
-                        Debug.Assert(false, "isRowUpdatingCommand should have been true");
+                        Debug.Fail("isRowUpdatingCommand should have been true");
                         goto default;
 #endif
                     default:
