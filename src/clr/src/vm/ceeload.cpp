@@ -7442,6 +7442,11 @@ MethodDesc* Module::LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_
             DWORD slot;
             IfFailThrow(p.GetData(&slot));
 
+            if (slot >= pOwnerMT->GetNumVtableSlots())
+            {
+                COMPlusThrow(kTypeLoadException, IDS_IBC_MISSING_EXTERNAL_METHOD);
+            }
+
             pMethod = pOwnerMT->GetMethodDescForSlot(slot);
         }
         else  // otherwise we use the normal metadata MethodDef token encoding and we handle ibc tokens.
