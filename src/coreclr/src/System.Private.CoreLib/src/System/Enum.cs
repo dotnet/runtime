@@ -924,7 +924,7 @@ namespace System
             if (valueType.IsEnum)
             {
                 if (!valueType.IsEquivalentTo(enumType))
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType.ToString(), enumType.ToString()));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType, enumType));
 
                 if (format.Length != 1)
                 {
@@ -938,7 +938,7 @@ namespace System
             Type underlyingType = GetUnderlyingType(enumType);
             if (valueType != underlyingType)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_EnumFormatUnderlyingTypeAndObjectMustBeSameType, valueType.ToString(), underlyingType.ToString()));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumFormatUnderlyingTypeAndObjectMustBeSameType, valueType, underlyingType));
             }
 
             if (format.Length == 1)
@@ -1156,7 +1156,7 @@ namespace System
                 Type thisType = this.GetType();
                 Type targetType = target.GetType();
 
-                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, targetType.ToString(), thisType.ToString()));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, targetType, thisType));
             }
             else
             {

@@ -145,7 +145,7 @@ namespace System.Reflection
 
             if (!MetadataImport.IsValidToken(tk) || !tk.IsFieldDef)
                 throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                    string.Format(CultureInfo.CurrentUICulture, SR.Format(SR.Argument_InvalidToken, tk, this)));
+                    SR.Format(SR.Argument_InvalidToken, tk, this));
 
             int tkDeclaringType;
             string fieldName;
@@ -305,17 +305,17 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
             if (!tk.IsString)
                 throw new ArgumentException(
-                    string.Format(CultureInfo.CurrentUICulture, SR.Argument_ResolveString, metadataToken, ToString()));
+                    SR.Format(SR.Argument_ResolveString, metadataToken, this));
 
             if (!MetadataImport.IsValidToken(tk))
                 throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                    string.Format(CultureInfo.CurrentUICulture, SR.Format(SR.Argument_InvalidToken, tk, this)));
+                    SR.Format(SR.Argument_InvalidToken, tk, this));
 
             string str = MetadataImport.GetUserString(metadataToken);
 
             if (str == null)
                 throw new ArgumentException(
-                    string.Format(CultureInfo.CurrentUICulture, SR.Argument_ResolveString, metadataToken, ToString()));
+                    SR.Format(SR.Argument_ResolveString, metadataToken, this));
 
             return str;
         }
