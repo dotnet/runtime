@@ -46,7 +46,7 @@ namespace Repro
         {
             var items = new List<(DateTime Date, CompositeSource Key, decimal Attribution)>();
 
-            foreach (var _ in Enumerable.Range(0, rng.Next(1000, 10000)))
+            foreach (var _ in Enumerable.Range(0, rng.Next(50, 100)))
             {
                 items.Add((
                     BaseDate.AddDays(rng.Next(1, 100)),
@@ -66,7 +66,7 @@ namespace Repro
         {
 
             var list = new List<CompositeSource>();
-            foreach (var _ in Enumerable.Range(0, 100))
+            foreach (var _ in Enumerable.Range(0, 50))
             {
                 lock (Rng)
                 {
@@ -89,7 +89,7 @@ namespace Repro
         {
             Console.WriteLine("Starting stress loop");
             var compositeSources = GetCompositeSources();
-            var res = Parallel.For(0, 10, i =>
+            var res = Parallel.For(0, 5, i =>
             {
                 int seed;
                 lock (Rng)
