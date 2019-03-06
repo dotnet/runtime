@@ -187,11 +187,16 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
             }
 
-            int i = 0;
-            foreach (T item in collection)
+            if (GetType() == typeof(Collection<T>) && items is List<T> list)
             {
-                Insert(index + i, item);
-                i++;
+                list.InsertRange(index, collection);
+            }
+            else
+            {
+                foreach (T item in collection)
+                {
+                    InsertItem(index++, item);
+                }
             }
         }
 
