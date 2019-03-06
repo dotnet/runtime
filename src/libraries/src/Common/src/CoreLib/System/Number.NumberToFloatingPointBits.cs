@@ -333,6 +333,9 @@ namespace System
         {
             Debug.Assert(number.GetDigitsPointer()[0] != '0');
 
+            Debug.Assert(number.Scale <= FloatingPointMaxExponent);
+            Debug.Assert(number.Scale >= FloatingPointMinExponent);
+
             // The input is of the form 0.Mantissa x 10^Exponent, where 'Mantissa' are
             // the decimal digits of the mantissa and 'Exponent' is the decimal exponent.
             // We decompose the mantissa into two parts: an integer part and a fractional
