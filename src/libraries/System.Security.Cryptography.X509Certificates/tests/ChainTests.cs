@@ -814,14 +814,73 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
             }
         }
 
-        private static X509ChainStatusFlags AllStatusFlags(this X509Chain chain)
+        [Fact]
+        public static void BuildInvalidSignatureTwice()
+        {
+            byte[] bytes = (byte[])TestData.MsCertificate.Clone();
+            bytes[bytes.Length - 1] ^= 0xFF;
+
+            using (X509Certificate2 cert = new X509Certificate2(bytes))
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+                chain.ChainPolicy.VerificationFlags =
+                    X509VerificationFlags.AllowUnknownCertificateAuthority;
+
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                int iter = 0;
+
+                void CheckChain()
+                {
+                    iter++;
+                    bool valid = chain.Build(cert);
+                    X509ChainStatusFlags allFlags = chain.AllStatusFlags();
+
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        // OSX considers this to be valid because it doesn't report NotSignatureValid,
+                        // just PartialChain ("I couldn't find an issuer that made the signature work"),
+                        // and PartialChain + AllowUnknownCertificateAuthority == pass.
+                        Assert.True(valid, $"Chain is valid on execution {iter}");
+
+                        Assert.Equal(1, chain.ChainElements.Count);
+
+                        Assert.Equal(
+                            X509ChainStatusFlags.PartialChain,
+                            allFlags);
+                    }
+                    else
+                    {
+                        Assert.False(valid, $"Chain is valid on execution {iter}");
+
+                        Assert.Equal(3, chain.ChainElements.Count);
+
+                        // Clear UntrustedRoot, if it happened.
+                        allFlags &= ~X509ChainStatusFlags.UntrustedRoot;
+
+                        Assert.Equal(
+                            X509ChainStatusFlags.NotSignatureValid,
+                            allFlags);
+                    }
+
+                    chainHolder.DisposeChainElements();
+                }
+
+                CheckChain();
+                CheckChain();
+            }
+        }
+
+        internal static X509ChainStatusFlags AllStatusFlags(this X509Chain chain)
         {
             return chain.ChainStatus.Aggregate(
                 X509ChainStatusFlags.NoError,
                 (f, s) => f | s.Status);
         }
 
-        private static X509ChainStatusFlags AllStatusFlags(this X509ChainElement chainElement)
+        internal static X509ChainStatusFlags AllStatusFlags(this X509ChainElement chainElement)
         {
             return chainElement.ChainElementStatus.Aggregate(
                 X509ChainStatusFlags.NoError,
