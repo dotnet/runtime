@@ -60,6 +60,7 @@ namespace System
         public static bool IsInContainer { get { throw null; } }
         public static bool IsInvokingStaticConstructorsSupported { get { throw null; } }
         public static bool IsMacOsHighSierraOrHigher { get { throw null; } }
+        public static bool IsMacOsMojaveOrHigher { get { throw null; } }
         public static bool IsNetBSD { get { throw null; } }
         public static bool IsNetCore { get { throw null; } }
         public static bool IsNetfx462OrNewer { get { throw null; } }
