@@ -732,8 +732,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread,
 //==========================================================================
 LONG FilterAccessViolation(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
 
-bool IsContinuableException(Thread *pThread);
-
 bool IsInterceptableException(Thread *pThread);
 
 #ifdef DEBUGGING_SUPPORTED

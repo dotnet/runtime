@@ -310,9 +310,6 @@ HRESULT EEConfig::Init()
     szZapBBInstr     = NULL;
     szZapBBInstrDir  = NULL;
 
-    fAppDomainUnload = true;
-    dwADURetryCount=1000;
-
 #ifdef _DEBUG
     // interop logging
     m_pTraceIUnknown = NULL;
@@ -1096,17 +1093,6 @@ HRESULT EEConfig::sync()
 #ifdef _DEBUG
     fExpandAllOnLoad = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_ExpandAllOnLoad, fExpandAllOnLoad) != 0);
 #endif //_DEBUG
-
-
-#ifdef AD_NO_UNLOAD
-    fAppDomainUnload = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AppDomainNoUnload) == 0);
-#endif
-    dwADURetryCount=GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_ADURetryCount, dwADURetryCount);
-    if (dwADURetryCount==(DWORD)-1)
-    {
-        _ASSERTE(!"Reserved value");
-        dwADURetryCount=(DWORD)-2;
-    }
 
 #ifdef ENABLE_STARTUP_DELAY
     {

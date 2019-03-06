@@ -102,7 +102,6 @@
 ///
 /// AppDomain
 ///
-CONFIG_DWORD_INFO(INTERNAL_ADBreakOnCannotUnload, W("ADBreakOnCannotUnload"), 0, "Used to troubleshoot failures to unload appdomain (e.g. someone sitting in unmanged code). In some cases by the time we throw the appropriate exception the thread has moved from the offending call. This setting allows in an instrumented build to stop exactly at the right moment.")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_AddRejitNops, W("AddRejitNops"), "Control for the profiler rejit feature infrastructure")
 CONFIG_DWORD_INFO(INTERNAL_ADDumpSB, W("ADDumpSB"), 0, "Not used")
 CONFIG_DWORD_INFO(INTERNAL_ADForceSB, W("ADForceSB"), 0, "Forces sync block creation for all objects")
@@ -110,8 +109,6 @@ CONFIG_DWORD_INFO(INTERNAL_ADLogMemory, W("ADLogMemory"), 0, "Superseded by test
 CONFIG_DWORD_INFO(INTERNAL_ADTakeDHSnapShot, W("ADTakeDHSnapShot"), 0, "Superseded by test hooks")
 CONFIG_DWORD_INFO(INTERNAL_ADTakeSnapShot, W("ADTakeSnapShot"), 0, "Superseded by test hooks")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_EnableFullDebug, W("EnableFullDebug"), "Heavy-weight checking for AD boundary violations (AD leaks)")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ADULazyMemoryRelease, W("ADULazyMemoryRelease"), 1, "On by default. Turned off in cases when people try to catch memory leaks, in which case AD unload should be immediately followed by GC)")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_ADURetryCount, W("ADURetryCount"), "Controls timeout of AD unload. Used for workarounds when machine is too slow, there are network issues etc.")
 
 // For the proposal and discussion on why finalizers are not run on shutdown by default anymore in CoreCLR, see the API review:
 // https://github.com/dotnet/corefx/issues/5205

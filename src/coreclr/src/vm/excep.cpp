@@ -5771,7 +5771,7 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
         {
             // No, don't swallow unhandled exceptions...
 
-            // ...except if the exception is of a type that is always swallowed (ThreadAbort, AppDomainUnload)...
+            // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
             if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
             {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
                 return EXCEPTION_EXECUTE_HANDLER;
@@ -6562,7 +6562,7 @@ LONG FilterAccessViolation(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvPar
 }
 
 /*
- * IsContinuableException
+ * IsInterceptableException
  *
  * Returns whether this is an exception the EE knows how to intercept and continue from.
  *
