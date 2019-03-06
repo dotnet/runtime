@@ -17894,11 +17894,11 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
             // Avx2.BroadcastScalarToVector128/256 have vector and pointer overloads both, e.g.,
             // Vector128<byte> BroadcastScalarToVector128(Vector128<byte> value)
             // Vector128<byte> BroadcastScalarToVector128(byte* source)
-            // So, we need to check the argument's type is memory-reference (TYP_I_IMPL) or not
+            // So, we need to check the argument's type is memory-reference or Vector128
             assert(HWIntrinsicInfo::lookupNumArgs(this) == 1);
             return (gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector128 ||
                     gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector256) &&
-                   gtOp.gtOp1->TypeGet() == TYP_I_IMPL;
+                   gtOp.gtOp1->TypeGet() != TYP_SIMD16;
         }
         else if (category == HW_Category_IMM)
         {
