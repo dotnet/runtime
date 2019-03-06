@@ -1,33 +1,11 @@
 parameters:
+  DependsOn: {}
   _PublishType: {}
 jobs:
   - job: Finalize_Publish
     displayName: Finalize_Publish
-    # Run only if all build legs succeeded
-    condition: and(
-                  succeeded('Build_Linux_Arm'),
-                  succeeded('Build_Linux_Arm64'),
-                  succeeded('Build_Linux_x64_Alpine36'),
-                  succeeded('Build_Linux_x64_glibc'),
-                  succeeded('Build_Linux_x64_Rhel6'),
-                  succeeded('Build_OSX'),
-                  succeeded('Build_Windows_Arm'),
-                  succeeded('Build_Windows_Arm64'),
-                  succeeded('Build_Windows_x64'),
-                  succeeded('Build_Windows_x86'),
-                  ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))
     # Run after all dependent legs are executed
-    dependsOn: 
-    - Build_Linux_Arm
-    - Build_Linux_Arm64
-    - Build_Linux_x64_Alpine36
-    - Build_Linux_x64_glibc
-    - Build_Linux_x64_Rhel6
-    - Build_OSX
-    - Build_Windows_Arm
-    - Build_Windows_Arm64
-    - Build_Windows_x64
-    - Build_Windows_x86
+    dependsOn: ${{ parameters.DependsOn }}
     pool:
       # For public or PR jobs, use the hosted pool.  For internal jobs use the internal pool.
       # Will eventually change this to two BYOC pools.

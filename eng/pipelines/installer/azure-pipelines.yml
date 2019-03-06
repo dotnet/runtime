@@ -90,7 +90,7 @@ jobs:
   parameters:
     crossBuild: true
     displayName: Build_Linux_Arm
-    dockerImage: microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180323032140
+    dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-cross-e435274-20180323032140
     additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm
     portableBuild: true
     skipTests: true
@@ -100,7 +100,7 @@ jobs:
   parameters:
     crossBuild: true
     displayName: Build_Linux_Arm64
-    dockerImage: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180316023254
+    dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180316023254
     additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm64
     portableBuild: true
     skipTests: true
@@ -122,16 +122,27 @@ jobs:
 
 - template: /eng/jobs/bash-build.yml
   parameters:
+    additionalMSBuildArgs: /p:OutputRid=linux-musl-arm64
+    crossBuild: true
+    displayName: Build_Linux_Arm64_Alpine37
+    dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917
+    additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm64
+    portableBuild: true
+    skipTests: true
+    targetArchitecture: arm64
+
+- template: /eng/jobs/bash-build.yml
+  parameters:
     additionalMSBuildArgs: /p:OutputRid=linux-musl-x64
     displayName: Build_Linux_x64_Alpine36
-    dockerImage: microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-20171119021156
+    dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.6-3148f11-20171119021156
     portableBuild: false
     targetArchitecture: x64
 
 - template: /eng/jobs/bash-build.yml
   parameters:
     displayName: Build_Linux_x64_glibc
-    dockerImage: microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424
+    dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-d485f41-20173404063424
     packageDistroListDeb: [debian.8,debian.9,ubuntu.16.04,ubuntu.18.04]
     packageDistroListRpm: [centos.7,fedora.27,opensuse.42,oraclelinux.7,sles.12]
     portableBuild: true
@@ -141,7 +152,7 @@ jobs:
   parameters:
     additionalMSBuildArgs: /p:OutputRid=rhel.6-x64
     displayName: Build_Linux_x64_Rhel6
-    dockerImage: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
+    dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-376e1a3-20174311014331
     portableBuild: false
     targetArchitecture: x64
 
@@ -190,6 +201,18 @@ jobs:
   ################################################################################
   - template: /eng/jobs/finalize-publish.yml
     parameters:
+      DependsOn:
+      - Build_Linux_Arm
+      - Build_Linux_Arm64
+      - Build_Linux_Arm64_Alpine37
+      - Build_Linux_x64_Alpine36
+      - Build_Linux_x64_glibc
+      - Build_Linux_x64_Rhel6
+      - Build_OSX
+      - Build_Windows_Arm
+      - Build_Windows_Arm64
+      - Build_Windows_x64
+      - Build_Windows_x86
       _PublishType: nopublishtype
 
   ################################################################################
