@@ -535,9 +535,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/eh/FinallyExec/nonlocalexitinroot/*">
             <Issue>Test times out</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19361/GitHub_19361/*">
-            <Issue>20232</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlstack/*">
             <Issue>Release only crash</Issue>
         </ExcludeList>
@@ -568,9 +565,6 @@
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' != 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/runtimeeventsource/*">
             <Issue>19340</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19361/GitHub_19361/*">
-            <Issue>20232</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
             <Issue>17129</Issue>
