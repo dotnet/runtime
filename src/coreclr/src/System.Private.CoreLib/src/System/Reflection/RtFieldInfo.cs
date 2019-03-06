@@ -102,7 +102,7 @@ namespace System.Reflection
                     else
                     {
                         throw new ArgumentException(
-                            string.Format(CultureInfo.CurrentUICulture, SR.Arg_FieldDeclTarget,
+                            SR.Format(SR.Arg_FieldDeclTarget,
                                 Name, m_declaringType, target.GetType()));
                     }
                 }
@@ -137,7 +137,7 @@ namespace System.Reflection
         {
             get
             {
-                return string.Format("{0}.{1}", DeclaringType.FullName, Name);
+                return DeclaringType.FullName + "." + Name;
             }
         }
 
