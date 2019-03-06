@@ -227,7 +227,7 @@ namespace System.Data.Odbc
                             parameter.Direction = ParameterDirection.ReturnValue;
                             break;
                         default:
-                            Debug.Assert(false, "Unexpected Parametertype while DeriveParamters");
+                            Debug.Fail("Unexpected Parametertype while DeriveParamters");
                             break;
                     }
                     parameter.OdbcType = TypeMap.FromSqlType((ODBC32.SQL_TYPE)reader.GetInt16(ODBC32.DATA_TYPE - 1))._odbcType;

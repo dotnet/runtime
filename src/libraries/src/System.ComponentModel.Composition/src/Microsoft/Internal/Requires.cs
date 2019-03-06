@@ -92,7 +92,7 @@ namespace Microsoft.Internal
             if ((value & enumFlagSet) != value || // Ensure the member is in the set
                 (value & (value - 1)) != 0) // Ensure that there is only one flag in the value (i.e. value is a power of 2).
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_InvalidEnumInSet, parameterName, value, enumFlagSet.ToString()), parameterName);
+                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_InvalidEnumInSet, parameterName, value, enumFlagSet.ToString()), parameterName);
             }
             Contract.EndContractBlock();
         }
@@ -112,7 +112,7 @@ namespace Microsoft.Internal
 
             if (value.Length == 0)
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ArgumentException_EmptyString, parameterName), parameterName);
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, parameterName), parameterName);
             }
         }
 

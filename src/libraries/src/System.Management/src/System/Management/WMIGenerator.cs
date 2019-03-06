@@ -4919,7 +4919,7 @@ namespace System.Management
             }
             catch
             {
-                throw new ArgumentOutOfRangeException(string.Format(SR.UnableToCreateCodeGeneratorException , strProvider ));
+                throw new ArgumentOutOfRangeException(SR.Format(SR.UnableToCreateCodeGeneratorException , strProvider ));
             }
 
             if(bSucceeded == true)
@@ -4928,7 +4928,7 @@ namespace System.Management
             }
             else
             {
-                throw new ArgumentOutOfRangeException(string.Format(SR.UnableToCreateCodeGeneratorException , strProvider));
+                throw new ArgumentOutOfRangeException(SR.Format(SR.UnableToCreateCodeGeneratorException , strProvider));
             }
             return true;
         }

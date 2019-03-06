@@ -777,9 +777,7 @@ namespace System.Numerics
         /// <returns>The string representation.</returns>
         public override string ToString()
         {
-            CultureInfo ci = CultureInfo.CurrentCulture;
-
-            return string.Format(ci, "{{X:{0} Y:{1} Z:{2} W:{3}}}", X.ToString(ci), Y.ToString(ci), Z.ToString(ci), W.ToString(ci));
+            return string.Format(CultureInfo.CurrentCulture, "{{X:{0} Y:{1} Z:{2} W:{3}}}", X, Y, Z, W);
         }
 
         /// <summary>

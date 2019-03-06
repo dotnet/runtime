@@ -611,7 +611,7 @@ namespace System.Diagnostics
                     }
 
                     if (inaccessibleLogs != null)
-                        throw new SecurityException(SR.Format(wantToCreate ? SR.SomeLogsInaccessibleToCreate : SR.SomeLogsInaccessible, inaccessibleLogs.ToString()));
+                        throw new SecurityException(SR.Format(wantToCreate ? SR.SomeLogsInaccessibleToCreate : SR.SomeLogsInaccessible, inaccessibleLogs));
 
                 }
                 finally

@@ -683,7 +683,7 @@ namespace System.Diagnostics
             {
                 if (handle.IsInvalid)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString(CultureInfo.CurrentCulture)));
+                    throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
                 }
 
                 ProcessThreadTimes processTimes = new ProcessThreadTimes();
@@ -762,7 +762,7 @@ namespace System.Diagnostics
                         if (waitHandle.WaitOne(0))
                         {
                             if (_haveProcessId)
-                                throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString(CultureInfo.CurrentCulture)));
+                                throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
                             else
                                 throw new InvalidOperationException(SR.ProcessHasExitedNoId);
                         }
@@ -783,7 +783,7 @@ namespace System.Diagnostics
                 {
                     if (Interop.Kernel32.GetExitCodeProcess(handle, out _exitCode) && _exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
                     {
-                        throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString(CultureInfo.CurrentCulture)));
+                        throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
                     }
                 }
                 return handle;

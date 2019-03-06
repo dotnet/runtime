@@ -177,9 +177,7 @@ namespace System.IO.Packaging
             }
             catch (XmlException exception)
             {
-                var r = SR.NotAValidXmlIdString;
-                var s = SR.Format(r, id);
-                throw new XmlException(s, exception);
+                throw new XmlException(SR.Format(SR.NotAValidXmlIdString, id), exception);
             }
         }
 

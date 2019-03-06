@@ -563,7 +563,7 @@ namespace System.Net.Mail
                             // Either TLS is already established or server does not support TLS
                             if (!(_connection._networkStream is TlsStream))
                             {
-                                throw new SmtpException(SR.Format(SR.MailServerDoesNotSupportStartTls));
+                                throw new SmtpException(SR.MailServerDoesNotSupportStartTls);
                             }
                         }
 
@@ -827,7 +827,7 @@ namespace System.Net.Mail
                     Authorization auth = _connection._authenticationModules[_currentModule].Authenticate(_authResponse, null, _connection, _connection._client.TargetName, _connection._channelBindingToken);
                     if (auth == null)
                     {
-                        throw new SmtpException(SR.Format(SR.SmtpAuthenticationFailed));
+                        throw new SmtpException(SR.SmtpAuthenticationFailed);
                     }
 
                     IAsyncResult result = AuthCommand.BeginSend(_connection, auth.Message, s_authenticateContinueCallback, this);

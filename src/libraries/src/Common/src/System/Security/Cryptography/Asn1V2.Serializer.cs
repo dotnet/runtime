@@ -1075,6 +1075,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 throw new AsnSerializationConstraintException(
                     SR.Format(
+                        SR.Cryptography_AsnSerializer_MultipleAsnTypeAttributes,
                         fieldInfo.Name,
                         fieldInfo.DeclaringType.FullName,
                         typeof(AsnTypeAttribute).FullName));

@@ -97,7 +97,7 @@ namespace Internal.Cryptography
             }
             else
             {
-                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.CurveType.ToString()));
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curve.Value.CurveType.ToString()));
             }
 
             try
@@ -112,7 +112,7 @@ namespace Internal.Cryptography
                 if (curve.Value.IsNamed &&
                     errorCode == ErrorCode.NTE_INVALID_PARAMETER || errorCode == ErrorCode.NTE_NOT_SUPPORTED)
                 {
-                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.Value.Oid.FriendlyName), e);
+                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curve.Value.Oid.FriendlyName), e);
                 }
                 throw;
             }

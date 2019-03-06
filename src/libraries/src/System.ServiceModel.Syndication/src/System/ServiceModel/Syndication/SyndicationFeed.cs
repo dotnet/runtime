@@ -307,7 +307,7 @@ namespace System.ServiceModel.Syndication
 
                         if (!parsed || (hour < 0 || hour > 23))
                         {
-                            throw new FormatException(string.Format(SR.InvalidSkipHourValue, value));
+                            throw new FormatException(SR.Format(SR.InvalidSkipHourValue, value));
                         }
 
                         skipHours.Add(hour);

@@ -157,13 +157,13 @@ namespace System.Collections.Immutable
                         case KeyCollisionBehavior.ThrowIfValueDifferent:
                             if (!valueComparer.Equals(_firstValue.Value, value))
                             {
-                                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                                throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                             }
 
                             result = OperationResult.NoChangeRequired;
                             return this;
                         case KeyCollisionBehavior.ThrowAlways:
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                            throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                         default:
                             throw new InvalidOperationException(); // unreachable
                     }
@@ -193,13 +193,13 @@ namespace System.Collections.Immutable
 #endif
                             if (!valueComparer.Equals(existingEntry.Value, value))
                             {
-                                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                                throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                             }
 
                             result = OperationResult.NoChangeRequired;
                             return this;
                         case KeyCollisionBehavior.ThrowAlways:
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                            throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                         default:
                             throw new InvalidOperationException(); // unreachable
                     }
