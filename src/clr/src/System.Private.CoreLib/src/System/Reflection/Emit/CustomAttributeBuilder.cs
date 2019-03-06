@@ -301,7 +301,7 @@ namespace System.Reflection.Emit
             }
             if (passedType == typeof(IntPtr) || passedType == typeof(UIntPtr))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_BadParameterTypeForCAB, passedType.ToString()), paramName);
+                throw new ArgumentException(SR.Format(SR.Argument_BadParameterTypeForCAB, passedType), paramName);
             }
         }
 
@@ -524,7 +524,7 @@ namespace System.Reflection.Emit
                 // value cannot be a "System.Object" object.
                 // If we allow this we will get into an infinite recursion
                 if (ot == typeof(object))
-                    throw new ArgumentException(SR.Format(SR.Argument_BadParameterTypeForCAB, ot.ToString()));
+                    throw new ArgumentException(SR.Format(SR.Argument_BadParameterTypeForCAB, ot));
 
                 EmitType(writer, ot);
                 EmitValue(writer, ot, value);

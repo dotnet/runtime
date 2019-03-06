@@ -384,7 +384,7 @@ namespace System.Reflection.Emit
                         }
                         else
                         {
-                            throw new ArgumentException(SR.Format(SR.Argument_ConstantNotSupported, type.ToString()));
+                            throw new ArgumentException(SR.Format(SR.Argument_ConstantNotSupported, type));
                         }
                         break;
                 }

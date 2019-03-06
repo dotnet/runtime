@@ -32,7 +32,7 @@ namespace System.IO
             else 
                 GetMessageForHR(hResult, JitHelpers.GetStringHandleOnStack(ref message));
 
-            return string.Format(CultureInfo.CurrentCulture, format, fileName, message);
+            return string.Format(format, fileName, message);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

@@ -366,7 +366,7 @@ namespace System
 
         private static KeyNotFoundException GetKeyNotFoundException(object key)
         {
-            return new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
+            return new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key));
         }
 
         private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
@@ -731,8 +731,7 @@ namespace System
                 case ExceptionResource.Arg_TypeNotSupported:
                     return SR.Arg_TypeNotSupported;
                 default:
-                    Debug.Assert(false,
-                        "The enum value is not defined, please check the ExceptionResource Enum.");
+                    Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
             }
         }

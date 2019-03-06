@@ -1064,8 +1064,7 @@ namespace System.Reflection.Emit
                     MethodBase m = RuntimeType.GetMethodBase(methodReal);
                     Type t = m.DeclaringType.GetGenericTypeDefinition();
 
-                    throw new ArgumentException(string.Format(
-                        CultureInfo.CurrentCulture, SR.Argument_MethodDeclaringTypeGenericLcg, m, t));
+                    throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGenericLcg, m, t));
                 }
             }
 

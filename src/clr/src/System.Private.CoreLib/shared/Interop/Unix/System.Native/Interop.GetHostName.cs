@@ -27,8 +27,8 @@ internal static partial class Interop
                 // which should only happen if the buffer we supply isn't big
                 // enough, and we're using a buffer size that the man page
                 // says is the max for POSIX (and larger than the max for Linux).
-                Debug.Fail("gethostname failed");
-                throw new InvalidOperationException(string.Format("gethostname returned {0}", err));
+                Debug.Fail($"GetHostName failed with error {err}");
+                throw new InvalidOperationException($"{nameof(GetHostName)}: {err}");
             }
 
             // If the hostname is truncated, it is unspecified whether the returned buffer includes a terminating null byte.

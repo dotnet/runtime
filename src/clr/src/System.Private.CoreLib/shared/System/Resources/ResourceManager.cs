@@ -544,7 +544,7 @@ namespace System.Resources
 
             if (!Version.TryParse(v, out Version version))
             {
-                throw new ArgumentException(SR.Format(SR.Arg_InvalidSatelliteContract_Asm_Ver, a.ToString(), v));
+                throw new ArgumentException(SR.Format(SR.Arg_InvalidSatelliteContract_Asm_Ver, a, v));
             }
 
             return version;

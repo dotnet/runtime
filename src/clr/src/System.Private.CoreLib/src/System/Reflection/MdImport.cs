@@ -629,7 +629,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "MetadataException HResult = {0:x}.", m_hr);
+            return string.Format("MetadataException HResult = {0:x}.", m_hr);
         }
     }
 }
