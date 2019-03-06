@@ -52,6 +52,11 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
+    # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
+    # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
+    - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
+      displayName: Clear NuGet http cache (if exists)
+
     # Initialize building
     - script: $(Build.SourcesDirectory)\build.cmd
         -- $(CommonMSBuildArgs)
