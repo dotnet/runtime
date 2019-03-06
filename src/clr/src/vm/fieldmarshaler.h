@@ -119,25 +119,6 @@ VOID ParseNativeType(Module*    pModule,
 BOOL IsFieldBlittable(FieldMarshaler* pFM);
 
 //=======================================================================
-// This is invoked from the class loader while building the data structures for a type.
-// This function checks if explicit layout metadata exists.
-//
-// Returns:
-//  TRUE    - yes, there's layout metadata
-//  FALSE   - no, there's no layout.
-//  fail    - throws a typeload exception
-//
-// If S_OK,
-//   *pNLType            gets set to nltAnsi or nltUnicode
-//   *pPackingSize       declared packing size
-//   *pfExplicitoffsets  offsets explicit in metadata or computed?
-//=======================================================================
-BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport *pInternalImport, mdTypeDef cl, 
-                            MethodTable *pParentMT, BYTE *pPackingSize, BYTE *pNLTType,
-                            BOOL *pfExplicitOffsets);
-
-
-//=======================================================================
 // This function returns TRUE if the type passed in is either a value class or a class and if it has layout information 
 // and is marshalable. In all other cases it will return FALSE. 
 //=======================================================================

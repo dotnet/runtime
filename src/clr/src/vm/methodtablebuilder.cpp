@@ -11839,6 +11839,94 @@ MethodTableBuilder::GatherGenericsInfo(
     bmtGenericsInfo->typeContext = typeContext;
 } // MethodTableBuilder::GatherGenericsInfo
 
+//=======================================================================
+// This is invoked from the class loader while building the internal structures for a type
+// This function should check if explicit layout metadata exists.
+//
+// Returns:
+//  TRUE    - yes, there's layout metadata
+//  FALSE   - no, there's no layout.
+//  fail    - throws a typeload exception
+//
+// If TRUE,
+//   *pNLType            gets set to nltAnsi or nltUnicode
+//   *pPackingSize       declared packing size
+//   *pfExplicitoffsets  offsets explicit in metadata or computed?
+//=======================================================================
+BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, mdTypeDef cl, MethodTable* pParentMT, BYTE* pPackingSize, BYTE* pNLTType, BOOL* pfExplicitOffsets)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pInternalImport));
+        PRECONDITION(CheckPointer(pPackingSize));
+        PRECONDITION(CheckPointer(pNLTType));
+        PRECONDITION(CheckPointer(pfExplicitOffsets));
+    }
+    CONTRACTL_END;
+
+    HRESULT hr;
+    ULONG clFlags;
+
+    if (FAILED(pInternalImport->GetTypeDefProps(cl, &clFlags, NULL)))
+    {
+        pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
+    }
+
+    if (IsTdAutoLayout(clFlags))
+    {
+        return FALSE;
+    }
+    else if (IsTdSequentialLayout(clFlags))
+    {
+        *pfExplicitOffsets = FALSE;
+    }
+    else if (IsTdExplicitLayout(clFlags))
+    {
+        *pfExplicitOffsets = TRUE;
+    }
+    else
+    {
+        pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
+    }
+
+    // We now know this class has seq. or explicit layout. Ensure the parent does too.
+    if (pParentMT && !(pParentMT->IsObjectClass() || pParentMT->IsValueTypeClass()) && !(pParentMT->HasLayout()))
+        pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
+
+    if (IsTdAnsiClass(clFlags))
+    {
+        *pNLTType = nltAnsi;
+    }
+    else if (IsTdUnicodeClass(clFlags) || IsTdAutoClass(clFlags))
+    {
+        *pNLTType = nltUnicode;
+    }
+    else
+    {
+        pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
+    }
+
+    DWORD dwPackSize;
+    hr = pInternalImport->GetClassPackSize(cl, &dwPackSize);
+    if (FAILED(hr) || dwPackSize == 0)
+        dwPackSize = DEFAULT_PACKING_SIZE;
+
+    // This has to be reduced to a BYTE value, so we had better make sure it fits. If
+    // not, we'll throw an exception instead of trying to munge the value to what we
+    // think the user might want.
+    if (!FitsInU1((UINT64)(dwPackSize)))
+    {
+        pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
+    }
+
+    *pPackingSize = (BYTE)dwPackSize;
+
+    return TRUE;
+}
+
 //---------------------------------------------------------------------------------------
 // 
 // This service is called for normal classes -- and for the pseudo class we invent to
