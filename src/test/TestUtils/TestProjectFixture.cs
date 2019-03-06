@@ -13,12 +13,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
      */
     public class TestProjectFixture : IDisposable
     {
-        private static readonly string s_testArtifactDirectoryEnvironmentVariable = "TEST_ARTIFACTS";
-
-        private string _testArtifactDirectory;
         private string _assemblyName;
         private TestProject _sourceTestProject;
-        private List<TestProject> _copiedTestProjects = new List<TestProject>();
 
         public DotNetCli SdkDotnet { get; }
         public DotNetCli BuiltDotnet { get; }
@@ -40,10 +36,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             RepoDirProvider = repoDirectoriesProvider;
 
-            _testArtifactDirectory = _testArtifactDirectory
-                ?? Environment.GetEnvironmentVariable(s_testArtifactDirectoryEnvironmentVariable)
-                ?? Path.Combine(AppContext.BaseDirectory, s_testArtifactDirectoryEnvironmentVariable);
-
             SdkDotnet = new DotNetCli(repoDirectoriesProvider.DotnetSDK);
             CurrentRid = repoDirectoriesProvider.TargetRID;
 
@@ -56,16 +48,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 sourceTestProjectPath,
                 assemblyName: _assemblyName);
 
-            TestProject = CopyTestProject(
-                _sourceTestProject,
-                _testArtifactDirectory,
-                _assemblyName);
+            TestProject = CopyTestProject(_sourceTestProject);
         }
 
         public TestProjectFixture(TestProjectFixture fixtureToCopy)
         {
             RepoDirProvider = fixtureToCopy.RepoDirProvider;
-            _testArtifactDirectory = fixtureToCopy._testArtifactDirectory;
             SdkDotnet = fixtureToCopy.SdkDotnet;
             CurrentRid = fixtureToCopy.CurrentRid;
             BuiltDotnet = fixtureToCopy.BuiltDotnet;
@@ -73,12 +61,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             Framework = fixtureToCopy.Framework;
             _assemblyName = fixtureToCopy._assemblyName;
 
-            TestProject = CopyTestProject(
-                fixtureToCopy.TestProject,
-                _testArtifactDirectory,
-                _assemblyName);
-
-            fixtureToCopy._copiedTestProjects.Add(TestProject);
+            TestProject = CopyTestProject(fixtureToCopy.TestProject);
         }
 
         public void Dispose()
@@ -88,31 +71,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 TestProject.Dispose();
                 TestProject = null;
             }
-
-            foreach (var project in _copiedTestProjects)
-            {
-                project.Dispose();
-            }
-
-            _copiedTestProjects.Clear();
         }
 
-        private TestProject CopyTestProject(
-            TestProject sourceTestProject,
-            string testArtifactDirectory,
-            string assemblyName)
+        private TestProject CopyTestProject(TestProject sourceTestProject)
         {
-            string copiedTestProjectDirectory = CalculateTestProjectDirectory(
-                sourceTestProject.ProjectName,
-                testArtifactDirectory);
-
-            EnsureDirectoryBuildProps(testArtifactDirectory);
-
-            sourceTestProject.CopyProjectFiles(copiedTestProjectDirectory);
-
-            return new TestProject(
-                copiedTestProjectDirectory,
-                assemblyName: assemblyName);
+            EnsureDirectoryBuildProps(TestArtifact.TestArtifactsPath);
+            return sourceTestProject.Copy();
         }
 
         private void EnsureDirectoryBuildProps(string testArtifactDirectory)
@@ -137,19 +101,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 catch (IOException)
                 {}
             }
-        }
-
-        private string CalculateTestProjectDirectory(string testProjectName, string testArtifactDirectory)
-        {
-            int projectCount = 0;
-            string projectDirectory = Path.Combine(testArtifactDirectory, projectCount.ToString(), testProjectName);
-
-            while (Directory.Exists(projectDirectory))
-            {
-                projectDirectory = Path.Combine(testArtifactDirectory, (++projectCount).ToString(), testProjectName);
-            }
-
-            return projectDirectory;
         }
 
         private void ValidateRequiredDirectories(RepoDirectoriesProvider repoDirectoriesProvider)
@@ -255,7 +206,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
             else
             {
-                 storeArgs.Add(_sourceTestProject.ProjectFile);
+                storeArgs.Add(_sourceTestProject.ProjectFile);
             }
 
             if (outputDirectory != null)

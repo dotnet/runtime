@@ -99,11 +99,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
-            MoveRuntimeConfigToSubdirectory(fixture);
+            var runtimeConfig = MoveRuntimeConfigToSubdirectory(fixture);
 
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
-            var runtimeConfig = fixture.TestProject.RuntimeConfigJson;
             
             dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll)
                 .CaptureStdErr()
@@ -119,11 +118,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
-            MoveRuntimeConfigToSubdirectory(fixture);
+            var runtimeConfig = MoveRuntimeConfigToSubdirectory(fixture);
 
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
-            var runtimeConfig = fixture.TestProject.RuntimeConfigJson;
             var additionalProbingPath = sharedTestState.RepoDirectories.NugetPackages;
 
             dotnet.Exec(
@@ -181,11 +179,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
-            MoveDepsJsonToSubdirectory(fixture);
+            var depsJson = MoveDepsJsonToSubdirectory(fixture);
 
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
-            var depsJson = fixture.TestProject.DepsJson;
 
             dotnet.Exec("exec", "--depsfile", depsJson, appDll)
                 .CaptureStdErr()
@@ -233,11 +230,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableTestProjectFixture
                 .Copy();
 
-            MoveRuntimeConfigToSubdirectory(fixture);
+            var runtimeConfig = MoveRuntimeConfigToSubdirectory(fixture);
 
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
-            var runtimeConfig = fixture.TestProject.RuntimeConfigJson;
 
             dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll)
                 .CaptureStdErr()
@@ -255,11 +251,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableTestProjectFixture
                 .Copy();
 
-            MoveDepsJsonToSubdirectory(fixture);
+            var depsJson = MoveDepsJsonToSubdirectory(fixture);
 
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
-            var depsJson = fixture.TestProject.DepsJson;
 
             dotnet.Exec("exec", "--depsfile", depsJson, appDll)
                 .CaptureStdErr()
@@ -333,7 +328,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
                 .HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
         }
 
-        private void MoveDepsJsonToSubdirectory(TestProjectFixture testProjectFixture)
+        private string MoveDepsJsonToSubdirectory(TestProjectFixture testProjectFixture)
         {
             var subdirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "d");
             if (!Directory.Exists(subdirectory))
@@ -349,10 +344,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             }
             File.Move(testProjectFixture.TestProject.DepsJson, destDepsJson);
 
-            testProjectFixture.TestProject.DepsJson = destDepsJson;
+            return destDepsJson;
         }
 
-        private void MoveRuntimeConfigToSubdirectory(TestProjectFixture testProjectFixture)
+        private string MoveRuntimeConfigToSubdirectory(TestProjectFixture testProjectFixture)
         {
             var subdirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "r");
             if (!Directory.Exists(subdirectory))
@@ -368,7 +363,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             }
             File.Move(testProjectFixture.TestProject.RuntimeConfigJson, destRuntimeConfig);
 
-            testProjectFixture.TestProject.RuntimeConfigJson = destRuntimeConfig;
+            return destRuntimeConfig;
         }
 
         private string CreateAStore(TestProjectFixture testProjectFixture)
