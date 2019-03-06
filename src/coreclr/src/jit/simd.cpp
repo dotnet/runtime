@@ -1022,17 +1022,17 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
 // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
 //
 // Arguments:
-//    type        -  the type of value that the caller expects to be popped off the stack.
-//    expectAddr  -  if true indicates we are expecting type stack entry to be a TYP_BYREF.
-//    structType  -  the class handle to use when normalizing if it is not the same as the stack entry class handle;
-//                   this can happen for certain scenarios, such as folding away a static cast, where we want the
-//                   value popped to have the type that would have been returned.
+//    type         -  the type of value that the caller expects to be popped off the stack.
+//    expectAddr   -  if true indicates we are expecting type stack entry to be a TYP_BYREF.
+//    structHandle -  the class handle to use when normalizing if it is not the same as the stack entry class handle;
+//                    this can happen for certain scenarios, such as folding away a static cast, where we want the
+//                    value popped to have the type that would have been returned.
 //
 // Notes:
 //    If the popped value is a struct, and the expected type is a simd type, it will be set
 //    to that type, otherwise it will assert if the type being popped is not the expected type.
 
-GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLASS_HANDLE structType)
+GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLASS_HANDLE structHandle)
 {
     StackEntry se   = impPopStack();
     typeInfo   ti   = se.seTypeInfo;
@@ -1058,10 +1058,18 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
     // If we have a ldobj of a SIMD local we need to transform it.
     if (tree->OperGet() == GT_OBJ)
     {
-        GenTree* addr = tree->gtOp.gtOp1;
-        if ((addr->OperGet() == GT_ADDR) && isSIMDTypeLocal(addr->gtOp.gtOp1))
+        if (tree->AsObj()->gtClass != structHandle)
         {
-            tree = addr->gtOp.gtOp1;
+            // In this case we need to retain the GT_OBJ to retype the value.
+            tree->AsObj()->gtClass = structHandle;
+        }
+        else
+        {
+            GenTree* addr = tree->gtOp.gtOp1;
+            if ((addr->OperGet() == GT_ADDR) && isSIMDTypeLocal(addr->gtOp.gtOp1))
+            {
+                tree = addr->gtOp.gtOp1;
+            }
         }
     }
 
@@ -1077,12 +1085,12 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
     {
         assert(ti.IsType(TI_STRUCT));
 
-        if (structType == nullptr)
+        if (structHandle == nullptr)
         {
-            structType = ti.GetClassHandleForValueClass();
+            structHandle = ti.GetClassHandleForValueClass();
         }
 
-        tree = impNormStructVal(tree, structType, (unsigned)CHECK_SPILL_ALL);
+        tree = impNormStructVal(tree, structHandle, (unsigned)CHECK_SPILL_ALL);
     }
 
     // Now set the type of the tree to the specialized SIMD struct type, if applicable.
