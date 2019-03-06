@@ -1608,14 +1608,6 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
-        case NI_SSE_MoveMask:
-            assert(sig->numArgs == 1);
-            assert(JITtype2varType(sig->retType) == TYP_INT);
-            assert(getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args)) == TYP_FLOAT);
-            op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, intrinsic, TYP_FLOAT, simdSize);
-            break;
-
         case NI_SSE_Prefetch0:
         case NI_SSE_Prefetch1:
         case NI_SSE_Prefetch2:
@@ -1688,17 +1680,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
             assert(simdSize == 0);
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, TYP_VOID, simdSize);
-            break;
-        }
-
-        case NI_SSE2_MoveMask:
-        {
-            assert(sig->numArgs == 1);
-            retType = JITtype2varType(sig->retType);
-            assert(retType == TYP_INT);
-            op1      = impSIMDPopStack(TYP_SIMD16);
-            baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
-            retNode  = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
             break;
         }
 
