@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
     internal class Helpers
     {
         public static bool IsElevatedAndCanWriteToPerfCounters { get => AdminHelpers.IsProcessElevated() && CanWriteToPerfCounters; }
-        public static bool CanWriteToPerfCounters { get => PlatformDetection.IsNotWindowsNanoServer; }
+        public static bool CanWriteToPerfCounters { get => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsNotArmNorArm64Process; }
 
         public static string CreateCategory(string name, PerformanceCounterCategoryType categoryType)
         {
