@@ -16,7 +16,7 @@ namespace System.Net.NetworkInformation
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
             // Win32 Icmp* APIs fail with E_ACCESSDENIED when called from UWP due to Windows OS limitations.
-            throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+            throw new PlatformNotSupportedException(SR.Format(CultureInfo.InvariantCulture,
                         SR.net_ping_not_supported_uwp));
         }
 
@@ -25,7 +25,7 @@ namespace System.Net.NetworkInformation
         private Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
             // Win32 Icmp* APIs fail with E_ACCESSDENIED when called from UWP due to Windows OS limitations.
-            throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+            throw new PlatformNotSupportedException(SR.Format(CultureInfo.InvariantCulture,
                         SR.net_ping_not_supported_uwp));
         }
     }

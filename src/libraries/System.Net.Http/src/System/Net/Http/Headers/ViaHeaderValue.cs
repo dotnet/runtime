@@ -298,7 +298,7 @@ namespace System.Net.Http.Headers
             string host = null;
             if (HttpRuleParser.GetHostLength(receivedBy, 0, true, out host) != receivedBy.Length)
             {
-                throw new FormatException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, receivedBy));
+                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, receivedBy));
             }
         }
     }

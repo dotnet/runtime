@@ -139,7 +139,7 @@ namespace System.Reflection.Metadata
                     break;
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Assert(false, $"Unexpected treatment {treatment}");
                     return default(BlobHandle);
             }
 

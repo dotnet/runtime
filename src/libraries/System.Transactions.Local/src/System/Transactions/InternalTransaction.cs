@@ -322,7 +322,7 @@ namespace System.Transactions
 
                     default:
                         {
-                            Debug.Assert(false, "InternalTransaction.DistributedTransactionOutcome - Unexpected TransactionStatus");
+                            Debug.Fail("InternalTransaction.DistributedTransactionOutcome - Unexpected TransactionStatus");
                             TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceLtm,
                                 "",
                                 null,

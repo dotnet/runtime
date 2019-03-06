@@ -317,7 +317,7 @@ namespace System.Xml.Xsl.Runtime
                     break;
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected node type {nav.NodeType}");
                     break;
             }
 

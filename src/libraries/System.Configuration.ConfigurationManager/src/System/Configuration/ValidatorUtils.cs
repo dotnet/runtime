@@ -59,7 +59,7 @@ namespace System.Configuration
                     : SR.Validation_scalar_range_violation_not_in_range;
             }
 
-            throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
+            throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
                 error,
                 min.ToString(),
                 max.ToString()));
@@ -70,7 +70,7 @@ namespace System.Configuration
             Debug.Assert(resolution > 0, "resolution > 0");
 
             if (value % resolution != 0)
-                throw new ArgumentException(string.Format(SR.Validator_scalar_resolution_violation, resolutionAsString));
+                throw new ArgumentException(SR.Format(SR.Validator_scalar_resolution_violation, resolutionAsString));
         }
 
         public static void ValidateScalar(TimeSpan value, TimeSpan min, TimeSpan max, long resolutionInSeconds,

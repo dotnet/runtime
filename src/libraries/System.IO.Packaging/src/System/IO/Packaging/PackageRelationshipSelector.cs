@@ -157,7 +157,7 @@ namespace System.IO.Packaging
                 default:
                     //Debug.Assert is fine here since the parameters have already been validated. And all the properties are 
                     //readonly
-                    Debug.Assert(false, "This option should never be called");
+                    Debug.Fail("This option should never be called");
                     break;
             }
 

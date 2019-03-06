@@ -142,7 +142,7 @@ namespace System.Net.Mime
 
             if (!MimeBasePart.IsAscii(name, false))
             {
-                throw new FormatException(SR.Format(SR.InvalidHeaderName));
+                throw new FormatException(SR.InvalidHeaderName);
             }
 
             // normalize the case of well known headers

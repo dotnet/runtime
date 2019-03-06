@@ -993,7 +993,7 @@ namespace System.Xml
                     case State.Closed:
                         return WriteState.Closed;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected state {_currentState}");
                         return WriteState.Error;
                 }
             }
@@ -1465,7 +1465,7 @@ namespace System.Xml
                         _stack[_top].defaultNs = ns;
                         break;
                     default:
-                        Debug.Assert(false, "Should have never come here");
+                        Debug.Fail("Should have never come here");
                         return;
                 }
                 _stack[_top].defaultNsState = (declared ? NamespaceState.DeclaredAndWrittenOut : NamespaceState.DeclaredButNotWrittenOut);
