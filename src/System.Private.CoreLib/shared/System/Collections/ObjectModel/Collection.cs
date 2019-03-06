@@ -217,7 +217,7 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if ((Int64)index + (Int64)count > items.Count)
+            if (index > items.Count - count)
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
             }
