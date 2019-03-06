@@ -1969,7 +1969,7 @@ TESTSAOT_GSHARED=$(TESTS_GSHARED:.exe=.exe$(PLATFORM_AOT_SUFFIX))
 TESTSAOT_TAILCALL=$(TESTS_TAILCALL_COMPILE:.exe=.exe$(PLATFORM_AOT_SUFFIX))
 endif
 
-EXTRA_DIST=test-driver test-runner.cs $(TESTS_CS_SRC) $(TESTS_IL_SRC) \
+EXTRA_DIST=common_mixed.mk test-driver test-runner.cs $(TESTS_CS_SRC) $(TESTS_IL_SRC) \
 	$(TESTS_BENCH_SRC) $(TESTS_STRESS_SRC) stress-runner.pl \
 	array-coop-1.cs array-coop-2.cs \
 	array-coop-bigvt.cs array-coop-int.cs array-coop-smallvt.cs \
