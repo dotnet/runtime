@@ -152,6 +152,7 @@ publish/
 *.nuget.g.targets
 *.nuget.cache
 **/packages/*
+*.nuget.dgspec.json
 project.lock.json
 project.assets.json
 
