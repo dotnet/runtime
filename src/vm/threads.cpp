@@ -7802,8 +7802,6 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    LONG (*ptrFilter) (PEXCEPTION_POINTERS, PVOID);
-
     TryParam * pRealParam = reinterpret_cast<TryParam *>(pParam);
     ManagedThreadCallState * _pCallState = pRealParam->m_pCallState;
 
@@ -7811,12 +7809,10 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
 
     // This will invoke the swallowing filter. If that returns EXCEPTION_CONTINUE_SEARCH,
     // it will trigger unhandled exception processing.
-    ptrFilter = ThreadBaseExceptionAppDomainFilter;
-
-    // WARNING - ptrFilter may not return
+    // WARNING - ThreadBaseExceptionAppDomainFilter may not return
     // This occurs when the debugger decides to intercept an exception and catch it in a frame closer
     // to the leaf than the one executing this filter
-    ret = (*ptrFilter) (pExceptionInfo, _pCallState);
+    ret = ThreadBaseExceptionAppDomainFilter(pExceptionInfo, _pCallState);
 
     // Although EXCEPTION_EXECUTE_HANDLER can also be returned in cases corresponding to
     // unhandled exceptions, all of those cases have already notified the debugger of an unhandled
@@ -7834,43 +7830,32 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
     Thread *pCurThread = GetThread();
     _ASSERTE(pCurThread);
 
+    //
+    // In the default domain, when an exception goes unhandled on a managed thread whose threadbase is in the VM (e.g. explicitly spawned threads,
+    //    ThreadPool threads, finalizer thread, etc), CLR can end up in the unhandled exception processing path twice.
+    //
+    // The first attempt to perform UE processing happens at the managed thread base (via this function). When it completes,
+    // we will set TSNC_ProcessedUnhandledException state against the thread to indicate that we have perform the unhandled exception processing.
+    //
+    // On CoreSys CoreCLR, the host can ask CoreCLR to run all code in the default domain. As a result, when we return from the first attempt to perform UE
+    // processing, the call could return back with EXCEPTION_EXECUTE_HANDLER since, like desktop CoreCLR is instructed by SL host to swallow all unhandled exceptions,
+    // CoreSys CoreCLR can also be instructed by its Phone host to swallow all unhandled exceptions. As a result, the exception dispatch will never continue to go upstack
+    // to the native threadbase in the OS kernel and thus, there will never be a second attempt to perform UE processing. Hence, we dont, and shouldnt, need to set
+    // TSNC_ProcessedUnhandledException state against the thread if we are in SingleAppDomain mode and have been asked to swallow the exception.
+    //
+    // If we continue to set TSNC_ProcessedUnhandledException and a ThreadPool Thread A has an exception go unhandled, we will swallow it correctly for the first time.
+    // The next time Thread A has an exception go unhandled, our UEF will see TSNC_ProcessedUnhandledException set and assume (incorrectly) UE processing has happened and
+    // will fail to honor the host policy (e.g. swallow unhandled exception). Thus, the 2nd unhandled exception may end up crashing the app when it should not.
+    //
+    if (ret != EXCEPTION_EXECUTE_HANDLER)
     {
         LOG((LF_EH, LL_INFO100, "ThreadBaseRedirectingFilter: setting TSNC_ProcessedUnhandledException\n"));
 
+        // Since we have already done unhandled exception processing for it, we dont want it
+        // to happen again if our UEF gets invoked upon returning back to the OS.
         //
-        // In the default domain, when an exception goes unhandled on a managed thread whose threadbase is in the VM (e.g. explicitly spawned threads, 
-        //    ThreadPool threads, finalizer thread, etc), CLR can end up in the unhandled exception processing path twice.
-        // 
-        // The first attempt to perform UE processing happens at the managed thread base (via this function). When it completes,
-        // we will set TSNC_ProcessedUnhandledException state against the thread to indicate that we have perform the unhandled exception processing.
-        //
-        // On the desktop CLR, after the first attempt, we will return back to the OS with EXCEPTION_CONTINUE_SEARCH as unhandled exceptions cannot be swallowed. When the exception reaches
-        // the native threadbase in the OS kernel, the OS will invoke the UEF registered for the process. This can result in CLR's UEF (COMUnhandledExceptionFilter)
-        // getting invoked that will attempt to perform UE processing yet again for the same thread. To avoid this duplicate processing, we check the presence of
-        // TSNC_ProcessedUnhandledException state on the thread and if present, we simply return back to the OS.
-        //
-        // On desktop CoreCLR, we will only do UE processing once (at the managed threadbase) since no thread is created in default domain - all are created and executed in non-default domain.
-        // As a result, we go via completely different codepath that prevents duplication of UE processing from happening, especially since desktop CoreCLR is targetted for SL and SL
-        // always passes us a flag to swallow unhandled exceptions.
-        //
-        // On CoreSys CoreCLR, the host can ask CoreCLR to run all code in the default domain. As a result, when we return from the first attempt to perform UE
-        // processing, the call could return back with EXCEPTION_EXECUTE_HANDLER since, like desktop CoreCLR is instructed by SL host to swallow all unhandled exceptions, 
-        // CoreSys CoreCLR can also be instructed by its Phone host to swallow all unhandled exceptions. As a result, the exception dispatch will never continue to go upstack
-        // to the native threadbase in the OS kernel and thus, there will never be a second attempt to perform UE processing. Hence, we dont, and shouldnt, need to set
-        // TSNC_ProcessedUnhandledException state against the thread if we are in SingleAppDomain mode and have been asked to swallow the exception.
-        //
-        // If we continue to set TSNC_ProcessedUnhandledException and a ThreadPool Thread A has an exception go unhandled, we will swallow it correctly for the first time.
-        // The next time Thread A has an exception go unhandled, our UEF will see TSNC_ProcessedUnhandledException set and assume (incorrectly) UE processing has happened and
-        // will fail to honor the host policy (e.g. swallow unhandled exception). Thus, the 2nd unhandled exception may end up crashing the app when it should not.
-        //
-        if (ret != EXCEPTION_EXECUTE_HANDLER)
-        {
-            // Since we have already done unhandled exception processing for it, we dont want it 
-            // to happen again if our UEF gets invoked upon returning back to the OS.
-            //
-            // Set the flag to indicate so.
-            pCurThread->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
-        }
+        // Set the flag to indicate so.
+        pCurThread->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
     }
 
     return ret;
