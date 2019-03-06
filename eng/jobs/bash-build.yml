@@ -78,7 +78,7 @@ jobs:
         -v $(Build.SourcesDirectory):/root/coresetup
         -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/
         -w=/root/coresetup
-        microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
+        mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
         /root/coresetup/Tools/msbuild.sh
       DebianPackagingCommand: $(CommonDebianRunCommand)
         /root/coresetup/src/pkg/packaging/dir.proj
@@ -91,7 +91,7 @@ jobs:
         -v $(Build.SourcesDirectory):/root/coresetup
         -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/
         -w=/root/coresetup
-        microsoft/dotnet-buildtools-prereqs:rhel-7-rpmpkg-c982313-20174116044113
+        mcr.microsoft.com/dotnet-buildtools/prereqs:rhel-7-rpmpkg-c982313-20174116044113
         /root/coresetup/Tools/msbuild.sh
       RpmPackagingCommand: $(CommonRpmRunCommand)
         /root/coresetup/src/pkg/packaging/dir.proj
