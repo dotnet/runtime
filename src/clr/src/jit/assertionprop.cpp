@@ -1989,11 +1989,23 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     op2 = op1->gtCall.gtCallLateArgs->gtOp.gtOp2;
     op1 = op1->gtCall.gtCallLateArgs;
 
+    // For the assertion, ensure op1 is the object being tested.
+    // Morph may have swizzled the operand order.
+    GenTree* op1op = op1->gtOp.gtOp1;
+
+    if (op1op->TypeGet() == TYP_I_IMPL)
+    {
+        jitstd::swap(op1, op2);
+        op1op = op1->gtOp.gtOp1;
+    }
+
+    assert(op1op->TypeGet() == TYP_REF);
+
     // Reverse the assertion
     assert(assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL);
     assertionKind = (assertionKind == OAK_EQUAL) ? OAK_NOT_EQUAL : OAK_EQUAL;
 
-    if (op1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
+    if (op1op->OperIs(GT_LCL_VAR))
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
