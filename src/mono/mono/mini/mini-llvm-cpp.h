@@ -144,6 +144,9 @@ mono_llvm_di_builder_finalize (void *di_builder);
 void
 mono_llvm_di_set_location (LLVMBuilderRef builder, void *loc_md);
 
+LLVMValueRef
+mono_llvm_get_or_insert_gc_safepoint_poll (LLVMModuleRef module);
+
 G_END_DECLS
 
 #endif /* __MONO_MINI_LLVM_CPP_H__ */  
