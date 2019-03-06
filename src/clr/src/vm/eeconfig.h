@@ -505,13 +505,6 @@ public:
         return fProbeForStackOverflow;
     }
 
-    inline bool AppDomainUnload() const
-    {LIMITED_METHOD_CONTRACT;  return fAppDomainUnload; }
-
-    inline DWORD AppDomainUnloadRetryCount() const
-    {LIMITED_METHOD_CONTRACT;  return dwADURetryCount; }
-    
-
 #ifdef _DEBUG
     inline bool AppDomainLeaks() const
     {
@@ -865,10 +858,6 @@ private: //----------------------------------------------------------------
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
     unsigned int DoubleArrayToLargeObjectHeapThreshold;  // double arrays of more than this number of elems go in large object heap
 #endif
-
-    bool   fAppDomainUnload;            // Enable appdomain unloading
-    
-    DWORD  dwADURetryCount;
 
 #ifdef _DEBUG
     bool fExpandAllOnLoad;              // True if we want to load all types/jit all methods in an assembly
