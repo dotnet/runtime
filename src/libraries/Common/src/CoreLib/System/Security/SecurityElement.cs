@@ -64,7 +64,7 @@ namespace System.Security
                 throw new ArgumentNullException(nameof(tag));
 
             if (!IsValidTag(tag))
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementTag, tag));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             _tag = tag;
             _text = null;
@@ -76,10 +76,10 @@ namespace System.Security
                 throw new ArgumentNullException(nameof(tag));
 
             if (!IsValidTag(tag))
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementTag, tag));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             if (text != null && !IsValidText(text))
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementText, text));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidElementText, text));
 
             _tag = tag;
             _text = text;
@@ -100,7 +100,7 @@ namespace System.Security
                     throw new ArgumentNullException(nameof(Tag));
 
                 if (!IsValidTag(value))
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementTag, value));
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, value));
 
                 _tag = value;
             }
@@ -147,10 +147,10 @@ namespace System.Security
                         string attrValue = (string)enumerator.Value;
 
                         if (!IsValidAttributeName(attrName))
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementName, attrName));
+                            throw new ArgumentException(SR.Format(SR.Argument_InvalidElementName, attrName));
 
                         if (!IsValidAttributeValue(attrValue))
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementValue, attrValue));
+                            throw new ArgumentException(SR.Format(SR.Argument_InvalidElementValue, attrValue));
 
                         list.Add(attrName);
                         list.Add(attrValue);
@@ -177,7 +177,7 @@ namespace System.Security
                 else
                 {
                     if (!IsValidText(value))
-                        throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementTag, value));
+                        throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, value));
 
                     _text = value;
                 }
@@ -250,10 +250,10 @@ namespace System.Security
                 throw new ArgumentNullException(nameof(value));
 
             if (!IsValidAttributeName(name))
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementName, name));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidElementName, name));
 
             if (!IsValidAttributeValue(value))
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_InvalidElementValue, value));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidElementValue, value));
 
             AddAttributeSafe(name, value);
         }

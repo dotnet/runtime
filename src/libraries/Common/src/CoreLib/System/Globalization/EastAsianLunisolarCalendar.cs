@@ -147,7 +147,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(
                                 "time",
                                 ticks,
-                                string.Format(CultureInfo.InvariantCulture, SR.ArgumentOutOfRange_CalendarRange,
+                                SR.Format(CultureInfo.InvariantCulture, SR.ArgumentOutOfRange_CalendarRange,
                                 MinSupportedDateTime, MaxSupportedDateTime));
             }
         }

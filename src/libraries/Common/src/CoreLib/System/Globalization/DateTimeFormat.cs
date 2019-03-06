@@ -346,10 +346,7 @@ namespace System
             if (!foundQuote)
             {
                 // Here we can't find the matching quote.
-                throw new FormatException(
-                        string.Format(
-                            CultureInfo.CurrentCulture,
-                            SR.Format_BadQuote, quoteChar));
+                throw new FormatException(SR.Format(SR.Format_BadQuote, quoteChar));
             }
 
             //

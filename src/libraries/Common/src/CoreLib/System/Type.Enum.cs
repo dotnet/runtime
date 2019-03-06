@@ -32,7 +32,7 @@ namespace System
             if (valueType.IsEnum)
             {
                 if (!valueType.IsEquivalentTo(this))
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType.ToString(), this.ToString()));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType, this));
 
                 valueType = valueType.GetEnumUnderlyingType();
             }
@@ -53,7 +53,7 @@ namespace System
                 Type underlyingType = GetEnumUnderlyingType();
                 // We cannot compare the types directly because valueType is always a runtime type but underlyingType might not be.
                 if (underlyingType.GetTypeCodeImpl() != valueType.GetTypeCodeImpl())
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, valueType.ToString(), underlyingType.ToString()));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, valueType, underlyingType));
 
                 Array values = GetEnumRawConstantValues();
                 return (BinarySearch(values, value) >= 0);
