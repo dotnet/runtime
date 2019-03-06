@@ -83,7 +83,7 @@ namespace System.Runtime.Loader
                     SR.AssemblyDependencyResolver_FailedToResolveDependencies,
                     componentAssemblyPath,
                     returnCode,
-                    errorMessage.ToString()));
+                    errorMessage));
             }
 
             string[] assemblyPaths = SplitPathsList(assemblyPathsList);

@@ -172,7 +172,7 @@ namespace System.Resources
                     return CultureInfo.InvariantCulture;
                 }
 
-                throw new ArgumentException(SR.Format(SR.Arg_InvalidNeutralResourcesLanguage_Asm_Culture, a.ToString(), attr.CultureName), e);
+                throw new ArgumentException(SR.Format(SR.Arg_InvalidNeutralResourcesLanguage_Asm_Culture, a, attr.CultureName), e);
             }
         }
 

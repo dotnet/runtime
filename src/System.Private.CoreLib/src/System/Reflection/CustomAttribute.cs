@@ -427,13 +427,13 @@ namespace System.Reflection
         {
             string ctorArgs = "";
             for (int i = 0; i < ConstructorArguments.Count; i++)
-                ctorArgs += string.Format(CultureInfo.CurrentCulture, i == 0 ? "{0}" : ", {0}", ConstructorArguments[i]);
+                ctorArgs += string.Format(i == 0 ? "{0}" : ", {0}", ConstructorArguments[i]);
 
             string namedArgs = "";
             for (int i = 0; i < NamedArguments.Count; i++)
-                namedArgs += string.Format(CultureInfo.CurrentCulture, i == 0 && ctorArgs.Length == 0 ? "{0}" : ", {0}", NamedArguments[i]);
+                namedArgs += string.Format(i == 0 && ctorArgs.Length == 0 ? "{0}" : ", {0}", NamedArguments[i]);
 
-            return string.Format(CultureInfo.CurrentCulture, "[{0}({1}{2})]", Constructor.DeclaringType.FullName, ctorArgs, namedArgs);
+            return string.Format("[{0}({1}{2})]", Constructor.DeclaringType.FullName, ctorArgs, namedArgs);
         }
         public override int GetHashCode() => base.GetHashCode();
         public override bool Equals(object obj) => obj == (object)this;
@@ -548,7 +548,7 @@ namespace System.Reflection
             if (m_memberInfo == null)
                 return base.ToString();
 
-            return string.Format(CultureInfo.CurrentCulture, "{0} = {1}", MemberInfo.Name, TypedValue.ToString(ArgumentType != typeof(object)));
+            return string.Format("{0} = {1}", MemberInfo.Name, TypedValue.ToString(ArgumentType != typeof(object)));
         }
         public override int GetHashCode()
         {
@@ -694,7 +694,7 @@ namespace System.Reflection
 
             if (type == null)
                 throw new InvalidOperationException(
-                    string.Format(CultureInfo.CurrentUICulture, SR.Arg_CATypeResolutionFailed, typeName));
+                    SR.Format(SR.Arg_CATypeResolutionFailed, typeName));
 
             return type;
         }
@@ -806,30 +806,30 @@ namespace System.Reflection
                 return base.ToString();
 
             if (ArgumentType.IsEnum)
-                return string.Format(CultureInfo.CurrentCulture, typed ? "{0}" : "({1}){0}", Value, ArgumentType.FullName);
+                return string.Format(typed ? "{0}" : "({1}){0}", Value, ArgumentType.FullName);
 
             else if (Value == null)
-                return string.Format(CultureInfo.CurrentCulture, typed ? "null" : "({0})null", ArgumentType.Name);
+                return string.Format(typed ? "null" : "({0})null", ArgumentType.Name);
 
             else if (ArgumentType == typeof(string))
-                return string.Format(CultureInfo.CurrentCulture, "\"{0}\"", Value);
+                return string.Format("\"{0}\"", Value);
 
             else if (ArgumentType == typeof(char))
-                return string.Format(CultureInfo.CurrentCulture, "'{0}'", Value);
+                return string.Format("'{0}'", Value);
 
             else if (ArgumentType == typeof(Type))
-                return string.Format(CultureInfo.CurrentCulture, "typeof({0})", ((Type)Value).FullName);
+                return string.Format("typeof({0})", ((Type)Value).FullName);
 
             else if (ArgumentType.IsArray)
             {
                 IList<CustomAttributeTypedArgument> array = (IList<CustomAttributeTypedArgument>)Value;
 
                 Type elementType = ArgumentType.GetElementType();
-                string result = string.Format(CultureInfo.CurrentCulture, @"new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullName : elementType.Name, array.Count);
+                string result = string.Format(@"new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullName : elementType.Name, array.Count);
 
                 for (int i = 0; i < array.Count; i++)
                 {
-                    result += string.Format(CultureInfo.CurrentCulture, i == 0 ? "{0}" : ", {0}", array[i].ToString(elementType != typeof(object)));
+                    result += string.Format(i == 0 ? "{0}" : ", {0}", array[i].ToString(elementType != typeof(object)));
                 }
 
                 result += " }";
@@ -837,7 +837,7 @@ namespace System.Reflection
                 return result;
             }
 
-            return string.Format(CultureInfo.CurrentCulture, typed ? "{0}" : "({1}){0}", Value, ArgumentType.Name);
+            return string.Format(typed ? "{0}" : "({1}){0}", Value, ArgumentType.Name);
         }
 
         public override int GetHashCode() => base.GetHashCode();
@@ -1450,8 +1450,7 @@ namespace System.Reflection
                             if (property == null)
                             {
                                 throw new CustomAttributeFormatException(
-                                    string.Format(CultureInfo.CurrentUICulture, 
-                                        SR.RFLCT_InvalidPropFail, name));
+                                    SR.Format(SR.RFLCT_InvalidPropFail, name));
                             }
 
                             MethodInfo setMethod = property.GetSetMethod(true);
@@ -1473,8 +1472,7 @@ namespace System.Reflection
                     catch (Exception e)
                     {
                         throw new CustomAttributeFormatException(
-                            string.Format(CultureInfo.CurrentUICulture,
-                                isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name), e);
+                            SR.Format(isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name), e);
                     }
                 }
 
@@ -1640,8 +1638,7 @@ namespace System.Reflection
                     continue;
 
                 if (attributeUsageAttribute != null)
-                    throw new FormatException(string.Format(
-                        CultureInfo.CurrentUICulture, SR.Format_AttributeUsage, attributeType));
+                    throw new FormatException(SR.Format(SR.Format_AttributeUsage, attributeType));
 
                 ParseAttributeUsageAttribute(caRecord.blob, out AttributeTargets targets, out bool inherited, out bool allowMultiple);
                 attributeUsageAttribute = new AttributeUsageAttribute(targets, allowMultiple, inherited);

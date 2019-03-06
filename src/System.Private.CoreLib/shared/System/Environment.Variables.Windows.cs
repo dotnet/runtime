@@ -61,7 +61,7 @@ namespace System
                     case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:
                         // The error message from Win32 is "The filename or extension is too long",
                         // which is not accurate.
-                        throw new ArgumentException(SR.Format(SR.Argument_LongEnvVarValue));
+                        throw new ArgumentException(SR.Argument_LongEnvVarValue);
 
                     case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
                     case Interop.Errors.ERROR_NO_SYSTEM_RESOURCES:

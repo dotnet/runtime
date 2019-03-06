@@ -149,13 +149,28 @@ namespace System
             }
         }
 
+        internal static string Format(IFormatProvider provider, string resourceFormat, params object[] args)
+        {
+            if (args != null)
+            {
+                if (UsingResourceKeys())
+                {
+                    return resourceFormat + ", " + string.Join(", ", args);
+                }
+
+                return string.Format(provider, resourceFormat, args);
+            }
+
+            return resourceFormat;
+        }
+
         internal static string Format(string resourceFormat, params object[] args)
         {
             if (args != null)
             {
                 if (UsingResourceKeys())
                 {
-                    return resourceFormat + string.Join(", ", args);
+                    return resourceFormat + ", " + string.Join(", ", args);
                 }
 
                 return string.Format(resourceFormat, args);

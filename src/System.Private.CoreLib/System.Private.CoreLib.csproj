@@ -25,7 +25,7 @@
     <CLSCompliant>true</CLSCompliant>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>649,1573,1591,0419</NoWarn>
+    <NoWarn>649,1573,1591,0419,BCL0020</NoWarn> <!-- Remove BCL0020 once https://github.com/dotnet/arcade/pull/2158 is available -->
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
