@@ -1752,7 +1752,10 @@ ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle re
 			 return m_class_is_valuetype (klass) == m_class_is_valuetype (klassc);
 		}
 	}
-	return mono_class_is_assignable_from_internal (klass, klassc);
+
+	gboolean result;
+	mono_class_is_assignable_from_checked (klass, klassc, &result, error);
+	return (guint32)result;
 }
 
 MonoBoolean
