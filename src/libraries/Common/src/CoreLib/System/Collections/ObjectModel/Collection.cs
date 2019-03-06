@@ -172,14 +172,14 @@ namespace System.Collections.ObjectModel
 
         protected virtual void InsertItemsRange(int index, IEnumerable<T> collection)
         {
-            if (collection == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.list);
-            }
-
             if (items.IsReadOnly)
             {
                 ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
+            }
+
+            if (collection == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.list);
             }
 
             if ((uint)index > (uint)items.Count)
