@@ -47,13 +47,6 @@
 
 #if 0
     #define APPDOMAIN_STATE
-    #define BREAK_ON_UNLOAD
-    #define AD_LOG_MEMORY
-    #define AD_NO_UNLOAD
-    #define AD_SNAPSHOT
-    #define BREAK_META_ACCESS
-    #define AD_BREAK_ON_CANNOT_UNLOAD
-    #define BREAK_ON_CLSLOAD
 
     // Enable to track details of EESuspension
     #define TIME_SUSPEND
