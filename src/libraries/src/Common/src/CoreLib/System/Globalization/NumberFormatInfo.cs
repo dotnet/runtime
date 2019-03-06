@@ -250,8 +250,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(CurrencyDecimalDigits),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
+                                SR.Format(
                                     SR.ArgumentOutOfRange_Range,
                                     0,
                                     99));
@@ -446,8 +445,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(CurrencyNegativePattern),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
+                                SR.Format(
                                     SR.ArgumentOutOfRange_Range,
                                     0,
                                     15));
@@ -470,8 +468,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(NumberNegativePattern),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
+                                SR.Format(
                                     SR.ArgumentOutOfRange_Range,
                                     0,
                                     4));
@@ -494,8 +491,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(PercentPositivePattern),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
+                                SR.Format(
                                     SR.ArgumentOutOfRange_Range,
                                     0,
                                     3));
@@ -518,8 +514,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(PercentNegativePattern),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
+                                SR.Format(
                                     SR.ArgumentOutOfRange_Range,
                                     0,
                                     11));
@@ -575,8 +570,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(NumberDecimalDigits),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
+                                SR.Format(
                                     SR.ArgumentOutOfRange_Range,
                                     0,
                                     99));
@@ -620,8 +614,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(CurrencyPositivePattern),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
+                                SR.Format(
                                     SR.ArgumentOutOfRange_Range,
                                     0,
                                     3));
@@ -677,8 +670,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(PercentDecimalDigits),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
+                                SR.Format(
                                     SR.ArgumentOutOfRange_Range,
                                     0,
                                     99));
