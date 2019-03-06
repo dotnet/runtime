@@ -1520,16 +1520,6 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE_MoveMask:
-        {
-            assert(baseType == TYP_FLOAT);
-            assert(op2 == nullptr);
-
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType);
-            emit->emitIns_R_R(ins, emitTypeSize(TYP_INT), targetReg, op1Reg);
-            break;
-        }
-
         case NI_SSE_Prefetch0:
         case NI_SSE_Prefetch1:
         case NI_SSE_Prefetch2:
@@ -1746,16 +1736,6 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(op1 == nullptr);
             assert(op2 == nullptr);
             emit->emitIns(INS_mfence);
-            break;
-        }
-
-        case NI_SSE2_MoveMask:
-        {
-            assert(op2 == nullptr);
-            assert(baseType == TYP_BYTE || baseType == TYP_UBYTE || baseType == TYP_DOUBLE);
-
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            emit->emitIns_R_R(ins, emitTypeSize(TYP_INT), targetReg, op1Reg);
             break;
         }
 
