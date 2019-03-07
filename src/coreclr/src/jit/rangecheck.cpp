@@ -362,7 +362,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
 
     // Add hashtable entry for expr.
-    bool alreadyPresent = m_pSearchPath->Set(expr, nullptr);
+    bool alreadyPresent = !m_pSearchPath->Set(expr, nullptr, SearchPath::Overwrite);
     if (alreadyPresent)
     {
         return true;
@@ -1014,7 +1014,7 @@ bool RangeCheck::DoesOverflow(BasicBlock* block, GenTree* expr)
 bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
 {
     JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
-    m_pSearchPath->Set(expr, block);
+    m_pSearchPath->Set(expr, block, SearchPath::Overwrite);
 
     bool overflows = true;
 
@@ -1050,7 +1050,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = DoesPhiOverflow(block, expr);
     }
-    GetOverflowMap()->Set(expr, overflows);
+    GetOverflowMap()->Set(expr, overflows, OverflowMap::Overwrite);
     m_pSearchPath->Remove(expr);
     return overflows;
 }
@@ -1064,11 +1064,12 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
 // eg.: merge((0, dep), (dep, dep)) = (0, dep)
 Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic DEBUGARG(int indent))
 {
-    bool  newlyAdded = !m_pSearchPath->Set(expr, block);
+    bool  newlyAdded = !m_pSearchPath->Set(expr, block, SearchPath::Overwrite);
     Range range      = Limit(Limit::keUndef);
 
     ValueNum vn = m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair);
-    // If newly added in the current search path, then reduce the budget.
+
+    // If we just added 'expr' in the current search path, then reduce the budget.
     if (newlyAdded)
     {
         // Assert that we are not re-entrant for a node which has been
@@ -1172,7 +1173,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic 
         range = Range(Limit(Limit::keUnknown));
     }
 
-    GetRangeMap()->Set(expr, new (m_alloc) Range(range));
+    GetRangeMap()->Set(expr, new (m_alloc) Range(range), RangeMap::Overwrite);
     m_pSearchPath->Remove(expr);
     return range;
 }
