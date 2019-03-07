@@ -88,7 +88,4 @@ mono_btls_ssl_ctx_set_client_ca_list (MonoBtlsSslCtx *ctx, int count, int *sizes
 MONO_API void
 mono_btls_ssl_ctx_set_server_name_callback (MonoBtlsSslCtx *ctx, MonoBtlsServerNameFunc func);
 
-MONO_API const char *
-mono_btls_ssl_ctx_get_servername (MonoBtlsSslCtx *ptr);
-
 #endif /* __btls_ssl_ctx__btls_ssl_ctx__ */

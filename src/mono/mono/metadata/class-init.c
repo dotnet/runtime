@@ -2237,18 +2237,21 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 
 #if (TRACE_INTERFACE_VTABLE_CODE|DEBUG_INTERFACE_VTABLE_CODE)
 static void
-foreach_override (gpointer key, gpointer value, gpointer user_data) {
+foreach_override (gpointer key, gpointer value, gpointer user_data)
+{
 	MonoMethod *method = key;
 	MonoMethod *override = value;
-	MonoClass *method_class = mono_method_get_class (method);
-	MonoClass *override_class = mono_method_get_class (override);
-	
-	printf ("  Method '%s.%s:%s' has override '%s.%s:%s'\n",
-			m_class_get_name_space (method_class), m_class_get_name (method_class), mono_method_get_name (method),
-			m_class_get_name_space (override_class), m_class_get_name (override_class), mono_method_get_name (override));
+
+	char *method_name = mono_method_get_full_name (method);
+	char *override_name = mono_method_get_full_name (override);
+	printf ("  Method '%s' has override '%s'\n", method_name, override_name);
+	g_free (method_name);
+	g_free (override_name);
 }
+
 static void
-print_overrides (GHashTable *override_map, const char *message) {
+print_overrides (GHashTable *override_map, const char *message)
+{
 	if (override_map) {
 		printf ("Override map \"%s\" START:\n", message);
 		g_hash_table_foreach (override_map, foreach_override, NULL);
@@ -2257,8 +2260,10 @@ print_overrides (GHashTable *override_map, const char *message) {
 		printf ("Override map \"%s\" EMPTY.\n", message);
 	}
 }
+
 static void
-print_vtable_full (MonoClass *klass, MonoMethod** vtable, int size, int first_non_interface_slot, const char *message, gboolean print_interfaces) {
+print_vtable_full (MonoClass *klass, MonoMethod** vtable, int size, int first_non_interface_slot, const char *message, gboolean print_interfaces)
+{
 	char *full_name = mono_type_full_name (m_class_get_byval_arg (klass));
 	int i;
 	int parent_size;
@@ -3066,6 +3071,10 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		for (int i = 0; i < iface_onum; i++) {
 			MonoMethod *decl = iface_overrides [i*2];
 			MonoMethod *override = iface_overrides [i*2 + 1];
+			if (decl->is_inflated) {
+				override = mono_class_inflate_generic_method_checked (override, mono_method_get_context (decl), error);
+				mono_error_assert_ok (error);
+			}
 			if (!apply_override (klass, ic, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
 				goto fail;
 		}

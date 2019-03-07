@@ -709,8 +709,13 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.thread_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "Thread");
 
+#ifdef ENABLE_NETCORE
+	/* There is only one thread class */
+	mono_defaults.internal_thread_class = mono_defaults.thread_class;
+#else
 	mono_defaults.internal_thread_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "InternalThread");
+#endif
 
 	mono_defaults.appdomain_class = mono_class_get_appdomain_class ();
 

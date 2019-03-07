@@ -3529,8 +3529,13 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
 	g_assert (result);
+	if (klass == oklass) {
+		*result = TRUE;
+		return;
+	}
+
+	MONO_REQ_GC_UNSAFE_MODE;
 	/*FIXME this will cause a lot of irrelevant stuff to be loaded.*/
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);
@@ -3538,13 +3543,20 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 	if (!m_class_is_inited (oklass))
 		mono_class_init_internal (oklass);
 
-	if (mono_class_has_failure (klass) || mono_class_has_failure  (oklass)) {
+	if (mono_class_has_failure (klass)) {
+		mono_error_set_for_class_failure (error, klass);
+		*result = FALSE;
+		return;
+	}
+
+	if (mono_class_has_failure (oklass)) {
+		mono_error_set_for_class_failure (error, oklass);
 		*result = FALSE;
 		return;
 	}
 
 	MonoType *klass_byval_arg = m_class_get_byval_arg (klass);
-	MonoType  *oklass_byval_arg = m_class_get_byval_arg (oklass);
+	MonoType *oklass_byval_arg = m_class_get_byval_arg (oklass);
 
 	if (mono_type_is_generic_argument (klass_byval_arg)) {
 		if (!mono_type_is_generic_argument (oklass_byval_arg)) {

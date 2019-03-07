@@ -2946,6 +2946,73 @@ emit_init_icall_wrappers (MonoLLVMModule *module)
 }
 
 static void
+emit_gc_safepoint_poll (MonoLLVMModule *module)
+{
+	LLVMModuleRef lmodule = module->lmodule;
+	LLVMValueRef func, indexes [2], got_entry_addr, flag_addr, val_ptr, callee, val, cmp;
+	LLVMBasicBlockRef entry_bb, poll_bb, exit_bb;
+	LLVMBuilderRef builder;
+	LLVMTypeRef sig;
+	MonoJumpInfo *ji;
+	int got_offset;
+
+	sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
+	func = mono_llvm_get_or_insert_gc_safepoint_poll (lmodule);
+	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_UNWIND);
+	LLVMSetLinkage (func, LLVMWeakODRLinkage);
+	// set_preserveall_cc (func);
+
+	entry_bb = LLVMAppendBasicBlock (func, "gc.safepoint_poll.entry");
+	poll_bb = LLVMAppendBasicBlock (func, "gc.safepoint_poll.poll");
+	exit_bb = LLVMAppendBasicBlock (func, "gc.safepoint_poll.exit");
+
+	builder = LLVMCreateBuilder ();
+
+	/* entry: */
+	LLVMPositionBuilderAtEnd (builder, entry_bb);
+
+	/* get_aotconst */
+	ji = g_new0 (MonoJumpInfo, 1);
+	ji->type = MONO_PATCH_INFO_GC_SAFE_POINT_FLAG;
+	ji = mono_aot_patch_info_dup (ji);
+	got_offset = mono_aot_get_got_offset (ji);
+	module->max_got_offset = MAX (module->max_got_offset, got_offset);
+	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+	indexes [1] = LLVMConstInt (LLVMInt32Type (), got_offset, FALSE);
+	got_entry_addr = LLVMBuildGEP (builder, module->got_var, indexes, 2, "");
+	flag_addr = LLVMBuildLoad (builder, got_entry_addr, "");
+	val_ptr = LLVMBuildLoad (builder, flag_addr, "");
+	val = LLVMBuildPtrToInt (builder, val_ptr, IntPtrType (), "");
+	cmp = LLVMBuildICmp (builder, LLVMIntEQ, val, LLVMConstNull (LLVMTypeOf (val)), "");
+	LLVMBuildCondBr (builder, cmp, exit_bb, poll_bb);
+
+	/* poll: */
+	LLVMPositionBuilderAtEnd(builder, poll_bb);
+
+	ji = g_new0 (MonoJumpInfo, 1);
+	ji->type = MONO_PATCH_INFO_JIT_ICALL;
+	ji->data.name = "mono_threads_state_poll";
+	ji = mono_aot_patch_info_dup (ji);
+	got_offset = mono_aot_get_got_offset (ji);
+	module->max_got_offset = MAX (module->max_got_offset, got_offset);
+	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+	indexes [1] = LLVMConstInt (LLVMInt32Type (), got_offset, FALSE);
+	got_entry_addr = LLVMBuildGEP (builder, module->got_var, indexes, 2, "");
+	callee = LLVMBuildLoad (builder, got_entry_addr, "");
+	callee = LLVMBuildBitCast (builder, callee, LLVMPointerType (sig, 0), "");
+	LLVMBuildCall (builder, callee, NULL, 0, "");
+	LLVMBuildBr(builder, exit_bb);
+
+	/* exit: */
+	LLVMPositionBuilderAtEnd(builder, exit_bb);
+
+	LLVMBuildRetVoid (builder);
+
+	LLVMVerifyFunction(func, LLVMAbortProcessAction);
+	LLVMDisposeBuilder (builder);
+}
+
+static void
 emit_llvm_code_end (MonoLLVMModule *module)
 {
 	LLVMModuleRef lmodule = module->lmodule;
@@ -7434,6 +7501,8 @@ emit_method_inner (EmitContext *ctx)
 
 	if (!cfg->llvm_only)
 		LLVMSetFunctionCallConv (method, LLVMMono1CallConv);
+	if (!cfg->llvm_only && cfg->compile_aot && mono_threads_are_safepoints_enabled ())
+		LLVMSetGC (method, "mono");
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
@@ -9054,6 +9123,8 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 
 	if (llvm_only)
 		emit_init_icall_wrappers (module);
+
+	emit_gc_safepoint_poll (module);
 
 	emit_llvm_code_start (module);
 

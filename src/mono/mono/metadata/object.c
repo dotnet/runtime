@@ -385,6 +385,38 @@ unref_type_lock (TypeInitializationLock *lock)
 }
 
 /**
+ * mono_runtime_run_module_cctor:
+ * \param image the image whose module ctor to run
+ * \param domain the domain to load the module class vtable in
+ * \param error set on error
+ * This routine runs the module ctor for \p image, if it hasn't already run
+ */
+gboolean
+mono_runtime_run_module_cctor (MonoImage *image, MonoDomain *domain, MonoError *error) {
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	if (!image->checked_module_cctor) {
+		mono_image_check_for_module_cctor (image);
+		if (image->has_module_cctor) {
+			MonoClass *module_klass;
+			MonoVTable *module_vtable;
+
+			module_klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | 1, error);
+			if (!module_klass) {
+				return FALSE;
+			}
+
+			module_vtable = mono_class_vtable_checked (domain, module_klass, error);
+			if (!module_vtable)
+				return FALSE;
+			if (!mono_runtime_class_init_full (module_vtable, error))
+				return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+/**
  * mono_runtime_class_init_full:
  * \param vtable that neeeds to be initialized
  * \param error set on error
@@ -413,23 +445,8 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	klass = vtable->klass;
 
 	MonoImage *klass_image = m_class_get_image (klass);
-	if (!klass_image->checked_module_cctor) {
-		mono_image_check_for_module_cctor (klass_image);
-		if (klass_image->has_module_cctor) {
-			MonoClass *module_klass;
-			MonoVTable *module_vtable;
-
-			module_klass = mono_class_get_checked (klass_image, MONO_TOKEN_TYPE_DEF | 1, error);
-			if (!module_klass) {
-				return FALSE;
-			}
-				
-			module_vtable = mono_class_vtable_checked (vtable->domain, module_klass, error);
-			if (!module_vtable)
-				return FALSE;
-			if (!mono_runtime_class_init_full (module_vtable, error))
-				return FALSE;
-		}
+	if (!mono_runtime_run_module_cctor(klass_image, vtable->domain, error)) {
+		return FALSE;
 	}
 	method = mono_class_get_cctor (klass);
 	if (!method) {
@@ -4059,19 +4076,50 @@ mono_nullable_init_from_handle (guint8 *buf, MonoObjectHandle value, MonoClass *
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	if (!MONO_HANDLE_IS_NULL (value)) {
+		uint32_t value_gchandle = 0;
+		gpointer src = mono_object_handle_pin_unbox (value, &value_gchandle);
+		mono_nullable_init_unboxed (buf, src, klass);
+
+		mono_gchandle_free_internal (value_gchandle);
+	} else {
+		mono_nullable_init_unboxed (buf, NULL, klass);
+	}
+}
+
+/*
+ * mono_nullable_init_unboxed
+ *
+ * @buf: The nullable structure to initialize.
+ * @value: the unboxed address of the value to initialize from
+ * @klass: the type for the object
+ *
+ * Initialize the nullable structure pointed to by @buf from @value which
+ * should be a boxed value type.   The size of @buf should be able to hold
+ * as much data as the @klass->instance_size (which is the number of bytes
+ * that will be copies).
+ *
+ * Since Nullables have variable structure, we can not define a C
+ * structure for them.
+ *
+ * This function expects all objects to be pinned or for 
+ * MONO_ENTER_NO_SAFEPOINTS to be used in a caller.
+ */
+void
+mono_nullable_init_unboxed (guint8 *buf, gpointer value, MonoClass *klass)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoClass *param_class = m_class_get_cast_class (klass);
 	gpointer has_value_field_addr = nullable_get_has_value_field_addr (buf, klass);
 	gpointer value_field_addr = nullable_get_value_field_addr (buf, klass);
 
-	*(guint8*)(has_value_field_addr) = MONO_HANDLE_IS_NULL  (value) ? 0 : 1;
-	if (!MONO_HANDLE_IS_NULL (value)) {
-		uint32_t value_gchandle = 0;
-		gpointer src = mono_object_handle_pin_unbox (value, &value_gchandle);
+	*(guint8*)(has_value_field_addr) = (value == NULL) ? 0 : 1;
+	if (value) {
 		if (m_class_has_references (param_class))
-			mono_gc_wbarrier_value_copy_internal (value_field_addr, src, 1, param_class);
+			mono_gc_wbarrier_value_copy_internal (value_field_addr, value, 1, param_class);
 		else
-			mono_gc_memmove_atomic (value_field_addr, src, mono_class_value_size (param_class, NULL));
-		mono_gchandle_free_internal (value_gchandle);
+			mono_gc_memmove_atomic (value_field_addr, value, mono_class_value_size (param_class, NULL));
 	} else {
 		mono_gc_bzero_atomic (value_field_addr, mono_class_value_size (param_class, NULL));
 	}
@@ -7193,9 +7241,28 @@ mono_object_isinst_mbyref (MonoObject *obj_raw, MonoClass *klass)
 MonoObjectHandle
 mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
 {
+	gboolean success = FALSE;
 	error_init (error);
 
 	MonoObjectHandle result = MONO_HANDLE_NEW (MonoObject, NULL);
+
+	if (MONO_HANDLE_IS_NULL (obj))
+		goto leave;
+
+	success = mono_object_handle_isinst_mbyref_raw (obj, klass, error);
+	if (success && is_ok (error))
+		MONO_HANDLE_ASSIGN (result, obj);
+
+leave:
+	return result;
+}
+
+gboolean
+mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
+{
+	error_init (error);
+
+	gboolean result = FALSE;
 
 	if (MONO_HANDLE_IS_NULL (obj))
 		goto leave;
@@ -7205,21 +7272,21 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 	
 	if (mono_class_is_interface (klass)) {
 		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, m_class_get_interface_id (klass))) {
-			MONO_HANDLE_ASSIGN (result, obj);
+			result = TRUE;
 			goto leave;
 		}
 
 		/* casting an array one of the invariant interfaces that must act as such */
 		if (m_class_is_array_special_interface (klass)) {
 			if (mono_class_is_assignable_from_internal (klass, vt->klass)) {
-				MONO_HANDLE_ASSIGN (result, obj);
+				result = TRUE;
 				goto leave;
 			}
 		}
 
 		/*If the above check fails we are in the slow path of possibly raising an exception. So it's ok to it this way.*/
 		else if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from_internal (klass, mono_handle_class (obj))) {
-			MONO_HANDLE_ASSIGN (result, obj);
+			result = TRUE;
 			goto leave;
 		}
 	} else {
@@ -7231,7 +7298,7 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 
 		mono_class_setup_supertypes (klass);
 		if (mono_class_has_parent_fast (oklass, klass)) {
-			MONO_HANDLE_ASSIGN (result, obj);
+			result = TRUE;
 			goto leave;
 		}
 	}
@@ -7270,7 +7337,8 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 			/* Update the vtable of the remote type, so it can safely cast to this new type */
 			mono_upgrade_remote_class (domain, obj, klass, error);
 			goto_if_nok (error, leave);
-			MONO_HANDLE_ASSIGN (result, obj);
+			result = TRUE;
+			goto leave;
 		}
 	}
 #endif /* DISABLE_REMOTING */

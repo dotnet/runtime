@@ -1342,6 +1342,13 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 		mono_hazard_pointer_set (hp, 1, info);
 		mono_thread_info_core_resume (info);
 		mono_threads_wait_pending_operations ();
+#ifdef USE_WINDOWS_BACKEND
+		// If we interrupt kernel but have blocking sync IO requests preventing the thread from running APC's
+		// try to abort all sync blocking IO request. This must be done after thread has been resumed, but before releasing
+		// global suspend lock (preventing other threads from supsending the thread).
+		if (interrupt_kernel)
+			mono_win32_abort_blocking_io_call (info);
+#endif
 		break;
 	case KeepSuspended:
 		THREADS_SUSPEND_DEBUG ("CALLBACK tid %p (%s): KeepSuspended\n", (void*)id, interrupt_kernel ? "int" : "");

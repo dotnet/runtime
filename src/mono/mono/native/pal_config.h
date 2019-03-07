@@ -10,4 +10,6 @@
 #ifdef TARGET_ANDROID
 /* arc4random_buf() is not available even when configure seems to find it */
 #undef HAVE_ARC4RANDOM_BUF
+/* sendfile() is not available for what seems like x86+older API levels */
+#undef HAVE_SENDFILE_4
 #endif

@@ -1581,10 +1581,15 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		return_val_if_nok (error, FALSE);
 		mono_class_setup_vtable (target_method->klass);
 
-		if (m_class_is_valuetype (constrained_class) && (target_method->klass == mono_defaults.object_class || target_method->klass == m_class_get_parent (mono_defaults.enum_class) || target_method->klass == mono_defaults.enum_class)) {
+		if (!m_class_is_valuetype (constrained_class)) {
+			/* managed pointer on the stack, we need to deref that puppy */
+			ADD_CODE (td, MINT_LDIND_I);
+			ADD_CODE (td, csignature->param_count);
+		} else if (target_method->klass == mono_defaults.object_class || target_method->klass == m_class_get_parent (mono_defaults.enum_class) || target_method->klass == mono_defaults.enum_class) {
 			if (target_method->klass == mono_defaults.enum_class && (td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
 				/* managed pointer on the stack, we need to deref that puppy */
-				ADD_CODE (td, MINT_LDIND_I);
+				/* Always load the entire stackval, to handle also the case where the enum has long storage */
+				ADD_CODE (td, MINT_LDIND_I8);
 				ADD_CODE (td, csignature->param_count);
 			}
 			if (mint_type (m_class_get_byval_arg (constrained_class)) == MINT_TYPE_VT) {
@@ -1596,12 +1601,29 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				ADD_CODE (td, get_data_item_index (td, constrained_class));
 				ADD_CODE (td, csignature->param_count);
 			}
-		} else if (!m_class_is_valuetype (constrained_class)) {
-			/* managed pointer on the stack, we need to deref that puppy */
-			ADD_CODE (td, MINT_LDIND_I);
-			ADD_CODE (td, csignature->param_count);
 		} else {
-			g_assert (m_class_is_valuetype (target_method->klass));
+			if (target_method->klass != constrained_class) {
+				/*
+				 * The type parameter is instantiated as a valuetype,
+				 * but that type doesn't override the method we're
+				 * calling, so we need to box `this'.
+				 */
+				if ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
+					/* managed pointer on the stack, we need to deref that puppy */
+					/* Always load the entire stackval, to handle also the case where the enum has long storage */
+					ADD_CODE (td, MINT_LDIND_I8);
+					ADD_CODE (td, csignature->param_count);
+				}
+				if (mint_type (m_class_get_byval_arg (constrained_class)) == MINT_TYPE_VT) {
+					ADD_CODE (td, MINT_BOX_VT);
+					ADD_CODE (td, get_data_item_index (td, constrained_class));
+					ADD_CODE (td, csignature->param_count | ((td->sp - 1 - csignature->param_count)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP));
+				} else {
+					ADD_CODE (td, MINT_BOX);
+					ADD_CODE (td, get_data_item_index (td, constrained_class));
+					ADD_CODE (td, csignature->param_count);
+				}
+			}
 			is_virtual = FALSE;
 		}
 	}
@@ -1809,6 +1831,8 @@ interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, M
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
 		field = (MonoClassField *) mono_method_get_wrapper_data (method, token);
 		*klass = field->parent;
+
+		mono_class_setup_fields (field->parent);
 	} else {
 		field = mono_field_from_token_checked (m_class_get_image (method->klass), token, klass, generic_context, error);
 		return_val_if_nok (error, NULL);
@@ -2326,6 +2350,29 @@ get_unaligned_opcode (int opcode)
 }
 #endif
 
+static void
+interp_handle_isinst (TransformData *td, MonoClass *klass, gboolean isinst_instr)
+{
+	/* Follow the logic from jit's handle_isinst */
+	if (!mono_class_has_variant_generic_params (klass)) {
+		if (mono_class_is_interface (klass)) {
+			ADD_CODE(td, isinst_instr ? MINT_ISINST_INTERFACE : MINT_CASTCLASS_INTERFACE);
+			ADD_CODE(td, get_data_item_index (td, klass));
+		} else if (!mono_class_is_marshalbyref (klass) && m_class_get_rank (klass) == 0 && !mono_class_is_nullable (klass)) {
+			ADD_CODE(td, isinst_instr ? MINT_ISINST_COMMON : MINT_CASTCLASS_COMMON);
+			ADD_CODE(td, get_data_item_index (td, klass));
+		} else {
+			ADD_CODE(td, isinst_instr ? MINT_ISINST : MINT_CASTCLASS);
+			ADD_CODE(td, get_data_item_index (td, klass));
+		}
+	} else {
+		ADD_CODE(td, isinst_instr ? MINT_ISINST : MINT_CASTCLASS);
+		ADD_CODE(td, get_data_item_index (td, klass));
+	}
+	td->ip += 5;
+}
+
+
 static gboolean
 generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error)
 {
@@ -2461,13 +2508,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 		td->body_start_offset = td->new_ip - td->new_code;
 
-		for (i = 0; i < header->num_locals; i++) {
-			int mt = mint_type(header->locals [i]);
-			if (mt == MINT_TYPE_VT || mt == MINT_TYPE_O || mt == MINT_TYPE_P) {
-				ADD_CODE(td, MINT_INITLOCALS);
-				break;
-			}
-		}
+		if (header->num_locals && header->init_locals)
+			ADD_CODE(td, MINT_INITLOCALS);
 
 		if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
 			ADD_CODE (td, MINT_PROF_ENTER);
@@ -3647,24 +3689,17 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		}
 		case CEE_CASTCLASS:
+		case CEE_ISINST: {
+			gboolean isinst_instr = *td->ip == CEE_ISINST;
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
-			ADD_CODE(td, MINT_CASTCLASS);
-			ADD_CODE(td, get_data_item_index (td, klass));
-			td->sp [-1].klass = klass;
-			td->ip += 5;
+			interp_handle_isinst (td, klass, isinst_instr);
+			if (!isinst_instr)
+				td->sp [-1].klass = klass;
 			break;
-		case CEE_ISINST:
-			CHECK_STACK (td, 1);
-			token = read32 (td->ip + 1);
-			klass = mini_get_class (method, token, generic_context);
-			CHECK_TYPELOAD (klass);
-			ADD_CODE(td, MINT_ISINST);
-			ADD_CODE(td, get_data_item_index (td, klass));
-			td->ip += 5;
-			break;
+		}
 		case CEE_CONV_R_UN:
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R8:
@@ -3727,10 +3762,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			if (mini_type_is_reference (m_class_get_byval_arg (klass))) {
 				int mt = mint_type (m_class_get_byval_arg (klass));
-				ADD_CODE (td, MINT_CASTCLASS);
-				ADD_CODE (td, get_data_item_index (td, klass));
+				interp_handle_isinst (td, klass, FALSE);
 				SET_TYPE (td->sp - 1, stack_type [mt], klass);
-				td->ip += 5;
 			} else if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method;
 				if (m_class_is_enumtype (mono_class_get_nullable_param (klass)))

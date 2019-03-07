@@ -48,7 +48,7 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # There is no ordering of corlib versions, no old or new,
 # the runtime expects an exact match.
 #
-MONO_CORLIB_VERSION=1A1222D8-4B4D-4EB4-B4FC-8227F50AB114
+MONO_CORLIB_VERSION=D0E80A74-BC69-4440-B4A0-BA6B5A944F1A
 
 #
 # Put a quoted #define in config.h.
@@ -399,6 +399,18 @@ case "$host" in
 		libgc_threads=pthreads
 		use_sigposix=yes
 		with_sigaltstack=no
+		;;
+	*-*-fuchsia*)
+		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
+		AC_DEFINE(HOST_FUCHSIA,1,[Targeting the Fuchsia platform])
+		fuchsia=true
+		with_tls=pthread
+		with_sigaltstack=yes
+		with_static_mono=no
+		support_boehm=no
+		with_gc=sgen
+		mono_cv_uscore=yes
+		mono_cv_clang=no
 		;;
 	*-*-aix*|*-*-os400*)
 		dnl Set up a 64-bit build
@@ -4394,6 +4406,11 @@ if test "x$host" != "x$target"; then
 		target_mach=no
 		with_tls=pthread
 		;;
+	x86_64-google-fuchsia)
+		TARGET=AMD64
+		target_win32=nop
+		AC_DEFINE(HOST_FUCHSIA,1,[Targeting the Fuchsia platform])
+		;;
 	*)
 		AC_MSG_ERROR([Cross compiling is not supported for target $target])
 	esac
@@ -6148,7 +6165,15 @@ elif case $host_os in aix*|os400*) true;; *) false;; esac; then
 	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
 	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
 	MONO_NATIVE_CFLAGS=$CFLAGS
-	MONO_NATIVE_LDFLAGS=$LDFLAGS
+	dnl flock in AIX exists in libbsd (not the same as freedesktop.org
+	dnl libbsd) which Mono.Native needs.
+	dnl Because of the way that the library is built by default, unresolved
+	dnl references are kept and resolved at runtime. Often, the dependency
+	dnl chain means libbsd is loaded anyways, but not necessarily. It's
+	dnl better to explicitly link it, even though it has it shadows libc's
+	dnl ioctl with its own. (As for the other unresolved imports, those
+	dnl should be provided by the Mono runtime loaded.)
+	MONO_NATIVE_LDFLAGS="$LDFLAGS -lbsd"
 
 	mono_native=yes
 	mono_native_compat=no
@@ -6307,6 +6332,7 @@ mono/tests/assembly-load-reference/Makefile
 mono/tests/tests-config
 mono/tests/gc-descriptors/Makefile
 mono/tests/testing_gac/Makefile
+mono/tests/fullaot-mixed/Makefile
 mono/tests/llvmonly-mixed/Makefile
 mono/unit-tests/Makefile
 mono/benchmark/Makefile

@@ -2105,7 +2105,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 	}
 	g_assert (res != NULL);
 	if (inflated_generic_method) {
-		g_assert (res->is_generic);
+		g_assert (res->is_generic || res->is_inflated);
 		res = mono_class_inflate_generic_method_checked (res, &inflated_method_ctx, error);
 		return_val_if_nok (error, NULL);
 	}

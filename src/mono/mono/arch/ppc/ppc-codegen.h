@@ -754,6 +754,33 @@ my and Ximian's copyright to this code. ;)
 
 /* this marks the end of my work, ct */
 
+/* Introduced in Power ISA 2.02 (P4?) */
+#define ppc_frinx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (0 << 16) | (B << 11) | (392 << 1) | Rc)
+#define ppc_frin(c,D,B) ppc_frinx(c,D,B,0)
+#define ppc_frind(c,D,B) ppc_frinx(c,D,B,1)
+
+#define ppc_fripx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (0 << 16) | (B << 11) | (456 << 1) | Rc)
+#define ppc_frip(c,D,B) ppc_fripx(c,D,B,0)
+#define ppc_fripd(c,D,B) ppc_fripx(c,D,B,1)
+
+#define ppc_frizx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (0 << 16) | (B << 11) | (424 << 1) | Rc)
+#define ppc_friz(c,D,B) ppc_frizx(c,D,B,0)
+#define ppc_frizd(c,D,B) ppc_frizx(c,D,B,1)
+
+#define ppc_frimx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | (D << 21) | (0 << 16) | (B << 11) | (488 << 1) | Rc)
+#define ppc_frim(c,D,B) ppc_frimx(c,D,B,0)
+#define ppc_frimd(c,D,B) ppc_frimx(c,D,B,1)
+
+/*
+ * Introduced in Power ISA 2.03 (P5)
+ * This is an A-form instruction like many of the FP arith ops,
+ * but arranged slightly differently (swap record and reserved area)
+ */
+#define ppc_isel(c,D,A,B,C) ppc_emit32(c, (31 << 26) | (D << 21) | (A << 16) | (B << 11) | (C << 6) | (15 << 1) | 0)
+#define ppc_isellt(c,D,A,B) ppc_isel(c,D,A,B,0)
+#define ppc_iselgt(c,D,A,B) ppc_isel(c,D,A,B,1)
+#define ppc_iseleq(c,D,A,B) ppc_isel(c,D,A,B,2)
+
 /* PPC64 */
 
 /* The following FP instructions are not are available to 32-bit

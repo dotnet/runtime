@@ -21,8 +21,9 @@
 enum Win32APCInfo {
 	WIN32_APC_INFO_CLEARED = 0,
 	WIN32_APC_INFO_ALERTABLE_WAIT_SLOT = 1 << 0,
-	WIN32_APC_INFO_PENDING_INTERRUPT_SLOT = 1 << 1,
-	WIN32_APC_INFO_PENDING_ABORT_SLOT = 1 << 2
+	WIN32_APC_INFO_BLOCKING_IO_SLOT = 1 << 1,
+	WIN32_APC_INFO_PENDING_INTERRUPT_SLOT = 1 << 2,
+	WIN32_APC_INFO_PENDING_ABORT_SLOT = 1 << 3
 };
 
 static inline void
@@ -78,7 +79,7 @@ abort_apc (ULONG_PTR param)
 		// Check if pending interrupt is still relevant and current thread has not left alertable wait region.
 		// NOTE, can only be reset by current thread, currently running this APC.
 		gint32 win32_apc_info = mono_atomic_load_i32 (&info->win32_apc_info);
-		if (win32_apc_info & WIN32_APC_INFO_PENDING_ABORT_SLOT) {
+		if (win32_apc_info & WIN32_APC_INFO_BLOCKING_IO_SLOT) {
 			// Check if current thread registered an IO handle when entering alertable wait (blocking IO call).
 			// No need for CAS on win32_apc_info_io_handle since its only loaded/stored by current thread
 			// currently running APC.
@@ -108,14 +109,6 @@ static void
 suspend_abort_syscall (PVOID thread_info, HANDLE native_thread_handle, DWORD tid)
 {
 	request_interrupt (thread_info, native_thread_handle, WIN32_APC_INFO_PENDING_ABORT_SLOT, abort_apc, tid);
-
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-	// In case thread is blocked on sync IO preventing it from running above queued APC, cancel
-	// all outputstanding sync IO for target thread. If its not blocked on a sync IO request, below
-	// call will just fail and nothing will be canceled. If thread is waiting on overlapped IO,
-	// the queued APC will take care of cancel specific outstanding IO requests.
-	CancelSynchronousIo (native_thread_handle);
-#endif
 }
 
 static inline void
@@ -126,7 +119,7 @@ enter_alertable_wait_ex (MonoThreadInfo *info, HANDLE io_handle)
 	info->win32_apc_info_io_handle = io_handle;
 
 	//Set alertable wait flag.
-	mono_atomic_xchg_i32 (&info->win32_apc_info, WIN32_APC_INFO_ALERTABLE_WAIT_SLOT);
+	mono_atomic_xchg_i32 (&info->win32_apc_info, (io_handle == INVALID_HANDLE_VALUE) ? WIN32_APC_INFO_ALERTABLE_WAIT_SLOT : WIN32_APC_INFO_BLOCKING_IO_SLOT);
 }
 
 static inline void
@@ -239,6 +232,21 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 	DWORD id = mono_thread_info_get_tid(info);
 	g_assert (info->native_handle);
 	suspend_abort_syscall (info, info->native_handle, id);
+}
+
+void
+mono_win32_abort_blocking_io_call (MonoThreadInfo *info)
+{
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+	// In case thread is blocked on sync IO preventing it from running above queued APC, cancel
+	// all outputstanding sync IO for target thread. If its not blocked on a sync IO request, below
+	// call will just fail and nothing will be canceled. If thread is waiting on overlapped IO,
+	// the queued APC will take care of cancel specific outstanding IO requests.
+	gint32 win32_apc_info = mono_atomic_load_i32 (&info->win32_apc_info);
+	if (win32_apc_info & WIN32_APC_INFO_BLOCKING_IO_SLOT) {
+		CancelSynchronousIo (info->native_handle);
+	}
+#endif
 }
 
 gboolean

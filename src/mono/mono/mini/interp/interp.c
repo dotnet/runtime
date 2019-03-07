@@ -1413,10 +1413,9 @@ exit_pinvoke:
  *   Initialize del->interp_method.
  */
 static void
-interp_init_delegate (MonoDelegate *del)
+interp_init_delegate (MonoDelegate *del, MonoError *error)
 {
 	MonoMethod *method;
-	ERROR_DECL (error);
 
 	if (del->interp_method) {
 		/* Delegate created by a call to ves_icall_mono_delegate_ctor_interp () */
@@ -1426,9 +1425,7 @@ interp_init_delegate (MonoDelegate *del)
 		del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
 	} else {
 		/* Created from JITted code */
-		g_assert (del->method_ptr);
-		del->interp_method = lookup_method_pointer (del->method_ptr);
-		g_assert (del->interp_method);
+		g_assert_not_reached ();
 	}
 
 	method = ((InterpMethod*)del->interp_method)->method;
@@ -1453,6 +1450,12 @@ interp_init_delegate (MonoDelegate *del)
 			del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, mono_marshal_get_delegate_invoke (method, NULL), error);
 			mono_error_assert_ok (error);
 		}
+	}
+
+	if (!((InterpMethod *) del->interp_method)->transformed && method_is_dynamic (method)) {
+		/* Return any errors from method compilation */
+		mono_interp_transform_method ((InterpMethod *) del->interp_method, get_context (), error);
+		return_if_nok (error);
 	}
 }
 
@@ -2573,7 +2576,7 @@ interp_entry_general (gpointer this_arg, gpointer res, gpointer *args, gpointer 
 // inline so we can alloc on stack
 #define alloc_storage_for_stackval(s, t, p) do {							\
 		if ((t)->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (t)) {		\
-			(s)->data.vt = alloca (mono_class_value_size ((t)->data.generic_class->container_class, NULL));	\
+			(s)->data.vt = alloca (mono_class_value_size (mono_class_from_mono_type_internal (t), NULL));	\
 		} else if ((t)->type == MONO_TYPE_VALUETYPE) {						\
 			if (p)										\
 				(s)->data.vt = alloca (mono_class_native_size ((t)->data.klass, NULL));	\
@@ -2767,14 +2770,14 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 	if (mono_llvm_only)
 		return (gpointer)no_llvmonly_interp_method_pointer;
 
-	if (compile) {
+	if (imethod->jit_entry)
+		return imethod->jit_entry;
+
+	if (compile && !imethod->transformed) {
 		/* Return any errors from method compilation */
 		mono_interp_transform_method (imethod, get_context (), error);
 		return_val_if_nok (error, NULL);
 	}
-
-	if (imethod->jit_entry)
-		return imethod->jit_entry;
 
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 
@@ -2782,9 +2785,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		/* The caller should call interp_create_method_pointer_llvmonly */
 		g_assert_not_reached ();
 
-	/* HACK: method_ptr of delegate should point to a runtime method*/
-	if (method->wrapper_type && (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD ||
-				(method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)))
+	if (method->wrapper_type && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		return imethod;
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
@@ -2941,9 +2942,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	0 };
 #endif
 
-
 	frame->ex = NULL;
-	frame->ip = NULL;
 	debug_enter (frame, &tracing);
 
 	imethod = frame->imethod;
@@ -2954,6 +2953,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		g_free (mn);
 #endif
 
+		frame->ip = NULL;
 		do_transform_method (frame, context);
 		if (frame->ex)
 			THROW_EX (frame->ex, NULL);
@@ -2962,8 +2962,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 	if (!clause_args) {
 		frame->args = g_newa (char, imethod->alloca_size);
-		memset (frame->args, 0, imethod->alloca_size);
-
 		ip = imethod->code;
 	} else {
 		ip = clause_args->start_with_ip;
@@ -3834,6 +3832,17 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			ip += 2;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_LDIND_I8) {
+			guint16 offset = * (guint16 *)(ip + 1);
+#ifdef NO_UNALIGNED_ACCESS
+			if ((gsize)sp [-1 - offset].data.p % SIZEOF_VOID_P)
+				memcpy (&sp [-1 - offset].data.l, sp [-1 - offset].data.p, sizeof (gint64));
+			else
+#endif
+			sp[-1 - offset].data.l = *(gint64*)sp[-1 - offset].data.p;
+			ip += 2;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDIND_R4_CHECK)
 			if (!sp[-1].data.p)
 				THROW_EX (mono_get_exception_null_reference (), ip);
@@ -4535,26 +4544,66 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 			break;
 		}
+		MINT_IN_CASE(MINT_CASTCLASS_INTERFACE)
+		MINT_IN_CASE(MINT_ISINST_INTERFACE) {
+			gboolean isinst_instr = *ip == MINT_ISINST_INTERFACE;
+			c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
+			if ((o = sp [-1].data.o)) {
+				gboolean isinst;
+				if (MONO_VTABLE_IMPLEMENTS_INTERFACE (o->vtable, m_class_get_interface_id (c))) {
+					isinst = TRUE;
+				} else if (m_class_is_array_special_interface (c) || mono_object_is_transparent_proxy (o)) {
+					/* slow path */
+					isinst = mono_object_isinst_checked (o, c, error) != NULL;
+					mono_error_cleanup (error); /* FIXME: don't swallow the error */
+				} else {
+					isinst = FALSE;
+				}
+
+				if (!isinst) {
+					if (isinst_instr)
+						sp [-1].data.p = NULL;
+					else
+						THROW_EX (mono_get_exception_invalid_cast (), ip);
+				}
+			}
+			ip += 2;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CASTCLASS_COMMON)
+		MINT_IN_CASE(MINT_ISINST_COMMON) {
+			gboolean isinst_instr = *ip == MINT_ISINST_COMMON;
+			c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
+			if ((o = sp [-1].data.o)) {
+				gboolean isinst = mono_class_has_parent_fast (o->vtable->klass, c);
+
+				if (!isinst) {
+					if (isinst_instr)
+						sp [-1].data.p = NULL;
+					else
+						THROW_EX (mono_get_exception_invalid_cast (), ip);
+				}
+			}
+			ip += 2;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CASTCLASS)
+		MINT_IN_CASE(MINT_ISINST) {
+			gboolean isinst_instr = *ip == MINT_ISINST;
 			c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.o)) {
 				MonoObject *isinst_obj = mono_object_isinst_checked (o, c, error);
 				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-				if (!isinst_obj)
-					THROW_EX (mono_get_exception_invalid_cast (), ip);
+				if (!isinst_obj) {
+					if (isinst_instr)
+						sp [-1].data.p = NULL;
+					else
+						THROW_EX (mono_get_exception_invalid_cast (), ip);
+				}
 			}
 			ip += 2;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ISINST)
-			c = (MonoClass*)imethod->data_items [*(guint16 *)(ip + 1)];
-			if ((o = sp [-1].data.o)) {
-				MonoObject *isinst_obj = mono_object_isinst_checked (o, c, error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-				if (!isinst_obj)
-					sp [-1].data.p = NULL;
-			}
-			ip += 2;
-			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CONV_R_UN_I4)
 			sp [-1].data.f = (double)(guint32)sp [-1].data.i;
 			++ip;

@@ -209,7 +209,13 @@ endfilter: src1:i len:32
 aotconst: dest:i len:8
 load_gotaddr: dest:i len:32
 got_entry: dest:i src1:b len:32
+abs: dest:f src1:f len:4
 sqrt: dest:f src1:f len:4
+sqrtf: dest:f src1:f len:4
+round: dest:f src1:f len:4
+ppc_trunc: dest:f src1:f len:4
+ppc_ceil: dest:f src1:f len:4
+ppc_floor: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4
@@ -322,6 +328,16 @@ icompare: src1:i src2:i len:4
 icompare_imm: src1:i len:12
 
 long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:32
+
+# shouldn't use long stuff on ppc32
+#long_min: dest:i src1:i src2:i len:8 clob:1
+#long_min_un: dest:i src1:i src2:i len:8 clob:1
+#long_max: dest:i src1:i src2:i len:8 clob:1
+#long_max_un: dest:i src1:i src2:i len:8 clob:1
+int_min: dest:i src1:i src2:i len:8 clob:1
+int_max: dest:i src1:i src2:i len:8 clob:1
+int_min_un: dest:i src1:i src2:i len:8 clob:1
+int_max_un: dest:i src1:i src2:i len:8 clob:1
 
 vcall2: len:20 clob:c
 vcall2_reg: src1:i len:8 clob:c

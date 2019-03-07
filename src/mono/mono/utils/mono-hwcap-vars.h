@@ -27,6 +27,7 @@ MONO_HWCAP_VAR(arm_has_thumb2)
 
 MONO_HWCAP_VAR(ppc_has_icache_snoop)
 MONO_HWCAP_VAR(ppc_is_isa_2x)
+MONO_HWCAP_VAR(ppc_is_isa_2_03)
 MONO_HWCAP_VAR(ppc_is_isa_64)
 MONO_HWCAP_VAR(ppc_has_move_fpr_gpr)
 MONO_HWCAP_VAR(ppc_has_multiple_ls_units)

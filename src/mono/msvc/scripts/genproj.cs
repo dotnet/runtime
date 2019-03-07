@@ -56,7 +56,7 @@ public class KnownProjectInfo {
 }
 
 public class SlnGenerator {
-	public static readonly string NewLine = "\r\n"; //Environment.NewLine; // "\n"; 
+	public static readonly string NewLine = Environment.NewLine;
 	public SlnGenerator (string slnVersion)
 	{
 		Console.Error.WriteLine("// Requested sln version is {0}", slnVersion);

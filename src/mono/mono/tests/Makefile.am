@@ -995,6 +995,8 @@ TESTS_IL_SRC=			\
 	bug-45841-fpstack-exceptions.il \
 	instance_tailrec.il	\
 	dim-constrainedcall.il	\
+	dim-constrained3.il	\
+	dim-constrained3_gm.il	\
 	dim-diamondshape.il	\
 	dim-genericmethods.il	\
 	dim-methodimpl.il	\
@@ -1010,7 +1012,8 @@ TESTS_IL_SRC=			\
 	newobj-abstract.il \
 	invalid-isbyreflike.il \
 	gh-13056_mono_local_cprop_av.il \
-	gh-13057_mono_local_emulate_ops_av.il
+	gh-13057_mono_local_emulate_ops_av.il \
+	module-cctor-entrypoint.il
 
 # This test crashes the runtime, even with recent fixes.
 #	incorrect-ldvirtftn-read-behind-for-dup.il
@@ -1966,7 +1969,7 @@ TESTSAOT_GSHARED=$(TESTS_GSHARED:.exe=.exe$(PLATFORM_AOT_SUFFIX))
 TESTSAOT_TAILCALL=$(TESTS_TAILCALL_COMPILE:.exe=.exe$(PLATFORM_AOT_SUFFIX))
 endif
 
-EXTRA_DIST=test-driver test-runner.cs $(TESTS_CS_SRC) $(TESTS_IL_SRC) \
+EXTRA_DIST=common_mixed.mk test-driver test-runner.cs $(TESTS_CS_SRC) $(TESTS_IL_SRC) \
 	$(TESTS_BENCH_SRC) $(TESTS_STRESS_SRC) stress-runner.pl \
 	array-coop-1.cs array-coop-2.cs \
 	array-coop-bigvt.cs array-coop-int.cs array-coop-smallvt.cs \

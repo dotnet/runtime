@@ -425,3 +425,19 @@ mono_llvm_di_builder_finalize (void *di_builder)
 }
 
 #endif /* #if LLVM_API_VERSION > 100 */
+
+LLVMValueRef
+mono_llvm_get_or_insert_gc_safepoint_poll (LLVMModuleRef module)
+{
+	llvm::Constant *SafepointPollConstant;
+	llvm::Function *SafepointPoll;
+
+	SafepointPollConstant = unwrap(module)->getOrInsertFunction("gc.safepoint_poll", FunctionType::get(unwrap(LLVMVoidType()), false));
+	g_assert (SafepointPollConstant);
+
+	SafepointPoll = dyn_cast<llvm::Function>(SafepointPollConstant);
+	g_assert (SafepointPoll);
+	g_assert (SafepointPoll->empty());
+
+	return wrap(SafepointPoll);
+}
