@@ -1,6 +1,6 @@
 include $(top_srcdir)/mk/common.mk
 
-SUBDIRS = gc-descriptors . testing_gac assembly-load-reference llvmonly-mixed
+SUBDIRS = gc-descriptors . testing_gac assembly-load-reference llvmonly-mixed fullaot-mixed
 
 check-local:
 	ok=:; \
