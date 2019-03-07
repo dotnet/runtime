@@ -33,7 +33,7 @@ typedef DPTR(class CodeVersionManager) PTR_CodeVersionManager;
 
 // This HRESULT is only used as a private implementation detail. Corerror.xml has a comment in it
 //  reserving this value for our use but it doesn't appear in the public headers.
-#define CORPROF_E_RUNTIME_SUSPEND_REQUIRED 0x80131381
+#define CORPROF_E_RUNTIME_SUSPEND_REQUIRED _HRESULT_TYPEDEF_(0x80131381L)
 
 #endif
 

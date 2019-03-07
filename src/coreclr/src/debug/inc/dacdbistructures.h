@@ -99,7 +99,7 @@ public:
 
 
     // returns the number of elements in the list
-    int Count() const;
+    unsigned int Count() const;
 
     // @dbgtodo  Mac - cleaner way to expose this for serialization?
     void PrepareForDeserialize()

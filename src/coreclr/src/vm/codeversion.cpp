@@ -47,7 +47,7 @@ bool NativeCodeVersion::operator!=(const NativeCodeVersion & rhs) const { return
 // it is a bug. Corerror.xml has a comment in it reserving this value for our use but it doesn't
 // appear in the public headers.
 
-#define CORPROF_E_RUNTIME_SUSPEND_REQUIRED 0x80131381
+#define CORPROF_E_RUNTIME_SUSPEND_REQUIRED _HRESULT_TYPEDEF_(0x80131381L)
 
 #ifndef DACCESS_COMPILE
 NativeCodeVersionNode::NativeCodeVersionNode(
@@ -1308,7 +1308,7 @@ HRESULT MethodDescVersioningState::JumpStampNativeCode(PCODE pCode /* = NULL */)
     // revert.
     if (GetJumpStampState() == JumpStampNone)
     {
-        for (int i = 0; i < sizeof(m_rgSavedCode); i++)
+        for (unsigned int i = 0; i < sizeof(m_rgSavedCode); i++)
         {
             m_rgSavedCode[i] = *FirstCodeByteAddr(pbCode + i, DebuggerController::GetPatchTable()->GetPatch((CORDB_ADDRESS_TYPE *)(pbCode + i)));
         }
@@ -1413,7 +1413,7 @@ HRESULT MethodDescVersioningState::UpdateJumpTarget(BOOL fEESuspended, PCODE pRe
     // revert.
     if (GetJumpStampState() == JumpStampNone)
     {
-        for (int i = 0; i < sizeof(m_rgSavedCode); i++)
+        for (unsigned int i = 0; i < sizeof(m_rgSavedCode); i++)
         {
             m_rgSavedCode[i] = *FirstCodeByteAddr(pbCode + i, DebuggerController::GetPatchTable()->GetPatch((CORDB_ADDRESS_TYPE *)(pbCode + i)));
         }
@@ -1640,7 +1640,7 @@ HRESULT MethodDescVersioningState::UpdateJumpStampHelper(BYTE* pbCode, INT64 i64
 
         // PERF: we might still want a faster path through here if we aren't debugging that doesn't do
         // all the patch checks
-        for (int i = 0; i < MethodDescVersioningState::JumpStubSize; i++)
+        for (unsigned int i = 0; i < MethodDescVersioningState::JumpStubSize; i++)
         {
             *FirstCodeByteAddr(pbCode + i, DebuggerController::GetPatchTable()->GetPatch(pbCode + i)) = ((BYTE*)&i64NewValue)[i];
         }

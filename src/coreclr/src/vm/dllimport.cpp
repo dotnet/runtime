@@ -867,13 +867,13 @@ public:
         // </NOTE>
 
 #if defined(PROFILING_SUPPORTED)
-        DWORD dwMethodDescLocalNum = -1;
+        DWORD dwMethodDescLocalNum = (DWORD)-1;
 
         // Notify the profiler of call out of the runtime
         if (!SF_IsReverseCOMStub(m_dwStubFlags) && (CORProfilerTrackTransitions() || SF_IsNGENedStubForProfiling(m_dwStubFlags)))
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
-            _ASSERTE(dwMethodDescLocalNum != -1);
+            _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
         }
 #endif // PROFILING_SUPPORTED
 
@@ -930,7 +930,7 @@ public:
 
 #if defined(PROFILING_SUPPORTED)
         // Notify the profiler of return back into the runtime
-        if (dwMethodDescLocalNum != -1)
+        if (dwMethodDescLocalNum != (DWORD)-1)
         {
             m_slIL.EmitProfilerEndTransitionCallback(pcsDispatch, m_dwStubFlags, dwMethodDescLocalNum);
         }

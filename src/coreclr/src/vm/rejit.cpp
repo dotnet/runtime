@@ -165,7 +165,7 @@
 
 // This HRESULT is only used as a private implementation detail. Corerror.xml has a comment in it
 //  reserving this value for our use but it doesn't appear in the public headers.
-#define CORPROF_E_RUNTIME_SUSPEND_REQUIRED 0x80131381
+#define CORPROF_E_RUNTIME_SUSPEND_REQUIRED _HRESULT_TYPEDEF_(0x80131381L)
 
 // This is just used as a unique id. Overflow is OK. If we happen to have more than 4+Billion rejits
 // and somehow manage to not run out of memory, we'll just have to redefine ReJITID as size_t.

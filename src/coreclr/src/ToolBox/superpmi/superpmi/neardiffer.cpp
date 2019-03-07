@@ -330,7 +330,7 @@ bool NearDiffer::compareOffsets(
 
     // VSD calling case.
     size_t Offset1 = (ipRelOffset1 - 8);
-    if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1) != (DWORD)-1)
+    if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1) != -1)
     {
         // This logging is too noisy, so disable it.
         // LogVerbose("Found VSD callsite, did softer compare than ideal");
@@ -340,13 +340,13 @@ bool NearDiffer::compareOffsets(
     // x86 VSD calling cases.
     size_t Offset1b = (size_t)offset1 - 4;
     size_t Offset2b = (size_t)offset2;
-    if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1b) != (DWORD)-1)
+    if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1b) != -1)
     {
         // This logging is too noisy, so disable it.
         // LogVerbose("Found VSD callsite, did softer compare than ideal");
         return true;
     }
-    if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset2b) != (DWORD)-1)
+    if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset2b) != -1)
     {
         // This logging is too noisy, so disable it.
         // LogVerbose("Found VSD callsite, did softer compare than ideal");
@@ -368,7 +368,7 @@ bool NearDiffer::compareOffsets(
         return true;
 
     realTargetAddr = (size_t)data->cr->searchAddressMap((void*)(gOffset2));
-    if (realTargetAddr != -1) // we know this was passed out as a bbloc
+    if (realTargetAddr != (size_t)-1) // we know this was passed out as a bbloc
         return true;
 
     return false;

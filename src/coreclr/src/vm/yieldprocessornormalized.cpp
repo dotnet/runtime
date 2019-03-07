@@ -72,7 +72,7 @@ static void InitializeYieldProcessorNormalized()
     {
         yieldsPerNormalizedYield = 1;
     }
-    _ASSERTE(yieldsPerNormalizedYield <= MinNsPerNormalizedYield);
+    _ASSERTE(yieldsPerNormalizedYield <= (int)MinNsPerNormalizedYield);
 
     // Calculate the maximum number of yields that would be optimal for a late spin iteration. Typically, we would not want to
     // spend excessive amounts of time (thousands of cycles) doing only YieldProcessor, as SwitchToThread/Sleep would do a

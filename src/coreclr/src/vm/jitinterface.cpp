@@ -7040,7 +7040,7 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
             // Call CompareTo method on the primitive type
             int tokCompareTo = pCompareToMD->GetMemberDef();
 
-            int index = (et - ELEMENT_TYPE_I1);
+            unsigned int index = (et - ELEMENT_TYPE_I1);
             _ASSERTE(index < _countof(ilcode));
 
             ilcode[index][0] = CEE_LDARGA_S;

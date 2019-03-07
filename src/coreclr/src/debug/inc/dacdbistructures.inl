@@ -154,7 +154,7 @@ T & DacDbiArrayList<T>::operator [](int i)
 // get the number of elements in the list
 template<class T> 
 inline
-int DacDbiArrayList<T>::Count() const
+unsigned int DacDbiArrayList<T>::Count() const
 {
     return m_nEntries;
 }
@@ -392,7 +392,7 @@ inline
 void SequencePoints::CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMapping  mapCopy[])
 {
     // copy information to pSeqPoint and set end offsets
-    int i;
+    unsigned int i;
 
     ULONG32 lastILOffset = 0;
 
@@ -405,7 +405,7 @@ void SequencePoints::CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMappin
         if (i < m_map.Count() - 1)
         {
             // We need to not use CALL_INSTRUCTION's IL start offset.
-            int j = i + 1;
+            unsigned int j = i + 1;
             while ((mapCopy[j].source & call_inst) == call_inst && j < m_map.Count()-1)
                 j++;
             

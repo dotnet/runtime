@@ -346,7 +346,7 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
 #ifdef FEATURE_PAL
     uint32_t cpuLimit;
 
-    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < processorCount)
+    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < (uint32_t)processorCount)
         processorCount = cpuLimit;
 #endif
 
