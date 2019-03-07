@@ -4873,6 +4873,8 @@ void          CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
+    //      |  possible GS cookie   |
+    //      |-----------------------|
     //      |      Saved LR         | // 8 bytes
     //      |-----------------------|
     //      |      Saved FP         | // 8 bytes
@@ -4901,6 +4903,8 @@ void          CodeGen::genPushCalleeSavedRegisters()
     //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
+    //      |-----------------------|
+    //      |  possible GS cookie   |
     //      |-----------------------|
     //      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
     //      |-----------------------| <---- Ambient SP
@@ -4962,8 +4966,7 @@ void          CodeGen::genPushCalleeSavedRegisters()
         // not do this. That means that negative offsets from FP might need to use the reserved register to form
         // the local variable offset for an addressing mode.
 
-        // TODO-ARM64-Bug?: should this be "totalFrameSize <= 512"?
-        if (((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize < 512)) &&
+        if (((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize <= 504)) &&
             !genSaveFpLrWithAllCalleeSavedRegisters)
         {
             // Case #1.
@@ -4971,8 +4974,10 @@ void          CodeGen::genPushCalleeSavedRegisters()
             // Generate:
             //      stp fp,lr,[sp,#-framesz]!
             //
-            // The (totalFrameSize < 512) condition ensures that both the predecrement
-            // and the postincrement of SP can occur with STP.
+            // The (totalFrameSize <= 504) condition ensures that both the pre-index STP instruction
+            // used in the prolog, and the post-index LDP instruction used in the epilog, can be generated.
+            // Note that STP and the unwind codes can handle -512, but LDP with a positive post-index value
+            // can only handle up to 504, and we want our prolog and epilog to match.
             //
             // After saving callee-saved registers, we establish the frame pointer with:
             //      mov fp,sp
@@ -4995,7 +5000,9 @@ void          CodeGen::genPushCalleeSavedRegisters()
             // Case #2.
             //
             // The (totalFrameSize <= 512) condition ensures the callee-saved registers can all be saved using STP
-            // with signed offset encoding.
+            // with signed offset encoding. The maximum positive STP offset is 504, but when storing a pair of
+            // 8 byte registers, the largest actual offset we use would be 512 - 8 * 2 = 496. And STR with positive
+            // offset has a range 0 to 32760.
             //
             // After saving callee-saved registers, we establish the frame pointer with:
             //      add fp,sp,#outsz
@@ -5209,7 +5216,7 @@ void          CodeGen::genPushCalleeSavedRegisters()
         assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
                                               // totalFrameSize and calleeSaveSPDelta -- is 16-byte aligned.
 
-        if (compiler->lvaOutgoingArgSpaceSize >= 504)
+        if (compiler->lvaOutgoingArgSpaceSize > 504)
         {
             // We can't do "stp fp,lr,[sp,#outsz]" because #outsz is too big.
             // If compiler->lvaOutgoingArgSpaceSize is not aligned, we need to align the SP adjustment.
@@ -5239,9 +5246,9 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
             JITDUMP("    spAdjustment3=%d\n", spAdjustment3);
 
-            // TODO-ARM64-CQ: we're reporting this SUB SP in the unwind info. Do we need to, since we've already
-            // established the frame pointer?
-            genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegZeroed);
+            // We've already established the frame pointer, so no need to report the stack pointer change to unwind
+            // info.
+            genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegZeroed, /* reportUnwindData */ false);
             offset += spAdjustment3;
         }
         else
@@ -5278,9 +5285,8 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
         JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
-        // TODO-ARM64-CQ: we're reporting this SUB SP in the unwind info. Do we need to, since we've already
-        // established the frame pointer?
-        genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed);
+        // We've already established the frame pointer, so no need to report the stack pointer change to unwind info.
+        genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ false);
         offset += remainingFrameSz;
     }
     else
@@ -5716,8 +5722,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     if (isFramePointerUsed())
     {
-        // TODO-ARM64-Bug?: should this be "totalFrameSize <= 512"?
-        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize < 512) &&
+        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize <= 504) &&
             !genSaveFpLrWithAllCalleeSavedRegisters)
         {
             JITDUMP("Frame type 1. #outsz=0; #framesz=%d; localloc? %s\n", totalFrameSize,
@@ -5797,7 +5802,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
             assert(remainingFrameSz > 0);
 
-            if (compiler->lvaOutgoingArgSpaceSize >= 504)
+            if (compiler->lvaOutgoingArgSpaceSize > 504)
             {
                 // We can't do "ldp fp,lr,[sp,#outsz]" because #outsz is too big.
                 // If compiler->lvaOutgoingArgSpaceSize is not aligned, we need to align the SP adjustment.
@@ -5807,27 +5812,11 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 int alignmentAdjustment2   = spAdjustment2 - spAdjustment2Unaligned;
                 assert((alignmentAdjustment2 == 0) || (alignmentAdjustment2 == REGSIZE_BYTES));
 
-                if (compiler->compLocallocUsed)
-                {
-                    // Restore sp from fp. No need to update sp after this since we've set up fp before adjusting sp
-                    // in prolog.
-                    //      sub sp, fp, #alignmentAdjustment2
-                    getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, alignmentAdjustment2);
-                    compiler->unwindSetFrameReg(REG_FPBASE, alignmentAdjustment2);
-                }
-                else
-                {
-                    // Generate:
-                    //      add sp,sp,#outsz                ; if #outsz is not 16-byte aligned, we need to be more
-                    //                                      ; careful
-                    int spAdjustment3 = compiler->lvaOutgoingArgSpaceSize - alignmentAdjustment2;
-                    assert(spAdjustment3 > 0);
-                    assert((spAdjustment3 % 16) == 0);
-
-                    JITDUMP("    spAdjustment3=%d\n", spAdjustment3);
-
-                    genStackPointerAdjustment(spAdjustment3, REG_IP0, nullptr);
-                }
+                // Restore sp from fp. No need to update sp after this since we've set up fp before adjusting sp
+                // in prolog.
+                //      sub sp, fp, #alignmentAdjustment2
+                getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, alignmentAdjustment2);
+                compiler->unwindSetFrameReg(REG_FPBASE, alignmentAdjustment2);
 
                 // Generate:
                 //      ldp fp,lr,[sp]
@@ -5883,7 +5872,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             // Restore sp from fp:
             //      sub sp, fp, #sp-to-fp-delta
             // This is the same whether there is localloc or not. Note that we don't need to do anything to remove the
-            // "remainingFrameSz" to reverse the SUB of that amount in the prolog. The unwind codes won't match.
+            // "remainingFrameSz" to reverse the SUB of that amount in the prolog.
 
             int offsetSpToSavedFp = calleeSaveSPDelta -
                                     (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
