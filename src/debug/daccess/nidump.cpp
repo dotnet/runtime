@@ -2462,7 +2462,7 @@ const NativeImageDumper::Dependency *NativeImageDumper::GetDependencyForFixup(RV
     {
         unsigned idx = DacSigUncompressData(sig);
 
-        _ASSERTE(idx >= 0 && idx < (int)m_numImports);
+        _ASSERTE(idx >= 0 && idx < m_numImports);
         return OpenImport(idx)->dependency;
     }
 

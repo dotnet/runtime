@@ -213,7 +213,7 @@ BOOL StackSlotStateChangeCallback (
         if (pState->fAnythingPrinted)
             pState->pfnPrintf("\n");
 
-        if ((CodeOffset == -2) && !pState->fAnythingPrinted)
+        if ((CodeOffset == (UINT32)-2) && !pState->fAnythingPrinted)
             pState->pfnPrintf("Untracked:");
         else
             pState->pfnPrintf("%08x", CodeOffset);

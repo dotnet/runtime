@@ -1208,7 +1208,7 @@ int GetCurrentProcessCpuCount()
     if (cCPUs != 0)
         return cCPUs;
 
-    int count = 0;
+    unsigned int count = 0;
     DWORD_PTR pmask, smask;
 
     if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
