@@ -9,22 +9,22 @@ variables:
 resources:
   containers:
   - container: ubuntu_1404_arm_cross_build_image
-    image: microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-cross-e435274-20180426002420
 
   - container: ubuntu_1604_arm64_cross_build_image
-    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
 
   - container: musl_x64_build_image
-    image: microsoft/dotnet-buildtools-prereqs:alpine-3.6-WithNode-f4d3fe3-20181220200247
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.6-WithNode-f4d3fe3-20181220200247
 
   - container: musl_arm64_build_image
-    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917
 
   - container: centos7_x64_build_image
-    image: microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-d485f41-20173404063424
 
   - container: centos6_x64_build_image
-    image: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-376e1a3-20174311014331
 
 trigger:
 - master
