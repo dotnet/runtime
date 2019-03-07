@@ -181,10 +181,6 @@ private:
     
 };
 
-#ifdef _DEBUG
-extern void DisableGlobalAllocStore ();
-#endif //_DEBUG 
-
 void SetLatchedExitCode (INT32 code);
 INT32 GetLatchedExitCode (void);
 

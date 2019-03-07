@@ -122,8 +122,6 @@ LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
     RETURN NULL;
 }
 
-extern void UpdateGCSettingFromHost ();
-
 HRESULT EEConfig::Setup()
 {
     STANDARD_VM_CONTRACT;
@@ -144,8 +142,6 @@ HRESULT EEConfig::Setup()
 
     _ASSERTE(pConfigOld == NULL && "EEConfig::Setup called multiple times!");
     
-    UpdateGCSettingFromHost();
-
     return S_OK;
 }
 

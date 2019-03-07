@@ -458,17 +458,7 @@ void BaseBucketParamsManager::PopulateBucketParameter(BucketParameterIndex param
 
     // verify that we haven't already written data to this param
     _ASSERTE(targetParam && targetParam[0] == W('\0'));
-#ifdef FEATURE_WINDOWSPHONE
-    WCHAR const* overrideParam = g_CLRErrorReportingManager.GetBucketParamOverride(paramIndex);
-    if (overrideParam != NULL)
-    {
-        CopyStringToBucket(targetParam, maxLength, overrideParam, false);
-    }
-    else
-#endif // FEATURE_WINDOWSPHONE
-    {
-        (this->*pFnDataPopulator)(targetParam, maxLength);
-    }
+    (this->*pFnDataPopulator)(targetParam, maxLength);
 
     LogParam(targetParam, paramIndex);
 }

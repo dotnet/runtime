@@ -4200,7 +4200,7 @@ void TrimWhiteSpace(__inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch);
 HRESULT Utf2Quick(
     LPCUTF8     pStr,                   // The string to convert.
     CQuickArray<WCHAR> &rStr,           // The QuickArray<WCHAR> to convert it into.
-    int         iCurLen);               // Inital characters in the array to leave (default 0).
+    int         iCurLen = 0);           // Initial characters in the array to leave (default 0).
 
 //*****************************************************************************
 //  Extract the movl 64-bit unsigned immediate from an IA64 bundle
@@ -5185,9 +5185,6 @@ HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt
 // This is a slight variation that can be used for anything else
 typedef void* (__cdecl *LocalizedFileHandler)(LPCWSTR);
 void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler lfh, _In_opt_z_ LPCWSTR modulePath=NULL);
-
-BOOL IsClrHostedLegacyComObject(REFCLSID rclsid);
-
 
 
 

@@ -455,9 +455,7 @@ void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction 
     GCX_PREEMP_NO_DTOR();
     
     FastInterlockExchange((LONG*)&g_fForbidEnterEE, TRUE);
-    
-    ProcessEventForHost(Event_ClrDisabled, NULL);
-    
+
     // Note that for free and retail builds StressLog must also be enabled
     if (g_pConfig && g_pConfig->StressLog())
     {
@@ -580,7 +578,6 @@ void DisableRuntime(ShutdownCompleteAction sca)
 
     GCX_PREEMP_NO_DTOR();
     
-    ProcessEventForHost(Event_ClrDisabled, NULL);
     ClrFlsClearThreadType(ThreadType_Shutdown);
 
     if (g_pDebugInterface != NULL)
@@ -757,12 +754,7 @@ void EEPolicy::HandleStackOverflow(StackOverflowDetector detector, void * pLimit
 
     if (pThread == NULL)
     {
-        //_ASSERTE (detector != SOD_ManagedFrameHandler);
-        // ProcessSOEventForHost(NULL, FALSE);
-
         // For security reason, it is not safe to continue execution if stack overflow happens
-        // unless a host tells us to do something different.
-        // EEPolicy::HandleFatalStackOverflow(NULL);
         return;
     }
 
@@ -770,8 +762,6 @@ void EEPolicy::HandleStackOverflow(StackOverflowDetector detector, void * pLimit
     GetCurrentExceptionPointers(&exceptionInfo);
 
     _ASSERTE(exceptionInfo.ExceptionRecord);
-
-    ProcessSOEventForHost(&exceptionInfo, false /* fInSoTolerant */);
 
     EEPolicy::HandleFatalStackOverflow(&exceptionInfo);
 }

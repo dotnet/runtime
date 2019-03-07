@@ -2755,13 +2755,6 @@ VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
-    if (g_CLRPolicyRequested &&
-        throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass)
-    {
-        // We depends on UNINSTALL_UNWIND_AND_CONTINUE_HANDLER to handle out of memory escalation.
-        // We should throw c++ exception instead.
-        ThrowOutOfMemory();
-    }
     _ASSERTE(throwable != CLRException::GetPreallocatedStackOverflowException());
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
@@ -3007,13 +3000,6 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
     // Unfortunately, COMPlusFrameHandler installed here, will try to create managed exception object.
     // We may hit a recursion.
 
-    if (g_CLRPolicyRequested &&
-        throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass)
-    {
-        // We depends on UNINSTALL_UNWIND_AND_CONTINUE_HANDLER to handle out of memory escalation.
-        // We should throw c++ exception instead.
-        ThrowOutOfMemory();
-    }
     _ASSERTE(throwable != CLRException::GetPreallocatedStackOverflowException());
 
     // TODO: Do we need to install COMPlusFrameHandler here?
@@ -8286,19 +8272,6 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         OBJECTREFToObject(orThrowable)));
 
     Exception::Delete(pException);
-
-    if (orThrowable != NULL && g_CLRPolicyRequested)
-    {
-        if (orThrowable->GetMethodTable() == g_pOutOfMemoryExceptionClass)
-        {
-            EEPolicy::HandleOutOfMemory();
-        }
-        else if (orThrowable->GetMethodTable() == g_pStackOverflowExceptionClass)
-        {
-            /* The parameters of the function do not matter here */
-            EEPolicy::HandleStackOverflow(SOD_UnmanagedFrameHandler, NULL);
-        }
-    }
 
     RaiseTheExceptionInternalOnly(orThrowable, FALSE);
 }

@@ -6,7 +6,6 @@ set( CORGUIDS_IDL_SOURCES
   xclrdata.idl
   corprof.idl
   corpub.idl
-  gchost.idl
   mscorsvc.idl
   clrprivappxhosting.idl
   clrprivbinding.idl
