@@ -314,6 +314,7 @@ static const char*
 section_name (int section)
 {
 	switch (section) {
+	case MONO_COUNTER_INTERP: return "Mono Interp";
 	case MONO_COUNTER_JIT: return "Mono JIT";
 	case MONO_COUNTER_GC: return "Mono GC";
 	case MONO_COUNTER_METADATA: return "Mono Metadata";

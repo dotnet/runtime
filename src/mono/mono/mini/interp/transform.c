@@ -21,6 +21,7 @@
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/utils/unlocked.h>
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -28,6 +29,8 @@
 #include "mintops.h"
 #include "interp-internals.h"
 #include "interp.h"
+
+MonoInterpStats mono_interp_stats;
 
 #define DEBUG 0
 
@@ -1454,6 +1457,9 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 		td->vt_sp = prev_vt_sp;
 		td->new_ip = td->new_code + prev_new_ip_offset;
 		td->last_new_ip = td->new_code + prev_last_new_ip_offset;
+		UnlockedIncrement (&mono_interp_stats.inline_failures);
+	} else {
+		UnlockedIncrement (&mono_interp_stats.inlined_methods);
 	}
 
 	td->ip = prev_ip;
@@ -5599,7 +5605,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	interp_method_compute_offsets (imethod, signature, header);
 
-	generate (method, header, imethod, generic_context, error);
+	MONO_TIME_TRACK (mono_interp_stats.transform_time, generate (method, header, imethod, generic_context, error));
 
 	mono_metadata_free_mh (header);
 

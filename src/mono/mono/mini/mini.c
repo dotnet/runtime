@@ -61,6 +61,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/unlocked.h>
+#include <mono/utils/mono-time.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -91,7 +92,7 @@ gboolean mono_using_xdebug;
 
 /* Counters */
 static guint32 discarded_code;
-static double discarded_jit_time;
+static gint64 discarded_jit_time;
 static guint32 jinfo_try_holes_size;
 
 #define mono_jit_lock() mono_os_mutex_lock (&jit_mutex)
@@ -3961,9 +3962,9 @@ mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg)
 
 #endif /* DISABLE_JIT */
 
-GTimer *mono_time_track_start ()
+gint64 mono_time_track_start ()
 {
-	return g_timer_new ();
+	return mono_100ns_ticks ();
 }
 
 /*
@@ -3971,11 +3972,9 @@ GTimer *mono_time_track_start ()
  *
  *   Uses UnlockedAddDouble () to update \param time.
  */
-void mono_time_track_end (gdouble *time, GTimer *timer)
+void mono_time_track_end (gint64 *time, gint64 start)
 {
-	g_timer_stop (timer);
-	UnlockedAddDouble (time, g_timer_elapsed (timer, NULL));
-	g_timer_destroy (timer);
+	UnlockedAdd64 (time, mono_100ns_ticks () - start);
 }
 
 /*
@@ -4011,16 +4010,16 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	MonoJitInfo *jinfo, *info;
 	MonoVTable *vtable;
 	MonoException *ex = NULL;
-	GTimer *jit_timer;
+	gint64 start;
 	MonoMethod *prof_method, *shared;
 
 	error_init (error);
 
-	jit_timer = mono_time_track_start ();
+	start = mono_time_track_start ();
 	cfg = mini_method_compile (method, opt, target_domain, JIT_FLAG_RUN_CCTORS, 0, -1);
-	gdouble jit_time = 0.0;
-	mono_time_track_end (&jit_time, jit_timer);
-	UnlockedAddDouble (&mono_jit_stats.jit_time, jit_time);
+	gint64 jit_time = 0.0;
+	mono_time_track_end (&jit_time, start);
+	UnlockedAdd64 (&mono_jit_stats.jit_time, jit_time);
 
 	prof_method = cfg->method;
 
@@ -4181,7 +4180,7 @@ void
 mini_jit_init (void)
 {
 	mono_counters_register ("Discarded method code", MONO_COUNTER_JIT | MONO_COUNTER_INT, &discarded_code);
-	mono_counters_register ("Time spent JITting discarded code", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &discarded_jit_time);
+	mono_counters_register ("Time spent JITting discarded code", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &discarded_jit_time);
 	mono_counters_register ("Try holes memory size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &jinfo_try_holes_size);
 
 	mono_os_mutex_init_recursive (&jit_mutex);
