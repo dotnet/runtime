@@ -48,7 +48,6 @@ public:
 class Assembly;
 class Module;
 class MethodTable;
-struct ITypeLibExporterNotifySink;
 
 typedef HRESULT (__stdcall* PCOMFN)(void);
 
@@ -61,16 +60,6 @@ typedef HRESULT (__stdcall* PCOMFN)(void);
 // Only unmarshal data that comes from our own runtime.
 extern BYTE         g_UnmarshalSecret[sizeof(GUID)];
 extern bool         g_fInitedUnmarshalSecret;
-
-struct ExportTypeLibFromLoadedAssembly_Args
-{
-    Assembly*                   pAssembly;
-    LPCWSTR                     szTlb;
-    ITypeLib**                  ppTlb;
-    ITypeLibExporterNotifySink* pINotify;
-    int                         flags;
-    HRESULT                     hr;
-};
 
 // make sure to keep the following enum and the g_stdVtables array in sync
 enum Enum_StdInterfaces

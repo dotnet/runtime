@@ -113,10 +113,6 @@ GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
 
 GVAL_IMPL_INIT(GCHeapType, g_heap_type, GC_HEAP_WKS);
 
-void UpdateGCSettingFromHost()
-{
-}
-
 HRESULT GetExceptionHResult(OBJECTREF throwable)
 {
     return E_FAIL;

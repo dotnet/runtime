@@ -28,13 +28,10 @@
 #include "typeparse.h"
 #include "field.h"
 
-class TypeLibExporter;
 class TypeString;
 
 class TypeNameBuilder
 {
-    friend class TypeNameBuilderWrapper;
-
 public:
     static void QCALLTYPE _ReleaseTypeNameBuilder(TypeNameBuilder * pTnb);
     static TypeNameBuilder * QCALLTYPE _CreateTypeNameBuilder();
@@ -148,36 +145,6 @@ private:
     Stack m_stack;
 };
 
-// Class that's exposed to COM and wraps TypeNameBuilder (so that it can thunk
-// all the entry points in order to perform stack probes).
-class TypeNameBuilderWrapper : public ITypeNameBuilder
-{
-public:
-    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppUnk);
-    virtual ULONG STDMETHODCALLTYPE AddRef();
-    virtual ULONG STDMETHODCALLTYPE Release();
-
-    virtual HRESULT STDMETHODCALLTYPE OpenGenericArguments();
-    virtual HRESULT STDMETHODCALLTYPE CloseGenericArguments();
-    virtual HRESULT STDMETHODCALLTYPE OpenGenericArgument();
-    virtual HRESULT STDMETHODCALLTYPE CloseGenericArgument();
-    virtual HRESULT STDMETHODCALLTYPE AddName(LPCWSTR szName);
-    virtual HRESULT STDMETHODCALLTYPE AddPointer();
-    virtual HRESULT STDMETHODCALLTYPE AddByRef();
-    virtual HRESULT STDMETHODCALLTYPE AddSzArray();
-    virtual HRESULT STDMETHODCALLTYPE AddArray(DWORD rank);
-    virtual HRESULT STDMETHODCALLTYPE AddAssemblySpec(LPCWSTR szAssemblySpec);
-    virtual HRESULT STDMETHODCALLTYPE ToString(BSTR* pszStringRepresentation);
-    virtual HRESULT STDMETHODCALLTYPE Clear();
-
-    TypeNameBuilderWrapper() : m_ref(0) { WRAPPER_NO_CONTRACT; }
-    virtual ~TypeNameBuilderWrapper() {}
-    
-private:
-    LONG            m_ref;
-    TypeNameBuilder m_tnb;
-};
-
 // --------------------------------------------------------------------------
 // This type can generate names for types. It is used by reflection methods
 // like System.RuntimeType.RuntimeTypeCache.ConstructName
@@ -249,7 +216,6 @@ public:
 #endif
 
 private:
-    friend class TypeLibExporter;
     friend class TypeNameBuilder;
     static void AppendMethodImpl(SString& s, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format);
     static void AppendTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pImport, mdTypeDef td, DWORD format = FormatNamespace);

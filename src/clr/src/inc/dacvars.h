@@ -131,10 +131,6 @@ DEFINE_DACVAR(ULONG, DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(ULONG, DWORD, dac__g_TlsIndex, g_TlsIndex)
 
-#if defined(FEATURE_WINDOWSPHONE)
-DEFINE_DACVAR(ULONG, int, CCLRErrorReportingManager__g_ECustomDumpFlavor, CCLRErrorReportingManager::g_ECustomDumpFlavor)
-#endif
-
 DEFINE_DACVAR(ULONG, PTR_SString, SString__s_Empty, SString::s_Empty)
 
 #ifdef FEATURE_APPX
