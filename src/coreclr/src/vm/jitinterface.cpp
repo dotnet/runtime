@@ -5295,6 +5295,7 @@ void CEEInfo::getCallInfo(
     //
 
     MethodDesc * pTargetMD = pMDAfterConstraintResolution;
+    DWORD dwTargetMethodAttrs = pTargetMD->GetAttrs();
 
     if (pTargetMD->HasMethodInstantiation())
     {
@@ -5352,12 +5353,6 @@ void CEEInfo::getCallInfo(
         directCall = true;
     }
     else
-    // Backwards compat: calls to abstract interface methods are treated as callvirt
-    if (pTargetMD->GetMethodTable()->IsInterface() && pTargetMD->IsAbstract())
-    {
-        directCall = false;
-    }
-    else
     if (!(flags & CORINFO_CALLINFO_CALLVIRT) || fResolvedConstraint)
     {
         directCall = true;
@@ -5398,12 +5393,11 @@ void CEEInfo::getCallInfo(
         if (pTargetMD->GetMethodTable()->IsInterface())
         {
             // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
-            devirt = !IsMdVirtual(pTargetMD->GetAttrs());
+            devirt = !IsMdVirtual(dwTargetMethodAttrs);
         }
         else
         {
-            DWORD dwMethodAttrs = pTargetMD->GetAttrs();
-            devirt = !IsMdVirtual(dwMethodAttrs) || IsMdFinal(dwMethodAttrs) || pTargetMD->GetMethodTable()->IsSealed();
+            devirt = !IsMdVirtual(dwTargetMethodAttrs) || IsMdFinal(dwTargetMethodAttrs) || pTargetMD->GetMethodTable()->IsSealed();
         }
 
         if (devirt)
@@ -5415,6 +5409,14 @@ void CEEInfo::getCallInfo(
 
     if (directCall)
     {
+        // Direct calls to abstract methods are not allowed
+        if (IsMdAbstract(dwTargetMethodAttrs) &&
+            // Compensate for always treating delegates as direct calls above
+            !(((flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt)))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
+        }
+
         bool allowInstParam = (flags & CORINFO_CALLINFO_ALLOWINSTPARAM);
 
         // Create instantiating stub if necesary

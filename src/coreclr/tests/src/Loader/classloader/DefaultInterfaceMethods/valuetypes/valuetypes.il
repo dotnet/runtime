@@ -58,7 +58,7 @@
              int32 V_1)
     IL_0000:  nop
     IL_0001:  ldarg.0
-    IL_0002:  call       instance int32 IValue::GetValue()
+    IL_0002:  callvirt   instance int32 IValue::GetValue()
     IL_0007:  stloc.0
     IL_0008:  ldloc.0
     IL_0009:  ldarg.1
@@ -66,7 +66,7 @@
     IL_000b:  stloc.0
     IL_000c:  ldarg.0
     IL_000d:  ldloc.0
-    IL_000e:  call       instance void IValue::SetValue(int32)
+    IL_000e:  callvirt   instance void IValue::SetValue(int32)
     IL_0013:  nop
     IL_0014:  ldloc.0
     IL_0015:  stloc.1
