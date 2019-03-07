@@ -234,15 +234,25 @@ public:
     // Arguments:
     //    k - the key
     //    v - the value
+    //    kind - Normal, we are not allowed to overwrite
+    //           Overwrite, we are allowed to overwrite
+    //           currently only used by CHK/DBG builds in an assert.
     //
     // Return Value:
-    //    `true` if the key already exists, `false` otherwise.
+    //    `true` if the key exists and was overwritten,
+    //    `false` otherwise.
     //
     // Notes:
-    //    If the key already exists then its associated value is updated to
-    //    the new value.
+    //    If the key already exists and kind is Normal
+    //    this method will assert
     //
-    bool Set(Key k, Value v)
+    enum SetKind
+    {
+        None,
+        Overwrite
+    };
+
+    bool Set(Key k, Value v, SetKind kind = None)
     {
         CheckGrowth();
 
@@ -257,6 +267,7 @@ public:
         }
         if (pN != nullptr)
         {
+            assert(kind == Overwrite);
             pN->m_val = v;
             return true;
         }

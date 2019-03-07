@@ -13640,8 +13640,15 @@ DONE_MORPHING_CHILDREN:
 
                 if (isZeroOffset)
                 {
+                    // The "op1" node might already be annotated with a zero-offset field sequence.
+                    FieldSeqNode* existingZeroOffsetFldSeq = nullptr;
+                    if (GetZeroOffsetFieldMap()->Lookup(op1, &existingZeroOffsetFldSeq))
+                    {
+                        // Append the zero field sequences
+                        zeroFieldSeq = GetFieldSeqStore()->Append(existingZeroOffsetFldSeq, zeroFieldSeq);
+                    }
                     // Transfer the annotation to the new GT_ADDR node.
-                    GetZeroOffsetFieldMap()->Set(op1, zeroFieldSeq);
+                    GetZeroOffsetFieldMap()->Set(op1, zeroFieldSeq, NodeToFieldSeqMap::Overwrite);
                 }
                 commaNode->gtOp.gtOp2 = op1;
                 // Originally, I gave all the comma nodes type "byref".  But the ADDR(IND(x)) == x transform
@@ -18743,7 +18750,16 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* op1, FieldSeqNode* fieldSeq)
 
         default:
             // Record in the general zero-offset map.
-            GetZeroOffsetFieldMap()->Set(op1, fieldSeq);
+
+            // The "op1" node might already be annotated with a zero-offset field sequence.
+            FieldSeqNode* existingZeroOffsetFldSeq = nullptr;
+            if (GetZeroOffsetFieldMap()->Lookup(op1, &existingZeroOffsetFldSeq))
+            {
+                // Append the zero field sequences
+                fieldSeq = GetFieldSeqStore()->Append(existingZeroOffsetFldSeq, fieldSeq);
+            }
+            // Set the new field sequence annotation for op1
+            GetZeroOffsetFieldMap()->Set(op1, fieldSeq, NodeToFieldSeqMap::Overwrite);
             break;
     }
 }
