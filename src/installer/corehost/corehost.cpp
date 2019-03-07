@@ -81,7 +81,7 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     size_t hi_len = (sizeof(hi_part) / sizeof(hi_part[0])) - 1;
     size_t lo_len = (sizeof(lo_part) / sizeof(lo_part[0])) - 1;
 
-    if ((binding.size() >= (hi_len + lo_len)) && 
+    if ((binding.size() >= (hi_len + lo_len)) &&
         binding.compare(0, hi_len, &hi_part[0]) == 0 &&
         binding.compare(hi_len, lo_len, &lo_part[0]) == 0)
     {
@@ -93,70 +93,23 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     return true;
 }
 
-bool resolve_fxr_path(const pal::string_t& app_root, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path)
-{
-    // If a hostfxr exists in app_root, then assume self-contained.
-    if (library_exists_in_dir(app_root, LIBFXR_NAME, out_fxr_path))
-    {
-        trace::info(_X("Resolved fxr [%s]..."), out_fxr_path->c_str());
-        out_dotnet_root->assign(app_root);
-        return true;
-    }
-
-    // For framework-dependent apps, use DOTNET_ROOT
-
-    pal::string_t default_install_location;
-    pal::string_t dotnet_root_env_var_name = get_dotnet_root_env_var_name();
-    if (get_file_path_from_env(dotnet_root_env_var_name.c_str(), out_dotnet_root))
-    {
-        trace::info(_X("Using environment variable %s=[%s] as runtime location."), dotnet_root_env_var_name.c_str(), out_dotnet_root->c_str());
-    }
-    else
-    {
-        // Check default installation root as fallback
-        if (!pal::get_default_installation_dir(&default_install_location))
-        {
-            trace::error(_X("A fatal error occurred, the default install location cannot be obtained."));
-            return false;
-        }
-        trace::info(_X("Using default installation location [%s] as runtime location."), default_install_location.c_str());
-        out_dotnet_root->assign(default_install_location);
-    }
-
-    pal::string_t fxr_dir = *out_dotnet_root;
-    append_path(&fxr_dir, _X("host"));
-    append_path(&fxr_dir, _X("fxr"));
-    if (!pal::directory_exists(fxr_dir))
-    {
-        if (default_install_location.empty())
-        {
-            pal::get_default_installation_dir(&default_install_location);
-        }
-
-        trace::error(_X("A fatal error occurred, the required library %s could not be found.\n"
-            "If this is a self-contained application, that library should exist in [%s].\n"
-            "If this is a framework-dependent application, install the runtime in the default location [%s] or use the %s environment variable to specify the runtime location."),
-            LIBFXR_NAME,
-            app_root.c_str(),
-            default_install_location.c_str(),
-            dotnet_root_env_var_name.c_str());
-        return false;
-    }
-
-    if (!get_latest_fxr(std::move(fxr_dir), out_fxr_path))
-        return false;
-
-    return true;
-}
-
 #elif FEATURE_LIBHOST
 #define CURHOST_TYPE    _X("libhost")
 #define CUREXE_PKG_VER  LIBHOST_PKG_VER
 #define CURHOST_LIB
 
+#else // !FEATURE_APPHOST && !FEATURE_LIBHOST
+#define CURHOST_TYPE    _X("dotnet")
+#define CUREXE_PKG_VER  HOST_PKG_VER
+#define CURHOST_EXE
+
+#endif
+
 bool resolve_fxr_path(const pal::string_t& root_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path)
 {
-    // If a hostfxr exists in root_path, then assume self-contained.
+    pal::string_t fxr_dir;
+#if FEATURE_APPHOST || FEATURE_LIBHOST
+    // If a hostfxr exists in app_root, then assume self-contained.
     if (library_exists_in_dir(root_path, LIBFXR_NAME, out_fxr_path))
     {
         trace::info(_X("Resolved fxr [%s]..."), out_fxr_path->c_str());
@@ -174,7 +127,6 @@ bool resolve_fxr_path(const pal::string_t& root_path, pal::string_t* out_dotnet_
     }
     else
     {
-        pal::string_t default_install_location;
         // Check default installation root as fallback
         if (!pal::get_default_installation_dir(&default_install_location))
         {
@@ -185,46 +137,40 @@ bool resolve_fxr_path(const pal::string_t& root_path, pal::string_t* out_dotnet_
         out_dotnet_root->assign(default_install_location);
     }
 
-    pal::string_t fxr_dir = *out_dotnet_root;
+    fxr_dir = *out_dotnet_root;
     append_path(&fxr_dir, _X("host"));
     append_path(&fxr_dir, _X("fxr"));
     if (!pal::directory_exists(fxr_dir))
     {
-        trace::error(_X("A fatal error occurred, the required library %s could not be found.\n"
+        if (default_install_location.empty())
+        {
+            pal::get_default_installation_dir(&default_install_location);
+        }
+
+        trace::error(_X("A fatal error occurred. The required library %s could not be found.\n"
             "If this is a self-contained application, that library should exist in [%s].\n"
-            "If this is a framework-dependent application, install the runtime in the default location [%s]."),
+            "If this is a framework-dependent application, install the runtime in the default location [%s] or use the %s environment variable to specify the runtime location."),
             LIBFXR_NAME,
             root_path.c_str(),
-            default_install_location.c_str());
+            default_install_location.c_str(),
+            dotnet_root_env_var_name.c_str());
         return false;
     }
-
-    if (!get_latest_fxr(std::move(fxr_dir), out_fxr_path))
-        return false;
-
-    return true;
-}
-
 #else // !FEATURE_APPHOST && !FEATURE_LIBHOST
-#define CURHOST_TYPE    _X("dotnet")
-#define CUREXE_PKG_VER  HOST_PKG_VER
-#define CURHOST_EXE
-
-bool resolve_fxr_path(const pal::string_t& host_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path)
-{
     pal::string_t host_dir;
-    host_dir.assign(get_directory(host_path));
+    host_dir.assign(get_directory(root_path));
 
     out_dotnet_root->assign(host_dir);
 
-    pal::string_t fxr_dir = *out_dotnet_root;
+    fxr_dir = *out_dotnet_root;
     append_path(&fxr_dir, _X("host"));
     append_path(&fxr_dir, _X("fxr"));
     if (!pal::directory_exists(fxr_dir))
     {
-        trace::error(_X("A fatal error occurred, the folder [%s] does not exist"), fxr_dir.c_str());
+        trace::error(_X("A fatal error occurred. The folder [%s] does not exist"), fxr_dir.c_str());
         return false;
     }
+#endif // !FEATURE_APPHOST && !FEATURE_LIBHOST
 
     if (!get_latest_fxr(std::move(fxr_dir), out_fxr_path))
         return false;
@@ -232,7 +178,6 @@ bool resolve_fxr_path(const pal::string_t& host_path, pal::string_t* out_dotnet_
     return true;
 }
 
-#endif // !FEATURE_APPHOST && !FEATURE_LIBHOST
 
 bool get_latest_fxr(pal::string_t fxr_root, pal::string_t* out_fxr_path)
 {
