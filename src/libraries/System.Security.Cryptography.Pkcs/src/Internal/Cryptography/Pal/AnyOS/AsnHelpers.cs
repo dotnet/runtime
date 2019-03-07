@@ -103,7 +103,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         // there's no data after the [AnyValue] value.
                         if (reader.PeekTag() != Asn1Tag.Null)
                         {
-                            if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
+                            if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
                             {
                                 saltLen = contents.Length;
                             }

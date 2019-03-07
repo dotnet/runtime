@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    public partial class AsnReader
+    internal partial class AsnReader
     {
         /// <summary>
         ///   Reads the next value as a NamedBitList with tag UNIVERSAL 3, converting it to the
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Asn1
         ///   Note that while the example here uses the KeyUsage NamedBitList from
         ///   <a href="https://tools.ietf.org/html/rfc3280#section-4.2.1.3">RFC 3280 (4.2.1.3)</a>,
         ///   the example enum uses values thar are different from
-        ///   <see cref="System.Security.Cryptography.X509Certificates.X509KeyUsageFlags"/>.
+        ///   System.Security.Cryptography.X509Certificates.X509KeyUsageFlags.
         /// </remarks>
         public TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(Asn1Tag expectedTag) where TFlagsEnum : struct
         {

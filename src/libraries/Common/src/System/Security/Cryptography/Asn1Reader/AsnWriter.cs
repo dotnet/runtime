@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Asn1
     /// <summary>
     ///   A writer for BER-, CER-, and DER-encoded ASN.1 data.
     /// </summary>
-    public sealed partial class AsnWriter : IDisposable
+    internal sealed partial class AsnWriter : IDisposable
     {
         private byte[] _buffer;
         private int _offset;

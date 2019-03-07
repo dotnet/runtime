@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Asn1
     ///   Tag assignments for the UNIVERSAL class in ITU-T X.680.
     /// </summary>
     // ITU-T-REC.X.680-201508 sec 8.6
-    public enum UniversalTagNumber
+    internal enum UniversalTagNumber
     {
         /// <summary>
         ///   The reserved identifier for the End-of-Contents marker in an indefinite

@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Asn1
     /// </summary>
     // Uses a masked overlay of the tag class encoding.
     // T-REC-X.690-201508 sec 8.1.2.2
-    public enum TagClass : byte
+    internal enum TagClass : byte
     {
         /// <summary>
         ///   The Universal tag class

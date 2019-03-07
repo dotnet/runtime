@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Asn1
 
             if (Parameters.HasValue)
             {
-                writer.WriteEncodedValue(Parameters.Value);
+                writer.WriteEncodedValue(Parameters.Value.Span);
             }
 
             writer.PopSequence(tag);
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Asn1
 
             if (sequenceReader.HasData)
             {
-                decoded.Parameters = sequenceReader.GetEncodedValue();
+                decoded.Parameters = sequenceReader.ReadEncodedValue();
             }
 
 

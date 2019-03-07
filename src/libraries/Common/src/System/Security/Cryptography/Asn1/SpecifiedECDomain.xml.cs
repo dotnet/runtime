@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Asn1
             System.Security.Cryptography.Asn1.FieldID.Decode(sequenceReader, out decoded.FieldID);
             System.Security.Cryptography.Asn1.CurveAsn.Decode(sequenceReader, out decoded.Curve);
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpBase))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpBase))
             {
                 decoded.Base = tmpBase;
             }
@@ -92,11 +92,11 @@ namespace System.Security.Cryptography.Asn1
                 decoded.Base = sequenceReader.ReadOctetString();
             }
 
-            decoded.Order = sequenceReader.GetIntegerBytes();
+            decoded.Order = sequenceReader.ReadIntegerBytes();
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Integer))
             {
-                decoded.Cofactor = sequenceReader.GetIntegerBytes();
+                decoded.Cofactor = sequenceReader.ReadIntegerBytes();
             }
 
             decoded.Hash = sequenceReader.ReadObjectIdentifier();

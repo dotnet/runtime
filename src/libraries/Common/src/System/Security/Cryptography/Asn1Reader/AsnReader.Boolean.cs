@@ -4,7 +4,7 @@
 
 namespace System.Security.Cryptography.Asn1
 {
-    public partial class AsnReader
+    internal partial class AsnReader
     {
         /// <summary>
         ///   Reads the next value as a Boolean with tag UNIVERSAL 1.

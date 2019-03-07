@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             ReadOnlyMemory<byte> publicKeyValue;
             int unusedBitCount;
 
-            if (!spkiReader.TryGetPrimitiveBitStringValue(out unusedBitCount, out publicKeyValue))
+            if (!spkiReader.TryReadPrimitiveBitStringValue(out unusedBitCount, out publicKeyValue))
             {
                 // The correct answer is 65 bytes.
                 for (int i = 10; ; i *= 2)
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.True(reader.HasData, "HasData after wrong tag");
 
             AsnReader seq = reader.ReadSequence();
-            Assert.Equal("0500", seq.GetEncodedValue().ByteArrayToHex());
+            Assert.Equal("0500", seq.ReadEncodedValue().ByteArrayToHex());
 
             Assert.False(reader.HasData, "HasData after read");
         }
@@ -231,7 +231,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.True(reader.HasData, "HasData after wrong tag");
 
             AsnReader seq = reader.ReadSequence();
-            Assert.Equal("0500", seq.GetEncodedValue().ByteArrayToHex());
+            Assert.Equal("0500", seq.ReadEncodedValue().ByteArrayToHex());
 
             Assert.False(reader.HasData, "HasData after read");
         }
@@ -265,7 +265,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             AsnReader seq = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 5));
-            Assert.Equal("0500", seq.GetEncodedValue().ByteArrayToHex());
+            Assert.Equal("0500", seq.ReadEncodedValue().ByteArrayToHex());
 
             Assert.False(reader.HasData, "HasData after reading value");
         }
@@ -299,7 +299,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             AsnReader seq = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 5));
-            Assert.Equal("0500", seq.GetEncodedValue().ByteArrayToHex());
+            Assert.Equal("0500", seq.ReadEncodedValue().ByteArrayToHex());
 
             Assert.False(reader.HasData, "HasData after reading value");
         }
@@ -332,7 +332,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.False(reader.HasData);
 
-            Assert.Equal(val1.GetEncodedValue().ByteArrayToHex(), val2.GetEncodedValue().ByteArrayToHex());
+            Assert.Equal(val1.ReadEncodedValue().ByteArrayToHex(), val2.ReadEncodedValue().ByteArrayToHex());
         }
     }
 }

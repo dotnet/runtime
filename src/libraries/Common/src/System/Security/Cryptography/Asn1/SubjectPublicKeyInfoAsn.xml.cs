@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Asn1
             
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.Algorithm);
 
-            if (sequenceReader.TryGetPrimitiveBitStringValue(out _, out ReadOnlyMemory<byte> tmpSubjectPublicKey))
+            if (sequenceReader.TryReadPrimitiveBitStringValue(out _, out ReadOnlyMemory<byte> tmpSubjectPublicKey))
             {
                 decoded.SubjectPublicKey = tmpSubjectPublicKey;
             }

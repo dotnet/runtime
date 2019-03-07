@@ -30,14 +30,14 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             writer.WriteInteger(Version);
             // Validator for tag constraint for Subject
             {
-                if (!Asn1Tag.TryParse(Subject.Span, out Asn1Tag validateTag, out _) ||
+                if (!Asn1Tag.TryDecode(Subject.Span, out Asn1Tag validateTag, out _) ||
                     !validateTag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
                 {
                     throw new CryptographicException();
                 }
             }
 
-            writer.WriteEncodedValue(Subject);
+            writer.WriteEncodedValue(Subject.Span);
             SubjectPublicKeyInfo.Encode(writer);
 
             writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
@@ -81,13 +81,13 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             AsnReader collectionReader;
             
-            decoded.Version = sequenceReader.GetInteger();
+            decoded.Version = sequenceReader.ReadInteger();
             if (!sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
                 throw new CryptographicException();
             }
 
-            decoded.Subject = sequenceReader.GetEncodedValue();
+            decoded.Subject = sequenceReader.ReadEncodedValue();
             System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn.Decode(sequenceReader, out decoded.SubjectPublicKeyInfo);
 
             // Decode SEQUENCE OF for Attributes
