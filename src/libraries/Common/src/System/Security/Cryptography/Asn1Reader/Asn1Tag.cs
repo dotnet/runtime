@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Asn1
     ///   This type represents an ASN.1 tag, as described in ITU-T Recommendation X.680.
     /// </summary>
     // T-REC-X.690-201508 sec 8.1.2
-    public partial struct Asn1Tag : IEquatable<Asn1Tag>
+    internal partial struct Asn1Tag : IEquatable<Asn1Tag>
     {
         private const byte ClassMask = 0b1100_0000;
         private const byte ConstructedMask = 0b0010_0000;

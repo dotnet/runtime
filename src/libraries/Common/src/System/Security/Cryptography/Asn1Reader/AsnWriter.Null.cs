@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography.Asn1
 {
-    public sealed partial class AsnWriter
+    internal sealed partial class AsnWriter
     {
         /// <summary>
         ///   Write NULL with tag UNIVERSAL 5.

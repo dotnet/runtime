@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.HashAlgorithm);
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpHashedMessage))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpHashedMessage))
             {
                 decoded.HashedMessage = tmpHashedMessage;
             }

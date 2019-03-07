@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography.Asn1
 {
-    public partial class AsnReader
+    internal partial class AsnReader
     {
         /// <summary>
         ///   Reads the next value as a GeneralizedTime with tag UNIVERSAL 24.

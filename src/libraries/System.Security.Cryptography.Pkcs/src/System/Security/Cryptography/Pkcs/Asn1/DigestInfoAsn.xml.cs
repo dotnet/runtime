@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.DigestAlgorithm);
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpDigest))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpDigest))
             {
                 decoded.Digest = tmpDigest;
             }

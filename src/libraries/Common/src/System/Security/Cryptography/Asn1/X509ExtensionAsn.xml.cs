@@ -103,7 +103,7 @@ namespace System.Security.Cryptography.Asn1
             }
 
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpExtnValue))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpExtnValue))
             {
                 decoded.ExtnValue = tmpExtnValue;
             }
