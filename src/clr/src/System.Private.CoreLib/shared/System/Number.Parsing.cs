@@ -398,11 +398,11 @@ namespace System
                 {
                     char* temp = p;
                     ch = ++p < strEnd ? *p : '\0';
-                    if ((next = MatchChars(p, strEnd, info.positiveSign)) != null)
+                    if ((next = MatchChars(p, strEnd, info._positiveSign)) != null)
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                     }
-                    else if ((next = MatchChars(p, strEnd, info.negativeSign)) != null)
+                    else if ((next = MatchChars(p, strEnd, info._negativeSign)) != null)
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                         negExp = true;

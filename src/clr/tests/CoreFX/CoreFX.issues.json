@@ -23,6 +23,118 @@
                 {
                     "name": "System.Globalization.Tests.CharUnicodeInfoGetUnicodeCategoryTests.GetUnicodeCategory",
                     "reason": "We updated the Unicode data and didn't pick yet the updated tests from corefx. we should remove this entry after updating the tests in coreclr."
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoNegativeInfinitySymbol.NegativeInfinitySymbol_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPercentDecimalDigits.PercentDecimalDigits_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoCurrencyGroupSeparator.CurrencyGroupSeparator_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoNumberNegativePattern.NumberNegativePattern_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPositiveInfinitySymbol.PositiveInfinitySymbol_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.StringInfoString.String_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoNumberDecimalSeparator.NumberDecimalSeparator_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoNumberGroupSeparator.NumberGroupSeparator_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoNaNSymbol.NaNSymbol_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPositiveSign.PositiveSign_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoCurrencyGroupSizes.CurrencyGroupSizes_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPercentSymbol.PercentSymbol_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.StringInfoCtorTests.Ctor_String_Null_ThrowsArgumentNullException",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoCurrencySymbol.CurrencySymbol_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPercentDecimalSeparator.PercentDecimalSeparator_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.DateTimeFormatInfoGetAbbreviatedDayName.GetAbbreviatedDayName_Invalid_ThrowsArgumentOutOfRangeException",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoNumberDecimalDigits.NumberDecimalDigits_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoNegativeSign.NegativeSign_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPercentGroupSizes.PercentGroupSizes_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoNumberGroupSizes.NumberGroupSizes_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPercentPositivePattern.PercentPositivePattern_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPerMilleSymbol.PerMilleSymbol_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPercentGroupSeparator.PercentGroupSeparator_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoCurrencyNegativePattern.CurrencyNegativePattern_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoCurrencyPositivePattern.CurrencyPositivePattern_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoPercentNegativePattern.PercentNegativePattern_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoCurrencyDecimalDigits.CurrencyDecimalDigits_Set_Invalid",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Globalization.Tests.NumberFormatInfoCurrencyDecimalSeparator.CurrencyDecimalSeparator_Set_Invalid",
+                    "reason": "outdated"
                 }
             ]
         }
