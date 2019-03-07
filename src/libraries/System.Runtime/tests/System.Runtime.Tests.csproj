@@ -214,6 +214,7 @@
     <Compile Include="System\HashCodeTests.netcoreapp.cs" />
     <Compile Include="Helpers.netcoreapp.cs" />
     <Compile Include="System\ActivatorTests.netcoreapp.cs" />
+    <Compile Include="System\AmbiguousImplementationExceptionTests.cs" />
     <Compile Include="System\ArrayTests.netcoreapp.cs" />
     <Compile Include="System\ArraySegmentTests.netcoreapp.cs" />
     <Compile Include="System\BooleanTests.netcoreapp.cs" />
