@@ -106,7 +106,7 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl(
             pDataTarget,  // takes a reference
             hDacModule,
             NULL, // Cordb
-            &pd, // 0 for V3 cases (pShim == NULL). 
+            &pd, // 0 for V3 cases (pShim == NULL).
             NULL, // no Shim in V3 cases
             &pProcess));
 
@@ -4921,7 +4921,7 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_DATA_BREAKPOINT:
         {
             _ASSERTE(pThread != NULL);
-        
+
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
                 pCallback4->DataBreakpoint(static_cast<ICorDebugProcess*>(this), pThread, reinterpret_cast<BYTE*>(&(pEvent->DataBreakpointData.context)), sizeof(CONTEXT));
@@ -5642,24 +5642,6 @@ void CordbProcess::RawDispatchEvent(
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
                 hr = pCallback1->ControlCTrap((ICorDebugProcess*) this);
             }
-
-            {
-                RSLockHolder ch(this->GetStopGoLock());
-
-                DebuggerIPCEvent eventControlCResult;
-
-                InitIPCEvent(&eventControlCResult,
-                             DB_IPCE_CONTROL_C_EVENT_RESULT,
-                             false,
-                             VMPTR_AppDomain::NullPtr());
-
-                // Indicate whether the debugger has handled the event.
-                eventControlCResult.hr = hr;
-
-                // Send the reply to the LS.
-                SendIPCEvent(&eventControlCResult, sizeof(eventControlCResult));
-            } // release SG lock
-
         }
         break;
 
@@ -6497,7 +6479,7 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
                 hr = E_INVALIDARG;
             }
             else
-            {                
+            {
                 DT_CONTEXT* managedContext;
                 hr = thread->GetManagedContext(&managedContext);
                 *pContext = *managedContext;
@@ -6576,7 +6558,7 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
     {
         RSLockHolder ch(GetProcess()->GetStopGoLock());
         RSLockHolder lockHolder(GetProcessLock());
-        
+
         EX_TRY
         {
             CordbThread* thread = this->TryLookupThreadByVolatileOSId(threadID);
@@ -6595,7 +6577,7 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
         }
         EX_END_CATCH(SwallowAllExceptions)
 
-        
+
     }
     return hr;
 }
@@ -15244,4 +15226,22 @@ bool CordbProcess::IsThreadSuspendedOrHijacked(ICorDebugThread * pICorDebugThrea
 
     CordbThread * pCordbThread = static_cast<CordbThread *> (pICorDebugThread);
     return GetDAC()->IsThreadSuspendedOrHijacked(pCordbThread->m_vmThreadToken);
+}
+
+void CordbProcess::HandleControlCTrapResult(HRESULT result)
+{
+    RSLockHolder ch(GetStopGoLock());
+
+    DebuggerIPCEvent eventControlCResult;
+
+    InitIPCEvent(&eventControlCResult,
+        DB_IPCE_CONTROL_C_EVENT_RESULT,
+        false,
+        VMPTR_AppDomain::NullPtr());
+
+    // Indicate whether the debugger has handled the event.
+    eventControlCResult.hr = result;
+
+    // Send the reply to the LS.
+    SendIPCEvent(&eventControlCResult, sizeof(eventControlCResult));
 }

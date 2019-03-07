@@ -3273,6 +3273,9 @@ public:
 
     bool IsThreadSuspendedOrHijacked(ICorDebugThread * pICorDebugThread);
 
+    // Handle the result of the ctrlC trap.
+    void HandleControlCTrapResult(HRESULT result);
+
     // Helper to get ProcessDescriptor internally.
     const ProcessDescriptor* GetProcessDescriptor();
 
