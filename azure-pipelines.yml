@@ -6,6 +6,7 @@ pr:
 - master
 - release/3.0
 
+name: $(Date:yyyyMMdd)$(Rev:.rr)
 
 variables:
   - name: TeamName
