@@ -80,10 +80,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(551_368, stream.TestWriteBytesCount);
 
             // We should have more than one write called due to the large byte count.
-            Assert.True(stream.TestWriteCount > 0);
+            Assert.InRange(stream.TestWriteCount, 1, int.MaxValue);
 
             // We don't auto-flush.
-            Assert.True(stream.TestFlushCount == 0);
+            Assert.Equal(0, stream.TestFlushCount);
         }
 
         private static async Task ReadAsync(TestStream stream)
@@ -96,13 +96,13 @@ namespace System.Text.Json.Serialization.Tests
 
             LargeDataTestClass obj = await JsonSerializer.ReadAsync<LargeDataTestClass>(stream, options);
             // Must be changed if the test classes change; may be > since last read may not have filled buffer.
-            Assert.True(stream.TestRequestedReadBytesCount >= 551368);
+            Assert.InRange(stream.TestRequestedReadBytesCount, 551368, int.MaxValue);
 
             // We should have more than one read called due to the large byte count.
-            Assert.True(stream.TestReadCount > 0);
+            Assert.InRange(stream.TestReadCount, 1, int.MaxValue);
 
             // We don't auto-flush.
-            Assert.True(stream.TestFlushCount == 0);
+            Assert.Equal(0, stream.TestFlushCount);
 
             obj.Verify();
         }
@@ -121,48 +121,49 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class TestStream : MemoryStream
+    public sealed class TestStream : Stream
     {
+        private readonly MemoryStream _stream;
+
+        public TestStream(int capacity) { _stream = new MemoryStream(capacity); }
+
+        public TestStream(byte[] buffer) { _stream = new MemoryStream(buffer); }
+
         public int TestFlushCount { get; private set; }
 
         public int TestWriteCount { get; private set; }
         public int TestWriteBytesCount { get; private set; }
-
         public int TestReadCount { get; private set; }
         public int TestRequestedReadBytesCount { get; private set; }
 
-        public TestStream(int capacity) : base(capacity) { }
+        public byte[] ToArray() => _stream.ToArray();
 
-        public TestStream(byte[] buffer) : base(buffer) { }
-
-        public override Task FlushAsync(CancellationToken cancellationToken)
+        public override void Flush()
         {
             TestFlushCount++;
-            return base.FlushAsync(cancellationToken);
+            _stream.Flush();
         }
 
-#if BUILDING_INBOX_LIBRARY
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
-        {
-            TestWriteCount++;
-            TestWriteBytesCount += source.Length;
-            return base.WriteAsync(source, cancellationToken);
-        }
-#else
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override void Write(byte[] buffer, int offset, int count)
         {
             TestWriteCount++;
             TestWriteBytesCount += (count - offset);
-            return base.WriteAsync(buffer, offset, count, cancellationToken);
+            _stream.Write(buffer, offset, count);
         }
-#endif
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             TestReadCount++;
             TestRequestedReadBytesCount += count;
-
-            return base.ReadAsync(buffer, offset, count, cancellationToken);
+            return _stream.Read(buffer, offset, count);
         }
+
+        public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
+        public override void SetLength(long value) => _stream.SetLength(value);
+        public override bool CanRead => _stream.CanRead;
+        public override bool CanSeek => _stream.CanSeek;
+        public override bool CanWrite => _stream.CanWrite;
+        public override long Length => _stream.Length;
+        public override long Position { get => _stream.Position; set => _stream.Position = value; }
     }
 }
