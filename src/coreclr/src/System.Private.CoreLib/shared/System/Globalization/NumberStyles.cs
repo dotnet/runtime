@@ -2,49 +2,54 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** Purpose: Contains valid formats for Numbers recognized by
-** the Number class' parsing code.
-**
-**
-===========================================================*/
-
 namespace System.Globalization
 {
+    /// <summary>
+    /// Contains valid formats for Numbers recognized by the Number
+    /// class' parsing code.
+    /// </summary>
     [Flags]
     public enum NumberStyles
     {
-        // Bit flag indicating that leading whitespace is allowed. Character values
-        // 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, and 0x0020 are considered to be
-        // whitespace.
-
         None = 0x00000000,
 
+        /// <summary>
+        /// Bit flag indicating that leading whitespace is allowed. Character values
+        /// 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, and 0x0020 are considered to be
+        /// whitespace.
+        /// </summary>
         AllowLeadingWhite = 0x00000001,
 
-        AllowTrailingWhite = 0x00000002, //Bitflag indicating trailing whitespace is allowed.
+        /// <summary>
+        /// Bitflag indicating trailing whitespace is allowed.
+        /// </summary>
+        AllowTrailingWhite = 0x00000002,
 
-        AllowLeadingSign = 0x00000004, //Can the number start with a sign char.  
-                                       //Specified by NumberFormatInfo.PositiveSign and NumberFormatInfo.NegativeSign
+        /// <summary>
+        /// Can the number start with a sign char specified by
+        /// NumberFormatInfo.PositiveSign and NumberFormatInfo.NegativeSign
+        /// </summary>
+        AllowLeadingSign = 0x00000004,
 
-        AllowTrailingSign = 0x00000008, //Allow the number to end with a sign char
+        /// <summary>
+        /// Allow the number to end with a sign char
+        /// </summary>
+        AllowTrailingSign = 0x00000008,
 
-        AllowParentheses = 0x00000010, //Allow the number to be enclosed in parens
+        /// <summary>
+        /// Allow the number to be enclosed in parens
+        /// </summary>
+        AllowParentheses = 0x00000010,
 
-        AllowDecimalPoint = 0x00000020, //Allow a decimal point
+        AllowDecimalPoint = 0x00000020,
 
-        AllowThousands = 0x00000040, //Allow thousands separators (more properly, allow group separators)
+        AllowThousands = 0x00000040,
 
-        AllowExponent = 0x00000080, //Allow an exponent
+        AllowExponent = 0x00000080,
 
-        AllowCurrencySymbol = 0x00000100, //Allow a currency symbol.
+        AllowCurrencySymbol = 0x00000100,
 
-        AllowHexSpecifier = 0x00000200, //Allow specifiying hexadecimal.
-                                        //Common uses.  These represent some of the most common combinations of these flags.
-
+        AllowHexSpecifier = 0x00000200,
 
         Integer = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign,
 
