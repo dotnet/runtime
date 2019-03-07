@@ -2579,9 +2579,6 @@ public:
     // Allows the debugger to keep an up to date list of special threads
     HRESULT UpdateSpecialThreadList(DWORD cThreadArrayLength, DWORD *rgdwThreadIDArray);
 
-    // Updates the pointer for the debugger services
-    void SetIDbgThreadControl(IDebuggerThreadControl *pIDbgThreadControl);
-
 #ifndef DACCESS_COMPILE
     static void AcquireDebuggerDataLock(Debugger *pDebugger);
 
@@ -2896,10 +2893,6 @@ private:
     ARRAY_PTR_MemoryRange m_rgHijackFunction;
 
 public:
-
-
-    IDebuggerThreadControl       *m_pIDbgThreadControl;
-
 
     // Sometimes we force all exceptions to be non-interceptable.
     // There are currently three cases where we set this field to true:

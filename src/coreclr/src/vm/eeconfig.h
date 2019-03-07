@@ -1141,8 +1141,6 @@ public:
 
 #endif
 
-extern BOOL g_CLRPolicyRequested;
-
 // NGENImagesAllowed is the safe way to determine if NGEN Images are allowed to be loaded. (Defined as
 // a macro instead of an inlined function to avoid compilation errors due to dependent
 // definitions not being available to this header.)

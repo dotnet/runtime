@@ -13,7 +13,6 @@
 
 #include "commtmemberinfomap.h"
 #include "comcallablewrapper.h"
-#include "tlbexport.h"
 #include "field.h"
 #include "caparser.h"
 
@@ -1381,6 +1380,67 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
     }
 } // void ComMTMemberInfoMap::AssignNewEnumMember()
 
+//*****************************************************************************
+// Signature utilities.
+//*****************************************************************************
+class MetaSigExport : public MetaSig
+{
+public:
+    MetaSigExport(MethodDesc *pMD) :
+        MetaSig(pMD)
+    {
+        WRAPPER_NO_CONTRACT;
+    }
+
+    BOOL IsVbRefType()
+    {
+        CONTRACT(BOOL)
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACT_END;
+
+        // Get the arg, and skip decorations.
+        SigPointer pt = GetArgProps();
+        CorElementType mt;
+        if (FAILED(pt.PeekElemType(&mt)))
+            return FALSE;
+
+        while (mt == ELEMENT_TYPE_BYREF || mt == ELEMENT_TYPE_PTR)
+        {
+            // Eat the one just examined, and peek at the next one.
+            if (FAILED(pt.GetElemType(NULL)) || FAILED(pt.PeekElemType(&mt)))
+                return FALSE;
+        }
+
+        // Is it just Object?
+        if (mt == ELEMENT_TYPE_OBJECT)
+            RETURN TRUE;
+
+        // A particular class?
+        if (mt == ELEMENT_TYPE_CLASS)
+        {
+            // Exclude "string".
+            if (pt.IsStringType(m_pModule, GetSigTypeContext()))
+                RETURN FALSE;
+            RETURN TRUE;
+        }
+
+        // A particular valuetype?
+        if (mt == ELEMENT_TYPE_VALUETYPE)
+        {
+            // Include "variant".
+            if (pt.IsClass(m_pModule, g_VariantClassName, GetSigTypeContext()))
+                RETURN TRUE;
+            RETURN FALSE;
+        }
+
+        // An array, a string, or POD.
+        RETURN FALSE;
+    }
+}; // class MetaSigExport : public MetaSig
 
 // ============================================================================
 // For each property set and let functions, determine PROPERTYPUT and 
