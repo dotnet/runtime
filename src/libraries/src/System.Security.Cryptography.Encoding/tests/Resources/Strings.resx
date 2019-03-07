@@ -57,6 +57,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
+    <value>The destination is too small to hold the encoded value.</value>
+  </data>
   <data name="Argument_InvalidOidValue" xml:space="preserve">
     <value>The OID value was invalid.</value>
   </data>

@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             
             writer.WriteObjectIdentifier(BagId);
             writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            writer.WriteEncodedValue(BagValue);
+            writer.WriteEncodedValue(BagValue.Span);
             writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
 
             if (BagAttributes != null)
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             decoded.BagId = sequenceReader.ReadObjectIdentifierAsString();
 
             explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            decoded.BagValue = explicitReader.GetEncodedValue();
+            decoded.BagValue = explicitReader.ReadEncodedValue();
             explicitReader.ThrowIfNotEmpty();
 
 

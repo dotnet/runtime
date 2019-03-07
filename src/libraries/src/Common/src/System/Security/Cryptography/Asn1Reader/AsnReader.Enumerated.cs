@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    public partial class AsnReader
+    internal partial class AsnReader
     {
         /// <summary>
         ///   Reads the next value as an Enumerated value with tag UNIVERSAL 10,

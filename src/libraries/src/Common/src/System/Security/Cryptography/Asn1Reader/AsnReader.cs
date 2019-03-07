@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Asn1
     /// <summary>
     ///   A stateful, forward-only reader for BER-, CER-, or DER-encoded ASN.1 data.
     /// </summary>
-    public partial class AsnReader
+    internal partial class AsnReader
     {
         // T-REC-X.690-201508 sec 9.2
         internal const int MaxCERSegmentSize = 1000;

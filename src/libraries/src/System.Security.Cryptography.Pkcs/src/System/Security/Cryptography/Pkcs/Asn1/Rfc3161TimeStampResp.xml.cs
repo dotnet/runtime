@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (TimeStampToken.HasValue)
             {
-                writer.WriteEncodedValue(TimeStampToken.Value);
+                writer.WriteEncodedValue(TimeStampToken.Value.Span);
             }
 
             writer.PopSequence(tag);
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (sequenceReader.HasData)
             {
-                decoded.TimeStampToken = sequenceReader.GetEncodedValue();
+                decoded.TimeStampToken = sequenceReader.ReadEncodedValue();
             }
 
 

@@ -4,7 +4,7 @@
 
 namespace System.Security.Cryptography.Asn1
 {
-    public sealed partial class AsnWriter
+    internal sealed partial class AsnWriter
     {
         /// <summary>
         ///   Write a non-[<see cref="FlagsAttribute"/>] enum value as an Enumerated with

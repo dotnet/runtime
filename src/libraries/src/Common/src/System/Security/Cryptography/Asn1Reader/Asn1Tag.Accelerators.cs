@@ -4,7 +4,7 @@
 
 namespace System.Security.Cryptography.Asn1
 {
-    public partial struct Asn1Tag
+    internal partial struct Asn1Tag
     {
         /// <summary>
         ///   Represents the End-of-Contents meta-tag.

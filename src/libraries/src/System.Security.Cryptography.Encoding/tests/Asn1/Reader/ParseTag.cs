@@ -51,9 +51,9 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             byte[] inputBytes = inputHex.HexToByteArray();
 
-            bool parsed = Asn1Tag.TryParse(inputBytes, out Asn1Tag tag, out int bytesRead);
+            bool parsed = Asn1Tag.TryDecode(inputBytes, out Asn1Tag tag, out int bytesRead);
 
-            Assert.True(parsed, "Asn1Tag.TryParse");
+            Assert.True(parsed, "Asn1Tag.TryDecode");
             Assert.Equal(inputBytes.Length, bytesRead);
             Assert.Equal((TagClass)tagClass, tag.TagClass);
             Assert.Equal(tagValue, tag.TagValue);
@@ -69,9 +69,9 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             byte[] secondBytes = new byte[inputBytes.Length];
             int written;
-            Assert.False(tag.TryWrite(secondBytes.AsSpan(0, inputBytes.Length - 1), out written));
+            Assert.False(tag.TryEncode(secondBytes.AsSpan(0, inputBytes.Length - 1), out written));
             Assert.Equal(0, written);
-            Assert.True(tag.TryWrite(secondBytes, out written));
+            Assert.True(tag.TryEncode(secondBytes, out written));
             Assert.Equal(inputBytes.Length, written);
             Assert.Equal(inputHex, secondBytes.ByteArrayToHex());
         }
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             byte[] inputBytes = inputHex.HexToByteArray();
 
-            Assert.False(Asn1Tag.TryParse(inputBytes, out Asn1Tag tag, out var bytesRead));
+            Assert.False(Asn1Tag.TryDecode(inputBytes, out Asn1Tag tag, out var bytesRead));
 
             Assert.Equal(default(Asn1Tag), tag);
             Assert.Equal(0, bytesRead);
@@ -140,9 +140,9 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputBytes = inputHex.HexToByteArray();
             Array.Resize(ref inputBytes, inputBytes.Length + 3);
 
-            bool parsed = Asn1Tag.TryParse(inputBytes, out Asn1Tag tag, out int bytesRead);
+            bool parsed = Asn1Tag.TryDecode(inputBytes, out Asn1Tag tag, out int bytesRead);
 
-            Assert.True(parsed, "Asn1Tag.TryParse");
+            Assert.True(parsed, "Asn1Tag.TryDecode");
             Assert.Equal(inputHex.Length / 2, bytesRead);
             Assert.Equal((TagClass)tagClass, tag.TagClass);
             Assert.Equal(tagValue, tag.TagValue);

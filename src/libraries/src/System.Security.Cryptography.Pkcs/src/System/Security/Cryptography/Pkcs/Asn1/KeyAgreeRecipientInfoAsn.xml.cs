@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             {
                 explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
 
-                if (explicitReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpUkm))
+                if (explicitReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpUkm))
                 {
                     decoded.Ukm = tmpUkm;
                 }

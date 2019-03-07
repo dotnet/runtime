@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Asn1
             }
 
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpIv))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpIv))
             {
                 decoded.Iv = tmpIv;
             }
