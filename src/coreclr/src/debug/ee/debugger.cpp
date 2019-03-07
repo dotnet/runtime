@@ -943,7 +943,6 @@ Debugger::Debugger()
     m_pModules(NULL),
     m_RSRequestedSync(FALSE),
     m_sendExceptionsOutsideOfJMC(TRUE),
-    m_pIDbgThreadControl(NULL),
     m_forceNonInterceptable(FALSE),
     m_pLazyData(NULL),
     m_defines(_defines),
@@ -16081,24 +16080,6 @@ HRESULT Debugger::UpdateSpecialThreadList(DWORD cThreadArrayLength,
     pIPC->m_specialThreadListDirty = true;
 
     return (S_OK);
-}
-
-// Updates the pointer for the debugger services
-void Debugger::SetIDbgThreadControl(IDebuggerThreadControl *pIDbgThreadControl)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-    if (m_pIDbgThreadControl)
-        m_pIDbgThreadControl->Release();
-
-    m_pIDbgThreadControl = pIDbgThreadControl;
-
-    if (m_pIDbgThreadControl)
-        m_pIDbgThreadControl->AddRef();
 }
 
 //

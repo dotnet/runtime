@@ -19,49 +19,18 @@ cpp_quote("")
 // Interface descriptions
 //
 import "unknwn.idl";
-#if defined(FEATURE_WINDOWSPHONE)
-import "gchost.idl";
-#endif
-
-#include "product_version.h"
 
 cpp_quote("struct IActivationFactory;")
 interface IActivationFactory;
 
-// CLSID TypeNameFactory : uuid{B81FF171-20F3-11d2-8DCC-00A0C9B00525}
-cpp_quote("EXTERN_GUID(CLSID_TypeNameFactory, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0xcc, 0x00, 0xa0, 0xc9, 0xb0, 0x05, 0x25);")
+cpp_quote("struct IHostControl;")
+interface IHostControl;
 
-
-#ifdef FEATURE_COMINTEROP
-// CLSID ComCallUnmarshal
-cpp_quote("EXTERN_GUID(CLSID_ComCallUnmarshal, 0x3F281000,0xE95A,0x11d2,0x88,0x6B,0x00,0xC0,0x4F,0x86,0x9F,0x04);")
+cpp_quote("struct ICLRControl;")
+interface ICLRControl;
 
 // CLSID ComCallUnmarshal2
 cpp_quote("EXTERN_GUID(CLSID_ComCallUnmarshalV4, 0x45fb4600,0xe6e8,0x4928,0xb2,0x5e,0x50,0x47,0x6f,0xf7,0x94,0x25);")
-#endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-// IID ICLRAppDomainResourceMonitor: uuid(C62DE18C-2E23-4AEA-8423-B40C1FC59EAE)
-cpp_quote("EXTERN_GUID(IID_ICLRAppDomainResourceMonitor, 0XC62DE18C, 0X2E23, 0X4AEA, 0X84, 0X23, 0XB4, 0X0C, 0X1F, 0XC5, 0X9E, 0XAE);")
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
-// {7D290010-D781-45da-A6F8-AA5D711A730E}
-cpp_quote("EXTERN_GUID(IID_ICLRPolicyManager, 0x7D290010, 0xD781, 0x45da, 0xA6, 0xF8, 0xAA, 0x5D, 0x71, 0x1A, 0x73, 0x0E);")
-
-#if defined (FEATURE_WINDOWSPHONE)
-// IID_ICLRGCManager : uuid(54D9007E-A8E2-4885-B7BF-F998DEEE4F2A)
-cpp_quote("EXTERN_GUID(IID_ICLRGCManager, 0x54D9007E, 0xA8E2, 0x4885, 0xB7, 0xBF, 0xF9, 0x98, 0xDE, 0xEE, 0x4F, 0x2A);")
-// IID_ICLRGCManager2 : uuid(0603B793-A97A-4712-9CB4-0CD1C74C0F7C)
-cpp_quote("EXTERN_GUID(IID_ICLRGCManager2, 0x0603B793, 0xA97A, 0x4712, 0x9C, 0xB4, 0x0C, 0xD1, 0xC7, 0x4C, 0x0F, 0x7C);")
-// IID_ICLRErrorReportingManager : uuid(980D2F1A-BF79-4c08-812A-BB9778928F78)
-cpp_quote("EXTERN_GUID(IID_ICLRErrorReportingManager, 0x980d2f1a, 0xbf79, 0x4c08, 0x81, 0x2a, 0xbb, 0x97, 0x78, 0x92, 0x8f, 0x78);")
-#endif // FEATURE_WINDOWSPHONE
-
-#ifdef FEATURE_WINDOWSPHONE
-// IID_ICLRErrorReportingManager2 : uuid(C68F63B1-4D8B-4E0B-9564-9D2EFE2FA18C)
-cpp_quote("EXTERN_GUID(IID_ICLRErrorReportingManager2, 0xc68f63b1, 0x4d8b, 0x4e0b, 0x95, 0x64, 0x9d, 0x2e, 0xfe, 0x2f, 0xa1, 0x8c);")
-#endif // FEATURE_WINDOWSPHONE
-
 
 // IID ICLRRuntimeHost: uuid(90F1A06C-7712-4762-86B5-7A5EBA6BDB02)
 cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost, 0x90F1A06C, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02);")
@@ -72,47 +41,7 @@ cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost2, 0x712AB73F, 0x2C22, 0x4807, 0xAD, 0
 // IID ICLRRuntimeHost4: uuid(64F6D366-D7C2-4F1F-B4B2-E8160CAC43AF)
 cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost4, 0x64F6D366, 0xD7C2, 0x4F1F, 0xB4, 0xB2, 0xE8, 0x16, 0x0C, 0xAC, 0x43, 0xAF);")
 
-
-// IID ITypeName : uuid{B81FF171-20F3-11d2-8DCC-00A0C9B00522}
-cpp_quote("EXTERN_GUID(IID_ITypeName, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0xcc, 0x00, 0xa0, 0xc9, 0xb0, 0x05, 0x22);")
-
-
-// IID ITypeNameBuilder : uuid{B81FF171-20F3-11d2-8DCC-00A0C9B00523}
-cpp_quote("EXTERN_GUID(IID_ITypeNameBuilder, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0xcc, 0x00, 0xa0, 0xc9, 0xb0, 0x05, 0x23);")
-
-// IID ITypeNameFactory : uuid{B81FF171-20F3-11d2-8DCC-00A0C9B00521}
-cpp_quote("EXTERN_GUID(IID_ITypeNameFactory, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0xcc, 0x00, 0xa0, 0xc9, 0xb0, 0x05, 0x21);")
-
-#pragma midl_echo("DEPRECATED_CLR_STDAPI GetCORSystemDirectory(_Out_writes_to_(cchBuffer, *dwLength) LPWSTR pbuffer, DWORD  cchBuffer, DWORD* dwLength);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI GetCORVersion(_Out_writes_to_(cchBuffer, *dwLength) LPWSTR pbBuffer, DWORD cchBuffer, DWORD* dwLength);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI GetFileVersion(LPCWSTR szFilename, _Out_writes_to_opt_(cchBuffer, *dwLength) LPWSTR szBuffer, DWORD cchBuffer, DWORD* dwLength);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI GetCORRequiredVersion(_Out_writes_to_(cchBuffer, *dwLength) LPWSTR pbuffer, DWORD cchBuffer, DWORD* dwLength);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe, LPCWSTR pwszVersion, LPCWSTR pConfigurationFile, DWORD startupFlags, DWORD runtimeInfoFlags, _Out_writes_opt_(dwDirectory) LPWSTR pDirectory, DWORD dwDirectory, _Out_opt_ DWORD *dwDirectoryLength, _Out_writes_opt_(cchBuffer) LPWSTR pVersion, DWORD cchBuffer, _Out_opt_ DWORD* dwlength);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI GetRequestedRuntimeVersion(_In_ LPWSTR pExe, _Out_writes_to_(cchBuffer, *dwLength) LPWSTR pVersion, DWORD cchBuffer, _Out_ DWORD* dwLength);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI CorBindToRuntimeHost(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, LPCWSTR pwszHostConfigFile, VOID* pReserved, DWORD startupFlags, REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI CorBindToRuntimeEx(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, DWORD startupFlags, REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI CorBindToRuntimeByCfg(IStream* pCfgStream, DWORD reserved, DWORD startupFlags, REFCLSID rclsid,REFIID riid, LPVOID FAR* ppv);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI CorBindToRuntime(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI CorBindToCurrentRuntime(LPCWSTR pwszFileName, REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI RunDll32ShimW(HWND hwnd, HINSTANCE hinst, LPCWSTR lpszCmdLine, int nCmdShow);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI LoadLibraryShim(LPCWSTR szDllName, LPCWSTR szVersion, LPVOID pvReserved, HMODULE *phModDll);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI CallFunctionShim(LPCWSTR szDllName, LPCSTR szFunctionName, LPVOID lpvArgument1, LPVOID lpvArgument2, LPCWSTR szVersion, LPVOID pvReserved);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI GetRealProcAddress(LPCSTR pwszProcName, VOID** ppv);")
-#pragma midl_echo("DECLARE_DEPRECATED void STDMETHODCALLTYPE CorExitProcess(int exitCode);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI LoadStringRC(UINT iResouceID, _Out_writes_z_(iMax) LPWSTR szBuffer, int iMax, int bQuiet);")
-#ifdef FEATURE_USE_LCID
-#pragma midl_echo("DEPRECATED_CLR_STDAPI LoadStringRCEx(LCID lcid, UINT iResouceID, _Out_writes_z_(iMax) LPWSTR szBuffer, int iMax, int bQuiet, int *pcwchUsed);")
-#endif
-
 #pragma midl_echo("typedef HRESULT  (STDAPICALLTYPE *FnGetCLRRuntimeHost)(REFIID riid, IUnknown **pUnk);")
-
-typedef enum {
-    HOST_TYPE_DEFAULT     = 0x0,
-    HOST_TYPE_APPLAUNCH   = 0x1,
-    HOST_TYPE_CORFLAG     = 0x2
-} HOST_TYPE;
-
-#pragma midl_echo("STDAPI CorLaunchApplication(HOST_TYPE dwClickOnceHost, LPCWSTR pwzAppFullName, DWORD dwManifestPaths, LPCWSTR* ppwzManifestPaths, DWORD dwActivationData, LPCWSTR* ppwzActivationData, LPPROCESS_INFORMATION lpProcessInformation);")
 
 typedef HRESULT (__stdcall *FExecuteInAppDomainCallback) (void* cookie);
 
@@ -145,26 +74,6 @@ typedef enum {
   STARTUP_DISABLE_RANDOMIZED_STRING_HASHING     = 0x2000000      // Disable the randomized string hashing (not supported)
 } STARTUP_FLAGS;
 
-typedef enum {
-  CLSID_RESOLUTION_DEFAULT         = 0x0,     // Standard behavior that interop uses
-  CLSID_RESOLUTION_REGISTERED   = 0x1,     // Searches the registry and applies shim policy
-} CLSID_RESOLUTION_FLAGS;
-
-typedef enum
-{
-    RUNTIME_INFO_UPGRADE_VERSION        = 0x001, // apply upgrades - i.e RTM->Everett
-    RUNTIME_INFO_REQUEST_IA64           = 0x002, // requesting a CLR for ia64
-    RUNTIME_INFO_REQUEST_AMD64          = 0x004, // requesting a CLR for amd64
-    RUNTIME_INFO_REQUEST_X86            = 0x008, // requesting a CLR for x86
-    RUNTIME_INFO_DONT_RETURN_DIRECTORY  = 0x010, // don't return directory information
-    RUNTIME_INFO_DONT_RETURN_VERSION    = 0x020, // don't return version information
-    RUNTIME_INFO_DONT_SHOW_ERROR_DIALOG = 0x040, // don't pop up an error dialog on failure
-    RUNTIME_INFO_IGNORE_ERROR_MODE      = 0x1000,// ignore SEM_FAILCRITICALERRORS 
-                                                 // (by default the error dialog is not shown if  SEM_FAILCRITICALERRORS is set)
-    // Reserved values here - see mscoreepriv.h
-} RUNTIME_INFO_FLAGS;
-
-
 typedef enum
 {
     APPDOMAIN_SECURITY_DEFAULT =0x0, 
@@ -182,84 +91,11 @@ typedef enum
     APPDOMAIN_DISABLE_TRANSPARENCY_ENFORCEMENT = 0x100,
 } APPDOMAIN_SECURITY_FLAGS;
 
-#pragma midl_echo("STDAPI GetRequestedRuntimeVersionForCLSID(REFCLSID rclsid, _Out_writes_opt_(cchBuffer) LPWSTR pVersion, DWORD cchBuffer, _Out_opt_ DWORD* dwLength, CLSID_RESOLUTION_FLAGS dwResolutionFlags);")
-
-
-cpp_quote("EXTERN_GUID(IID_IDebuggerThreadControl, 0x23d86786, 0x0bb5, 0x4774, 0x8f, 0xb5, 0xe3, 0x52, 0x2a, 0xdd, 0x62, 0x46);")
-[
-    uuid(23D86786-0BB5-4774-8FB5-E3522ADD6246),
-    version(1.0),
-    helpstring("Control over threads blocked in debugging services"),
-    pointer_default(unique),
-    local
-]
-interface IDebuggerThreadControl : IUnknown
-{
-    // Notification that the thread making the call is about to
-    // block within the debugging services.      This gives the host
-    // an opportunity to perform another action while the thread
-    // blocks. This will always be called on a Runtime thread.
-    HRESULT ThreadIsBlockingForDebugger();
-
-    // Notification that the debugging services is about to
-    // release all threads it has blocked. This will never be
-    // called on a Runtime thread. If the host has a Runtime
-    // thread blocked in ThreadIsBlockingForDebugger() then it
-    // should release it now.
-    HRESULT ReleaseAllRuntimeThreads();
-
-    // Notification that the debugging services are about to
-    // start blocking all threads. This could be called on a
-    // Runtime thread. This is the signal to the host to
-    // start blocking threads in ThreadIsBlockingForDebugger().
-    HRESULT StartBlockingForDebugger(DWORD dwUnused);
-}
-
-cpp_quote("EXTERN_GUID(IID_IDebuggerInfo, 0xbf24142d, 0xa47d, 0x4d24, 0xa6, 0x6d, 0x8c, 0x21, 0x41, 0x94, 0x4e, 0x44);")
-[
-    uuid(BF24142D-A47D-4d24-A66D-8C2141944E44),
-    version(1.0),
-    helpstring("Information on the state of the debugging services"),
-    pointer_default(unique),
-    local
-]
-interface IDebuggerInfo : IUnknown
-{
-    // Indicates whether or not a managed debugger is attached to this process.
-    HRESULT IsDebuggerAttached([out] BOOL *pbAttached);
-}
-
-
-//*****************************************************************************
-// Interface for hosting mscoree
-//*****************************************************************************
-typedef void* HDOMAINENUM;
-
-
-typedef enum
-{
-    eMemoryAvailableLow = 1,
-    eMemoryAvailableNeutral = 2,
-    eMemoryAvailableHigh = 3
-} EMemoryAvailable;
-
-typedef enum
-{
-    eTaskCritical = 0,
-    eAppDomainCritical = 1,
-    eProcessCritical = 2
-} EMemoryCriticalLevel;
-
 typedef enum {
     WAIT_MSGPUMP = 0x1,
     WAIT_ALERTABLE = 0x2,
     WAIT_NOTINDEADLOCK = 0x4
 }WAIT_OPTION;
-
-
-typedef UINT64 TASKID;
-typedef DWORD CONNID;
-
 
 typedef enum ETaskType
 {
@@ -277,14 +113,6 @@ typedef enum ETaskType
     TT_UNKNOWN = 0x80000000,
 } ETaskType;
 
-
-typedef enum { 
-    eSymbolReadingNever = 0,        // Never read PDBs
-    eSymbolReadingAlways = 1,       // Always read PDBs
-    eSymbolReadingFullTrustOnly = 2 // Only read PDBs that correspond to full-trust assemblies
-} ESymbolReadingPolicy;
-
-
 typedef enum {
     // Default to minidump
         DUMP_FLAVOR_Mini = 0,
@@ -299,26 +127,6 @@ typedef enum {
     DUMP_FLAVOR_Default = DUMP_FLAVOR_Mini
         
 } ECustomDumpFlavor;
-
-// reserved for future extension
-typedef enum
-{           
-        DUMP_ITEM_None = 0
-} ECustomDumpItemKind;
-
-//
-// The CustomDumpItem structure describes an item to be added to a dump. 
-// It is defined for future expansion and is not presently used.
-//
-typedef struct
-{
-    ECustomDumpItemKind itemKind; //this affects how next fields are interpreted.
-    union
-    {
-                  // Union to be expanded later if need be
-             UINT_PTR pReserved;
-    };    
-} CustomDumpItem;
 
 const DWORD BucketParamsCount = 10;
 const DWORD BucketParamLength = 255;
@@ -344,112 +152,6 @@ typedef struct _BucketParameters
     WCHAR pszEventTypeName[BucketParamLength];                // Name of the event type.
     WCHAR pszParams[BucketParamsCount][BucketParamLength];    // Parameter strings.
 } BucketParameters;
-
-#if defined(FEATURE_WINDOWSPHONE)
-[
-    uuid(980D2F1A-BF79-4c08-812A-BB9778928F78),
-    version(1.0),
-    helpstring("CLR error reporting manager"),
-    pointer_default(unique),
-    local
-]
-interface ICLRErrorReportingManager : IUnknown
-{
-    // Get Watson bucket parameters for "current" exception (on calling thread).
-    HRESULT GetBucketParametersForCurrentException([out] BucketParameters *pParams);
-    
-    // The BeginCustomDump function configures the custom dump support
-    HRESULT BeginCustomDump(        [in] ECustomDumpFlavor dwFlavor,
-                                    [in] DWORD dwNumItems,
-                                    [in, size_is(dwNumItems), length_is(dwNumItems)] CustomDumpItem *items,
-                                    DWORD dwReserved);
-    
-    // EndCustomDump clears the custom dump configuration 
-    HRESULT EndCustomDump();                             
-}
-
-#ifdef FEATURE_WINDOWSPHONE
-typedef enum
-{
-    // indicates that the specified value is the Application ID
-    ApplicationID  = 0x1,
-
-    // indicates that the specified value is the application's Instance ID
-    InstanceID     = 0x2,
-
-    // additional values are reserved for future use
-} ApplicationDataKey;
-
-[
-    uuid(C68F63B1-4D8B-4E0B-9564-9D2EFE2FA18C),
-    version(1.0),
-    helpstring("CLR error reporting manager 2"),
-    pointer_default(unique),
-    local
-]
-interface ICLRErrorReportingManager2 : ICLRErrorReportingManager
-{
-    // This API will allow the host to specify key/value pairs of data to be consumed by the CLR.
-    //
-    // Parameters:
-    //   [in] key - One of the values specified in the ApplicationDataKey enumerated type.
-    //
-    //   [in] pValue - A NULL-terminated WCHAR string with a maximum length of MAX_PATH containing the corresponding
-    //                 value.  Note that the CLR maintains its own copy of the data so this structure does not need
-    //                 to persist after the API call returns.
-    //
-    // Return values:
-    //   S_OK upon success.
-    //
-    //   Any other return value indicates that the API did not complete successfully and no value was set.
-    //
-    //   Well-defined errors:
-    //     E_INVALIDOPERATION if the CLR has already started.
-    //     E_INVALIDARG for any of the following:
-    //       key is not within the range of valid values for ApplicationDataKey
-    //       pValue == NULL
-    //       length of pValue is greater than MAX_PATH
-    HRESULT SetApplicationData([in] ApplicationDataKey key, [in] WCHAR const* pValue);
-
-    // This API will allow the host to specify pre-defined Watson bucket data in the event of an unhandled
-    // exception, allowing the host to override Watson bucket parameter data that is usually collected and
-    // populated by the CLR.  It should be called before the CLR has started.
-    // The BucketParameters data structure must be properly initialized before calling this API by zeroing
-    // out all fields, setting pszParams entries as required, then setting fInited to TRUE.
-    // A NULL pszParams entry indicates that the bucket parameter should not be overridden, and if all pszParams
-    // entries are NULL then the API call will fail.
-    // To override a bucket parameter with an empty string specify a pszParams entry with a blank string (one or
-    // more whitespace characters).
-    //
-    // NOTE: The current implementation allows overriding of the first bucket parameter only (pszParams[0]).
-    //       Any other non-NULL pszParams entries will be ignored.  This is subject to change in future releases.
-    //
-    // Parameters:
-    //   [in] pBucketParams - A pointer to an initialized BucketParameters structure which contains the data to be
-    //                        reported in the event of an unhandled exception.  Note that the CLR maintains its own
-    //                        copy of the data so this structure does not need to persist after the API call returns.
-    //
-    //   [out] pCountParams - A pointer to a DWORD indicating the number of bucket parameter values that have
-    //                        been overridden by the host.  A count of 0 indicates that no parameters were
-    //                        overridden.
-    //
-    // Return values:
-    //   S_OK upon success.  In this case the value pointed to by pCountParams will be greater than 0.
-    //
-    //   Any other return value indicates that the API did not complete successfully.  In this case the value
-    //   pointed to by pCountParams will be 0.
-    //
-    //   Well-defined errors:
-    //     E_INVALIDOPERATION if the CLR has already started.
-    //     E_INVALIDARG for any of the following:
-    //       pBucketParams or pCountParams is NULL
-    //       pBucketParams->fInited != TRUE
-    //       if all BucketParameters.pszParams are NULL
-    HRESULT SetBucketParametersForUnhandledException([in] BucketParameters const* pBucketParams, [out] DWORD* pCountParams);
-}
-#endif // FEATURE_WINDOWSPHONE
-
-#endif // defined(FEATURE_WINDOWSPHONE)
 
 
 typedef enum
@@ -506,225 +208,6 @@ typedef enum
     MaxPolicyAction
 } EPolicyAction;
 
-[
-    uuid(7D290010-D781-45da-A6F8-AA5D711A730E),
-    version(1.0),
-    helpstring("Allow host to specify policy for CLR to follow in abnormal condition"),
-    pointer_default(unique),
-    local
-]
-interface ICLRPolicyManager: IUnknown
-{
-    HRESULT SetDefaultAction(
-        [in] EClrOperation operation,
-        [in] EPolicyAction action);
-
-    HRESULT SetTimeout(
-        [in] EClrOperation operation,
-        [in] DWORD dwMilliseconds);
-
-    HRESULT SetActionOnTimeout(
-        [in] EClrOperation operation,
-        [in] EPolicyAction action);
-
-    HRESULT SetTimeoutAndAction(
-        [in] EClrOperation operation,
-        [in] DWORD dwMilliseconds,
-        [in] EPolicyAction action);
-
-    HRESULT SetActionOnFailure(
-        [in] EClrFailure failure,
-        [in] EPolicyAction action);
-
-    HRESULT SetUnhandledExceptionPolicy(
-        [in] EClrUnhandledException policy);
-}
-
-
-typedef enum
-{
-    Event_DomainUnload,
-    Event_ClrDisabled,
-    Event_MDAFired,
-    Event_StackOverflow,
-    MaxClrEvent
-    // Do not add anything after this
-} EClrEvent;
-
-// An MDAInfo is passed via OnEvent for Event_MDAFired events.
-typedef struct _MDAInfo
-{
-    LPCWSTR lpMDACaption;
-    LPCWSTR lpMDAMessage;
-    LPCWSTR lpStackTrace;
-} MDAInfo;
-
-// An StackOverflowInfo is passed via OnEvent for Event_StackOverflow events.
-typedef enum
-{
-    SO_Managed,
-    SO_ClrEngine,
-    SO_Other,
-} StackOverflowType;
-
-cpp_quote("typedef struct _StackOverflowInfo")
-cpp_quote("{")
-cpp_quote("    StackOverflowType soType;")
-cpp_quote("    EXCEPTION_POINTERS *pExceptionInfo;")
-cpp_quote("} StackOverflowInfo;")
-
-
-#if defined(FEATURE_WINDOWSPHONE)
-
-/*
- * This interface is used to get information about the GC system and
- * control some aspects of the GC.  This interface is for expert usage
- * only, and can severely impact the performance of an application if
- * used improperly!!
- */
-[
-        uuid(54D9007E-A8E2-4885-B7BF-F998DEEE4F2A),
-    version(1.0),
-        pointer_default(unique),
-        local
-]
-interface ICLRGCManager : IUnknown
-{
-    /*
-     * Forces a collection to occur for the given generation, regardless of
-     * current GC statistics.  A value of -1 means collect all generations.
-     */
-    HRESULT Collect([in] LONG Generation);
-
-    /*
-     * Returns a set of current statistics about the state of the GC system.
-     * These values can then be used by a smart allocation system to help the
-     * GC run, by say adding more memory or forcing a collection.
-     */
-    HRESULT GetStats([in][out] COR_GC_STATS *pStats);
-
-    /*
-     * Sets the segment size and gen 0 maximum size.  This value may only be
-     * specified once and will not change if called later.
-     */
-    HRESULT SetGCStartupLimits([in] DWORD SegmentSize, [in] DWORD MaxGen0Size);
-}
-
-/*
- * This interface is added to allow users to specify 64-bit numbers on 64-bit OSs
- * for the parameters to SetGCStartupLimits.
- */
-[
-    uuid(0603B793-A97A-4712-9CB4-0CD1C74C0F7C),
-    version(2.0),
-    pointer_default(unique),
-    local
-]
-interface ICLRGCManager2 : ICLRGCManager
-{
-    /*
-     * Sets the segment size and gen 0 maximum size.  This value may only be
-     * specified once and will not change if called later.
-     */
-    HRESULT SetGCStartupLimitsEx([in] SIZE_T SegmentSize, [in] SIZE_T MaxGen0Size);
-};
-
-
-#endif // FEATURE_WINDOWSPHONE
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// enum EBindPolicyLevels
-//
-///////////////////////////////////////////////////////////////////////////////
-typedef enum
-{
-    ePolicyLevelNone = 0x0,
-    ePolicyLevelRetargetable = 0x1,
-    ePolicyUnifiedToCLR = 0x2,
-    ePolicyLevelApp = 0x4,
-    ePolicyLevelPublisher = 0x8,
-    ePolicyLevelHost = 0x10,
-    ePolicyLevelAdmin = 0x20,
-    ePolicyPortability = 0x40,
-} EBindPolicyLevels;
-///////////////////////////////////////////////////////////////////////////////
-//
-// struct AssemblyBindInfo
-//
-///////////////////////////////////////////////////////////////////////////////
-typedef struct _AssemblyBindInfo
-{
-    DWORD                       dwAppDomainId;
-    LPCWSTR                     lpReferencedIdentity;
-    LPCWSTR                     lpPostPolicyIdentity;
-    DWORD                       ePolicyLevel;
-}AssemblyBindInfo;
-///////////////////////////////////////////////////////////////////////////////
-//
-// struct ModuleBindInfo
-//
-///////////////////////////////////////////////////////////////////////////////
-typedef struct _ModuleBindInfo
-{
-    DWORD                         dwAppDomainId;
-    LPCWSTR                       lpAssemblyIdentity;
-    LPCWSTR                       lpModuleName;
-} ModuleBindInfo;
-
-
-typedef enum _HostApplicationPolicy
-{
-    HOST_APPLICATION_BINDING_POLICY = 1
-}EHostApplicationPolicy;
-
-
-
-// Implemented in mscorwks.dll, use mscoree!GetRealProcAddress to get
-// a function pointer of this API.
-#pragma midl_echo("STDAPI GetCLRIdentityManager(REFIID riid, IUnknown **ppManager);")
-
-// {02CA073D-7079-4860-880A-C2F7A449C991}
-cpp_quote("EXTERN_GUID(IID_IHostControl, 0x02CA073C, 0x7079, 0x4860, 0x88, 0x0A, 0xC2, 0xF7, 0xA4, 0x49, 0xC9, 0x91);")
-[
-    uuid(02CA073C-7079-4860-880A-C2F7A449C991),
-    version(1.0),
-    helpstring("Common Language Runtime Host Control Interface"),
-    pointer_default(unique),
-    local
-]
-interface IHostControl : IUnknown
-{
-    HRESULT GetHostManager(
-        [in] REFIID riid,
-        [out] void **ppObject);
-
-    /* Notify Host with IUnknown with the pointer to AppDomainManager */
-        HRESULT SetAppDomainManager(
-        [in] DWORD dwAppDomainID,
-        [in] IUnknown* pUnkAppDomainManager);
-}
-
-cpp_quote("EXTERN_GUID(IID_ICLRControl, 0x9065597E, 0xD1A1, 0x4fb2, 0xB6, 0xBA, 0x7E, 0x1F, 0xCE, 0x23, 0x0F, 0x61);")
-[
-    uuid(9065597E-D1A1-4fb2-B6BA-7E1FCE230F61),
-    version(1.0),
-    helpstring("Common Language Runtime Control Interface"),
-    pointer_default(unique),
-    local
-]
-interface ICLRControl : IUnknown
-{
-    HRESULT GetCLRManager(
-        [in] REFIID riid,
-        [out] void **ppObject);
-
-        HRESULT SetAppDomainManagerType(
-                [in] LPCWSTR pwzAppDomainManagerAssembly,
-        [in] LPCWSTR pwzAppDomainManagerType);
-}
-
-
 
 //*****************************************************************************
 // New interface for hosting mscoree
@@ -773,10 +256,6 @@ interface ICLRRuntimeHost : IUnknown
                                       [in] LPCWSTR pwzArgument,
                                       [out] DWORD  *pReturnValue);
 };
-
-// Keys for ICLRRuntmeHost2::Authenticate. No longer required.
-cpp_quote("#define CORECLR_HOST_AUTHENTICATION_KEY 0x1C6CA6F94025800LL")
-cpp_quote("#define CORECLR_HOST_AUTHENTICATION_KEY_NONGEN 0x1C6CA6F94025801LL")
 
 //*****************************************************************************
 // New interface for hosting mscoree
@@ -842,209 +321,6 @@ interface ICLRRuntimeHost4 : ICLRRuntimeHost2
                                           [in] BOOL fWaitUntilDone,
                                           [out] int *pLatchedExitCode);
 };
-
-//*****************************************************************************
-// Interface to utilize HostProtection
-//*****************************************************************************
-typedef enum
-{
-    eNoChecks                    = 0,
-    //---------------------------------
-    eSynchronization             = 0x1,
-    eSharedState                 = 0x2,
-    eExternalProcessMgmt         = 0x4,
-    eSelfAffectingProcessMgmt    = 0x8,
-    eExternalThreading           = 0x10,
-    eSelfAffectingThreading      = 0x20,
-    eSecurityInfrastructure      = 0x40,
-    eUI                          = 0x80,
-    eMayLeakOnAbort              = 0x100,
-    //----------------------------------
-    eAll                         = 0x1ff
-} EApiCategories;
-
-
-//
-// Interface for configuring the default AppDomain
-//
-
-typedef enum
-{
-    eInitializeNewDomainFlags_None              = 0x0000,
-
-    // InitializeNewDomain will not make changes to the security state of the AppDomain
-    eInitializeNewDomainFlags_NoSecurityChanges = 0x0002
-}
-EInitializeNewDomainFlags;
-
-
-//*****************************************************************************
-// mscoree typelib definition
-//*****************************************************************************
-
-[
-    uuid(5477469e-83b1-11d2-8b49-00a0c9b7c9c4),
-    version(2.4),
-    helpstring("Common Language Runtime Execution Engine 2.4 Library")
-]
-library mscoree
-{
-    importlib("stdole32.tlb");
-
-    //*****************************************************************************
-    //
-    //*****************************************************************************
-    [
-        object,
-        oleautomation,
-        uuid(B81FF171-20F3-11d2-8DCC-00A0C9B00522),
-        helpstring("Type name parser"),
-        pointer_default(unique)
-    ]
-    interface ITypeName : IUnknown
-    {
-        HRESULT GetNameCount([out, retval] DWORD* pCount);
-        HRESULT GetNames([in] DWORD count, [out] BSTR* rgbszNames, [out, retval] DWORD* pCount);
-        HRESULT GetTypeArgumentCount([out, retval] DWORD* pCount);
-        HRESULT GetTypeArguments([in] DWORD count, [out] ITypeName** rgpArguments, [out, retval] DWORD* pCount);
-        HRESULT GetModifierLength([out, retval] DWORD* pCount);
-        HRESULT GetModifiers([in] DWORD count, [out] DWORD* rgModifiers, [out, retval] DWORD* pCount);
-        HRESULT GetAssemblyName([out, retval] BSTR* rgbszAssemblyNames);
-    };
-
-    //*****************************************************************************
-    //
-    //*****************************************************************************
-    [
-        object,
-        oleautomation,
-        uuid(B81FF171-20F3-11d2-8DCC-00A0C9B00523),
-        helpstring("Type name builder"),
-        pointer_default(unique)
-    ]
-    interface ITypeNameBuilder : IUnknown
-    {
-        HRESULT OpenGenericArguments();
-        HRESULT CloseGenericArguments();
-        HRESULT OpenGenericArgument();
-        HRESULT CloseGenericArgument();
-        HRESULT AddName([in] LPCWSTR szName);
-        HRESULT AddPointer();
-        HRESULT AddByRef();
-        HRESULT AddSzArray();
-        HRESULT AddArray([in] DWORD rank);
-        HRESULT AddAssemblySpec([in] LPCWSTR szAssemblySpec);
-        HRESULT ToString([out, retval] BSTR* pszStringRepresentation);
-        HRESULT Clear();
-    };
-
-    //*****************************************************************************
-    //
-    //*****************************************************************************
-    [
-        object,
-        oleautomation,
-        uuid(B81FF171-20F3-11d2-8DCC-00A0C9B00521),
-        helpstring("Type name builder and parser factory"),
-        pointer_default(unique)
-    ]
-    interface ITypeNameFactory : IUnknown
-    {
-        HRESULT ParseTypeName([in] LPCWSTR szName, [out] DWORD* pError, [out, retval] ITypeName** ppTypeName);
-        HRESULT GetTypeNameBuilder([out, retval] ITypeNameBuilder** ppTypeBuilder);
-    };
-
-
-#ifdef _WIN64
-    #define CCW_PTR __int64 *
-    cpp_quote("#define CCW_PTR __int64 *")
-#else // WIN64
-    #define CCW_PTR int *
-    cpp_quote("#define CCW_PTR int *")
-#endif // WIN64
-
-#ifdef FEATURE_COMINTEROP
-    //*****************************************************************************
-    // IMarshal implementation for 1.0, 1.1, and 2.0 COM callable wrappers
-    //*****************************************************************************
-    [
-        uuid(3F281000-E95A-11d2-886B-00C04F869F04),
-        helpstring("Com Call Wrapper Unmarshalling Class")
-    ]
-    coclass ComCallUnmarshal
-    {
-        [default] interface IMarshal;
-    };
-
-    //*****************************************************************************
-    // IMarshal implementation for 4.0 COM callable wrappers
-    //*****************************************************************************
-    [
-        uuid(45FB4600-E6E8-4928-B25E-50476FF79425),
-        helpstring("Com Call Wrapper Unmarshalling Class 4.0")
-    ]
-    coclass ComCallUnmarshalV4
-    {
-        [default] interface IMarshal;
-    };
-#endif // FEATURE_COMINTEROP
-
-
-    [
-        uuid(90F1A06E-7712-4762-86B5-7A5EBA6BDB02),
-        helpstring("CLR Runtime Hosting Class V2")
-    ]
-    coclass CLRRuntimeHost
-    {
-        [default] interface ICLRRuntimeHost;
-        interface ICLRValidator;
-    };
-
-    [
-        uuid(B81FF171-20F3-11d2-8DCC-00A0C9B00525),
-        helpstring("TypeName parser and builder")
-    ]
-    coclass TypeNameFactory
-    {
-        [default] interface ITypeNameFactory;
-    };
-};
-
-typedef enum
-{
-        eCurrentContext=0x00,
-        eRestrictedContext=0x01
-} EContextType;
-
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-///////////////////////////////////////////////////////////////////////////////
-//
-// ICLRAppDomainResourceMonitor
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        version(1.0),
-        uuid(c62de18c-2e23-4aea-8423-b40c1fc59eae),
-        helpstring("ARM interface"),
-        pointer_default(unique),
-        local
-]
-interface ICLRAppDomainResourceMonitor: IUnknown
-{
-    HRESULT GetCurrentAllocated([in] DWORD dwAppDomainId, 
-                                [out] ULONGLONG* pBytesAllocated);
-
-    HRESULT GetCurrentSurvived([in] DWORD dwAppDomainId, 
-                               [out] ULONGLONG* pAppDomainBytesSurvived,
-                               [out] ULONGLONG* pTotalBytesSurvived);
-
-    HRESULT GetCurrentCpuTime([in] DWORD dwAppDomainId,
-                              [out] ULONGLONG* pMilliseconds);
-
-
-};
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
 cpp_quote("#undef DEPRECATED_CLR_STDAPI")
 cpp_quote("#undef DECLARE_DEPRECATED")

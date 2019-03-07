@@ -343,9 +343,6 @@ public:
     virtual HRESULT UpdateSpecialThreadList(DWORD cThreadArrayLength,
                                             DWORD *rgdwThreadIDArray) = 0;
 
-    // Updates the pointer for the debugger services
-    virtual void SetIDbgThreadControl(IDebuggerThreadControl *pIDbgThreadControl) = 0;
-
     virtual DWORD GetRCThreadId(void) = 0;
 
     virtual HRESULT GetVariablesFromOffset(MethodDesc                 *pMD,

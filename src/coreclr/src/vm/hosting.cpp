@@ -10,188 +10,11 @@
 
 #include "hosting.h"
 #include "mscoree.h"
-#include "mscoreepriv.h"
 #include "corhost.h"
 #include "threads.h"
 
 
 #define countof(x) (sizeof(x) / sizeof(x[0]))
-
-//Copied from winbase.h
-#ifndef STARTF_TITLEISAPPID
-#define STARTF_TITLEISAPPID     	  0x00001000
-#endif
-#ifndef STARTF_PREVENTPINNING
-#define STARTF_PREVENTPINNING    0x00002000
-#endif
-
-//Flags encoded in the first parameter of CorLaunchApplication.
-#define MASK_NOTPINNABLE 	0x80000000
-#define MASK_HOSTTYPE 		0x00000003
-#define MASK_DONT_SHOW_INSTALL_DIALOG 	0x00000100
-
-#ifdef _DEBUG
-// This function adds a static annotation read by SCAN to indicate HOST_CALLS. Its
-// purpose is to be called from the BEGIN_SO_TOLERANT_CODE_CALLING_HOST macro, to
-// effectively mark all functions that use BEGIN_SO_TOLERANT_CODE_CALLING_HOST as being
-// HOST_CALLS. If you hit a SCAN violation that references AddHostCallsStaticMarker, then
-// you have a function marked as HOST_NOCALLS that eventually calls into a function that
-// uses BEGIN_SO_TOLERANT_CODE_CALLING_HOST.
-DEBUG_NOINLINE void AddHostCallsStaticMarker()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_HOST_CALLS;
-
-    METHOD_CANNOT_BE_FOLDED_DEBUG;
-}
-#endif  //_DEBUG
-
-//
-// memory management functions
-//
-
-// global debug only tracking utilities
-#ifdef _DEBUG
-
-static const LONG MaxGlobalAllocCount = 8;
-
-class GlobalAllocStore {
-public:
-    static void AddAlloc (LPVOID p)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (!p) {
-            return;
-        }
-        if (m_Disabled) {
-            return;
-        }
-
-        //InterlockedIncrement (&numMemWriter);
-        //if (CheckMemFree) {
-        //    goto Return;
-        //}
-
-        //m_Count is number of allocation we've ever tried, it's OK to be bigger than
-        //size of m_Alloc[]
-        InterlockedIncrement (&m_Count);
-
-        //this is by no means an accurate record of heap allocation.
-        //the algorithm used here can't guarantee an allocation is saved in
-        //m_Alloc[] even there's enough free space. However this is only used
-        //for debugging purpose and most importantly, m_Count is accurate.
-        for (size_t n = 0; n < countof(m_Alloc); n ++) {
-            if (m_Alloc[n] == 0) {
-                if (InterlockedCompareExchangeT(&m_Alloc[n],p,0) == 0) {
-                    return;
-                }
-            }
-        }
-        
-        //InterlockedDecrement (&numMemWriter);
-    }
-
-    //this is called in non-host case where we don't care the free after
-    //alloc store is disabled
-    static BOOL RemoveAlloc (LPVOID p)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_Disabled)
-        {
-            return TRUE;
-        }
-        //decrement the counter even we might not find the allocation
-        //in m_Alloc. Because it's possible for an allocation not to be saved
-        //in the array
-        InterlockedDecrement (&m_Count);
-        // Binary search        
-        for (size_t n = 0; n < countof(m_Alloc); n ++) {
-            if (m_Alloc[n] == p) {
-                m_Alloc[n] = 0;
-                return TRUE;
-            }
-        }
-        return FALSE;
-    }
-
-    //this is called in host case where if the store is disabled, we want to 
-    //guarantee we don't try to free anything the host doesn't know about
-    static void ValidateFree(LPVOID p)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (p == 0) {
-            return;
-        }
-        if (m_Disabled) {
-            for (size_t n = 0; n < countof(m_Alloc); n ++) {
-                //there could be miss, because an allocation might not be saved
-                //in the array
-                if (m_Alloc[n] == p) {
-                    _ASSERTE (!"Free a memory that host interface does not know");
-                    return;
-                }
-            }
-        }
-    }
-
-    static void Validate()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_Count > MaxGlobalAllocCount) {
-            _ASSERTE (!"Using too many memory allocator before Host Interface is set up");
-        }       
-        
-        //while (numMemWriter != 0) {
-        //    Sleep(5);
-        //}
-        //qsort (GlobalMemAddr, (MemAllocCount>MaxAllocCount)?MaxAllocCount:MemAllocCount, sizeof(LPVOID), MemAddrCompare);
-    }
-
-    static void Disable ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (!m_Disabled) 
-        {
-            // Let all threads know
-            InterlockedIncrement((LONG*)&m_Disabled);
-        }
-    }
-
-private:
-    static BOOL m_Disabled;    
-    static LPVOID m_Alloc[MaxGlobalAllocCount];
-    //m_Count is number of allocation we tried, it's legal to be bigger than
-    //size of m_Alloc[]
-    static LONG m_Count;
-    // static LONG numMemWriter = 0;
-};
-
-// used from corhost.cpp
-void ValidateHostInterface()
-{
-    WRAPPER_NO_CONTRACT;
-
-    GlobalAllocStore::Validate();
-    GlobalAllocStore::Disable();    
-}
-
-void DisableGlobalAllocStore ()
-{
-    WRAPPER_NO_CONTRACT;
-    GlobalAllocStore::Disable();
-}
-LPVOID GlobalAllocStore::m_Alloc[MaxGlobalAllocCount];
-LONG GlobalAllocStore::m_Count = 0;
-BOOL GlobalAllocStore::m_Disabled = FALSE;
-
-#endif
-
 
 
 HANDLE g_ExecutableHeapHandle = NULL;
@@ -255,10 +78,6 @@ LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
             p = ::VirtualAlloc (lpAddress, dwSize, flAllocationType, flProtect);
         }
 
-#ifdef _DEBUG
-        GlobalAllocStore::AddAlloc (p);
-#endif
-
         if(p == NULL){
              STRESS_LOG_OOM_STACK(dwSize);
         }
@@ -278,17 +97,7 @@ BOOL EEVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
     }
     CONTRACTL_END;
 
-    BOOL retVal = FALSE;
-
-    {
-#ifdef _DEBUG
-        GlobalAllocStore::RemoveAlloc (lpAddress);
-#endif
-
-        retVal = (BOOL)(BYTE)::VirtualFree (lpAddress, dwSize, dwFreeType);
-    }
-
-    return retVal;
+    return (BOOL)(BYTE)::VirtualFree (lpAddress, dwSize, dwFreeType);
 }
 #define VirtualFree(lpAddress, dwSize, dwFreeType) Dont_Use_VirtualFree(lpAddress, dwSize, dwFreeType)
 
@@ -408,7 +217,6 @@ LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
             *((HANDLE*)p) = hHeap;
             p = (BYTE*)p + OS_HEAP_ALIGN;
         }
-        GlobalAllocStore::AddAlloc (p);
 #else
         p = ::HeapAlloc (hHeap, dwFlags, dwBytes);
 #endif
@@ -455,8 +263,6 @@ BOOL EEHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
 
     {
 #ifdef _DEBUG
-        GlobalAllocStore::RemoveAlloc (lpMem);
-
         if (lpMem != NULL)
         {
             // Check the heap handle to detect heap contamination

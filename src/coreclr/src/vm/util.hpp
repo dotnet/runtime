@@ -735,10 +735,6 @@ typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
 
 void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX);
 
-void ProcessEventForHost(EClrEvent event, void *data);
-void ProcessSOEventForHost(EXCEPTION_POINTERS *pExceptionInfo, BOOL fInSoTolerant);
-BOOL IsHostRegisteredForEvent(EClrEvent event);
-
 #define SetupThreadForComCall(OOMRetVal)            \
     MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk()); \
     if (CURRENT_THREAD == NULL)                     \
