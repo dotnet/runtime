@@ -141,7 +141,7 @@ namespace System.Tests
         [InlineData("0.0", 0x0000000000000000ul)]
         [InlineData("1.0e-99999999999999999999", 0x0000000000000000ul)]
         [InlineData("0e-99999999999999999999", 0x0000000000000000ul)]
-        [InlineData("0e99999999999999999999", 0x0000000000000000ul)]
+        [InlineData("0e99999999999999999999", 0x0000000000000000ul, Skip = "https://github.com/dotnet/corefx/issues/35864")]
         // Verify small and large exactly representable integers:
         [InlineData("1", 0x3ff0000000000000)]
         [InlineData("2", 0x4000000000000000)]
