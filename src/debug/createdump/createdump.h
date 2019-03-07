@@ -54,6 +54,8 @@ typedef int T_CONTEXT;
 #include <map>
 #include <set>
 #include <vector>
+#include <array>
+#include <string>
 #include "datatarget.h"
 #include "threadinfo.h"
 #include "memoryregion.h"
