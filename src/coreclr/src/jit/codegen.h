@@ -261,7 +261,7 @@ protected:
                               regNumber   tmpReg,
                               bool        inUnwindRegion = false);
 
-    void genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg, bool* pTmpRegIsZero);
+    void genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
 
     void genPrologSaveRegPair(regNumber reg1,
                               regNumber reg2,
