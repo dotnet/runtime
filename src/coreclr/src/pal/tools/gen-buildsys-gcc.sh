@@ -22,7 +22,7 @@ gcc_prefix=""
 
 if [ "$CROSSCOMPILE" = "1" ]; then
   # Locate gcc
-  if [ ! -z "$TOOLCHAIN" ]; then
+  if [ -n "$TOOLCHAIN" ]; then
     gcc_prefix="$TOOLCHAIN-"
   fi
 fi
@@ -37,19 +37,21 @@ elif command -v "${gcc_prefix}gcc$2$3" > /dev/null
 elif command -v "${gcc_prefix}gcc-$2$3" > /dev/null
     then
         desired_gcc_version="-$2$3"
-elif command -v ${gcc_prefix}gcc > /dev/null
+elif command -v "${gcc_prefix}gcc" > /dev/null
     then
         desired_gcc_version=
 else
-    echo "Unable to find $gcc_prefixgcc Compiler"
+    echo "Unable to find \"${gcc_prefix}\"gcc Compiler"
     exit 1
 fi
 
 if [ -z "$CC" ]; then
-  export CC="$(command -v ${gcc_prefix}gcc$desired_gcc_version)"
+    CC="$(command -v "${gcc_prefix}"gcc"$desired_gcc_version")"
+    export CC
 fi
 if [ -z "$CXX" ]; then
-  export CXX="$(command -v ${gcc_prefix}g++$desired_gcc_version)"
+    CXX="$(command -v "${gcc_prefix}g++$desired_gcc_version")"
+    export CXX
 fi
 
 build_arch="$4"
@@ -60,9 +62,9 @@ __UnprocessedCMakeArgs=""
 
 ITER=-1
 for i in "$@"; do
-    ITER=$(($ITER + 1))
+    ITER=$((ITER + 1))
     if [ $ITER -lt 5 ]; then continue; fi
-    upperI="$(echo $i | awk '{print toupper($0)}')"
+    upperI="$(echo "$i" | awk '{print toupper($0)}')"
     case $upperI in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO, MINSIZEREL.
       DEBUG | CHECKED | RELEASE | RELWITHDEBINFO | MINSIZEREL)
@@ -80,55 +82,33 @@ for i in "$@"; do
     esac
 done
 
-OS=`uname`
+OS=$(uname)
 
 locate_gcc_exec() {
   if command -v "$gcc_prefix$1$desired_gcc_version" > /dev/null 2>&1
   then
-    echo "$(command -v $gcc_prefix$1$desired_gcc_version)"
+    command -v "$gcc_prefix$1$desired_gcc_version"
   elif command -v "$gcc_prefix$1" > /dev/null 2>&1
   then
-    echo "$(command -v $gcc_prefix$1)"
+    command -v "$gcc_prefix$1"
   else
     exit 1
   fi
 }
 
-gcc_ar="$(locate_gcc_exec ar)"
-[ $? -eq 0 ] || { echo "Unable to locate gcc-ar"; exit 1; }
+if ! gcc_ar="$(locate_gcc_exec ar)"; then { echo "Unable to locate gcc-ar"; exit 1; } fi
 
-if [ -z "$CC" ]; then
-  gcc_link="$(locate_gcc_exec gcc)"
-  [ $? -eq 0 ] || { echo "Unable to locate gcc-link"; exit 1; }
-else
-  gcc_link="$CC"
-fi
+if ! gcc_link="$(locate_gcc_exec link)"; then { echo "Unable to locate gcc-link"; exit 1; } fi
 
-if [ -z "$NM" ]; then
-  gcc_nm="$(locate_gcc_exec nm)"
-  [ $? -eq 0 ] || { echo "Unable to locate gcc-nm"; exit 1; }
-else
-  gcc_nm="$NM"
-fi
+if ! gcc_nm="$(locate_gcc_exec nm)"; then { echo "Unable to locate gcc-nm"; exit 1; } fi
 
 if [ "$OS" = "Linux" ] || [ "$OS" = "FreeBSD" ] || [ "$OS" = "OpenBSD" ] || [ "$OS" = "NetBSD" ] || [ "$OS" = "SunOS" ]; then
-  if [ -z "$OBJDUMP" ]; then
-    gcc_objdump="$(locate_gcc_exec objdump)"
-    [ $? -eq 0 ] || { echo "Unable to locate gcc-objdump"; exit 1; }
-  else
-    gcc_objdump="$OBJDUMP"
-  fi
+  if ! gcc_objdump="$(locate_gcc_exec objdump)"; then { echo "Unable to locate gcc-objdump"; exit 1; } fi
 fi
 
-if [ -z "$OBJCOPY" ]; then
-  gcc_objcopy="$(locate_gcc_exec objcopy)"
-  [ $? -eq 0 ] || { echo "Unable to locate gcc-objcopy"; exit 1; }
-else
-  gcc_objcopy="$OBJCOPY"
-fi
+if ! gcc_objcopy="$(locate_gcc_exec objcopy)"; then { echo "Unable to locate gcc-objcopy"; exit 1; } fi
 
-gcc_ranlib="$(locate_gcc_exec ranlib)"
-[ $? -eq 0 ] || { echo "Unable to locate gcc-ranlib"; exit 1; }
+if ! gcc_ranlib="$(locate_gcc_exec ranlib)"; then { echo "Unable to locate gcc-ranlib"; exit 1; } fi
 
 cmake_extra_defines=
 if [ -n "$LLDB_LIB_DIR" ]; then
@@ -183,6 +163,6 @@ cmake \
   "-DCMAKE_EXPORT_COMPILE_COMMANDS=1 " \
   "-DCLR_CMAKE_ENABLE_CODE_COVERAGE=$code_coverage" \
   "-DCLR_CMAKE_COMPILER=GNU" \
-  $cmake_extra_defines \
-  $__UnprocessedCMakeArgs \
+  "$cmake_extra_defines" \
+  "$__UnprocessedCMakeArgs" \
   "$1"
