@@ -449,7 +449,8 @@ private:
     ComMethodTable* CreateComMethodTableForBasic(MethodTable* pClassMT);
     ComMethodTable* CreateComMethodTableForDelegate(MethodTable *pDelegateMT);
 
-    void            DetermineComVisibility();
+    void DetermineComVisibility();
+    ComCallWrapperTemplate* FindInvisibleParent();
 
 private:
     LONG                                    m_cbRefCount;

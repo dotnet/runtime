@@ -907,7 +907,7 @@ BEGIN
     IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL "Method '%3' on type '%1' from assembly '%2' tried to explicitly implement an interface method with weaker type parameter constraints."
     IDS_CLASSLOAD_EXPLICIT_GENERIC "Could not load type '%1' from assembly '%2' because generic types cannot have explicit layout."
     
-    IDS_EE_COM_INVISIBLE_PARENT "This type has a ComVisible(false) parent in its hierarchy, therefore QueryInterface calls for IDispatch or class interfaces are disallowed."
+    IDS_EE_COM_INVISIBLE_PARENT "Type '%1' has a ComVisible(false) parent '%2' in its hierarchy, therefore QueryInterface calls for IDispatch or class interfaces are disallowed."
 
     IDS_EE_COMIMPORT_METHOD_NO_INTERFACE    "Method '%1' in ComImport class '%2' must implement an interface method."
     IDS_EE_ATTEMPT_TO_CREATE_GENERIC_CCW    "Generic types cannot be marshaled to COM interface pointers."
