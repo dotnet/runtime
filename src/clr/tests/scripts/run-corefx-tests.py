@@ -377,6 +377,10 @@ def main(args):
     if not Is_windows:
         command += ' /p:TestWithLocalNativeLibraries=true'
 
+    if not Is_windows and (arch == 'arm' or arch == 'arm64'):
+        # It is needed under docker where LC_ALL is not configured.
+        command += ' --warnAsError false'
+
     # Run the corefx test build and run the tests themselves.
 
     log(command)
