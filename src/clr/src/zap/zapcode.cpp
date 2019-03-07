@@ -1788,7 +1788,7 @@ DWORD ZapLazyHelperThunk::SaveWorker(ZapWriter * pZapWriter)
     PORTABILITY_ASSERT("ZapLazyHelperThunk::Save");
 #endif
 
-    _ASSERTE(p - buffer <= sizeof(buffer));
+    _ASSERTE((DWORD)(p - buffer) <= sizeof(buffer));
 
     if (pZapWriter != NULL)
         pZapWriter->Write(&buffer, (int)(p - buffer));

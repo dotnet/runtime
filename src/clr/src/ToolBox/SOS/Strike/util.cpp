@@ -1726,7 +1726,7 @@ int GetValueFieldOffset(CLRDATA_ADDRESS cdaMT, __in_z LPCWSTR wszFieldName, Dacp
     if (dmtd.ParentMethodTable)
     {
         DWORD retVal = GetValueFieldOffset(dmtd.ParentMethodTable, wszFieldName, pDacpFieldDescData);
-        if (retVal != NOT_FOUND)
+        if (retVal != (DWORD)NOT_FOUND)
         {
             // Return in case of error or success. Fall through for field-not-found.
             return retVal;

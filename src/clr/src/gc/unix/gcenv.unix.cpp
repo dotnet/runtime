@@ -485,7 +485,7 @@ bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processAffinityMa
     {
         uintptr_t processMask = 0;
 
-        for (int i = 0; i < g_logicalCpuCount; i++)
+        for (unsigned int i = 0; i < g_logicalCpuCount; i++)
         {
             if (CPU_ISSET(i, &cpuSet))
             {
@@ -536,7 +536,7 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 
     pmask &= smask;
 
-    int count = 0;
+    unsigned int count = 0;
     while (pmask)
     {
         pmask &= (pmask - 1);
