@@ -47,7 +47,7 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity Start() { throw null; }
         public void Stop() { }
     }
-    public enum ActivityIdFormat : byte
+    public enum ActivityIdFormat
     {
         Hierarchical = (byte)1,
         Unknown = (byte)0,
@@ -60,16 +60,17 @@ namespace System.Diagnostics
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public ActivitySpanId(System.ReadOnlySpan<byte> idData, bool isUtf8Chars = false) { throw null; }
-        public ActivitySpanId(System.ReadOnlySpan<char> idData) { throw null; }
-        public string AsHexString { get { throw null; } }
         public void CopyTo(System.Span<byte> destination) { }
+        public static System.Diagnostics.ActivitySpanId CreateFromBytes(System.ReadOnlySpan<byte> idData) { throw null; }
+        public static System.Diagnostics.ActivitySpanId CreateFromString(System.ReadOnlySpan<char> idData) { throw null; }
+        public static System.Diagnostics.ActivitySpanId CreateFromUtf8String(System.ReadOnlySpan<byte> idData) { throw null; }
+        public static System.Diagnostics.ActivitySpanId CreateRandom() { throw null; }
         public bool Equals(System.Diagnostics.ActivitySpanId spanId) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Diagnostics.ActivitySpanId NewSpanId() { throw null; }
         public static bool operator ==(in System.Diagnostics.ActivitySpanId spanId1, in System.Diagnostics.ActivitySpanId spandId2) { throw null; }
         public static bool operator !=(in System.Diagnostics.ActivitySpanId spanId1, in System.Diagnostics.ActivitySpanId spandId2) { throw null; }
+        public string ToHexString() { throw null; }
         public override string ToString() { throw null; }
     }
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
@@ -79,16 +80,17 @@ namespace System.Diagnostics
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public ActivityTraceId(System.ReadOnlySpan<byte> idData, bool isUtf8Chars = false) { throw null; }
-        public ActivityTraceId(System.ReadOnlySpan<char> idData) { throw null; }
-        public string AsHexString { get { throw null; } }
         public void CopyTo(System.Span<byte> destination) { }
+        public static System.Diagnostics.ActivityTraceId CreateFromBytes(System.ReadOnlySpan<byte> idData) { throw null; }
+        public static System.Diagnostics.ActivityTraceId CreateFromString(System.ReadOnlySpan<char> idData) { throw null; }
+        public static System.Diagnostics.ActivityTraceId CreateFromUtf8String(System.ReadOnlySpan<byte> idData) { throw null; }
+        public static System.Diagnostics.ActivityTraceId CreateRandom() { throw null; }
         public bool Equals(System.Diagnostics.ActivityTraceId traceId) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Diagnostics.ActivityTraceId NewTraceId() { throw null; }
         public static bool operator ==(in System.Diagnostics.ActivityTraceId traceId1, in System.Diagnostics.ActivityTraceId traceId2) { throw null; }
         public static bool operator !=(in System.Diagnostics.ActivityTraceId traceId1, in System.Diagnostics.ActivityTraceId traceId2) { throw null; }
+        public string ToHexString() { throw null; }
         public override string ToString() { throw null; }
     }
     public abstract partial class DiagnosticSource
