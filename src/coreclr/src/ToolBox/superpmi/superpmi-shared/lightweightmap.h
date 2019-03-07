@@ -345,7 +345,7 @@ public:
                 return false; // found it. return position /////
         }
         insert = first;
-        if (insert != first)
+        if (insert != (unsigned int)first)
         {
             LogDebug("index = %u f %u mid = %u l %u***************************", insert, first, mid, last);
             __debugbreak();

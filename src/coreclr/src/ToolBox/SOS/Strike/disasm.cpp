@@ -530,7 +530,7 @@ INT_PTR ParseHexNumber (__in_z char *ptr, ___out char **endptr)
         endptr1 = endptr2;
     }
     // if the hex number was specified as 000006fbf9b70f50, an overflow occurred
-    else if (ULONG_MAX == value1 && errno == ERANGE)
+    else if ((INT_PTR)ULONG_MAX == value1 && errno == ERANGE)
     {
         if (!strncmp(ptr, "0x", 2))
             ptr += 2;

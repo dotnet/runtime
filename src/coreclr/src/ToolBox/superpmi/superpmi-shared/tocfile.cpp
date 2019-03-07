@@ -47,7 +47,7 @@ void TOCFile::LoadToc(const char* inputFileName, bool validate)
 
     // Get the last 4 byte token (more abuse of LARGE_INTEGER)
     if (!ReadFile(hIndex, &val.u.HighPart, sizeof(DWORD), &read, nullptr) || (read != sizeof(DWORD)) ||
-        (val.u.LowPart != val.u.HighPart))
+        (val.u.LowPart != (DWORD)val.u.HighPart))
     {
         CloseHandle(hIndex);
         this->Clear();
