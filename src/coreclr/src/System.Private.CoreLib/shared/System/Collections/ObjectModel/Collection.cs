@@ -220,11 +220,18 @@ namespace System.Collections.ObjectModel
             if (index > items.Count - count)
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
-            }            
+            }
 
-            for (int i = 0; i < count; i++)
+            if (GetType() == typeof(Collection<T>) && items is List<T> list)
             {
-                RemoveItem(index);
+                list.RemoveRange(index, count);
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    RemoveItem(index);
+                }
             }
         }
 
