@@ -145,11 +145,12 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 //    tmpReg                  - an available temporary register
 //    pTmpRegIsZero           - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
 //                              Otherwise, we don't touch it.
+//    reportUnwindData        - If true, report the change in unwind data. Otherwise, do not report it.
 //
 // Return Value:
 //    None.
 
-void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
+void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData)
 {
     // Even though INS_add is specified here, the encoder will choose either
     // an INS_add or an INS_sub and encode the immediate as a positive value
@@ -162,13 +163,16 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
         }
     }
 
-    // spDelta is negative in the prolog, positive in the epilog, but we always tell the unwind codes the positive
-    // value.
-    ssize_t  spDeltaAbs    = abs(spDelta);
-    unsigned unwindSpDelta = (unsigned)spDeltaAbs;
-    assert((ssize_t)unwindSpDelta == spDeltaAbs); // make sure that it fits in a unsigned
+    if (reportUnwindData)
+    {
+        // spDelta is negative in the prolog, positive in the epilog, but we always tell the unwind codes the positive
+        // value.
+        ssize_t  spDeltaAbs    = abs(spDelta);
+        unsigned unwindSpDelta = (unsigned)spDeltaAbs;
+        assert((ssize_t)unwindSpDelta == spDeltaAbs); // make sure that it fits in a unsigned
 
-    compiler->unwindAllocStack(unwindSpDelta);
+        compiler->unwindAllocStack(unwindSpDelta);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -220,13 +224,13 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 
             needToSaveRegs = false;
         }
-        else // (spDelta < -512))
+        else // (spOffset != 0) || (spDelta < -512)
         {
             // We need to do SP adjustment separately from the store; we can't fold in a pre-indexed addressing and the
             // non-zero offset.
 
             // generate sub SP,SP,imm
-            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero);
+            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
         }
     }
 
@@ -279,7 +283,7 @@ void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNum
     if (spDelta != 0)
     {
         // generate sub SP,SP,imm
-        genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero);
+        genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
     }
 
     // str REG, [SP, #offset]
@@ -333,7 +337,7 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
             getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spDelta, INS_OPTS_POST_INDEX);
             compiler->unwindSaveRegPairPreindexed(reg1, reg2, -spDelta);
         }
-        else // (spDelta > 504))
+        else // (spOffset != 0) || (spDelta > 504)
         {
             // Can't fold in the SP change; need to use a separate ADD instruction.
 
@@ -342,7 +346,7 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
             compiler->unwindSaveRegPair(reg1, reg2, spOffset);
 
             // generate add SP,SP,imm
-            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero);
+            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
         }
     }
     else
@@ -388,7 +392,7 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
     if (spDelta != 0)
     {
         // generate add SP,SP,imm
-        genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero);
+        genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
     }
 }
 
@@ -603,7 +607,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
         {
             // Currently this is the case for varargs only
             // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
-            genStackPointerAdjustment(spDelta, REG_NA, nullptr);
+            genStackPointerAdjustment(spDelta, REG_NA, nullptr, /* reportUnwindData */ true);
         }
         return;
     }
@@ -722,7 +726,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         {
             // Currently this is the case for varargs only
             // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
-            genStackPointerAdjustment(spDelta, REG_NA, nullptr);
+            genStackPointerAdjustment(spDelta, REG_NA, nullptr, /* reportUnwindData */ true);
         }
         return;
     }
@@ -1088,7 +1092,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         assert(genFuncletInfo.fiSpDelta1 >= -512);
 
         // generate sub SP,SP,imm
-        genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_NA, nullptr);
+        genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
 
@@ -1113,7 +1117,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         assert(genFuncletInfo.fiSpDelta1 >= -512);
 
         // generate sub SP,SP,imm
-        genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_NA, nullptr);
+        genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
     }
@@ -1134,7 +1138,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         assert(genFuncletInfo.fiSpDelta2 < 0);
 
         // generate sub SP,SP,imm
-        genStackPointerAdjustment(genFuncletInfo.fiSpDelta2, REG_R2, nullptr);
+        genStackPointerAdjustment(genFuncletInfo.fiSpDelta2, REG_R2, nullptr, /* reportUnwindData */ true);
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
@@ -1215,7 +1219,7 @@ void CodeGen::genFuncletEpilog()
         assert(genFuncletInfo.fiSpDelta2 < 0);
 
         // generate add SP,SP,imm
-        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta2, REG_R2, nullptr);
+        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta2, REG_R2, nullptr, /* reportUnwindData */ true);
     }
 
     regMaskTP regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
@@ -1246,7 +1250,7 @@ void CodeGen::genFuncletEpilog()
         assert(genFuncletInfo.fiSpDelta1 >= -512);
 
         // generate add SP,SP,imm
-        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr);
+        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
     }
@@ -1263,7 +1267,7 @@ void CodeGen::genFuncletEpilog()
         assert(genFuncletInfo.fiSpDelta1 >= -512);
 
         // generate add SP,SP,imm
-        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr);
+        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
     }
@@ -1276,7 +1280,7 @@ void CodeGen::genFuncletEpilog()
         assert(genFuncletInfo.fiSpDelta1 >= -240);
 
         // generate add SP,SP,imm
-        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr);
+        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
     }
 
     inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
