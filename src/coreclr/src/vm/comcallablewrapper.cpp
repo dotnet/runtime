@@ -5305,7 +5305,16 @@ void ComCallWrapperTemplate::CheckParentComVisibility(BOOL fForIDispatch)
 
     // Throw an exception to report the error.
     if (!CheckParentComVisibilityNoThrow(fForIDispatch))
-        COMPlusThrow(kInvalidOperationException, IDS_EE_COM_INVISIBLE_PARENT);    
+    {
+        ComCallWrapperTemplate *invisParent = FindInvisibleParent();
+        _ASSERTE(invisParent != NULL);
+
+        SString thisType;
+        SString invisParentType;
+        TypeString::AppendType(thisType, m_thClass);
+        TypeString::AppendType(invisParentType, invisParent->m_thClass);
+        COMPlusThrow(kInvalidOperationException, IDS_EE_COM_INVISIBLE_PARENT, thisType.GetUnicode(), invisParentType.GetUnicode());
+    }
 }
 
 BOOL ComCallWrapperTemplate::CheckParentComVisibilityNoThrow(BOOL fForIDispatch)
@@ -6173,20 +6182,36 @@ void ComCallWrapperTemplate::DetermineComVisibility()
 
     m_flags &= (~enum_InvisibleParent);
 
-    // If there are no parents...leave it as false.
     if (m_pParent == NULL)
         return;
 
-    // If our parent has an invisible parent
-    if (m_pParent->HasInvisibleParent())
+    // Check if the parent has an invisible parent
+    // or if the parent itself is invisible.
+    if (m_pParent->HasInvisibleParent()
+        || !IsTypeVisibleFromCom(m_pParent->m_thClass))
     {
+        _ASSERTE(NULL != FindInvisibleParent());
         m_flags |= enum_InvisibleParent;
     }
-    // If our parent is invisible
-    else if (!IsTypeVisibleFromCom(m_pParent->m_thClass))
+}
+
+ComCallWrapperTemplate* ComCallWrapperTemplate::FindInvisibleParent()
+{
+    ComCallWrapperTemplate* invisParentMaybe = m_pParent;
+
+    // Walk up the CCW parent classes and try to find
+    // if one is invisible to COM.
+    while (invisParentMaybe != NULL)
     {
-        m_flags |= enum_InvisibleParent;
+        // If our parent is invisible, return it.
+        if (!IsTypeVisibleFromCom(invisParentMaybe->m_thClass))
+            return invisParentMaybe;
+
+        invisParentMaybe = invisParentMaybe->m_pParent;
     }
+
+    // All classes in hierarchy are COM visible
+    return NULL;
 }
 
 //--------------------------------------------------------------------------
