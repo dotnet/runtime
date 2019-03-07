@@ -2929,7 +2929,7 @@ void DACNotify::DoGCNotification(const GcEvtArgs& args)
 
     if (args.typ == GC_MARK_END)
     {
-        TADDR Args[3] = { GC_NOTIFICATION, (TADDR) args.typ, args.condemnedGeneration };
+        TADDR Args[3] = { GC_NOTIFICATION, (TADDR) args.typ, (TADDR) args.condemnedGeneration };
         DACNotifyExceptionHelper(Args, 3);
     }
 }
