@@ -7,9 +7,9 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Logging.EventSource;
-using Newtonsoft.Json;
 using Xunit;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace Microsoft.Extensions.Logging.Test
 {
@@ -692,7 +692,7 @@ namespace Microsoft.Extensions.Logging.Test
 
             { "E5JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 5, null, LogLevel.Critical,
                 @"""ArgumentsJson"":{""stringParam"":""bar"",""int1Param"":""23"",""int2Param"":""45""",
-                @"""ExceptionJson"":{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":""-2146233088"",""VerboseMessage"":""System.Exception: oops ---> System.Exception: inner oops") },
+                @"""ExceptionJson"":{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":""-2146233088"",""VerboseMessage"":""System.Exception: oops ---\u003e System.Exception: inner oops") },
 
             { "E5MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 5, null, LogLevel.Critical,
                  @"{""Key"":""stringParam"",""Value"":""bar""}",

@@ -6,13 +6,17 @@
     <PackageTags>$(PackageTags);EventSource;ETW</PackageTags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsShipping>true</IsShipping>
+    <NoWarn>$(NoWarn);CS3021</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="../../shared/*.cs" />
 
+    <Reference Include="Microsoft.Bcl.Json.Sources">
+      <PrivateAssets>All</PrivateAssets>
+    </Reference>
     <Reference Include="Microsoft.Extensions.Logging" />
-    <Reference Include="Newtonsoft.Json" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 
 </Project>

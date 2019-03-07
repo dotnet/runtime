@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
-using Newtonsoft.Json;
 
 namespace Microsoft.Extensions.Logging.EventSource
 {
@@ -205,19 +207,19 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         private string ToJson(IReadOnlyList<KeyValuePair<string, string>> keyValues)
         {
-            var sw = new StringWriter();
-            var writer = new JsonTextWriter(sw);
-            writer.DateFormatString = "O"; // ISO 8601
+            var arrayBufferWriter = new ArrayBufferWriter<byte>();
+            var writer = new Utf8JsonWriter(arrayBufferWriter);
 
             writer.WriteStartObject();
-            for (int i = 0; i < keyValues.Count; i++)
+            foreach (var keyValue in keyValues)
             {
-                var keyValue = keyValues[i];
-                writer.WritePropertyName(keyValue.Key, true);
-                writer.WriteValue(keyValue.Value);
+                writer.WriteString(keyValue.Key, keyValue.Value, true);
             }
             writer.WriteEndObject();
-            return sw.ToString();
+
+            writer.Flush(true);
+
+            return Encoding.UTF8.GetString(arrayBufferWriter.WrittenMemory.ToArray());
         }
     }
 }
