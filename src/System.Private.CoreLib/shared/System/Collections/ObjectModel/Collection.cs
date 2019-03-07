@@ -220,15 +220,9 @@ namespace System.Collections.ObjectModel
             if (index > items.Count - count)
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
-            }
+            }            
 
-            int length = items.Count;
-            if (index < items.Count - count)
-            {
-                length = index + count;
-            }
-
-            for (int i = index; i < length; i++)
+            for (int i = 0; i < count; i++)
             {
                 RemoveItem(index);
             }
