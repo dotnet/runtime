@@ -1042,9 +1042,6 @@ PALCommonCleanup()
         PROCDumpThreadList();
 #endif
     }
-
-    // Mark that the PAL is uninitialized
-    init_count = 0;
 }
 
 BOOL PALIsShuttingDown()
