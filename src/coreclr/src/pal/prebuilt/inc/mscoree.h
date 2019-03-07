@@ -112,7 +112,8 @@ typedef interface ICLRRuntimeHost ICLRRuntimeHost;
 #define __ICLRRuntimeHost2_FWD_DEFINED__
 typedef interface ICLRRuntimeHost2 ICLRRuntimeHost2;
 
-#endif 	/* __ICLRRuntimeHost4_FWD_DEFINED__ */
+#endif 	/* __ICLRRuntimeHost2_FWD_DEFINED__ */
+
 
 #ifndef __ICLRRuntimeHost4_FWD_DEFINED__
 #define __ICLRRuntimeHost4_FWD_DEFINED__
@@ -1810,7 +1811,9 @@ EXTERN_C const IID IID_ICLRRuntimeHost2;
             /* [in] */ DWORD dwAppDomainId,
             /* [in] */ BOOL fWaitUntilDone,
             /* [out] */ int *pLatchedExitCode) = 0;
+        
     };
+    
     
 #else 	/* C style interface */
 
