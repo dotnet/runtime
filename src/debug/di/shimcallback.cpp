@@ -868,7 +868,7 @@ HRESULT ShimProxyCallback::ControlCTrap(ICorDebugProcess * pProcess)
     class ControlCTrapEvent  : public ManagedEvent
     {
         // callbacks parameters. These are strong references
-        RSExtSmartPtr<ICorDebugProcess > m_pProcess;
+        RSExtSmartPtr<ICorDebugProcess> m_pProcess;
 
     public:
         // Ctor
@@ -880,7 +880,12 @@ HRESULT ShimProxyCallback::ControlCTrap(ICorDebugProcess * pProcess)
 
         HRESULT Dispatch(DispatchArgs args)
         {
-            return args.GetCallback1()->ControlCTrap(m_pProcess);
+            HRESULT hr = args.GetCallback1()->ControlCTrap(m_pProcess);
+
+            // Pass the callback result to the CordbProcess
+            CordbProcess *proc = static_cast<CordbProcess*>((ICorDebugProcess*) m_pProcess);
+            proc->HandleControlCTrapResult(hr);
+            return hr;
         }
     }; // end class ControlCTrapEvent
 
@@ -1417,6 +1422,3 @@ HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugT
     m_pShim->GetManagedEventQueue()->QueueEvent(new DataBreakpointEvent(pProcess, pThread, pContext, contextSize));
     return S_OK;
 }
-
-
-
