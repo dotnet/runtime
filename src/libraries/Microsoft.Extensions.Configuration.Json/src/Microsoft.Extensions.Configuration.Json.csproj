@@ -7,7 +7,7 @@
     <IsShipping>true</IsShipping>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
-    <NoWarn>$(NoWarn);3021;PKG0001</NoWarn>
+    <NoWarn>$(NoWarn);3021</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,11 +17,9 @@
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.Configuration" />
     <Reference Include="Microsoft.Extensions.Configuration.FileExtensions" />
-    <Reference Include="Newtonsoft.Json" />
     <Reference Include="System.Threading.Tasks.Extensions" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
     <Reference Include="Microsoft.Bcl.Json.Sources" Condition="'$(TargetFramework)' == 'netstandard2.0'">
       <PrivateAssets>All</PrivateAssets>
-      <IsSharedSource>false</IsSharedSource>
     </Reference>
     <Reference Include="System.Runtime.CompilerServices.Unsafe" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
   </ItemGroup>
