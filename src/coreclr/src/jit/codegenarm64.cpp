@@ -613,28 +613,22 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     // We also can save FP and LR, even though they are not in RBM_CALLEE_SAVED.
     assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
 
-    if (genSaveFpLrWithAllCalleeSavedRegisters)
+    // Save integer registers at higher addresses than floating-point registers.
+
+    regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
+    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
+
+    if (maskSaveRegsFloat != RBM_NONE)
     {
-        // TODO: always save int regs higher than float, to be consistent?
-        regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-        regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
-
-        if (maskSaveRegsFloat != RBM_NONE)
-        {
-            genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta, lowestCalleeSavedOffset);
-            spDelta = 0;
-            lowestCalleeSavedOffset += genCountBits(maskSaveRegsFloat) * FPSAVE_REGSIZE_BYTES;
-        }
-
-        if (maskSaveRegsInt != RBM_NONE)
-        {
-            genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset);
-            // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
-        }
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta, lowestCalleeSavedOffset);
+        spDelta = 0;
+        lowestCalleeSavedOffset += genCountBits(maskSaveRegsFloat) * FPSAVE_REGSIZE_BYTES;
     }
-    else
+
+    if (maskSaveRegsInt != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(regsToSaveMask, spDelta, lowestCalleeSavedOffset);
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset);
+        // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
     }
 }
 
@@ -736,31 +730,25 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
     int spOffset = lowestCalleeSavedOffset + regsToRestoreCount * REGSIZE_BYTES;
 
-    if (genSaveFpLrWithAllCalleeSavedRegisters)
+    // Save integer registers at higher addresses than floating-point registers.
+
+    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
+    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
+
+    // Restore in the opposite order of saving.
+
+    if (maskRestoreRegsInt != RBM_NONE)
     {
-        // TODO: always save int regs higher than float, to be consistent?
-        regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-        regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
-
-        // Restore in the opposite order of saving.
-
-        if (maskRestoreRegsInt != RBM_NONE)
-        {
-            int spIntDelta = (maskRestoreRegsFloat != RBM_NONE) ? 0 : spDelta; // should we delay the SP adjustment?
-            genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spIntDelta, spOffset);
-            spOffset -= genCountBits(maskRestoreRegsInt) * REGSIZE_BYTES;
-        }
-
-        if (maskRestoreRegsFloat != RBM_NONE)
-        {
-            // If there is any spDelta, it must be used here.
-            genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spDelta, spOffset);
-            // No need to update spOffset since it's not used after this.
-        }
+        int spIntDelta = (maskRestoreRegsFloat != RBM_NONE) ? 0 : spDelta; // should we delay the SP adjustment?
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spIntDelta, spOffset);
+        spOffset -= genCountBits(maskRestoreRegsInt) * REGSIZE_BYTES;
     }
-    else
+
+    if (maskRestoreRegsFloat != RBM_NONE)
     {
-        genRestoreCalleeSavedRegisterGroup(regsToRestoreMask, spDelta, spOffset);
+        // If there is any spDelta, it must be used here.
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spDelta, spOffset);
+        // No need to update spOffset since it's not used after this.
     }
 }
 
