@@ -5240,66 +5240,21 @@ void CodeGen::genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node)
 }
 
 //------------------------------------------------------------------------
-// genHWIntrinsicSwitchTable:
-//
-// Generate code for an immediate switch table
-//
-// In cases where an instruction only supports const immediate operands, we
-// need to generate functionally correct code when the operand is not constant
-//
-// This is required by the HW Intrinsic design to handle indirect calls, such as:
-//   debugger calls
-//   reflection
-//   call backs
-//
-// Generated code implements a switch of this form
-//
-// switch (swReg)
-// {
-// case 0:
-//    ins0; // emitSwCase(0)
-//    break;
-// case 1:
-//    ins1; // emitSwCase(1)
-//    break;
-// ...
-// ...
-// ...
-// case swMax - 1:
-//    insLast; // emitSwCase(swMax - 1)
-//    break;
-// default:
-//    throw ArgumentOutOfRangeException
-// }
-//
-// Generated code looks like:
-//
-//     cmp swReg, #swMax
-//     b.hs ThrowArgumentOutOfRangeExceptionHelper
-//     adr tmpReg, labelFirst
-//     add tmpReg, tmpReg, swReg, LSL #3
-//     b   [tmpReg]
-// labelFirst:
-//     ins0
-//     b labelBreakTarget
-//     ins1
-//     b labelBreakTarget
-//     ...
-//     ...
-//     ...
-//     insLast
-//     b labelBreakTarget
-// labelBreakTarget:
-//
+// genHWIntrinsicSwitchTable: generate the jump-table for imm-intrinsics
+//    with non-constant argument
 //
 // Arguments:
 //    swReg      - register containing the switch case to execute
 //    tmpReg     - temporary integer register for calculating the switch indirect branch target
-//    swMax      - the number of switch cases.  If swReg >= swMax throw SCK_ARG_RNG_EXCPN
-//    emitSwCase - function like argument taking an immediate value and emitting one instruction
+//    swMax      - the number of switch cases.
+//    emitSwCase - lambda to generate an individual switch case
 //
-// Return Value:
-//    None.
+// Notes:
+//    Used for cases where an instruction only supports immediate operands,
+//    but at jit time the operand is not a constant.
+//
+//    The importer is responsible for inserting an upstream range check
+//    (GT_HW_INTRINSIC_CHK) for swReg, so no range check is needed here.
 //
 template <typename HWIntrinsicSwitchCaseBody>
 void CodeGen::genHWIntrinsicSwitchTable(regNumber                 swReg,
@@ -5313,27 +5268,24 @@ void CodeGen::genHWIntrinsicSwitchTable(regNumber                 swReg,
     assert(genIsValidIntReg(tmpReg));
     assert(genIsValidIntReg(swReg));
 
-    BasicBlock* labelFirst       = genCreateTempLabel();
-    BasicBlock* labelBreakTarget = genCreateTempLabel();
-
-    // Detect and throw out of range exception
-    getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, swReg, swMax);
-
-    genJumpToThrowHlpBlk(EJ_hs, SCK_ARG_RNG_EXCPN);
+    BasicBlock* switchTableBeg = genCreateTempLabel();
+    BasicBlock* switchTableEnd = genCreateTempLabel();
 
     // Calculate switch target
-    labelFirst->bbFlags |= BBF_JMP_TARGET;
+    //
+    // Each switch table case needs exactly 8 bytes of code.
+    switchTableBeg->bbFlags |= BBF_JMP_TARGET;
 
-    // tmpReg = labelFirst
-    getEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, labelFirst, tmpReg);
+    // tmpReg = switchTableBeg
+    getEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, switchTableBeg, tmpReg);
 
-    // tmpReg = labelFirst + swReg * 8
+    // tmpReg = switchTableBeg + swReg * 8
     getEmitter()->emitIns_R_R_R_I(INS_add, EA_PTRSIZE, tmpReg, tmpReg, swReg, 3, INS_OPTS_LSL);
 
     // br tmpReg
     getEmitter()->emitIns_R(INS_br, EA_PTRSIZE, tmpReg);
 
-    genDefineTempLabel(labelFirst);
+    genDefineTempLabel(switchTableBeg);
     for (int i = 0; i < swMax; ++i)
     {
         unsigned prevInsCount = getEmitter()->emitInsCount;
@@ -5342,11 +5294,11 @@ void CodeGen::genHWIntrinsicSwitchTable(regNumber                 swReg,
 
         assert(getEmitter()->emitInsCount == prevInsCount + 1);
 
-        inst_JMP(EJ_jmp, labelBreakTarget);
+        inst_JMP(EJ_jmp, switchTableEnd);
 
         assert(getEmitter()->emitInsCount == prevInsCount + 2);
     }
-    genDefineTempLabel(labelBreakTarget);
+    genDefineTempLabel(switchTableEnd);
 }
 
 //------------------------------------------------------------------------
