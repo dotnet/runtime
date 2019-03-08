@@ -9,8 +9,8 @@ then
   echo "gen-buildsys-gcc.sh <path to top level CMakeLists.txt> <GccMajorVersion> <GccMinorVersion> <Architecture> [build flavor] [coverage] [ninja] [cmakeargs]"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
   echo "Specify the Gcc version to use, split into major and minor version"
-  echo "Specify the target architecture." 
-  echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
+  echo "Specify the target architecture."
+  echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG."
   echo "Optionally specify 'coverage' to enable code coverage build."
   echo "Target ninja instead of make. ninja must be on the PATH."
   echo "Pass additional arguments to CMake call."
@@ -45,14 +45,20 @@ else
     exit 1
 fi
 
-if [ -z "$CC" ]; then
+if [ -z "$DOTNET_CC" ]; then
     CC="$(command -v "${gcc_prefix}"gcc"$desired_gcc_version")"
     export CC
+else
+    CC="$DOTNET_CC"
 fi
-if [ -z "$CXX" ]; then
+
+if [ -z "$DOTNET_CXX" ]; then
     CXX="$(command -v "${gcc_prefix}g++$desired_gcc_version")"
-    export CXX
+else
+    CXX="$DOTNET_CXX"
 fi
+
+export CC CXX
 
 build_arch="$4"
 buildtype=DEBUG
@@ -85,6 +91,12 @@ done
 OS=$(uname)
 
 locate_gcc_exec() {
+  ENV_KNOB="DOTNET_$(echo "$1" | tr '[:lower:]' '[:upper:]')"
+  if [ -n $(eval "\$$ENV_KNOB") ]; then
+    $(eval "\$$ENV_KNOB")
+    return
+  fi
+
   if command -v "$gcc_prefix$1$desired_gcc_version" > /dev/null 2>&1
   then
     command -v "$gcc_prefix$1$desired_gcc_version"
