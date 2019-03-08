@@ -270,7 +270,7 @@ void JitTls::SetCompiler(Compiler* compiler)
     reinterpret_cast<JitTls*>(GetJitTls())->m_compiler = compiler;
 }
 
-#else // defined(DEBUG)
+#else // !defined(DEBUG)
 
 JitTls::JitTls(ICorJitInfo* jitInfo)
 {
