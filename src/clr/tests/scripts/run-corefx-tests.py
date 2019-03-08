@@ -288,23 +288,26 @@ def main(args):
 
     # Gather up some arguments to pass to the different build scripts.
 
-    config_args = '-restore -build -buildtests -configuration Release -os %s -arch %s' % (clr_os, arch)
+    common_config_args = '-configuration Release -framework netcoreapp -os %s -arch %s' % (clr_os, arch)
+    build_args = '-build -restore'
+    build_test_args = '-buildtests  /p:ArchiveTests=Tests'
 
     if not no_run_tests:
-        config_args += ' -test'
+        build_test_args += ' -test'
 
-    build_args = config_args
 
     if not Is_windows and arch == 'arm' :
         # We need to force clang5.0; we are building in a docker container that doesn't have
         # clang3.9, which is currently the default used by the native build.
-        build_args += ' /p:BuildNativeClang=--clang5.0'
+        common_config_args += ' /p:BuildNativeClang=--clang5.0'
 
     if not Is_windows and (arch == 'arm' or arch == 'arm64'):
         # It is needed under docker where LC_ALL is not configured.
-        build_args += ' --warnAsError false'
+        common_config_args += ' --warnAsError false'
 
-    command = ' '.join(('build.cmd' if Is_windows else './build.sh', build_args))
+    build_command = 'build.cmd' if Is_windows else './build.sh'
+
+    command = ' '.join((build_command, common_config_args, build_args))
     log(command)
     returncode = 0 if testing else os.system(command)
     if returncode != 0:
@@ -331,11 +334,6 @@ def main(args):
     copy_files(core_root, fx_runtime)
 
     # Build the test command line.
-
-    if Is_windows:
-        command = 'build.cmd'
-    else:
-        command = './build.sh'
 
     # If we're doing altjit testing, then don't run any tests that don't work with altjit.
     if ci_arch is not None and (ci_arch == 'x86_arm_altjit' or ci_arch == 'x64_arm64_altjit'):
@@ -366,8 +364,9 @@ def main(args):
         without_categories = ' /p:WithoutCategories=IgnoreForCI'
 
     command = ' '.join((
-        command,
-        config_args,
+        build_command,
+        common_config_args,
+        build_test_args,
         without_categories
     ))
 
