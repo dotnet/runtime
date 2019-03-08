@@ -3164,6 +3164,7 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public ref partial struct TypedReference
     {
+        private object _dummy;
         private int _dummyPrimitive;
         public override bool Equals(object o) { throw null; }
         public override int GetHashCode() { throw null; }
