@@ -11,9 +11,10 @@ You must install several components to build the Core-Setup repo. These instruct
 ## Visual Studio
 
 Visual Studio must be installed. Supported versions:
-- [Visual Studio 2015 Update 3](https://www.visualstudio.com/vs/older-downloads/) (Community, Professional, Enterprise).  The community version is completely free.
+- [Visual Studio 2019 RC](https://visualstudio.microsoft.com/downloads/#2019rc) (Community, Professional, Enterprise).  The community version is completely free.
+- [Visual Studio 2017](https://visualstudio.microsoft.com/vs/) (Community, Professional, Enterprise).  The community version is completely free.
 
-For Visual Studio 2015:
+For Visual Studio:
 * Required installer options that need to be manually enabled:
   * Universal Windows App Development Tools: Tools and Windows 10 SDK (10.0.14393) + Windows 10 SDK (10.0.10586)
   * Visual C++
@@ -22,7 +23,8 @@ Visual Studio Express is not supported.
 
 ## CMake
 
-The Core-Setup repo build has been validated using CMake 3.6.3 
+The Core-Setup repo build has been validated using CMake 3.6.3.
+If using Visual Studio 2019, then at least CMake 3.14 is required.
 
 - Install [CMake](http://www.cmake.org/download) for Windows.
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.  
