@@ -73,7 +73,7 @@ mono_security_win_get_token_name (gpointer token, gunichar2 **uniname, MonoError
 {
 	// FIXME This is now supported by UWP.
 	mono_security_win_not_supported ("GetTokenInformation", error);
-	return FALSE;
+	return 0;
 }
 
 gboolean
