@@ -21152,7 +21152,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         // If parent is a TYP_VOID, we don't no need to propagate TYP_INT up. We are fine.
         if (op2 && op2->gtOper == GT_ASG)
         {
-            assert(tree->gtType == TYP_VOID);
+            // We can have ASGs on the RHS of COMMAs in setup arguments to a call.
+            assert(tree->gtType == TYP_VOID || tree->gtOper == GT_COMMA);
         }
 
         switch (oper)
