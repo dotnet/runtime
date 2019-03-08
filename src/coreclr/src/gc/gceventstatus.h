@@ -32,15 +32,6 @@
 // Uncomment this define to print out event state changes to standard error.
 // #define TRACE_GC_EVENT_STATE 1
 
-/*
- * GCEventProvider represents one of the two providers that the GC can
- * fire events from: the default and private providers.
- */
-enum GCEventProvider
-{
-    GCEventProvider_Default = 0,
-    GCEventProvider_Private = 1
-};
 
 /*
  * GCEventStatus maintains all eventing state for the GC. It consists
@@ -96,6 +87,22 @@ public:
         fprintf(stderr, "event state change:\n");
         DebugDumpState(provider);
 #endif // TRACE_GC_EVENT_STATE
+    }
+
+    /*
+     * Returns currently enabled levels
+     */
+    static inline GCEventLevel GetEnabledLevel(GCEventProvider provider)
+    {
+        return enabledLevels[static_cast<size_t>(provider)].LoadWithoutBarrier();
+    }
+
+    /*
+     * Returns currently enabled keywords in GCPublic
+     */
+    static inline GCEventKeyword GetEnabledKeywords(GCEventProvider provider)
+    {
+        return enabledKeywords[static_cast<size_t>(provider)].LoadWithoutBarrier();
     }
 
 #if TRACE_GC_EVENT_STATE
@@ -236,6 +243,7 @@ void FireDynamicEvent(const char* name, EventArgument... arguments)
  * payload. Known events will delegate to IGCToCLREventSink::Fire##name.
  */
 #if FEATURE_EVENT_TRACE
+
 #define KNOWN_EVENT(name, provider, level, keyword)               \
   inline bool GCEventEnabled##name() { return GCEventStatus::IsEnabled(provider, keyword, level); } \
   template<typename... EventActualArgument>                       \
@@ -258,7 +266,8 @@ void FireDynamicEvent(const char* name, EventArgument... arguments)
 
 #define EVENT_ENABLED(name) GCEventEnabled##name()
 #define FIRE_EVENT(name, ...) GCEventFire##name(__VA_ARGS__)
-#else
+
+#else // FEATURE_EVENT_TRACE
 #define EVENT_ENABLED(name) false
 #define FIRE_EVENT(name, ...) 0
 #endif // FEATURE_EVENT_TRACE
