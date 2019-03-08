@@ -16,6 +16,8 @@ using MSS = Microsoft.SqlServer.Server;
 using Microsoft.SqlServer.Server;
 
 using System.ComponentModel.Design.Serialization;
+using System.Text;
+using System.Threading;
 
 namespace System.Data.SqlClient
 {
@@ -35,11 +37,27 @@ namespace System.Data.SqlClient
 
     internal class TextDataFeed : DataFeed
     {
+        private static UnicodeEncoding s_defaultEncoding;
+
         internal TextReader _source;
 
         internal TextDataFeed(TextReader source)
         {
             _source = source;
+        }
+
+        public static UnicodeEncoding DefaultEncoding
+        {
+            get
+            {
+                UnicodeEncoding encoding = s_defaultEncoding;
+                if (encoding is null)
+                {
+                    encoding = new UnicodeEncoding(false, false); ;
+                    Interlocked.CompareExchange(ref s_defaultEncoding, encoding, null);
+                }
+                return encoding;
+            }
         }
     }
 
