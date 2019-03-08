@@ -280,16 +280,32 @@ void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNum
     assert(spDelta <= 0);
     assert((spDelta % 16) == 0); // SP changes must be 16-byte aligned
 
+    bool needToSaveRegs = true;
     if (spDelta != 0)
     {
-        // generate sub SP,SP,imm
-        genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
+        if ((spOffset == 0) && (spDelta >= -256))
+        {
+            // We can use pre-index addressing.
+            // str REG, [SP, #spDelta]!
+            getEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spDelta, INS_OPTS_PRE_INDEX);
+            compiler->unwindSaveRegPreindexed(reg1, spDelta);
+
+            needToSaveRegs = false;
+        }
+        else // (spOffset != 0) || (spDelta < -256)
+        {
+            // generate sub SP,SP,imm
+            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
+        }
     }
 
-    // str REG, [SP, #offset]
-    // 64-bit STR offset range: 0 to 32760, multiple of 8.
-    getEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-    compiler->unwindSaveReg(reg1, spOffset);
+    if (needToSaveRegs)
+    {
+        // str REG, [SP, #offset]
+        // 64-bit STR offset range: 0 to 32760, multiple of 8.
+        getEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+        compiler->unwindSaveReg(reg1, spOffset);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -385,14 +401,30 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
     assert(spDelta >= 0);
     assert((spDelta % 16) == 0); // SP changes must be 16-byte aligned
 
-    // ldr reg1, [SP, #offset]
-    getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-    compiler->unwindSaveReg(reg1, spOffset);
-
     if (spDelta != 0)
     {
-        // generate add SP,SP,imm
-        genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
+        if ((spOffset == 0) && (spDelta <= 255))
+        {
+            // We can use post-index addressing.
+            // ldr REG, [SP], #spDelta
+            getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spDelta, INS_OPTS_POST_INDEX);
+            compiler->unwindSaveRegPreindexed(reg1, -spDelta);
+        }
+        else // (spOffset != 0) || (spDelta > 255)
+        {
+            // ldr reg1, [SP, #offset]
+            getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+            compiler->unwindSaveReg(reg1, spOffset);
+
+            // generate add SP,SP,imm
+            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
+        }
+    }
+    else
+    {
+        // ldr reg1, [SP, #offset]
+        getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+        compiler->unwindSaveReg(reg1, spOffset);
     }
 }
 
