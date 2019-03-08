@@ -16,6 +16,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/mono-os-wait.h>
+#include <mono/metadata/w32subset.h>
 #include <limits.h>
 
 enum Win32APCInfo {
@@ -237,7 +238,7 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 void
 mono_win32_abort_blocking_io_call (MonoThreadInfo *info)
 {
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_CANCEL_SYNCHRONOUS_IO
 	// In case thread is blocked on sync IO preventing it from running above queued APC, cancel
 	// all outputstanding sync IO for target thread. If its not blocked on a sync IO request, below
 	// call will just fail and nothing will be canceled. If thread is waiting on overlapped IO,
@@ -258,9 +259,9 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 
 	handle = info->native_handle;
 	g_assert (handle);
-	
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+
 	if (info->async_target) {
+#if HAVE_API_SUPPORT_WIN32_SET_THREAD_CONTEXT
 		MonoContext ctx;
 		CONTEXT context;
 		gboolean res;
@@ -286,10 +287,10 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 		if (!res) {
 			return FALSE;
 		}
-	}
 #else
-	g_error ("Not implemented due to lack of SetThreadContext");	
+		g_error ("Not implemented due to lack of SetThreadContext");
 #endif
+	}
 
 	result = ResumeThread (handle);
 
@@ -409,8 +410,7 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle)
  * Can't OpenThread on UWP until SDK 15063 (our minspec today is 10240),
  * but this function doesn't seem to be used on Windows anyway
  */
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-
+#if HAVE_API_SUPPORT_WIN32_OPEN_THREAD
 gboolean
 mono_native_thread_join (MonoNativeThreadId tid)
 {
@@ -421,7 +421,6 @@ mono_native_thread_join (MonoNativeThreadId tid)
 
 	return mono_native_thread_join_handle (handle, TRUE);
 }
-
 #endif
 
 #if HAVE_DECL___READFSDWORD==0
@@ -464,7 +463,7 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 
 }
 
-#if SIZEOF_VOID_P == 4 && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_IS_WOW64_PROCESS
 typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
 static gboolean is_wow64 = FALSE;
 #endif
@@ -473,7 +472,7 @@ static gboolean is_wow64 = FALSE;
 void
 mono_threads_platform_init (void)
 {
-#if SIZEOF_VOID_P == 4 && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_IS_WOW64_PROCESS
 	LPFN_ISWOW64PROCESS is_wow64_func = (LPFN_ISWOW64PROCESS) GetProcAddress (GetModuleHandle (TEXT ("kernel32")), "IsWow64Process");
 	if (is_wow64_func)
 		is_wow64_func (GetCurrentProcess (), &is_wow64);
@@ -492,7 +491,7 @@ gboolean
 mono_threads_platform_in_critical_region (MonoNativeThreadId tid)
 {
 	gboolean ret = FALSE;
-#if SIZEOF_VOID_P == 4 && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_OPEN_THREAD
 /* FIXME On cygwin these are not defined */
 #if defined(CONTEXT_EXCEPTION_REQUEST) && defined(CONTEXT_EXCEPTION_REPORTING) && defined(CONTEXT_EXCEPTION_ACTIVE)
 	if (is_wow64) {
