@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Globalization;
 using System.Reflection;
 using Xunit;
@@ -162,6 +163,92 @@ namespace System.Text.Tests
             Assert.Equal(expectedSign >= 0, a >= b);
         }
 
+        [Theory]
+        [InlineData(new char[0], OperationStatus.NeedMoreData, 0xFFFD, 0)] // empty buffer
+        [InlineData(new char[] { '\u1234' }, OperationStatus.Done, 0x1234, 1)] // BMP char
+        [InlineData(new char[] { '\u1234', '\ud800' }, OperationStatus.Done, 0x1234, 1)] // BMP char
+        [InlineData(new char[] { '\ud83d', '\ude32' }, OperationStatus.Done, 0x1F632, 2)] // supplementary value (U+1F632 ASTONISHED FACE)
+        [InlineData(new char[] { '\udc00' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone low surrogate
+        [InlineData(new char[] { '\udc00', '\udc00' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone low surrogate
+        [InlineData(new char[] { '\udc00', '\udc00' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone low surrogate
+        [InlineData(new char[] { '\ud800' }, OperationStatus.NeedMoreData, 0xFFFD, 1)] // high surrogate at end of buffer
+        [InlineData(new char[] { '\ud800', '\ud800' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone high surrogate
+        [InlineData(new char[] { '\ud800', '\u1234' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone high surrogate
+        public static void DecodeUtf16(char[] data, OperationStatus expectedOperationStatus, int expectedRuneValue, int expectedCharsConsumed)
+        {
+            Assert.Equal(expectedOperationStatus, Rune.DecodeUtf16(data, out Rune actualRune, out int actualCharsConsumed));
+            Assert.Equal(expectedRuneValue, actualRune.Value);
+            Assert.Equal(expectedCharsConsumed, actualCharsConsumed);
+        }
+
+        [Theory]
+        [InlineData(new char[0], OperationStatus.NeedMoreData, 0xFFFD, 0)] // empty buffer
+        [InlineData(new char[] { '\u1234', '\u5678' }, OperationStatus.Done, 0x5678, 1)] // BMP char
+        [InlineData(new char[] { '\udc00', '\ud800' }, OperationStatus.NeedMoreData, 0xFFFD, 1)] // high surrogate at end of buffer
+        [InlineData(new char[] { '\ud83d', '\ude32' }, OperationStatus.Done, 0x1F632, 2)] // supplementary value (U+1F632 ASTONISHED FACE)
+        [InlineData(new char[] { '\u1234', '\udc00' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone low surrogate
+        [InlineData(new char[] { '\udc00' }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone low surrogate
+        public static void DecodeUtf16FromEnd(char[] data, OperationStatus expectedOperationStatus, int expectedRuneValue, int expectedCharsConsumed)
+        {
+            Assert.Equal(expectedOperationStatus, Rune.DecodeUtf16FromEnd(data, out Rune actualRune, out int actualCharsConsumed));
+            Assert.Equal(expectedRuneValue, actualRune.Value);
+            Assert.Equal(expectedCharsConsumed, actualCharsConsumed);
+        }
+
+        [Theory]
+        [InlineData(new byte[0], OperationStatus.NeedMoreData, 0xFFFD, 0)] // empty buffer
+        [InlineData(new byte[] { 0x30 }, OperationStatus.Done, 0x0030, 1)] // ASCII byte
+        [InlineData(new byte[] { 0x30, 0x40, 0x50 }, OperationStatus.Done, 0x0030, 1)] // ASCII byte
+        [InlineData(new byte[] { 0x80 }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone continuation byte
+        [InlineData(new byte[] { 0x80, 0x80, 0x80 }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone continuation byte
+        [InlineData(new byte[] { 0xC1 }, OperationStatus.InvalidData, 0xFFFD, 1)] // C1 is never a valid UTF-8 byte
+        [InlineData(new byte[] { 0xF5 }, OperationStatus.InvalidData, 0xFFFD, 1)] // F5 is never a valid UTF-8 byte
+        [InlineData(new byte[] { 0xC2 }, OperationStatus.NeedMoreData, 0xFFFD, 1)] // C2 is a valid byte; expecting it to be followed by a continuation byte
+        [InlineData(new byte[] { 0xED }, OperationStatus.NeedMoreData, 0xFFFD, 1)] // ED is a valid byte; expecting it to be followed by a continuation byte
+        [InlineData(new byte[] { 0xF4 }, OperationStatus.NeedMoreData, 0xFFFD, 1)] // F4 is a valid byte; expecting it to be followed by a continuation byte
+        [InlineData(new byte[] { 0xC2, 0xC2 }, OperationStatus.InvalidData, 0xFFFD, 1)] // C2 not followed by continuation byte
+        [InlineData(new byte[] { 0xC3, 0x90 }, OperationStatus.Done, 0x00D0, 2)] // [ C3 90 ] is U+00D0 LATIN CAPITAL LETTER ETH
+        [InlineData(new byte[] { 0xC1, 0xBF }, OperationStatus.InvalidData, 0xFFFD, 1)] // [ C1 BF ] is overlong 2-byte sequence, all overlong sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xE0, 0x9F }, OperationStatus.InvalidData, 0xFFFD, 1)] // [ E0 9F ] is overlong 3-byte sequence, all overlong sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xE0, 0xA0 }, OperationStatus.NeedMoreData, 0xFFFD, 2)] // [ E0 A0 ] is valid 2-byte start of 3-byte sequence
+        [InlineData(new byte[] { 0xED, 0x9F }, OperationStatus.NeedMoreData, 0xFFFD, 2)] // [ ED 9F ] is valid 2-byte start of 3-byte sequence
+        [InlineData(new byte[] { 0xED, 0xBF }, OperationStatus.InvalidData, 0xFFFD, 1)] // [ ED BF ] would place us in UTF-16 surrogate range, all surrogate sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xEE, 0x80 }, OperationStatus.NeedMoreData, 0xFFFD, 2)] // [ EE 80 ] is valid 2-byte start of 3-byte sequence
+        [InlineData(new byte[] { 0xF0, 0x8F }, OperationStatus.InvalidData, 0xFFFD, 1)] // [ F0 8F ] is overlong 4-byte sequence, all overlong sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xF0, 0x90 }, OperationStatus.NeedMoreData, 0xFFFD, 2)] // [ F0 90 ] is valid 2-byte start of 4-byte sequence
+        [InlineData(new byte[] { 0xF4, 0x90 }, OperationStatus.InvalidData, 0xFFFD, 1)] // [ F4 90 ] would place us beyond U+10FFFF, all such sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xE2, 0x88, 0xB4 }, OperationStatus.Done, 0x2234, 3)] // [ E2 88 B4 ] is U+2234 THEREFORE
+        [InlineData(new byte[] { 0xE2, 0x88, 0xC0 }, OperationStatus.InvalidData, 0xFFFD, 2)] // [ E2 88 ] followed by non-continuation byte, maximal invalid subsequence length 2
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98 }, OperationStatus.NeedMoreData, 0xFFFD, 3)] // [ F0 9F 98 ] is valid 3-byte start of 4-byte sequence
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98, 0x20 }, OperationStatus.InvalidData, 0xFFFD, 3)] // [ F0 9F 98 ] followed by non-continuation byte, maximal invalid subsequence length 3
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98, 0xB2 }, OperationStatus.Done, 0x1F632, 4)] // [ F0 9F 98 B2 ] is U+1F632 ASTONISHED FACE
+        public static void DecodeUtf8(byte[] data, OperationStatus expectedOperationStatus, int expectedRuneValue, int expectedBytesConsumed)
+        {
+            Assert.Equal(expectedOperationStatus, Rune.DecodeUtf8(data, out Rune actualRune, out int actualBytesConsumed));
+            Assert.Equal(expectedRuneValue, actualRune.Value);
+            Assert.Equal(expectedBytesConsumed, actualBytesConsumed);
+        }
+
+        [Theory]
+        [InlineData(new byte[0], OperationStatus.NeedMoreData, 0xFFFD, 0)] // empty buffer
+        [InlineData(new byte[] { 0x30 }, OperationStatus.Done, 0x0030, 1)] // ASCII byte
+        [InlineData(new byte[] { 0x30, 0x40, 0x50 }, OperationStatus.Done, 0x0050, 1)] // ASCII byte
+        [InlineData(new byte[] { 0x80 }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone continuation byte
+        [InlineData(new byte[] { 0x80, 0x80, 0x80 }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone continuation byte
+        [InlineData(new byte[] { 0x80, 0x80, 0x80, 0x80 }, OperationStatus.InvalidData, 0xFFFD, 1)] // standalone continuation byte
+        [InlineData(new byte[] { 0x80, 0x80, 0x80, 0xC2 }, OperationStatus.NeedMoreData, 0xFFFD, 1)] // [ C2 ] at end of buffer, valid 1-byte start of 2-byte sequence
+        [InlineData(new byte[] { 0xC1 }, OperationStatus.InvalidData, 0xFFFD, 1)] // [ C1 ] is never a valid byte
+        [InlineData(new byte[] { 0x80, 0xE2, 0x88, 0xB4 }, OperationStatus.Done, 0x2234, 3)] // [ E2 88 B4 ] is U+2234 THEREFORE
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98, 0xB2 }, OperationStatus.Done, 0x1F632, 4)] // [ F0 9F 98 B2 ] is U+1F632 ASTONISHED FACE
+        [InlineData(new byte[] { 0xE2, 0x88, 0xB4, 0xB2 }, OperationStatus.InvalidData, 0xFFFD, 1)] // [ B2 ] is standalone continuation byte
+        [InlineData(new byte[] { 0x80, 0x62, 0x80, 0x80 }, OperationStatus.InvalidData, 0xFFFD, 1)] // [ 80 ] is standalone continuation byte
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98, }, OperationStatus.NeedMoreData, 0xFFFD, 3)] // [ F0 9F 98 ] is valid 3-byte start of 4-byte sequence
+        public static void DecodeUtf8FromEnd(byte[] data, OperationStatus expectedOperationStatus, int expectedRuneValue, int expectedBytesConsumed)
+        {
+            Assert.Equal(expectedOperationStatus, Rune.DecodeUtf8FromEnd(data, out Rune actualRune, out int actualBytesConsumed));
+            Assert.Equal(expectedRuneValue, actualRune.Value);
+            Assert.Equal(expectedBytesConsumed, actualBytesConsumed);
+        }
 
         [Theory]
         [InlineData(0, 0, true)]
