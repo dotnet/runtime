@@ -3834,6 +3834,13 @@ namespace System.Buffers
         protected internal virtual bool TryGetArray(out System.ArraySegment<T> segment) { throw null; }
         public abstract void Unpin();
     }
+    public enum OperationStatus
+    {
+        DestinationTooSmall = 1,
+        Done = 0,
+        InvalidData = 3,
+        NeedMoreData = 2,
+    }
     public delegate void ReadOnlySpanAction<T, in TArg>(System.ReadOnlySpan<T> span, TArg arg);
     public delegate void SpanAction<T, in TArg>(System.Span<T> span, TArg arg);
 }
@@ -7681,6 +7688,10 @@ namespace System.Text
         public int Utf8SequenceLength { get { throw null; } }
         public int Value { get { throw null; } }
         public int CompareTo(System.Text.Rune other) { throw null; }
+        public static System.Buffers.OperationStatus DecodeUtf16(System.ReadOnlySpan<char> utf16Source, out System.Text.Rune result, out int charsConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeUtf16FromEnd(System.ReadOnlySpan<char> utf16Source, out System.Text.Rune result, out int charsConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeUtf8(System.ReadOnlySpan<byte> utf8Source, out System.Text.Rune result, out int bytesConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeUtf8FromEnd(System.ReadOnlySpan<byte> utf8Source, out System.Text.Rune result, out int bytesConsumed) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Text.Rune other) { throw null; }
         public override int GetHashCode() { throw null; }
