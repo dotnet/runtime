@@ -34,7 +34,6 @@ We believe adding some new top-level types will satisfy these requests:
     class EventCounter {
         EventCounter(string name, EventSource eventSource);
         string DisplayName;
-        TimeSpan DisplayRateTimeScale;
         void WriteMetric(float metric);
         void AddMetaData(string key, string value);
     }
@@ -42,7 +41,6 @@ We believe adding some new top-level types will satisfy these requests:
     class PollingCounter {
         PollingCounter(string name, EventSource eventSource Func<float> getMetricFunction);
         string DisplayName;
-        TimeSpan DisplayRateTimeScale;
         void AddMetaData(string key, string value);
     }
 
