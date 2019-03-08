@@ -30,12 +30,12 @@ namespace System.Diagnostics
         public string OperationName { get { throw null; } }
         public System.Diagnostics.Activity Parent { get { throw null; } }
         public string ParentId { get { throw null; } }
-        public ref System.Diagnostics.ActivitySpanId ParentSpanId { get { throw null; } }
+        public ref readonly System.Diagnostics.ActivitySpanId ParentSpanId { get { throw null; } }
         public string RootId { get { throw null; } }
-        public ref System.Diagnostics.ActivitySpanId SpanId { get { throw null; } }
+        public ref readonly System.Diagnostics.ActivitySpanId SpanId { get { throw null; } }
         public System.DateTime StartTimeUtc { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> Tags { get { throw null; } }
-        public ref System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
+        public ref readonly System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
         public string TraceStateString { get { throw null; } set { } }
         public System.Diagnostics.Activity AddBaggage(string key, string value) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, string value) { throw null; }
@@ -56,10 +56,10 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
     [System.Security.SecuritySafeCriticalAttribute]
 #endif
-    public partial struct ActivitySpanId : System.IEquatable<System.Diagnostics.ActivitySpanId>
+    public readonly partial struct ActivitySpanId : System.IEquatable<System.Diagnostics.ActivitySpanId>
     {
-        private object _dummy;
-        private int _dummyPrimitive;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public void CopyTo(System.Span<byte> destination) { }
         public static System.Diagnostics.ActivitySpanId CreateFromBytes(System.ReadOnlySpan<byte> idData) { throw null; }
         public static System.Diagnostics.ActivitySpanId CreateFromString(System.ReadOnlySpan<char> idData) { throw null; }
@@ -76,10 +76,10 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
     [System.Security.SecuritySafeCriticalAttribute]
 #endif
-    public partial struct ActivityTraceId : System.IEquatable<System.Diagnostics.ActivityTraceId>
+    public readonly partial struct ActivityTraceId : System.IEquatable<System.Diagnostics.ActivityTraceId>
     {
-        private object _dummy;
-        private int _dummyPrimitive;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public void CopyTo(System.Span<byte> destination) { }
         public static System.Diagnostics.ActivityTraceId CreateFromBytes(System.ReadOnlySpan<byte> idData) { throw null; }
         public static System.Diagnostics.ActivityTraceId CreateFromString(System.ReadOnlySpan<char> idData) { throw null; }
