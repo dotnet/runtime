@@ -4,144 +4,114 @@
 
 #pragma once
 
-#include "jitstd.h"
-
-// Fixed-size array that can hold elements with no default constructor;
-// it will construct them all by forwarding whatever arguments are
-// supplied to its constructor.
-template <typename T, int N>
-class ConstructedArray
+class SsaRenameState
 {
-    union {
-        // Storage that gets used to hold the T objects.
-        unsigned char bytes[N * sizeof(T)];
+    struct StackNode;
 
-#if defined(_MSC_VER) && (_MSC_VER < 1900)
-        // With MSVC pre-VS2015, the code in the #else branch would hit error C2621,
-        // so in that case just count on pointer alignment being sufficient
-        // (currently T is only ever instantiated as jitstd::list<SsaRenameStateForBlock>)
+    class Stack
+    {
+        StackNode* m_top;
 
-        // Unused (except to impart alignment requirement)
-        void* pointer;
-#else
-        // Unused (except to impart alignment requirement)
-        T alignedArray[N];
-#endif // defined(_MSC_VER) && (_MSC_VER < 1900)
+    public:
+        Stack() : m_top(nullptr)
+        {
+        }
+
+        StackNode* Top()
+        {
+            return m_top;
+        }
+
+        void Push(StackNode* node)
+        {
+            node->m_stackPrev = m_top;
+            m_top             = node;
+        }
+
+        StackNode* Pop()
+        {
+            StackNode* top = m_top;
+            m_top          = top->m_stackPrev;
+            return top;
+        }
     };
 
+    struct StackNode
+    {
+        // Link to the previous stack top node
+        StackNode* m_stackPrev;
+        // Link to the previously pushed stack (used only when popping blocks)
+        Stack* m_listPrev;
+        // The basic block (used only when popping blocks)
+        BasicBlock* m_block;
+        // The actual information StackNode stores - the SSA number
+        unsigned m_ssaNum;
+
+        StackNode(Stack* listPrev, BasicBlock* block, unsigned ssaNum)
+            : m_listPrev(listPrev), m_block(block), m_ssaNum(ssaNum)
+        {
+        }
+    };
+
+    // Memory allocator
+    CompAllocator m_alloc;
+    // Number of local variables to allocate stacks for
+    unsigned m_lvaCount;
+    // An array of stack objects, one for each local variable
+    Stack* m_stacks;
+    // The tail of the list of stacks that have been pushed to
+    Stack* m_stackListTail;
+    // Same state for the special implicit memory variables
+    Stack m_memoryStack[MemoryKindCount];
+    // A stack of free stack nodes
+    Stack m_freeStack;
+
 public:
-    T& operator[](size_t i)
-    {
-        return *(reinterpret_cast<T*>(bytes + i * sizeof(T)));
-    }
+    SsaRenameState(CompAllocator alloc, unsigned lvaCount);
 
-    template <typename... Args>
-    ConstructedArray(Args&&... args)
-    {
-        for (int i = 0; i < N; ++i)
-        {
-            new (bytes + i * sizeof(T), jitstd::placement_t()) T(jitstd::forward<Args>(args)...);
-        }
-    }
+    // Get the SSA number at the top of the stack for the specified variable.
+    unsigned Top(unsigned lclNum);
 
-    ~ConstructedArray()
-    {
-        for (int i = 0; i < N; ++i)
-        {
-            operator[](i).~T();
-        }
-    }
-};
+    // Push a SSA number onto the stack for the specified variable.
+    void Push(BasicBlock* block, unsigned lclNum, unsigned ssaNum);
 
-struct SsaRenameStateForBlock
-{
-    BasicBlock* m_bb;
-    unsigned    m_count;
-
-    SsaRenameStateForBlock(BasicBlock* bb, unsigned count) : m_bb(bb), m_count(count)
-    {
-    }
-    SsaRenameStateForBlock() : m_bb(nullptr), m_count(0)
-    {
-    }
-};
-
-// A record indicating that local "m_loc" was defined in block "m_bb".
-struct SsaRenameStateLocDef
-{
-    BasicBlock* m_bb;
-    unsigned    m_lclNum;
-
-    SsaRenameStateLocDef(BasicBlock* bb, unsigned lclNum) : m_bb(bb), m_lclNum(lclNum)
-    {
-    }
-};
-
-struct SsaRenameState
-{
-    typedef jitstd::list<SsaRenameStateForBlock> Stack;
-    typedef Stack**                              Stacks;
-    typedef jitstd::list<SsaRenameStateLocDef>   DefStack;
-
-    SsaRenameState(CompAllocator allocator, unsigned lvaCount, bool byrefStatesMatchGcHeapStates);
-
-    void EnsureStacks();
-
-    // Requires "lclNum" to be a variable number for which an ssa number at the top of the
-    // stack is required i.e., for variable "uses."
-    unsigned CountForUse(unsigned lclNum);
-
-    // Requires "lclNum" to be a variable number, and requires "count" to represent
-    // an ssa number, that needs to be pushed on to the stack corresponding to the lclNum.
-    void Push(BasicBlock* bb, unsigned lclNum, unsigned count);
-
-    // Pop all stacks that have an entry for "bb" on top.
-    void PopBlockStacks(BasicBlock* bb);
+    // Pop all stacks that have an entry for "block" on top.
+    void PopBlockStacks(BasicBlock* block);
 
     // Similar functions for the special implicit memory variable.
-    unsigned CountForMemoryUse(MemoryKind memoryKind)
+    unsigned TopMemory(MemoryKind memoryKind)
     {
-        if ((memoryKind == GcHeap) && byrefStatesMatchGcHeapStates)
-        {
-            // Share rename stacks in this configuration.
-            memoryKind = ByrefExposed;
-        }
-        return memoryStack[memoryKind].back().m_count;
+        return m_memoryStack[memoryKind].Top()->m_ssaNum;
     }
 
-    void PushMemory(MemoryKind memoryKind, BasicBlock* bb, unsigned count)
+    void PushMemory(MemoryKind memoryKind, BasicBlock* block, unsigned ssaNum)
     {
-        if ((memoryKind == GcHeap) && byrefStatesMatchGcHeapStates)
-        {
-            // Share rename stacks in this configuration.
-            memoryKind = ByrefExposed;
-        }
-        memoryStack[memoryKind].push_back(SsaRenameStateForBlock(bb, count));
+        Push(&m_memoryStack[memoryKind], block, ssaNum);
     }
-
-    void PopBlockMemoryStack(MemoryKind memoryKind, BasicBlock* bb);
-
-#ifdef DEBUG
-    // Debug interface
-    void DumpStacks();
-#endif
 
 private:
-    // Map of lclNum -> SsaRenameStateForBlock.
-    Stacks stacks;
+    void EnsureStacks();
 
-    // This list represents the set of locals defined in the current block.
-    DefStack definedLocs;
+    // Allocate a new stack entry (possibly by popping it from the free stack)
+    template <class... Args>
+    StackNode* AllocStackNode(Args&&... args)
+    {
+        StackNode* stack = m_freeStack.Top();
 
-    // Same state for the special implicit memory variables.
-    ConstructedArray<Stack, MemoryKindCount> memoryStack;
+        if (stack != nullptr)
+        {
+            m_freeStack.Pop();
+        }
+        else
+        {
+            stack = m_alloc.allocate<StackNode>(1);
+        }
 
-    // Number of stacks/counts to allocate.
-    unsigned lvaCount;
+        return new (stack, jitstd::placement_t()) StackNode(jitstd::forward<Args>(args)...);
+    }
 
-    // Allocator to allocate stacks.
-    CompAllocator m_alloc;
+    // Push a SSA number onto a stack
+    void Push(Stack* stack, BasicBlock* block, unsigned ssaNum);
 
-    // Indicates whether GcHeap and ByrefExposed use the same state.
-    bool byrefStatesMatchGcHeapStates;
+    INDEBUG(void DumpStack(Stack* stack);)
 };

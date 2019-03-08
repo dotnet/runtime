@@ -9,7 +9,7 @@
 
 #include "compiler.h"
 
-struct SsaRenameState;
+class SsaRenameState;
 
 typedef int LclVarNum;
 
@@ -105,12 +105,6 @@ private:
     // Assigns gtSsaNames to all variables.
     void RenameVariables(BlkToBlkVectorMap* domTree, SsaRenameState* pRenameState);
 
-    // Requires "block" to be any basic block participating in variable renaming, and has at least a
-    // definition that pushed a ssa number into the rename stack for a variable. Requires "pRenameState"
-    // to have variable stacks that have counts pushed into them for the block while assigning def
-    // numbers. Pops the stack for any local variable that has an entry for block on top.
-    void BlockPopStacks(BasicBlock* block, SsaRenameState* pRenameState);
-
     // Requires "block" to be non-NULL; and is searched for defs and uses to assign ssa numbers.
     // Requires "pRenameState" to be non-NULL and be currently used for variables renaming.
     void BlockRenameVariables(BasicBlock* block, SsaRenameState* pRenameState);
@@ -120,15 +114,15 @@ private:
     // implies that any definition occurring within "tree" is a phi definition.
     void TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRenameState* pRenameState, bool isPhiDefn);
 
-    // Assumes that "block" contains a definition for local var "lclNum", with SSA number "count".
+    // Assumes that "block" contains a definition for local var "lclNum", with SSA number "ssaNum".
     // IF "block" is within one or more try blocks,
     // and the local variable is live at the start of the corresponding handlers,
-    // add this SSA number "count" to the argument list of the phi for the variable in the start
+    // add this SSA number "ssaNum" to the argument list of the phi for the variable in the start
     // block of those handlers.
-    void AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigned count);
+    void AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigned ssaNum);
 
     // Same as above, for memory.
-    void AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* block, unsigned count);
+    void AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* block, unsigned ssaNum);
 
     // Requires "block" to be non-NULL.  Requires "pRenameState" to be non-NULL and be currently used
     // for variables renaming. Assigns the rhs arguments to the phi, i.e., block's phi node arguments.
