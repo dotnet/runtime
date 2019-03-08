@@ -114,8 +114,6 @@ private:
     bool m_is_framework_dependent;
     std::vector<pal::string_t> m_probe_paths;
     std::vector<const pal::char_t*> m_probe_paths_cstr;
-    bool m_patch_roll_forward;
-    bool m_prerelease_roll_forward;
     host_mode_t m_host_mode;
     host_interface_t m_host_interface;
     std::vector<pal::string_t> m_fx_names;
@@ -223,8 +221,11 @@ public:
         hi.probe_paths.len = m_probe_paths_cstr.size();
         hi.probe_paths.arr = m_probe_paths_cstr.data();
 
-        hi.patch_roll_forward = m_patch_roll_forward;
-        hi.prerelease_roll_forward = m_prerelease_roll_forward;
+        // These are not used anymore, but we have to keep them for backward compat reasons.
+        // Set default values.
+        hi.patch_roll_forward = true;
+        hi.prerelease_roll_forward = false;
+
         hi.host_mode = m_host_mode;
 
         hi.tfm = m_tfm.c_str();
@@ -369,7 +370,7 @@ struct hostpolicy_init_t
 
                 // The found_ver was not passed previously, so obtain that from fx_dir
                 pal::string_t fx_found_ver;
-                int index = fx_dir.rfind(DIR_SEPARATOR);
+                size_t index = fx_dir.rfind(DIR_SEPARATOR);
                 if (index != pal::string_t::npos)
                 {
                     fx_found_ver = fx_dir.substr(index + 1);
