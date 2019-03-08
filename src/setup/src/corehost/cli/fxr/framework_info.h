@@ -4,7 +4,8 @@
 #ifndef __FRAMEWORK_INFO_H_
 #define __FRAMEWORK_INFO_H_
 
-#include "libhost.h"
+#include "pal.h"
+#include "fx_ver.h"
 
 struct framework_info
 {

@@ -11,7 +11,6 @@
 #include "deps_resolver.h"
 #include "utils.h"
 #include "fx_ver.h"
-#include "libhost.h"
 
 const pal::string_t MissingAssemblyMessage = _X(
     "%s:\n"

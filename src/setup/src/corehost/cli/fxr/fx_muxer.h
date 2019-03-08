@@ -8,7 +8,9 @@ struct fx_ver_t;
 struct host_startup_info_t;
 
 #include <corehost.h>
-#include "libhost.h"
+#include "fx_definition.h"
+#include "host_interface.h"
+#include "host_startup_info.h"
 
 const int Max_Framework_Resolve_Retries = 100;
 
