@@ -313,7 +313,7 @@ namespace System.ComponentModel
                         }
                         if (_propInfo != null)
                         {
-                            _getMethod = _propInfo.GetMethod;
+                            _getMethod = _propInfo.GetGetMethod(nonPublic: true);
                         }
                         if (_getMethod == null)
                         {
@@ -399,7 +399,7 @@ namespace System.ComponentModel
                             PropertyInfo p = t.GetProperty(name, PropertyType, Array.Empty<Type>(), null);
                             if (p != null)
                             {
-                                _setMethod = p.SetMethod;
+                                _setMethod = p.GetSetMethod(nonPublic: false);
                                 if (_setMethod != null)
                                 {
                                     break;
@@ -425,7 +425,7 @@ namespace System.ComponentModel
                         }
                         if (_propInfo != null)
                         {
-                            _setMethod = _propInfo.SetMethod;
+                            _setMethod = _propInfo.GetSetMethod(nonPublic: true);
                         }
                     }
                     else
