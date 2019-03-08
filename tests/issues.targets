@@ -251,6 +251,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_590771/DevDiv_590771/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/inducedgc/inducedgc/*">
+            <Issue>23124</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
