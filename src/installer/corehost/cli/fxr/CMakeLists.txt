@@ -13,7 +13,6 @@ include_directories(../json/casablanca/include)
 set(SOURCES
     ../../common/trace.cpp
     ../../common/utils.cpp
-    ../libhost.cpp
     ../deps_format.cpp
     ../deps_entry.cpp
     ../host_startup_info.cpp

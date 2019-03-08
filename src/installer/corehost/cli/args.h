@@ -8,7 +8,7 @@
 #include "pal.h"
 #include "trace.h"
 #include "deps_format.h"
-#include "libhost.h"
+#include "hostpolicy_init.h"
 
 struct probe_config_t
 {

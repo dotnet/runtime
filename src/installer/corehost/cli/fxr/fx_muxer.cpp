@@ -5,6 +5,7 @@
 #include <mutex>
 #include "args.h"
 #include "cpprest/json.h"
+#include "corehost_init.h"
 #include "deps_format.h"
 #include "error_codes.h"
 #include "framework_info.h"
@@ -13,7 +14,6 @@
 #include "fx_reference.h"
 #include "fx_ver.h"
 #include "host_startup_info.h"
-#include "libhost.h"
 #include "pal.h"
 #include "runtime_config.h"
 #include "sdk_info.h"
@@ -400,6 +400,48 @@ bool resolve_hostpolicy_dir_from_probe_paths(const pal::string_t& version, const
         trace::error(_X("  %s"), path.c_str());
     }
     return false;
+}
+
+void get_runtime_config_paths_from_arg(const pal::string_t& arg, pal::string_t* cfg, pal::string_t* dev_cfg)
+{
+    auto name = get_filename_without_ext(arg);
+
+    auto json_name = name + _X(".json");
+    auto dev_json_name = name + _X(".dev.json");
+
+    auto json_path = get_directory(arg);
+    auto dev_json_path = json_path;
+
+    append_path(&json_path, json_name.c_str());
+    append_path(&dev_json_path, dev_json_name.c_str());
+
+    trace::verbose(_X("Runtime config is cfg=%s dev=%s"), json_path.c_str(), dev_json_path.c_str());
+
+    dev_cfg->assign(dev_json_path);
+    cfg->assign(json_path);
+}
+
+void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg)
+{
+    auto json_path = path;
+    auto json_name = name + _X(".runtimeconfig.json");
+    append_path(&json_path, json_name.c_str());
+    cfg->assign(json_path);
+
+    auto dev_json_path = path;
+    auto dev_json_name = name + _X(".runtimeconfig.dev.json");
+    append_path(&dev_json_path, dev_json_name.c_str());
+    dev_cfg->assign(dev_json_path);
+
+    trace::verbose(_X("Runtime config is cfg=%s dev=%s"), json_path.c_str(), dev_json_path.c_str());
+}
+
+void get_runtime_config_paths_from_app(const pal::string_t& app, pal::string_t* cfg, pal::string_t* dev_cfg)
+{
+    auto name = get_filename_without_ext(app);
+    auto path = get_directory(app);
+
+    get_runtime_config_paths(path, name, cfg, dev_cfg);
 }
 
 /**
@@ -1008,6 +1050,35 @@ int read_config(
     }
 
     return StatusCode::Success;
+}
+
+host_mode_t detect_operating_mode(const host_startup_info_t& host_info)
+{
+    if (coreclr_exists_in_dir(host_info.dotnet_root))
+    {
+        // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
+
+        pal::string_t deps_in_dotnet_root = host_info.dotnet_root;
+        pal::string_t deps_filename = host_info.get_app_name() + _X(".deps.json");
+        append_path(&deps_in_dotnet_root, deps_filename.c_str());
+        bool deps_exists = pal::file_exists(deps_in_dotnet_root);
+
+        trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
+            host_info.dotnet_root.c_str(), deps_filename.c_str(), deps_exists);
+
+        // Name of runtimeconfig file; since no path is included here the check is in the current working directory
+        pal::string_t config_in_cwd = host_info.get_app_name() + _X(".runtimeconfig.json");
+
+        return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::split_fx;
+    }
+
+    if (pal::file_exists(host_info.app_path))
+    {
+        // Framework-dependent apphost
+        return host_mode_t::apphost;
+    }
+
+    return host_mode_t::muxer;
 }
 
 int fx_muxer_t::soft_roll_forward_helper(
