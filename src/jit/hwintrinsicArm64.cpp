@@ -129,14 +129,6 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* className, const char* me
 }
 
 //------------------------------------------------------------------------
-// impCheckImmediate: check if immediate is const and in range for inlining
-//
-bool Compiler::impCheckImmediate(GenTree* immediateOp, unsigned int max)
-{
-    return immediateOp->IsCnsIntOrI() && (immediateOp->AsIntConCommon()->IconValue() < max);
-}
-
-//------------------------------------------------------------------------
 // isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
 //
 // Arguments:
@@ -192,6 +184,46 @@ bool HWIntrinsicInfo::isScalarIsa(InstructionSet isa)
         default:
             assert(!"Unexpected Arm64 HW intrinsics ISA");
             return true;
+    }
+}
+
+//------------------------------------------------------------------------
+// addRangeCheckIfNeeded: add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic
+//
+// Arguments:
+//    immOp      -- the operand of the intrinsic that points to the imm-arg
+//    max        -- maximum allowable value for the immOp
+//    mustExpand -- true if the compiler is compiling the fallback(GT_CALL) of this intrinsics
+//
+// Return Value:
+//     if necessary, add a GT_HW_INTRINSIC_CHK node which throws an ArgumentOutOfRangeException
+//     when the immOp is not in the valid range; otherwise, just return the provided immOp.
+//
+GenTree* Compiler::addRangeCheckIfNeeded(GenTree* immOp, unsigned int max, bool mustExpand)
+{
+    assert(immOp != nullptr);
+
+    // Need to range check only if we're must expand and don't have an appropriate constant
+    if (mustExpand && (!immOp->IsCnsIntOrI() || (immOp->AsIntConCommon()->IconValue() < max)))
+    {
+        GenTree* upperBoundNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, max);
+        GenTree* index          = nullptr;
+        if ((immOp->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            index = fgInsertCommaFormTemp(&immOp);
+        }
+        else
+        {
+            index = gtCloneExpr(immOp);
+        }
+        GenTreeBoundsChk* hwIntrinsicChk = new (this, GT_HW_INTRINSIC_CHK)
+            GenTreeBoundsChk(GT_HW_INTRINSIC_CHK, TYP_VOID, index, upperBoundNode, SCK_RNGCHK_FAIL);
+        hwIntrinsicChk->gtThrowKind = SCK_ARG_RNG_EXCPN;
+        return gtNewOperNode(GT_COMMA, immOp->TypeGet(), hwIntrinsicChk, immOp);
+    }
+    else
+    {
+        return immOp;
     }
 }
 
@@ -426,24 +458,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             return gtNewSimdHWIntrinsicNode(simdType, op1, intrinsic, simdBaseType, simdSizeBytes);
 
         case HWIntrinsicInfo::SimdExtractOp:
-            if (!mustExpand && !impCheckImmediate(impStackTop(0).val, getSIMDVectorLength(simdSizeBytes, simdBaseType)))
-            {
-                // Immediate lane not constant or out of range
-                return nullptr;
-            }
-            op2 = impPopStack().val;
+            op2 =
+                addRangeCheckIfNeeded(impPopStack().val, getSIMDVectorLength(simdSizeBytes, simdBaseType), mustExpand);
             op1 = impSIMDPopStack(simdType);
 
             return gtNewScalarHWIntrinsicNode(JITtype2varType(sig->retType), op1, op2, intrinsic);
 
         case HWIntrinsicInfo::SimdInsertOp:
-            if (!mustExpand && !impCheckImmediate(impStackTop(1).val, getSIMDVectorLength(simdSizeBytes, simdBaseType)))
-            {
-                // Immediate lane not constant or out of range
-                return nullptr;
-            }
             op3 = impPopStack().val;
-            op2 = impPopStack().val;
+            op2 =
+                addRangeCheckIfNeeded(impPopStack().val, getSIMDVectorLength(simdSizeBytes, simdBaseType), mustExpand);
             op1 = impSIMDPopStack(simdType);
 
             return gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, intrinsic, simdBaseType, simdSizeBytes);
