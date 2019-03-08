@@ -17,9 +17,9 @@ set __ExtraCmakeParams=
 
 :: Set the target architecture to a format cmake understands. ANYCPU defaults to x64
 set __RIDArch=%3
-if /i "%3" == "x86"     (set cm_BaseRid=win7&&set cm_Arch=I386&&set __VSString=%__VSString%)
-if /i "%3" == "x64"     (set cm_BaseRid=win7&&set cm_Arch=AMD64&&set __VSString=%__VSString% Win64)
-if /i "%3" == "arm"     (set cm_BaseRid=win8&&set cm_Arch=ARM&&set __VSString=%__VSString% ARM)
+if /i "%3" == "x64"     (set cm_BaseRid=win7&&set  cm_Arch=AMD64&&set __ExtraCmakeParams=%__ExtraCmakeParams% -A x64)
+if /i "%3" == "x86"     (set cm_BaseRid=win7&&set  cm_Arch=I386&&set  __ExtraCmakeParams=%__ExtraCmakeParams% -A Win32)
+if /i "%3" == "arm"     (set cm_BaseRid=win8&&set  cm_Arch=ARM&&set   __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM)
 if /i "%3" == "arm64"   (set cm_BaseRid=win10&&set cm_Arch=ARM64&&set __ExtraCmakeParams=%__ExtraCmakeParams% -A ARM64)
 
 set __LatestCommit=%4
@@ -50,7 +50,7 @@ GOTO :DONE
   echo "Usage..."
   echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion> <Target Architecture>"
   echo "Specify the path to the top level CMake file"
-  echo "Specify the VSVersion to be used - VS2015 or VS2017"
+  echo "Specify the VSVersion to be used - VS2017 or VS2019"
   echo "Specify the Target Architecture - AnyCPU, x86, x64, ARM, or ARM64."
   echo "Specify latest commit hash"
   echo "Specify the host version, apphost version, hostresolver version, hostpolicy version"
