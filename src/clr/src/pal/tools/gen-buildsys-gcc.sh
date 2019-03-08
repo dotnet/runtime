@@ -46,7 +46,7 @@ else
 fi
 
 if [ -z "$CLR_CC" ]; then
-    CC="$(command -v "${gcc_prefix}"gcc"$desired_gcc_version")"
+    CC="$(command -v "${gcc_prefix}gcc$desired_gcc_version")"
     gcc_link="$(command -v link)"
 else
     CC="$CLR_CC"
@@ -174,6 +174,6 @@ cmake \
   "-DCMAKE_EXPORT_COMPILE_COMMANDS=1 " \
   "-DCLR_CMAKE_ENABLE_CODE_COVERAGE=$code_coverage" \
   "-DCLR_CMAKE_COMPILER=GNU" \
-  "$cmake_extra_defines" \
+  $cmake_extra_defines \
   "$__UnprocessedCMakeArgs" \
   "$1"
