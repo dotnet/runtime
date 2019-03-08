@@ -110,7 +110,7 @@ namespace Mono.Linker {
 
 		static void AddIfResolved (HashSet<TypeDefinition> set, TypeReference item)
 		{
-			var resolved = item.Resolve ();
+			var resolved = item?.Resolve ();
 			if (resolved == null)
 				return;
 			set.Add (resolved);
