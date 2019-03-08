@@ -237,10 +237,23 @@ namespace System.Resources
                     }
                     else
                     {
-                        Type readerType = Type.GetType(readerTypeName, throwOnError: true);
-                        object[] args = new object[1];
-                        args[0] = store;
-                        IResourceReader reader = (IResourceReader)Activator.CreateInstance(readerType, args);
+                        IResourceReader reader;
+
+                        // Permit deserialization as long as the default ResourceReader is used
+                        if (ResourceManager.IsDefaultType(readerTypeName, ResourceManager.ResReaderTypeName))
+                        {
+                            reader = new ResourceReader(
+                                store,
+                                new Dictionary<string, ResourceLocator>(FastResourceComparer.Default),
+                                permitDeserialization: true);
+                        }
+                        else
+                        {
+                            Type readerType = Type.GetType(readerTypeName, throwOnError: true);
+                            object[] args = new object[1];
+                            args[0] = store;
+                            reader = (IResourceReader)Activator.CreateInstance(readerType, args);
+                        }
 
                         object[] resourceSetArgs = new object[1];
                         resourceSetArgs[0] = reader;
