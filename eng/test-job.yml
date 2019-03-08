@@ -91,7 +91,7 @@ jobs:
       timeoutInMinutes: 240
     ${{ if eq(parameters.testGroup, 'outerloop') }}:
       timeoutInMinutes: 360
-    ${{ if eq(parameters.testGroup, 'outerloop-jitminopts-jitstress1-jitstress2') }}:
+    ${{ if in(parameters.testGroup, 'outerloop-jitminopts-jitstress1-jitstress2', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
       timeoutInMinutes: 480
 
     steps:
@@ -168,8 +168,7 @@ jobs:
         ${{ if eq(parameters.testGroup, 'outerloop') }}:
           timeoutPerTestCollectionInMinutes: 60
           timeoutPerTestInMinutes: 10
-        ${{ if eq(parameters.testGroup, 'outerloop-jitminopts-jitstress1-jitstress2') }}:
-          # TODO: Adjust this number as soon as we have more data on how long it takes to run these jobs in Helix.
+        ${{ if in(parameters.testGroup, 'outerloop-jitminopts-jitstress1-jitstress2', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
           timeoutPerTestCollectionInMinutes: 120
           timeoutPerTestInMinutes: 30
 
@@ -195,6 +194,36 @@ jobs:
             - jitstress1_tiered
             - jitstress2
             - jitstress2_tiered
+        ${{ if eq(parameters.testGroup, 'outerloop-jitstressregs') }}:
+          scenarios:
+            asString: 'jitstressregs1,jitstressregs2,jitstressregs3,jitstressregs4,jitstressregs8,jitstressregs0x10,jitstressregs0x80,jitstressregs0x1000'
+            asArray:
+            - jitstressregs1
+            - jitstressregs2
+            - jitstressregs3
+            - jitstressregs4
+            - jitstressregs8
+            - jitstressregs0x10
+            - jitstressregs0x80
+            - jitstressregs0x1000
+        ${{ if eq(parameters.testGroup, 'outerloop-jitstress2-jitstressregs') }}:
+          scenarios:
+            asString: 'jitstress2_jitstressregs1,jitstress2_jitstressregs2,jitstress2_jitstressregs3,jitstress2_jitstressregs4,jitstress2_jitstressregs8,jitstress2_jitstressregs0x10,jitstress2_jitstressregs0x80,jitstress2_jitstressregs0x1000'
+            asArray:
+            - jitstress2_jitstressregs1
+            - jitstress2_jitstressregs2
+            - jitstress2_jitstressregs3
+            - jitstress2_jitstressregs4
+            - jitstress2_jitstressregs8
+            - jitstress2_jitstressregs0x10
+            - jitstress2_jitstressregs0x80
+            - jitstress2_jitstressregs0x1000
+        ${{ if eq(parameters.testGroup, 'outerloop-gcstress0x3-gcstress0xc') }}:
+          scenarios:
+            asString: 'gcstress0x3,gcstress0xc'
+            asArray:
+            - gcstress0x3
+            - gcstress0xc
 
     # Publish Logs
     - task: PublishPipelineArtifact@0
