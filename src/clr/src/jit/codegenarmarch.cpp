@@ -374,6 +374,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
             genRangeCheck(treeNode);
             break;
 
@@ -1312,12 +1315,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 //
 void CodeGen::genRangeCheck(GenTree* oper)
 {
-#ifdef FEATURE_SIMD
-    noway_assert(oper->OperGet() == GT_ARR_BOUNDS_CHECK || oper->OperGet() == GT_SIMD_CHK);
-#else  // !FEATURE_SIMD
-    noway_assert(oper->OperGet() == GT_ARR_BOUNDS_CHECK);
-#endif // !FEATURE_SIMD
-
+    noway_assert(oper->OperIsBoundsCheck());
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
     GenTree* arrLen    = bndsChk->gtArrLen;
