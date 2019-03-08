@@ -157,10 +157,4 @@ bool EventPipeEventInstance::EnsureConsistency()
 }
 #endif // _DEBUG
 
-SampleProfilerEventInstance::SampleProfilerEventInstance(EventPipeSession &session, EventPipeEvent &event, Thread *pThread, BYTE *pData, unsigned int length)
-    :EventPipeEventInstance(session, event, pThread->GetOSThreadId(), pData, length, NULL /* pActivityId */, NULL /* pRelatedActivityId */)
-{
-    LIMITED_METHOD_CONTRACT;
-}
-
 #endif // FEATURE_PERFTRACING
