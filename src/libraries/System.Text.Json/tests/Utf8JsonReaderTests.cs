@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -486,6 +488,9 @@ namespace System.Text.Json.Tests
         [InlineData("{\"test\":[[[123,456]]]}", "test123456", "test123456")]
         [InlineData("/*a*//*z*/[/*b*//*z*/123/*c*//*z*/,/*d*//*z*/456/*e*//*z*/]/*f*//*z*/", "123456", "/*a*//*z*//*b*//*z*/123/*c*//*z*//*d*//*z*/456/*e*//*z*//*f*//*z*/")]
         [InlineData("[123,/*hi*/456/*bye*/]", "123456", "123/*hi*/456/*bye*/")]
+        [InlineData("[123,//hi\n456//bye\n]", "123456", "123//hi\n456//bye\n")]
+        [InlineData("[123,//hi\r456//bye\r]", "123456", "123//hi\r456//bye\r")]
+        [InlineData("[123,//hi\r\n456\r\n]", "123456", "123//hi\r\n456")]
         [InlineData("/*a*//*z*/{/*b*//*z*/\"test\":/*c*//*z*/[/*d*//*z*/[/*e*//*z*/[/*f*//*z*/123/*g*//*z*/,/*h*//*z*/456/*i*//*z*/]/*j*//*z*/]/*k*//*z*/]/*l*//*z*/}/*m*//*z*/",
     "test123456", "/*a*//*z*//*b*//*z*/test/*c*//*z*//*d*//*z*//*e*//*z*//*f*//*z*/123/*g*//*z*//*h*//*z*/456/*i*//*z*//*j*//*z*//*k*//*z*//*l*//*z*//*m*//*z*/")]
         [InlineData("//a\n//z\n{//b\n//z\n\"test\"://c\n//z\n[//d\n//z\n[//e\n//z\n[//f\n//z\n123//g\n//z\n,//h\n//z\n456//i\n//z\n]//j\n//z\n]//k\n//z\n]//l\n//z\n}//m\n//z\n",
@@ -978,6 +983,9 @@ namespace System.Text.Json.Tests
         [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json with new line\n", "//This is a \u6F22\u5B57comment after json with new line\n", 64)]
         [InlineData("{\"a\u6F22\u5B57ge\" : \n//This is a \u6F22\u5B57comment between key-value pairs\n 30}", "//This is a \u6F22\u5B57comment between key-value pairs\n", 66)]
         [InlineData("{\"a\u6F22\u5B57ge\" : 30//This is a \u6F22\u5B57comment between key-value pairs on the same line\n}", "//This is a \u6F22\u5B57comment between key-value pairs on the same line\n", 84)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return\r//Another single-line comment", "//This is a comment with a carriage return\r", 59)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a line break\n//Another single-line comment", "//This is a comment with a line break\n", 54)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return and line break\r\n//Another single-line comment", "//This is a comment with a carriage return and line break\r\n", 75)]
 
         [InlineData("/*T\u6F22\u5B57his is a multi-line \u6F22\u5B57comment before json*/\"hello\"", "/*T\u6F22\u5B57his is a multi-line \u6F22\u5B57comment before json*/", 56)]
         [InlineData("\"h\u6F22\u5B57ello\"/*This is a multi-line \u6F22\u5B57comment after json*/", "/*This is a multi-line \u6F22\u5B57comment after json*/", 62)]
@@ -1095,6 +1103,9 @@ namespace System.Text.Json.Tests
         [InlineData("\"h\u6F22\u5B57ello\"//This is a \u6F22\u5B57comment after json with new line\n", 52)]
         [InlineData("{\"a\u6F22\u5B57ge\" : \n//This is a \u6F22\u5B57comment between key-value pairs\n 30}", 54)]
         [InlineData("{\"a\u6F22\u5B57ge\" : 30//This is a \u6F22\u5B57comment between key-value pairs on the same line\n}", 72)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return\r//Another single-line comment", 59)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a line break\n//Another single-line comment", 54)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return and line break\r\n//Another single-line comment", 75)]
 
         [InlineData("/*T\u6F22\u5B57his is a multi-line \u6F22\u5B57comment before json*/\"hello\"", 44)]
         [InlineData("\"h\u6F22\u5B57ello\"/*This is a multi-line \u6F22\u5B57comment after json*/", 50)]
@@ -1156,6 +1167,9 @@ namespace System.Text.Json.Tests
         [InlineData("\"d\u6F22\u5B57elta\" \r\n/*This is a multi-line \u6F22\u5B57comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", 53)]
         [InlineData("{\"a\u6F22\u5B57ge\" : \n/*This is a \u6F22\u5B57comment between key-value pairs*/ 30}", 55)]
         [InlineData("{\"a\u6F22\u5B57ge\" : 30/*This is a \u6F22\u5B57comment between key-value pairs on the same line*/}", 73)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return\r//Another single-line comment", 59)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a line break\n//Another single-line comment", 54)]
+        [InlineData("\"a\u6F22\u5B57lpha\" \r\n//This is a comment with a carriage return and line break\r\n//Another single-line comment", 75)]
 
         [InlineData("/*T\u6F22\u5B57his is a split multi-line \n\u6F22\u5B57comment before json*/\"hello\"", 51)]
         [InlineData("\"h\u6F22\u5B57ello\"/*This is a split multi-line \n\u6F22\u5B57comment after json*/", 57)]
@@ -1757,6 +1771,69 @@ namespace System.Text.Json.Tests
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
         }
 
+        private static void VerifyReadLoop(ref Utf8JsonReader json, string expected)
+        {
+            while (json.Read())
+            {
+                switch (json.TokenType)
+                {
+                    case JsonTokenType.StartObject:
+                    case JsonTokenType.EndObject:
+                        break;
+                    case JsonTokenType.Comment:
+                        if (expected != null)
+                        {
+                            byte[] data = json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan.ToArray();
+                            Assert.Equal(expected, Encoding.UTF8.GetString(data));
+                        }
+                        else
+                        {
+                            Assert.True(false);
+                        }
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleLineCommentData))]
+        public static void ConsumeSingleLineCommentSingleSpanTest(string expected)
+        {
+            var jsonData = "{" + expected + "}";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonData);
+
+            for (int i = 0; i < jsonData.Length; i++)
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow });
+                var json = new Utf8JsonReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                VerifyReadLoop(ref json, expected);
+
+                json = new Utf8JsonReader(dataUtf8.AsSpan((int)state.BytesConsumed), isFinalBlock: true, state);
+                VerifyReadLoop(ref json, expected);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleLineCommentData))]
+        public static void SkipSingleLineCommentSingleSpanTest(string expected)
+        {
+            var jsonData = "{" + expected + "}";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonData);
+
+            for (int i = 0; i < jsonData.Length; i++)
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip });
+                var json = new Utf8JsonReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                VerifyReadLoop(ref json, null);
+
+                json = new Utf8JsonReader(dataUtf8.AsSpan((int)state.BytesConsumed), isFinalBlock: true, state);
+                VerifyReadLoop(ref json, null);
+            }
+        }
+
         public static IEnumerable<object[]> TestCases
         {
             get
@@ -1983,6 +2060,31 @@ namespace System.Text.Json.Tests
                     new object[] { new byte[] { 34, 97, 0xf0, 0x28, 0x8c, 0xbc, 98, 34 } },
                     new object[] { new byte[] { 34, 97, 0xf0, 0x90, 0x28, 0xbc, 98, 34 } },
                     new object[] { new byte[] { 34, 97, 0xf0, 0x28, 0x8c, 0x28, 98, 34 } },
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> SingleLineCommentData
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    // \r as the line separator
+                    new object [] {"//Comment\r" },
+                    new object [] {"//Comment\r" },
+                    new object [] {"//Comment\r" },
+
+                    // \r\n as line separator
+                    new object [] {"//Comment\r\n" },
+                    new object [] {"//Comment\r\n" },
+                    new object [] {"//Comment\r\n" },
+                    new object [] {"//Comment\r\n" },
+
+                    // \n as line separator
+                    new object [] {"//Comment\n" },
+                    new object [] {"//Comment\n" },
+                    new object [] {"//Comment\n" }
                 };
             }
         }
