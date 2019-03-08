@@ -8897,7 +8897,7 @@ namespace System.Data.SqlClient
             return null;
         }
 
-        private class TdsOutputStream : Stream
+        private sealed class TdsOutputStream : Stream
         {
             private TdsParser _parser;
             private TdsParserStateObject _stateObj;
@@ -9041,7 +9041,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private class ConstrainedTextWriter : TextWriter
+        private sealed class ConstrainedTextWriter : TextWriter
         {
             private TextWriter _next;
             private int _size;
@@ -9172,156 +9172,166 @@ namespace System.Data.SqlClient
             {
                 preambleToSkip = encoding.GetPreamble();
             }
-            ConstrainedTextWriter writer = new ConstrainedTextWriter(new StreamWriter(new TdsOutputStream(this, stateObj, preambleToSkip), encoding), size);
-
             XmlWriterSettings writerSettings = new XmlWriterSettings();
-            writerSettings.CloseOutput = false;		// don't close the memory stream
+            writerSettings.CloseOutput = false;     // don't close the memory stream
             writerSettings.ConformanceLevel = ConformanceLevel.Fragment;
             if (_asyncWrite)
             {
                 writerSettings.Async = true;
             }
-            XmlWriter ww = XmlWriter.Create(writer, writerSettings);
-
-            if (feed._source.ReadState == ReadState.Initial)
-            {
-                feed._source.Read();
-            }
-
-            while (!feed._source.EOF && !writer.IsComplete)
-            {
-                // We are copying nodes from a reader to a writer.  This will cause the
-                // XmlDeclaration to be emitted despite ConformanceLevel.Fragment above.
-                // Therefore, we filter out the XmlDeclaration while copying.
-                if (feed._source.NodeType == XmlNodeType.XmlDeclaration)
+            using (ConstrainedTextWriter writer = new ConstrainedTextWriter(new StreamWriter(new TdsOutputStream(this, stateObj, preambleToSkip), encoding), size))
+            using (XmlWriter ww = XmlWriter.Create(writer, writerSettings))
+            { 
+                if (feed._source.ReadState == ReadState.Initial)
                 {
                     feed._source.Read();
-                    continue;
+                }
+
+                while (!feed._source.EOF && !writer.IsComplete)
+                {
+                    // We are copying nodes from a reader to a writer.  This will cause the
+                    // XmlDeclaration to be emitted despite ConformanceLevel.Fragment above.
+                    // Therefore, we filter out the XmlDeclaration while copying.
+                    if (feed._source.NodeType == XmlNodeType.XmlDeclaration)
+                    {
+                        feed._source.Read();
+                        continue;
+                    }
+
+                    if (_asyncWrite)
+                    {
+                        await ww.WriteNodeAsync(feed._source, true).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        ww.WriteNode(feed._source, true);
+                    }
                 }
 
                 if (_asyncWrite)
                 {
-                    await ww.WriteNodeAsync(feed._source, true).ConfigureAwait(false);
+                    await ww.FlushAsync().ConfigureAwait(false);
                 }
                 else
                 {
-                    ww.WriteNode(feed._source, true);
+                    ww.Flush();
                 }
-            }
-
-            if (_asyncWrite)
-            {
-                await ww.FlushAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                ww.Flush();
             }
         }
 
         private async Task WriteTextFeed(TextDataFeed feed, Encoding encoding, bool needBom, TdsParserStateObject stateObj, int size)
         {
             Debug.Assert(encoding == null || !needBom);
-            char[] inBuff = new char[constTextBufferSize];
+            char[] inBuff = ArrayPool<char>.Shared.Rent(constTextBufferSize);
 
-            encoding = encoding ?? new UnicodeEncoding(false, false);
+            encoding = encoding ?? TextDataFeed.DefaultEncoding;
 
-            ConstrainedTextWriter writer = new ConstrainedTextWriter(new StreamWriter(new TdsOutputStream(this, stateObj, null), encoding), size);
-
-            if (needBom)
+            using (ConstrainedTextWriter writer = new ConstrainedTextWriter(new StreamWriter(new TdsOutputStream(this, stateObj, null), encoding), size))
             {
+                if (needBom)
+                {
+                    if (_asyncWrite)
+                    {
+                        await writer.WriteAsync((char)TdsEnums.XMLUNICODEBOM).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        writer.Write((char)TdsEnums.XMLUNICODEBOM);
+                    }
+                }
+
+                int nWritten = 0;
+                do
+                {
+                    int nRead = 0;
+
+                    if (_asyncWrite)
+                    {
+                        nRead = await feed._source.ReadBlockAsync(inBuff, 0, constTextBufferSize).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        nRead = feed._source.ReadBlock(inBuff, 0, constTextBufferSize);
+                    }
+
+                    if (nRead == 0)
+                    {
+                        break;
+                    }
+
+                    if (_asyncWrite)
+                    {
+                        await writer.WriteAsync(inBuff, 0, nRead).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        writer.Write(inBuff, 0, nRead);
+                    }
+
+                    nWritten += nRead;
+                } while (!writer.IsComplete);
+
                 if (_asyncWrite)
                 {
-                    await writer.WriteAsync((char)TdsEnums.XMLUNICODEBOM).ConfigureAwait(false);
+                    await writer.FlushAsync().ConfigureAwait(false);
                 }
                 else
                 {
-                    writer.Write((char)TdsEnums.XMLUNICODEBOM);
+                    writer.Flush();
                 }
             }
 
-            int nWritten = 0;
-            do
-            {
-                int nRead = 0;
-
-                if (_asyncWrite)
-                {
-                    nRead = await feed._source.ReadBlockAsync(inBuff, 0, constTextBufferSize).ConfigureAwait(false);
-                }
-                else
-                {
-                    nRead = feed._source.ReadBlock(inBuff, 0, constTextBufferSize);
-                }
-
-                if (nRead == 0)
-                {
-                    break;
-                }
-
-                if (_asyncWrite)
-                {
-                    await writer.WriteAsync(inBuff, 0, nRead).ConfigureAwait(false);
-                }
-                else
-                {
-                    writer.Write(inBuff, 0, nRead);
-                }
-
-                nWritten += nRead;
-            } while (!writer.IsComplete);
-
-            if (_asyncWrite)
-            {
-                await writer.FlushAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                writer.Flush();
-            }
+            Array.Clear(inBuff, 0, constTextBufferSize);
+            ArrayPool<char>.Shared.Return(inBuff, clearArray: false);
         }
 
         private async Task WriteStreamFeed(StreamDataFeed feed, TdsParserStateObject stateObj, int len)
         {
-            TdsOutputStream output = new TdsOutputStream(this, stateObj, null);
-            byte[] buff = new byte[constBinBufferSize];
-            int nWritten = 0;
-            do
+            byte[] buff = ArrayPool<byte>.Shared.Rent(constBinBufferSize);
+
+            using (TdsOutputStream output = new TdsOutputStream(this, stateObj, null))
             {
-                int nRead = 0;
-                int readSize = constBinBufferSize;
-                if (len > 0 && nWritten + readSize > len)
+                int nWritten = 0;
+                do
                 {
-                    readSize = len - nWritten;
-                }
+                    int nRead = 0;
+                    int readSize = constBinBufferSize;
+                    if (len > 0 && nWritten + readSize > len)
+                    {
+                        readSize = len - nWritten;
+                    }
 
-                Debug.Assert(readSize >= 0);
+                    Debug.Assert(readSize >= 0);
 
-                if (_asyncWrite)
-                {
-                    nRead = await feed._source.ReadAsync(buff, 0, readSize).ConfigureAwait(false);
-                }
-                else
-                {
-                    nRead = feed._source.Read(buff, 0, readSize);
-                }
+                    if (_asyncWrite)
+                    {
+                        nRead = await feed._source.ReadAsync(buff, 0, readSize).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        nRead = feed._source.Read(buff, 0, readSize);
+                    }
 
-                if (nRead == 0)
-                {
-                    return;
-                }
+                    if (nRead == 0)
+                    {
+                        return;
+                    }
 
-                if (_asyncWrite)
-                {
-                    await output.WriteAsync(buff, 0, nRead).ConfigureAwait(false);
-                }
-                else
-                {
-                    output.Write(buff, 0, nRead);
-                }
+                    if (_asyncWrite)
+                    {
+                        await output.WriteAsync(buff, 0, nRead).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        output.Write(buff, 0, nRead);
+                    }
 
-                nWritten += nRead;
-            } while (len <= 0 || nWritten < len);
+                    nWritten += nRead;
+                } while (len <= 0 || nWritten < len);
+            }
+
+            Array.Clear(buff, 0, constTextBufferSize);
+            ArrayPool<byte>.Shared.Return(buff, clearArray: false);
         }
 
         private Task NullIfCompletedWriteTask(Task task)
