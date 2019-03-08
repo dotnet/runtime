@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
 namespace ILLink.Tasks
 {
-	public class ILLink : Task
+	public class ILLink : ToolTask
 	{
 		/// <summary>
 		///   Paths to the assembly files that should be considered as
@@ -70,30 +72,63 @@ namespace ILLink.Tasks
 		/// </summary>
 		public bool DumpDependencies { get; set; }
 
-		public override bool Execute ()
+
+		private static string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
+
+		private string _dotnetPath;
+
+		private string DotNetPath
 		{
-			string [] args = GenerateCommandLineCommands ();
-			var argsString = String.Join (" ", args);
-			Log.LogMessageFromText ($"illink {argsString}", MessageImportance.Normal);
-			var logger = new AdapterLogger (Log);
-			int ret = Mono.Linker.Driver.Execute (args, logger);
-			return ret == 0;
+			get
+			{
+				if (!String.IsNullOrEmpty (_dotnetPath))
+				{
+					return _dotnetPath;
+				}
+				_dotnetPath = Environment.GetEnvironmentVariable (DotNetHostPathEnvironmentName);
+				if (String.IsNullOrEmpty (_dotnetPath))
+				{
+					throw new InvalidOperationException ($"{DotNetHostPathEnvironmentName} is not set");
+				}
+				return _dotnetPath;
+			}
 		}
 
-		string [] GenerateCommandLineCommands ()
+
+		/// ToolTask implementation
+
+		protected override string ToolName => Path.GetFileName (DotNetPath);
+
+		protected override string GenerateFullPathToTool () => DotNetPath;
+
+		private string _illinkPath = "";
+
+		public string ILLinkPath {
+			get {
+				if (!String.IsNullOrEmpty (_illinkPath))
+				{
+					return _illinkPath;
+				}
+				var taskDirectory = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
+				_illinkPath = Path.Combine (taskDirectory, "illink.dll");
+				return _illinkPath;
+			}
+			set => _illinkPath = value;
+		}
+
+		protected override string GenerateCommandLineCommands ()
 		{
-			var args = new List<string> ();
+			var args = new StringBuilder ();
+			args.Append (ILLinkPath);
 
 			if (RootDescriptorFiles != null) {
 				foreach (var rootFile in RootDescriptorFiles) {
-					args.Add ("-x");
-					args.Add (rootFile.ItemSpec);
+					args.Append (" -x ").Append (rootFile.ItemSpec);
 				}
 			}
 
 			foreach (var assemblyItem in RootAssemblyNames) {
-				args.Add ("-a");
-				args.Add (assemblyItem.ItemSpec);
+				args.Append (" -a ").Append (assemblyItem.ItemSpec);
 			}
 
 			HashSet<string> directories = new HashSet<string> ();
@@ -102,42 +137,39 @@ namespace ILLink.Tasks
 				var dir = Path.GetDirectoryName (assemblyPath);
 				if (!directories.Contains (dir)) {
 					directories.Add (dir);
-					args.Add ("-d");
-					args.Add (dir);
+					args.Append (" -d ").Append (dir);
 				}
 
 				string action = assembly.GetMetadata ("action");
 				if ((action != null) && (action.Length > 0)) {
-					args.Add ("-p");
-					args.Add (action);
-					args.Add (Path.GetFileNameWithoutExtension (assemblyPath));
+					args.Append (" -p ");
+					args.Append (action);
+					args.Append (" ").Append (Path.GetFileNameWithoutExtension (assemblyPath));
 				}
 			}
 
 			if (OutputDirectory != null) {
-				args.Add ("-out");
-				args.Add (OutputDirectory.ItemSpec);
+				args.Append (" -out ").Append (OutputDirectory.ItemSpec);
 			}
 
 			if (ClearInitLocals) {
-				args.Add ("-s");
+				args.Append (" -s ");
 				// Version of ILLink.CustomSteps is passed as a workaround for msbuild issue #3016
-				args.Add ("ILLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps,Version=0.0.0.0:OutputStep");
+				args.Append ("LLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps,Version=0.0.0.0:OutputStep");
 				if ((ClearInitLocalsAssemblies != null) && (ClearInitLocalsAssemblies.Length > 0)) {
-					args.Add ("-m");
-					args.Add ("ClearInitLocalsAssemblies");
-					args.Add (ClearInitLocalsAssemblies);
+					args.Append (" -m ClearInitLocalsAssemblies ");
+					args.Append (ClearInitLocalsAssemblies);
 				}
 			}
 
 			if (ExtraArgs != null) {
-				args.AddRange (ExtraArgs.Split (' '));
+				args.Append (" ").Append (ExtraArgs);
 			}
 
 			if (DumpDependencies)
-				args.Add ("--dump-dependencies");
+				args.Append (" --dump-dependencies");
 
-			return args.ToArray ();
+			return args.ToString ();
 		}
 
 	}
