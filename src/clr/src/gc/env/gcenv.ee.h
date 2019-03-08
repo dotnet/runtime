@@ -96,6 +96,7 @@ public:
     static void AnalyzeSurvivorsFinished(int condemnedGeneration);
 
     static void VerifySyncTableEntry();
+    static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
 };
 
 #endif // __GCENV_EE_H__

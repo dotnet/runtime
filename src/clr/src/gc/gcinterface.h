@@ -199,6 +199,16 @@ extern uint8_t* g_GCShadowEnd;
 extern uint8_t* g_shadow_lowest_address;
 #endif
 
+/*
+ * GCEventProvider represents one of the two providers that the GC can
+ * fire events from: the default and private providers.
+ */
+enum GCEventProvider
+{
+    GCEventProvider_Default = 0,
+    GCEventProvider_Private = 1
+};
+
 // Event levels corresponding to events that can be fired by the GC.
 enum GCEventLevel
 {
