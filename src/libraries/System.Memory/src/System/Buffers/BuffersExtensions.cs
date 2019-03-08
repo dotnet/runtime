@@ -22,7 +22,7 @@ namespace System.Buffers
                 int index = source.First.Span.IndexOf(value);
                 if (index != -1)
                 {
-                    return source.GetPosition(index);
+                    return source.Seek(index);
                 }
 
                 return null;
