@@ -4,7 +4,7 @@
     "vendor": ".NET Foundation",
 
     "package_name": "dotnet-host",
-    "install_root": "/usr/share/dotnet",
+    "install_root": "/",
     "install_doc": "/usr/share/doc/dotnet-host/",
     "install_man": "/usr/share/man/man1",
 
@@ -39,8 +39,5 @@
     "directories" : [
         "/usr/share/dotnet",
         "/usr/share/doc/dotnet-host"
-    ],
-
-    "after_install_source": "scripts/after_install_host.sh",
-    "after_remove_source": "scripts/after_remove_host.sh"
+    ]
 }
