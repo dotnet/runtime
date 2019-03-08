@@ -71,12 +71,14 @@ public:
     // Returns the first argument register of the allocated set.
     unsigned allocRegArg(var_types type, unsigned numRegs = 1);
 
+#ifdef _TARGET_ARM_
     // We are aligning the register to an ABI-required boundary, such as putting
     // double-precision floats in even-numbered registers, by skipping one register.
     // "requiredRegAlignment" is the amount to align to: 1 for no alignment (everything
     // is 1-aligned), 2 for "double" alignment.
     // Returns the number of registers skipped.
     unsigned alignReg(var_types type, unsigned requiredRegAlignment);
+#endif // _TARGET_ARM_
 
     // Return true if it is an enregisterable type and there is room.
     // Note that for "type", we only care if it is float or not. In particular,
