@@ -4995,10 +4995,10 @@ struct GenTreePhiArg : public GenTreeLclVarCommon
 {
     BasicBlock* gtPredBB;
 
-    GenTreePhiArg(var_types type, unsigned lclNum, unsigned snum, BasicBlock* block)
+    GenTreePhiArg(var_types type, unsigned lclNum, unsigned ssaNum, BasicBlock* block)
         : GenTreeLclVarCommon(GT_PHI_ARG, type, lclNum), gtPredBB(block)
     {
-        SetSsaNum(snum);
+        SetSsaNum(ssaNum);
     }
 
 #if DEBUGGABLE_GENTREE
