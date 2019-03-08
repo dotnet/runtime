@@ -14,7 +14,6 @@ include_directories(../json/casablanca/include)
 set(SOURCES
     ../../common/trace.cpp
     ../../common/utils.cpp
-    ../libhost.cpp
     ../runtime_config.cpp
     ../json/casablanca/src/json/json.cpp
     ../json/casablanca/src/json/json_parsing.cpp

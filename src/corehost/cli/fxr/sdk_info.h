@@ -4,7 +4,8 @@
 #ifndef __SDK_INFO_H_
 #define __SDK_INFO_H_
 
-#include "libhost.h"
+#include "pal.h"
+#include "fx_ver.h"
 
 struct sdk_info
 {

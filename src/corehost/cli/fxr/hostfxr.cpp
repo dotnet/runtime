@@ -8,7 +8,6 @@
 #include "fx_ver.h"
 #include "fx_muxer.h"
 #include "error_codes.h"
-#include "libhost.h"
 #include "corehost.h"
 #include "runtime_config.h"
 #include "sdk_info.h"
