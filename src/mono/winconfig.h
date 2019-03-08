@@ -240,8 +240,10 @@
 
 #ifdef _WIN64
 #define TARGET_AMD64 1
+#define HOST_AMD64 1
 #else
 #define TARGET_X86 1
+#define HOST_X86 1
 #endif
 
 /* byte order of target */
