@@ -28,7 +28,6 @@ usage()
   echo "  --buildtests               Build all test projects"
   echo "  --rebuild                  Rebuild all source projects"
   echo "  --test                     Run all unit tests (short: -t)"
-  echo "  --performanceTest          Run all performance tests"
   echo "  --pack                     Package build outputs into NuGet packages"
   echo "  --sign                     Sign build outputs"
   echo "  --publish                  Publish artifacts (e.g. symbols)"
@@ -51,7 +50,7 @@ extraargs=''
 checkedPossibleDirectoryToBuild=false
 
 # Check if an action is passed in
-declare -a actions=("r" "restore" "b" "build" "rebuild" "deploy" "deployDeps" "test" "integrationTest" "performanceTest" "sign" "publish" "buildtests")
+declare -a actions=("r" "restore" "b" "build" "rebuild" "deploy" "deployDeps" "test" "integrationTest" "sign" "publish" "buildtests")
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build"
