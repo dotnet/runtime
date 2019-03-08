@@ -140,17 +140,6 @@ private:
     void SetTimeStamp(LARGE_INTEGER timeStamp);
 };
 
-// A specific type of event instance for use by the SampleProfiler.
-// This is needed because the SampleProfiler knows how to walk stacks belonging
-// to threads other than the current thread.
-class SampleProfilerEventInstance : public EventPipeEventInstance
-{
-
-public:
-
-    SampleProfilerEventInstance(EventPipeSession &session, EventPipeEvent &event, Thread *pThread, BYTE *pData, unsigned int length);
-};
-
 #endif // FEATURE_PERFTRACING
 
 #endif // __EVENTPIPE_EVENTINSTANCE_H__
