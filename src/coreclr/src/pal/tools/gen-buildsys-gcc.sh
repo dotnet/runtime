@@ -41,21 +41,22 @@ elif command -v "${gcc_prefix}gcc" > /dev/null
     then
         desired_gcc_version=
 else
-    echo "Unable to find \"${gcc_prefix}\"gcc Compiler"
+    echo "Unable to find ${gcc_prefix}gcc Compiler"
     exit 1
 fi
 
-if [ -z "$DOTNET_CC" ]; then
+if [ -z "$CLR_CC" ]; then
     CC="$(command -v "${gcc_prefix}"gcc"$desired_gcc_version")"
-    export CC
+    gcc_link="$(command -v link)"
 else
-    CC="$DOTNET_CC"
+    CC="$CLR_CC"
+    gcc_link="$CC"
 fi
 
-if [ -z "$DOTNET_CXX" ]; then
+if [ -z "$CLR_CXX" ]; then
     CXX="$(command -v "${gcc_prefix}g++$desired_gcc_version")"
 else
-    CXX="$DOTNET_CXX"
+    CXX="$CLR_CXX"
 fi
 
 export CC CXX
@@ -91,9 +92,9 @@ done
 OS=$(uname)
 
 locate_gcc_exec() {
-  ENV_KNOB="DOTNET_$(echo "$1" | tr '[:lower:]' '[:upper:]')"
-  if [ -n $(eval "\$$ENV_KNOB") ]; then
-    $(eval "\$$ENV_KNOB")
+  ENV_KNOB="CLR_$(echo "$1" | tr '[:lower:]' '[:upper:]')"
+  if env | grep -q "^$ENV_KNOB="; then
+    eval "echo \"\$$ENV_KNOB\""
     return
   fi
 
@@ -109,8 +110,6 @@ locate_gcc_exec() {
 }
 
 if ! gcc_ar="$(locate_gcc_exec ar)"; then { echo "Unable to locate gcc-ar"; exit 1; } fi
-
-if ! gcc_link="$(locate_gcc_exec link)"; then { echo "Unable to locate gcc-link"; exit 1; } fi
 
 if ! gcc_nm="$(locate_gcc_exec nm)"; then { echo "Unable to locate gcc-nm"; exit 1; } fi
 
