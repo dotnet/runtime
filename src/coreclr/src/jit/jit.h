@@ -867,7 +867,7 @@ inline T UninitializedWord(Compiler* comp)
     {
         comp = JitTls::GetCompiler();
     }
-    defaultFill = comp->compGetJitDefaultFill();
+    defaultFill = Compiler::compGetJitDefaultFill(comp);
     assert(defaultFill <= 0xff);
     __int64 word = 0x0101010101010101LL * defaultFill;
     return (T)word;
