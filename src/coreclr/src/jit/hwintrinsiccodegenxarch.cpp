@@ -1197,7 +1197,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
 //    nonConstImmReg - the register contains non-constant imm8 argument
 //    baseReg        - a register for the start of the switch table
 //    offsReg        - a register for the offset into the switch table
-//    emitSwCase     - the lambda to generate siwtch-case
+//    emitSwCase     - the lambda to generate a switch case
 //
 // Return Value:
 //    generate the jump-table fallback for imm-intrinsics with non-constant argument.
