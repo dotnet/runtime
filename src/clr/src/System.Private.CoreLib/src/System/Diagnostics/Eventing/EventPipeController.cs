@@ -212,7 +212,7 @@ namespace System.Diagnostics.Tracing
             {
                 // If set, bail out early if the specified process does not match the current process.
                 int processID = Convert.ToInt32(strProcessID);
-                if (processID != Interop.Kernel32.GetCurrentProcessId())
+                if (processID != (int)Interop.GetCurrentProcessId())
                 {
                     return null;
                 }
@@ -294,7 +294,7 @@ namespace System.Diagnostics.Tracing
 
         private static string BuildTraceFileName()
         {
-            return GetAppName() + "." + Interop.Kernel32.GetCurrentProcessId().ToString() + NetPerfFileExtension;
+            return GetAppName() + "." + Interop.GetCurrentProcessId().ToString() + NetPerfFileExtension;
         }
 
         private static string GetAppName()

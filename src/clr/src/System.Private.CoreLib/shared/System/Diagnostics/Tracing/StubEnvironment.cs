@@ -377,5 +377,7 @@ internal static partial class Interop
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         internal static extern uint GetCurrentProcessId();
     }
+
+    internal static uint GetCurrentProcessId() => Kernel32.GetCurrentProcessId();
 }
 #endif
