@@ -13,7 +13,6 @@
 struct probe_config_t
 {
     pal::string_t probe_dir;
-    bool patch_roll_fwd;
     const deps_json_t* probe_deps_json;
     int fx_level;
 
