@@ -310,6 +310,9 @@ namespace System.Text.Json.Tests
         [InlineData("{\"test\":[[[123,456]]]}", "test123456", "test123456")]
         [InlineData("/*a*//*z*/[/*b*//*z*/123/*c*//*z*/,/*d*//*z*/456/*e*//*z*/]/*f*//*z*/", "123456", "/*a*//*z*//*b*//*z*/123/*c*//*z*//*d*//*z*/456/*e*//*z*//*f*//*z*/")]
         [InlineData("[123,/*hi*/456/*bye*/]", "123456", "123/*hi*/456/*bye*/")]
+        [InlineData("[123,//hi\n456//bye\n]", "123456", "123//hi\n456//bye\n")]
+        [InlineData("[123,//hi\r456//bye\r]", "123456", "123//hi\r456//bye\r")]
+        [InlineData("[123,//hi\r\n456]", "123456", "123//hi\r\n456")]
         [InlineData("/*a*//*z*/{/*b*//*z*/\"test\":/*c*//*z*/[/*d*//*z*/[/*e*//*z*/[/*f*//*z*/123/*g*//*z*/,/*h*//*z*/456/*i*//*z*/]/*j*//*z*/]/*k*//*z*/]/*l*//*z*/}/*m*//*z*/",
     "test123456", "/*a*//*z*//*b*//*z*/test/*c*//*z*//*d*//*z*//*e*//*z*//*f*//*z*/123/*g*//*z*//*h*//*z*/456/*i*//*z*//*j*//*z*//*k*//*z*//*l*//*z*//*m*//*z*/")]
         [InlineData("//a\n//z\n{//b\n//z\n\"test\"://c\n//z\n[//d\n//z\n[//e\n//z\n[//f\n//z\n123//g\n//z\n,//h\n//z\n456//i\n//z\n]//j\n//z\n]//k\n//z\n]//l\n//z\n}//m\n//z\n",
@@ -560,6 +563,46 @@ namespace System.Text.Json.Tests
                 Assert.False(json.HasValueSequence);
                 Assert.True(json.ValueSpan == default);
                 Assert.True(json.ValueSequence.IsEmpty);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleLineCommentData))]
+        public static void ConsumeSingleLineCommentMultiSpanTest(string expected)
+        {
+            string jsonData = "{" + expected + "}";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonData);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
+
+            for (int i = 0; i < jsonData.Length; i++)
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow });
+
+                var json = new Utf8JsonReader(sequence.Slice(0, i), isFinalBlock: false, state);
+                VerifyReadLoop(ref json, expected);
+
+                json = new Utf8JsonReader(sequence.Slice(state.BytesConsumed), isFinalBlock: true, state);
+                VerifyReadLoop(ref json, expected);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleLineCommentData))]
+        public static void SkipSingleLineCommentMultiSpanTest(string expected)
+        {
+            string jsonData = "{" + expected + "}";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonData);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
+
+            for (int i = 0; i < jsonData.Length; i++)
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip });
+
+                var json = new Utf8JsonReader(sequence.Slice(0, i), isFinalBlock: false, state);
+                VerifyReadLoop(ref json, null);
+
+                json = new Utf8JsonReader(sequence.Slice(state.BytesConsumed), isFinalBlock: true, state);
+                VerifyReadLoop(ref json, null);
             }
         }
     }
