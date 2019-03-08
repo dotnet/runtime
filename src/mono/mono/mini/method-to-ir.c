@@ -2137,7 +2137,10 @@ check_method_sharing (MonoCompile *cfg, MonoMethod *cmethod, gboolean *out_pass_
 	}
 
 	if (mini_method_needs_mrgctx (cmethod)) {
-		g_assert (!pass_vtable);
+		if (mini_method_is_default_method (cmethod))
+			pass_vtable = FALSE;
+		else
+			g_assert (!pass_vtable);
 
 		if (mono_method_is_generic_sharable_full (cmethod, TRUE, TRUE, TRUE)) {
 			pass_mrgctx = TRUE;
