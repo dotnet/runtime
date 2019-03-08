@@ -47,10 +47,8 @@ fi
 
 if [ -z "$CLR_CC" ]; then
     CC="$(command -v "${gcc_prefix}gcc$desired_gcc_version")"
-    gcc_link="$(command -v link)"
 else
     CC="$CLR_CC"
-    gcc_link="$CC"
 fi
 
 if [ -z "$CLR_CXX" ]; then
@@ -108,6 +106,8 @@ locate_gcc_exec() {
     exit 1
   fi
 }
+
+if ! gcc_link="$(locate_gcc_exec link)"; then { echo "Unable to locate link"; exit 1; } fi
 
 if ! gcc_ar="$(locate_gcc_exec ar)"; then { echo "Unable to locate gcc-ar"; exit 1; } fi
 
