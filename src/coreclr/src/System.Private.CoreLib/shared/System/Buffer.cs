@@ -23,30 +23,8 @@ using nuint = System.UInt32;
 
 namespace System
 {
-    public static class Buffer
+    public static partial class Buffer
     {
-        // Copies from one primitive array to another primitive array without
-        // respecting types.  This calls memmove internally.  The count and 
-        // offset parameters here are in bytes.  If you want to use traditional
-        // array element indices and counts, use Array.Copy.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void BlockCopy(Array src, int srcOffset,
-            Array dst, int dstOffset, int count);
-
-        // Returns a bool to indicate if the array is of primitive data types
-        // or not.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool IsPrimitiveTypeArray(Array array);
-
-        // Gets the length of the array in bytes.  The array must be an
-        // array of primitives.
-        //
-        // This essentially does the following:
-        // return array.length * sizeof(array.UnderlyingElementType).
-        //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int _ByteLength(Array array);
-
         public static int ByteLength(Array array)
         {
             // Is the array present?
@@ -160,24 +138,6 @@ namespace System
                 Memcpy(pDest + destIndex, pSrc + srcIndex, len);
             }
         }
-
-        // This method has a slightly different behavior on arm and other platforms.
-        // On arm this method behaves like memcpy and does not handle overlapping buffers.
-        // While on other platforms it behaves like memmove and handles overlapping buffers.
-        // This behavioral difference is unfortunate but intentional because
-        // 1. This method is given access to other internal dlls and this close to release we do not want to change it.
-        // 2. It is difficult to get this right for arm and again due to release dates we would like to visit it later.
-#if ARM
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void Memcpy(byte* dest, byte* src, int len);
-#else // ARM
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void Memcpy(byte* dest, byte* src, int len)
-        {
-            Debug.Assert(len >= 0, "Negative length in memcpy!");
-            Memmove(dest, src, (nuint)len);
-        }
-#endif // ARM
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         internal static unsafe void Memmove(byte* dest, byte* src, nuint len)
@@ -614,9 +574,6 @@ namespace System
             fixed (byte* pSrc = &src)
                 __Memmove(pDest, pSrc, len);
         }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
 #if HAS_CUSTOM_BLOCKS
         [StructLayout(LayoutKind.Sequential, Size = 16)]
