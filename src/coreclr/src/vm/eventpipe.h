@@ -20,7 +20,6 @@ class EventPipeBufferManager;
 class EventPipeEventSource;
 class EventPipeProvider;
 class MethodDesc;
-class SampleProfilerEventInstance;
 struct EventPipeProviderConfiguration;
 class EventPipeSession;
 
