@@ -12,8 +12,6 @@ include_directories(../json/casablanca/include)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
-    ../../common/trace.cpp
-    ../../common/utils.cpp
     ../runtime_config.cpp
     ../json/casablanca/src/json/json.cpp
     ../json/casablanca/src/json/json_parsing.cpp
