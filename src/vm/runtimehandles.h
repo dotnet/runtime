@@ -152,6 +152,8 @@ public:
     static FCDECL1_V(ReflectClassBaseObject*, GetTypeFromHandle, FCALLRuntimeTypeHandle th);
     static FCDECL1_V(EnregisteredTypeHandle, GetValueInternal, FCALLRuntimeTypeHandle RTH);
 
+    static FCDECL2(FC_BOOL_RET, IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE);
+
     static FCDECL2(FC_BOOL_RET, TypeEQ, Object* left, Object* right);
     static FCDECL2(FC_BOOL_RET, TypeNEQ, Object* left, Object* right);
 

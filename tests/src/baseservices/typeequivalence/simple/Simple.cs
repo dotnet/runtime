@@ -38,6 +38,34 @@ public class Simple
         }
     }
 
+    private static void ValidateTypeInstanceEquality()
+    {
+        Console.WriteLine($"{nameof(ValidateTypeInstanceEquality)}");
+        var inAsm = EmptyType.Create();
+        var otherAsm = EmptyType2.Create();
+
+        Type inAsmInterfaceType = inAsm.GetType().GetInterface(nameof(IEmptyType));
+        Type otherAsmInterfaceType = otherAsm.GetType().GetInterface(nameof(IEmptyType));
+
+        // Sanity checks
+        Assert.IsTrue(inAsmInterfaceType == inAsmInterfaceType);
+        Assert.IsTrue(inAsmInterfaceType.IsEquivalentTo(inAsmInterfaceType));
+        Assert.IsFalse(inAsmInterfaceType.IsEquivalentTo(inAsm.GetType()));
+        Assert.IsTrue(otherAsmInterfaceType == otherAsmInterfaceType);
+        Assert.IsTrue(otherAsmInterfaceType.IsEquivalentTo(otherAsmInterfaceType));
+        Assert.IsFalse(otherAsmInterfaceType.IsEquivalentTo(otherAsm.GetType()));
+
+        // The intrinsic equality operations should fail
+        Assert.IsFalse(inAsmInterfaceType == otherAsmInterfaceType);
+        Assert.IsFalse(inAsmInterfaceType.Equals(otherAsmInterfaceType));
+        Assert.IsFalse(otherAsmInterfaceType == inAsmInterfaceType);
+        Assert.IsFalse(otherAsmInterfaceType.Equals(inAsmInterfaceType));
+
+        // Determination of equal types requires API call
+        Assert.IsTrue(inAsmInterfaceType.IsEquivalentTo(otherAsmInterfaceType));
+        Assert.IsTrue(otherAsmInterfaceType.IsEquivalentTo(inAsmInterfaceType));
+    }
+
     private class MethodTestDerived : MethodTestBase
     {
         private readonly int scaleValue;
@@ -127,6 +155,7 @@ public class Simple
         try
         {
             InterfaceTypesFromDifferentAssembliesAreEquivalent();
+            ValidateTypeInstanceEquality();
             InterfaceTypesMethodOperations();
             CallSparseInterface();
         }
