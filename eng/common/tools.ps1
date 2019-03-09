@@ -321,12 +321,10 @@ function LocateVisualStudio([object]$vsRequirements = $null){
 
 function InitializeBuildTool() {
   if (Test-Path variable:global:_BuildTool) {
-    Write-Host "variable:global:_BuildTool initialized." -ForegroundColor Red
     return $global:_BuildTool
   }
 
   if (-not $msbuildEngine) {
-    Write-Host "-not $msbuildEngine" -ForegroundColor Red
     $msbuildEngine = GetDefaultMSBuildEngine
   }
 
