@@ -798,6 +798,7 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
                 payload.GetSize(),
                 pActivityId,
                 pRelatedActivityId);
+            instance.EnsureStack(*s_pSession);
 
             if(s_pFile != NULL)
             {
