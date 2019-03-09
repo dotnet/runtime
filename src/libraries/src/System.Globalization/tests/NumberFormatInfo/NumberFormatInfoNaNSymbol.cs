@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -10,7 +9,7 @@ namespace System.Globalization.Tests
     public class NumberFormatInfoNaNSymbol
     {
         [Fact]
-        public void NaNSymbol_Get_InvariantInfo()
+        public void NaNSymbol_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("NaN", NumberFormatInfo.InvariantInfo.NaNSymbol);
         }
@@ -19,7 +18,7 @@ namespace System.Globalization.Tests
         [InlineData("string")]
         [InlineData("   ")]
         [InlineData("")]
-        public void NaNSymbol_Set(string newNaNSymbol)
+        public void NaNSymbol_Set_GetReturnsExpected(string newNaNSymbol)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.NaNSymbol = newNaNSymbol;
@@ -27,9 +26,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void NaNSymbol_Set_Invalid()
+        public void NaNSymbol_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("NaNSymbol", () => new NumberFormatInfo().NaNSymbol = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "NaNSymbol", () => format.NaNSymbol = null);
+        }
+
+        [Fact]
+        public void NaNSymbol_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NaNSymbol = "");
         }
     }
