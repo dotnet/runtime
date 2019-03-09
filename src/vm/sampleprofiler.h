@@ -22,7 +22,6 @@ class SampleProfiler
 
     // Declare friends.
     friend class EventPipe;
-    friend class SampleProfilerEventInstance;
 
     public:
 
