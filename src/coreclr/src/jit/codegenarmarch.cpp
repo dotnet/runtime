@@ -2675,47 +2675,68 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         if (varDsc->lvRegNum != argReg)
         {
             var_types loadType = TYP_UNDEF;
-            if (varTypeIsStruct(varDsc))
+
+            if (varDsc->lvIsHfaRegArg())
             {
-                // Must be <= 16 bytes or else it wouldn't be passed in registers
-                noway_assert(EA_SIZE_IN_BYTES(varDsc->lvSize()) <= MAX_PASS_MULTIREG_BYTES);
-                loadType = compiler->getJitGCType(varDsc->lvGcLayout[0]);
+                // Note that for HFA, the argument is currently marked address exposed so lvRegNum will always be
+                // REG_STK. We home the incoming HFA argument registers in the prolog. Then we'll load them back
+                // here, whether they are already in the correct registers or not. This is such a corner case that
+                // it is not worth optimizing it.
+
+                assert(!compiler->info.compIsVarArgs);
+
+                loadType           = varDsc->GetHfaType();
+                regNumber fieldReg = argReg;
+                emitAttr  loadSize = emitActualTypeSize(loadType);
+                unsigned  cSlots   = varDsc->lvHfaSlots();
+
+                for (unsigned ofs = 0, cSlot = 0; cSlot < cSlots; cSlot++, ofs += (unsigned)loadSize)
+                {
+                    getEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, fieldReg, varNum, ofs);
+                    assert(genIsValidFloatReg(fieldReg)); // No GC register tracking for floating point registers.
+                    fieldReg = regNextOfType(fieldReg, loadType);
+                }
             }
             else
             {
-                loadType = compiler->mangleVarArgsType(genActualType(varDsc->TypeGet()));
-            }
-            emitAttr loadSize = emitActualTypeSize(loadType);
-            getEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argReg, varNum, 0);
-
-            // Update argReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
-            // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
-            // Therefore manually update life of argReg.  Note that GT_JMP marks the end of the basic block
-            // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
-            regSet.AddMaskVars(genRegMask(argReg));
-            gcInfo.gcMarkRegPtrVal(argReg, loadType);
-
-            if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
-            {
-                if (varDsc->lvIsHfa())
+                if (varTypeIsStruct(varDsc))
                 {
-                    NYI_ARM64("CodeGen::genJmpMethod with multireg HFA arg");
+                    // Must be <= 16 bytes or else it wouldn't be passed in registers, except for HFA,
+                    // which can be bigger (and is handled above).
+                    noway_assert(EA_SIZE_IN_BYTES(varDsc->lvSize()) <= 16);
+                    loadType = compiler->getJitGCType(varDsc->lvGcLayout[0]);
+                }
+                else
+                {
+                    loadType = compiler->mangleVarArgsType(genActualType(varDsc->TypeGet()));
+                }
+                emitAttr loadSize = emitActualTypeSize(loadType);
+                getEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argReg, varNum, 0);
+
+                // Update argReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
+                // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
+                // Therefore manually update life of argReg.  Note that GT_JMP marks the end of the basic block
+                // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
+                regSet.AddMaskVars(genRegMask(argReg));
+                gcInfo.gcMarkRegPtrVal(argReg, loadType);
+
+                if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+                {
+                    // Restore the second register.
+                    argRegNext = genRegArgNext(argReg);
+
+                    loadType = compiler->getJitGCType(varDsc->lvGcLayout[1]);
+                    loadSize = emitActualTypeSize(loadType);
+                    getEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, TARGET_POINTER_SIZE);
+
+                    regSet.AddMaskVars(genRegMask(argRegNext));
+                    gcInfo.gcMarkRegPtrVal(argRegNext, loadType);
                 }
 
-                // Restore the second register.
-                argRegNext = genRegArgNext(argReg);
-
-                loadType = compiler->getJitGCType(varDsc->lvGcLayout[1]);
-                loadSize = emitActualTypeSize(loadType);
-                getEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, TARGET_POINTER_SIZE);
-
-                regSet.AddMaskVars(genRegMask(argRegNext));
-                gcInfo.gcMarkRegPtrVal(argRegNext, loadType);
-            }
-
-            if (compiler->lvaIsGCTracked(varDsc))
-            {
-                VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
+                if (compiler->lvaIsGCTracked(varDsc))
+                {
+                    VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
+                }
             }
         }
 
@@ -2723,6 +2744,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         {
             // In case of a jmp call to a vararg method ensure only integer registers are passed.
             assert((genRegMask(argReg) & (RBM_ARG_REGS | RBM_ARG_RET_BUFF)) != RBM_NONE);
+            assert(!varDsc->lvIsHfaRegArg());
 
             fixedIntArgMask |= genRegMask(argReg);
 
