@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
 
-                if (reader.TryGetPrimitiveOctetStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out ReadOnlyMemory<byte> tmpSubjectKeyIdentifier))
+                if (reader.TryReadPrimitiveOctetStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out ReadOnlyMemory<byte> tmpSubjectKeyIdentifier))
                 {
                     decoded.SubjectKeyIdentifier = tmpSubjectKeyIdentifier;
                 }

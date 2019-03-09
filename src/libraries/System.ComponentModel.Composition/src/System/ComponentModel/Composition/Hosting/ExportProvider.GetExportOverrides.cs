@@ -793,7 +793,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             if (!MetadataViewProvider.IsViewTypeValid(metadataViewType))
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, SR.InvalidMetadataView, metadataViewType.Name));
+                throw new InvalidOperationException(SR.Format(SR.InvalidMetadataView, metadataViewType.Name));
             }
 
             ImportDefinition importDefinition = BuildImportDefinition(type, metadataViewType, contractName, cardinality);

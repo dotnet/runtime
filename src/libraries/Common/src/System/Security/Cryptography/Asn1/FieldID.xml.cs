@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Asn1
             writer.PushSequence(tag);
             
             writer.WriteObjectIdentifier(FieldType);
-            writer.WriteEncodedValue(Parameters);
+            writer.WriteEncodedValue(Parameters.Span);
             writer.PopSequence(tag);
         }
 
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             
             decoded.FieldType = sequenceReader.ReadObjectIdentifierAsString();
-            decoded.Parameters = sequenceReader.GetEncodedValue();
+            decoded.Parameters = sequenceReader.ReadEncodedValue();
 
             sequenceReader.ThrowIfNotEmpty();
         }

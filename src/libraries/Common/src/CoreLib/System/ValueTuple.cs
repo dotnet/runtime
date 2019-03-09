@@ -62,7 +62,7 @@ namespace System
 
             if (!(other is ValueTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             return 0;
@@ -87,7 +87,7 @@ namespace System
 
             if (!(other is ValueTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             return 0;
@@ -365,7 +365,7 @@ namespace System
 
             if (!(other is ValueTuple<T1>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             var objTuple = (ValueTuple<T1>)other;
@@ -392,7 +392,7 @@ namespace System
 
             if (!(other is ValueTuple<T1>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             var objTuple = (ValueTuple<T1>)other;
@@ -559,7 +559,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             return CompareTo((ValueTuple<T1, T2>)other);
@@ -587,7 +587,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             var objTuple = (ValueTuple<T1, T2>)other;
@@ -759,7 +759,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             return CompareTo((ValueTuple<T1, T2, T3>)other);
@@ -790,7 +790,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             var objTuple = (ValueTuple<T1, T2, T3>)other;
@@ -976,7 +976,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             return CompareTo((ValueTuple<T1, T2, T3, T4>)other);
@@ -1010,7 +1010,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             var objTuple = (ValueTuple<T1, T2, T3, T4>)other;
@@ -1212,7 +1212,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             return CompareTo((ValueTuple<T1, T2, T3, T4, T5>)other);
@@ -1249,7 +1249,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             var objTuple = (ValueTuple<T1, T2, T3, T4, T5>)other;
@@ -1467,7 +1467,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             return CompareTo((ValueTuple<T1, T2, T3, T4, T5, T6>)other);
@@ -1507,7 +1507,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6>)other;
@@ -1741,7 +1741,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             return CompareTo((ValueTuple<T1, T2, T3, T4, T5, T6, T7>)other);
@@ -1784,7 +1784,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6, T7>)other;
@@ -2040,7 +2040,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             return CompareTo((ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)other);
@@ -2086,7 +2086,7 @@ namespace System
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, GetType()), nameof(other));
             }
 
             var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)other;

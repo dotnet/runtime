@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.X509Certificates
             uint allFlags = 0x71F1;
             uint dwFlags = (uint)flags;
             if ((dwFlags & ~allFlags) != 0)
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "flag"));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, "flag"));
         }
 
         private volatile string _lazyDistinguishedName;

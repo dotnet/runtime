@@ -215,7 +215,7 @@ namespace System.Xml.Xsl.IlGen
                 case 1: _arg1 = arg; break;
                 case 2: _arg2 = arg; break;
                 default:
-                    Debug.Assert(false, "Cannot handle more than 2 arguments.");
+                    Debug.Fail("Cannot handle more than 2 arguments.");
                     break;
             }
         }

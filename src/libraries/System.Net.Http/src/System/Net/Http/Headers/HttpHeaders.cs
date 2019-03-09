@@ -989,7 +989,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 default:
-                    Debug.Assert(false, "Unknown StoreLocation value: " + location.ToString());
+                    Debug.Fail("Unknown StoreLocation value: " + location.ToString());
                     break;
             }
         }
@@ -1062,7 +1062,7 @@ namespace System.Net.Http.Headers
             // value already set.
             if (!info.CanAddValue(descriptor.Parser))
             {
-                throw new FormatException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_single_value_header, descriptor.Name));
+                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_single_value_header, descriptor.Name));
             }
 
             int index = 0;

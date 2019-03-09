@@ -13,21 +13,9 @@ namespace System.Globalization
         private int m_NlsVersion; // Do not rename (binary serialization)
         private Guid m_SortId; // Do not rename (binary serialization)
 
-        public int FullVersion
-        {
-            get
-            {
-                return m_NlsVersion;
-            }
-        }
+        public int FullVersion => m_NlsVersion;
 
-        public Guid SortId
-        {
-            get
-            {
-                return m_SortId;
-            }
-        }
+        public Guid SortId => m_SortId;
 
         public SortVersion(int fullVersion, Guid sortId)
         {
@@ -53,13 +41,7 @@ namespace System.Globalization
 
         public override bool Equals(object obj)
         {
-            SortVersion n = obj as SortVersion;
-            if (n != null)
-            {
-                return this.Equals(n);
-            }
-
-            return false;
+            return obj is SortVersion otherVersion && Equals(otherVersion);
         }
 
         public bool Equals(SortVersion other)

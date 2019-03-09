@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
     public class NumberFormatInfoPercentGroupSeparator
     {
         [Fact]
-        public void PercentGroupSeparator_Get_InvariantInfo()
+        public void PercentGroupSeparator_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal(",", NumberFormatInfo.InvariantInfo.PercentGroupSeparator);
         }
@@ -18,7 +18,7 @@ namespace System.Globalization.Tests
         [InlineData("string")]
         [InlineData("    ")]
         [InlineData("")]
-        public void PercentGroupSeparator_Set(string newPercentGroupSeparator)
+        public void PercentGroupSeparator_Set_GetReturnsExpected(string newPercentGroupSeparator)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.PercentGroupSeparator = newPercentGroupSeparator;
@@ -26,9 +26,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void PercentGroupSeparator_Set_Invalid()
+        public void PercentGroupSeparator_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("PercentGroupSeparator", () => new NumberFormatInfo().PercentGroupSeparator = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "PercentGroupSeparator", () => format.PercentGroupSeparator = null);
+        }
+
+        [Fact]
+        public void PercentGroupSeparator_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentGroupSeparator = "string");
         }
     }

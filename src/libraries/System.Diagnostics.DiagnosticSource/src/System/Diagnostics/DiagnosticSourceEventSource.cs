@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -644,26 +646,43 @@ namespace System.Diagnostics
                 {
                     if (!_noImplicitTransforms)
                     {
+                        // given the type, fetch the implicit transforms for that type and put it in the implicitTransforms variable.  
                         Type argType = args.GetType();
-                        if (_expectedArgType != argType)
+                        TransformSpec implicitTransforms;
+
+                        // First check the one-element cache _firstImplicitTransformsEntry
+                        ImplicitTransformEntry cacheEntry = _firstImplicitTransformsEntry;
+                        if (cacheEntry != null && cacheEntry.Type == argType)
                         {
-                            // Figure out the default properties to send on to EventSource.  These are all string or primitive properties.  
-                            _implicitTransforms = null;
-                            TransformSpec newSerializableArgs = null;
-                            TypeInfo curTypeInfo = argType.GetTypeInfo();
-                            foreach (var property in curTypeInfo.DeclaredProperties)
+                            implicitTransforms = cacheEntry.Transforms;     // Yeah we hit the cache.  
+                        }
+                        else if (cacheEntry == null)
+                        {
+                            // _firstImplicitTransformsEntry is empty, we should fill it.  
+                            // Note that it is OK that two threads may race and both call MakeImplicitTransforms on their own
+                            // (that is we don't expect exactly once initialization of _firstImplicitTransformsEntry)    
+                            implicitTransforms = MakeImplicitTransforms(argType);
+                            Interlocked.CompareExchange(ref _firstImplicitTransformsEntry, 
+                                new ImplicitTransformEntry() { Type = argType, Transforms = implicitTransforms }, null);
+                        }
+                        else
+                        {
+                            // This should only happen when you are wildcarding your events (reasonably rare).   
+                            // In that case you will probably need many types
+                            // Note currently we don't limit the cache size, but it is limited by the number of 
+                            // distinct types of objects passed to DiagnosticSource.Write.  
+                            if (_implicitTransformsTable == null)
                             {
-                                var propertyType = property.PropertyType;
-                                newSerializableArgs = new TransformSpec(property.Name, 0, property.Name.Length, newSerializableArgs);
+                                Interlocked.CompareExchange(ref _implicitTransformsTable,
+                                    new ConcurrentDictionary<Type, TransformSpec>(1, 8), null);
                             }
-                            _expectedArgType = argType;
-                            _implicitTransforms = Reverse(newSerializableArgs);
+                            implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, type => MakeImplicitTransforms(type));
                         }
 
-                        // Fetch all the fields that are already serializable
-                        if (_implicitTransforms != null)
+                        // implicitTransformas now fetched from cache or constructed, use it to Fetch all the implicit fields.  
+                        if (implicitTransforms != null)
                         {
-                            for (var serializableArg = _implicitTransforms; serializableArg != null; serializableArg = serializableArg.Next)
+                            for (TransformSpec serializableArg = implicitTransforms; serializableArg != null; serializableArg = serializableArg.Next)
                                 outputArgs.Add(serializableArg.Morph(args));
                         }
                     }
@@ -684,6 +703,20 @@ namespace System.Diagnostics
             public FilterAndTransform Next;
 
             #region private
+            // Given a type generate all the the implicit transforms for type (that is for every field 
+            // generate the spec that fetches it).  
+            private static TransformSpec MakeImplicitTransforms(Type type)
+            {
+                TransformSpec newSerializableArgs = null;
+                TypeInfo curTypeInfo = type.GetTypeInfo();
+                foreach (PropertyInfo property in curTypeInfo.DeclaredProperties)
+                {
+                    Type propertyType = property.PropertyType;
+                    newSerializableArgs = new TransformSpec(property.Name, 0, property.Name.Length, newSerializableArgs);
+                }
+                return Reverse(newSerializableArgs);
+            }
+
             // Reverses a linked list (of TransformSpecs) in place.    
             private static TransformSpec Reverse(TransformSpec list)
             {
@@ -700,12 +733,20 @@ namespace System.Diagnostics
 
             private IDisposable _diagnosticsListenersSubscription; // This is our subscription that listens for new Diagnostic source to appear. 
             private Subscriptions _liveSubscriptions;              // These are the subscriptions that we are currently forwarding to the EventSource.
-            private bool _noImplicitTransforms;                    // Listener can say they don't want implicit transforms.  
-            private Type _expectedArgType;                         // This is the type where 'implicitTransforms is built for'
-            private TransformSpec _implicitTransforms;             // payload to include because the DiagnosticSource's object fields are already serializable 
+            private bool _noImplicitTransforms;                    // Listener can say they don't want implicit transforms.
+            private ImplicitTransformEntry _firstImplicitTransformsEntry; // The transform for _firstImplicitFieldsType
+            private ConcurrentDictionary<Type, TransformSpec> _implicitTransformsTable; // If there is more than one object type for an implicit transform, they go here.   
             private TransformSpec _explicitTransforms;             // payload to include because the user explicitly indicated how to fetch the field.  
             private DiagnosticSourceEventSource _eventSource;      // Where the data is written to.  
             #endregion
+        }
+
+        // This olds one the implicit transform for one type of object.  
+        // We remember this type-transform pair in the _firstImplicitTransformsEntry cache.  
+        internal class ImplicitTransformEntry
+        {
+            public Type Type;
+            public TransformSpec Transforms;
         }
 
         /// <summary>

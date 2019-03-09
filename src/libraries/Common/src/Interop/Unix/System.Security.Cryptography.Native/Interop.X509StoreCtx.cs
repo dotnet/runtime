@@ -33,6 +33,29 @@ internal static partial class Interop
             }
         }
 
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_X509StoreCtxResetForSignatureError(
+            SafeX509StoreCtxHandle ctx,
+            out SafeX509StoreHandle newStore);
+
+        internal static void X509StoreCtxResetForSignatureError(
+            SafeX509StoreCtxHandle ctx,
+            out SafeX509StoreHandle newStore)
+        {
+            if (CryptoNative_X509StoreCtxResetForSignatureError(ctx, out newStore) != 1)
+            {
+                newStore.Dispose();
+                newStore = null;
+                throw CreateOpenSslCryptographicException();
+            }
+
+            if (newStore.IsInvalid)
+            {
+                newStore.Dispose();
+                newStore = null;
+            }
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetSharedUntrusted")]
         private static extern SafeSharedX509StackHandle X509StoreCtxGetSharedUntrusted_private(SafeX509StoreCtxHandle ctx);
 

@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));
                 for (int i = 0; i < RevocationInfoChoices.Length; i++)
                 {
-                    writer.WriteEncodedValue(RevocationInfoChoices[i]); 
+                    writer.WriteEncodedValue(RevocationInfoChoices[i].Span); 
                 }
                 writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));
 
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
                     while (collectionReader.HasData)
                     {
-                        tmpItem = collectionReader.GetEncodedValue(); 
+                        tmpItem = collectionReader.ReadEncodedValue(); 
                         tmpList.Add(tmpItem);
                     }
 

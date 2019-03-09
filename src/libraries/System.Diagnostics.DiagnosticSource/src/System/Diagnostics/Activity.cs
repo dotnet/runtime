@@ -5,6 +5,7 @@
 using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
     using System.Security;
@@ -63,7 +64,7 @@ namespace System.Diagnostics
                 // if we represented it as a traceId-spanId, convert it to a string.  
                 // We can do this concatenation with a stackalloced Span<char> if we actually used Id a lot.  
                 if (_id == null && _spanIdSet)
-                    _id = "00-" + _traceId.AsHexString + "-" + _spanId.AsHexString + "-00";
+                    _id = "00-" + _traceId.ToHexString() + "-" + _spanId.ToHexString() + "-00";
                 return _id;
             }
         }
@@ -98,7 +99,7 @@ namespace System.Diagnostics
                 if (_parentId == null)
                 {
                     if (_parentSpanIdSet)
-                        _parentId = "00-" + _traceId.AsHexString + "-" + _parentSpanId.AsHexString + "-00";
+                        _parentId = "00-" + _traceId.ToHexString() + "-" + _parentSpanId.ToHexString() + "-00";
                     else if (Parent != null)
                         _parentId = Parent.Id;
                 }
@@ -456,7 +457,7 @@ namespace System.Diagnostics
         /// which will have the effect of updating Activity's instance so all subsequent uses
         /// share the same converted string.  
         /// </summary>
-        public ref ActivitySpanId SpanId
+        public ref readonly ActivitySpanId SpanId
         {
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
             [System.Security.SecuritySafeCriticalAttribute]
@@ -467,7 +468,7 @@ namespace System.Diagnostics
                 {
                     if (_id != null && IdFormat == ActivityIdFormat.W3C)
                     {
-                        _spanId = new ActivitySpanId(_id.AsSpan(36, 16));
+                        _spanId = ActivitySpanId.CreateFromString(_id.AsSpan(36, 16));
                         _spanIdSet = true;
                     }
                 }
@@ -486,7 +487,7 @@ namespace System.Diagnostics
         /// which will have the effect of updating Activity's instance so all subsequent uses
         /// share the same converted string.  
         /// </summary>
-        public ref ActivityTraceId TraceId
+        public ref readonly ActivityTraceId TraceId
         {
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
             [System.Security.SecuritySafeCriticalAttribute]
@@ -497,7 +498,7 @@ namespace System.Diagnostics
                 {
                     if (_id != null && IdFormat == ActivityIdFormat.W3C)
                     {
-                        _traceId = new ActivityTraceId(_id.AsSpan(3, 32));
+                        _traceId = ActivityTraceId.CreateFromString(_id.AsSpan(3, 32));
                         _traceIdSet = true;
                     }
                 }
@@ -509,7 +510,7 @@ namespace System.Diagnostics
         /// If the parent Activity ID has the W3C format, this returns the ID for the SpanId part of the ParentId.  
         /// Otherwise it returns a zero SpanId. 
         /// </summary>
-        public ref ActivitySpanId ParentSpanId
+        public ref readonly ActivitySpanId ParentSpanId
         {
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
             [System.Security.SecuritySafeCriticalAttribute]
@@ -522,13 +523,13 @@ namespace System.Diagnostics
                     {
                         try
                         {
-                            _parentSpanId = new ActivitySpanId(_parentId.AsSpan(36, 16));
+                            _parentSpanId = ActivitySpanId.CreateFromString(_parentId.AsSpan(36, 16));
                         }
-                        catch  { }
+                        catch { }
                         _parentSpanIdSet = true;
                     }
                     else if (Parent != null && Parent.IdFormat == ActivityIdFormat.W3C)
-                    { 
+                    {
                         _parentSpanId = Parent.SpanId;
                         _parentSpanIdSet = true;
                     }
@@ -612,22 +613,22 @@ namespace System.Diagnostics
                 {
                     try
                     {
-                        _traceId = new ActivityTraceId(_parentId.AsSpan(3, 32));
+                        _traceId = ActivityTraceId.CreateFromString(_parentId.AsSpan(3, 32));
                     }
                     catch
                     {
-                        _traceId = ActivityTraceId.NewTraceId();
+                        _traceId = ActivityTraceId.CreateRandom();
                     }
                 }
                 else
                 {
-                    _traceId = ActivityTraceId.NewTraceId();
+                    _traceId = ActivityTraceId.CreateRandom();
                 }
 
                 _traceIdSet = true;
             }
             // Create a new SpanID. 
-            _spanId = ActivitySpanId.NewSpanId();
+            _spanId = ActivitySpanId.CreateRandom();
             _spanIdSet = true;
         }
 
@@ -800,7 +801,7 @@ namespace System.Diagnostics
     /// <summary>
     /// The possibilities for the format of the ID
     /// </summary>
-    public enum ActivityIdFormat : byte
+    public enum ActivityIdFormat
     {
         Unknown,      // ID format is not known.     
         Hierarchical, //|XXXX.XX.X_X ... see https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format
@@ -819,56 +820,35 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [SecuritySafeCritical]
 #endif
-    public unsafe struct ActivityTraceId : IEquatable<ActivityTraceId>
+    public unsafe readonly struct ActivityTraceId : IEquatable<ActivityTraceId>
     {
         /// <summary>
-        /// Creates a TraceId from a 16 byte span 'idBytes'.   The bytes are copied.  
+        /// Create a new TraceId with at random number in it (very likely to be unique)
         /// </summary>
-        public ActivityTraceId(ReadOnlySpan<byte> idData, bool isUtf8Chars = false)
+        public static ActivityTraceId CreateRandom()
         {
-            _id1 = 0;
-            _id2 = 0;
-            _asHexString = null;
-            if (isUtf8Chars)
-            {
-                if (idData.Length != 32)
-                    throw new ArgumentOutOfRangeException(nameof(idData));
-                Utf8Parser.TryParse(idData.Slice(0, 16), out _id1, out _, 'x');
-                Utf8Parser.TryParse(idData.Slice(16, 16), out _id2, out _, 'x');
-                if (BitConverter.IsLittleEndian)
-                {
-                    _id1 = BinaryPrimitives.ReverseEndianness(_id1);
-                    _id2 = BinaryPrimitives.ReverseEndianness(_id2);
-                }
-            }
-            else
-            {
-                if (idData.Length != 16)
-                    throw new ArgumentOutOfRangeException(nameof(idData));
-                fixed (ulong* idPtr = &_id1)
-                    idData.CopyTo(new Span<byte>(idPtr, sizeof(ulong) * 2));
-            }
+            ActivityTraceId ret = new ActivityTraceId();
+            SetToRandomBytes(new Span<byte>(&ret._id1, sizeof(ulong) * 2));
+            return ret;
         }
+        public static ActivityTraceId CreateFromBytes(ReadOnlySpan<byte> idData)
+        {
+            if (idData.Length != 16)
+                throw new ArgumentOutOfRangeException(nameof(idData));
 
-        public ActivityTraceId(ReadOnlySpan<char> idData)
+            ActivityTraceId ret = new ActivityTraceId();
+            idData.CopyTo(new Span<byte>(&ret._id1, sizeof(ulong) * 2));
+            return ret;
+        }
+        public static ActivityTraceId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivityTraceId(idData);
+
+        public static ActivityTraceId CreateFromString(ReadOnlySpan<char> idData)
         {
             if (idData.Length != 32)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-            _id1 = 0;
-            _id2 = 0;
-            _asHexString = null;
-            fixed (ulong* idPtr = &_id1)
-                ActivityTraceId.SetSpanFromHexChars(new Span<byte>(idPtr, sizeof(ulong) * 2), idData);
-        }
-
-        /// <summary>
-        /// Create a new TraceId with at random number in it (very likely to be unique)
-        /// </summary>
-        public static ActivityTraceId NewTraceId()
-        {
             ActivityTraceId ret = new ActivityTraceId();
-            SetToRandomBytes(new Span<byte>(&ret._id1, sizeof(ulong) * 2));
+            ActivityTraceId.SetSpanFromHexChars(new Span<byte>(&ret._id1, sizeof(ulong) * 2), idData);
             return ret;
         }
 
@@ -884,23 +864,25 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns the TraceId as a 32 character hexadecimal string.  
         /// </summary>
-        public string AsHexString
+        public string ToHexString()
         {
-            get
+            if (_asHexString == null)
             {
-                if (_asHexString == null)
+                fixed (ulong* idPtr = &_id1)
                 {
-                    fixed (ulong* idPtr = &_id1)
-                        _asHexString = SpanToHexString(new ReadOnlySpan<byte>(idPtr, sizeof(ulong) * 2));
+                    // Cast away the read-only-ness of _asHexString, and assign the converted value to it.  
+                    // We are OK with this because conceptually the class is still read-only.  
+                    ref string strRef = ref Unsafe.AsRef(in _asHexString);
+                    Interlocked.CompareExchange(ref strRef, SpanToHexString(new ReadOnlySpan<byte>(idPtr, sizeof(ulong) * 2)), null);
                 }
-                return _asHexString;
             }
+            return _asHexString;
         }
 
         /// <summary>
         /// Returns the TraceId as a 32 character hexadecimal string.  
         /// </summary>
-        public override string ToString() => AsHexString;
+        public override string ToString() => ToHexString();
 
         #region equality operators
         public static bool operator ==(in ActivityTraceId traceId1, in ActivityTraceId traceId2)
@@ -925,9 +907,28 @@ namespace System.Diagnostics
         {
             return _id1.GetHashCode() + _id2.GetHashCode();
         }
-        #endregion 
+        #endregion
 
         #region private
+        /// <summary>
+        /// This is exposed as CreateFromUtf8String, but we are modifying fields, so the code needs to be in a constructor.  
+        /// </summary>
+        /// <param name="idData"></param>
+        private ActivityTraceId(ReadOnlySpan<byte> idData)
+        {
+            _id1 = 0;
+            _id2 = 0;
+            _asHexString = null;
+            if (idData.Length != 32)
+                throw new ArgumentOutOfRangeException(nameof(idData));
+            Utf8Parser.TryParse(idData.Slice(0, 16), out _id1, out _, 'x');
+            Utf8Parser.TryParse(idData.Slice(16, 16), out _id2, out _, 'x');
+            if (BitConverter.IsLittleEndian)
+            {
+                _id1 = BinaryPrimitives.ReverseEndianness(_id1);
+                _id2 = BinaryPrimitives.ReverseEndianness(_id2);
+            }
+        }
 
         /// <summary>
         /// Sets the bytes in 'outBytes' to be random values.   outBytes.Length must be less than or equal to 16
@@ -994,7 +995,7 @@ namespace System.Diagnostics
 
         readonly ulong _id1;
         readonly ulong _id2;
-        string _asHexString;  // Caches the Hex string    
+        readonly string _asHexString;  // Caches the Hex string    
         #endregion
     }
 
@@ -1010,57 +1011,34 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [SecuritySafeCritical]
 #endif
-    public unsafe struct ActivitySpanId : IEquatable<ActivitySpanId>
+    public unsafe readonly struct ActivitySpanId : IEquatable<ActivitySpanId>
     {
         /// <summary>
-        /// Creates a new SpanId from a given set of bytes 'idData'   idData 
-        /// can either be an 8 byte Span of bytes, or a 16 byte Span of Utf8 characters
-        /// and 'isUtf8Chars' indicates which of these it is.   
+        /// Create a new SpanId with at random number in it (very likely to be unique)
         /// </summary>
-        public ActivitySpanId(ReadOnlySpan<byte> idData, bool isUtf8Chars = false)
+        public static ActivitySpanId CreateRandom()
         {
-            _id1 = 0;
-            _asHexString = null;
-            if (isUtf8Chars)
-            {
-                if (idData.Length != 16)
-                    throw new ArgumentOutOfRangeException(nameof(idData));
-                Utf8Parser.TryParse(idData, out _id1, out _, 'x');
-                if (BitConverter.IsLittleEndian)
-                    _id1 = BinaryPrimitives.ReverseEndianness(_id1);
-            }
-            else
-            {
-                if (idData.Length != 8)
-                    throw new ArgumentOutOfRangeException(nameof(idData));
-                fixed (ulong* idPtr = &_id1)
-                    idData.CopyTo(new Span<byte>(idPtr, sizeof(ulong)));
-            }
+            ActivitySpanId ret = new ActivitySpanId();
+            ActivityTraceId.SetToRandomBytes(new Span<byte>(&ret._id1, sizeof(ulong)));
+            return ret;
         }
+        public static ActivitySpanId CreateFromBytes(ReadOnlySpan<byte> idData)
+        {
+            if (idData.Length != 8)
+                throw new ArgumentOutOfRangeException(nameof(idData));
 
-        /// <summary>
-        /// Creates a new SpanId from the give characters in 'idData'   IdData
-        /// must be exactly 16 bytes long and contain only Hex digits.   
-        /// </summary>
-        /// <param name="idData"></param>
-        public ActivitySpanId(ReadOnlySpan<char> idData)
+            ActivitySpanId ret = new ActivitySpanId();
+            idData.CopyTo(new Span<byte>(&ret._id1, sizeof(ulong)));
+            return ret;
+        }
+        public static ActivitySpanId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivitySpanId(idData);
+        public static ActivitySpanId CreateFromString(ReadOnlySpan<char> idData)
         {
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-            _id1 = 0;
-            _asHexString = null;
-            fixed (ulong* idPtr = &_id1)
-                ActivityTraceId.SetSpanFromHexChars(new Span<byte>(idPtr, sizeof(ulong)), idData);
-        }
-
-        /// <summary>
-        /// Create a new SpanId with at random number in it (very likely to be unique)
-        /// </summary>
-        public static ActivitySpanId NewSpanId()
-        {
             ActivitySpanId ret = new ActivitySpanId();
-            ActivityTraceId.SetToRandomBytes(new Span<byte>(&ret._id1, sizeof(ulong)));
+            ActivityTraceId.SetSpanFromHexChars(new Span<byte>(&ret._id1, sizeof(ulong)), idData);
             return ret;
         }
 
@@ -1077,23 +1055,25 @@ namespace System.Diagnostics
         /// Returns the TraceId as a 16 character hexadecimal string.  
         /// </summary>
         /// <returns></returns>
-        public string AsHexString
+        public string ToHexString()
         {
-            get
+            if (_asHexString == null)
             {
-                if (_asHexString == null)
+                fixed (ulong* idPtr = &_id1)
                 {
-                    fixed (ulong* idPtr = &_id1)
-                        _asHexString = ActivityTraceId.SpanToHexString(new ReadOnlySpan<byte>(idPtr, sizeof(ulong)));
+                    // Cast away the read-only-ness of _asHexString, and assign the converted value to it.  
+                    // We are OK with this because conceptually the class is still read-only.  
+                    ref string strRef = ref Unsafe.AsRef(in _asHexString);
+                    Interlocked.CompareExchange(ref strRef, ActivityTraceId.SpanToHexString(new ReadOnlySpan<byte>(idPtr, sizeof(ulong))), null);
                 }
-                return _asHexString;
             }
+            return _asHexString;
         }
 
         /// <summary>
         /// Returns SpanId as a hex string. 
         /// </summary>
-        public override string ToString() => AsHexString;
+        public override string ToString() => ToHexString();
 
         #region equality operators
         public static bool operator ==(in ActivitySpanId spanId1, in ActivitySpanId spandId2)
@@ -1122,8 +1102,20 @@ namespace System.Diagnostics
         #endregion
 
         #region private
+
+        private ActivitySpanId(ReadOnlySpan<byte> idData)
+        {
+            _id1 = 0;
+            _asHexString = null;
+            if (idData.Length != 16)
+                throw new ArgumentOutOfRangeException(nameof(idData));
+            Utf8Parser.TryParse(idData, out _id1, out _, 'x');
+            if (BitConverter.IsLittleEndian)
+                _id1 = BinaryPrimitives.ReverseEndianness(_id1);
+        }
+
         readonly ulong _id1;
-        string _asHexString;   // Caches the Hex string  
+        readonly string _asHexString;   // Caches the Hex string  
         #endregion
     }
 }

@@ -78,7 +78,7 @@ namespace System.CodeDom.Compiler
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.Provider_does_not_support_options, CodeDomProviderType.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.Provider_does_not_support_options, CodeDomProviderType));
             }
         }
 

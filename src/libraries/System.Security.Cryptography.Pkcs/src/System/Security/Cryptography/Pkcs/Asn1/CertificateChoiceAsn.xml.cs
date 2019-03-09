@@ -43,14 +43,14 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 
                 // Validator for tag constraint for Certificate
                 {
-                    if (!Asn1Tag.TryParse(Certificate.Value.Span, out Asn1Tag validateTag, out _) ||
+                    if (!Asn1Tag.TryDecode(Certificate.Value.Span, out Asn1Tag validateTag, out _) ||
                         !validateTag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
                     {
                         throw new CryptographicException();
                     }
                 }
 
-                writer.WriteEncodedValue(Certificate.Value);
+                writer.WriteEncodedValue(Certificate.Value.Span);
                 wroteValue = true;
             }
 
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             
             if (tag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
-                decoded.Certificate = reader.GetEncodedValue();
+                decoded.Certificate = reader.ReadEncodedValue();
             }
             else
             {

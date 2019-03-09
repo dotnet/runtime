@@ -416,7 +416,7 @@ namespace System.ServiceProcess
                 catch (Exception e)
                 {
                     _status.currentState = ServiceControlStatus.STATE_PAUSED;
-                    WriteLogEntry(SR.Format(SR.ContinueFailed, e.ToString()), true);
+                    WriteLogEntry(SR.Format(SR.ContinueFailed, e), true);
 
                     // We re-throw the exception so that the advapi32 code can report
                     // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -438,7 +438,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.CommandFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.CommandFailed, e), true);
 
                 // We should re-throw the exception so that the advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -459,7 +459,7 @@ namespace System.ServiceProcess
                 catch (Exception e)
                 {
                     _status.currentState = ServiceControlStatus.STATE_RUNNING;
-                    WriteLogEntry(SR.Format(SR.PauseFailed, e.ToString()), true);
+                    WriteLogEntry(SR.Format(SR.PauseFailed, e), true);
 
                     // We re-throw the exception so that the advapi32 code can report
                     // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -487,7 +487,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.PowerEventFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.PowerEventFailed, e), true);
 
                 // We rethrow the exception so that advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -503,7 +503,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.SessionChangeFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.SessionChangeFailed, e), true);
 
                 // We rethrow the exception so that advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -535,7 +535,7 @@ namespace System.ServiceProcess
                 {
                     _status.currentState = previousState;
                     SetServiceStatus(_statusHandle, pStatus);
-                    WriteLogEntry(SR.Format(SR.StopFailed, e.ToString()), true);
+                    WriteLogEntry(SR.Format(SR.StopFailed, e), true);
                     throw;
                 }
             }
@@ -546,7 +546,7 @@ namespace System.ServiceProcess
             try
             {
                 OnShutdown();
-                WriteLogEntry(SR.Format(SR.ShutdownOK));
+                WriteLogEntry(SR.ShutdownOK);
 
                 if (_status.currentState == ServiceControlStatus.STATE_PAUSED || _status.currentState == ServiceControlStatus.STATE_RUNNING)
                 {
@@ -561,7 +561,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.ShutdownFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.ShutdownFailed, e), true);
                 throw;
             }
         }
@@ -851,7 +851,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.StartFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.StartFailed, e), true);
                 _status.currentState = ServiceControlStatus.STATE_STOPPED;
 
                 // We capture the exception so that it can be propagated

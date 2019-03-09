@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Integer))
             {
-                decoded.Nonce = sequenceReader.GetIntegerBytes();
+                decoded.Nonce = sequenceReader.ReadIntegerBytes();
             }
 
 

@@ -63,6 +63,13 @@ jobs:
               _helixQueues: $(netcoreappWindowsQueues)
               _publishTests: true
 
+            arm64_Release:
+              _BuildConfig: Release
+              _architecture: arm64
+              _framework: netcoreapp
+              _helixQueues: $(windowsArmQueue)
+              _publishTests: true
+
             NETFX_x86_Release:
               _BuildConfig: Release
               _architecture: x86
@@ -216,11 +223,6 @@ jobs:
               arm_Release:
                 _BuildConfig: Release
                 _architecture: arm
-                _framework: netcoreapp
-
-              arm64_Release:
-                _BuildConfig: Release
-                _architecture: arm64
                 _framework: netcoreapp
 
               UAPAOT_arm_Release:

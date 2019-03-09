@@ -128,9 +128,8 @@ namespace System.IO
                 return null;
 
             Debug.Assert(wrtStr is TWinRtStream,
-                            string.Format("Attempted to get the underlying WinRT stream typed as \"{0}\"," +
-                                          " but the underlying WinRT stream cannot be cast to that type. Its actual type is \"{1}\".",
-                                          typeof(TWinRtStream).ToString(), wrtStr.GetType().ToString()));
+                $"Attempted to get the underlying WinRT stream typed as \"{typeof(TWinRtStream)}\", " +
+                $"but the underlying WinRT stream cannot be cast to that type. Its actual type is \"{wrtStr.GetType()}\".");
 
             return wrtStr as TWinRtStream;
         }

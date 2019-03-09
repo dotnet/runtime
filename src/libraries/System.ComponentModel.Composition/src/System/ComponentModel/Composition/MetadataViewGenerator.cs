@@ -218,7 +218,7 @@ namespace System.ComponentModel.Composition
                 string fieldName = string.Format(CultureInfo.InvariantCulture, "_{0}_{1}", propertyInfo.Name, Guid.NewGuid());
 
                 // Cache names and type for exception
-                string propertyName = string.Format(CultureInfo.InvariantCulture, "{0}", propertyInfo.Name);
+                string propertyName = propertyInfo.Name;
 
                 Type[] propertyTypeArguments = new Type[] { propertyInfo.PropertyType };
                 Type[] optionalModifiers = null;
@@ -312,7 +312,7 @@ namespace System.ComponentModel.Composition
                 if (propertyInfo.CanWrite)
                 {
                     // The MetadataView '{0}' is invalid because property '{1}' has a property set method.
-                    throw new NotSupportedException(string.Format(CultureInfo.CurrentCulture,
+                    throw new NotSupportedException(SR.Format(
                         SR.InvalidSetterOnMetadataField,
                         viewType,
                         propertyName));
@@ -321,7 +321,7 @@ namespace System.ComponentModel.Composition
                 {
                     // Generate "get" method implementation.
                     MethodBuilder getMethodBuilder = proxyTypeBuilder.DefineMethod(
-                        string.Format(CultureInfo.InvariantCulture, "get_{0}", propertyName),
+                        "get_" + propertyName,
                         MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.NewSlot | MethodAttributes.Virtual | MethodAttributes.Final,
                         CallingConventions.HasThis,
                         propertyInfo.PropertyType,

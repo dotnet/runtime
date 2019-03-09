@@ -59,7 +59,7 @@ internal static partial class Interop
             {
                 if (nidCurveName == Interop.Crypto.NID_undef)
                 {
-                    Debug.Assert(false); // Key is invalid or doesn't have a curve
+                    Debug.Fail("Key is invalid or doesn't have a curve");
                     return string.Empty;
                 }
 

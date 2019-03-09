@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  content with type of xml produces an error
 Expect:       InvalidMIMEType{element:content,parent:entry}

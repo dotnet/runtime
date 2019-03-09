@@ -198,7 +198,7 @@ namespace System.Diagnostics
             {
                 if (throwIfExited)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, processId.ToString(CultureInfo.CurrentCulture)));
+                    throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, processId.ToString()));
                 }
                 else
                 {
@@ -215,7 +215,7 @@ namespace System.Diagnostics
             if (threadHandle.IsInvalid)
             {
                 if (result == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    throw new InvalidOperationException(SR.Format(SR.ThreadExited, threadId.ToString(CultureInfo.CurrentCulture)));
+                    throw new InvalidOperationException(SR.Format(SR.ThreadExited, threadId.ToString()));
                 throw new Win32Exception(result);
             }
             return threadHandle;

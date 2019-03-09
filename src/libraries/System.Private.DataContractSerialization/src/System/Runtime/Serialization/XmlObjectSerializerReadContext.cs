@@ -510,7 +510,7 @@ namespace System.Runtime.Serialization
 #endif
         {
             if (!xmlReader.Read())
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.UnexpectedEndOfFile)));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
         }
 
         internal static void ParseQualifiedName(string qname, XmlReaderDelegator xmlReader, out string name, out string ns, out string prefix)
@@ -984,7 +984,7 @@ namespace System.Runtime.Serialization
             while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
             {
                 if (xmlReader.EOF)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.UnexpectedEndOfFile)));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
 
                 if (xmlChildNodes == null)
                     xmlChildNodes = new List<XmlNode>();
@@ -1041,7 +1041,7 @@ namespace System.Runtime.Serialization
                     }
                 }
                 else if (xmlReader.EOF)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.UnexpectedEndOfFile)));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
                 else if (IsContentNode(xmlReader.NodeType))
                     couldBeClassData = couldBeISerializableData = couldBeCollectionData = false;
 
