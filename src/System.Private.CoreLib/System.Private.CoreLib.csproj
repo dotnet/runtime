@@ -122,7 +122,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Array.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Attribute.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\BadImageFormatException.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Buffer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Buffer.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.CoreCLR.cs" />
