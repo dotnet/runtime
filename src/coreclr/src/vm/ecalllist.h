@@ -163,10 +163,6 @@ FCFuncStart(gEnvironmentFuncs)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_Str_RetVoid, SystemNative::FailFastWithExceptionAndSource)
 FCFuncEnd()
 
-FCFuncStart(gSerializationFuncs)
-    FCFuncElement("nativeGetUninitializedObject", ReflectionSerialization::GetUninitializedObject)
-FCFuncEnd()
-
 FCFuncStart(gExceptionFuncs)
     FCFuncElement("IsImmutableAgileException", ExceptionNative::IsImmutableAgileException)
     FCFuncElement("nIsTransient", ExceptionNative::IsTransient)
@@ -919,6 +915,7 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("Equals", ObjectNative::Equals)
     FCFuncElement("EnsureSufficientExecutionStack", ReflectionInvocation::EnsureSufficientExecutionStack)
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
+    FCFuncElement("GetUninitializedObjectInternal", ReflectionSerialization::GetUninitializedObject)
 FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
@@ -1196,7 +1193,6 @@ FCClassElement("EventPipeInternal", "System.Diagnostics.Tracing", gEventPipeInte
 #endif // FEATURE_PERFTRACING
 FCClassElement("Exception", "System", gExceptionFuncs)
 FCClassElement("FileLoadException", "System.IO", gFileLoadExceptionFuncs)
-FCClassElement("FormatterServices", "System.Runtime.Serialization", gSerializationFuncs)
 FCClassElement("GC", "System", gGCInterfaceFuncs)
 FCClassElement("GCHandle", "System.Runtime.InteropServices", gGCHandleFuncs)
 FCClassElement("GCSettings", "System.Runtime", gGCSettingsFuncs)
