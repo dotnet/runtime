@@ -268,6 +268,7 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("Allocate", RuntimeTypeHandle::Allocate) //for A.CI
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
     FCIntrinsic("GetValueInternal", RuntimeTypeHandle::GetValueInternal, CORINFO_INTRINSIC_RTH_GetValueInternal)
+    FCFuncElement("IsEquivalentTo", RuntimeTypeHandle::IsEquivalentTo)
 FCFuncEnd()
 
 FCFuncStart(gMetaDataImport)
