@@ -178,9 +178,7 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 #endif
 }
 
-// CoreCLR expects the "2" suffixes on these: they should be cleaned up in our
-// next coordinated System.Native changes
-int32_t SystemNative_Stat2(const char* path, FileStatus* output)
+int32_t SystemNative_Stat(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -194,7 +192,7 @@ int32_t SystemNative_Stat2(const char* path, FileStatus* output)
     return ret;
 }
 
-int32_t SystemNative_FStat2(intptr_t fd, FileStatus* output)
+int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -208,7 +206,7 @@ int32_t SystemNative_FStat2(intptr_t fd, FileStatus* output)
     return ret;
 }
 
-int32_t SystemNative_LStat2(const char* path, FileStatus* output)
+int32_t SystemNative_LStat(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret = lstat_(path, &result);
@@ -219,6 +217,22 @@ int32_t SystemNative_LStat2(const char* path, FileStatus* output)
     }
 
     return ret;
+}
+
+// These "2" suffix functions are pending removal
+int32_t SystemNative_Stat2(const char* path, FileStatus* output)
+{
+    return SystemNative_Stat(path, output);
+}
+
+int32_t SystemNative_FStat2(intptr_t fd, FileStatus* output)
+{
+    return SystemNative_FStat(fd, output);
+}
+
+int32_t SystemNative_LStat2(const char* path, FileStatus* output)
+{
+    return SystemNative_LStat(path, output);
 }
 
 static int32_t ConvertOpenFlags(int32_t flags)
