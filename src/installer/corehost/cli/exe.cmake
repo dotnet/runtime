@@ -10,9 +10,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/fxr)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 list(APPEND SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/../corehost.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../common/trace.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../common/utils.cpp)
+    ${CMAKE_CURRENT_LIST_DIR}/../corehost.cpp)
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES} ${RESOURCES})
 
