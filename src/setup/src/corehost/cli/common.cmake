@@ -23,6 +23,10 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../common)
 
+list(APPEND SOURCES
+    ${CMAKE_CURRENT_LIST_DIR}/../common/trace.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../common/utils.cpp)
+    
 if(WIN32)
     list(APPEND SOURCES 
         ${CMAKE_CURRENT_LIST_DIR}/../common/pal.windows.cpp

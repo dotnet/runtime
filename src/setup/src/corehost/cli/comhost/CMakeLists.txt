@@ -15,8 +15,6 @@ set(SOURCES
     ../../corehost.cpp
     exports.cpp
     clsidmap.cpp
-    ../../common/trace.cpp
-    ../../common/utils.cpp
     ../fxr/fx_ver.cpp
     ../json/casablanca/src/json/json.cpp
     ../json/casablanca/src/json/json_parsing.cpp
