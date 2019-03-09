@@ -83,6 +83,7 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, Eve
             payload.GetSize(),
             (pThread == NULL) ? NULL : pActivityId,
             pRelatedActivityId);
+        pInstance->EnsureStack(session); // TODO: Perform the stackwalk before the constructor
 
         // Copy the stack if a separate stack trace was provided.
         if(pStack != NULL)

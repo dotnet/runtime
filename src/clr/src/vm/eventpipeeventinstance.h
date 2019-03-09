@@ -23,6 +23,8 @@ public:
 
     EventPipeEventInstance(EventPipeSession &session, EventPipeEvent &event, DWORD threadID, BYTE *pData, unsigned int length, LPCGUID pActivityId, LPCGUID pRelatedActivityId);
 
+    void EnsureStack(const EventPipeSession &session);
+
     StackContents* GetStack()
     {
         LIMITED_METHOD_CONTRACT;
