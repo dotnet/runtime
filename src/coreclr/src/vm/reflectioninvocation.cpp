@@ -2581,10 +2581,6 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
 
     HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
 
-    if (objType == NULL) {
-        COMPlusThrowArgumentNull(W("type"), W("ArgumentNull_Type"));
-    }
-
     TypeHandle type = objType->GetType();
 
     // Don't allow arrays, pointers, byrefs or function pointers.
