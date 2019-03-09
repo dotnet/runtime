@@ -615,6 +615,11 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
+
+#if FEATURE_TYPEEQUIVALENCE
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2);
+#endif // FEATURE_TYPEEQUIVALENCE
     }
 
     // This type is used to remove the expense of having a managed reference object that is dynamically 
