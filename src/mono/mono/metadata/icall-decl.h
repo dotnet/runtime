@@ -176,9 +176,17 @@ ICALL_EXPORT void ves_icall_System_GC_WaitForPendingFinalizers (void);
 ICALL_EXPORT void ves_icall_System_IO_LogcatTextWriter_Log (const char*, gint32, const char*);
 ICALL_EXPORT void ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const**, gint32 const**, gunichar2 const**, gunichar2 const**, gint64 const**, gint32 const**);
 ICALL_EXPORT void ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionField*, MonoReflectionType*, MonoTypedRef*, MonoObject*, MonoReflectionType*);
+#if ENABLE_NETCORE
+ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove (guint8*, guint8*, size_t);
+#else
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove (guint8*, guint8*, guint);
+#endif
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove_wbarrier (guint8*, guint8*, guint, MonoType*);
+#if ENABLE_NETCORE
+ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8*, size_t);
+#else
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8*, guint);
+#endif
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ecvt_s(char*, size_t, double, int, int*, int*);
 #if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH)
 ICALL_EXPORT gpointer ves_icall_System_IO_Compression_DeflateStreamNative_CreateZStream (gint32 compress, MonoBoolean gzip, gpointer feeder, gpointer data);

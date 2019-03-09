@@ -881,7 +881,11 @@ ves_icall_System_Array_SetGenericValueImpl (MonoArray *arr, guint32 pos, gpointe
 }
 
 void
+#if ENABLE_NETCORE
+ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *source, size_t byte_count)
+#else
 ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *source, guint byte_count)
+#endif
 {
 	mono_gc_memmove_atomic (destination, source, byte_count);
 }
@@ -896,7 +900,11 @@ ves_icall_System_Runtime_RuntimeImports_Memmove_wbarrier (guint8 *destination, g
 }
 
 void
+#if ENABLE_NETCORE
+ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, size_t byte_length)
+#else
 ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, guint byte_length)
+#endif
 {
 	memset (p, 0, byte_length);
 }
