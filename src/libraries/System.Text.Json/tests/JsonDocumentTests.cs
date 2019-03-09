@@ -19,11 +19,29 @@ namespace System.Text.Json.Tests
 {
     public static class JsonDocumentTests
     {
+        private static readonly byte[] Utf8Bom = { 0xEF, 0xBB, 0xBF };
+
         private static readonly Dictionary<TestCaseType, string> s_expectedConcat =
             new Dictionary<TestCaseType, string>();
 
         private static readonly Dictionary<TestCaseType, string> s_compactJson =
             new Dictionary<TestCaseType, string>();
+
+        public static IEnumerable<object[]> BadBOMCases { get; } =
+            new object[][]
+            {
+                new object[] { "\u00EF" },
+                new object[] { "\u00EF1" },
+                new object[] { "\u00EF\u00BB" },
+                new object[] { "\u00EF\u00BB1" },
+                new object[] { "\u00EF\u00BB\u00BE" },
+                new object[] { "\u00EF\u00BB\u00BE1" },
+                new object[] { "\u00EF\u00BB\u00FB" },
+                new object[] { "\u00EF\u00BB\u00FB1" },
+
+                // Legal BOM, but no payload.
+                new object[] { "\u00EF\u00BB\u00BF" },
+            };
 
         public static IEnumerable<object[]> ReducedTestCases { get; } =
             new List<object[]>
@@ -261,6 +279,150 @@ namespace System.Text.Json.Tests
                 bytes => JsonDocument.ParseAsync(
                     new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, bytes)).
                     GetAwaiter().GetResult());
+        }
+
+
+        [Fact]
+        public static void ParseJson_SeekableStream_Small()
+        {
+            byte[] data = { (byte)'1', (byte)'1' };
+
+            using (JsonDocument doc = JsonDocument.Parse(new MemoryStream(data)))
+            {
+                JsonElement root = doc.RootElement;
+                Assert.Equal(JsonValueType.Number, root.Type);
+                Assert.Equal(11, root.GetInt32());
+            }
+        }
+
+        [Fact]
+        public static void ParseJson_UnseekableStream_Small()
+        {
+            byte[] data = { (byte)'1', (byte)'1' };
+
+            using (JsonDocument doc =
+                JsonDocument.Parse(new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, data: data)))
+            {
+                JsonElement root = doc.RootElement;
+                Assert.Equal(JsonValueType.Number, root.Type);
+                Assert.Equal(11, root.GetInt32());
+            }
+        }
+
+        [Fact]
+        public static async Task ParseJson_SeekableStream_Small_Async()
+        {
+            byte[] data = { (byte)'1', (byte)'1' };
+
+            using (JsonDocument doc = await JsonDocument.ParseAsync(new MemoryStream(data)))
+            {
+                JsonElement root = doc.RootElement;
+                Assert.Equal(JsonValueType.Number, root.Type);
+                Assert.Equal(11, root.GetInt32());
+            }
+        }
+
+        [Fact]
+        public static async Task ParseJson_UnseekableStream_Small_Async()
+        {
+            byte[] data = { (byte)'1', (byte)'1' };
+
+            using (JsonDocument doc = await JsonDocument.ParseAsync(
+                new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, data: data)))
+            {
+                JsonElement root = doc.RootElement;
+                Assert.Equal(JsonValueType.Number, root.Type);
+                Assert.Equal(11, root.GetInt32());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static void ParseJson_SeekableStream_WithBOM(bool compactData, TestCaseType type, string jsonString)
+        {
+            ParseJson(
+                compactData,
+                type,
+                jsonString,
+                null,
+                bytes => JsonDocument.Parse(new MemoryStream(Utf8Bom.Concat(bytes).ToArray())));
+        }
+        
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static void ParseJson_SeekableStream_Async_WithBOM(bool compactData, TestCaseType type, string jsonString)
+        {
+            ParseJson(
+                compactData,
+                type,
+                jsonString,
+                null,
+                bytes => JsonDocument.ParseAsync(new MemoryStream(Utf8Bom.Concat(bytes).ToArray())).GetAwaiter().GetResult());
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static void ParseJson_UnseekableStream_WithBOM(bool compactData, TestCaseType type, string jsonString)
+        {
+            ParseJson(
+                compactData,
+                type,
+                jsonString,
+                null,
+                bytes => JsonDocument.Parse(
+                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, Utf8Bom.Concat(bytes).ToArray())));
+        }
+
+        [Theory]
+        [MemberData(nameof(ReducedTestCases))]
+        public static void ParseJson_UnseekableStream_Async_WithBOM(bool compactData, TestCaseType type, string jsonString)
+        {
+            ParseJson(
+                compactData,
+                type,
+                jsonString,
+                null,
+                bytes => JsonDocument.ParseAsync(
+                        new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, Utf8Bom.Concat(bytes).ToArray())).
+                    GetAwaiter().GetResult());
+        }
+
+        [Theory]
+        [MemberData(nameof(BadBOMCases))]
+        public static void ParseJson_SeekableStream_BadBOM(string json)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(json);
+            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(new MemoryStream(data)));
+        }
+
+        [Theory]
+        [MemberData(nameof(BadBOMCases))]
+        public static Task ParseJson_SeekableStream_Async_BadBOM(string json)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(json);
+            return Assert.ThrowsAsync<JsonReaderException>(() => JsonDocument.ParseAsync(new MemoryStream(data)));
+        }
+
+        [Theory]
+        [MemberData(nameof(BadBOMCases))]
+        public static void ParseJson_UnseekableStream_BadBOM(string json)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(json);
+
+            Assert.Throws<JsonReaderException>(
+                () => JsonDocument.Parse(
+                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, data)));
+        }
+
+        [Theory]
+        [MemberData(nameof(BadBOMCases))]
+        public static Task ParseJson_UnseekableStream_Async_BadBOM(string json)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(json);
+
+            return Assert.ThrowsAsync<JsonReaderException>(
+                () => JsonDocument.ParseAsync(
+                    new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, data)));
         }
 
         [Theory]

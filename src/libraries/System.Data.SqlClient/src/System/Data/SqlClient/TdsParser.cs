@@ -288,7 +288,7 @@ namespace System.Data.SqlClient
         {
             if (_state != TdsParserState.Closed)
             {
-                Debug.Assert(false, "TdsParser.Connect called on non-closed connection!");
+                Debug.Fail("TdsParser.Connect called on non-closed connection!");
                 return;
             }
 
@@ -302,7 +302,7 @@ namespace System.Data.SqlClient
                 _physicalStateObj.AddError(ProcessSNIError(_physicalStateObj));
                 _physicalStateObj.Dispose();
                 ThrowExceptionAndWarning(_physicalStateObj);
-                Debug.Assert(false, "SNI returned status != success, but no error thrown?");
+                Debug.Fail("SNI returned status != success, but no error thrown?");
             }
 
             _sniSpnBuffer = null;
@@ -333,7 +333,7 @@ namespace System.Data.SqlClient
                 // a bad error could be returned (as it was when it was freed to early for me).
                 _physicalStateObj.Dispose();
                 ThrowExceptionAndWarning(_physicalStateObj);
-                Debug.Assert(false, "SNI returned status != success, but no error thrown?");
+                Debug.Fail("SNI returned status != success, but no error thrown?");
             }
 
             _server = serverInfo.ResolvedServerName;
@@ -638,7 +638,7 @@ namespace System.Data.SqlClient
                         break;
 
                     default:
-                        Debug.Assert(false, "UNKNOWN option in SendPreLoginHandshake");
+                        Debug.Fail("UNKNOWN option in SendPreLoginHandshake");
                         break;
                 }
 
@@ -773,7 +773,7 @@ namespace System.Data.SqlClient
                                 break;
 
                             default:
-                                Debug.Assert(false, "Invalid client encryption option detected");
+                                Debug.Fail("Invalid client encryption option detected");
                                 break;
                         }
 
@@ -865,7 +865,7 @@ namespace System.Data.SqlClient
                         break;
 
                     default:
-                        Debug.Assert(false, "UNKNOWN option in ConsumePreLoginHandshake, option:" + option);
+                        Debug.Fail("UNKNOWN option in ConsumePreLoginHandshake, option:" + option);
 
                         // DO NOTHING FOR THESE UNKNOWN OPTIONS
                         offset += 4;
@@ -1202,9 +1202,9 @@ namespace System.Data.SqlClient
             string sniContextEnumName = TdsEnums.GetSniContextEnumName(stateObj.SniContext);
 
             string sqlContextInfo = SR.GetResourceString(sniContextEnumName, sniContextEnumName);
-            string providerRid = string.Format((IFormatProvider)null, "SNI_PN{0}", details.provider);
+            string providerRid = string.Format("SNI_PN{0}", details.provider);
             string providerName = SR.GetResourceString(providerRid, providerRid);
-            Debug.Assert(!string.IsNullOrEmpty(providerName), string.Format((IFormatProvider)null, "invalid providerResourceId '{0}'", providerRid));
+            Debug.Assert(!string.IsNullOrEmpty(providerName), $"invalid providerResourceId '{providerRid}'");
             uint win32ErrorCode = details.nativeError;
 
             if (details.sniErrorNumber == 0)
@@ -1261,7 +1261,7 @@ namespace System.Data.SqlClient
                     }
                 }
             }
-            errorMessage = string.Format((IFormatProvider)null, "{0} (provider: {1}, error: {2} - {3})",
+            errorMessage = string.Format("{0} (provider: {1}, error: {2} - {3})",
                 sqlContextInfo, providerName, (int)details.sniErrorNumber, errorMessage);
 
             return new SqlError((int)details.nativeError, 0x00, TdsEnums.FATAL_ERROR_CLASS,
@@ -1575,7 +1575,7 @@ namespace System.Data.SqlClient
         {
             Debug.Assert((SniContext.Undefined != stateObj.SniContext) &&       // SniContext must not be Undefined
                 ((stateObj._attentionSent) || ((SniContext.Snix_Execute != stateObj.SniContext) && (SniContext.Snix_SendRows != stateObj.SniContext))),  // SniContext should not be Execute or SendRows unless attention was sent (and, therefore, we are looking for an ACK)
-                        string.Format("Unexpected SniContext on call to TryRun; SniContext={0}", stateObj.SniContext));
+                        $"Unexpected SniContext on call to TryRun; SniContext={stateObj.SniContext}");
 
             if (TdsParserState.Broken == State || TdsParserState.Closed == State)
             {
@@ -1628,7 +1628,7 @@ namespace System.Data.SqlClient
 
                 if (!IsValidTdsToken(token))
                 {
-                    Debug.Assert(false, string.Format((IFormatProvider)null, "unexpected token; token = {0,-2:X2}", token));
+                    Debug.Fail($"unexpected token; token = {token,-2:X2}");
                     _state = TdsParserState.Broken;
                     _connHandler.BreakConnection();
                     throw SQL.ParsingError();
@@ -2126,7 +2126,7 @@ namespace System.Data.SqlClient
                 {
                     return false;
                 }
-                Debug.Assert(IsValidTdsToken(token), string.Format("DataReady is false, but next token is not valid: {0,-2:X2}", token));
+                Debug.Assert(IsValidTdsToken(token), $"DataReady is false, but next token is not valid: {token,-2:X2}");
             }
 #endif
 
@@ -2468,7 +2468,7 @@ namespace System.Data.SqlClient
                         break;
 
                     default:
-                        Debug.Assert(false, "Unknown environment change token: " + env.type);
+                        Debug.Fail("Unknown environment change token: " + env.type);
                         break;
                 }
                 processedLength += env.length;
@@ -3442,7 +3442,7 @@ namespace System.Data.SqlClient
                         ThrowUnsupportedCollationEncountered(stateObj);
                     }
 
-                    Debug.Assert(codePage >= 0, string.Format("Invalid code page. codePage: {0}. cultureId: {1}", codePage, cultureId));
+                    Debug.Assert(codePage >= 0, $"Invalid code page. codePage: {codePage}. cultureId: {cultureId}");
                 }
             }
 
@@ -3784,7 +3784,7 @@ namespace System.Data.SqlClient
                         break;
 
                     default:
-                        Debug.Assert(false, "Unknown VariableTime type!");
+                        Debug.Fail("Unknown VariableTime type!");
                         break;
                 }
             }
@@ -4305,7 +4305,7 @@ namespace System.Data.SqlClient
                     break;
 
                 default:
-                    Debug.Assert(false, "unknown null sqlType!" + md.type.ToString());
+                    Debug.Fail("unknown null sqlType!" + md.type.ToString());
                     break;
             }
 
@@ -4479,7 +4479,7 @@ namespace System.Data.SqlClient
                     }
 
                 default:
-                    Debug.Assert(false, "Unknown tds type for SqlString!" + type.ToString(CultureInfo.InvariantCulture));
+                    Debug.Fail("Unknown tds type for SqlString!" + type.ToString(CultureInfo.InvariantCulture));
                     break;
             }
 
@@ -4620,7 +4620,7 @@ namespace System.Data.SqlClient
                     break;
 
                 default:
-                    Debug.Assert(false, "ReadSqlDateTime is called with the wrong tdsType");
+                    Debug.Fail("ReadSqlDateTime is called with the wrong tdsType");
                     break;
             }
 
@@ -4844,7 +4844,7 @@ namespace System.Data.SqlClient
                     break;
 
                 default:
-                    Debug.Assert(false, "Unknown SqlType!" + tdsType.ToString(CultureInfo.InvariantCulture));
+                    Debug.Fail("Unknown SqlType!" + tdsType.ToString(CultureInfo.InvariantCulture));
                     break;
             } // switch
 
@@ -5035,7 +5035,7 @@ namespace System.Data.SqlClient
                     }
 
                 default:
-                    Debug.Assert(false, "Unknown tds type in SqlVariant!" + type.ToString(CultureInfo.InvariantCulture));
+                    Debug.Fail("Unknown tds type in SqlVariant!" + type.ToString(CultureInfo.InvariantCulture));
                     break;
             } // switch
 
@@ -5195,7 +5195,7 @@ namespace System.Data.SqlClient
                     break;
 
                 default:
-                    Debug.Assert(false, "unknown tds type for sqlvariant!");
+                    Debug.Fail("unknown tds type for sqlvariant!");
                     break;
             } // switch
             // return point for accumulated writes, note: non-accumulated writes returned from their case statements
@@ -5363,7 +5363,7 @@ namespace System.Data.SqlClient
                     break;
 
                 default:
-                    Debug.Assert(false, "unknown tds type for sqlvariant!");
+                    Debug.Fail("unknown tds type for sqlvariant!");
                     break;
             } // switch
             // return point for accumulated writes, note: non-accumulated writes returned from their case statements
@@ -5879,7 +5879,7 @@ namespace System.Data.SqlClient
                         return true;
                     }
                 default:
-                    Debug.Assert(false, "Unknown token length!");
+                    Debug.Fail("Unknown token length!");
                     tokenLength = 0;
                     return true;
             }
@@ -6059,7 +6059,7 @@ namespace System.Data.SqlClient
                     dataLen = 1 + sizeof(int) + fedAuthFeatureData.accessToken.Length; // length of feature data = 1 byte for library and echo, security token length and sizeof(int) for token lengh itself
                     break;
                 default:
-                    Debug.Assert(false, "Unrecognized library type for fedauth feature extension request");
+                    Debug.Fail("Unrecognized library type for fedauth feature extension request");
                     break;
             }
 
@@ -6081,7 +6081,7 @@ namespace System.Data.SqlClient
                         options |= TdsEnums.FEDAUTHLIB_SECURITYTOKEN << 1;
                         break;
                     default:
-                        Debug.Assert(false, "Unrecognized FedAuthLibrary type for feature extension request");
+                        Debug.Fail("Unrecognized FedAuthLibrary type for feature extension request");
                         break;
                 }
 
@@ -6242,7 +6242,7 @@ namespace System.Data.SqlClient
                     // Call helper function for SSPI data and actual length.
                     // Since we don't have SSPI data from the server, send null for the
                     // byte[] buffer and 0 for the int length.
-                    Debug.Assert(SniContext.Snix_Login == _physicalStateObj.SniContext, string.Format((IFormatProvider)null, "Unexpected SniContext. Expecting Snix_Login, actual value is '{0}'", _physicalStateObj.SniContext));
+                    Debug.Assert(SniContext.Snix_Login == _physicalStateObj.SniContext, $"Unexpected SniContext. Expecting Snix_Login, actual value is '{_physicalStateObj.SniContext}'");
                     _physicalStateObj.SniContext = SniContext.Snix_LoginSspi;
 
                     SSPIData(null, 0, ref outSSPIBuff, ref outSSPILength);
@@ -6649,7 +6649,7 @@ namespace System.Data.SqlClient
                                                         timeout, null, stateObj, true))
             {
 
-                Debug.Assert(SniContext.Snix_Read == stateObj.SniContext, string.Format((IFormatProvider)null, "The SniContext should be Snix_Read but it actually is {0}", stateObj.SniContext));
+                Debug.Assert(SniContext.Snix_Read == stateObj.SniContext, $"The SniContext should be Snix_Read but it actually is {stateObj.SniContext}");
                 if (null != dtcReader && dtcReader.Read())
                 {
                     Debug.Assert(dtcReader.GetName(0) == "TM Address", "TdsParser: GetDTCAddress did not return 'TM Address'");
@@ -6670,7 +6670,7 @@ namespace System.Data.SqlClient
 #if DEBUG
                     else
                     {
-                        Debug.Assert(false, "unexpected length (> Int32.MaxValue) returned from dtcReader.GetBytes");
+                        Debug.Fail("unexpected length (> Int32.MaxValue) returned from dtcReader.GetBytes");
                         // if we hit this case we'll just return a null address so that the user
                         // will get a transcaction enlistment error in the upper layers
                     }
@@ -6838,7 +6838,7 @@ namespace System.Data.SqlClient
                         WriteString(transactionName, stateObj);
                         break;
                     default:
-                        Debug.Assert(false, "Unexpected TransactionManagerRequest");
+                        Debug.Fail("Unexpected TransactionManagerRequest");
                         break;
                 }
 
@@ -7983,7 +7983,7 @@ namespace System.Data.SqlClient
                     }
                     else
                     {
-                        Debug.Assert(false, "SUDTs not yet supported.");
+                        Debug.Fail("SUDTs not yet supported.");
                     }
                     break;
                 case SqlDbType.Date:
@@ -8002,7 +8002,7 @@ namespace System.Data.SqlClient
                     stateObj.WriteByte(metaData.Scale);
                     break;
                 default:
-                    Debug.Assert(false, "Unknown SqlDbType should have been caught earlier!");
+                    Debug.Fail("Unknown SqlDbType should have been caught earlier!");
                     break;
             }
         }
@@ -8627,7 +8627,7 @@ namespace System.Data.SqlClient
                         break;
 
                     default:
-                        Debug.Assert(false, "Unknown token length!");
+                        Debug.Fail("Unknown token length!");
                         break;
                 }
 
@@ -8890,7 +8890,7 @@ namespace System.Data.SqlClient
                     throw SQL.UDTUnexpectedResult(value.GetType().AssemblyQualifiedName);
 
                 default:
-                    Debug.Assert(false, "Unknown TdsType!" + type.NullableType.ToString("x2", (IFormatProvider)null));
+                    Debug.Fail("Unknown TdsType!" + type.NullableType.ToString("x2", (IFormatProvider)null));
                     break;
             } // switch
             // return point for accumulated writes, note: non-accumulated writes returned from their case statements
@@ -9089,7 +9089,7 @@ namespace System.Data.SqlClient
                     _next.Write(value);
                     _written++;
                 }
-                Debug.Assert(_size < 0 || _written <= _size, string.Format("Length of data written exceeds specified length.  Written: {0}, specified: {1}", _written, _size));
+                Debug.Assert(_size < 0 || _written <= _size, $"Length of data written exceeds specified length.  Written: {_written}, specified: {_size}");
             }
 
             public override void Write(char[] buffer, int index, int count)
@@ -9581,7 +9581,7 @@ namespace System.Data.SqlClient
                     break;
 
                 default:
-                    Debug.Assert(false, "Unknown TdsType!" + type.NullableType.ToString("x2", (IFormatProvider)null));
+                    Debug.Fail("Unknown TdsType!" + type.NullableType.ToString("x2", (IFormatProvider)null));
                     break;
             } // switch
             // return point for accumulated writes, note: non-accumulated writes returned from their case statements
@@ -9670,7 +9670,7 @@ namespace System.Data.SqlClient
                         "Out of sync plp read request");
             if (stateObj._longlenleft == 0)
             {
-                Debug.Assert(false, "Out of sync read request");
+                Debug.Fail("Out of sync read request");
                 charsRead = 0;
                 return true;
             }

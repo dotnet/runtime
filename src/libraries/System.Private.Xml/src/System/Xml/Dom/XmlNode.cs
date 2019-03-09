@@ -98,7 +98,7 @@ namespace System.Xml
         public virtual string Value
         {
             get { return null; }
-            set { throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, SR.Xdom_Node_SetVal, NodeType.ToString())); }
+            set { throw new InvalidOperationException(SR.Format(CultureInfo.InvariantCulture, SR.Xdom_Node_SetVal, NodeType.ToString())); }
         }
 
         // Gets the type of the current node.

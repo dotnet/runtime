@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  xhtml content value containing only escaped html produces a warning
 Expect:       NotInline{parent:entry,element:content}

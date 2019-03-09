@@ -39,7 +39,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static Exception InvalidArgument_Handle(string parameterName)
         {
-            throw new ArgumentException(SR.Format(SR.InvalidHandle), parameterName);
+            throw new ArgumentException(SR.InvalidHandle, parameterName);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

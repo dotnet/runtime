@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 decoded.Issuer = tmpList.ToArray();
             }
 
-            decoded.SerialNumber = sequenceReader.GetIntegerBytes();
+            decoded.SerialNumber = sequenceReader.ReadIntegerBytes();
 
             sequenceReader.ThrowIfNotEmpty();
         }

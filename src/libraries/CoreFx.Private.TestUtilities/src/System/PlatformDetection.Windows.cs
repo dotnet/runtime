@@ -39,6 +39,7 @@ namespace System
         public static bool IsWindowsServerCore => GetInstallationType().Equals("Server Core", StringComparison.OrdinalIgnoreCase);
         public static int WindowsVersion => (int)GetWindowsVersion();
         public static bool IsMacOsHighSierraOrHigher { get; } = false;
+        public static bool IsMacOsMojaveOrHigher { get; } = false;
         public static Version ICUVersion => new Version(0, 0, 0, 0);
         public static bool IsRedHatFamily => false;
         public static bool IsNotRedHatFamily => true;

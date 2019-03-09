@@ -307,7 +307,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (typeBnd.TypeKind)
             {
                 default:
-                    Debug.Assert(false, "Unexpected type.");
+                    Debug.Fail("Unexpected type.");
                     return false;
 
                 case TypeKind.TK_VoidType:

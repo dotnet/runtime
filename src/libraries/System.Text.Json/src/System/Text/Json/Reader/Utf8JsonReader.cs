@@ -1712,23 +1712,43 @@ namespace System.Text.Json
 
         private bool SkipSingleLineComment(ReadOnlySpan<byte> localBuffer, out int idx)
         {
-            // TODO: https://github.com/dotnet/corefx/issues/33293
-            idx = localBuffer.IndexOf(JsonConstants.LineFeed);
-            if (idx == -1)
+            idx = localBuffer.IndexOfAny(JsonConstants.LineFeed, JsonConstants.CarriageReturn);
+            if (idx != -1)
             {
-                if (IsLastSpan)
+                if (localBuffer[idx] == JsonConstants.LineFeed)
                 {
-                    idx = localBuffer.Length;
-                    // Assume everything on this line is a comment and there is no more data.
-                    _bytePositionInLine += 2 + localBuffer.Length;
-                    goto Done;
+                    goto EndOfComment;
                 }
+
+                // If we are here, we have definintely found a \r. So now to check if \n follows.
+                Debug.Assert(localBuffer[idx] == JsonConstants.CarriageReturn);
+
+                if (idx < localBuffer.Length - 1)
+                {
+                    if (localBuffer[idx + 1] == JsonConstants.LineFeed)
+                    {
+                        idx++;
+                    }
+                    goto EndOfComment;
+                }
+            }
+            if (IsLastSpan)
+            {
+                idx = localBuffer.Length;
+                // Assume everything on this line is a comment and there is no more data.
+                _bytePositionInLine += 2 + localBuffer.Length;
+                goto Done;
+            }
+            else
+            {
                 return false;
             }
 
+        EndOfComment:
             idx++;
             _bytePositionInLine = 0;
             _lineNumber++;
+
         Done:
             _consumed += 2 + idx;
             return true;

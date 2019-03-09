@@ -5,10 +5,7 @@
       <!-- called through reflection by System.ComponentModel.DefaultValueAttribute -->
       <method name="ConvertFromInvariantString" />
     </type>
-    <type fullname="System.ComponentModel.LicenseManager">
-      <!-- supports the CLR's IClassFactory2 marshaling -->
-      <method name="GetLicenseInteropHelperType" />
-    </type>
+    <!-- The following types support the CLR's IClassFactory2 marshaling -->
     <type fullname="System.ComponentModel.LicenseManager/LicenseInteropHelper" />
     <type fullname="System.ComponentModel.LicenseManager/CLRLicenseContext" />
     <type fullname="System.ComponentModel.LicenseManager/LicInfoHelperLicenseContext" />

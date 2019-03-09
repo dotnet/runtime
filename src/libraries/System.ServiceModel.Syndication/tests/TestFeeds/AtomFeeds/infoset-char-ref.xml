@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  Whether characters are represented by character references or not is not significant.
 Expect:       !Error

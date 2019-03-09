@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
 
@@ -16,13 +15,6 @@
     <SerializeProjects Condition="'$(BuildTests)' != 'true' AND ('$(BuildingUAPVertical)' == 'true' or '$(Coverage)' == 'true' or '$(PerformanceTest)' == 'true')">true</SerializeProjects>
     <TraversalBuildDependsOn Condition="'$(BuildingUAPVertical)' == 'true'">MakeCommonResourcesPriFile;$(TraversalBuildDependsOn)</TraversalBuildDependsOn>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(RunningSharedFrameworkValidation)' == 'true'">
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Data.Odbc.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.IO.Pipes.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.XmlSerializer.Generator.Tests.csproj" />
-    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Reflection.Context.Tests.csproj" />
-  </ItemGroup>
 
   <PropertyGroup>
     <TestProjectFilter Condition="'$(Test)' == 'true'">Tests</TestProjectFilter>

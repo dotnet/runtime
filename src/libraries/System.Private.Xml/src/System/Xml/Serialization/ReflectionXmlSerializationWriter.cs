@@ -316,7 +316,7 @@ namespace System.Xml.Serialization
                         ((XmlNode)o).WriteTo(Writer);
                         break;
                     default:
-                        throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                        throw new InvalidOperationException(SR.XmlInternalError);
                 }
             }
         }
@@ -468,7 +468,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                throw new InvalidOperationException(SR.XmlInternalError);
             }
         }
 
@@ -673,7 +673,7 @@ namespace System.Xml.Serialization
                 }
 
                 if (enumMapping == null)
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
 
                 WriteXsiType(enumMapping.TypeName, ns);
                 Writer.WriteString(WriteEnumMethod(enumMapping, o));
@@ -696,7 +696,7 @@ namespace System.Xml.Serialization
                 }
 
                 if (arrayMapping == null)
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
 
                 WriteXsiType(arrayMapping.TypeName, ns);
                 WriteMember(o, null, arrayMapping.ElementsSortedByDerivation, null, null, arrayMapping.TypeDesc, true);
@@ -779,7 +779,7 @@ namespace System.Xml.Serialization
                 return memberField.GetValue(o);
             }
 
-            throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+            throw new InvalidOperationException(SR.XmlInternalError);
         }
 
         private void WriteMember(object memberValue, AttributeAccessor attribute, TypeDesc memberTypeDesc, object container)
@@ -1040,8 +1040,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    // #10593: Add More Tests for Serialization Code
-                    Debug.Assert(false);
+                    Debug.Fail("#10593: Add More Tests for Serialization Code");
                 }
             }
             else if (o is byte[] a)
@@ -1060,14 +1059,12 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    // #10593: Add More Tests for Serialization Code
-                    Debug.Assert(false);
+                    Debug.Fail("#10593: Add More Tests for Serialization Code");
                 }
             }
             else
             {
-                // #10593: Add More Tests for Serialization Code
-                Debug.Assert(false);
+                Debug.Fail("#10593: Add More Tests for Serialization Code");
             }
         }
 
@@ -1169,7 +1166,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
                 }
             }
 
@@ -1412,7 +1409,7 @@ namespace System.Xml.Serialization
 
                 if (!foundMatchedMember)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"Could not find member named {memberName} of type {declaringType.ToString()}"));
+                    throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"Could not find member named {memberName} of type {declaringType}"));
                 }
 
                 declaringType = currentType;

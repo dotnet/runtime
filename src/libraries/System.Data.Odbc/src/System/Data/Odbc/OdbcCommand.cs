@@ -796,7 +796,7 @@ namespace System.Data.Odbc
 
                             default:
                                 // this should NEVER happen
-                                Debug.Assert(false, "ExecuteReaderObjectcalled with unsupported ODBC API method.");
+                                Debug.Fail("ExecuteReaderObjectcalled with unsupported ODBC API method.");
                                 throw ADP.InvalidOperation(method.ToString());
                         }
 

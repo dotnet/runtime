@@ -245,8 +245,7 @@ namespace System.ServiceModel.Syndication
         private SyndicationLink TryReadDocumentationFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension documentationElement = elementExtensions
-                                      .Where(e => e.OuterName == Rss20Constants.DocumentationTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
-                                      .FirstOrDefault();
+                                      .FirstOrDefault(e => e.OuterName == Rss20Constants.DocumentationTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
             if (documentationElement == null)
                 return null;
@@ -290,8 +289,7 @@ namespace System.ServiceModel.Syndication
         private void TryReadSkipHoursFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<int> skipHours)
         {
             SyndicationElementExtension skipHoursElement = elementExtensions
-                                      .Where(e => e.OuterName == Rss20Constants.SkipHoursTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
-                                      .FirstOrDefault();
+                                      .FirstOrDefault(e => e.OuterName == Rss20Constants.SkipHoursTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
             if (skipHoursElement == null)
                 return;
@@ -309,7 +307,7 @@ namespace System.ServiceModel.Syndication
 
                         if (!parsed || (hour < 0 || hour > 23))
                         {
-                            throw new FormatException(string.Format(SR.InvalidSkipHourValue, value));
+                            throw new FormatException(SR.Format(SR.InvalidSkipHourValue, value));
                         }
 
                         skipHours.Add(hour);
@@ -325,8 +323,7 @@ namespace System.ServiceModel.Syndication
         private void TryReadSkipDaysFromExtension(SyndicationElementExtensionCollection elementExtensions, Collection<string> skipDays)
         {
             SyndicationElementExtension skipDaysElement = elementExtensions
-                                      .Where(e => e.OuterName == Rss20Constants.SkipDaysTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
-                                      .FirstOrDefault();
+                                      .FirstOrDefault(e => e.OuterName == Rss20Constants.SkipDaysTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
             if (skipDaysElement == null)
                 return;
@@ -362,8 +359,7 @@ namespace System.ServiceModel.Syndication
         private SyndicationTextInput TryReadTextInputFromExtension(SyndicationElementExtensionCollection elementExtensions)
         {
             SyndicationElementExtension textInputElement = elementExtensions
-                                      .Where(e => e.OuterName == Rss20Constants.TextInputTag && e.OuterNamespace == Rss20Constants.Rss20Namespace)
-                                      .FirstOrDefault();
+                                      .FirstOrDefault(e => e.OuterName == Rss20Constants.TextInputTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
             if (textInputElement == null)
                 return null;

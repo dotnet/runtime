@@ -255,5 +255,43 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Verify(writer, "180F32303137313131363137333530315A" + "830F32303137313131363137333530315A");
             }
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void WriteAfterDispose(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteNull();
+                }
+
+                writer.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteGeneralizedTime(DateTimeOffset.UtcNow));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteGeneralizedTime(DateTimeOffset.UtcNow, true));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteGeneralizedTime(Asn1Tag.Integer, DateTimeOffset.Now));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteGeneralizedTime(Asn1Tag.Integer, DateTimeOffset.Now, true));
+
+                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 18);
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteGeneralizedTime(tag, DateTimeOffset.Now));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteGeneralizedTime(tag, DateTimeOffset.Now, true));
+            }
+        }
     }
 }

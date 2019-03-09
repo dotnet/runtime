@@ -13,27 +13,27 @@ namespace System.Configuration
 
         internal static ArgumentException ParameterInvalid(string parameter)
         {
-            return new ArgumentException(string.Format(SR.Parameter_Invalid, parameter), parameter);
+            return new ArgumentException(SR.Format(SR.Parameter_Invalid, parameter), parameter);
         }
 
         internal static ArgumentException ParameterNullOrEmpty(string parameter)
         {
-            return new ArgumentException(string.Format(SR.Parameter_NullOrEmpty, parameter), parameter);
+            return new ArgumentException(SR.Format(SR.Parameter_NullOrEmpty, parameter), parameter);
         }
 
         internal static ArgumentException PropertyInvalid(string property)
         {
-            return new ArgumentException(string.Format(SR.Property_Invalid, property), property);
+            return new ArgumentException(SR.Format(SR.Property_Invalid, property), property);
         }
 
         internal static ArgumentException PropertyNullOrEmpty(string property)
         {
-            return new ArgumentException(string.Format(SR.Property_NullOrEmpty, property), property);
+            return new ArgumentException(SR.Format(SR.Property_NullOrEmpty, property), property);
         }
 
         internal static InvalidOperationException UnexpectedError(string methodName)
         {
-            return new InvalidOperationException(string.Format(SR.Unexpected_Error, methodName));
+            return new InvalidOperationException(SR.Format(SR.Unexpected_Error, methodName));
         }
 
         internal static ConfigurationErrorsException WrapAsConfigException(string outerMessage, Exception e,
@@ -73,7 +73,7 @@ namespace System.Configuration
             if (e != null)
             {
                 return new ConfigurationErrorsException(
-                    string.Format(SR.Wrapped_exception_message, outerMessage, e.Message),
+                    SR.Format(SR.Wrapped_exception_message, outerMessage, e.Message),
                     e,
                     filename,
                     line);
@@ -81,7 +81,7 @@ namespace System.Configuration
 
             // If there is no exception, create a new exception with no further information.
             return new ConfigurationErrorsException(
-                string.Format(SR.Wrapped_exception_message, outerMessage, NoExceptionInformation),
+                SR.Format(SR.Wrapped_exception_message, outerMessage, NoExceptionInformation),
                 filename,
                 line);
         }

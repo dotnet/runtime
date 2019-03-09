@@ -424,7 +424,7 @@ namespace System.IO.Packaging
                 // fall-through is not allowed
                 default:
                     {
-                        Debug.Assert(false, "Encountered an invalid CompressionOption enum value");
+                        Debug.Fail("Encountered an invalid CompressionOption enum value");
                         goto case CompressionOption.NotCompressed;
                     }
             }

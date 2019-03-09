@@ -59,8 +59,8 @@ namespace System.Security.Cryptography.Asn1
             decoded = default;
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             
-            decoded.Modulus = sequenceReader.GetInteger();
-            decoded.PublicExponent = sequenceReader.GetInteger();
+            decoded.Modulus = sequenceReader.ReadInteger();
+            decoded.PublicExponent = sequenceReader.ReadInteger();
 
             sequenceReader.ThrowIfNotEmpty();
         }

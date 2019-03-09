@@ -79,14 +79,14 @@ namespace System.Security.Cryptography.Asn1
                 sequenceReader.ThrowIfNotEmpty();
             }
 
-            decoded.Modulus = sequenceReader.GetInteger();
-            decoded.PublicExponent = sequenceReader.GetInteger();
-            decoded.PrivateExponent = sequenceReader.GetInteger();
-            decoded.Prime1 = sequenceReader.GetInteger();
-            decoded.Prime2 = sequenceReader.GetInteger();
-            decoded.Exponent1 = sequenceReader.GetInteger();
-            decoded.Exponent2 = sequenceReader.GetInteger();
-            decoded.Coefficient = sequenceReader.GetInteger();
+            decoded.Modulus = sequenceReader.ReadInteger();
+            decoded.PublicExponent = sequenceReader.ReadInteger();
+            decoded.PrivateExponent = sequenceReader.ReadInteger();
+            decoded.Prime1 = sequenceReader.ReadInteger();
+            decoded.Prime2 = sequenceReader.ReadInteger();
+            decoded.Exponent1 = sequenceReader.ReadInteger();
+            decoded.Exponent2 = sequenceReader.ReadInteger();
+            decoded.Coefficient = sequenceReader.ReadInteger();
 
             sequenceReader.ThrowIfNotEmpty();
         }
