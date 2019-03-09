@@ -2,37 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// RuntimeHelpers
-//    This class defines a set of static methods that provide support for compilers.
-//
-//
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
-    using System;
-    using System.Diagnostics;
-    using System.Security;
-    using System.Runtime;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.Serialization;
-    using System.Threading;
-    using System.Runtime.Versioning;
-    using Internal.Runtime.CompilerServices;
-
-    public static class RuntimeHelpers
+    public static partial class RuntimeHelpers
     {
-        // Exposed here as a more appropriate place than on FormatterServices itself,
-        // which is a high level reflection heavy type.
-        public static object GetUninitializedObject(Type type)
-        {
-            return FormatterServices.GetUninitializedObject(type);
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
 
@@ -113,8 +90,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public static void PrepareContractedDelegate(Delegate d) { }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void PrepareDelegate(Delegate d);
 
@@ -160,27 +135,6 @@ namespace System.Runtime.CompilerServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
-        public static void ProbeForSufficientStack()
-        {
-        }
-
-        // This method is a marker placed immediately before a try clause to mark the corresponding catch and finally blocks as
-        // constrained. There's no code here other than the probe because most of the work is done at JIT time when we spot a call to this routine.
-        public static void PrepareConstrainedRegions()
-        {
-            ProbeForSufficientStack();
-        }
-
-        // When we detect a CER with no calls, we can point the JIT to this non-probing version instead
-        // as we don't need to probe.
-        public static void PrepareConstrainedRegionsNoOP()
-        {
-        }
-
-        public delegate void TryCode(object userData);
-
-        public delegate void CleanupCode(object userData, bool exceptionThrown);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object userData);
 
@@ -195,26 +149,6 @@ namespace System.Runtime.CompilerServices
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementation for how this happens.
             throw new InvalidOperationException();
-        }
-
-        /// <summary>
-        /// GetSubArray helper method for the compiler to slice an array using a range.
-        /// </summary>
-        public static T[] GetSubArray<T>(T[] array, Range range)
-        {
-            Type elementType = array.GetType().GetElementType();
-            Span<T> source = array.AsSpan(range);
-
-            if (elementType.IsValueType)
-            {
-                return source.ToArray();
-            }
-            else
-            {
-                T[] newArray = (T[])Array.CreateInstance(elementType, source.Length);
-                source.CopyTo(newArray);
-                return newArray;
-            }
         }
 
         // Returns true iff the object has a component size;
@@ -256,5 +190,9 @@ namespace System.Runtime.CompilerServices
             // Ideally this would just be a single dereference:
             // mov tmp, qword ptr [rax] ; rax = obj ref, tmp = MethodTable* pointer
         }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern object GetUninitializedObjectInternal(Type type);
+
     }
 }
