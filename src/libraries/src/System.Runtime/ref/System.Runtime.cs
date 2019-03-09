@@ -3164,6 +3164,7 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public ref partial struct TypedReference
     {
+        private object _dummy;
         private int _dummyPrimitive;
         public override bool Equals(object o) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -3833,6 +3834,13 @@ namespace System.Buffers
         void System.IDisposable.Dispose() { }
         protected internal virtual bool TryGetArray(out System.ArraySegment<T> segment) { throw null; }
         public abstract void Unpin();
+    }
+    public enum OperationStatus
+    {
+        DestinationTooSmall = 1,
+        Done = 0,
+        InvalidData = 3,
+        NeedMoreData = 2,
     }
     public delegate void ReadOnlySpanAction<T, in TArg>(System.ReadOnlySpan<T> span, TArg arg);
     public delegate void SpanAction<T, in TArg>(System.Span<T> span, TArg arg);
@@ -5161,6 +5169,7 @@ namespace System.IO
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
+        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.ObsoleteAttribute("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual System.IntPtr Handle { get { throw null; } }
         public virtual bool IsAsync { get { throw null; } }
@@ -6411,6 +6420,12 @@ namespace System.Reflection
 }
 namespace System.Runtime
 {
+    public sealed class AmbiguousImplementationException : System.Exception
+    {
+        public AmbiguousImplementationException() { }
+        public AmbiguousImplementationException(string message) { }
+        public AmbiguousImplementationException(string message, System.Exception innerException) { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
     public sealed partial class AssemblyTargetedPatchBandAttribute : System.Attribute
     {
@@ -7674,6 +7689,10 @@ namespace System.Text
         public int Utf8SequenceLength { get { throw null; } }
         public int Value { get { throw null; } }
         public int CompareTo(System.Text.Rune other) { throw null; }
+        public static System.Buffers.OperationStatus DecodeUtf16(System.ReadOnlySpan<char> utf16Source, out System.Text.Rune result, out int charsConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeUtf16FromEnd(System.ReadOnlySpan<char> utf16Source, out System.Text.Rune result, out int charsConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeUtf8(System.ReadOnlySpan<byte> utf8Source, out System.Text.Rune result, out int bytesConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeUtf8FromEnd(System.ReadOnlySpan<byte> utf8Source, out System.Text.Rune result, out int bytesConsumed) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Text.Rune other) { throw null; }
         public override int GetHashCode() { throw null; }

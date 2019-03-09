@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "pal_crypto_types.h"
-#include "pal_compiler.h"
 #include "opensslshim.h"
+#include "pal_compiler.h"
+#include "pal_crypto_types.h"
 
 /*
 These values should be kept in sync with System.Security.Cryptography.X509Certificates.X509RevocationFlag.
 */
-typedef enum
-{
+typedef enum {
     EndCertificateOnly = 0,
     EntireChain = 1,
     ExcludeRoot = 2,
@@ -21,8 +20,7 @@ The error codes used when verifying X509 certificate chains.
 
 These values should be kept in sync with Interop.Crypto.X509VerifyStatusCode.
 */
-typedef enum
-{
+typedef enum {
     PAL_X509_V_OK = 0,
     PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT = 2,
     PAL_X509_V_ERR_UNABLE_TO_GET_CRL = 3,
@@ -233,7 +231,10 @@ DLLEXPORT void CryptoNative_X509StoreCtxDestroy(X509_STORE_CTX* v);
 /*
 Shims the X509_STORE_CTX_init method.
 */
-DLLEXPORT int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx, X509_STORE* store, X509* x509, X509Stack* extraStore);
+DLLEXPORT int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx,
+                                                X509_STORE* store,
+                                                X509* x509,
+                                                X509Stack* extraStore);
 
 /*
 Shims the X509_verify_cert method.
@@ -358,6 +359,14 @@ the current chain to make chain builds after Reset faster.
 DLLEXPORT int32_t CryptoNative_X509StoreCtxCommitToChain(X509_STORE_CTX* storeCtx);
 
 /*
+Duplicates any certificate at or below the level where the error marker is.
+
+Outputs a new store with a clone of the root, if necessary.
+The new store does not have any properties set other than the trust. (Mainly, CRLs are lost)
+*/
+DLLEXPORT int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx, X509_STORE** newStore);
+
+/*
 Look for a cached OCSP response appropriate to the end-entity certificate using the issuer as
 determined by the chain in storeCtx.
 */
@@ -373,4 +382,7 @@ DLLEXPORT OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* s
 Determine if the OCSP response is acceptable, and if acceptable report the status and
 cache the result (if appropriate)
 */
-DLLEXPORT X509VerifyStatusCode CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OCSP_RESPONSE* resp, char* cachePath);
+DLLEXPORT X509VerifyStatusCode CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx,
+                                                                OCSP_REQUEST* req,
+                                                                OCSP_RESPONSE* resp,
+                                                                char* cachePath);

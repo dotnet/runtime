@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             writer.PushSequence(tag);
             
             writer.WriteObjectIdentifier(PolicyQualifierId);
-            writer.WriteEncodedValue(Qualifier);
+            writer.WriteEncodedValue(Qualifier.Span);
             writer.PopSequence(tag);
         }
 
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             
             decoded.PolicyQualifierId = sequenceReader.ReadObjectIdentifierAsString();
-            decoded.Qualifier = sequenceReader.GetEncodedValue();
+            decoded.Qualifier = sequenceReader.ReadEncodedValue();
 
             sequenceReader.ThrowIfNotEmpty();
         }

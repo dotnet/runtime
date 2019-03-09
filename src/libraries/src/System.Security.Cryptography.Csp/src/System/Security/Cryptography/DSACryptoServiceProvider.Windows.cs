@@ -458,7 +458,7 @@ namespace System.Security.Cryptography
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
 
             if (rgbHash.Length != _sha1.HashSize / 8)
-                throw new CryptographicException(string.Format(SR.Cryptography_InvalidHashSize, "SHA1", _sha1.HashSize / 8));
+                throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHashSize, "SHA1", _sha1.HashSize / 8));
 
             return CapiHelper.SignValue(
                 SafeProvHandle,

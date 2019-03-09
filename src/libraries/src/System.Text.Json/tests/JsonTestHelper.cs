@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -155,6 +156,24 @@ namespace System.Text.Json.Tests
             Array.Copy(_dataUtf8, _dataUtf8.Length - remaining, buffers[numberOfSegments - 1], 0, remaining);
 
             return BufferFactory.Create(buffers);
+        }
+
+        public static List<ReadOnlySequence<byte>> GetSequences(ReadOnlyMemory<byte> dataMemory)
+        {
+            var sequences = new List<ReadOnlySequence<byte>>
+            {
+                new ReadOnlySequence<byte>(dataMemory)
+            };
+
+            for (int i = 0; i < dataMemory.Length; i++)
+            {
+                var firstSegment = new BufferSegment<byte>(dataMemory.Slice(0, i));
+                ReadOnlyMemory<byte> secondMem = dataMemory.Slice(i);
+                BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+                var sequence = new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
+                sequences.Add(sequence);
+            }
+            return sequences;
         }
 
         internal static ReadOnlySequence<byte> SegmentInto(ReadOnlyMemory<byte> data, int segmentCount)
@@ -542,6 +561,21 @@ namespace System.Text.Json.Tests
         {
             double value = random.NextDouble() * (maxValue - minValue) + minValue;
             return (decimal)value;
+        }
+
+        public static string GetCompactString(string jsonString)
+        {
+            using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
+            {
+                jsonReader.FloatParseHandling = FloatParseHandling.Decimal;
+                JToken jtoken = JToken.ReadFrom(jsonReader);
+                var stringWriter = new StringWriter();
+                using (JsonTextWriter jsonWriter = new JsonTextWriter(stringWriter))
+                {
+                    jtoken.WriteTo(jsonWriter);
+                    return stringWriter.ToString();
+                }
+            }
         }
     }
 }

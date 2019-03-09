@@ -1171,8 +1171,8 @@ namespace System.ComponentModel
                             continue;
                         }
 
-                        MethodInfo getMethod = propertyInfo.GetMethod;
-                        MethodInfo setMethod = propertyInfo.SetMethod;
+                        MethodInfo getMethod = propertyInfo.GetGetMethod(nonPublic: false);
+                        MethodInfo setMethod = propertyInfo.GetSetMethod(nonPublic: false);
                         string name = propertyInfo.Name;
 
                         // If the property only overrode "set", then we don't

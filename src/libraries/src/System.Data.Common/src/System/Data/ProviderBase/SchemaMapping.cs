@@ -422,7 +422,7 @@ namespace System.Data.ProviderBase
                         dataRow = _dataTable.LoadDataRow(mapped, false);
                         break;
                     default:
-                        Debug.Assert(false, "unexpected LoadOption");
+                        Debug.Fail("unexpected LoadOption");
                         throw ADP.InvalidLoadOption(_loadOption);
                 }
                 if ((null != _chapterMap) && (null != _dataSet))

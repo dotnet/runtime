@@ -29,7 +29,7 @@ namespace System.Configuration
                 throw new ArgumentNullException(nameof(machineConfigFilename));
 
             if (!File.Exists(machineConfigFilename))
-                throw new ArgumentException(string.Format(SR.Machine_config_file_not_found, machineConfigFilename),
+                throw new ArgumentException(SR.Format(SR.Machine_config_file_not_found, machineConfigFilename),
                     nameof(machineConfigFilename));
 
             MachineConfigFilename = machineConfigFilename;

@@ -94,7 +94,7 @@ namespace System.Configuration
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
                 if ((factoryRecord != null) && (factoryRecord.AllowDefinition != value))
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined, ConfigKey));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _allowDefinition = value;
                 _modifiedFlags[FlagAllowDefinitionModified] = true;
@@ -115,7 +115,7 @@ namespace System.Configuration
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
                 if ((factoryRecord != null) && (factoryRecord.AllowExeDefinition != value))
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined, ConfigKey));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _allowExeDefinition = value;
                 _modifiedFlags[FlagAllowExeDefinitionModified] = true;
@@ -136,7 +136,7 @@ namespace System.Configuration
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
                 if ((factoryRecord != null) && (factoryRecord.OverrideModeDefault.OverrideMode != value))
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined, ConfigKey));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 // Threat "Inherit" as "Allow" as "Inherit" does not make sense as a default
                 if (value == OverrideMode.Inherit) value = OverrideMode.Allow;
@@ -162,7 +162,7 @@ namespace System.Configuration
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
                 if ((factoryRecord != null) && (factoryRecord.AllowLocation != value))
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined, ConfigKey));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _flags[FlagAllowLocation] = value;
                 _modifiedFlags[FlagAllowLocation] = true;
@@ -208,7 +208,7 @@ namespace System.Configuration
                         _flags[FlagChildrenLocked] = true;
                         break;
                     default:
-                        Debug.Assert(false, "Unexpected value for OverrideMode");
+                        Debug.Fail("Unexpected value for OverrideMode");
                         break;
                 }
             }
@@ -326,7 +326,7 @@ namespace System.Configuration
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
                 if ((factoryRecord != null) && (factoryRecord.RestartOnExternalChanges != value))
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined, ConfigKey));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _flags[FlagRestartOnExternalChanges] = value;
                 _modifiedFlags[FlagRestartOnExternalChanges] = true;
@@ -347,7 +347,7 @@ namespace System.Configuration
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
                 if ((factoryRecord != null) && (factoryRecord.RequirePermission != value))
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined, ConfigKey));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _flags[FlagRequirePermission] = value;
                 _modifiedFlags[FlagRequirePermission] = true;
@@ -377,7 +377,7 @@ namespace System.Configuration
 
                     if (!factoryRecord.IsEquivalentType(host, value))
                     {
-                        throw new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined,
+                        throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined,
                             ConfigKey));
                     }
                 }

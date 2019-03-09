@@ -201,7 +201,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     break;
 
                 default:
-                    Debug.Assert(false, "Invalid Predefined Method in VisitCALL");
+                    Debug.Fail("Invalid Predefined Method in VisitCALL");
                     throw Error.InternalCompilerError();
             }
 
@@ -263,7 +263,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             if (m == null)
             {
-                Debug.Assert(false, "How did we get a call that doesn't have a methodinfo?");
+                Debug.Fail("How did we get a call that doesn't have a methodinfo?");
                 throw Error.InternalCompilerError();
             }
 
@@ -397,7 +397,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             if (p == null)
             {
-                Debug.Assert(false, "How did we get a prop that doesn't have a propinfo?");
+                Debug.Fail("How did we get a prop that doesn't have a propinfo?");
                 throw Error.InternalCompilerError();
             }
 
@@ -536,7 +536,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     return Expression.SubtractChecked(arg1, arg2);
 
                 default:
-                    Debug.Assert(false, "Invalid Predefined Method in GenerateBinaryOperator");
+                    Debug.Fail("Invalid Predefined Method in GenerateBinaryOperator");
                     throw Error.InternalCompilerError();
             }
         }
@@ -612,7 +612,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     return Expression.SubtractChecked(arg1, arg2, methodInfo);
 
                 default:
-                    Debug.Assert(false, "Invalid Predefined Method in GenerateUserDefinedBinaryOperator");
+                    Debug.Fail("Invalid Predefined Method in GenerateUserDefinedBinaryOperator");
                     throw Error.InternalCompilerError();
             }
         }
@@ -636,7 +636,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     return Expression.NegateChecked(arg);
 
                 default:
-                    Debug.Assert(false, "Invalid Predefined Method in GenerateUnaryOperator");
+                    Debug.Fail("Invalid Predefined Method in GenerateUnaryOperator");
                     throw Error.InternalCompilerError();
             }
         }
@@ -665,7 +665,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     return Expression.NegateChecked(arg, methodInfo);
 
                 default:
-                    Debug.Assert(false, "Invalid Predefined Method in GenerateUserDefinedUnaryOperator");
+                    Debug.Fail("Invalid Predefined Method in GenerateUserDefinedUnaryOperator");
                     throw Error.InternalCompilerError();
             }
         }
@@ -862,7 +862,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                         return GenerateUserDefinedUnaryOperator(call);
 
                     default:
-                        Debug.Assert(false, "Invalid Predefined Method in GetExpression");
+                        Debug.Fail("Invalid Predefined Method in GetExpression");
                         throw Error.InternalCompilerError();
                 }
             }

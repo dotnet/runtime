@@ -139,7 +139,7 @@ nameof(binaryForm),
                 // Indicates a bug in the implementation, not in user's code.
                 //
 
-                Debug.Assert(false, "Length > ushort.MaxValue");
+                Debug.Fail("Length > ushort.MaxValue");
                 // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                 // but it's the best exception type available to indicate a failure because
                 // of a bug in the ACE itself.
@@ -850,13 +850,13 @@ nameof(type),
                 {
                     throw new ArgumentOutOfRangeException(
 nameof(opaque),
-                        string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLength));
+                        SR.Format(SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLength));
                 }
                 else if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(
 nameof(opaque),
-                        string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
+                        SR.Format(SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
                 }
             }
 
@@ -885,7 +885,7 @@ nameof(opaque),
             {
                 if (OpaqueLength > MaxOpaqueLength)
                 {
-                    Debug.Assert(false, "OpaqueLength somehow managed to exceed MaxOpaqueLength");
+                    Debug.Fail("OpaqueLength somehow managed to exceed MaxOpaqueLength");
                     // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                     // but it's the best exception type available to indicate a failure because
                     // of a bug in the ACE itself.
@@ -1202,7 +1202,7 @@ nameof(opaque),
                     // Indicates a bug in the implementation, not in user's code
                     //
 
-                    Debug.Assert(false, "Invalid ACE type");
+                    Debug.Fail("Invalid ACE type");
                     // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                     // but it's the best exception type available to indicate a failure because
                     // of a bug in the ACE itself.
@@ -1303,13 +1303,13 @@ nameof(opaque),
                 {
                     throw new ArgumentOutOfRangeException(
 nameof(opaque),
-                        string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLengthInternal));
+                        SR.Format(SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLengthInternal));
                 }
                 else if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(
 nameof(opaque),
-                        string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
+                        SR.Format(SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
                 }
             }
 
@@ -1646,7 +1646,7 @@ nameof(qualifier),
             {
                 if (OpaqueLength > MaxOpaqueLengthInternal)
                 {
-                    Debug.Assert(false, "OpaqueLength somehow managed to exceed MaxOpaqueLength");
+                    Debug.Fail("OpaqueLength somehow managed to exceed MaxOpaqueLength");
                     // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                     // but it's the best exception type available to indicate a failure because
                     // of a bug in the ACE itself.
@@ -2212,7 +2212,7 @@ nameof(qualifier),
             {
                 if (OpaqueLength > MaxOpaqueLengthInternal)
                 {
-                    Debug.Assert(false, "OpaqueLength somehow managed to exceed MaxOpaqueLength");
+                    Debug.Fail("OpaqueLength somehow managed to exceed MaxOpaqueLength");
                     // Replacing SystemException with InvalidOperationException. It's not a perfect fit,
                     // but it's the best exception type available to indicate a failure because
                     // of a bug in the ACE itself.

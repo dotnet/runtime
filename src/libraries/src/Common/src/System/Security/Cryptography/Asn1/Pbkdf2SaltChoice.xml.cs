@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Asn1
             if (tag.HasSameClassAndValue(Asn1Tag.PrimitiveOctetString))
             {
 
-                if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSpecified))
+                if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSpecified))
                 {
                     decoded.Specified = tmpSpecified;
                 }

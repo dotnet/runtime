@@ -63,7 +63,7 @@ namespace System.Runtime.Serialization
             {
                 return ProcessClassDataContract((ClassDataContract)contract, context, memberNode);
             }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.QueryGeneratorPathToMemberNotFound)));
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));
         }
 
         static DataContract ProcessClassDataContract(ClassDataContract contract, ExportContext context, MemberInfo memberNode)
@@ -77,7 +77,7 @@ namespace System.Runtime.Serialization
                     return member.MemberTypeContract;
                 }
             }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.QueryGeneratorPathToMemberNotFound)));
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));
         }
 
         static IEnumerable<DataMember> GetDataMembers(ClassDataContract contract)

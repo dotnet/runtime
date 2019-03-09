@@ -16,6 +16,7 @@ namespace System
     {
         public static void Contains(string value, string substring) { }
         public static void Equal(byte[] expected, byte[] actual) { }
+        public static void Equal<T>(System.Collections.Generic.HashSet<T> expected, System.Collections.Generic.HashSet<T> actual) { }
         public static void GreaterThanOrEqualTo<T>(T actual, T greaterThanOrEqualTo, string userMessage = null) where T : System.IComparable { }
         public static void GreaterThan<T>(T actual, T greaterThan, string userMessage = null) where T : System.IComparable { }
         public static void LessThanOrEqualTo<T>(T actual, T lessThanOrEqualTo, string userMessage = null) where T : System.IComparable { }
@@ -45,6 +46,7 @@ namespace System
         public static bool IsArgIteratorNotSupported { get { throw null; } }
         public static bool IsArgIteratorSupported { get { throw null; } }
         public static bool IsArm64Process { get { throw null; } }
+        public static bool IsArmOrArm64Process { get { throw null; } }
         public static bool IsArmProcess { get { throw null; } }
         public static bool IsCentos6 { get { throw null; } }
         public static bool IsDebian { get { throw null; } }
@@ -58,6 +60,7 @@ namespace System
         public static bool IsInContainer { get { throw null; } }
         public static bool IsInvokingStaticConstructorsSupported { get { throw null; } }
         public static bool IsMacOsHighSierraOrHigher { get { throw null; } }
+        public static bool IsMacOsMojaveOrHigher { get { throw null; } }
         public static bool IsNetBSD { get { throw null; } }
         public static bool IsNetCore { get { throw null; } }
         public static bool IsNetfx462OrNewer { get { throw null; } }
@@ -67,6 +70,7 @@ namespace System
         public static bool IsNetNative { get { throw null; } }
         public static bool IsNonZeroLowerBoundArraySupported { get { throw null; } }
         public static bool IsNotArm64Process { get { throw null; } }
+        public static bool IsNotArmNorArm64Process { get { throw null; } }
         public static bool IsNotArmProcess { get { throw null; } }
         public static bool IsNotFedoraOrRedHatFamily { get { throw null; } }
         public static bool IsNotInAppContainer { get { throw null; } }

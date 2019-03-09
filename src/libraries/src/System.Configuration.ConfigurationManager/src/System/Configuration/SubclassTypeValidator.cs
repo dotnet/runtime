@@ -31,7 +31,7 @@ namespace System.Configuration
 
             if (!_base.IsAssignableFrom((Type)value))
             {
-                throw new ArgumentException(string.Format(SR.Subclass_validator_error, ((Type)value).FullName,
+                throw new ArgumentException(SR.Format(SR.Subclass_validator_error, ((Type)value).FullName,
                     _base.FullName));
             }
         }

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  Empty title element
 Expect:       NotBlank{element:title,parent:entry}

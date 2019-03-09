@@ -59,7 +59,7 @@ namespace System.Data
                     break;
 
                 default:
-                    Debug.Assert(false, "NYI");
+                    Debug.Fail("NYI");
                     goto case ValueType.Object;
             }
         }

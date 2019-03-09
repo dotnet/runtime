@@ -1,4 +1,4 @@
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <PropertyGroup>
     <PackageDescriptionFile>$(RepoRoot)pkg/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
@@ -13,7 +13,7 @@
     <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
 
     <XmlDocPackage>Microsoft.Private.Intellisense</XmlDocPackage>
-    <XmlDocPackageVersion>3.0.0-preview3-190214-0</XmlDocPackageVersion>
+    <XmlDocPackageVersion>3.0.0-preview3-190305-0</XmlDocPackageVersion>
     <XmlDocFileRoot>$(PackagesDir)$(XmlDocPackage.ToLowerInvariant())/$(XmlDocPackageVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
     <XmlDocDir>$(ArtifactsBinDir)docs</XmlDocDir>
 

@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<ClassDiagram MajorVersion="1" MinorVersion="1">
+﻿<ClassDiagram MajorVersion="1" MinorVersion="1">
   <Interface Name="System.Collections.Generic.IHashKeyCollection&lt;TKey&gt;">
     <Position X="12.75" Y="0.5" Width="1.75" />
     <TypeIdentifier>

@@ -98,7 +98,7 @@ namespace System.Xml
                             await writer.WriteStringAsync((string)item.data).ConfigureAwait(false);
                             break;
                         default:
-                            Debug.Assert(false, "Unexpected ItemType value.");
+                            Debug.Fail("Unexpected ItemType value.");
                             break;
                     }
                 }

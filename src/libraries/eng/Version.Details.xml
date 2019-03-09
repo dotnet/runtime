@@ -1,43 +1,43 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview4-27501-75">
+    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview4-27508-76">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>c1801e85024add717f518feb6a9caed60d54500f</Sha>
+      <Sha>ee56e5874db8780c99d2d93169aacf477f7b73f1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="3.0.0-preview4-27501-75">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="3.0.0-preview4-27508-76">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>c1801e85024add717f518feb6a9caed60d54500f</Sha>
+      <Sha>ee56e5874db8780c99d2d93169aacf477f7b73f1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="3.0.0-preview4-27501-75">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="3.0.0-preview4-27508-76">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>c1801e85024add717f518feb6a9caed60d54500f</Sha>
+      <Sha>ee56e5874db8780c99d2d93169aacf477f7b73f1</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.NETCore.App" Version="3.0.0-preview4-27501-1">
+    <Dependency Name="Microsoft.NETCore.App" Version="3.0.0-preview4-27508-16">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>8aac3c4b2d230d17c9e8875174359ac388e8854e</Sha>
+      <Sha>ac7856f5c717a730b0f09b1ab30f419cb726ab22</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="3.0.0-preview4-27413-11">
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="3.0.0-preview4-27508-16">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>0f10c29471af71b020b0c1513f28356660df1eab</Sha>
+      <Sha>ac7856f5c717a730b0f09b1ab30f419cb726ab22</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="3.0.0-preview4-27413-11">
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="3.0.0-preview4-27508-16">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>0f10c29471af71b020b0c1513f28356660df1eab</Sha>
+      <Sha>ac7856f5c717a730b0f09b1ab30f419cb726ab22</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview4.19152.1">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview4.19158.7">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>b2a4149d63615df35f413b5236e436e7fdb8cd85</Sha>
+      <Sha>232796d75d9492f273f61df9bb8afc05d33d6dc6</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19128.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>6f33f02efeafb578b3f99da08cb2670e0470c917</Sha>
     </Dependency>
-    <Dependency Name="NETStandard.Library" Version="2.1.0-prerelease.19126.1">
+    <Dependency Name="NETStandard.Library" Version="2.1.0-prerelease.19158.1">
       <Uri>https://github.com/dotnet/standard</Uri>
-      <Sha>f3add9198e40e017c064188481e978d09631eba3</Sha>
+      <Sha>0dee41e279fc1dad29dd1e567186e52697b7417a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="2.0.0-beta.19128.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -91,9 +91,9 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>ec366687c8caead948e58704ad61ed644eb91b5b</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190302.1">
+    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190308.5">
       <Uri>https://dnceng@dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>6cf1c3d858719aa31d0d78ce537dc92f3b0a6ddd</Sha>
+      <Sha>5fdf7f90d84111d4897438d4e5d8e88e0af4f3fb</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

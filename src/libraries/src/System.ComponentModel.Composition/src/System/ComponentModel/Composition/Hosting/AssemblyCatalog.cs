@@ -392,7 +392,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (assembly.ReflectionOnly)
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_AssemblyReflectionOnly, nameof(assembly)), nameof(assembly));
+                throw new ArgumentException(SR.Format(SR.Argument_AssemblyReflectionOnly, nameof(assembly)), nameof(assembly));
             }
             _assembly = assembly;
         }
