@@ -64,9 +64,15 @@ static GENERATE_GET_CLASS_WITH_CACHE (mono_event, "System.Reflection", "RuntimeE
 static GENERATE_GET_CLASS_WITH_CACHE (mono_property, "System.Reflection", "RuntimePropertyInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (mono_parameter_info, "System.Reflection", "RuntimeParameterInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (missing, "System.Reflection", "Missing");
+#ifdef ENABLE_NETCORE
+static GENERATE_GET_CLASS_WITH_CACHE (method_body, "System.Reflection", "RuntimeMethodBody");
+static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, "System.Reflection", "RuntimeLocalVariableInfo");
+static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, "System.Reflection", "RuntimeExceptionHandlingClause");
+#else
 static GENERATE_GET_CLASS_WITH_CACHE (method_body, "System.Reflection", "MethodBody");
 static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, "System.Reflection", "LocalVariableInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, "System.Reflection", "ExceptionHandlingClause");
+#endif
 static GENERATE_GET_CLASS_WITH_CACHE (type_builder, "System.Reflection.Emit", "TypeBuilder");
 static GENERATE_GET_CLASS_WITH_CACHE (dbnull, "System", "DBNull");
 
@@ -1200,7 +1206,7 @@ leave:
  * mono_method_body_get_object:
  * \param domain an app domain
  * \param method a method
- * \return A \c System.Reflection.MethodBody object representing the method \p method.
+ * \return A \c System.Reflection.MethodBody/RuntimeMethodBody object representing the method \p method.
  */
 MonoReflectionMethodBody*
 mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)

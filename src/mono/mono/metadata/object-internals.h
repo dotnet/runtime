@@ -992,7 +992,9 @@ TYPED_HANDLE_DECL (MonoReflectionProperty);
 /*This is System.EventInfo*/
 struct _MonoReflectionEvent {
 	MonoObject object;
+#ifndef ENABLE_NETCORE
 	MonoObject *cached_add_event;
+#endif
 };
 
 /* Safely access System.Reflection.EventInfo from native code */
