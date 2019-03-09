@@ -27,8 +27,20 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrencyDecimalSeparator_Set_Invalid()
         {
-            AssertExtensions.Throws<ArgumentNullException>("CurrencyDecimalSeparator", () => new NumberFormatInfo().CurrencyDecimalSeparator = null);
-            AssertExtensions.Throws<ArgumentException>(null, () => new NumberFormatInfo().CurrencyDecimalSeparator = "");
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "CurrencyDecimalSeparator", () => format.CurrencyDecimalSeparator = null);
+        }
+
+        [Fact]
+        public void CurrencyDecimalSeparator_SetEmpty_ThrowsArgumentException()
+        {
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentException>("value", null, () => format.CurrencyDecimalSeparator = "");
+        }
+        
+        [Fact]
+        public void CurrencyDecimalSeparator_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyDecimalSeparator = "string");
         }
     }
