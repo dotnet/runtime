@@ -131,8 +131,6 @@ namespace System.Threading.Tasks
     {
         [ThreadStatic]
         internal static Task t_currentTask;  // The currently executing task.
-        [ThreadStatic]
-        private static StackGuard t_stackGuard;  // The stack guard object for this thread
 
         internal static int s_taskIdCounter; //static counter used to generate unique task IDs
 
@@ -1256,23 +1254,6 @@ namespace System.Threading.Tasks
         {
             return (creationOptions & TaskCreationOptions.AttachedToParent) != 0 ? InternalCurrent : null;
         }
-
-        /// <summary>
-        /// Gets the StackGuard object assigned to the current thread.
-        /// </summary>
-        internal static StackGuard CurrentStackGuard
-        {
-            get
-            {
-                StackGuard sg = t_stackGuard;
-                if (sg == null)
-                {
-                    t_stackGuard = sg = new StackGuard();
-                }
-                return sg;
-            }
-        }
-
 
         /// <summary>
         /// Gets the <see cref="T:System.AggregateException">Exception</see> that caused the <see
@@ -3336,7 +3317,9 @@ namespace System.Threading.Tasks
             if (AsyncCausalityTracer.LoggingOn)
                 AsyncCausalityTracer.TraceSynchronousWorkStart(this, CausalitySynchronousWork.CompletionNotification);
 
-            bool canInlineContinuations = (m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) == 0;
+            bool canInlineContinuations = 
+                (m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) == 0 &&
+                RuntimeHelpers.TryEnsureSufficientExecutionStack();
 
             switch (continuationObject)
             {
@@ -6485,51 +6468,6 @@ namespace System.Threading.Tasks
         ExecuteSynchronously = 0x80000
     }
 
-    /// <summary>
-    /// Internal helper class to keep track of stack depth and decide whether we should inline or not.
-    /// </summary>
-    internal class StackGuard
-    {
-        // current thread's depth of nested inline task executions
-        private int m_inliningDepth = 0;
-
-        // For relatively small inlining depths we don't want to get into the business of stack probing etc.
-        // This clearly leaves a window of opportunity for the user code to SO. However a piece of code
-        // that can SO in 20 inlines on a typical 1MB stack size probably needs to be revisited anyway.
-        private const int MAX_UNCHECKED_INLINING_DEPTH = 20;
-
-        /// <summary>
-        /// This method needs to be called before attempting inline execution on the current thread. 
-        /// If false is returned, it means we are too close to the end of the stack and should give up inlining.
-        /// Each call to TryBeginInliningScope() that returns true must be matched with a 
-        /// call to EndInliningScope() regardless of whether inlining actually took place.
-        /// </summary>
-        internal bool TryBeginInliningScope()
-        {
-            // If we're still under the 'safe' limit we'll just skip the stack probe to save p/invoke calls
-            if (m_inliningDepth < MAX_UNCHECKED_INLINING_DEPTH || RuntimeHelpers.TryEnsureSufficientExecutionStack())
-            {
-                m_inliningDepth++;
-                return true;
-            }
-            else
-                return false;
-        }
-
-        /// <summary>
-        /// This needs to be called once for each previous successful TryBeginInliningScope() call after
-        /// inlining related logic runs.
-        /// </summary>
-        internal void EndInliningScope()
-        {
-            m_inliningDepth--;
-            Debug.Assert(m_inliningDepth >= 0, "Inlining depth count should never go negative.");
-
-            // do the right thing just in case...
-            if (m_inliningDepth < 0) m_inliningDepth = 0;
-        }
-    }
-
     // Special internal struct that we use to signify that we are not interested in
     // a Task<VoidTaskResult>'s result.
     internal struct VoidTaskResult { }
@@ -6609,18 +6547,17 @@ namespace System.Threading.Tasks
         // For ITaskCompletionAction 
         public void Invoke(Task completingTask)
         {
-            // Check the current stack guard.  If we're ok to inline,
-            // process the task, and reset the guard when we're done.
-            var sg = Task.CurrentStackGuard;
-            if (sg.TryBeginInliningScope())
+            // If we're ok to inline, process the task. Otherwise, we're too deep on the stack, and
+            // we shouldn't run the continuation chain here, so queue a work item to call back here
+            // to Invoke asynchronously.
+            if (RuntimeHelpers.TryEnsureSufficientExecutionStack())
             {
-                try { InvokeCore(completingTask); }
-                finally { sg.EndInliningScope(); }
+                InvokeCore(completingTask);
             }
-            // Otherwise, we're too deep on the stack, and
-            // we shouldn't run the continuation chain here, so queue a work
-            // item to call back here to Invoke asynchronously.
-            else InvokeCoreAsync(completingTask);
+            else
+            {
+                InvokeCoreAsync(completingTask);
+            }
         }
 
         /// <summary>
