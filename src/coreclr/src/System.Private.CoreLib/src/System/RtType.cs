@@ -3225,6 +3225,25 @@ namespace System
             return false;
         }
 
+#if FEATURE_TYPEEQUIVALENCE
+        // Reflexive, symmetric, transitive.
+        public override bool IsEquivalentTo(Type other)
+        {
+            var otherRtType = other as RuntimeType;
+            if (otherRtType is null)
+            {
+                return false;
+            }
+
+            if (otherRtType == this)
+            {
+                return true;
+            }
+
+            return RuntimeTypeHandle.IsEquivalentTo(this, otherRtType);
+        }
+#endif // FEATURE_TYPEEQUIVALENCE
+
         public override Type BaseType => GetBaseType();
 
         private RuntimeType GetBaseType()

@@ -250,6 +250,25 @@ FCIMPL1_V(EnregisteredTypeHandle, RuntimeTypeHandle::GetValueInternal, FCALLRunt
 }
 FCIMPLEND
 
+FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE)
+{
+    FCALL_CONTRACT;
+
+    REFLECTCLASSBASEREF rtType1 = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(rtType1UNSAFE);
+    REFLECTCLASSBASEREF rtType2 = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(rtType2UNSAFE);
+
+    BOOL areEquivalent = FALSE;
+    HELPER_METHOD_FRAME_BEGIN_RET_2(rtType1, rtType2);
+
+    if (rtType1 != NULL && rtType2 != NULL)
+        areEquivalent = rtType1->GetType().IsEquivalentTo(rtType2->GetType());
+
+    HELPER_METHOD_FRAME_END();
+
+    FC_RETURN_BOOL(areEquivalent);
+}
+FCIMPLEND
+
 // TypeEqualsHelper and TypeNotEqualsHelper are almost identical.
 // Unfortunately we cannot combime them because they need to hardcode the caller's name
 NOINLINE static BOOL TypeEqualSlow(OBJECTREF refL, OBJECTREF refR, LPVOID __me)
