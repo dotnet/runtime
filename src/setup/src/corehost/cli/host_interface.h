@@ -4,6 +4,7 @@
 #ifndef __HOST_INTERFACE_H__
 #define __HOST_INTERFACE_H__
 
+#include <cstddef>
 #include "pal.h"
 
 enum host_mode_t
