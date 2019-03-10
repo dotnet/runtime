@@ -20,6 +20,7 @@ set(SOURCES
     ../fxr/fx_ver.cpp
     ../breadcrumbs.cpp
     ../args.cpp
+    ../hostpolicy_init.cpp
     ../hostpolicy.cpp
     ../host_startup_info.cpp
     ../coreclr.cpp
