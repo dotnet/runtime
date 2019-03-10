@@ -145,6 +145,44 @@ namespace System.Composition.Runtime.Tests
                 false
             };
 
+            yield return new object[]
+            {
+                new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", new string[0] } }),
+                new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", new object() } }),
+                false
+            };
+
+            yield return new object[]
+            {
+                new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } }),
+                new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", "value" } }),
+                false
+            };
+
+            yield return new object[]
+            {
+                new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", "value" } }),
+                new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } }),
+                false
+            };
+
+            yield return new object[]
+            {
+                new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", new object[0] } }),
+                new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } }),
+                false
+            };
+
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[]
+                {
+                    new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } }),
+                    new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } }),
+                    true
+                };
+            }
+
             yield return new object[] { new CompositionContract(typeof(int)), new object(), false };
             yield return new object[] { new CompositionContract(typeof(int)), null, false };
         }
@@ -155,23 +193,6 @@ namespace System.Composition.Runtime.Tests
         {
             Assert.Equal(expected, contract.Equals(other));
             Assert.Equal(contract.GetHashCode(), contract.GetHashCode());
-        }
-
-        [Fact]
-        public void Equals_NullValueInDictionaryNotInOther_ReturnsFalse()
-        {
-            // These tests can't be in MemberData as an ArgumentNullException is thrown in the ToString method, which is invoked by xunit.
-            Equals_Object_ReturnsExpected(new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } }), new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", "value" } }), false);
-            Equals_Object_ReturnsExpected(new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", "value" } }), new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } }), false);
-            Equals_Object_ReturnsExpected(new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", new object[0] } }), new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } }), false);
-        }
-
-        [Fact]
-        public void Equals_NullValueInDictionaryAndOther_ThrowsNullReferenceException()
-        {
-            var contract = new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } });
-            var other = new CompositionContract(typeof(int), "contractName", new Dictionary<string, object> { { "key", null } });
-            Assert.Throws<NullReferenceException>(() => contract.Equals(other));
         }
 
         [Fact]

@@ -4,11 +4,11 @@
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CompositionFailedExceptionTests.cs" />
-    <Compile Include="CompositionContextTests.cs" />
-    <Compile Include="CompositionContractTests.cs" />
-    <Compile Include="ExportFactoryTMetadataTests.cs" />
-    <Compile Include="ExportFactoryTests.cs" />
-    <Compile Include="ExportTests.cs" />
+    <Compile Include="System\Composition\Hosting\Core\CompositionContractTests.cs" />
+    <Compile Include="System\Composition\Hosting\CompositionFailedExceptionTests.cs" />
+    <Compile Include="System\Composition\CompositionContextTests.cs" />
+    <Compile Include="System\Composition\ExportFactoryTMetadataTests.cs" />
+    <Compile Include="System\Composition\ExportFactoryTests.cs" />
+    <Compile Include="System\Composition\ExportTests.cs" />
   </ItemGroup>
 </Project>
