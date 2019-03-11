@@ -408,7 +408,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 TypeHandle thReturnValueType;
                 if (m_methodSig.GetReturnTypeNormalized(&thReturnValueType) == ELEMENT_TYPE_VALUETYPE)
                 {
-                    _ASSERTE(cbReturnValue >= thReturnValueType.GetSize());
+                    _ASSERTE((DWORD)cbReturnValue >= thReturnValueType.GetSize());
                 }
             }
 #endif // UNIX_AMD64_ABI
@@ -611,7 +611,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 
     if (pReturnValue != NULL)
     {
-        _ASSERTE(cbReturnValue <= sizeof(callDescrData.returnValue));
+        _ASSERTE((DWORD)cbReturnValue <= sizeof(callDescrData.returnValue));
         memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
 
 #if !defined(_WIN64) && BIGENDIAN

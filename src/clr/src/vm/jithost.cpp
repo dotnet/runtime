@@ -27,7 +27,7 @@ int JitHost::getIntConfigValue(const wchar_t* name, int defaultValue)
     WRAPPER_NO_CONTRACT;
 
     // Translate JIT call into runtime configuration query
-    CLRConfig::ConfigDWORDInfo info{ name, defaultValue, CLRConfig::EEConfig_default };
+    CLRConfig::ConfigDWORDInfo info{ name, (DWORD)defaultValue, CLRConfig::EEConfig_default };
 
     // Perform a CLRConfig look up on behalf of the JIT.
     return CLRConfig::GetConfigValue(info);

@@ -1734,7 +1734,7 @@ void DacDbiInterfaceImpl::CollectFields(TypeHandle                   thExact,
                                           FALSE);  // don't fixup EnC (we can't, we're stopped)
 
     PTR_FieldDesc pCurrentFD;
-    int index = 0;
+    unsigned int index = 0;
     while (((pCurrentFD = fdIterator.Next()) != NULL) && (index < pFieldList->Count()))
     {
         // fill in the pCurrentEntry structure
@@ -3097,7 +3097,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactFnPtrTypeHandle(ArgInfoList * pArgInfo)
 
     // convert the type information for each parameter to its corresponding type handle
     // and store it in the list
-    for (int i = 0; i < pArgInfo->Count(); i++)
+    for (unsigned int i = 0; i < pArgInfo->Count(); i++)
     {
         pInst[i] = BasicTypeInfoToTypeHandle(&((*pArgInfo)[i]));
     }
@@ -3316,7 +3316,7 @@ void DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_AppDomain  vmAppDomain,
     pParams->Alloc(typeHandle.GetNumGenericArgs());
     
     // collect type information for each type parameter
-    for (int i = 0; i < pParams->Count(); ++i)
+    for (unsigned int i = 0; i < pParams->Count(); ++i)
     {
         VMPTR_TypeHandle thInst = VMPTR_TypeHandle::NullPtr();
         thInst.SetDacTargetPtr(typeHandle.GetInstantiation()[i].AsTAddr());
@@ -3597,7 +3597,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypesForIIDs(
     {
         pTypes->Alloc(iids.Count());
 
-        for (int i = 0; i < iids.Count(); ++i)
+        for (unsigned int i = 0; i < iids.Count(); ++i)
         {
             // There is the possiblity that we'll get this far with a dump and not fail, but still
             // not be able to get full info for a particular param.

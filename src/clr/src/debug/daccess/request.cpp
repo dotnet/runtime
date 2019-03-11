@@ -2854,7 +2854,7 @@ ClrDataAccess::GetGCHeapList(unsigned int count, CLRDATA_ADDRESS heaps[], unsign
 #if !defined(FEATURE_SVR_GC)
         _ASSERTE(0);
 #else // !defined(FEATURE_SVR_GC)
-        int heapCount = GCHeapCount();
+        unsigned int heapCount = GCHeapCount();
         if (pNeeded)
             *pNeeded = heapCount;
 

@@ -24392,7 +24392,7 @@ void gc_heap::relocate_shortened_survivor_helper (uint8_t* plug, uint8_t* plug_e
 
     while (x < plug_end)
     {
-        if (check_short_obj_p && ((plug_end - x) < min_pre_pin_obj_size))
+        if (check_short_obj_p && ((plug_end - x) < (DWORD)min_pre_pin_obj_size))
         {
             dprintf (3, ("last obj %Ix is short", x));
 

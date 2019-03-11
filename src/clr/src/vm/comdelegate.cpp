@@ -479,7 +479,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
         {
             filledSlots[i] = false;
         }
-        for (int i = 0; i < pShuffleEntryArray->GetCount(); i++)
+        for (unsigned int i = 0; i < pShuffleEntryArray->GetCount(); i++)
         {
             entry = (*pShuffleEntryArray)[i];
 
@@ -487,7 +487,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
             // of the entry that filled it in.
             if (filledSlots[GetNormalizedArgumentSlotIndex(entry.srcofs)])
             {
-                int j;
+                unsigned int j;
                 for (j = i; (*pShuffleEntryArray)[j].dstofs != entry.srcofs; j--)
                     (*pShuffleEntryArray)[j] = (*pShuffleEntryArray)[j - 1];
 
