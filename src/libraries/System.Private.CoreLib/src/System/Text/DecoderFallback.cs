@@ -67,6 +67,10 @@ namespace System.Text
         internal unsafe byte* byteStart;
         internal unsafe char* charEnd;
 
+        internal Encoding _encoding;
+        internal DecoderNLS _decoder;
+        private int _originalByteCount;
+
         // Internal Reset
         internal unsafe void InternalReset()
         {
@@ -80,6 +84,22 @@ namespace System.Text
         {
             this.byteStart = byteStart;
             this.charEnd = charEnd;
+        }
+
+        internal static DecoderFallbackBuffer CreateAndInitialize(Encoding encoding, DecoderNLS decoder, int originalByteCount)
+        {
+            // The original byte count is only used for keeping track of what 'index' value needs
+            // to be passed to the abstract Fallback method. The index value is calculated by subtracting
+            // 'bytes.Length' (where bytes is expected to be the entire remaining input buffer)
+            // from the 'originalByteCount' value specified here.
+
+            DecoderFallbackBuffer fallbackBuffer = (decoder is null) ? encoding.DecoderFallback.CreateFallbackBuffer() : decoder.FallbackBuffer;
+
+            fallbackBuffer._encoding = encoding;
+            fallbackBuffer._decoder = decoder;
+            fallbackBuffer._originalByteCount = originalByteCount;
+
+            return fallbackBuffer;
         }
 
         // Fallback the current byte by sticking it into the remaining char buffer.
@@ -189,6 +209,90 @@ namespace System.Text
 
             // If no fallback return 0
             return 0;
+        }
+
+        internal int InternalFallbackGetCharCount(ReadOnlySpan<byte> remainingBytes, int fallbackLength)
+        {
+            return (Fallback(remainingBytes.Slice(0, fallbackLength).ToArray(), index: _originalByteCount - remainingBytes.Length))
+                ? DrainRemainingDataForGetCharCount()
+                : 0;
+        }
+
+        internal bool TryInternalFallbackGetChars(ReadOnlySpan<byte> remainingBytes, int fallbackLength, Span<char> chars, out int charsWritten)
+        {
+            if (Fallback(remainingBytes.Slice(0, fallbackLength).ToArray(), index: _originalByteCount - remainingBytes.Length))
+            {
+                return TryDrainRemainingDataForGetChars(chars, out charsWritten);
+            }
+            else
+            {
+                // Return true because we weren't asked to write anything, so this is a "success" in the sense that
+                // the output buffer was large enough to hold the desired 0 chars of output.
+
+                charsWritten = 0;
+                return true;
+            }
+        }
+
+        private Rune GetNextRune()
+        {
+            // Call GetNextChar() and try treating it as a non-surrogate character.
+            // If that fails, call GetNextChar() again and attempt to treat the two chars
+            // as a surrogate pair. If that still fails, throw an exception since the fallback
+            // mechanism is giving us a bad replacement character.
+
+            Rune rune;
+            char ch = GetNextChar();
+            if (!Rune.TryCreate(ch, out rune) && !Rune.TryCreate(ch, GetNextChar(), out rune))
+            {
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
+            }
+
+            return rune;
+        }
+
+        internal int DrainRemainingDataForGetCharCount()
+        {
+            int totalCharCount = 0;
+
+            Rune thisRune;
+            while ((thisRune = GetNextRune()).Value != 0)
+            {
+                // We need to check for overflow while tallying the fallback char count.
+
+                totalCharCount += thisRune.Utf16SequenceLength;
+                if (totalCharCount < 0)
+                {
+                    InternalReset();
+                    Encoding.ThrowConversionOverflow();
+                }
+            }
+
+            return totalCharCount;
+        }
+
+        internal bool TryDrainRemainingDataForGetChars(Span<char> chars, out int charsWritten)
+        {
+            int originalCharCount = chars.Length;
+
+            Rune thisRune;
+            while ((thisRune = GetNextRune()).Value != 0)
+            {
+                if (thisRune.TryEncode(chars, out int charsWrittenJustNow))
+                {
+                    chars = chars.Slice(charsWrittenJustNow);
+                    continue;
+                }
+                else
+                {
+                    InternalReset();
+                    charsWritten = default;
+                    return false;
+                }
+            }
+
+            charsWritten = originalCharCount - chars.Length;
+            return true;
         }
 
         // private helper methods
