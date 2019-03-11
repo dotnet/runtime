@@ -4822,20 +4822,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
     //
     if (pThread && pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
-        // This assert shouldnt be hit in CoreCLR since:
-        //
-        // 1) It has no concept of managed entry point that is invoked by the shim. You can
-        //    only run managed code via hosting APIs that will run code in non-default domains.
-        //
-        // 2) Managed threads cannot be created in DefaultDomain since no user code executes
-        //    in default domain.
-        //
-        // So, if this is hit, something is not right!
-        if (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
-        {
-            _ASSERTE(!"How come a thread with TSNC_ProcessedUnhandledException state entered the UEF on CoreCLR?");
-        }
-
         LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: have already processed unhandled exception for this thread.\n"));
         return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -5152,10 +5138,20 @@ LONG InternalUnhandledExceptionFilter(
 
 } // LONG InternalUnhandledExceptionFilter()
 
+static bool s_useEntryPointFilter = false;
+
+void ParseUseEntryPointFilter(LPCWSTR value)
+{
+#ifdef PLATFORM_WINDOWS // This feature has only been tested on Windows, keep it disabled on other platforms
+    // set s_useEntryPointFilter true if value != "0"
+    if (value && (_wcsicmp(value, W("0")) != 0))
+    {
+        s_useEntryPointFilter = true;
+    }
+#endif
+}
+
 // This filter is used to trigger unhandled exception processing for the entrypoint thread
-// incase an exception goes unhandled from it. This makes us independent of the OS
-// UEF mechanism to invoke our registered UEF to trigger CLR specific unhandled exception 
-// processing since that can be skipped if another UEF registered over ours and not chain back.
 LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 {
     CONTRACTL
@@ -5168,20 +5164,38 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 
     LONG ret = -1;
 
-    // Invoke the UEF worker to perform unhandled exception processing
-    ret = InternalUnhandledExceptionFilter_Worker (pExceptionInfo);
+    ret = CLRNoCatchHandler(pExceptionInfo, _pData);
+
+    if (ret != EXCEPTION_CONTINUE_SEARCH)
+    {
+        return ret;
+    }
+
+    if (!s_useEntryPointFilter)
+    {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
 
     Thread* pThread = GetThread();
-    if (pThread)
+    if (pThread && !GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
+        // Invoke the UEF worker to perform unhandled exception processing
+        ret = InternalUnhandledExceptionFilter_Worker (pExceptionInfo);
+
         // Set the flag that we have done unhandled exception processing for this thread
         // so that we dont duplicate the effort in the UEF.
         //
         // For details on this flag, refer to threads.h.
         LOG((LF_EH, LL_INFO100, "EntryPointFilter: setting TSNC_ProcessedUnhandledException\n"));
         pThread->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+
+        if (ret == EXCEPTION_EXECUTE_HANDLER)
+        {
+            // Do not swallow the exception, we just want to log it
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
     }
-    
+
     return ret;
 }
 
