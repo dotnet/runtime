@@ -1987,8 +1987,8 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
 #endif
 
     DWORD      dwNonGCBytes[2] = { 
-        DomainLocalModule::OffsetOfDataBlob() + sizeof(BYTE)*dwNumTypes, 
-        ThreadLocalModule::OffsetOfDataBlob() + sizeof(BYTE)*dwNumTypes
+        DomainLocalModule::OffsetOfDataBlob() + (DWORD)(sizeof(BYTE)*dwNumTypes),
+        ThreadLocalModule::OffsetOfDataBlob() + (DWORD)(sizeof(BYTE)*dwNumTypes)
     };
 
     HENUMInternalHolder hTypeEnum(pImport);

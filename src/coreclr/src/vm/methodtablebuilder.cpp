@@ -6326,7 +6326,7 @@ MethodTableBuilder::WriteMethodImplData(
             // binary search later
             for (DWORD i = 0; i < cSlots; i++)
             {
-                int min = i;
+                unsigned int min = i;
                 for (DWORD j = i + 1; j < cSlots; j++)
                 {
                     if (rgSlots[j] < rgSlots[min])

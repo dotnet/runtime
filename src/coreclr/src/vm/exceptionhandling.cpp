@@ -901,7 +901,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
     {
         DWORD exceptionCode = pExceptionRecord->ExceptionCode;
 
-        if (exceptionCode == STATUS_UNWIND)
+        if ((NTSTATUS)exceptionCode == STATUS_UNWIND)
             // If exceptionCode is STATUS_UNWIND, RtlUnwind is called with a NULL ExceptionRecord,
             // therefore OS uses a faked ExceptionRecord with STATUS_UNWIND code.  Then we need to
             // look at our saved exception code.

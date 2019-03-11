@@ -3547,7 +3547,7 @@ void MethodContext::recGetClassGClayout(CORINFO_CLASS_HANDLE cls, BYTE* gcPtrs, 
 void MethodContext::dmpGetClassGClayout(DWORDLONG key, const Agnostic_GetClassGClayout& value)
 {
     printf("GetClassGCLayout key %016llX, value len %u cnt %u {", key, value.len, value.valCount);
-    if (value.gcPtrs_Index != -1)
+    if (value.gcPtrs_Index != (DWORD)-1)
     {
         BYTE* ptr = (BYTE*)GetClassGClayout->GetBuffer(value.gcPtrs_Index);
         for (unsigned int i = 0; i < value.len; i++)
@@ -3572,7 +3572,7 @@ unsigned MethodContext::repGetClassGClayout(CORINFO_CLASS_HANDLE cls, BYTE* gcPt
     unsigned int len   = (unsigned int)value.len;
     unsigned int index = (unsigned int)value.gcPtrs_Index;
 
-    if (index != -1)
+    if (index != (unsigned int)-1)
     {
         BYTE* ptr = (BYTE*)GetClassGClayout->GetBuffer(index);
         for (unsigned int i = 0; i < len; i++)
