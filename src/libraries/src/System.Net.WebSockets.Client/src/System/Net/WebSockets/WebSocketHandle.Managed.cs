@@ -83,7 +83,7 @@ namespace System.Net.WebSockets
                 {
                     foreach (string key in options.RequestHeaders)
                     {
-                        request.Headers.Add(key, options.RequestHeaders[key]);
+                        request.Headers.TryAddWithoutValidation(key, options.RequestHeaders[key]);
                     }
                 }
 
@@ -248,7 +248,7 @@ namespace System.Net.WebSockets
             request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketKey, secKey);
             if (options._requestedSubProtocols?.Count > 0)
             {
-                request.Headers.Add(HttpKnownHeaderNames.SecWebSocketProtocol, string.Join(", ", options.RequestedSubProtocols));
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketProtocol, string.Join(", ", options.RequestedSubProtocols));
             }
         }
 
