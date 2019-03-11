@@ -22,6 +22,11 @@ set(SOURCES
     ../json/casablanca/src/utilities/asyncrt_utils.cpp
 )
 
+if(WIN32)
+    list(APPEND SOURCES
+        Exports.def)
+endif()
+
 include(../lib.cmake)
 
 # Move to setup.cmake if COMHOST is ever built on non-Windows
