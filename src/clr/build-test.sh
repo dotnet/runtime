@@ -436,7 +436,8 @@ build_native_projects()
         pushd "$intermediatesForBuild"
         # Regenerate the CMake solution
         # Force cross dir to point to project root cross dir, in case there is a cross build.
-        nextCommand="CONFIG_DIR=\"$__ProjectRoot/cross\" \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__TestDir\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
+        scriptDir="$__ProjectRoot/src/pal/tools"
+        nextCommand="CONFIG_DIR=\"$__ProjectRoot/cross\" \"$scriptDir/gen-buildsys-clang.sh\" \"$__TestDir\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $scriptDir $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
         echo "Invoking $nextCommand"
         eval $nextCommand
         popd

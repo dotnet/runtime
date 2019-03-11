@@ -3,13 +3,14 @@
 # This file invokes cmake and generates the build system for Gcc.
 #
 
-if [ $# -lt 4 ]
+if [ $# -lt 5 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-gcc.sh <path to top level CMakeLists.txt> <GccMajorVersion> <GccMinorVersion> <Architecture> [build flavor] [coverage] [ninja] [cmakeargs]"
+  echo "gen-buildsys-gcc.sh <path to top level CMakeLists.txt> <GccMajorVersion> <GccMinorVersion> <Architecture> <ScriptDirectory> [build flavor] [coverage] [ninja] [cmakeargs]"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
   echo "Specify the Gcc version to use, split into major and minor version"
   echo "Specify the target architecture."
+  echo "Specify the script directory."
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG."
   echo "Optionally specify 'coverage' to enable code coverage build."
   echo "Target ninja instead of make. ninja must be on the PATH."
@@ -60,6 +61,7 @@ fi
 export CC CXX
 
 build_arch="$4"
+script_dir="$5"
 buildtype=DEBUG
 code_coverage=OFF
 generator="Unix Makefiles"
@@ -68,7 +70,7 @@ __UnprocessedCMakeArgs=""
 ITER=-1
 for i in "$@"; do
     ITER=$((ITER + 1))
-    if [ $ITER -lt 5 ]; then continue; fi
+    if [ $ITER -lt 6 ]; then continue; fi
     upperI="$(echo "$i" | awk '{print toupper($0)}')"
     case $upperI in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO, MINSIZEREL.
@@ -158,8 +160,7 @@ fi
 
 overridefile=gcc-compiler-override.txt
 
-# Determine the current script directory
-__currentScriptDir="$(cd -- "$(dirname -- "$0")" && pwd -P)"
+__currentScriptDir="$script_dir"
 
 cmake \
   -G "$generator" \
