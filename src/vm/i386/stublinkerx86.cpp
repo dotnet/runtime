@@ -1414,7 +1414,7 @@ VOID StubLinkerCPU::X86EmitSPIndexPush(__int32 ofs)
         // The offset can be expressed in a byte (can use the byte
         // form of the push esp instruction)
 
-        BYTE code[] = {0xff, 0x74, 0x24, ofs8};
+        BYTE code[] = {0xff, 0x74, 0x24, (BYTE)ofs8};
         EmitBytes(code, sizeof(code));   
     }
     else

@@ -201,7 +201,7 @@ DEFINE_EXCEPTION(g_IONS,               FileNotFoundException,           true,
 
 DEFINE_EXCEPTION(g_SystemNS,           FormatException,                false,  COR_E_FORMAT)
 
-DEFINE_EXCEPTION(g_SystemNS,           IndexOutOfRangeException,       false,  COR_E_INDEXOUTOFRANGE, 0x800a0009 /*Subscript out of range*/)
+DEFINE_EXCEPTION(g_SystemNS,           IndexOutOfRangeException,       false,  COR_E_INDEXOUTOFRANGE, (int)0x800a0009 /*Subscript out of range*/)
 DEFINE_EXCEPTION(g_SystemNS,           InsufficientExecutionStackException, false,  COR_E_INSUFFICIENTEXECUTIONSTACK)
 DEFINE_EXCEPTION(g_SystemNS,           InvalidCastException,           false,  COR_E_INVALIDCAST)
 #ifdef FEATURE_COMINTEROP

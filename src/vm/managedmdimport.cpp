@@ -20,7 +20,7 @@ void ThrowMetaDataImportException(HRESULT hr)
    
     MethodDescCallSite throwError(METHOD__METADATA_IMPORT__THROW_ERROR);
     
-    ARG_SLOT args[] = { hr };
+    ARG_SLOT args[] = { (ARG_SLOT)hr };
     throwError.Call(args);
 }
 

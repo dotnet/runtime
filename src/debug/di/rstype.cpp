@@ -1382,7 +1382,7 @@ HRESULT CordbType::InstantiateFromTypeHandle(CordbAppDomain * pAppDomain,
         // means it will simply assert IsNeutered.
         DacDbiArrayList<CordbType *> typeList;
         typeList.Alloc(params.Count());
-        for (int i = 0; i < params.Count(); ++i)
+        for (unsigned int i = 0; i < params.Count(); ++i)
         {
             IfFailThrow(TypeDataToType(pAppDomain, &(params[i]), &(typeList[i])));
         }

@@ -1043,7 +1043,7 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
 
     Agnostic_RecordCallSite value = RecordCallSite->Get(instrOffset);
 
-    if (value.callSig.callConv == -1)
+    if (value.callSig.callConv == (DWORD)-1)
         return false;
 
     pCallSig->callConv               = (CorInfoCallConv)value.callSig.callConv;

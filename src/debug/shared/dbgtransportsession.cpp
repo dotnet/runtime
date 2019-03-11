@@ -836,7 +836,7 @@ bool DbgTransportSession::SendBlock(PBYTE pbBuffer, DWORD cbBuffer)
     if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Send))
         fSuccess = false;
     else
-        fSuccess = (m_pipe.Write(pbBuffer, cbBuffer) == cbBuffer);
+        fSuccess = ((DWORD)m_pipe.Write(pbBuffer, cbBuffer) == cbBuffer);
 
     if (!fSuccess)
     {
@@ -867,7 +867,7 @@ bool DbgTransportSession::ReceiveBlock(PBYTE pbBuffer, DWORD cbBuffer)
     if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Receive))
         fSuccess = false;
     else
-        fSuccess = (m_pipe.Read(pbBuffer, cbBuffer) == cbBuffer);
+        fSuccess = ((DWORD)m_pipe.Read(pbBuffer, cbBuffer) == cbBuffer);
 
     if (!fSuccess)
     {
