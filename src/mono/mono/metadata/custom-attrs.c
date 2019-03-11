@@ -1371,7 +1371,7 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 		MonoObject *typedarg, *namedarg, *minfo;
 
 		if (arginfo [i].prop) {
-			minfo = (MonoObject*)mono_property_get_object_checked (domain, NULL, arginfo [i].prop, error);
+			minfo = (MonoObject*)mono_property_get_object_checked (domain, arginfo [i].prop->parent, arginfo [i].prop, error);
 			if (!minfo)
 				goto leave;
 		} else {

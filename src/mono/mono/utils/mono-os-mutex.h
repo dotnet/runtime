@@ -44,17 +44,7 @@ typedef pthread_mutex_t mono_mutex_t;
 typedef pthread_cond_t mono_cond_t;
 
 static inline void
-mono_os_mutex_init (mono_mutex_t *mutex)
-{
-	int res;
-
-	res = pthread_mutex_init (mutex, NULL);
-	if (G_UNLIKELY (res != 0))
-		g_error ("%s: pthread_mutex_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
-}
-
-static inline void
-mono_os_mutex_init_recursive (mono_mutex_t *mutex)
+mono_os_mutex_init_type (mono_mutex_t *mutex, int type)
 {
 	int res;
 	pthread_mutexattr_t attr;
@@ -63,9 +53,16 @@ mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutexattr_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
-	res = pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
+	res = pthread_mutexattr_settype (&attr, type);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutexattr_settype failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+#ifdef PTHREAD_PRIO_INHERIT
+	/* use PTHREAD_PRIO_INHERIT if possible */
+	res = pthread_mutexattr_setprotocol (&attr, PTHREAD_PRIO_INHERIT);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_mutexattr_setprotocol failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 
 	res = pthread_mutex_init (mutex, &attr);
 	if (G_UNLIKELY (res != 0))
@@ -74,6 +71,18 @@ mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 	res = pthread_mutexattr_destroy (&attr);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutexattr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+}
+
+static inline void
+mono_os_mutex_init (mono_mutex_t *mutex)
+{
+	mono_os_mutex_init_type(mutex, PTHREAD_MUTEX_DEFAULT);
+}
+
+static inline void
+mono_os_mutex_init_recursive (mono_mutex_t *mutex)
+{
+	mono_os_mutex_init_type(mutex, PTHREAD_MUTEX_RECURSIVE);
 }
 
 static inline void

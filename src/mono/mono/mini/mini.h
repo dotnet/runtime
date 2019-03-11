@@ -1608,45 +1608,45 @@ typedef struct {
 	gint32 methods_with_interp;
 	char *max_ratio_method;
 	char *biggest_method;
-	gdouble jit_method_to_ir;
-	gdouble jit_liveness_handle_exception_clauses;
-	gdouble jit_handle_out_of_line_bblock;
-	gdouble jit_decompose_long_opts;
-	gdouble jit_decompose_typechecks;
-	gdouble jit_local_cprop;
-	gdouble jit_local_emulate_ops;
-	gdouble jit_optimize_branches;
-	gdouble jit_handle_global_vregs;
-	gdouble jit_local_deadce;
-	gdouble jit_local_alias_analysis;
-	gdouble jit_if_conversion;
-	gdouble jit_bb_ordering;
-	gdouble jit_compile_dominator_info;
-	gdouble jit_compute_natural_loops;
-	gdouble jit_insert_safepoints;
-	gdouble jit_ssa_compute;
-	gdouble jit_ssa_cprop;
-	gdouble jit_ssa_deadce;
-	gdouble jit_perform_abc_removal;
-	gdouble jit_ssa_remove;
-	gdouble jit_local_cprop2;
-	gdouble jit_handle_global_vregs2;
-	gdouble jit_local_deadce2;
-	gdouble jit_optimize_branches2;
-	gdouble jit_decompose_vtype_opts;
-	gdouble jit_decompose_array_access_opts;
-	gdouble jit_liveness_handle_exception_clauses2;
-	gdouble jit_analyze_liveness;
-	gdouble jit_linear_scan;
-	gdouble jit_arch_allocate_vars;
-	gdouble jit_spill_global_vars;
-	gdouble jit_local_cprop3;
-	gdouble jit_local_deadce3;
-	gdouble jit_codegen;
-	gdouble jit_create_jit_info;
-	gdouble jit_gc_create_gc_map;
-	gdouble jit_save_seq_point_info;
-	gdouble jit_time;
+	gint64 jit_method_to_ir;
+	gint64 jit_liveness_handle_exception_clauses;
+	gint64 jit_handle_out_of_line_bblock;
+	gint64 jit_decompose_long_opts;
+	gint64 jit_decompose_typechecks;
+	gint64 jit_local_cprop;
+	gint64 jit_local_emulate_ops;
+	gint64 jit_optimize_branches;
+	gint64 jit_handle_global_vregs;
+	gint64 jit_local_deadce;
+	gint64 jit_local_alias_analysis;
+	gint64 jit_if_conversion;
+	gint64 jit_bb_ordering;
+	gint64 jit_compile_dominator_info;
+	gint64 jit_compute_natural_loops;
+	gint64 jit_insert_safepoints;
+	gint64 jit_ssa_compute;
+	gint64 jit_ssa_cprop;
+	gint64 jit_ssa_deadce;
+	gint64 jit_perform_abc_removal;
+	gint64 jit_ssa_remove;
+	gint64 jit_local_cprop2;
+	gint64 jit_handle_global_vregs2;
+	gint64 jit_local_deadce2;
+	gint64 jit_optimize_branches2;
+	gint64 jit_decompose_vtype_opts;
+	gint64 jit_decompose_array_access_opts;
+	gint64 jit_liveness_handle_exception_clauses2;
+	gint64 jit_analyze_liveness;
+	gint64 jit_linear_scan;
+	gint64 jit_arch_allocate_vars;
+	gint64 jit_spill_global_vars;
+	gint64 jit_local_cprop3;
+	gint64 jit_local_deadce3;
+	gint64 jit_codegen;
+	gint64 jit_create_jit_info;
+	gint64 jit_gc_create_gc_map;
+	gint64 jit_save_seq_point_info;
+	gint64 jit_time;
 	gboolean enabled;
 } MonoJitStats;
 
@@ -2686,13 +2686,13 @@ void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg);
 
 #define MONO_TIME_TRACK(a, phase) \
 	{ \
-		GTimer *timer = mono_time_track_start (); \
+		gint64 start = mono_time_track_start (); \
 		(phase) ; \
-		mono_time_track_end (&(a), timer); \
+		mono_time_track_end (&(a), start); \
 	}
 
-GTimer *mono_time_track_start (void);
-void mono_time_track_end (gdouble *time, GTimer *timer);
+gint64 mono_time_track_start (void);
+void mono_time_track_end (gint64 *time, gint64 start);
 
 void mono_update_jit_stats (MonoCompile *cfg);
 

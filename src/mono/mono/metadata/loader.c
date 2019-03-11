@@ -1688,7 +1688,7 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 
 	g_assert (error_msg_out);
 
-#ifdef TARGET_WIN32
+#ifdef HOST_WIN32
 	if (import && import [0] == '#' && isdigit (import [1])) {
 		char *end;
 		long id;
@@ -1704,30 +1704,19 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
 		error_msg = mono_dl_symbol (module, import, &addr); 
 	} else {
-		char *mangled_name = NULL, *mangled_name2 = NULL;
-		int mangle_charset;
-		int mangle_stdcall;
-		int mangle_param_count;
-#ifdef TARGET_WIN32
-		int param_count;
-#endif
-
 		/*
 		 * Search using a variety of mangled names
 		 */
-		for (mangle_charset = 0; mangle_charset <= 1; mangle_charset ++) {
-			for (mangle_stdcall = 0; mangle_stdcall <= 1; mangle_stdcall ++) {
-				gboolean need_param_count = FALSE;
-#ifdef TARGET_WIN32
-				if (mangle_stdcall > 0)
-					need_param_count = TRUE;
+		for (int mangle_stdcall = 0; mangle_stdcall <= 1 && addr == NULL; mangle_stdcall++) {
+#if HOST_WIN32 && HOST_X86
+			const int max_managle_param_count = (mangle_stdcall == 0) ? 0 : 256;
+#else
+			const int max_managle_param_count = 0;
 #endif
-				for (mangle_param_count = 0; mangle_param_count <= (need_param_count ? 256 : 0); mangle_param_count += 4) {
+			for (int mangle_charset = 0; mangle_charset <= 1 && addr == NULL; mangle_charset ++) {
+				for (int mangle_param_count = 0; mangle_param_count <= max_managle_param_count && addr == NULL; mangle_param_count += 4) {
 
-					if (addr)
-						continue;
-
-					mangled_name = (char*)import;
+					char *mangled_name = (char*)import;
 					switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
 					case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
 						/* Try the mangled name first */
@@ -1735,7 +1724,7 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 							mangled_name = g_strconcat (import, "W", NULL);
 						break;
 					case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-#ifdef TARGET_WIN32
+#ifdef HOST_WIN32
 						if (mangle_charset == 0)
 							mangled_name = g_strconcat (import, "W", NULL);
 #else
@@ -1752,44 +1741,44 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 						break;
 					}
 
-#ifdef TARGET_WIN32
-					MonoMethod *method = &piinfo->method;
-					if (mangle_param_count == 0)
-						param_count = mono_method_signature_internal (method)->param_count * sizeof (gpointer);
-					else
-						/* Try brute force, since it would be very hard to compute the stack usage correctly */
-						param_count = mangle_param_count;
-
+#if HOST_WIN32 && HOST_X86
 					/* Try the stdcall mangled name */
 					/* 
 					 * gcc under windows creates mangled names without the underscore, but MS.NET
 					 * doesn't support it, so we doesn't support it either.
 					 */
-					if (mangle_stdcall == 1)
-						mangled_name2 = g_strdup_printf ("_%s@%d", mangled_name, param_count);
-					else
-						mangled_name2 = mangled_name;
-#else
-					mangled_name2 = mangled_name;
+					if (mangle_stdcall == 1) {
+						MonoMethod *method = &piinfo->method;
+						int param_count;
+						if (mangle_param_count == 0)
+							param_count = mono_method_signature_internal (method)->param_count * sizeof (gpointer);
+						else
+							/* Try brute force, since it would be very hard to compute the stack usage correctly */
+							param_count = mangle_param_count;
+
+						char *mangled_stdcall_name = g_strdup_printf ("_%s@%d", mangled_name, param_count);
+
+						if (mangled_name != import)
+							g_free (mangled_name);
+
+						mangled_name = mangled_stdcall_name;
+					}
 #endif
-
 					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-								"Probing '%s'.", mangled_name2);
+								"Probing '%s'.", mangled_name);
 
-					error_msg = mono_dl_symbol (module, mangled_name2, &addr);
+					error_msg = mono_dl_symbol (module, mangled_name, &addr);
 
 					if (addr)
 						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-									"Found as '%s'.", mangled_name2);
+									"Found as '%s'.", mangled_name);
 					else
 						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-									"Could not find '%s' due to '%s'.", mangled_name2, error_msg);
+									"Could not find '%s' due to '%s'.", mangled_name, error_msg);
 
 					g_free (error_msg);
 					error_msg = NULL;
 
-					if (mangled_name != mangled_name2)
-						g_free (mangled_name2);
 					if (mangled_name != import)
 						g_free (mangled_name);
 				}

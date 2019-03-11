@@ -881,7 +881,11 @@ ves_icall_System_Array_SetGenericValueImpl (MonoArray *arr, guint32 pos, gpointe
 }
 
 void
+#if ENABLE_NETCORE
+ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *source, size_t byte_count)
+#else
 ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *source, guint byte_count)
+#endif
 {
 	mono_gc_memmove_atomic (destination, source, byte_count);
 }
@@ -896,7 +900,11 @@ ves_icall_System_Runtime_RuntimeImports_Memmove_wbarrier (guint8 *destination, g
 }
 
 void
+#if ENABLE_NETCORE
+ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, size_t byte_length)
+#else
 ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, guint byte_length)
+#endif
 {
 	memset (p, 0, byte_length);
 }
@@ -1061,6 +1069,20 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 #endif
 	return TRUE;
 }
+
+#ifdef ENABLE_NETCORE
+MonoObjectHandle
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectInternal (MonoType *handle, MonoError *error)
+{
+	MonoClass *klass;
+
+	g_assert (handle);
+
+	klass = mono_class_from_mono_type_internal (handle);
+
+	return mono_object_new_handle (mono_domain_get (), klass, error);
+}
+#endif
 
 MonoObjectHandle
 ves_icall_System_Object_MemberwiseClone (MonoObjectHandle this_obj, MonoError *error)
@@ -1906,7 +1928,6 @@ ves_icall_System_Reflection_EventInfo_internal_from_handle_type (MonoEvent *hand
 	return mono_event_get_object_handle (mono_domain_get (), klass, handle, error);
 }
 
-
 MonoReflectionPropertyHandle
 ves_icall_System_Reflection_RuntimePropertyInfo_internal_from_handle_type (MonoProperty *handle, MonoType *type, MonoError *error)
 {
@@ -2219,6 +2240,9 @@ typed_reference_to_object (MonoTypedRef *tref, MonoError *error)
 	if (MONO_TYPE_IS_REFERENCE (tref->type)) {
 		MonoObject** objp = (MonoObject **)tref->value;
 		result = MONO_HANDLE_NEW (MonoObject, *objp);
+	} else if (mono_type_is_pointer (tref->type)) {
+		/* Boxed as UIntPtr */
+		result = mono_value_box_handle (mono_domain_get (), mono_get_uintptr_class (), tref->value, error);
 	} else {
 		result = mono_value_box_handle (mono_domain_get (), tref->klass, tref->value, error);
 	}

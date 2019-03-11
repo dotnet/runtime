@@ -151,6 +151,14 @@ typedef struct {
 	MonoJitExceptionInfo *handler_ei;
 } ThreadContext;
 
+typedef struct {
+	gint64 transform_time;
+	gint32 inlined_methods;
+	gint32 inline_failures;
+} MonoInterpStats;
+
+extern MonoInterpStats mono_interp_stats;
+
 extern int mono_interp_traceopt;
 extern int mono_interp_opt;
 extern GSList *mono_interp_jit_classes;

@@ -119,7 +119,7 @@ static GHashTable *codegen_regions;
 static DebugEntry *last_entry;
 static mono_mutex_t mutex;
 static GHashTable *dyn_codegen_regions;
-static gdouble register_time;
+static gint64 register_time;
 static int num_entries;
 
 #define lldb_lock() mono_os_mutex_lock (&mutex)
@@ -308,9 +308,9 @@ add_entry (EntryType type, Buffer *buf)
 	__mono_jit_debug_descriptor.addr = entry->addr;
 	mono_memory_barrier ();
 
-	GTimer *timer = mono_time_track_start ();
+	gint64 start = mono_time_track_start ();
 	__mono_jit_debug_register_code ();
-	mono_time_track_end (&register_time, timer);
+	mono_time_track_end (&register_time, start);
 	num_entries ++;
 	//printf ("%lf %d %d\n", register_time, num_entries, entry->type);
 
@@ -417,7 +417,7 @@ mono_lldb_init (const char *options)
 	enabled = TRUE;
 	mono_os_mutex_init_recursive (&mutex);
 
-	mono_counters_register ("Time spent in LLDB", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &register_time);
+	mono_counters_register ("Time spent in LLDB", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &register_time);
 }
 
 typedef struct

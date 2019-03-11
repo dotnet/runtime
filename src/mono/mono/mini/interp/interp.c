@@ -26,6 +26,7 @@
 
 #include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-math.h>
+#include <mono/utils/mono-counters.h>
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
@@ -6551,6 +6552,14 @@ interp_stop_single_stepping (void)
 	ss_enabled = FALSE;
 }
 
+static void
+register_interp_stats (void)
+{
+	 mono_counters_register ("Total transform time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.transform_time);
+	 mono_counters_register ("Methods inlined", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inlined_methods);
+	 mono_counters_register ("Inline failures", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inline_failures);
+}
+
 void
 mono_ee_interp_init (const char *opts)
 {
@@ -6598,4 +6607,6 @@ mono_ee_interp_init (const char *opts)
 	c.start_single_stepping = interp_start_single_stepping;
 	c.stop_single_stepping = interp_stop_single_stepping;
 	mini_install_interp_callbacks (&c);
+
+	register_interp_stats ();
 }
