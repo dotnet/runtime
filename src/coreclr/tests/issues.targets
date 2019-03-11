@@ -71,9 +71,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/waithandle/waitany/waitanyex2a/*">
             <Issue>19406</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/429802/CMain/*">
-            <Issue>23096</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets -->
