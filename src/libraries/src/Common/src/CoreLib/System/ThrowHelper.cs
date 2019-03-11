@@ -452,8 +452,20 @@ namespace System
                     return "startIndex";
                 case ExceptionArgument.task:
                     return "task";
+                case ExceptionArgument.bytes:
+                    return "bytes";
+                case ExceptionArgument.byteIndex:
+                    return "byteIndex";
+                case ExceptionArgument.byteCount:
+                    return "byteCount";
                 case ExceptionArgument.ch:
                     return "ch";
+                case ExceptionArgument.chars:
+                    return "chars";
+                case ExceptionArgument.charIndex:
+                    return "charIndex";
+                case ExceptionArgument.charCount:
+                    return "charCount";
                 case ExceptionArgument.s:
                     return "s";
                 case ExceptionArgument.input:
@@ -612,6 +624,10 @@ namespace System
             {
                 case ExceptionResource.ArgumentOutOfRange_Index:
                     return SR.ArgumentOutOfRange_Index;
+                case ExceptionResource.ArgumentOutOfRange_IndexCount:
+                    return SR.ArgumentOutOfRange_IndexCount;
+                case ExceptionResource.ArgumentOutOfRange_IndexCountBuffer:
+                    return SR.ArgumentOutOfRange_IndexCountBuffer;
                 case ExceptionResource.ArgumentOutOfRange_Count:
                     return SR.ArgumentOutOfRange_Count;
                 case ExceptionResource.Arg_ArrayPlusOffTooSmall:
@@ -694,6 +710,8 @@ namespace System
                     return SR.Task_WaitMulti_NullTask;
                 case ExceptionResource.ArgumentException_OtherNotArrayOfCorrectLength:
                     return SR.ArgumentException_OtherNotArrayOfCorrectLength;
+                case ExceptionResource.ArgumentNull_Array:
+                    return SR.ArgumentNull_Array;
                 case ExceptionResource.ArgumentNull_SafeHandle:
                     return SR.ArgumentNull_SafeHandle;
                 case ExceptionResource.ArgumentOutOfRange_EndIndexStartIndex:
@@ -752,7 +770,13 @@ namespace System
         value,
         startIndex,
         task,
+        bytes,
+        byteIndex,
+        byteCount,
         ch,
+        chars,
+        charIndex,
+        charCount,
         s,
         input,
         ownedMemory,
@@ -828,6 +852,8 @@ namespace System
     internal enum ExceptionResource
     {
         ArgumentOutOfRange_Index,
+        ArgumentOutOfRange_IndexCount,
+        ArgumentOutOfRange_IndexCountBuffer,
         ArgumentOutOfRange_Count,
         Arg_ArrayPlusOffTooSmall,
         NotSupported_ReadOnlyCollection,
@@ -869,6 +895,7 @@ namespace System
         Task_ThrowIfDisposed,
         Task_WaitMulti_NullTask,
         ArgumentException_OtherNotArrayOfCorrectLength,
+        ArgumentNull_Array,
         ArgumentNull_SafeHandle,
         ArgumentOutOfRange_EndIndexStartIndex,
         ArgumentOutOfRange_Enum,

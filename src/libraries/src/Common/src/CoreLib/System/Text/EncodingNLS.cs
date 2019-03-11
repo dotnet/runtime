@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -27,6 +28,7 @@ namespace System.Text
     {
         protected EncodingNLS(int codePage) : base(codePage)
         {
+            Debug.Assert(GetType() == typeof(Latin1Encoding), "Should be no instantiations of this type except via Latin1Encoding.");
         }
 
         // Returns the number of bytes required to encode a range of characters in
