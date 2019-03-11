@@ -82,16 +82,16 @@
     IL_002d:  call       void [mscorlib_1]System.Console::WriteLine(string)
     IL_0032:  ldc.i4.0
     IL_0033:  stloc.0
-    IL_0034:  ldc.i4.1
-    IL_0035:  ldloc.2
-    IL_0036:  call       instance int32 [MyBar]MyBar::DoBar()
-    IL_003b:  beq.s      IL_0049
+    IL_0034:
 
-    IL_003d:  ldstr      "FAIL: expected MyBar.DoSelfBar to execute, but ano"
-    + "ther method was executed instead."
-    IL_0042:  call       void [mscorlib_1]System.Console::WriteLine(string)
-    IL_0047:  ldc.i4.0
-    IL_0048:  stloc.0
+
+
+
+
+
+
+
+
     IL_0049:  ldloc.0
     IL_004a:  brtrue.s   IL_005b
 
