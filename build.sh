@@ -276,16 +276,17 @@ build_native()
         pushd "$intermediatesForBuild"
         # Regenerate the CMake solution
 
+        scriptDir="$__ProjectRoot/src/pal/tools"
         if [[ $__GccBuild == 0 ]]; then
             scan_build=
             if [[ $__StaticAnalyzer == 1 ]]; then
                 scan_build=scan-build
             fi
-            echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion \"$__ClangMinorVersion\" $platformArch $__BuildType $__CodeCoverage $scan_build $generator $extraCmakeArguments $__cmakeargs"
-            source "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion "$__ClangMinorVersion" $platformArch $__BuildType $__CodeCoverage $scan_build $generator "$extraCmakeArguments" "$__cmakeargs"
+            echo "Invoking \"$scriptDir/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion \"$__ClangMinorVersion\" $platformArch "$scriptDir" $__BuildType $__CodeCoverage $scan_build $generator $extraCmakeArguments $__cmakeargs"
+            source "$scriptDir/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion "$__ClangMinorVersion" $platformArch "$scriptDir" $__BuildType $__CodeCoverage $scan_build $generator "$extraCmakeArguments" "$__cmakeargs"
         else
-            echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-gcc.sh\" \"$__ProjectRoot\" $__GccMajorVersion \"$__GccMinorVersion\" $platformArch $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
-            source "$__ProjectRoot/src/pal/tools/gen-buildsys-gcc.sh" "$__ProjectRoot" "$__GccMajorVersion" "$__CGccMinorVersion" $platformArch $__BuildType $__CodeCoverage $generator "$extraCmakeArguments" "$__cmakeargs"
+            echo "Invoking \"$scriptDir/gen-buildsys-gcc.sh\" \"$__ProjectRoot\" $__GccMajorVersion \"$__GccMinorVersion\" $platformArch "$scriptDir" $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
+            source "$scriptDir/gen-buildsys-gcc.sh" "$__ProjectRoot" "$__GccMajorVersion" "$__CGccMinorVersion" $platformArch "$scriptDir" $__BuildType $__CodeCoverage $generator "$extraCmakeArguments" "$__cmakeargs"
         fi
         popd
     fi
