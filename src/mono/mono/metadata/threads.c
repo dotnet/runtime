@@ -541,7 +541,11 @@ unlock_thread_handle (MonoInternalThreadHandle thread)
 static inline gboolean
 is_appdomainunloaded_exception (MonoClass *klass)
 {
+#ifdef ENABLE_NETCORE
+	return FALSE;
+#else
 	return klass == mono_class_get_appdomain_unloaded_exception_class ();
+#endif
 }
 
 static inline gboolean
