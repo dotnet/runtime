@@ -53,6 +53,8 @@
 #endif // !_MSC_VER
 #endif // !NOINLINE
 
+#define ANALYZER_NORETURN
+
 //
 // CPP_ASSERT() can be used within a class definition, to perform a
 // compile-time assertion involving private names within the class.

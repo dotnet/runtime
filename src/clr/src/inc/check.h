@@ -473,7 +473,7 @@ CHECK CheckValue(TYPENAME &val)
 // in a free build they are passed through to the compiler to use in optimization.
 //--------------------------------------------------------------------------------
 
-#if defined(_PREFAST_) || defined(_PREFIX_) 
+#if defined(_PREFAST_) || defined(_PREFIX_) || defined(__clang_analyzer__)
 #define COMPILER_ASSUME_MSG(_condition, _message) if (!(_condition)) __UNREACHABLE();
 #define COMPILER_ASSUME_MSGF(_condition, args) if (!(_condition)) __UNREACHABLE();
 #else
@@ -561,7 +561,7 @@ CHECK CheckValue(TYPENAME &val)
 # define __UNREACHABLE() __assume(0)
 #endif
 #else
-#define __UNREACHABLE()  do { } while(true)
+#define __UNREACHABLE() __builtin_unreachable()
 #endif
 
 #ifdef _DEBUG_IMPL
