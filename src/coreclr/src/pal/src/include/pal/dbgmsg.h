@@ -355,6 +355,15 @@ bool DBG_ShouldCheckStackAlignment();
 
 #else /* defined(_DEBUG) */
 
+ANALYZER_NORETURN
+inline void AssertBreak()
+{
+    if(g_Dbg_asserts_enabled)
+    {
+        DebugBreak();
+    }
+}
+
 #define ASSERT(...)                                                     \
 {                                                                       \
     __ASSERT_ENTER();                                                   \
@@ -362,10 +371,7 @@ bool DBG_ShouldCheckStackAlignment();
     {                                                                   \
         DBG_printf(defdbgchan,DLI_ASSERT,TRUE,__FUNCTION__,__FILE__,__LINE__,__VA_ARGS__); \
     }                                                                   \
-    if(g_Dbg_asserts_enabled)                                           \
-    {                                                                   \
-        DebugBreak();                                                   \
-    }                                                                   \
+    AssertBreak();                                                     \
 }
     
 #define _ASSERT(expr) do { if (!(expr)) { ASSERT(""); } } while(0)
