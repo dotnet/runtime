@@ -425,6 +425,16 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			ins->flags |= MONO_INST_UNALIGNED;
 			return ins;
 		}
+	} else if (!strcmp (cmethod->name, "ByteOffset")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		int dreg = alloc_preg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [1]->dreg, args [0]->dreg);
+		ins->type = STACK_PTR;
+		return ins;
 	}
 
 	return NULL;
