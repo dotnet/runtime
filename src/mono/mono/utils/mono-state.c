@@ -35,9 +35,9 @@ extern GCStats mono_gc_stats;
 #include <mach/task_info.h>
 #endif
 
-#include <sys/param.h>
+#ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
-#include <fcntl.h>
+#endif
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
