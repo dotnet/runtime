@@ -1,25 +1,23 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using Xunit;
 using FluentAssertions;
-using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup.Test;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Diagnostics;
-using System.Collections.Generic;
 using System.Threading;
+using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 {
     public class GivenThatICareAboutStandaloneAppActivation : IClassFixture<GivenThatICareAboutStandaloneAppActivation.SharedTestState>
     {
-        private readonly string AppHostExeName = "apphost" + Constants.ExeSuffix;
+        private readonly string AppHostExeName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost");
 
         private SharedTestState sharedTestState;
 
@@ -76,8 +74,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 
             var appExe = fixture.TestProject.AppExe;
 
-            string hostExeName = $"apphost{Constants.ExeSuffix}";
-            string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
+            string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, AppHostExeName);
             File.Copy(builtAppHost, appExe, true);
 
             int exitCode = Command.Create(appExe)
@@ -105,7 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 
             var appExe = fixture.TestProject.AppExe;
 
-            string hostExeName = $"dotnet{Constants.ExeSuffix}";
+            string hostExeName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet");
             string builtHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
             File.Copy(builtHost, appExe, true);
 
@@ -133,7 +130,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-            var renamedAppExe = fixture.TestProject.AppExe + $"renamed{Constants.ExeSuffix}";
+            var renamedAppExe = fixture.TestProject.AppExe + RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("renamed");
 
             File.Copy(appExe, renamedAppExe, true);
 

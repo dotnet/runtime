@@ -275,7 +275,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             var appExe = fixture.TestProject.AppExe;
             var appDllName = Path.GetFileName(fixture.TestProject.AppDll);
 
-            string hostExeName = $"apphost{Constants.ExeSuffix}";
+            string hostExeName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost");
             string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
             string appDir = Path.GetDirectoryName(appExe);
             string appDirHostExe = Path.Combine(appDir, hostExeName);
