@@ -740,6 +740,12 @@ HRESULT CorHost2::_CreateAppDomain(
         {
             pwzAppNiPaths = pPropertyValues[i];
         }
+        else
+        if (wcscmp(pPropertyNames[i], W("USE_ENTRYPOINT_FILTER")) == 0)
+        {
+            extern void ParseUseEntryPointFilter(LPCWSTR value);
+            ParseUseEntryPointFilter(pPropertyValues[i]);
+        }
 #ifdef FEATURE_COMINTEROP
         else
         if (wcscmp(pPropertyNames[i], W("APP_LOCAL_WINMETADATA")) == 0)

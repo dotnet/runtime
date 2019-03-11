@@ -844,7 +844,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         }                               \
         PAL_ENDTRY                      \
     }                                   \
-    PAL_EXCEPT_FILTER(CLRNoCatchHandler) \
+    PAL_EXCEPT_FILTER(EntryPointFilter) \
     {                                   \
     }                                   \
     PAL_ENDTRY
