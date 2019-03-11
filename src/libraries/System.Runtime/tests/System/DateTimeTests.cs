@@ -828,16 +828,18 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToBinary_TestData()
         {
-            DateTime local = new DateTime(10, DateTimeKind.Local);
-            TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(new DateTime(10));
+            const long Ticks = 123456789101112;
+
+            DateTime local = new DateTime(Ticks, DateTimeKind.Local);
+            TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(local);
             long localTicks = local.Ticks - offset.Ticks;
             if (localTicks < 0)
             {
                 localTicks |= 0x4000000000000000;
             }
 
-            yield return new object[] { new DateTime(10, DateTimeKind.Utc), 10 | ((long)DateTimeKind.Utc << 62) };
-            yield return new object[] { new DateTime(10, DateTimeKind.Unspecified), 10 | (( long)DateTimeKind.Unspecified << 62) };
+            yield return new object[] { new DateTime(Ticks, DateTimeKind.Utc), Ticks | ((long)DateTimeKind.Utc << 62) };
+            yield return new object[] { new DateTime(Ticks, DateTimeKind.Unspecified), Ticks | (( long)DateTimeKind.Unspecified << 62) };
             yield return new object[] { local, localTicks | ((long)DateTimeKind.Local << 62) };
 
             yield return new object[] { DateTime.MaxValue, 3155378975999999999 };
@@ -879,17 +881,23 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToFileTime_TestData()
         {
-            yield return new object[] { new DateTime(1601, 1, 1) };
-            yield return new object[] { new DateTime(1601, 1, 1).AddTicks(1) };
-            yield return new object[] { new DateTime(2018, 12, 24) };
-            yield return new object[] { new DateTime(2018, 11, 24, 17, 57, 30, 12) };
+            yield return new object[] { new DateTime(1601, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
+            yield return new object[] { new DateTime(1601, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(1) };
+
+            yield return new object[] { new DateTime(2018, 12, 24, 0, 0, 0, DateTimeKind.Utc) };
+            yield return new object[] { new DateTime(2018, 11, 24, 17, 57, 30, 12, DateTimeKind.Utc) };
+
+            yield return new object[] { new DateTime(2018, 12, 24, 0, 0, 0, DateTimeKind.Local) };
+            yield return new object[] { new DateTime(2018, 11, 24, 17, 57, 30, 12, DateTimeKind.Local) };
         }
 
         [Theory]
         [MemberData(nameof(ToFileTime_TestData))]
         public void ToFileTime_Invoke_ReturnsExpected(DateTime date)
         {
-            Assert.Equal(date, DateTime.FromFileTime(date.ToFileTime()));
+            long fileTime = date.ToFileTime();
+            DateTime fromFileTime = date.Kind == DateTimeKind.Utc ? DateTime.FromFileTimeUtc(fileTime) : DateTime.FromFileTime(fileTime);
+            Assert.Equal(date, fromFileTime);
         }
 
         public static IEnumerable<object[]> ToFileTime_Overflow_TestData()
