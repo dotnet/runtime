@@ -42,9 +42,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
   check_include_files("libintl.h" HAVE_LIBINTL_H)
 endif()
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-  set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
-endif()
+set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
 
 check_cxx_source_compiles("
 #include <lttng/tracepoint.h>
@@ -52,9 +50,7 @@ int main(int argc, char **argv) {
   return 0;
 }" HAVE_LTTNG_TRACEPOINT_H)
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-  set(CMAKE_REQUIRED_LIBRARIES)
-endif()
+set(CMAKE_REQUIRED_LIBRARIES)
 
 check_include_files(sys/sysctl.h HAVE_SYS_SYSCTL_H)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
