@@ -523,6 +523,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue(35933, TestPlatforms.AnyUnix)]
         public unsafe void TestCheckChildProcessUserAndGroupIds()
         {
             string userName = GetCurrentRealUserName();
