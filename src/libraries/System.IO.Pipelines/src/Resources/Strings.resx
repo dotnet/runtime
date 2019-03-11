@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -133,6 +134,12 @@
   </data>
   <data name="GetResultBeforeCompleted" xml:space="preserve">
     <value>Can't GetResult unless awaiter is completed.</value>
+  </data>
+  <data name="InvalidExaminedOrConsumedPosition" xml:space="preserve">
+    <value>The examined position must be greater than or equal to the consumed position.</value>
+  </data>
+  <data name="InvalidExaminedPosition" xml:space="preserve">
+    <value>The examined position cannot be less than the previously examined position.</value>
   </data>
   <data name="InvalidZeroByteRead" xml:space="preserve">
     <value>The PipeReader returned 0 bytes when the ReadResult was not completed or canceled.</value>

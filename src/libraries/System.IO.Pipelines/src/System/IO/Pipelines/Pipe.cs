@@ -62,8 +62,7 @@ namespace System.IO.Pipelines
 
         // Stores the last examined position, used to calculate how many bytes were to release
         // for back pressure management
-        private BufferSegment _lastExamined;
-        private int _lastExaminedIndex;
+        private long _lastExaminedIndex = -1;
 
         // The read head which is the extent of the PipeReader's consumed bytes
         private BufferSegment _readHead;
@@ -130,7 +129,7 @@ namespace System.IO.Pipelines
             _writerAwaitable = new PipeAwaitable(completed: true, _useSynchronizationContext);
             _readTailIndex = 0;
             _readHeadIndex = 0;
-            _lastExaminedIndex = 0;
+            _lastExaminedIndex = -1;
             _currentWriteLength = 0;
             _length = 0;
         }
@@ -193,7 +192,8 @@ namespace System.IO.Pipelines
                     BufferSegment newSegment = AllocateSegment(sizeHint);
 
                     // Set all the pointers
-                    _writingHead = _readHead = _readTail = _lastExamined = newSegment;
+                    _writingHead = _readHead = _readTail = newSegment;
+                    _lastExaminedIndex = 0;
                 }
                 else
                 {
@@ -266,7 +266,6 @@ namespace System.IO.Pipelines
             Debug.Assert(segment != _readHead, "Returning _readHead segment that's in use!");
             Debug.Assert(segment != _readTail, "Returning _readTail segment that's in use!");
             Debug.Assert(segment != _writingHead, "Returning _writingHead segment that's in use!");
-            Debug.Assert(segment != _lastExamined, "Returning _lastExamined segment that's in use!");
 
             if (_bufferSegmentPool.Count < MaxPoolSize)
             {
@@ -423,6 +422,12 @@ namespace System.IO.Pipelines
 
         private void AdvanceReader(BufferSegment consumedSegment, int consumedIndex, BufferSegment examinedSegment, int examinedIndex)
         {
+            // Throw if examined < consumed
+            if (consumedSegment != null && examinedSegment != null && GetLength(consumedSegment, consumedIndex, examinedSegment, examinedIndex) < 0)
+            {
+                ThrowHelper.ThrowInvalidOperationException_InvalidExaminedOrConsumedPosition();
+            }
+
             BufferSegment returnStart = null;
             BufferSegment returnEnd = null;
 
@@ -436,20 +441,20 @@ namespace System.IO.Pipelines
                     examinedEverything = examinedIndex == _readTailIndex;
                 }
 
-                if (examinedSegment != null && _lastExamined != null)
+                if (examinedSegment != null && _lastExaminedIndex >= 0)
                 {
-                    long examinedBytes = GetLength(_lastExamined, _lastExaminedIndex, examinedSegment, examinedIndex);
+                    long examinedBytes = GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
                     long oldLength = _length;
 
                     if (examinedBytes < 0)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_AdvanceToInvalidCursor();
+                        ThrowHelper.ThrowInvalidOperationException_InvalidExaminedPosition();
                     }
 
                     _length -= examinedBytes;
 
-                    _lastExamined = examinedSegment;
-                    _lastExaminedIndex = examinedIndex;
+                    // Store the absolute position
+                    _lastExaminedIndex = examinedSegment.RunningIndex + examinedIndex;
 
                     Debug.Assert(_length >= 0, "Length has gone negative");
 
@@ -485,14 +490,6 @@ namespace System.IO.Pipelines
 
                         _readHead = nextBlock;
                         _readHeadIndex = 0;
-
-                        // Only update the last examined if the same as consumed
-                        if (consumedSegment == examinedSegment)
-                        {
-                            // The last examined index and the read head should be in sync
-                            _lastExamined = nextBlock;
-                            _lastExaminedIndex = 0;
-                        }
 
                         // Reset the writing head to null if it's the return block
                         // then null it out as we're about to reset that memory
@@ -541,6 +538,12 @@ namespace System.IO.Pipelines
         private static long GetLength(BufferSegment startSegment, int startIndex, BufferSegment endSegment, int endIndex)
         {
             return (endSegment.RunningIndex + (uint)endIndex) - (startSegment.RunningIndex + (uint)startIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static long GetLength(long startPosition, BufferSegment endSegment, int endIndex)
+        {
+            return (endSegment.RunningIndex + (uint)endIndex) - startPosition;
         }
 
         internal void CompleteReader(Exception exception)
@@ -787,7 +790,7 @@ namespace System.IO.Pipelines
                 _writingHead = null;
                 _readHead = null;
                 _readTail = null;
-                _lastExamined = null;
+                _lastExaminedIndex = -1;
             }
         }
 
