@@ -19,7 +19,8 @@ def RunCMake(workspace, target, platform):
         print "Running: " + workspace + "/ProjectK/NDP/clr/src/pal/tools/gen-buildsys-clang.sh " + workspace + "/ProjectK/NDP/clr DEBUG"
         print "\n==================================================\n"
         sys.stdout.flush()
-        returncode = subprocess.call(workspace + "/ProjectK/NDP/clr/src/pal/tools/gen-buildsys-clang.sh " + workspace + "/ProjectK/NDP/clr " + target, shell=True)
+        scriptDir = "/ProjectK/NDP/clr/src/pal/tools"
+        returncode = subprocess.call(workspace + "/ProjectK/NDP/clr/src/pal/tools/gen-buildsys-clang.sh " + workspace + "/ProjectK/NDP/clr " + target + " " + scriptDir, shell=True)
 
     if returncode != 0:
         print "ERROR: cmake failed with exit code " + str(returncode)

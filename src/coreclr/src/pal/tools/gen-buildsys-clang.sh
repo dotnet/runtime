@@ -3,13 +3,14 @@
 # This file invokes cmake and generates the build system for Clang.
 #
 
-if [ $# -lt 4 ]
+if [ $# -lt 5 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor] [coverage] [ninja] [scan-build] [cmakeargs]"
+  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> <ScriptDirectory> [build flavor] [coverage] [ninja] [scan-build] [cmakeargs]"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
   echo "Specify the clang version to use, split into major and minor version"
-  echo "Specify the target architecture." 
+  echo "Specify the target architecture."
+  echo "Specify the script directory."
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
   echo "Optionally specify 'coverage' to enable code coverage build."
   echo "Optionally specify 'scan-build' to enable build with clang static analyzer."
@@ -40,6 +41,7 @@ export CC="$(command -v clang$desired_llvm_version)"
 export CXX="$(command -v clang++$desired_llvm_version)"
 
 build_arch="$4"
+script_dir="$5"
 buildtype=DEBUG
 code_coverage=OFF
 build_tests=OFF
@@ -47,7 +49,7 @@ scan_build=OFF
 generator="Unix Makefiles"
 __UnprocessedCMakeArgs=""
 
-for i in "${@:5}"; do
+for i in "${@:6}"; do
     upperI="$(echo $i | awk '{print toupper($0)}')"
     case $upperI in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO, MINSIZEREL.
@@ -155,8 +157,7 @@ else
     overridefile=clang-compiler-override.txt
 fi
 
-# Determine the current script directory
-__currentScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+__currentScriptDir="$script_dir"
 
 cmake_command=cmake
 
