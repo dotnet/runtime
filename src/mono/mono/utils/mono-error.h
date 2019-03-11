@@ -49,6 +49,11 @@ enum {
 	MONO_ERROR_CLEANUP_CALLED_SENTINEL = 0xffff
 };
 
+#ifdef _MSC_VER
+__pragma(warning (push))
+__pragma(warning (disable:4201))
+#endif
+
 /*Keep in sync with MonoErrorInternal*/
 typedef union _MonoError {
 	// Merge two uint16 into one uint32 so it can be initialized
@@ -60,6 +65,10 @@ typedef union _MonoError {
 		void *hidden_1 [12]; /*DON'T TOUCH */
 	};
 } MonoError;
+
+#ifdef _MSC_VER
+__pragma(warning (pop))
+#endif
 
 /* Mempool-allocated MonoError.*/
 typedef struct _MonoErrorBoxed MonoErrorBoxed;

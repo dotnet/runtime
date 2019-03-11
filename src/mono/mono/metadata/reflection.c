@@ -466,8 +466,13 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	type = m_class_get_byval_arg (klass)->byref == type->byref ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
 
 	/* void is very common */
+#ifdef ENABLE_NETCORE
+	if (!type->byref && type->type == MONO_TYPE_VOID && domain->typeof_void)
+		return (MonoReflectionType*)domain->typeof_void;
+#else
 	if (type->type == MONO_TYPE_VOID && domain->typeof_void)
 		return (MonoReflectionType*)domain->typeof_void;
+#endif
 
 	/*
 	 * If the vtable of the given class was already created, we can use
@@ -1639,6 +1644,7 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 	if (!info->name) {
 		if (last_point) {
 			info->name_space = start;
+
 			*last_point = 0;
 			info->name = last_point + 1;
 		} else {
