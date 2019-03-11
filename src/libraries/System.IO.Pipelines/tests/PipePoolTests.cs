@@ -206,7 +206,12 @@ namespace System.IO.Pipelines.Tests
         public void ReturnsWriteHeadWhenRequestingLargerBlock()
         {
             var pool = new DisposeTrackingBufferPool();
-            var pipe = new Pipe(CreatePipeWithInlineSchedulers(pool));
+            var options = new PipeOptions(pool,
+                readerScheduler: PipeScheduler.Inline,
+                writerScheduler: PipeScheduler.Inline,
+                minimumSegmentSize: 2048);
+
+            var pipe = new Pipe(options);
             pipe.Writer.GetMemory(512);
             pipe.Writer.GetMemory(4096);
 
