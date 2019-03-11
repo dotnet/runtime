@@ -20,7 +20,7 @@ int verbDumpToc::DoWork(const char* nameOfInput)
         const TOCElement* te = tf.GetElementPtr(i);
         printf("%4u: %016llX ", te->Number, te->Offset);
 
-        for (int j = 0; j < sizeof(te->Hash); j++)
+        for (size_t j = 0; j < sizeof(te->Hash); j++)
         {
             printf("%02x ", te->Hash[j]);
         }

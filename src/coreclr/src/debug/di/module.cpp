@@ -4460,7 +4460,7 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
         const DacDbiArrayList<ICorDebugInfo::NativeVarInfo> *pOffsetInfoList = m_nativeVarData.GetOffsetInfoList();
         _ASSERTE(pOffsetInfoList != NULL);
         DWORD countHomes = 0;
-        for (int i = 0; i < pOffsetInfoList->Count(); i++)
+        for (unsigned int i = 0; i < pOffsetInfoList->Count(); i++)
         {
             const ICorDebugInfo::NativeVarInfo *pNativeVarInfo = &((*pOffsetInfoList)[i]);
             _ASSERTE(pNativeVarInfo != NULL);
@@ -4477,7 +4477,7 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
         rsHomes = new RSSmartPtr<CordbVariableHome>[countHomes];
 
         DWORD varHomeInd = 0;
-        for (int i = 0; i < pOffsetInfoList->Count(); i++)
+        for (unsigned int i = 0; i < pOffsetInfoList->Count(); i++)
         {
             const ICorDebugInfo::NativeVarInfo *pNativeVarInfo = &((*pOffsetInfoList)[i]);
 

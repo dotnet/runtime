@@ -126,7 +126,7 @@ public:
         // This function is used rarely and so the overhead of reading the zeros from
         // the stack is negligible.
         long long zeros[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS] = {};
-        _ASSERTE(sizeof(zeros) >= fieldBytes);
+        _ASSERTE(sizeof(zeros) >= (size_t)fieldBytes);
 
         CopyStructToRegisters(zeros, fieldBytes, 0);
     }

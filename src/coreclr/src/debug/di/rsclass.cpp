@@ -808,7 +808,7 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
 BOOL CordbClass::GotUnallocatedStatic(DacDbiArrayList<FieldData> * pFieldList)
 {
     BOOL fGotUnallocatedStatic = FALSE;
-    int count = 0;
+    unsigned int count = 0;
     while ((count < pFieldList->Count()) && !fGotUnallocatedStatic )
     {
         if ((*pFieldList)[count].OkToGetOrSetStaticAddress() &&
@@ -1145,7 +1145,7 @@ HRESULT CordbClass::SearchFieldInfo(
     FieldData **ppFieldData
 )
 {
-    int i;
+    unsigned int i;
 
     IMetaDataImport * pImport = pModule->GetMetaDataImporter(); // throws      
 

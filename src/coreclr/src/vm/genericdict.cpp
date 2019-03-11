@@ -1233,7 +1233,7 @@ Dictionary::PopulateEntry(
         ULONG slotIndex;
         if (isReadyToRunModule)
         {
-            _ASSERT(dictionaryIndexAndSlot != -1);
+            _ASSERT(dictionaryIndexAndSlot != (DWORD)-1);
             slotIndex = (ULONG)(dictionaryIndexAndSlot & 0xFFFF);
         }
         else

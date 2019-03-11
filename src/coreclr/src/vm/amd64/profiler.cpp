@@ -248,7 +248,7 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     }
 
     // if we're here we have an enregistered argument
-    int regStructOfs = (argOffset - TransitionBlock::GetOffsetOfArgumentRegisters());
+    unsigned int regStructOfs = (argOffset - TransitionBlock::GetOffsetOfArgumentRegisters());
     _ASSERTE(regStructOfs < ARGUMENTREGISTERS_SIZE);
 
     CorElementType t = m_argIterator.GetArgType();
