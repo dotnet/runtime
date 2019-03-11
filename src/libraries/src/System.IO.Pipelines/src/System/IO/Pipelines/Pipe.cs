@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -16,7 +17,8 @@ namespace System.IO.Pipelines
     /// </summary>
     public sealed partial class Pipe
     {
-        internal const int SegmentPoolSize = 16;
+        internal const int InitialSegmentPoolSize = 16; // 65K
+        internal const int MaxPoolSize = 256; // 1MB
 
         private static readonly Action<object> s_signalReaderAwaitable = state => ((Pipe)state).ReaderCancellationRequested();
         private static readonly Action<object> s_signalWriterAwaitable = state => ((Pipe)state).WriterCancellationRequested();
@@ -42,7 +44,7 @@ namespace System.IO.Pipelines
         private readonly PipeScheduler _readerScheduler;
         private readonly PipeScheduler _writerScheduler;
 
-        private readonly BufferSegment[] _bufferSegmentPool;
+        private readonly Stack<BufferSegment> _bufferSegmentPool;
 
         private readonly DefaultPipeReader _reader;
         private readonly DefaultPipeWriter _writer;
@@ -51,8 +53,6 @@ namespace System.IO.Pipelines
 
         private long _length;
         private long _currentWriteLength;
-
-        private int _pooledSegmentCount;
 
         private PipeAwaitable _readerAwaitable;
         private PipeAwaitable _writerAwaitable;
@@ -101,7 +101,7 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.options);
             }
 
-            _bufferSegmentPool = new BufferSegment[SegmentPoolSize];
+            _bufferSegmentPool = new Stack<BufferSegment>(InitialSegmentPoolSize);
 
             _operationState = default;
             _readerCompletion = default;
@@ -253,10 +253,9 @@ namespace System.IO.Pipelines
 
         private BufferSegment CreateSegmentUnsynchronized()
         {
-            if (_pooledSegmentCount > 0)
+            if (_bufferSegmentPool.Count > 0)
             {
-                _pooledSegmentCount--;
-                return _bufferSegmentPool[_pooledSegmentCount];
+                return _bufferSegmentPool.Pop();
             }
 
             return new BufferSegment();
@@ -269,10 +268,9 @@ namespace System.IO.Pipelines
             Debug.Assert(segment != _writingHead, "Returning _writingHead segment that's in use!");
             Debug.Assert(segment != _lastExamined, "Returning _lastExamined segment that's in use!");
 
-            if (_pooledSegmentCount < _bufferSegmentPool.Length)
+            if (_bufferSegmentPool.Count < MaxPoolSize)
             {
-                _bufferSegmentPool[_pooledSegmentCount] = segment;
-                _pooledSegmentCount++;
+                _bufferSegmentPool.Push(segment);
             }
         }
 
