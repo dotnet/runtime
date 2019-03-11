@@ -1904,49 +1904,6 @@ if test x$platform_android = xyes; then
 	AC_DEFINE(HAVE_SIGNAL,1)
 fi
 
-dnl ***********************************
-dnl *** Checks for availability of GSS dependencies (krb5, gss.framework, etc)
-dnl ***********************************
-enable_gss=no;
-AC_MSG_CHECKING(for GSS/GSS.h)
-AC_TRY_COMPILE([
-    #include <GSS/GSS.h>
-], [
-],[
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(HAVE_GSSFW_HEADERS, 1, [GSS/GSS.h])
-    AC_DEFINE(HAVE_GSS_SPNEGO_MECHANISM, 1, [GSS_SPNEGO_MECHANISM])
-    enable_gss=yes
-], [
-    AC_MSG_RESULT(no)
-])
-
-AC_MSG_CHECKING(for gssapi/gssapi_ext.h)
-AC_TRY_COMPILE([
-    #include <gssapi/gssapi_ext.h>
-], [
-],[
-    AC_MSG_RESULT(yes)
-    enable_gss=yes
-], [
-    AC_MSG_RESULT(no)
-])
-
-AC_MSG_CHECKING(for GSS_SPNEGO_MECHANISM)
-AC_TRY_COMPILE([
-    #include <gssapi/gssapi_ext.h>
-    #include <gssapi/gssapi_krb5.h>
-    gss_OID_set_desc gss_mech_spnego_OID_set_desc = {.count = 1, .elements = GSS_SPNEGO_MECHANISM};
-], [
-],[
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(HAVE_GSS_SPNEGO_MECHANISM, 1, [GSS_SPNEGO_MECHANISM])
-], [
-    AC_MSG_RESULT(no)
-])
-
-AM_CONDITIONAL(ENABLE_GSS, test x$enable_gss = xyes)
-
 # `target_ios=yes` does not detect watch devices and fails when cross-compiling
 AC_MONO_APPLE_TARGET(TARGET_OS_IPHONE, [mono_native_platform_ios=yes])
 
@@ -2617,6 +2574,7 @@ if test x$host_win32 = xno; then
 			#error "__thread does not currently work with clang on Mac OS X"
 			#endif
 			
+			#include <unistd.h>
 			#include <pthread.h>
 			__thread int i;
 			static int res1, res2;
@@ -2906,6 +2864,9 @@ if test x$host_win32 = xno; then
 		#include <stdio.h>
 		#include <sys/types.h>
 		#include <sys/socket.h>
+		#ifdef HAVE_NET_IF_H
+		#include <net/if.h>
+		#endif
 		#include <ifaddrs.h>
 	], [
 		getifaddrs(NULL);
@@ -3127,8 +3088,11 @@ if test x$host_win32 = xno; then
 	fi
 
 	dnl *********************************
-	dnl *** Checks for Mono.Native  ***
+	dnl *** Checks for Mono.Native    ***
 	dnl *********************************
+
+	# Translated from CMake in external/corefx/src/Native/Unix/configure.cmake, keep in sync!
+	# Note: check_c_source_compiles in CMake is AC_TRY_LINK in autoconf
 
 	AC_MSG_CHECKING(for linux/in.h)
 	AC_TRY_COMPILE([
@@ -3182,34 +3146,41 @@ if test x$host_win32 = xno; then
 		AC_CHECK_TYPES([struct flock64], [AC_DEFINE(HAVE_FLOCK64, 1, struct flock64)], , [#include <fcntl.h>])
 	fi
 
-	if test x$mono_native_platform_ios = xno; then
-		# On iOS, `stat64()` is deprecated and there is no `struct stat64` and `stat()`
-		# is either 32-bit or 64-bit based on the device / simulator that you're running on.
-		AC_CHECK_FUNC(stat64,            [AC_DEFINE(HAVE_STAT64, 1, [stat64])])
-	fi
+	AC_CHECK_DECL(O_CLOEXEC,         [AC_DEFINE(HAVE_O_CLOEXEC, 1, [O_CLOEXEC])], [], [[#include <fcntl.h>]])
+	AC_CHECK_DECL(F_DUPFD_CLOEXEC,   [AC_DEFINE(HAVE_F_DUPFD_CLOEXEC, 1, [F_DUPFD_CLOEXEC])], [], [[#include <fcntl.h>]])
+
+	# AC_CHECK_FUNC(getifaddrs,           [AC_DEFINE(HAVE_GETIFADDRS, 1, [getifaddrs])]) # already done above
 
 	AC_CHECK_FUNC(lseek64,           [AC_DEFINE(HAVE_LSEEK64, 1, [lseek64])])
 	AC_CHECK_FUNC(mmap64,            [AC_DEFINE(HAVE_MMAP64, 1, [mmap64])])
 	AC_CHECK_FUNC(ftruncate64,       [AC_DEFINE(HAVE_FTRUNCATE64, 1, [ftruncate64])])
 	AC_CHECK_FUNC(posix_fadvise64,   [AC_DEFINE(HAVE_POSIX_FADVISE64, 1, [posix_fadvise64])])
+
+	if test "x$mono_native_platform_ios" = "xno"; then
+		# On iOS, `stat64()` is deprecated and there is no `struct stat64` and `stat()`
+		# is either 32-bit or 64-bit based on the device / simulator that you're running on.
+		AC_CHECK_FUNC(stat64,            [AC_DEFINE(HAVE_STAT64, 1, [stat64])])
+	fi
+
 	AC_CHECK_DECL(pipe2,             [AC_DEFINE(HAVE_PIPE2, 1, [pipe2])])
 	AC_CHECK_FUNC(getmntinfo,        [AC_DEFINE(HAVE_GETMNTINFO, 1, [getmntinfo])], [], [[#include <unistd.h>]])
 	AC_CHECK_FUNC(strcpy_s,          [AC_DEFINE(HAVE_STRCPY_S, 1, [strcpy_s])])
 	AC_CHECK_FUNC(strlcpy,           [AC_DEFINE(HAVE_STRLCPY, 1, [strlcpy])])
-	AC_CHECK_FUNC(posix_fadvise,     [AC_DEFINE(HAVE_POSIX_FADVISE, 1, [posix_fadvise])])
+	AC_CHECK_FUNC(posix_fadvise,     [AC_DEFINE(HAVE_POSIX_ADVISE, 1, [posix_fadvise])]) # the define is called HAVE_POSIX_ADVISE in corefx, not a typo
 	AC_CHECK_FUNC(ioctl,             [AC_DEFINE(HAVE_IOCTL, 1, [ioctl])])
 	AC_CHECK_FUNC(sched_getaffinity, [AC_DEFINE(HAVE_SCHED_GETAFFINITY, 1, [sched_getaffinity])])
 	AC_CHECK_FUNC(sched_setaffinity, [AC_DEFINE(HAVE_SCHED_SETAFFINITY, 1, [sched_setaffinity])])
+
+	if test "x$platform_android" != "xyes"; then
+		AC_CHECK_FUNC(arc4random_buf,    [AC_DEFINE(HAVE_ARC4RANDOM_BUF, 1, [arc4random_buf])])
+	fi
+
 	AC_CHECK_DECL(TIOCGWINSZ,        [AC_DEFINE(HAVE_TIOCGWINSZ, 1, [TIOCGWINSZ])], [], [[#include <sys/ioctl.h>]])
 	AC_CHECK_FUNC(tcgetattr,         [AC_DEFINE(HAVE_TCGETATTR, 1, [tcgetattr])])
 	AC_CHECK_FUNC(tcsetattr,         [AC_DEFINE(HAVE_TCSETATTR, 1, [tcsetattr])])
-	AC_CHECK_FUNC(arc4random_buf,    [AC_DEFINE(HAVE_ARC4RANDOM_BUF, 1, [arc4random_buf])])
 	AC_CHECK_DECL(ECHO,              [AC_DEFINE(HAVE_ECHO, 1, [ECHO])], [], [[#include <termios.h>]])
 	AC_CHECK_DECL(ICANON,            [AC_DEFINE(HAVE_ICANON, 1, [ICANON])], [], [[#include <termios.h>]])
 	AC_CHECK_DECL(TCSANOW,           [AC_DEFINE(HAVE_TCSANOW, 1, [TCSANOW])], [], [[#include <termios.h>]])
-
-	AC_CHECK_DECL(O_CLOEXEC,         [AC_DEFINE(HAVE_O_CLOEXEC, 1, [O_CLOEXEC])], [], [[#include <fcntl.h>]])
-	AC_CHECK_DECL(F_DUPFD_CLOEXEC,   [AC_DEFINE(HAVE_F_DUPFD_CLOEXEC, 1, [F_DUPFD_CLOEXEC])], [], [[#include <fcntl.h>]])
 
 	AC_CHECK_MEMBER(struct stat.st_birthtimespec, [AC_DEFINE(HAVE_STAT_BIRTHTIME, 1, [struct stat.st_birthtime])], [], [[#include <sys/types.h>], [#include <sys/stat.h>]])
 	AC_CHECK_MEMBER(struct stat.st_atimespec,     [AC_DEFINE(HAVE_STAT_TIMESPEC, 1, [struct stat.st_atimespec])], [], [[#include <sys/types.h>], [#include <sys/stat.h>]])
@@ -3240,7 +3211,7 @@ if test x$host_win32 = xno; then
 	fi
 
 	AC_MSG_CHECKING(for readdir_r)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <dirent.h>
 	], [
 		DIR* dir;
@@ -3255,7 +3226,7 @@ if test x$host_win32 = xno; then
 	])
 
 	AC_MSG_CHECKING(for kevent with void *data)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <sys/types.h>
 		#include <sys/event.h>
 	], [
@@ -3273,9 +3244,17 @@ if test x$host_win32 = xno; then
 	AC_CHECK_MEMBER(struct fd_set.__fds_bits, [AC_DEFINE(HAVE_PRIVATE_FDS_BITS, 1, [struct fd_set.__fds_bits])], [], [[#include <sys/select.h>]])
 
 	AC_MSG_CHECKING(for sendfile with 4 arguments)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <sys/sendfile.h>
 	], [
+		#if defined(TARGET_ANDROID)
+		#if !defined(__ANDROID_API__)
+		#error No definition for __ANDROID_API__ even though we're targeting TARGET_ANDROID
+		#elif __ANDROID_API__ < 21
+		#error sendfile is not supported on this Android API level
+		#endif
+		#endif
+
 		int result = sendfile(0, 0, 0, 0);
 	],[
 		AC_MSG_RESULT(yes)
@@ -3283,6 +3262,9 @@ if test x$host_win32 = xno; then
 	], [
 		AC_MSG_RESULT(no)
 	])
+
+	ORIG_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
 
 	AC_MSG_CHECKING(for sendfile with 6 arguments)
 	AC_TRY_LINK([
@@ -3299,16 +3281,18 @@ if test x$host_win32 = xno; then
 		AC_MSG_RESULT(no)
 	])
 
+	CFLAGS="$ORIG_CFLAGS"
+
 	AC_CHECK_FUNC(fcopyfile,     [AC_DEFINE(HAVE_FCOPYFILE, 1, [fcopyfile])])
 	AC_CHECK_FUNC(epoll_create1, [AC_DEFINE(HAVE_EPOLL, 1, [epoll_create1])])
 	AC_CHECK_FUNC(accept4,       [AC_DEFINE(HAVE_ACCEPT4, 1, [accept4])])
 	AC_CHECK_FUNC(kqueue,        [AC_DEFINE(HAVE_KQUEUE, 1, [kqueue])])
 
 	ORIG_CFLAGS="$CFLAGS"
-	CFLAGS="-Werror -Wsign-conversion"
+	CFLAGS="$CFLAGS -Werror=sign-conversion"
 
 	AC_MSG_CHECKING(for getnameinfo with signed flags)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <sys/types.h>
 		#include <netdb.h>
 	], [
@@ -3335,11 +3319,18 @@ if test x$host_win32 = xno; then
 		AC_DEFINE(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO, 0, [HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO])
 	fi
 
+	# HAVE_CLOCK_MONOTONIC check already done above
+	# HAVE_CLOCK_REALTIME check already done above
+	# HAVE_MACH_ABSOLUTE_TIME check already done above
+	# HAVE_MACH_TIMEBASE_INFO check already done above
+	# HAVE_FUTIMES check already done above
+	# HAVE_FUTIMENS check already done above
+
 	ORIG_CFLAGS="$CFLAGS"
-	CFLAGS="-Werror -Wsign-conversion"
+	CFLAGS="$CFLAGS -Werror=sign-conversion"
 
 	AC_MSG_CHECKING(for bind with unsigned addrlen)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <sys/socket.h>
 	], [
 		int fd;
@@ -3354,7 +3345,7 @@ if test x$host_win32 = xno; then
 	])
 
 	AC_MSG_CHECKING(for struct ipv6_mreq with unsigned ipv6mr_interface)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <netinet/in.h>
 		#include <netinet/tcp.h>
 	], [
@@ -3369,7 +3360,7 @@ if test x$host_win32 = xno; then
 	])
 
 	AC_MSG_CHECKING(for inotify_rm_watch with unsigned wd)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <sys/inotify.h>
 	], [
 		intptr_t fd;
@@ -3421,7 +3412,7 @@ if test x$host_win32 = xno; then
 	fi
 
 	AC_MSG_CHECKING(for getpriority with int who)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <sys/resource.h>
 	], [
 		int which;
@@ -3435,7 +3426,7 @@ if test x$host_win32 = xno; then
 	])
 
 	AC_MSG_CHECKING(for kevent with int parameters)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <sys/types.h>
 		#include <sys/event.h>
 	], [
@@ -3453,34 +3444,15 @@ if test x$host_win32 = xno; then
 		AC_MSG_RESULT(no)
 	])
 
-	ORIG_CFLAGS="$CFLAGS"
-	CFLAGS="-Werror -Wimplicit-function-declaration"
+	AC_CHECK_FUNCS(mkstemps)
+	# AC_CHECK_FUNCS(mkstemp) # already done above
 
-	AC_MSG_CHECKING(for mkstemps)
-	AC_TRY_COMPILE([
-		#include <stdlib.h>
-		#include <unistd.h>
-		#include <string.h>
-	], [
-		char *template;
-		int suffixlen;
-		int result = mkstemps(template, suffixlen);
-	],[
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_MKSTEMPS, 1, [mkstemps])
-		have_mkstemps=yes
-	], [
-		AC_MSG_RESULT(no)
-	])
-
-	CFLAGS="$ORIG_CFLAGS"
-
-	if test "x$have_mkstemps" != "xyes" -a "x$ac_cv_func_mkstemp" != "xyes"; then
+	if test "x$ac_cv_func_mkstemps" != "xyes" -a "x$ac_cv_func_mkstemp" != "xyes"; then
 		AC_MSG_ERROR([Cannot find mkstemps or mkstemp on this platform])
 	fi
 
 	AC_MSG_CHECKING(for tcp/var.h)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <sys/types.h>
 		#include <sys/socketvar.h>
 		#include <netinet/ip.h>
@@ -3497,7 +3469,7 @@ if test x$host_win32 = xno; then
 	AC_CHECK_HEADERS([sys/cdefs.h])
 
 	AC_MSG_CHECKING(for TCPSTATE enum in netinet/tcp.h)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#ifdef HAVE_SYS_CDEFS_H
 		#include <sys/cdefs.h>
 		#endif
@@ -3530,14 +3502,14 @@ if test x$host_win32 = xno; then
 	AC_CHECK_HEADERS([linux/rtnetlink.h])
 
 	AC_CHECK_FUNC(getpeereid,    [AC_DEFINE(HAVE_GETPEEREID, 1, [getpeereid])])
-	AC_CHECK_FUNC(getdomainname, [AC_DEFINE(HAVE_GETDOMAINNAME, 1, [getdomainname])])
+	#AC_CHECK_FUNC(getdomainname, [AC_DEFINE(HAVE_GETDOMAINNAME, 1, [getdomainname])]) # already done above
 	AC_CHECK_FUNC(uname,         [AC_DEFINE(HAVE_UNAME, 1, [uname])])
 
 	ORIG_CFLAGS="$CFLAGS"
-	CFLAGS="-Werror -Weverything"
+	CFLAGS="$CFLAGS -Werror=shorten-64-to-32"
 
 	AC_MSG_CHECKING(for getdomainname with size_t namelen)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <unistd.h>
 	], [
 		size_t namelen = 20;
@@ -3562,10 +3534,55 @@ if test x$host_win32 = xno; then
 		AC_MSG_ERROR([Cannot find inotify functions on a Linux platform.])
 	fi
 
+	# HAVE_CURLM_ADDED_ALREADY check skipped because we don't use libcurl in mono
+	# HAVE_CURL_HTTP_VERSION_2TLS check skipped because we don't use libcurl in mono
+	# HAVE_CURLPIPE_MULTIPLEX check skipped because we don't use libcurl in mono
+	# HAVE_CURL_SSLVERSION_TLSv1_012 check skipped because we don't use libcurl in mono
+
+	enable_gss=no;
+	AC_MSG_CHECKING(for GSS/GSS.h)
+	AC_TRY_COMPILE([
+			#include <GSS/GSS.h>
+	], [
+	],[
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_GSSFW_HEADERS, 1, [GSS/GSS.h])
+			AC_DEFINE(HAVE_GSS_SPNEGO_MECHANISM, 1, [GSS_SPNEGO_MECHANISM])
+			enable_gss=yes
+	], [
+			AC_MSG_RESULT(no)
+	])
+
+	AC_MSG_CHECKING(for gssapi/gssapi_ext.h)
+	AC_TRY_COMPILE([
+			#include <gssapi/gssapi_ext.h>
+	], [
+	],[
+			AC_MSG_RESULT(yes)
+			enable_gss=yes
+	], [
+			AC_MSG_RESULT(no)
+	])
+
+	AC_MSG_CHECKING(for GSS_SPNEGO_MECHANISM)
+	AC_TRY_COMPILE([
+			#include <gssapi/gssapi_ext.h>
+			#include <gssapi/gssapi_krb5.h>
+			gss_OID_set_desc gss_mech_spnego_OID_set_desc = {.count = 1, .elements = GSS_SPNEGO_MECHANISM};
+	], [
+	],[
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_GSS_SPNEGO_MECHANISM, 1, [GSS_SPNEGO_MECHANISM])
+	], [
+			AC_MSG_RESULT(no)
+	])
+
+	AM_CONDITIONAL(ENABLE_GSS, test x$enable_gss = xyes)
+
 	AC_CHECK_HEADERS([crt_externs.h])
 
 	AC_MSG_CHECKING(for _NSGetEnviron)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <crt_externs.h>
 	], [
 		char **result = *(_NSGetEnviron());
@@ -3578,7 +3595,10 @@ if test x$host_win32 = xno; then
 
 	AC_CHECK_DECL(IN_EXCL_UNLINK, [AC_DEFINE(HAVE_IN_EXCL_UNLINK, 1, [IN_EXCL_UNLINK])], [], [[#include <sys/inotify.h>]])
 
+	# *** End of Mono.Native checks ***
 else
+	AM_CONDITIONAL(ENABLE_GSS, false)
+
 	dnl *********************************
 	dnl *** Checks for Windows compilation ***
 	dnl *********************************
@@ -4800,7 +4820,6 @@ i*86-*-darwin*)
 esac
 
 AC_SUBST(ORDER)
-AC_SUBST(CFLAGS)
 AC_SUBST(PATHSEP)
 AC_SUBST(SEARCHSEP)
 AC_SUBST(OS)
@@ -5472,14 +5491,6 @@ AC_CHECK_HEADER([malloc.h],
 		[AC_DEFINE([HAVE_USR_INCLUDE_MALLOC_H], [1], 
 			[Define to 1 if you have /usr/include/malloc.h.])],,)
 
-if test x"$GCC" = xyes; then
-   	# Implicit function declarations are not 64 bit safe
-	# Do this late, since this causes lots of configure tests to fail
-	CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
-	# jay has a lot of implicit declarations
-	JAY_CFLAGS="-Wno-implicit-function-declaration"
-fi
-
 # When --disable-shared is used, libtool transforms libmono-2.0.la into libmono-2.0.so
 # instead of libmono-static.a
 if test "x$enable_shared" = "xno" -a "x$enable_executables" = "xyes"; then
@@ -5708,9 +5719,6 @@ AC_SUBST(GTKX11)
 AC_SUBST(XINERAMA)
 AC_DEFINE_UNQUOTED(MONO_ARCHITECTURE,"$arch_target",[The architecture this is running on])
 AC_SUBST(arch_target)
-AC_SUBST(CFLAGS)
-AC_SUBST(CPPFLAGS)
-AC_SUBST(LDFLAGS)
 
 #This must always be defined when building the runtime
 AC_DEFINE(MONO_INSIDE_RUNTIME,1, [Disable banned functions from being used by the runtime])
@@ -5949,26 +5957,6 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/web.config],
 AC_CONFIG_COMMANDS([quiet-libtool], [sed -e 's/echo "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool; sed -e 's/$ECHO "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
 AC_CONFIG_COMMANDS([nolock-libtool], [sed -e 's/lock_old_archive_extraction=yes/lock_old_archive_extraction=no/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
 AC_CONFIG_COMMANDS([clean-llvm], [rm -f llvm/llvm_config.mk])
-
-# Anything involving -Werror must be done late because autoconf depends on compiling with warnings to be success.
-if test x"$GCC" = xyes -a "x$with_jemalloc" != "xyes"; then
-
-	# incompatible-pointer-types requires gcc circa 5.x
-
-	ORIG_CFLAGS=$CFLAGS
-	CFLAGS="$CFLAGS -Wincompatible-pointer-types -Werror"
-	AC_MSG_CHECKING(for -Wincompatible-pointer-types option to gcc)
-	AC_TRY_COMPILE([],[
-	], [
-		AC_MSG_RESULT(yes)
-		CFLAGS="$ORIG_CFLAGS -Werror=incompatible-pointer-types"
-	], [
-		AC_MSG_RESULT(no)
-		CFLAGS=$ORIG_CFLAGS
-	])
-
-	CFLAGS="$CFLAGS -Werror=return-type"
-fi
 
 #
 # Mono.Native Support
@@ -6293,6 +6281,42 @@ if test "x$enable_llvm_runtime" = "xyes"; then
 else
 	AC_SUBST(MONO_CXXLD, [$CC])
 fi
+
+### Set -Werror options
+#
+# Anything involving -Werror must be done late because autoconf depends on compiling with warnings to be success.
+#
+if test x"$GCC" = xyes; then
+
+	if test "x$with_jemalloc" != "xyes"; then
+
+		# incompatible-pointer-types requires gcc circa 5.x
+
+		ORIG_CFLAGS=$CFLAGS
+		CFLAGS="$CFLAGS -Wincompatible-pointer-types -Werror"
+		AC_MSG_CHECKING(for -Wincompatible-pointer-types option to gcc)
+		AC_TRY_COMPILE([],[
+		], [
+			AC_MSG_RESULT(yes)
+			CFLAGS="$ORIG_CFLAGS -Werror=incompatible-pointer-types"
+		], [
+			AC_MSG_RESULT(no)
+			CFLAGS=$ORIG_CFLAGS
+		])
+
+		CFLAGS="$CFLAGS -Werror=return-type"
+	fi
+
+	# Implicit function declarations are not 64 bit safe
+	# Do this late, since this causes lots of configure tests to fail
+	CFLAGS="$CFLAGS -Werror-implicit-function-declaration"
+	# jay has a lot of implicit declarations
+	JAY_CFLAGS="-Wno-implicit-function-declaration"
+fi
+
+AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
+AC_SUBST(LDFLAGS)
 
 # Update all submodules recursively to ensure everything is checked out
 (cd $srcdir && scripts/update_submodules.sh)
