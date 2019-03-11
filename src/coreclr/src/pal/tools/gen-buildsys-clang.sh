@@ -6,12 +6,13 @@
 if [ $# -lt 4 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor] [coverage] [ninja] [cmakeargs]"
+  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor] [coverage] [ninja] [scan-build] [cmakeargs]"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
   echo "Specify the clang version to use, split into major and minor version"
   echo "Specify the target architecture." 
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
   echo "Optionally specify 'coverage' to enable code coverage build."
+  echo "Optionally specify 'scan-build' to enable build with clang static analyzer."
   echo "Target ninja instead of make. ninja must be on the PATH."
   echo "Pass additional arguments to CMake call."
   exit 1
@@ -42,6 +43,7 @@ build_arch="$4"
 buildtype=DEBUG
 code_coverage=OFF
 build_tests=OFF
+scan_build=OFF
 generator="Unix Makefiles"
 __UnprocessedCMakeArgs=""
 
@@ -58,6 +60,10 @@ for i in "${@:5}"; do
       ;;
       NINJA)
       generator=Ninja
+      ;;
+      SCAN-BUILD)
+      echo "Static analysis is turned on for this build."
+      scan_build=ON
       ;;
       *)
       __UnprocessedCMakeArgs="${__UnprocessedCMakeArgs}${__UnprocessedCMakeArgs:+ }$i"
@@ -152,7 +158,16 @@ fi
 # Determine the current script directory
 __currentScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-cmake \
+cmake_command=cmake
+
+if [[ "$scan_build" == "ON" ]]; then
+    export CCC_CC=$CC
+    export CCC_CXX=$CXX
+    export SCAN_BUILD_COMMAND=$(command -v scan-build$desired_llvm_version)
+    cmake_command="$SCAN_BUILD_COMMAND $cmake_command"
+fi
+
+$cmake_command \
   -G "$generator" \
   "-DCMAKE_USER_MAKE_RULES_OVERRIDE=${__currentScriptDir}/$overridefile" \
   "-DCMAKE_AR=$llvm_ar" \
