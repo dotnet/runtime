@@ -1359,14 +1359,24 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         {
             // Insert op1 after '*pAfterStmt'
             *pAfterStmt = fgInsertStmtAfter(block, *pAfterStmt, gtNewStmt(src->gtOp.gtOp1, ilOffset));
-            // Evaluate the second thing using recursion.
-            return impAssignStructPtr(destAddr, src->gtOp.gtOp2, structHnd, curLevel, pAfterStmt, ilOffset, block);
+        }
+        else if (impTreeLast != nullptr)
+        {
+            // Do the side-effect as a separate statement.
+            impAppendTree(src->gtOp.gtOp1, curLevel, ilOffset);
         }
         else
         {
-            // We don't have an instruction to insert after, so use the entire comma expression as our rhs.
-            asgType = impNormStructType(structHnd);
+            // In this case we have neither been given a statement to insert after, nor are we
+            // in the importer where we can append the side effect.
+            // Instead, we're going to sink the assignment below the COMMA.
+            src->gtOp.gtOp2 =
+                impAssignStructPtr(destAddr, src->gtOp.gtOp2, structHnd, curLevel, pAfterStmt, ilOffset, block);
+            return src;
         }
+
+        // Evaluate the second thing using recursion.
+        return impAssignStructPtr(destAddr, src->gtOp.gtOp2, structHnd, curLevel, pAfterStmt, ilOffset, block);
     }
     else if (src->IsLocal())
     {
