@@ -6,16 +6,16 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public class DefaultMemberAttributeTests
+    public class AssemblyCultureAttributeTests
     {
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        [InlineData("configuration")]
-        public void Ctor_String(string memberName)
+        [InlineData("Czech")]
+        public void Ctor_String(string culture)
         {
-            var attribute = new DefaultMemberAttribute(memberName);
-            Assert.Equal(memberName, attribute.MemberName);
+            var attribute = new AssemblyCultureAttribute(culture);
+            Assert.Equal(culture, attribute.Culture);
         }
     }
 }
