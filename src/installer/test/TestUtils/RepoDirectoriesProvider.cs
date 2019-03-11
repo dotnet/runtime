@@ -1,39 +1,21 @@
-using Microsoft.DotNet.Cli.Build;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.DotNet.Cli.Build.Framework;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class RepoDirectoriesProvider
     {
-        private string _repoRoot;
-        private string _artifacts;
-        private string _hostArtifacts;
-        private string _builtDotnet;
-        private string _nugetPackages;
-        private string _corehostPackages;
-        private string _dotnetSDK;
-
-        private string _targetRID;
-        private string _buildRID;
-        private string _buildArchitecture;
-        private string _mnaVersion;
-
-        public string BuildRID => _buildRID;
-        public string BuildArchitecture => _buildArchitecture;
-        public string TargetRID => _targetRID;
-        public string MicrosoftNETCoreAppVersion => _mnaVersion;
-        public string RepoRoot => _repoRoot;
-        public string Artifacts => _artifacts;
-        public string HostArtifacts => _hostArtifacts;
-        public string BuiltDotnet => _builtDotnet;
-        public string NugetPackages => _nugetPackages;
-        public string CorehostPackages => _corehostPackages;
-        public string DotnetSDK => _dotnetSDK;
+        public string BuildRID { get; }
+        public string BuildArchitecture { get; }
+        public string TargetRID { get; }
+        public string MicrosoftNETCoreAppVersion { get; }
+        public string RepoRoot { get; }
+        public string Artifacts { get; }
+        public string HostArtifacts { get; }
+        public string BuiltDotnet { get; }
+        public string NugetPackages { get; }
+        public string CorehostPackages { get; }
+        public string DotnetSDK { get; }
 
         public RepoDirectoriesProvider(
             string repoRoot = null,
@@ -44,32 +26,32 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string dotnetSdk = null,
             string microsoftNETCoreAppVersion = null)
         {
-            _repoRoot = repoRoot ?? GetRepoRootDirectory();
+            RepoRoot = repoRoot ?? GetRepoRootDirectory();
 
-            string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "bin");
+            string baseArtifactsFolder = artifacts ?? Path.Combine(RepoRoot, "bin");
 
-            _targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
-            _buildRID = Environment.GetEnvironmentVariable("BUILDRID");
-            _buildArchitecture = Environment.GetEnvironmentVariable("BUILD_ARCHITECTURE");
-            _mnaVersion = microsoftNETCoreAppVersion ?? Environment.GetEnvironmentVariable("MNA_VERSION");
+            TargetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
+            BuildRID = Environment.GetEnvironmentVariable("BUILDRID");
+            BuildArchitecture = Environment.GetEnvironmentVariable("BUILD_ARCHITECTURE");
+            MicrosoftNETCoreAppVersion = microsoftNETCoreAppVersion ?? Environment.GetEnvironmentVariable("MNA_VERSION");
 
             string configuration = Environment.GetEnvironmentVariable("BUILD_CONFIGURATION");
-            string osPlatformConfig = $"{_buildRID}.{configuration}";
+            string osPlatformConfig = $"{BuildRID}.{configuration}";
 
-            _dotnetSDK = dotnetSdk ?? Environment.GetEnvironmentVariable("DOTNET_SDK_PATH");
+            DotnetSDK = dotnetSdk ?? Environment.GetEnvironmentVariable("DOTNET_SDK_PATH");
 
-            if (!Directory.Exists(_dotnetSDK))
+            if (!Directory.Exists(DotnetSDK))
             {
                 throw new InvalidOperationException("ERROR: Test SDK folder not found.");
             }
 
-            _artifacts = Path.Combine(baseArtifactsFolder, osPlatformConfig);
-            _hostArtifacts = artifacts ?? Path.Combine(_artifacts, "corehost");
+            Artifacts = Path.Combine(baseArtifactsFolder, osPlatformConfig);
+            HostArtifacts = artifacts ?? Path.Combine(Artifacts, "corehost");
 
-            _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, "packages");
+            NugetPackages = nugetPackages ?? Path.Combine(RepoRoot, "packages");
 
-            _corehostPackages = corehostPackages ?? Path.Combine(_artifacts, "corehost");
-            _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", osPlatformConfig, "sharedFrameworkPublish");
+            CorehostPackages = corehostPackages ?? Path.Combine(Artifacts, "corehost");
+            BuiltDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", osPlatformConfig, "sharedFrameworkPublish");
         }
 
         private static string GetRepoRootDirectory()

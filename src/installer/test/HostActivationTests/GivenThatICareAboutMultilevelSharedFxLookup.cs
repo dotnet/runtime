@@ -1,6 +1,4 @@
-﻿using Microsoft.DotNet.Cli.Build.Framework;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -12,38 +10,33 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
         private const string SystemCollectionsImmutableFileVersion = "88.2.3.4";
         private const string SystemCollectionsImmutableAssemblyVersion = "88.0.1.2";
 
-        private RepoDirectoriesProvider RepoDirectories;
-        private TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture;
+        private readonly RepoDirectoriesProvider RepoDirectories;
+        private readonly TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture;
 
-        private string _currentWorkingDir;
-        private string _userDir;
-        private string _exeDir;
-        private string _regDir;
-        private string _cwdSharedFxBaseDir;
-        private string _cwdSharedUberFxBaseDir;
-        private string _userSharedFxBaseDir;
-        private string _userSharedUberFxBaseDir;
-        private string _exeSharedFxBaseDir;
-        private string _exeSharedUberFxBaseDir;
-        private string _regSharedFxBaseDir;
-        private string _regSharedUberFxBaseDir;
-        private string _builtSharedFxDir;
-        private string _builtSharedUberFxDir;
+        private readonly string _currentWorkingDir;
+        private readonly string _userDir;
+        private readonly string _exeDir;
+        private readonly string _regDir;
+        private readonly string _cwdSharedFxBaseDir;
+        private readonly string _cwdSharedUberFxBaseDir;
+        private readonly string _userSharedFxBaseDir;
+        private readonly string _userSharedUberFxBaseDir;
+        private readonly string _exeSharedFxBaseDir;
+        private readonly string _exeSharedUberFxBaseDir;
+        private readonly string _regSharedFxBaseDir;
+        private readonly string _regSharedUberFxBaseDir;
+        private readonly string _builtSharedFxDir;
+        private readonly string _builtSharedUberFxDir;
 
-        private string _cwdSelectedMessage;
-        private string _userSelectedMessage;
-        private string _exeSelectedMessage;
-        private string _regSelectedMessage;
+        private readonly string _exeSelectedMessage;
+        private readonly string _regSelectedMessage;
 
-        private string _cwdFoundUberFxMessage;
-        private string _userFoundUberFxMessage;
-        private string _exeFoundUberFxMessage;
-        private string _regFoundUberFxMessage;
+        private readonly string _exeFoundUberFxMessage;
 
-        private string _sharedFxVersion;
-        private string _multilevelDir;
-        private string _builtDotnet;
-        private string _hostPolicyDllName;
+        private readonly string _sharedFxVersion;
+        private readonly string _multilevelDir;
+        private readonly string _builtDotnet;
+        private readonly string _hostPolicyDllName;
 
         public GivenThatICareAboutMultilevelSharedFxLookup()
         {
@@ -89,7 +82,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             SharedFramework.CopyDirectory(_builtDotnet, _exeDir);
 
             //Copy dotnet to self-registered directory
-            File.Copy(Path.Combine(_builtDotnet, $"dotnet{Constants.ExeSuffix}"), Path.Combine(_regDir, $"dotnet{Constants.ExeSuffix}"), true);
+            File.Copy(
+                Path.Combine(_builtDotnet, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet")),
+                Path.Combine(_regDir, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet")),
+                true);
 
             // Restore and build SharedFxLookupPortableApp from exe dir
             PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("SharedFxLookupPortableApp", RepoDirectories)
@@ -107,15 +103,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Trace messages used to identify from which folder the framework was picked
             _hostPolicyDllName = Path.GetFileName(fixture.TestProject.HostPolicyDll);
-            _cwdSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_cwdSharedFxBaseDir}";
-            _userSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_userSharedFxBaseDir}";
             _exeSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_exeSharedFxBaseDir}";
             _regSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_regSharedFxBaseDir}";
 
-            _cwdFoundUberFxMessage = $"Chose FX version [{_cwdSharedUberFxBaseDir}";
-            _userFoundUberFxMessage = $"Chose FX version [{_userSharedUberFxBaseDir}";
             _exeFoundUberFxMessage = $"Chose FX version [{_exeSharedUberFxBaseDir}";
-            _regFoundUberFxMessage = $"Chose FX version [{_regSharedUberFxBaseDir}";
         }
 
         public void Dispose()
@@ -376,41 +367,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.3")
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy3");
-        }
-
-        static private JObject GetAdditionalFramework(string fxName, string fxVersion, bool? applyPatches, int? rollForwardOnNoCandidateFx)
-        {
-            var jobject = new JObject(new JProperty("name", fxName));
-
-            if (fxVersion != null)
-            {
-                jobject.Add(new JProperty("version", fxVersion));
-            }
-
-            if (applyPatches.HasValue)
-            {
-                jobject.Add(new JProperty("applyPatches", applyPatches.Value));
-            }
-
-            if (rollForwardOnNoCandidateFx.HasValue)
-            {
-                jobject.Add(new JProperty("rollForwardOnNoCandidateFx", rollForwardOnNoCandidateFx));
-            }
-
-            return jobject;
-        }
-
-        static private string CreateAStore(TestProjectFixture testProjectFixture)
-        {
-            var storeoutputDirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "store");
-            if (!Directory.Exists(storeoutputDirectory))
-            {
-                Directory.CreateDirectory(storeoutputDirectory);
-            }
-
-            testProjectFixture.StoreProject(outputDirectory: storeoutputDirectory);
-
-            return storeoutputDirectory;
         }
     }
 }

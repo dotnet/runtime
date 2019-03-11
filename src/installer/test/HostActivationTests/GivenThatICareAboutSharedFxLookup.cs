@@ -1,5 +1,4 @@
-﻿using Microsoft.DotNet.Cli.Build.Framework;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,38 +12,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
         private const string SystemCollectionsImmutableFileVersion = "88.2.3.4";
         private const string SystemCollectionsImmutableAssemblyVersion = "88.0.1.2";
 
-        private RepoDirectoriesProvider RepoDirectories;
-        private TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture;
+        private readonly RepoDirectoriesProvider RepoDirectories;
+        private readonly TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture;
 
-        private string _currentWorkingDir;
-        private string _userDir;
-        private string _executableDir;
-        private string _globalDir;
-        private string _cwdSharedFxBaseDir;
-        private string _cwdSharedUberFxBaseDir;
-        private string _userSharedFxBaseDir;
-        private string _userSharedUberFxBaseDir;
-        private string _exeSharedFxBaseDir;
-        private string _exeSharedUberFxBaseDir;
-        private string _globalSharedFxBaseDir;
-        private string _globalSharedUberFxBaseDir;
-        private string _builtSharedFxDir;
-        private string _builtSharedUberFxDir;
+        private readonly string _currentWorkingDir;
+        private readonly string _userDir;
+        private readonly string _executableDir;
+        private readonly string _globalDir;
+        private readonly string _cwdSharedFxBaseDir;
+        private readonly string _cwdSharedUberFxBaseDir;
+        private readonly string _userSharedFxBaseDir;
+        private readonly string _userSharedUberFxBaseDir;
+        private readonly string _exeSharedFxBaseDir;
+        private readonly string _exeSharedUberFxBaseDir;
+        private readonly string _globalSharedFxBaseDir;
+        private readonly string _globalSharedUberFxBaseDir;
+        private readonly string _builtSharedFxDir;
+        private readonly string _builtSharedUberFxDir;
 
-        private string _cwdSelectedMessage;
-        private string _userSelectedMessage;
-        private string _exeSelectedMessage;
-        private string _globalSelectedMessage;
+        private readonly string _exeSelectedMessage;
 
-        private string _cwdFoundUberFxMessage;
-        private string _userFoundUberFxMessage;
-        private string _exeFoundUberFxMessage;
-        private string _globalFoundUberFxMessage;
+        private readonly string _exeFoundUberFxMessage;
 
-        private string _sharedFxVersion;
-        private string _baseDir;
-        private string _builtDotnet;
-        private string _hostPolicyDllName;
+        private readonly string _sharedFxVersion;
+        private readonly string _baseDir;
+        private readonly string _builtDotnet;
+        private readonly string _hostPolicyDllName;
 
         public GivenThatICareAboutSharedFxLookup()
         {
@@ -90,7 +83,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
             SharedFramework.CopyDirectory(_builtDotnet, _executableDir);
 
             //Copy dotnet to global directory
-            File.Copy(Path.Combine(_builtDotnet, $"dotnet{Constants.ExeSuffix}"), Path.Combine(_globalDir, $"dotnet{Constants.ExeSuffix}"), true);
+            File.Copy(
+                Path.Combine(_builtDotnet, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet")),
+                Path.Combine(_globalDir, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet")),
+                true);
 
             // Restore and build SharedFxLookupPortableApp from exe dir
             PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("SharedFxLookupPortableApp", RepoDirectories)
@@ -108,15 +104,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
 
             // Trace messages used to identify from which folder the framework was picked
             _hostPolicyDllName = Path.GetFileName(fixture.TestProject.HostPolicyDll);
-            _cwdSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_cwdSharedFxBaseDir}";
-            _userSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_userSharedFxBaseDir}";
             _exeSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_exeSharedFxBaseDir}";
-            _globalSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_globalSharedFxBaseDir}";
 
-            _cwdFoundUberFxMessage = $"Chose FX version [{_cwdSharedUberFxBaseDir}";
-            _userFoundUberFxMessage = $"Chose FX version [{_userSharedUberFxBaseDir}";
             _exeFoundUberFxMessage = $"Chose FX version [{_exeSharedUberFxBaseDir}";
-            _globalFoundUberFxMessage = $"Chose FX version [{_globalSharedUberFxBaseDir}";
         }
 
         public void Dispose()
@@ -785,8 +775,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
 
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
 
-            var additionalfxs = new JArray();
-            additionalfxs.Add(GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.0", applyPatches: false, rollForwardOnNoCandidateFx: 0));
+            var additionalfxs = new JArray
+            {
+                GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.0", applyPatches: false, rollForwardOnNoCandidateFx: 0)
+            };
             SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true, frameworks: additionalfxs);
 
             // Add versions in the exe folders
@@ -824,8 +816,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
 
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
 
-            var additionalfxs = new JArray();
-            additionalfxs.Add(GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.1", applyPatches: false, rollForwardOnNoCandidateFx: 1));
+            var additionalfxs = new JArray
+            {
+                GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.1", applyPatches: false, rollForwardOnNoCandidateFx: 1)
+            };
             SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true, frameworks: additionalfxs);
 
             // Add versions in the exe folders
@@ -869,8 +863,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
 
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
 
-            var additionalfxs = new JArray();
-            additionalfxs.Add(GetAdditionalFramework("Microsoft.UberFramework", "7777.0.0", null, null));
+            var additionalfxs = new JArray
+            {
+                GetAdditionalFramework("Microsoft.UberFramework", "7777.0.0", null, null)
+            };
             // Specify Uber as additional fx so we find NetCoreApp 9999.1.1 and then need to do a re-try for 9999.5.5
             SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.1.1", null, null, frameworks: additionalfxs);
 
@@ -915,8 +911,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
 
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
 
-            var additionalfxs = new JArray();
-            additionalfxs.Add(GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.1", applyPatches: false, rollForwardOnNoCandidateFx: 1));
+            var additionalfxs = new JArray
+            {
+                GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.1", applyPatches: false, rollForwardOnNoCandidateFx: 1)
+            };
             SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true, frameworks: additionalfxs);
 
             // Add versions in the exe folders
@@ -1101,19 +1099,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.SharedFxLookup
             }
 
             return jobject;
-        }
-
-        static private string CreateAStore(TestProjectFixture testProjectFixture)
-        {
-            var storeoutputDirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "store");
-            if (!Directory.Exists(storeoutputDirectory))
-            {
-                Directory.CreateDirectory(storeoutputDirectory);
-            }
-
-            testProjectFixture.StoreProject(outputDirectory: storeoutputDirectory);
-
-            return storeoutputDirectory;
         }
     }
 }

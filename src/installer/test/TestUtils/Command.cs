@@ -14,8 +14,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 {
     public class Command
     {
-        private Process _process;
-
         private StringWriter _stdOutCapture;
         private StringWriter _stdErrCapture;
 
@@ -28,7 +26,12 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         private bool _running = false;
         private bool _quietBuildReporter = false;
 
-        public Process Process { get => _process; }
+        public Process Process { get; }
+
+        // Priority order of runnable suffixes to look for and run
+        private static readonly string[] RunnableSuffixes = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                                                         ? new string[] { ".exe", ".cmd", ".bat" }
+                                                         : new string[] { string.Empty };
 
         private Command(string executable, string args)
         {
@@ -39,7 +42,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 Arguments = args
             };
 
-            _process = new Process()
+            Process = new Process()
             {
                 StartInfo = psi
             };
@@ -64,7 +67,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         private static void ResolveExecutablePath(ref string executable, ref string args)
         {
-            foreach (string suffix in Constants.RunnableSuffixes)
+            foreach (string suffix in RunnableSuffixes)
             {
                 var fullExecutable = Path.GetFullPath(Path.Combine(
                                         AppContext.BaseDirectory, executable + suffix));
@@ -146,14 +149,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             foreach (var item in env)
             {
-                _process.StartInfo.Environment[item.Key] = item.Value;
+                Process.StartInfo.Environment[item.Key] = item.Value;
             }
             return this;
         }
 
         public Command Environment(string key, string value)
         {
-            _process.StartInfo.Environment[key] = value;
+            Process.StartInfo.Environment[key] = value;
             return this;
         }
 
@@ -173,36 +176,36 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             ThrowIfRunning();
             _running = true;
 
-            if (_process.StartInfo.RedirectStandardOutput)
+            if (Process.StartInfo.RedirectStandardOutput)
             {
-                _process.OutputDataReceived += (sender, args) =>
+                Process.OutputDataReceived += (sender, args) =>
                 {
                     ProcessData(args.Data, _stdOutCapture, _stdOutForward, _stdOutHandler);
                 };
             }
 
-            if (_process.StartInfo.RedirectStandardError)
+            if (Process.StartInfo.RedirectStandardError)
             {
-                _process.ErrorDataReceived += (sender, args) =>
+                Process.ErrorDataReceived += (sender, args) =>
                 {
                     ProcessData(args.Data, _stdErrCapture, _stdErrForward, _stdErrHandler);
                 };
             }
 
-            _process.EnableRaisingEvents = true;
+            Process.EnableRaisingEvents = true;
 
             ReportExecBegin();
 
-            _process.Start();
+            Process.Start();
 
-            if (_process.StartInfo.RedirectStandardOutput)
+            if (Process.StartInfo.RedirectStandardOutput)
             {
-                _process.BeginOutputReadLine();
+                Process.BeginOutputReadLine();
             }
 
-            if (_process.StartInfo.RedirectStandardError)
+            if (Process.StartInfo.RedirectStandardError)
             {
-                _process.BeginErrorReadLine();
+                Process.BeginErrorReadLine();
             }
 
             return this;
@@ -212,14 +215,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         {
             ReportExecWaitOnExit();
 
-            _process.WaitForExit();
+            Process.WaitForExit();
 
-            var exitCode = _process.ExitCode;
+            var exitCode = Process.ExitCode;
 
             ReportExecEnd(exitCode, fExpectedToFail);
 
             return new CommandResult(
-                _process.StartInfo,
+                Process.StartInfo,
                 exitCode,
                 _stdOutCapture?.GetStringBuilder()?.ToString(),
                 _stdErrCapture?.GetStringBuilder()?.ToString());
@@ -233,7 +236,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public Command WorkingDirectory(string projectDirectory)
         {
-            _process.StartInfo.WorkingDirectory = projectDirectory;
+            Process.StartInfo.WorkingDirectory = projectDirectory;
             return this;
         }
 
@@ -249,7 +252,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 userDir = "HOME";
             }
 
-            _process.StartInfo.Environment[userDir] = userprofile;
+            Process.StartInfo.Environment[userDir] = userprofile;
             return this;
         }
 
@@ -267,14 +270,14 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public Command EnvironmentVariable(string name, string value)
         {
-            _process.StartInfo.Environment[name] = value;
+            Process.StartInfo.Environment[name] = value;
             return this;
         }
 
         public Command CaptureStdOut()
         {
             ThrowIfRunning();
-            _process.StartInfo.RedirectStandardOutput = true;
+            Process.StartInfo.RedirectStandardOutput = true;
             _stdOutCapture = new StringWriter();
             return this;
         }
@@ -282,7 +285,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Command CaptureStdErr()
         {
             ThrowIfRunning();
-            _process.StartInfo.RedirectStandardError = true;
+            Process.StartInfo.RedirectStandardError = true;
             _stdErrCapture = new StringWriter();
             return this;
         }
@@ -290,7 +293,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Command ForwardStdOut(TextWriter to = null)
         {
             ThrowIfRunning();
-            _process.StartInfo.RedirectStandardOutput = true;
+            Process.StartInfo.RedirectStandardOutput = true;
             if (to == null)
             {
                 _stdOutForward = Reporter.Output.WriteLine;
@@ -305,7 +308,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Command ForwardStdErr(TextWriter to = null)
         {
             ThrowIfRunning();
-            _process.StartInfo.RedirectStandardError = true;
+            Process.StartInfo.RedirectStandardError = true;
             if (to == null)
             {
                 _stdErrForward = Reporter.Error.WriteLine;
@@ -320,7 +323,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Command OnOutputLine(Action<string> handler)
         {
             ThrowIfRunning();
-            _process.StartInfo.RedirectStandardOutput = true;
+            Process.StartInfo.RedirectStandardOutput = true;
             if (_stdOutHandler != null)
             {
                 throw new InvalidOperationException("Already handling stdout!");
@@ -332,7 +335,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public Command OnErrorLine(Action<string> handler)
         {
             ThrowIfRunning();
-            _process.StartInfo.RedirectStandardError = true;
+            Process.StartInfo.RedirectStandardError = true;
             if (_stdErrHandler != null)
             {
                 throw new InvalidOperationException("Already handling stderr!");
@@ -359,7 +362,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         {
             if (!_quietBuildReporter)
             {
-                BuildReporter.BeginSection("EXEC", FormatProcessInfo(_process.StartInfo, includeWorkingDirectory: false));
+                BuildReporter.BeginSection("EXEC", FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: false));
             }
         }
 
@@ -367,7 +370,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         {
             if (!_quietBuildReporter)
             {
-                BuildReporter.SectionComment("EXEC", $"Waiting for process {_process.Id} to exit...");
+                BuildReporter.SectionComment("EXEC", $"Waiting for process {Process.Id} to exit...");
             }
         }
 
@@ -383,7 +386,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                     msgExpectedToFail = "failed as expected and ";
                 }
 
-                var message = $"{FormatProcessInfo(_process.StartInfo, includeWorkingDirectory: !success)} {msgExpectedToFail}exited with {exitCode}";
+                var message = $"{FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: !success)} {msgExpectedToFail}exited with {exitCode}";
 
                 BuildReporter.EndSection(
                     "EXEC",
