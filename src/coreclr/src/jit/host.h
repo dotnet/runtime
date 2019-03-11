@@ -35,6 +35,7 @@ void gcDump_logf(const char* fmt, ...);
 
 void logf(unsigned level, const char* fmt, ...);
 
+ANALYZER_NORETURN
 extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line);
 
 #undef assert
