@@ -61,6 +61,7 @@ usage()
     echo "-msbuildonunsupportedplatform - build managed binaries even if distro is not officially supported."
     echo "-numproc - set the number of build processes."
     echo "-portablebuild - pass -portablebuild=false to force a non-portable build."
+    echo "-staticanalyzer - build with clang static analyzer enabled."
     exit 1
 }
 
@@ -276,11 +277,15 @@ build_native()
         # Regenerate the CMake solution
 
         if [[ $__GccBuild == 0 ]]; then
-            echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion \"$__ClangMinorVersion\" $platformArch $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
-            "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion "$__ClangMinorVersion" $platformArch $__BuildType $__CodeCoverage $generator "$extraCmakeArguments" "$__cmakeargs"
+            scan_build=
+            if [[ $__StaticAnalyzer == 1 ]]; then
+                scan_build=scan-build
+            fi
+            echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion \"$__ClangMinorVersion\" $platformArch $__BuildType $__CodeCoverage $scan_build $generator $extraCmakeArguments $__cmakeargs"
+            source "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion "$__ClangMinorVersion" $platformArch $__BuildType $__CodeCoverage $scan_build $generator "$extraCmakeArguments" "$__cmakeargs"
         else
             echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-gcc.sh\" \"$__ProjectRoot\" $__GccMajorVersion \"$__GccMinorVersion\" $platformArch $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
-            "$__ProjectRoot/src/pal/tools/gen-buildsys-gcc.sh" "$__ProjectRoot" "$__GccMajorVersion" "$__CGccMinorVersion" $platformArch $__BuildType $__CodeCoverage $generator "$extraCmakeArguments" "$__cmakeargs"
+            source "$__ProjectRoot/src/pal/tools/gen-buildsys-gcc.sh" "$__ProjectRoot" "$__GccMajorVersion" "$__CGccMinorVersion" $platformArch $__BuildType $__CodeCoverage $generator "$extraCmakeArguments" "$__cmakeargs"
         fi
         popd
     fi
@@ -298,6 +303,10 @@ build_native()
 
     # Check that the makefiles were created.
     pushd "$intermediatesForBuild"
+
+    if [ $__StaticAnalyzer == 1 ]; then
+        buildTool="$SCAN_BUILD_COMMAND $buildTool"
+    fi
 
     echo "Executing $buildTool install -j $__NumProc"
 
@@ -649,6 +658,7 @@ __BuildManagedTools=1
 __SkipRestoreArg=""
 __SignTypeArg=""
 __OfficialBuildIdArg=""
+__StaticAnalyzer=0
 
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
@@ -935,6 +945,10 @@ while :; do
         -officialbuildid=*)
             __Id=$(echo $1| cut -d'=' -f 2)
             __OfficialBuildIdArg="/p:OfficialBuildId=$__Id"
+            ;;
+
+        -staticanalyzer)
+            __StaticAnalyzer=1
             ;;
 
         --)
