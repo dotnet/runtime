@@ -1078,7 +1078,7 @@ namespace System.Diagnostics.Tests
             {
                 Assert.NotEmpty(processes);
             }
-            catch (TrueException)
+            catch (NotEmptyException)
             {
                 throw new TrueException(PrintProcesses(), false);
             }
