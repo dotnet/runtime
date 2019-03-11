@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Globalization;
-using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text
 {
@@ -74,7 +71,7 @@ namespace System.Text
     // generally executes faster.
     //
 
-    public abstract class Encoding : ICloneable
+    public abstract partial class Encoding : ICloneable
     {
         // For netcore we use UTF8 as default encoding since ANSI isn't available
         private static readonly UTF8Encoding.UTF8EncodingSealed s_defaultEncoding  = new UTF8Encoding.UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: false);
@@ -559,12 +556,15 @@ namespace System.Text
             return newEncoding;
         }
 
-
         public bool IsReadOnly
         {
             get
             {
                 return (_isReadOnly);
+            }
+            private protected set
+            {
+                _isReadOnly = value;
             }
         }
 
@@ -666,16 +666,6 @@ namespace System.Text
             }
         }
 
-        // For NLS Encodings, workhorse takes an encoder (may be null)
-        // Always validate parameters before calling internal version, which will only assert.
-        internal virtual unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
-        {
-            Debug.Assert(chars != null);
-            Debug.Assert(count >= 0);
-
-            return GetByteCount(chars, count);
-        }
-
         // Returns a byte array containing the encoded representation of the given
         // character array.
         //
@@ -770,14 +760,6 @@ namespace System.Text
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
             return GetBytes(s.ToCharArray(), charIndex, charCount, bytes, byteIndex);
-        }
-
-        // This is our internal workhorse
-        // Always validate parameters before calling internal version, which will only assert.
-        internal virtual unsafe int GetBytes(char* chars, int charCount,
-                                                byte* bytes, int byteCount, EncoderNLS encoder)
-        {
-            return GetBytes(chars, charCount, bytes, byteCount);
         }
 
         // We expect this to be the workhorse for NLS Encodings, but for existing
@@ -898,13 +880,6 @@ namespace System.Text
             }
         }
 
-        // This is our internal workhorse
-        // Always validate parameters before calling internal version, which will only assert.
-        internal virtual unsafe int GetCharCount(byte* bytes, int count, DecoderNLS decoder)
-        {
-            return GetCharCount(bytes, count);
-        }
-
         // Returns a character array containing the decoded representation of a
         // given byte array.
         //
@@ -1010,15 +985,6 @@ namespace System.Text
                 return GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length);
             }
         }
-
-        // This is our internal workhorse
-        // Always validate parameters before calling internal version, which will only assert.
-        internal virtual unsafe int GetChars(byte* bytes, int byteCount,
-                                                char* chars, int charCount, DecoderNLS decoder)
-        {
-            return GetChars(bytes, byteCount, chars, charCount);
-        }
-
 
         [CLSCompliant(false)]
         public unsafe string GetString(byte* bytes, int byteCount)
@@ -1236,6 +1202,12 @@ namespace System.Text
 
             // If we didn't throw, we are in convert and have to remember our flushing
             encoder.ClearMustFlush();
+        }
+
+        [StackTraceHidden]
+        internal static void ThrowConversionOverflow()
+        {
+            throw new ArgumentException(SR.Argument_ConversionOverflow);
         }
 
         internal void ThrowCharsOverflow()

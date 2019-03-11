@@ -862,6 +862,28 @@
         }
     },
     {
+        "name": "System.Text.Encoding.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Text.Tests.EncoderConvert2.EncoderASCIIConvertMixedASCIIUnicodeCharArrayPartial",
+                    "reason": "https://github.com/dotnet/coreclr/issues/23020"
+                },
+                {
+                    "name": "System.Text.Tests.EncoderConvert2.EncoderUTF8ConvertMixedASCIIUnicodeCharArrayPartial",
+                    "reason": "https://github.com/dotnet/coreclr/issues/23020"
+                },
+                {
+                    "name": "System.Text.Tests.EncoderConvert2.EncoderUTF8ConvertUnicodeCharArrayPartial",
+                    "reason": "https://github.com/dotnet/coreclr/issues/23020"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.Text.RegularExpressions.Tests",
         "enabled": true,
         "exclusions": {
