@@ -127,14 +127,16 @@ bool resolve_fxr_path(const pal::string_t& root_path, pal::string_t* out_dotnet_
     }
     else
     {
-        // Check default installation root as fallback
-        if (!pal::get_default_installation_dir(&default_install_location))
+        if (pal::get_dotnet_self_registered_dir(&default_install_location) || pal::get_default_installation_dir(&default_install_location))
+        {
+            trace::info(_X("Using global installation location [%s] as runtime location."), default_install_location.c_str());
+            out_dotnet_root->assign(default_install_location);
+        }
+        else
         {
             trace::error(_X("A fatal error occurred, the default install location cannot be obtained."));
             return false;
         }
-        trace::info(_X("Using default installation location [%s] as runtime location."), default_install_location.c_str());
-        out_dotnet_root->assign(default_install_location);
     }
 
     fxr_dir = *out_dotnet_root;
@@ -144,12 +146,16 @@ bool resolve_fxr_path(const pal::string_t& root_path, pal::string_t* out_dotnet_
     {
         if (default_install_location.empty())
         {
+            pal::get_dotnet_self_registered_dir(&default_install_location);
+        }
+        if (default_install_location.empty())
+        {
             pal::get_default_installation_dir(&default_install_location);
         }
 
         trace::error(_X("A fatal error occurred. The required library %s could not be found.\n"
             "If this is a self-contained application, that library should exist in [%s].\n"
-            "If this is a framework-dependent application, install the runtime in the default location [%s] or use the %s environment variable to specify the runtime location."),
+            "If this is a framework-dependent application, install the runtime in the global location [%s] or use the %s environment variable to specify the runtime location."),
             LIBFXR_NAME,
             root_path.c_str(),
             default_install_location.c_str(),

@@ -194,13 +194,19 @@ bool is_executable(const pal::string_t& file_path)
     return ((st.st_mode & S_IEXEC) != 0);
 }
 
- bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
+bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
 {
     // No support for global directories in Unix.
     return false;
 }
 
- bool pal::get_default_installation_dir(pal::string_t* recv)
+bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
+{
+    // No support for global directories in Unix.
+    return false;
+}
+
+bool pal::get_default_installation_dir(pal::string_t* recv)
 {
 #if defined(__APPLE__)
      recv->assign(_X("/usr/local/share/dotnet"));
