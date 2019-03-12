@@ -7,13 +7,13 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
+namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public class GivenThatICareAboutNativeHostApis : IClassFixture<GivenThatICareAboutNativeHostApis.SharedTestState>
+    public class NativeHostApis : IClassFixture<NativeHostApis.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
-        public GivenThatICareAboutNativeHostApis(SharedTestState fixture)
+        public NativeHostApis(SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
         [Fact]
         public void Muxer_activation_of_Publish_Output_Portable_DLL_hostfxr_get_native_search_directories_Succeeds()
         {
-            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+            var fixture = sharedTestState.HostApiInvokerAppFixture.Copy();
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
@@ -37,12 +37,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("hostfxr_get_native_search_directories:Success")
-                .And
-                .HaveStdOutContaining("hostfxr_get_native_search_directories buffer:[" + dotnet.GreatestVersionSharedFxPath);
+                .Should().Pass()
+                .And.HaveStdOutContaining("hostfxr_get_native_search_directories:Success")
+                .And.HaveStdOutContaining("hostfxr_get_native_search_directories buffer:[" + dotnet.GreatestVersionSharedFxPath);
         }
 
         // This test also validates that hostfxr_set_error_writer captures errors
@@ -50,14 +47,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
         [Fact]
         public void Hostfxr_get_native_search_directories_invalid_buffer()
         {
-            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+            var fixture = sharedTestState.HostApiInvokerAppFixture.Copy();
 
             fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "Test_hostfxr_get_native_search_directories_invalid_buffer")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
+                .Should().Pass()
                 .And.HaveStdOutContaining($"hostfxr reported errors:")
                 .And.HaveStdOutContaining("hostfxr_get_native_search_directories received an invalid argument.");
         }
@@ -67,8 +63,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
         [Fact]
         public void Muxer_hostfxr_get_native_search_directories_with_invalid_deps()
         {
-            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
-            var appFixture = sharedTestState.PreviouslyPublishedAndRestoredPortableAppProjectFixture.Copy();
+            var fixture = sharedTestState.HostApiInvokerAppFixture.Copy();
+            var appFixture = sharedTestState.PortableAppFixture.Copy();
             var dotnet = fixture.BuiltDotnet;
 
             // Corrupt the .deps.json by appending } to it (malformed json)
@@ -88,8 +84,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
+                .Should().Pass()
                 .And.HaveStdOutContaining("hostfxr_get_native_search_directories:Fail[2147516555]") // StatusCode::ResolverInitFailure
                 .And.HaveStdOutContaining("hostfxr reported errors:")
                 .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{appFixture.TestProject.DepsJson}]: * Line 1, Column 2 Syntax error: Malformed token")
@@ -99,7 +94,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
         [Fact]
         public void Breadcrumb_thread_finishes_when_app_closes_normally()
         {
-            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableAppProjectFixture.Copy();
+            var fixture = sharedTestState.PortableAppFixture.Copy();
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
@@ -109,18 +104,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Hello World")
-                .And
-                .HaveStdErrContaining("Waiting for breadcrumb thread to exit...");
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdErrContaining("Waiting for breadcrumb thread to exit...");
         }
 
         [Fact]
         public void Breadcrumb_thread_does_not_finish_when_app_has_unhandled_exception()
         {
-            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableAppWithExceptionProjectFixture.Copy();
+            var fixture = sharedTestState.PortableAppWithExceptionFixture.Copy();
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
@@ -130,15 +122,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining("Unhandled Exception: System.Exception: Goodbye World")
-                .And
+                .Should().Fail()
+                .And.HaveStdErrContaining("Unhandled Exception: System.Exception: Goodbye World")
                 // The breadcrumb thread does not wait since destructors are not called when an exception is thrown.
                 // However, destructors will be called when the caller (such as a custom host) is compiled with SEH Exceptions (/EHa) and has a try\catch.
                 // Todo: add a native host test app so we can verify this behavior.
-                .NotHaveStdErrContaining("Waiting for breadcrumb thread to exit...");
+                .And.NotHaveStdErrContaining("Waiting for breadcrumb thread to exit...");
         }
 
         private class SdkResolutionFixture
@@ -161,7 +150,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
 
             public SdkResolutionFixture(SharedTestState state)
             {
-                _fixture = state.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+                _fixture = state.HostApiInvokerAppFixture.Copy();
 
                 Directory.CreateDirectory(WorkingDir);
 
@@ -216,12 +205,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("hostfxr_get_available_sdks:Success")
-                .And
-                .HaveStdOutContaining($"hostfxr_get_available_sdks sdks:[{expectedList}]");
+                .Should().Pass()
+                .And.HaveStdOutContaining("hostfxr_get_available_sdks:Success")
+                .And.HaveStdOutContaining($"hostfxr_get_available_sdks sdks:[{expectedList}]");
         }
 
         [Fact]
@@ -242,12 +228,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("hostfxr_get_available_sdks:Success")
-                .And
-                .HaveStdOutContaining($"hostfxr_get_available_sdks sdks:[{expectedList}]");
+                .Should().Pass()
+                .And.HaveStdOutContaining("hostfxr_get_available_sdks:Success")
+                .And.HaveStdOutContaining($"hostfxr_get_available_sdks sdks:[{expectedList}]");
         }
 
         [Fact]
@@ -266,12 +249,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("hostfxr_resolve_sdk2:Success")
-                .And
-                .HaveStdOutContaining($"hostfxr_resolve_sdk2 data:[{expectedData}]");
+                .Should().Pass()
+                .And.HaveStdOutContaining("hostfxr_resolve_sdk2:Success")
+                .And.HaveStdOutContaining($"hostfxr_resolve_sdk2 data:[{expectedData}]");
         }
 
         [Fact]
@@ -290,12 +270,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("hostfxr_resolve_sdk2:Success")
-                .And
-                .HaveStdOutContaining($"hostfxr_resolve_sdk2 data:[{expectedData}]");
+                .Should().Pass()
+                .And.HaveStdOutContaining("hostfxr_resolve_sdk2:Success")
+                .And.HaveStdOutContaining($"hostfxr_resolve_sdk2 data:[{expectedData}]");
         }
 
         [Fact]
@@ -318,75 +295,70 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("hostfxr_resolve_sdk2:Success")
-                .And
-                .HaveStdOutContaining($"hostfxr_resolve_sdk2 data:[{expectedData}]");
+                .Should().Pass()
+                .And.HaveStdOutContaining("hostfxr_resolve_sdk2:Success")
+                .And.HaveStdOutContaining($"hostfxr_resolve_sdk2 data:[{expectedData}]");
         }
 
         [Fact]
         public void Hostfxr_corehost_set_error_writer_test()
         {
-            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+            var fixture = sharedTestState.HostApiInvokerAppFixture.Copy();
 
             fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "Test_hostfxr_set_error_writer")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass();
+                .Should().Pass();
         }
 
         [Fact]
         public void Hostpolicy_corehost_set_error_writer_test()
         {
-            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+            var fixture = sharedTestState.HostApiInvokerAppFixture.Copy();
 
             fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "Test_corehost_set_error_writer")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass();
+                .Should().Pass();
         }
 
         public class SharedTestState : IDisposable
         {
-            public TestProjectFixture PreviouslyPublishedAndRestoredPortableApiTestProjectFixture { get; set; }
-            public TestProjectFixture PreviouslyPublishedAndRestoredPortableAppProjectFixture { get; set; }
-            public TestProjectFixture PreviouslyPublishedAndRestoredPortableAppWithExceptionProjectFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
+            public TestProjectFixture HostApiInvokerAppFixture { get; }
+            public TestProjectFixture PortableAppFixture { get; }
+            public TestProjectFixture PortableAppWithExceptionFixture { get; }
+            public RepoDirectoriesProvider RepoDirectories { get; }
 
-            public string BreadcrumbLocation { get; set; }
+            public string BreadcrumbLocation { get; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
 
-                PreviouslyPublishedAndRestoredPortableApiTestProjectFixture = new TestProjectFixture("HostApiInvokerApp", RepoDirectories)
+                HostApiInvokerAppFixture = new TestProjectFixture("HostApiInvokerApp", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .BuildProject();
 
-                PreviouslyPublishedAndRestoredPortableAppProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
+                PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .PublishProject();
 
-                PreviouslyPublishedAndRestoredPortableAppWithExceptionProjectFixture = new TestProjectFixture("PortableAppWithException", RepoDirectories)
+                PortableAppWithExceptionFixture = new TestProjectFixture("PortableAppWithException", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .PublishProject();
 
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     BreadcrumbLocation = Path.Combine(
-                        PreviouslyPublishedAndRestoredPortableAppWithExceptionProjectFixture.TestProject.OutputDirectory,
+                        PortableAppWithExceptionFixture.TestProject.OutputDirectory,
                         "opt",
                         "corebreadcrumbs");
                     Directory.CreateDirectory(BreadcrumbLocation);
 
                     // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it next to the app dll.
-                    var fixture = PreviouslyPublishedAndRestoredPortableApiTestProjectFixture;
+                    var fixture = HostApiInvokerAppFixture;
                     var hostfxr = Path.Combine(
                         fixture.BuiltDotnet.GreatestVersionHostFxrPath,
                         RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
@@ -399,9 +371,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
 
             public void Dispose()
             {
-                PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Dispose();
-                PreviouslyPublishedAndRestoredPortableAppProjectFixture.Dispose();
-                PreviouslyPublishedAndRestoredPortableAppWithExceptionProjectFixture.Dispose();
+                HostApiInvokerAppFixture.Dispose();
+                PortableAppFixture.Dispose();
+                PortableAppWithExceptionFixture.Dispose();
             }
         }
     }

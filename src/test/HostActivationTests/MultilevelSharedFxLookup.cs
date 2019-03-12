@@ -3,15 +3,15 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLookup
+namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public partial class GivenThatICareAboutMultilevelSharedFxLookup : IDisposable
+    public partial class MultilevelSharedFxLookup : IDisposable
     {
         private const string SystemCollectionsImmutableFileVersion = "88.2.3.4";
         private const string SystemCollectionsImmutableAssemblyVersion = "88.0.1.2";
 
         private readonly RepoDirectoriesProvider RepoDirectories;
-        private readonly TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture;
+        private readonly TestProjectFixture SharedFxLookupPortableAppFixture;
 
         private readonly string _currentWorkingDir;
         private readonly string _userDir;
@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
         private readonly string _builtDotnet;
         private readonly string _hostPolicyDllName;
 
-        public GivenThatICareAboutMultilevelSharedFxLookup()
+        public MultilevelSharedFxLookup()
         {
             // From the artifacts dir, it's possible to find where the sharedFrameworkPublish folder is. We need
             // to locate it because we'll copy its contents into other folders
@@ -88,10 +88,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 true);
 
             // Restore and build SharedFxLookupPortableApp from exe dir
-            PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("SharedFxLookupPortableApp", RepoDirectories)
+            SharedFxLookupPortableAppFixture = new TestProjectFixture("SharedFxLookupPortableApp", RepoDirectories)
                 .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture;
+            var fixture = SharedFxLookupPortableAppFixture;
 
             // The actual framework version can be obtained from the built fixture. We'll use it to
             // locate the builtSharedFxDir from which we can get the files contained in the version folder
@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
         public void Dispose()
         {
-            PreviouslyBuiltAndRestoredPortableTestProjectFixture.Dispose();
+            SharedFxLookupPortableAppFixture.Dispose();
 
             if (!TestProject.PreserveTestRuns())
             {
@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 return;
             }
 
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = SharedFxLookupPortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -156,10 +156,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.0"));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.0"));
 
             // Add a dummy version in the user dir
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _userSharedFxBaseDir, "9999.0.0");
@@ -179,10 +177,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.0"));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.0"));
 
             // Add a dummy version in the cwd dir
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _cwdSharedFxBaseDir, "9999.0.0");
@@ -202,10 +198,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.0"));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.0"));
 
             // Add version in the exe dir
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0");
@@ -225,10 +219,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0"));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0"));
 
             // Verify we have the expected runtime versions
             dotnet.Exec("--list-runtimes")
@@ -240,10 +232,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0");
+                .Should().Pass()
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0");
         }
 
         [Fact]
@@ -255,7 +245,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 return;
             }
 
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = SharedFxLookupPortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -280,10 +270,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1"));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1"));
 
             // Version: 9999.0.0-dummy1 (through --fx-version arg)
             // Cwd: empty
@@ -300,10 +288,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining("It was not possible to find any compatible framework version");
+                .Should().Fail()
+                .And.HaveStdErrContaining("It was not possible to find any compatible framework version");
 
             // Version: 9999.0.0 (through --fx-version arg)
             // Cwd: empty
@@ -320,10 +306,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.2"));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.2"));
 
             // Version: 9999.0.0 (through --fx-version arg)
             // Cwd: empty
@@ -340,10 +324,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0"));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0"));
 
             // Verify we have the expected runtime versions
             dotnet.Exec("--list-runtimes")
@@ -355,18 +337,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0")
-                .And
-                .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy2")
-                .And
-                .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.2")
-                .And
-                .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.3")
-                .And
-                .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy3");
+                .Should().Pass()
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0")
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy2")
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.2")
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.3")
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy3");
         }
     }
 }
