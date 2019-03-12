@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Data.SqlTypes;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -1755,13 +1754,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
        private static void TestXEventsStreaming(string connectionString)
         {   
-           while (!Debugger.IsAttached)
-           {
-               Console.WriteLine("Waiting for debugger to attach");               
-               Console.WriteLine( Process.GetCurrentProcess().Id); 
-               Thread.Sleep(2000);
-           }
-           Console.WriteLine("Debugger attached");
             string sessionName = "xeventStreamTest";
             SetupXevent(connectionString, sessionName);
             Task.Factory.StartNew(() =>
