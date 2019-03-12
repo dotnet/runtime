@@ -4393,7 +4393,9 @@ mono_class_init_internal (MonoClass *klass)
 		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic Type Definition failed to init"))
 			goto leave;
 
+		mono_loader_lock ();
 		mono_class_setup_interface_id_internal (klass);
+		mono_loader_unlock ();
 	}
 
 	if (klass->parent && !klass->parent->inited)
