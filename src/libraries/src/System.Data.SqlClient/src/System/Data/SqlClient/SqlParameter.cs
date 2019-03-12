@@ -53,8 +53,8 @@ namespace System.Data.SqlClient
                 UnicodeEncoding encoding = s_defaultEncoding;
                 if (encoding is null)
                 {
-                    encoding = new UnicodeEncoding(false, false); ;
-                    Interlocked.CompareExchange(ref s_defaultEncoding, encoding, null);
+                    encoding = new UnicodeEncoding(false, false);
+                    encoding = Interlocked.CompareExchange(ref s_defaultEncoding, encoding, null) ?? encoding;
                 }
                 return encoding;
             }
