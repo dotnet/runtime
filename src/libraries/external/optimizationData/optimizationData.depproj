@@ -6,7 +6,7 @@
 
     <CoreFxOptimizationDataPackageId>optimization.windows_nt-x64.IBC.CoreFx</CoreFxOptimizationDataPackageId>
     <CoreFxOptimizationDataPackageId Condition="'$(IBCTarget)'=='Linux'">optimization.linux-x64.IBC.CoreFx</CoreFxOptimizationDataPackageId>
-    <CoreFxOptimizationDataVersion>$(optimizationwindowsntx64IBCCoreFxPackageVersion)</CoreFxOptimizationDataVersion>
+    <CoreFxOptimizationDataVersion>$(optimizationwindows_ntx64IBCCoreFxPackageVersion)</CoreFxOptimizationDataVersion>
   </PropertyGroup>
   <ItemGroup>
     <!-- IBC data -->
