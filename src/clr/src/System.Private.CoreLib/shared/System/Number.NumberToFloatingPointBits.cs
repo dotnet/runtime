@@ -336,6 +336,8 @@ namespace System
             Debug.Assert(number.Scale <= FloatingPointMaxExponent);
             Debug.Assert(number.Scale >= FloatingPointMinExponent);
 
+            Debug.Assert(number.DigitsCount != 0);
+
             // The input is of the form 0.Mantissa x 10^Exponent, where 'Mantissa' are
             // the decimal digits of the mantissa and 'Exponent' is the decimal exponent.
             // We decompose the mantissa into two parts: an integer part and a fractional
@@ -362,11 +364,6 @@ namespace System
             // we can rely on it to produce the correct result when both inputs are exact.
 
             byte* src = number.GetDigitsPointer();
-
-            if (totalDigits == 0)
-            {
-                return info.ZeroBits;
-            }
 
             if ((info.DenormalMantissaBits == 23) && (totalDigits <= 7) && (fastExponent <= 10))
             {
