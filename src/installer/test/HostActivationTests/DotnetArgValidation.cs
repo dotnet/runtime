@@ -1,21 +1,14 @@
-﻿using FluentAssertions;
-using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.DotNet.Cli.Build.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
+namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public class GivenThatICareAboutDotnetArgValidationScenarios : IClassFixture<GivenThatICareAboutDotnetArgValidationScenarios.SharedTestState>
+    public class DotnetArgValidation : IClassFixture<DotnetArgValidation.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
-        public GivenThatICareAboutDotnetArgValidationScenarios(GivenThatICareAboutDotnetArgValidationScenarios.SharedTestState fixture)
+        public DotnetArgValidation(DotnetArgValidation.SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
@@ -23,7 +16,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
         [Fact]
         public void Muxer_Exec_With_Missing_App_Assembly_Fails()
         {
-            var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -34,16 +27,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
+                .Should().Fail()
+                .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
 
         [Fact]
         public void Muxer_Exec_With_Missing_App_Assembly_And_Bad_Extension_Fails()
         {
-            var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -54,16 +45,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
+                .Should().Fail()
+                .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
 
         [Fact]
         public void Muxer_Exec_With_Bad_Extension_Fails()
         {
-            var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -77,16 +66,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining($"dotnet exec needs a managed .dll or .exe extension. The application specified was '{assemblyName}'");
+                .Should().Fail()
+                .And.HaveStdErrContaining($"dotnet exec needs a managed .dll or .exe extension. The application specified was '{assemblyName}'");
         }
 
         [Fact]
         public void Detect_Missing_Argument_Value()
         {
-            var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = sharedTestState.PortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -95,35 +82,33 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining($"Failed to parse supported options or their values:");
+                .Should().Fail()
+                .And.HaveStdErrContaining($"Failed to parse supported options or their values:");
         }
 
         // Return a non-exisitent path that contains a mix of / and \
         private string GetNonexistentAndUnnormalizedPath()
         {
-            return Path.Combine(sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture.SdkDotnet.BinPath, @"x\y/");
+            return Path.Combine(sharedTestState.PortableAppFixture.SdkDotnet.BinPath, @"x\y/");
         }
 
         public class SharedTestState : IDisposable
         {
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
-            public TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture { get; set; }
+            public RepoDirectoriesProvider RepoDirectories { get; }
+            public TestProjectFixture PortableAppFixture { get; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
 
-                PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
+                PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .BuildProject();
             }
 
             public void Dispose()
             {
-                PreviouslyBuiltAndRestoredPortableTestProjectFixture.Dispose();
+                PortableAppFixture.Dispose();
             }
         }
     }

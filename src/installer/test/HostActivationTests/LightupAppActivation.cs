@@ -3,41 +3,34 @@
 
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using Xunit;
-using FluentAssertions;
-using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.DotNet.Cli.Build.Framework;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
+namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public class GivenThatICareAboutLightupAppActivation : IClassFixture<GivenThatICareAboutLightupAppActivation.SharedTestState>, IDisposable
+    public class LightupAppActivation : IClassFixture<LightupAppActivation.SharedTestState>, IDisposable
     {
         private SharedTestState sharedTestState;
 
         private const string SystemCollectionsImmutableFileVersion = "88.2.3.4";
         private const string SystemCollectionsImmutableAssemblyVersion = "88.0.1.2";
 
-        private string _currentWorkingDir;
-        private string _builtDotnet;
-        private string _builtSharedFxDir;
-        private string _builtSharedUberFxDir;
-        private string _fxBaseDir;
-        private string _uberFxBaseDir;
+        private readonly string _currentWorkingDir;
+        private readonly string _builtSharedFxDir;
+        private readonly string _builtSharedUberFxDir;
+        private readonly string _fxBaseDir;
+        private readonly string _uberFxBaseDir;
 
-        private TestProjectFixture PreviouslyGlobalBuiltAndRestoredLightupAppTestProjectFixture { get; set; }
+        private TestProjectFixture GlobalLightupClientFixture;
 
-        public GivenThatICareAboutLightupAppActivation(GivenThatICareAboutLightupAppActivation.SharedTestState fixture)
+        public LightupAppActivation(LightupAppActivation.SharedTestState fixture)
         {
             sharedTestState = fixture;
 
             // From the artifacts dir, it's possible to find where the sharedFrameworkPublish folder is. We need
             // to locate it because we'll copy its contents into other folders
             string artifactsDir = Environment.GetEnvironmentVariable("TEST_ARTIFACTS");
-            _builtDotnet = Path.Combine(artifactsDir, "sharedFrameworkPublish");
+            string builtDotnet = Path.Combine(artifactsDir, "sharedFrameworkPublish");
 
             // The dotnetLightupSharedFxLookup dir will contain some folders and files that will be necessary to perform the tests
             string sharedLookupDir = Path.Combine(artifactsDir, "dotnetLightupSharedFxLookup");
@@ -45,23 +38,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
             _fxBaseDir = Path.Combine(_currentWorkingDir, "shared", "Microsoft.NETCore.App");
             _uberFxBaseDir = Path.Combine(_currentWorkingDir, "shared", "Microsoft.UberFramework");
 
-            SharedFramework.CopyDirectory(_builtDotnet, _currentWorkingDir);
+            SharedFramework.CopyDirectory(builtDotnet, _currentWorkingDir);
 
             var repoDirectories = new RepoDirectoriesProvider(builtDotnet: _currentWorkingDir);
-            PreviouslyGlobalBuiltAndRestoredLightupAppTestProjectFixture = new TestProjectFixture("LightupClient", repoDirectories)
+            GlobalLightupClientFixture = new TestProjectFixture("LightupClient", repoDirectories)
                 .EnsureRestored(sharedTestState.RepoDirectories.CorehostPackages)
                 .BuildProject();
 
-            string greatestVersionSharedFxPath = sharedTestState.PreviouslyBuiltAndRestoredLightupLibTestProjectFixture.BuiltDotnet.GreatestVersionSharedFxPath;
+            string greatestVersionSharedFxPath = sharedTestState.LightupLibFixture_Built.BuiltDotnet.GreatestVersionSharedFxPath;
             string sharedFxVersion = (new DirectoryInfo(greatestVersionSharedFxPath)).Name;
-            _builtSharedFxDir = Path.Combine(_builtDotnet, "shared", "Microsoft.NETCore.App", sharedFxVersion);
-            _builtSharedUberFxDir = Path.Combine(_builtDotnet, "shared", "Microsoft.UberFramework", sharedFxVersion);
+            _builtSharedFxDir = Path.Combine(builtDotnet, "shared", "Microsoft.NETCore.App", sharedFxVersion);
+            _builtSharedUberFxDir = Path.Combine(builtDotnet, "shared", "Microsoft.UberFramework", sharedFxVersion);
             SharedFramework.CreateUberFrameworkArtifacts(_builtSharedFxDir, _builtSharedUberFxDir, SystemCollectionsImmutableAssemblyVersion, SystemCollectionsImmutableFileVersion);
         }
 
         public void Dispose()
         {
-            PreviouslyGlobalBuiltAndRestoredLightupAppTestProjectFixture.Dispose();
+            GlobalLightupClientFixture.Dispose();
 
             if (!TestProject.PreserveTestRuns())
             {
@@ -74,10 +67,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
         [Fact]
         public void Muxer_activation_of_LightupApp_NoLightupLib_Fails()
         {
-            var fixtureLib = sharedTestState.PreviouslyBuiltAndRestoredLightupLibTestProjectFixture
+            var fixtureLib = sharedTestState.LightupLibFixture_Built
                 .Copy();
 
-            var fixtureApp = sharedTestState.PreviouslyBuiltAndRestoredLightupAppTestProjectFixture
+            var fixtureApp = sharedTestState.LightupClientFixture
                 .Copy();
 
             var dotnet = fixtureApp.BuiltDotnet;
@@ -88,10 +81,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining(
+                .Should().Fail()
+                .And.HaveStdErrContaining(
                     "Error:" + Environment.NewLine +
                     "  An assembly specified in the application dependencies manifest (LightupLib.deps.json) was not found:" + Environment.NewLine +
                     "    package: \'LightupLib\', version: \'1.0.0\'" + Environment.NewLine +
@@ -103,10 +94,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
         [Fact]
         public void Muxer_activation_of_LightupApp_WithLightupLib_Succeeds()
         {
-            var fixtureLib = sharedTestState.PreviouslyPublishedAndRestoredLightupLibTestProjectFixture
+            var fixtureLib = sharedTestState.LightupLibFixture_Published
                 .Copy();
 
-            var fixtureApp = sharedTestState.PreviouslyBuiltAndRestoredLightupAppTestProjectFixture
+            var fixtureApp = sharedTestState.LightupClientFixture
                 .Copy();
 
             var dotnet = fixtureApp.BuiltDotnet;
@@ -146,19 +137,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Hello LightupClient");
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello LightupClient");
         }
 
         [Fact]
         public void Muxer_activation_of_LightupApp_WithLightupLib_and_Roll_Backwards_From_Release_To_Release_Succeeds()
         {
-            var fixtureLib = sharedTestState.PreviouslyPublishedAndRestoredLightupLibTestProjectFixture
+            var fixtureLib = sharedTestState.LightupLibFixture_Published
                 .Copy();
 
-            var fixtureApp = PreviouslyGlobalBuiltAndRestoredLightupAppTestProjectFixture
+            var fixtureApp = GlobalLightupClientFixture
                 .Copy();
 
             var dotnet = fixtureApp.BuiltDotnet;
@@ -211,21 +200,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Hello LightupClient")
-                .And
-                .HaveStdErrContaining($"Using specified additional deps.json: '{selectedLightupPath}");
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello LightupClient")
+                .And.HaveStdErrContaining($"Using specified additional deps.json: '{selectedLightupPath}");
         }
 
         [Fact]
         public void Muxer_activation_of_LightupApp_WithLightupLib_and_Roll_Backwards_From_Prerelease_To_Release_Succeeds()
         {
-            var fixtureLib = sharedTestState.PreviouslyPublishedAndRestoredLightupLibTestProjectFixture
+            var fixtureLib = sharedTestState.LightupLibFixture_Published
                 .Copy();
 
-            var fixtureApp = PreviouslyGlobalBuiltAndRestoredLightupAppTestProjectFixture
+            var fixtureApp = GlobalLightupClientFixture
                 .Copy();
 
             var dotnet = fixtureApp.BuiltDotnet;
@@ -274,21 +260,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Hello LightupClient")
-                .And
-                .HaveStdErrContaining($"Using specified additional deps.json: '{selectedLightupPath}");
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello LightupClient")
+                .And.HaveStdErrContaining($"Using specified additional deps.json: '{selectedLightupPath}");
         }
 
         [Fact]
         public void Muxer_activation_of_LightupApp_WithLightupLib_and_Roll_Backwards_Fails()
         {
-            var fixtureLib = sharedTestState.PreviouslyPublishedAndRestoredLightupLibTestProjectFixture
+            var fixtureLib = sharedTestState.LightupLibFixture_Published
                 .Copy();
 
-            var fixtureApp = PreviouslyGlobalBuiltAndRestoredLightupAppTestProjectFixture
+            var fixtureApp = GlobalLightupClientFixture
                 .Copy();
 
             var dotnet = fixtureApp.BuiltDotnet;
@@ -329,10 +312,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining($"No additional deps directory less than or equal to [8888.0.1] found with same major and minor version.");
+                .Should().Fail()
+                .And.HaveStdErrContaining($"No additional deps directory less than or equal to [8888.0.1] found with same major and minor version.");
         }
 
         // Attempt to run the app without lightup deps.json specified but lightup library present in the expected 
@@ -340,10 +321,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
         [Fact]
         public void Muxer_activation_of_LightupApp_WithLightupLib_NoLightupDepsJson_Fails()
         {
-            var fixtureLib = sharedTestState.PreviouslyBuiltAndRestoredLightupLibTestProjectFixture
+            var fixtureLib = sharedTestState.LightupLibFixture_Built
                 .Copy();
 
-            var fixtureApp = sharedTestState.PreviouslyBuiltAndRestoredLightupAppTestProjectFixture
+            var fixtureApp = sharedTestState.LightupClientFixture
                 .Copy();
 
             var dotnet = fixtureApp.BuiltDotnet;
@@ -359,19 +340,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdOutContaining("Exception: Failed to load the lightup assembly!");
+                .Should().Fail()
+                .And.HaveStdOutContaining("Exception: Failed to load the lightup assembly!");
         }
 
         [Fact]
         public void Additional_Deps_Lightup_Folder_With_Bad_JsonFile()
         {
-            var fixture = PreviouslyGlobalBuiltAndRestoredLightupAppTestProjectFixture
+            var fixture = GlobalLightupClientFixture
                 .Copy();
 
-            var fixtureLib = sharedTestState.PreviouslyPublishedAndRestoredLightupLibTestProjectFixture
+            var fixtureLib = sharedTestState.LightupLibFixture_Published
                 .Copy();
 
             CopyLightupLib(fixture, fixtureLib);
@@ -400,19 +379,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining($"Error initializing the dependency resolver: An error occurred while parsing: {additionalDepsPath}");
+                .Should().Fail()
+                .And.HaveStdErrContaining($"Error initializing the dependency resolver: An error occurred while parsing: {additionalDepsPath}");
         }
 
         [Fact]
         public void SharedFx_With_Higher_Version_Wins_Against_Additional_Deps()
         {
-            var fixture = PreviouslyGlobalBuiltAndRestoredLightupAppTestProjectFixture
+            var fixture = GlobalLightupClientFixture
                 .Copy();
 
-            var fixtureLib = sharedTestState.PreviouslyPublishedAndRestoredLightupLibTestProjectFixture
+            var fixtureLib = sharedTestState.LightupLibFixture_Published
                 .Copy();
 
             CopyLightupLib(fixture, fixtureLib);
@@ -453,32 +430,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining($"Using specified additional deps.json: '{additionalDepsPath}'")
-                .And
-                .HaveStdErrContaining($"Adding tpa entry: {uberAssembly}")
-                .And
-                .HaveStdErrContaining($"Adding tpa entry: {appAssembly}")
-                .And
-                .HaveStdErrContaining($"Replacing deps entry [{appAssembly}")
-                .And
-                .HaveStdErrContaining($"with [{uberAssembly}, AssemblyVersion:{SystemCollectionsImmutableAssemblyVersion}, FileVersion:{SystemCollectionsImmutableFileVersion}]")
-                .And
+                .Should().Pass()
+                .And.HaveStdErrContaining($"Using specified additional deps.json: '{additionalDepsPath}'")
+                .And.HaveStdErrContaining($"Adding tpa entry: {uberAssembly}")
+                .And.HaveStdErrContaining($"Adding tpa entry: {appAssembly}")
+                .And.HaveStdErrContaining($"Replacing deps entry [{appAssembly}")
+                .And.HaveStdErrContaining($"with [{uberAssembly}, AssemblyVersion:{SystemCollectionsImmutableAssemblyVersion}, FileVersion:{SystemCollectionsImmutableFileVersion}]")
                 // Verify final selection in TRUSTED_PLATFORM_ASSEMBLIES
-                .HaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}")
-                .And
-                .NotHaveStdErrContaining($"{appAssembly}{Path.PathSeparator}");
+                .And.HaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}")
+                .And.NotHaveStdErrContaining($"{appAssembly}{Path.PathSeparator}");
         }
 
         [Fact]
         public void SharedFx_With_Lower_Version_Loses_Against_Additional_Deps()
         {
-            var fixture = PreviouslyGlobalBuiltAndRestoredLightupAppTestProjectFixture
+            var fixture = GlobalLightupClientFixture
                 .Copy();
 
-            var fixtureLib = sharedTestState.PreviouslyPublishedAndRestoredLightupLibTestProjectFixture
+            var fixtureLib = sharedTestState.LightupLibFixture_Published
                 .Copy();
 
             CopyLightupLib(fixture, fixtureLib);
@@ -520,17 +489,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining($"Using specified additional deps.json: '{additionalDepsPath}'")
-                .And
-                .HaveStdErrContaining($"Adding tpa entry: {appAssembly}, AssemblyVersion: 99.9.9.9, FileVersion: 98.9.9.9")
-                .And
+                .Should().Pass()
+                .And.HaveStdErrContaining($"Using specified additional deps.json: '{additionalDepsPath}'")
+                .And.HaveStdErrContaining($"Adding tpa entry: {appAssembly}, AssemblyVersion: 99.9.9.9, FileVersion: 98.9.9.9")
                 // Verify final selection in TRUSTED_PLATFORM_ASSEMBLIES
-                .HaveStdErrContaining($"{appAssembly}{Path.PathSeparator}")
-                .And
-                .NotHaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}");
+                .And.HaveStdErrContaining($"{appAssembly}{Path.PathSeparator}")
+                .And.NotHaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}");
         }
 
         private static void CreateLightupFolder(string customLightupPath, string version, string libDepsJson)
@@ -582,41 +546,35 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
 
         public class SharedTestState : IDisposable
         {
-            public TestProjectFixture PreviouslyBuiltAndRestoredLightupLibTestProjectFixture { get; set; }
-            public TestProjectFixture PreviouslyPublishedAndRestoredLightupLibTestProjectFixture { get; set; }
+            public TestProjectFixture LightupLibFixture_Built { get; }
+            public TestProjectFixture LightupLibFixture_Published { get; }
 
-            public TestProjectFixture PreviouslyBuiltAndRestoredLightupAppTestProjectFixture { get; set; }
-            public TestProjectFixture PreviouslyPublishedAndRestoredLightupAppTestProjectFixture { get; set; }
+            public TestProjectFixture LightupClientFixture { get; }
 
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
+            public RepoDirectoriesProvider RepoDirectories { get; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
 
-                PreviouslyBuiltAndRestoredLightupLibTestProjectFixture = new TestProjectFixture("LightupLib", RepoDirectories)
+                LightupLibFixture_Built = new TestProjectFixture("LightupLib", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .BuildProject();
 
-                PreviouslyPublishedAndRestoredLightupLibTestProjectFixture = new TestProjectFixture("LightupLib", RepoDirectories)
+                LightupLibFixture_Published = new TestProjectFixture("LightupLib", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .PublishProject();
 
-                PreviouslyBuiltAndRestoredLightupAppTestProjectFixture = new TestProjectFixture("LightupClient", RepoDirectories)
+                LightupClientFixture = new TestProjectFixture("LightupClient", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .BuildProject();
-
-                PreviouslyPublishedAndRestoredLightupAppTestProjectFixture = new TestProjectFixture("LightupClient", RepoDirectories)
-                    .EnsureRestored(RepoDirectories.CorehostPackages)
-                    .PublishProject();
             }
 
             public void Dispose()
             {
-                PreviouslyBuiltAndRestoredLightupLibTestProjectFixture.Dispose();
-                PreviouslyPublishedAndRestoredLightupLibTestProjectFixture.Dispose();
-                PreviouslyBuiltAndRestoredLightupAppTestProjectFixture.Dispose();
-                PreviouslyPublishedAndRestoredLightupAppTestProjectFixture.Dispose();
+                LightupLibFixture_Built.Dispose();
+                LightupLibFixture_Published.Dispose();
+                LightupClientFixture.Dispose();
             }
         }
     }

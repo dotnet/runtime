@@ -2,9 +2,9 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLookup
+namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public partial class GivenThatICareAboutMultilevelSharedFxLookup
+    public partial class MultilevelSharedFxLookup
     {
         [Fact]
         public void TPA_Version_Check_App_Wins()
@@ -24,15 +24,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
+                .Should().Pass()
                 // Verify final selection in TRUSTED_PLATFORM_ASSEMBLIES
-                .HaveStdErrContaining($"{appAssembly}{Path.PathSeparator}")
-                .And
-                .NotHaveStdErrContaining($"{netcoreAssembly}{Path.PathSeparator}")
-                .And
-                .NotHaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}");
+                .And.HaveStdErrContaining($"{appAssembly}{Path.PathSeparator}")
+                .And.NotHaveStdErrContaining($"{netcoreAssembly}{Path.PathSeparator}")
+                .And.NotHaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}");
         }
 
         [Theory]
@@ -58,17 +54,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, uberProductVersion))
-                .And
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, uberProductVersion))
                 // Verify final selection in TRUSTED_PLATFORM_ASSEMBLIES
-                .HaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}")
-                .And
-                .NotHaveStdErrContaining($"{netcoreAssembly}{Path.PathSeparator}")
-                .And
-                .NotHaveStdErrContaining($"{appAssembly}{Path.PathSeparator}");
+                .And.HaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}")
+                .And.NotHaveStdErrContaining($"{netcoreAssembly}{Path.PathSeparator}")
+                .And.NotHaveStdErrContaining($"{appAssembly}{Path.PathSeparator}");
         }
 
         [Fact]
@@ -89,21 +80,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
+                .Should().Pass()
                 // Verify final selection in TRUSTED_PLATFORM_ASSEMBLIES
-                .HaveStdErrContaining($"{netcoreAssembly}{Path.PathSeparator}")
-                .And
-                .NotHaveStdErrContaining($"{appAssembly}{Path.PathSeparator}")
-                .And
-                .NotHaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}");
+                .And.HaveStdErrContaining($"{netcoreAssembly}{Path.PathSeparator}")
+                .And.NotHaveStdErrContaining($"{appAssembly}{Path.PathSeparator}")
+                .And.NotHaveStdErrContaining($"{uberAssembly}{Path.PathSeparator}");
         }
 
         private TestProjectFixture ConfigureAppAndFrameworks(string appAssemblyVersion, string uberFxAssemblyVersion, string uberFxProductVersion, out string appAssembly, out string uberAssembly, out string netcoreAssembly)
         {
             const string fileVersion = "0.0.0.9";
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = SharedFxLookupPortableAppFixture
                 .Copy();
 
             if (!string.IsNullOrEmpty(uberFxAssemblyVersion))

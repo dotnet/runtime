@@ -1,17 +1,16 @@
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Microsoft.DotNet.InternalAbstractions;
-using Microsoft.Win32;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
+namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public class GivenThatICareAboutMultilevelSDKLookup : IDisposable
+    public class MultilevelSDKLookup : IDisposable
     {
-        private static IDictionary<string, string> s_DefaultEnvironment = new Dictionary<string, string>()
+        private static readonly IDictionary<string, string> s_DefaultEnvironment = new Dictionary<string, string>()
         {
             {"COREHOST_TRACE", "1" },
             // The SDK being used may be crossgen'd for a different architecture than we are building for.
@@ -20,26 +19,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
         };
 
         private RepoDirectoriesProvider RepoDirectories;
-        private TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture;
+        private TestProjectFixture PortableAppFixture;
 
-        private string _currentWorkingDir;
-        private string _userDir;
-        private string _exeDir;
-        private string _regDir;
-        private string _cwdSdkBaseDir;
-        private string _userSdkBaseDir;
-        private string _exeSdkBaseDir;
-        private string _regSdkBaseDir;
-        private string _cwdSelectedMessage;
-        private string _userSelectedMessage;
-        private string _exeSelectedMessage;
-        private string _regSelectedMessage;
-        private string _sdkDir;
-        private string _multilevelDir;
+        private readonly string _currentWorkingDir;
+        private readonly string _userDir;
+        private readonly string _exeDir;
+        private readonly string _regDir;
+        private readonly string _cwdSdkBaseDir;
+        private readonly string _userSdkBaseDir;
+        private readonly string _exeSdkBaseDir;
+        private readonly string _regSdkBaseDir;
+        private readonly string _exeSelectedMessage;
+        private readonly string _regSelectedMessage;
+        private readonly string _sdkDir;
+        private readonly string _multilevelDir;
 
         private const string _dotnetSdkDllMessageTerminator = "dotnet.dll]";
 
-        public GivenThatICareAboutMultilevelSDKLookup()
+        public MultilevelSDKLookup()
         {
             // From the artifacts dir, it's possible to find where the sharedFrameworkPublish folder is. We need
             // to locate it because we'll copy its contents into other folders
@@ -78,10 +75,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             Directory.CreateDirectory(_regSdkBaseDir);
 
             // Restore and build PortableApp from exe dir
-            PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
+            PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
                 .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture;
+            var fixture = PortableAppFixture;
 
             // Set a dummy framework version (9999.0.0) in the exe sharedFx location. We will
             // always pick the framework from this to avoid interference with the sharedFxLookup
@@ -104,15 +101,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             _sdkDir = Path.Combine(sdkBaseDir, greatestVersionSdk);
 
             // Trace messages used to identify from which folder the SDK was picked
-            _cwdSelectedMessage = $"Using dotnet SDK dll=[{_cwdSdkBaseDir}";
-            _userSelectedMessage = $"Using dotnet SDK dll=[{_userSdkBaseDir}";
             _exeSelectedMessage = $"Using dotnet SDK dll=[{_exeSdkBaseDir}";
             _regSelectedMessage = $"Using dotnet SDK dll=[{_regSdkBaseDir}";
         }
 
         public void Dispose()
         {
-            PreviouslyBuiltAndRestoredPortableTestProjectFixture.Dispose();
+            PortableAppFixture.Dispose();
 
             if (!TestProject.PreserveTestRuns())
             {
@@ -129,7 +124,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 return;
             }
 
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = PortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -152,10 +147,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
+                .Should().Fail()
+                .And.HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.4.1", "9999.3.4-dummy");
@@ -171,14 +164,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .WithUserProfile(_userDir)
                 .Environment(s_DefaultEnvironment)
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "1")
-                 .EnvironmentVariable("_DOTNET_TEST_SDK_SELF_REGISTERED_DIR", _regDir)
+                .EnvironmentVariable("_DOTNET_TEST_SDK_SELF_REGISTERED_DIR", _regDir)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
+                .Should().Fail()
+                .And.HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.3.3");
@@ -198,10 +189,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
+                .Should().Fail()
+                .And.HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.4");
@@ -221,10 +210,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.4", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.4", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.3.5-dummy");
@@ -244,10 +231,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.5-dummy", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.5-dummy", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.600");
@@ -267,10 +252,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.5-dummy", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.5-dummy", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.4-global-dummy");
@@ -290,10 +273,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.4-global-dummy", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.4-global-dummy", _dotnetSdkDllMessageTerminator));
 
             // Verify we have the expected SDK versions
             dotnet.Exec("--list-sdks")
@@ -304,22 +285,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .EnvironmentVariable("_DOTNET_TEST_SDK_SELF_REGISTERED_DIR", _regDir)
                 .CaptureStdOut()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("9999.3.4-dummy")
-                .And
-                .HaveStdOutContaining("9999.3.4-global-dummy")
-                .And
-                .HaveStdOutContaining("9999.4.1")
-                .And
-                .HaveStdOutContaining("9999.3.3")
-                .And
-                .HaveStdOutContaining("9999.3.4")
-                .And
-                .HaveStdOutContaining("9999.3.600")
-                .And
-                .HaveStdOutContaining("9999.3.5-dummy");
+                .Should().Pass()
+                .And.HaveStdOutContaining("9999.3.4-dummy")
+                .And.HaveStdOutContaining("9999.3.4-global-dummy")
+                .And.HaveStdOutContaining("9999.4.1")
+                .And.HaveStdOutContaining("9999.3.3")
+                .And.HaveStdOutContaining("9999.3.4")
+                .And.HaveStdOutContaining("9999.3.600")
+                .And.HaveStdOutContaining("9999.3.5-dummy");
         }
 
         [Fact]
@@ -331,7 +304,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 return;
             }
 
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = PortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -354,10 +327,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
+                .Should().Fail()
+                .And.HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.3.57", "9999.3.4-dummy");
@@ -377,10 +348,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
+                .Should().Fail()
+                .And.HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.300", "9999.7.304-global-dummy");
@@ -400,10 +369,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
+                .Should().Fail()
+                .And.HaveStdErrContaining("A compatible installed dotnet SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.3.304");
@@ -423,10 +390,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.304", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.304", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.399", "9999.3.399-dummy", "9999.3.400");
@@ -446,10 +411,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.399", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.399", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.2400", "9999.3.3004");
@@ -470,10 +433,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.399", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.399", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.3.304-global-dummy");
@@ -493,10 +454,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.304-global-dummy", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.3.304-global-dummy", _dotnetSdkDllMessageTerminator));
 
             // Verify we have the expected SDK versions
             dotnet.Exec("--list-sdks")
@@ -507,30 +466,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .EnvironmentVariable("_DOTNET_TEST_SDK_SELF_REGISTERED_DIR", _regDir)
                 .CaptureStdOut()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("9999.3.57")
-                .And
-                .HaveStdOutContaining("9999.3.4-dummy")
-                .And
-                .HaveStdOutContaining("9999.3.300")
-                .And
-                .HaveStdOutContaining("9999.7.304-global-dummy")
-                .And
-                .HaveStdOutContaining("9999.3.399")
-                .And
-                .HaveStdOutContaining("9999.3.399-dummy")
-                .And
-                .HaveStdOutContaining("9999.3.400")
-                .And
-                .HaveStdOutContaining("9999.3.2400")
-                .And
-                .HaveStdOutContaining("9999.3.3004")
-                .And
-                .HaveStdOutContaining("9999.3.304")
-                .And
-                .HaveStdOutContaining("9999.3.304-global-dummy");
+                .Should().Pass()
+                .And.HaveStdOutContaining("9999.3.57")
+                .And.HaveStdOutContaining("9999.3.4-dummy")
+                .And.HaveStdOutContaining("9999.3.300")
+                .And.HaveStdOutContaining("9999.7.304-global-dummy")
+                .And.HaveStdOutContaining("9999.3.399")
+                .And.HaveStdOutContaining("9999.3.399-dummy")
+                .And.HaveStdOutContaining("9999.3.400")
+                .And.HaveStdOutContaining("9999.3.2400")
+                .And.HaveStdOutContaining("9999.3.3004")
+                .And.HaveStdOutContaining("9999.3.304")
+                .And.HaveStdOutContaining("9999.3.304-global-dummy");
         }
 
         [Fact]
@@ -542,7 +489,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 return;
             }
 
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = PortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -565,10 +512,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.4");
@@ -588,10 +533,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
         }
 
         [Fact]
@@ -614,7 +557,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 return;
             }
 
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = PortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -662,10 +605,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                     .CaptureStdOut()
                     .CaptureStdErr()
                     .Execute()
-                    .Should()
-                    .Pass()
-                    .And
-                    .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
+                    .Should().Pass()
+                    .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
             }
             finally
             {
@@ -682,7 +623,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 return;
             }
 
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = PortableAppFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -705,10 +646,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.3-dummy", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.3-dummy", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.3");
@@ -728,10 +667,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.3", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.3", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_userSdkBaseDir, "9999.0.200");
@@ -753,10 +690,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.100", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.100", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.80");
@@ -776,10 +711,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.100", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.100", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.5500000");
@@ -799,10 +732,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.5500000", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.5500000", _dotnetSdkDllMessageTerminator));
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.52000000");
@@ -822,10 +753,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.52000000", _dotnetSdkDllMessageTerminator));
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_regSelectedMessage, "9999.0.52000000", _dotnetSdkDllMessageTerminator));
 
             // Verify we have the expected SDK versions
             dotnet.Exec("--list-sdks")
@@ -836,22 +765,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .EnvironmentVariable("_DOTNET_TEST_SDK_SELF_REGISTERED_DIR", _regDir)
                 .CaptureStdOut()
                 .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("9999.0.0")
-                .And
-                .HaveStdOutContaining("9999.0.3-dummy")
-                .And
-                .HaveStdOutContaining("9999.0.3")
-                .And
-                .HaveStdOutContaining("9999.0.100")
-                .And
-                .HaveStdOutContaining("9999.0.80")
-                .And
-                .HaveStdOutContaining("9999.0.5500000")
-                .And
-                .HaveStdOutContaining("9999.0.52000000");
+                .Should().Pass()
+                .And.HaveStdOutContaining("9999.0.0")
+                .And.HaveStdOutContaining("9999.0.3-dummy")
+                .And.HaveStdOutContaining("9999.0.3")
+                .And.HaveStdOutContaining("9999.0.100")
+                .And.HaveStdOutContaining("9999.0.80")
+                .And.HaveStdOutContaining("9999.0.5500000")
+                .And.HaveStdOutContaining("9999.0.52000000");
         }
 
         // This method adds a list of new sdk version folders in the specified
