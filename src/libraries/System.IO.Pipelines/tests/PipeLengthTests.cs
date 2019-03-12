@@ -126,6 +126,34 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task BufferSegmentsAreReused()
+        {
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            object oldSegment = result.Buffer.End.GetObject();
+
+            // This should return the first segment
+            _pipe.Reader.AdvanceTo(result.Buffer.End);
+
+            // One block remaining
+            Assert.Equal(0, _pipe.Length);
+
+            // This should use the segment that was returned
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            result = await _pipe.Reader.ReadAsync();
+            object newSegment = result.Buffer.End.GetObject();
+            _pipe.Reader.AdvanceTo(result.Buffer.End);
+
+            Assert.Same(oldSegment, newSegment);
+
+            Assert.Equal(0, _pipe.Length);
+        }
+
+        [Fact]
         public async Task PooledSegmentsDontAffectLastExaminedSegment()
         {
             _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
