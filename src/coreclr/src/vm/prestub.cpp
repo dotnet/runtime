@@ -1234,7 +1234,7 @@ void CreateInstantiatingILStubTargetSig(MethodDesc *pBaseMD,
 
     // Return type
     SigPointer pReturn = msig.GetReturnProps();
-    pReturn.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder, FALSE);
+    pReturn.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder);
 
 #ifndef _TARGET_X86_
     // The hidden context parameter
