@@ -25,8 +25,6 @@ include(../exe.cmake)
 
 add_definitions(-DFEATURE_APPHOST=1)
 
-install_library_and_symbols (apphost)
-
 # Disable manifest generation into the file .exe on Windows
 if(WIN32)
     set_property(TARGET ${PROJECT_NAME} PROPERTY 

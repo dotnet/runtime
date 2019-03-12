@@ -111,23 +111,12 @@ function(strip_symbols targetName outputFilename)
     endif(CLR_CMAKE_PLATFORM_UNIX)
 endfunction()
 
-function(install_library_and_symbols targetName)
-    strip_symbols(${targetName} strip_destination_file)
-
-    # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
-    # generator expression doesn't work correctly returning the wrong path and on
-    # the newer cmake versions the LOCATION property isn't supported anymore.
-    if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
-        set(install_source_file $<TARGET_FILE:${targetName}>)
-    else()
-        get_property(install_source_file TARGET ${targetName} PROPERTY LOCATION)
-    endif()
-
-    install(PROGRAMS ${install_source_file} DESTINATION .)
+function(install_symbols targetName destination_path)
     if(WIN32)
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION PDB)
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION ${destination_path})
     else()
-        install(FILES ${strip_destination_file} DESTINATION .)
+        strip_symbols(${targetName} strip_destination_file)
+        install(FILES ${strip_destination_file} DESTINATION ${destination_path})
     endif()
 endfunction()
 
