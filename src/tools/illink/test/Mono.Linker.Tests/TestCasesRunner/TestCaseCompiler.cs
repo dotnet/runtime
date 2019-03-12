@@ -202,7 +202,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return CompileCSharpAssemblyWithExternalCompiler (LocateCscExecutable (), options);
 		}
 
-		protected virtual NPath CompileCSharpAssemblyWithMsc(CompilerOptions options)
+		protected virtual NPath CompileCSharpAssemblyWithMcs(CompilerOptions options)
 		{
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 				CompileCSharpAssemblyWithExternalCompiler (LocateMcsExecutable (), options);
@@ -321,7 +321,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				return CompileCSharpAssemblyWithCsc (options);
 
 			if (options.CompilerToUse == "mcs")
-				return CompileCSharpAssemblyWithMsc (options);
+				return CompileCSharpAssemblyWithMcs (options);
 
 			throw new ArgumentException ($"Invalid compiler value `{options.CompilerToUse}`");
 		}

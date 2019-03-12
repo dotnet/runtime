@@ -414,7 +414,7 @@
     <Compile Include="TestFramework\CanCompileReferencesWithResourcesWithMcs.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithDebugPdbs.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithCsc.cs" />
-    <Compile Include="TestFramework\CanCompileTestCaseWithMsc.cs" />
+    <Compile Include="TestFramework\CanCompileTestCaseWithMcs.cs" />
     <Compile Include="TestFramework\CanSandboxDependenciesUsingType.cs" />
     <Compile Include="TestFramework\CanVerifyInterfacesOnTypesInAssembly.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileReferencesUsingTypes_LibSource1.cs" />

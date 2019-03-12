@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.TestFramework {
 
 	[KeptResource ("CanCompileTestCaseWithMcs.txt")]
 	[KeptMemberInAssembly ("library.dll", typeof (CanCompileTestCaseWithMcs_Lib), "Used()")]
-	class CanCompileTestCaseWithMsc {
+	class CanCompileTestCaseWithMcs {
 		static void Main ()
 		{
 #if VERIFY_DEFINE_WORKS
