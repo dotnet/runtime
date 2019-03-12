@@ -174,7 +174,7 @@ namespace System.Net.WebSockets
 
                 if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
                 {
-                    throw new WebSocketException(SR.Format(SR.net_WebSockets_Connect101Expected, (int) response.StatusCode));
+                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_Connect101Expected, (int) response.StatusCode));
                 }
 
                 // The Connection, Upgrade, and SecWebSocketAccept headers are required and with specific values.
@@ -227,7 +227,7 @@ namespace System.Net.WebSockets
                 {
                     throw;
                 }
-                throw new WebSocketException(SR.net_webstatus_ConnectFailure, exc);
+                throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, exc);
             }
             finally
             {
@@ -280,10 +280,10 @@ namespace System.Net.WebSockets
             string[] array = (string[])values;
             if (array.Length != 1 || !string.Equals(array[0], expectedValue, StringComparison.OrdinalIgnoreCase))
             {
-                throw new WebSocketException(SR.Format(SR.net_WebSockets_InvalidResponseHeader, name, string.Join(", ", array)));
+                throw new WebSocketException(WebSocketError.HeaderError, SR.Format(SR.net_WebSockets_InvalidResponseHeader, name, string.Join(", ", array)));
             }
         }
 
-        private static void ThrowConnectFailure() => throw new WebSocketException(SR.net_webstatus_ConnectFailure);
+        private static void ThrowConnectFailure() => throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure);
     }
 }
