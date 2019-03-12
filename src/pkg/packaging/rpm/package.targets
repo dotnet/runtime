@@ -113,6 +113,11 @@
           SkipUnchangedFiles="False"
           UseHardlinksIfPossible="False" />
 
+    <!--
+      Clean up dotnet symlink. Later build steps are confused and fail because the symlink points to
+      a path that doesn't exist on the build machine.
+    -->
+    <Delete Files="$(rpmLayoutUsrBinDir)dotnet" />
   </Target>
 
   <Target Name="GenerateHostFxrRpm">
