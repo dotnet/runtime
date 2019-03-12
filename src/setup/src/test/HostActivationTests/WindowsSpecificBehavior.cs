@@ -2,13 +2,13 @@
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.WindowsOsShims
+namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public class GivenThatICareAboutWindowsOsShims : IClassFixture<GivenThatICareAboutWindowsOsShims.SharedTestState>
+    public class WindowsSpecificBehavior : IClassFixture<WindowsSpecificBehavior.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
-        public GivenThatICareAboutWindowsOsShims(SharedTestState fixture)
+        public WindowsSpecificBehavior(SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.WindowsOsShims
                 return;
             }
 
-            TestProjectFixture portableAppFixture = sharedTestState.PortableTestWindowsOsShimsAppFixture.Copy();
+            TestProjectFixture portableAppFixture = sharedTestState.TestWindowsOsShimsAppFixture.Copy();
 
             portableAppFixture.BuiltDotnet.Exec(portableAppFixture.TestProject.AppDll)
                 .CaptureStdErr()
@@ -39,20 +39,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.WindowsOsShims
         {
             private static RepoDirectoriesProvider RepoDirectories { get; set; }
 
-            public TestProjectFixture PortableTestWindowsOsShimsAppFixture { get; set; }
+            public TestProjectFixture TestWindowsOsShimsAppFixture { get; set; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
 
-                PortableTestWindowsOsShimsAppFixture = new TestProjectFixture("TestWindowsOsShimsApp", RepoDirectories)
+                TestWindowsOsShimsAppFixture = new TestProjectFixture("TestWindowsOsShimsApp", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .PublishProject();
             }
 
             public void Dispose()
             {
-                PortableTestWindowsOsShimsAppFixture.Dispose();
+                TestWindowsOsShimsAppFixture.Dispose();
             }
         }
     }

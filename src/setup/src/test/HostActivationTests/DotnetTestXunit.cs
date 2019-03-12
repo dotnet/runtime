@@ -1,20 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Xunit;
-using Microsoft.DotNet.CoreSetup.Test;
-using System.Runtime.InteropServices;
+﻿using Microsoft.DotNet.CoreSetup.Test;
+using System;
 using System.IO;
+using Xunit;
 
 namespace Microsoft.DotNet.Tools.Publish.Tests
 {
-    public class GivenThatICareAboutDotnetTestXunitScenarios
+    public class DotnetTestXunit
     {
         private string DotnetTestXunitVersion => "1.0.0-rc2-192208-24";
         private RepoDirectoriesProvider RepoDirectories { get; set; }
 
-        public GivenThatICareAboutDotnetTestXunitScenarios()
+        public DotnetTestXunit()
         {
             RepoDirectories = new RepoDirectoriesProvider();
         }
@@ -67,12 +63,9 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute(fExpectedToFail:true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdOutContaining("Total: 2")
-                .And
-                .HaveStdOutContaining("Failed: 1");
+                .Should().Fail()
+                .And.HaveStdOutContaining("Total: 2")
+                .And.HaveStdOutContaining("Failed: 1");
         }
 
         private string FindDotnetTestXunitDll(RepoDirectoriesProvider repoDirectories, string dotnetTestXunitVersion)
