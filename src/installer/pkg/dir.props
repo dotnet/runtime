@@ -28,6 +28,37 @@
     <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
+
+    <RpmTemplatesDir>$(MSBuildThisFileDirectory)packaging/rpm/templates/</RpmTemplatesDir>
+
+    <DebtoolConsumerProjectName>dotnet-deb-tool-consumer.csproj</DebtoolConsumerProjectName>
+    <DebtoolConsumerProjectFile>$(MSBuildThisFileDirectory)deps/$(DebtoolConsumerProjectName)</DebtoolConsumerProjectFile>
+    <!--
+      Intermediate dir the debtool project is copied to. Use this as the working directory for
+      "dotnet deb-tool" commands, after depending on InitializeDotnetDebTool target.
+    -->
+    <DebtoolConsumerDeployDir>$(IntermediateOutputRootPath)$(DebtoolConsumerProjectName)/</DebtoolConsumerDeployDir>
+
+    <IsDebianBasedDistro
+      Condition="
+        $(PackageTargetRid.StartsWith('ubuntu')) or
+        $(PackageTargetRid.StartsWith('debian')) or 
+        $(PackageTargetRid.StartsWith('linuxmint'))">true</IsDebianBasedDistro>
+    <BuildDebPackage Condition="'$(IsDebianBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildDebPackage>
+
+    <IsRPMBasedDistro Condition="'$(InstallerExtension)' == '.rpm'">true</IsRPMBasedDistro>
+    <BuildRpmPackage Condition="'$(IsRPMBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildRpmPackage>
+
+    <!--
+      Some Debian and RPM packages only need to be built once for all supported distros, as the bits
+      are portable. By default, build these packages, but in the official build this can be turned
+      off to avoid producing redundant packages.
+    -->
+    <BuildDistroIndependentInstallers Condition="'$(BuildDistroIndependentInstallers)' == ''">true</BuildDistroIndependentInstallers>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageIndex Include="$(PackageIndexFile)" />
   </ItemGroup>

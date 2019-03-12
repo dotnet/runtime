@@ -5,10 +5,11 @@
 
   <PropertyGroup>
     <PackageTargets>
-        GenerateVersionBadge;
-        GenerateCompressedFiles;
-        GenerateNugetPackages;
-        GenerateInstallers;
+      GenerateVersionBadge;
+      GenerateCompressedFiles;
+      GenerateNugetPackages;
+      GenerateInstallers;
+      GenerateProjectInstallers;
     </PackageTargets>
   </PropertyGroup>
 
@@ -163,6 +164,11 @@
   <Target Name="GenerateInstallers" DependsOnTargets="InitPackage;$(InstallerDependsOn)" />
 
   <Target Name="GenerateCombinedInstallers" DependsOnTargets="InitPackage;GenerateBundles" />
+
+  <!-- Run the project-based installer creation infrastructure as well. -->
+  <Target Name="GenerateProjectInstallers">
+    <MSBuild Targets="GenerateInstallers" Projects="..\projects\installer.builds" />
+  </Target>
 
   <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'">
 

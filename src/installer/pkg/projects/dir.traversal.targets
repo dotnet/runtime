@@ -9,10 +9,17 @@
     use this to build runtime packages, for example.
   -->
   <Target Name="ExpandProjects"
-          BeforeTargets="Build">
+          BeforeTargets="Build;GenerateInstallers">
     <MSBuild Projects="@(ProjectProvider)" Targets="GetProjectsToBuild">
-      <Output TaskParameter="TargetOutputs" ItemName="Project" />
+      <Output TaskParameter="TargetOutputs" ItemName="_everyProject" />
     </MSBuild>
+
+    <!-- Filter to projects that apply to the current *.builds file. -->
+    <ItemGroup>
+      <Project
+        Include="@(_everyProject)"
+        Condition="'%(_everyProject.Phase)' == '$(BuildPhase)'" />
+    </ItemGroup>
   </Target>
 
   <!--
