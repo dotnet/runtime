@@ -128,7 +128,7 @@ jobs:
     displayName: Build_Linux_Arm64_Alpine37
     dockerImage: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917
     additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm64
-    portableBuild: true
+    portableBuild: false
     skipTests: true
     targetArchitecture: arm64
 

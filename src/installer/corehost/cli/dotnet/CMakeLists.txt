@@ -13,5 +13,3 @@ if(WIN32)
 endif()
 
 include(../exe.cmake)
-
-install_library_and_symbols (dotnet)

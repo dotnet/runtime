@@ -43,4 +43,5 @@ if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
     target_link_libraries(comhost Advapi32.lib Ole32.lib OleAut32.lib)
 endif()
 
-install_library_and_symbols (comhost)
+install(TARGETS comhost DESTINATION corehost)
+install_symbols(comhost corehost)
