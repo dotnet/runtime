@@ -1975,13 +1975,13 @@ namespace System
             number.CheckConsistency();
             double result;
 
-            if (number.Scale > DoubleMaxExponent)
-            {
-                result = double.PositiveInfinity;
-            }
-            else if (number.Scale < DoubleMinExponent)
+            if ((number.DigitsCount == 0) || (number.Scale < DoubleMinExponent))
             {
                 result = 0;
+            }
+            else if (number.Scale > DoubleMaxExponent)
+            {
+                result = double.PositiveInfinity;
             }
             else
             {
@@ -1997,13 +1997,13 @@ namespace System
             number.CheckConsistency();
             float result;
 
-            if (number.Scale > SingleMaxExponent)
-            {
-                result = float.PositiveInfinity;
-            }
-            else if (number.Scale < SingleMinExponent)
+            if ((number.DigitsCount == 0) || (number.Scale < SingleMinExponent))
             {
                 result = 0;
+            }
+            else if (number.Scale > SingleMaxExponent)
+            {
+                result = float.PositiveInfinity;
             }
             else
             {
