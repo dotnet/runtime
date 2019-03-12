@@ -6,6 +6,8 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -292,6 +294,81 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+        }
+
+        [Fact]
+        public void Framework_Dependent_AppHost_From_Global_Registry_Location_Succeeds()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return;
+            }
+
+            var fixture = sharedTestState.PortableAppFixture_Published
+                .Copy();
+
+            // Since SDK doesn't support building framework dependent apphost yet, emulate that behavior
+            // by creating the executable from apphost.exe
+            var appExe = fixture.TestProject.AppExe;
+            var appDllName = Path.GetFileName(fixture.TestProject.AppDll);
+
+            string hostExeName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost");
+            string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
+            string appDir = Path.GetDirectoryName(appExe);
+            string appDirHostExe = Path.Combine(appDir, hostExeName);
+
+            // Make a copy of apphost first, replace hash and overwrite app.exe, rather than
+            // overwrite app.exe and edit in place, because the file is opened as "write" for
+            // the replacement -- the test fails with ETXTBSY (exit code: 26) in Linux when
+            // executing a file opened in "write" mode.
+            File.Copy(builtAppHost, appDirHostExe, true);
+            using (var sha256 = SHA256.Create())
+            {
+                // Replace the hash with the managed DLL name.
+                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
+                var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
+                AppHostExtensions.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDllName), true);
+            }
+            File.Copy(appDirHostExe, appExe, true);
+
+            // Get the framework location that was built
+            string builtDotnet = fixture.BuiltDotnet.BinPath;
+
+            RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
+            RegistryKey interfaceKey = hkcu.CreateSubKey(@"Software\Classes\Interface");
+            string testKeyName = "_DOTNET_Test" + System.Diagnostics.Process.GetCurrentProcess().Id.ToString();
+            RegistryKey testKey = interfaceKey.CreateSubKey(testKeyName);
+            try
+            {
+                string architecture = fixture.CurrentRid.Split('-')[1];
+                RegistryKey dotnetLocationKey = testKey.CreateSubKey($@"Setup\InstalledVersions\{architecture}");
+                dotnetLocationKey.SetValue("InstallLocation", builtDotnet);
+
+                // Verify running with the default working directory
+                Command.Create(appExe)
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .EnvironmentVariable("_DOTNET_TEST_SDK_REGISTRY_PATH", testKey.Name)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("Hello World")
+                    .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+
+                // Verify running from within the working directory
+                Command.Create(appExe)
+                    .WorkingDirectory(fixture.TestProject.OutputDirectory)
+                    .EnvironmentVariable("_DOTNET_TEST_SDK_REGISTRY_PATH", testKey.Name)
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("Hello World")
+                    .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+            }
+            finally
+            {
+                interfaceKey.DeleteSubKeyTree(testKeyName);
+            }
         }
 
         private string MoveDepsJsonToSubdirectory(TestProjectFixture testProjectFixture)
