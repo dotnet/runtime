@@ -29,7 +29,10 @@
   -->
   <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
     <ItemGroup Condition="'$(SymbolFileExtension)' != ''">
-      <AdditionalLibPackageExcludes Include="%2A%2A\%2a$(SymbolFileExtension)" />
+      <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(SymbolFileExtension)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(CrossGenSymbolExtension)' != ''">
+      <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(CrossGenSymbolExtension)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -209,48 +212,18 @@
   </Target>
 
   <!--
-    Copy the files in the package's data/ dir to a layout directory. This is what the targeting pack
-    installer will place in the dotnet install dir.
-
-    This extracts from the nupkg (zip) directly. An alternative would be using the PackageFile
-    items, but there's some risk of handling TargetPath metadata differently than NuGet does. Using
-    the nupkg directly ensures results are identical.
-  -->
-  <Target Name="CreateTargetingPackLayout"
-          AfterTargets="CreatePackage"
-          Condition="'$(IsTargetingPack)' == 'true'">
-    <PropertyGroup>
-      <TargetingPackNupkgFile>$(PackageOutputPath)$(Id).$(PackageVersion).nupkg</TargetingPackNupkgFile>
-    </PropertyGroup>
-
-    <ZipFileGetEntries TargetArchive="$(TargetingPackNupkgFile)">
-      <Output TaskParameter="Entries" ItemName="TargetingPackNupkgEntries" />
-    </ZipFileGetEntries>
-
-    <ItemGroup>
-      <TargetingPackDataEntries
-        Include="@(TargetingPackNupkgEntries)"
-        Condition="
-          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('data/')) OR
-          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('ref/')) OR
-          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('runtimes/'))" />
-    </ItemGroup>
-
-    <ZipFileExtractToDirectory
-      SourceArchive="$(TargetingPackNupkgFile)"
-      DestinationDirectory="$(PackLayoutDir)packs/$(Id)/$(Version)/"
-      OverwriteDestination="true"
-      Include="@(TargetingPackDataEntries)" />
-  </Target>
-
-  <!--
     Get Project items: build the project, and build runtime packages if necessary. All projects in
     this directory are ProjectProviders.
   -->
   <Target Name="GetProjectsToBuild" Returns="@(Project)">
     <ItemGroup>
-      <Project Include="@(RuntimeProject)" Condition="'$(BuildRuntimePackages)' == 'true'" />
-      <Project Include="$(MSBuildProjectFullPath)" />
+      <!-- The pkg and src builds both build these projects. Add them to both phases. -->
+      <PkgSrcProject Include="@(RuntimeProject)" Condition="'$(BuildRuntimePackages)' == 'true'" />
+      <PkgSrcProject Include="$(MSBuildProjectFullPath)" />
+
+      <Project Include="@(PkgSrcProject)" Phase="pkg" />
+      <Project Include="@(PkgSrcProject)" Phase="src" />
+      <Project Include="@(InstallerPackageProject)" Phase="installer" />
     </ItemGroup>
   </Target>
 

@@ -5,12 +5,6 @@
   <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
   <UsingTask TaskName="BuildFPMToolPreReqs" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
 
-  <PropertyGroup>
-    <IsRPMBasedDistro Condition="'$(InstallerExtension)' == '.rpm'">true</IsRPMBasedDistro>
-    <BuildRpmPackage Condition="'$(IsRPMBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildRpmPackage>
-    <BuildRuntimeRpms>true</BuildRuntimeRpms>
-  </PropertyGroup>
-
   <Target Name="GenerateRpms"
           DependsOnTargets="TestFPMTool;BuildRpms;"
           Condition="'$(BuildRpmPackage)'=='true'" />
@@ -387,22 +381,4 @@
 
   </Target>
 
-  <Target Name="TestFPMTool">
-
-    <!-- run FPM  -->
-    <Exec Command="/usr/bin/env fpm -h" ContinueOnError="true">
-      <Output TaskParameter="ExitCode" PropertyName="FPMExitCode" />
-    </Exec>
-
-    <!-- Check if it returned 0 -->
-    <PropertyGroup>
-      <FPMPresent>false</FPMPresent>
-      <FPMPresent Condition=" '$(FPMExitCode)' == '0' ">true</FPMPresent>
-    </PropertyGroup>
-
-    <!-- Workaround for Jenkins machines that don't have the necessary packages https://github.com/dotnet/core-setup/issues/2260 -->
-    <Message Condition=" '$(FPMPresent)'  != 'true' "
-             Text="FPM tool Not found, RPM packages will not be built."
-             Importance="High" />
-  </Target>
 </Project>

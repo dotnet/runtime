@@ -3,6 +3,266 @@
     Shared targets specific to projects building 'Microsoft.*.App*' packages.
   -->
 
+  <UsingTask TaskName="BuildFPMToolPreReqs" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="GenerateJsonObjectString" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+
+  <Target Name="GenerateInstallers"
+          DependsOnTargets="
+            GenerateDeb;
+            GenerateRpm" />
+
+  <Target Name="GenerateDeb" DependsOnTargets="TestDebuild;CreateDeb" />
+  <Target Name="GenerateRpm" DependsOnTargets="TestFPMTool;CreateRpm" />
+
+  <!--
+    Create Debian package.
+  -->
+  <Target Name="CreateDeb"
+          DependsOnTargets="
+            InitializeDotnetDebTool;
+            CreateInstallerLayout;
+            GetDebInstallerJsonProperties"
+          Condition="'$(BuildDebPackage)' == 'true' AND '$(DebuildPresent)' == 'true'">
+    <PropertyGroup>
+      <ConfigJsonFile>$(LayoutDirectory)debian_config.json</ConfigJsonFile>
+      <DebIntermediatesDir>$(InstallerIntermediatesDir)out-deb</DebIntermediatesDir>
+
+      <DebToolArgs>-i $(LayoutDirectory)</DebToolArgs>
+      <DebToolArgs>$(DebToolArgs) -o $(DebIntermediatesDir)</DebToolArgs>
+      <DebToolArgs>$(DebToolArgs) -n $(VersionedInstallerName)</DebToolArgs>
+      <DebToolArgs>$(DebToolArgs) -v $(InstallerPackageVersion)</DebToolArgs>
+    </PropertyGroup>
+
+    <!-- Write the configuration JSON. -->
+    <GenerateJsonObjectString
+      Properties="@(CommonJsonProperty);@(DebJsonProperty)"
+      TargetFile="$(ConfigJsonFile)" />
+
+    <!-- Run deb tool in the directory of the consumer project. -->
+    <Exec
+      Command="$(DotnetToolCommand) deb-tool $(DebToolArgs)"
+      WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+
+    <!-- Copy package to output. -->
+    <ItemGroup>
+      <GeneratedDebFiles Include="$(DebIntermediatesDir)/*.deb" />
+    </ItemGroup>
+
+    <Error Text="@(GeneratedDebFiles->Count()) .deb files generated." Condition="'@(GeneratedDebFiles->Count())' != 1" />
+
+    <Copy SourceFiles="@(GeneratedDebFiles)"
+          DestinationFiles="$(InstallerFile)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+  </Target>
+
+  <Target Name="GetDebInstallerJsonProperties"
+          DependsOnTargets="GetCommonJsonProperties">
+    <ItemGroup>
+      <DebJsonProperty Include="debian_dependencies" Object="{}" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Create RPM package.
+  -->
+  <Target Name="CreateRpm"
+          DependsOnTargets="
+            CreateInstallerLayout;
+            GetRpmInstallerJsonProperties"
+          Condition="'$(BuildRpmPackage)' == 'true' AND '$(FPMPresent)' == 'true'">
+    <PropertyGroup>
+      <ConfigJsonFile>$(LayoutDirectory)rpm_config.json</ConfigJsonFile>
+      <RpmIntermediatesDir>$(InstallerIntermediatesDir)out-rpm</RpmIntermediatesDir>
+
+      <!-- Copyright, Changelog -->
+      <RpmTemplatesLayoutDir>$(LayoutDirectory)templates/</RpmTemplatesLayoutDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <RpmTemplateFile Include="$(RpmTemplatesDir)**/*" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(RpmTemplateFile)"
+      DestinationFiles="@(RpmTemplateFile->'$(RpmTemplatesLayoutDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <GenerateJsonObjectString
+      Properties="@(CommonJsonProperty);@(RpmJsonProperty)"
+      TargetFile="$(ConfigJsonFile)" />
+
+    <MakeDir Directories="$(RpmIntermediatesDir)" />
+
+    <!-- Call the task to build the pre-reqs (parameters, copyright, changelog) for calling the FPM tool -->
+    <BuildFPMToolPreReqs
+      InputDir="$(LayoutDirectory)"
+      OutputDir="$(RpmIntermediatesDir)"
+      PackageVersion="$(InstallerPackageVersion)"
+      ConfigJsonFile="$(ConfigJsonFile)">
+      <Output TaskParameter="FPMParameters" PropertyName="FPMCmdParameters" />
+    </BuildFPMToolPreReqs>
+
+    <Exec Command="fpm $(FPMCmdParameters)" WorkingDirectory="$(RpmIntermediatesDir)" />
+
+    <!-- Copy package to output -->
+    <ItemGroup>
+      <GeneratedRpmFiles Include="$(RpmIntermediatesDir)/*.rpm" />
+    </ItemGroup>
+
+    <Error Text="@(GeneratedRpmFiles->Count()) .rpm files generated." Condition="'@(GeneratedRpmFiles->Count())' != 1" />
+
+    <Copy SourceFiles="@(GeneratedRpmFiles)"
+          DestinationFiles="$(InstallerFile)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+  </Target>
+
+  <Target Name="GetRpmInstallerJsonProperties"
+          DependsOnTargets="GetCommonJsonProperties">
+    <ItemGroup>
+      <RpmJsonProperty Include="vendor" String=".NET Foundation" />
+      <RpmJsonProperty Include="install_doc" String="/usr/share/doc/$(VersionedInstallerName)/" />
+      <RpmJsonProperty Include="rpm_dependencies" Object="{}" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Create installer layout. Used for RPM or Debian package creation.
+  -->
+  <Target Name="CreateInstallerLayout"
+          DependsOnTargets="CopyFilesToLayout;FixLayoutPermissions" />
+
+  <Target Name="CopyFilesToLayout">
+    <PropertyGroup>
+      <LayoutDirectory>$(InstallerIntermediatesDir)/debianLayoutDirectory/</LayoutDirectory>
+      <LayoutAbsolute>$(LayoutDirectory)$</LayoutAbsolute>
+      <LayoutPackageRoot>$(LayoutDirectory)package_root</LayoutPackageRoot>
+      <LayoutSamples>$(LayoutDirectory)samples</LayoutSamples>
+      <LayoutDocs>$(LayoutDirectory)docs</LayoutDocs>
+    </PropertyGroup>
+
+    <RemoveDir Condition="Exists('$(InstallerIntermediatesDir)')" Directories="$(InstallerIntermediatesDir)" />
+    <MakeDir Directories="$(InstallerIntermediatesDir)" />
+
+    <!-- Create empty layout. -->
+    <RemoveDir Condition="Exists('$(LayoutDirectory)')" Directories="$(LayoutDirectory)" />
+    <MakeDir Directories="$(LayoutDirectory)" />
+    <MakeDir Directories="$(LayoutAbsolute)" />
+    <MakeDir Directories="$(LayoutPackageRoot)" />
+    <MakeDir Directories="$(LayoutSamples)" />
+    <MakeDir Directories="$(LayoutDocs)" />
+
+    <!-- Copy files to layout. -->
+    <ItemGroup>
+      <LayoutFiles Include="$(PackLayoutDir)/**/*" />
+    </ItemGroup>
+
+    <Error Text="No pack layout files found, expected > 0." Condition="@(LayoutFiles->Count()) == 0" />
+
+    <Copy
+      SourceFiles="@(LayoutFiles)"
+      DestinationFiles="@(LayoutFiles->'$(LayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <Target Name="FixLayoutPermissions"
+          Condition="'$(OSGroup)' != 'Windows_NT'">
+    <!-- Fix file permissions in the layout dir. -->
+    <!-- Reset everything to user readable/writeable and group and world readable. -->
+    <Exec Command='find "$(PackLayoutDir)" -type f -name "*" -exec chmod 644 {} \;' />
+    <!-- Generally, dylibs and sos have 'x'. -->
+    <Exec Command='find "$(PackLayoutDir)" -type f -name "*.dylib" -exec chmod 755 {} \;' />
+    <Exec Command='find "$(PackLayoutDir)" -type f -name "*.so" -exec chmod 755 {} \;' />
+    <!-- Executables (those without dots) are executable. -->
+    <Exec Command='find "$(PackLayoutDir)" -type f ! -name "*.*" -exec chmod 755 {} \;' />
+  </Target>
+
+  <!--
+    Get common JSON properties. Used in the configuration JSON for both RPM and Debian packages.
+  -->
+  <Target Name="GetCommonJsonProperties">
+    <PropertyGroup>
+      <FullLicenseText>$([System.IO.File]::ReadAllText('$(ProjectDir)LICENSE.TXT').Replace('%0A', '\n').Replace('"', '\"'))</FullLicenseText>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <JsonReleaseProperty Include="package_version" String="1.0.0.0" />
+      <JsonReleaseProperty Include="package_revision" String="$(InstallerPackageRelease)" />
+      <JsonReleaseProperty Include="urgency" String="low" />
+      <JsonReleaseProperty Include="changelog_message" String="https://github.com/dotnet/core/tree/master/release-notes" />
+
+      <JsonControlProperty Include="priority" String="standard" />
+      <JsonControlProperty Include="section" String="libs" />
+      <JsonControlProperty Include="architecture" String="amd64" />
+
+      <JsonLicenseProperty Include="type" String="MIT and ASL 2.0 and BSD" />
+      <JsonLicenseProperty Include="full_text" String="$(FullLicenseText)" />
+    </ItemGroup>
+
+    <GenerateJsonObjectString Properties="@(JsonReleaseProperty)">
+      <Output TaskParameter="Json" PropertyName="JsonReleaseObject" />
+    </GenerateJsonObjectString>
+    <GenerateJsonObjectString Properties="@(JsonControlProperty)">
+      <Output TaskParameter="Json" PropertyName="JsonControlObject" />
+    </GenerateJsonObjectString>
+    <GenerateJsonObjectString Properties="@(JsonLicenseProperty)">
+      <Output TaskParameter="Json" PropertyName="JsonLicenseObject" />
+    </GenerateJsonObjectString>
+
+    <ItemGroup>
+      <CommonJsonProperty Include="package_name" String="$(VersionedInstallerName)" />
+      <CommonJsonProperty Include="short_description" String="$(MSBuildProjectName) $(InstallerPackageVersion)" />
+      <CommonJsonProperty Include="maintainer_name" String=".NET Core Team" />
+      <CommonJsonProperty Include="maintainer_email" String="dotnetpackages@dotnetfoundation.org" />
+      <CommonJsonProperty Include="install_root" String="/usr/share/dotnet" />
+      <CommonJsonProperty Include="long_description" String=".NET Core is a development platform that you can use to build command-line applications, microservices and modern websites. It is open source, cross-platform and is supported by Microsoft. We hope you enjoy using it! If you do, please consider joining the active community of developers that are contributing to the project on GitHub (https://github.com/dotnet/core). We happily accept issues and PRs." />
+      <CommonJsonProperty Include="homepage" String="https://github.com/dotnet/core" />
+      <CommonJsonProperty Include="copyright" String="2017 Microsoft" />
+      <CommonJsonProperty Include="release" Object="$(JsonReleaseObject)" />
+      <CommonJsonProperty Include="control" Object="$(JsonControlObject)" />
+      <CommonJsonProperty Include="license" Object="$(JsonLicenseObject)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Copy the files in the package's data/ dir to a layout directory. This is what the targeting pack
+    installer will place in the dotnet install dir.
+
+    This extracts from the nupkg (zip) directly. An alternative would be using the PackageFile
+    items, but there's some risk of handling TargetPath metadata and filtering symbols differently
+    than the NuGet tasks do. Using the nupkg directly ensures results are identical.
+
+    This is not ideal: the dependency on NuGet package creation is avoidable. We could create (a)
+    layout(s) that both NuGet packaging and installers are based on.
+  -->
+  <Target Name="CreateFrameworkPackLayout"
+          AfterTargets="CreatePackage"
+          Condition="'$(FrameworkPackType)' != ''">
+    <PropertyGroup>
+      <TargetingPackNupkgFile>$(PackageOutputPath)$(Id).$(PackageVersion).nupkg</TargetingPackNupkgFile>
+    </PropertyGroup>
+
+    <ZipFileGetEntries TargetArchive="$(TargetingPackNupkgFile)">
+      <Output TaskParameter="Entries" ItemName="TargetingPackNupkgEntries" />
+    </ZipFileGetEntries>
+
+    <ItemGroup>
+      <TargetingPackDataEntries
+        Include="@(TargetingPackNupkgEntries)"
+        Condition="
+          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('data/')) OR
+          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('ref/')) OR
+          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('runtimes/'))" />
+    </ItemGroup>
+
+    <ZipFileExtractToDirectory
+      SourceArchive="$(TargetingPackNupkgFile)"
+      DestinationDirectory="$(PackLayoutDir)packs/$(Id)/$(Version)/"
+      OverwriteDestination="true"
+      Include="@(TargetingPackDataEntries)" />
+  </Target>
+
   <!-- Target overrides (can't be shared with other package projects) -->
 
   <Target Name="GetPackageReport" />

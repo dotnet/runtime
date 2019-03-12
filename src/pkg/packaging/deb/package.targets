@@ -5,38 +5,8 @@
   <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
 
   <PropertyGroup>
-    <IsDebianBasedDistro Condition="$(PackageTargetRid.StartsWith('ubuntu')) or
-                                    $(PackageTargetRid.StartsWith('debian')) or 
-                                    $(PackageTargetRid.StartsWith('linuxmint'))">true</IsDebianBasedDistro>
-    <BuildDebPackage Condition="'$(IsDebianBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildDebPackage>
     <DebianConfigJsonName>debian_config.json</DebianConfigJsonName>
-    <BuildRuntimeDebs>true</BuildRuntimeDebs>
   </PropertyGroup>
-
-  <Target Name="InitializeDotnetDebTool">
-    <PropertyGroup>
-      <VersionSuffixArg Condition="'$(VersionSuffix)' != ''">--version-suffix $(VersionSuffix)</VersionSuffixArg>
-    </PropertyGroup>
-
-    <Exec Command="$(DotnetRestoreCommand) $(dotnetDebToolSource)"/>
-    <Exec Command="$(DotnetToolCommand) pack $(dotnetDebToolSource) --output $(PackageOutputPath) $(VersionSuffixArg)"/>
-
-    <RemoveDir Condition="Exists('$(consumingProjectDirectory)')"
-               Directories="$(consumingProjectDirectory)" />
-
-    <MakeDir Directories="$(consumingProjectDirectory)" />
-
-    <MakeDir Condition="!Exists('$(PackagesIntermediateDir)')"
-             Directories="$(PackagesIntermediateDir)" />
-
-
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)/$(toolConsumerProjectName)"
-          DestinationFiles="$(consumingProjectDirectory)/$(toolConsumerProjectName)" />
-
-    <Exec Command="$(DotnetRestoreCommand) -s $(dotnetDebToolPackageSource)"
-          WorkingDirectory="$(consumingProjectDirectory)" />
-
-  </Target>
 
   <Target Name="GenerateDebs"
           DependsOnTargets="TestDebuild;
@@ -106,7 +76,7 @@
                          ReplacementItems="@(SharedHostTokenValue)" />
 
     <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(consumingProjectDirectory)" />
+          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -185,7 +155,7 @@
                          ReplacementItems="@(HostFxrTokenValue)" />
 
     <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(consumingProjectDirectory)" />
+          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -278,7 +248,7 @@
                          ReplacementItems="@(SharedFrameworkTokenValue)" />
 
     <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(consumingProjectDirectory)" />
+          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -346,7 +316,7 @@
                          ReplacementItems="@(SharedFrameworkTokenValue)" />
 
     <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(consumingProjectDirectory)" />
+          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -362,25 +332,6 @@
           SkipUnchangedFiles="False"
           UseHardlinksIfPossible="False" />
 
-  </Target>
-
-  <Target Name="TestDebuild">
-
-    <!-- run Debuild -->
-    <Exec Command="/usr/bin/env debuild -h" ContinueOnError="true">
-      <Output TaskParameter="ExitCode" PropertyName="DebuildExitCode" />
-    </Exec>
-
-    <!-- Check if it returned 0 -->
-    <PropertyGroup>
-      <DebuildPresent>false</DebuildPresent>
-      <DebuildPresent Condition=" '$(DebuildExitCode)' == '0' ">true</DebuildPresent>
-    </PropertyGroup>
-
-    <!-- Workaround for Jenkins machines that don't have the necessary packages https://github.com/dotnet/core-setup/issues/2260 -->
-    <Message Condition=" '$(DebuildPresent)'  != 'true' "
-             Text="Debuild Not found, Debian packages will not be built."
-             Importance="High" />
   </Target>
 
 </Project>

@@ -12,7 +12,7 @@
     <RuntimeDependenciesRpmPkgName>$(DotnetRuntimeDependenciesPackageString)$(PackageNameSuffix)</RuntimeDependenciesRpmPkgName>
     <RuntimeDependenciesRpmPkgName>$(RuntimeDependenciesRpmPkgName.ToLower())</RuntimeDependenciesRpmPkgName>
 
-    <TemplatesDir>$(MSBuildThisFileDirectory)/templates</TemplatesDir>
+    <TemplatesDir>$(RpmTemplatesDir)</TemplatesDir>
     <ScriptsDir>$(MSBuildThisFileDirectory)/scripts</ScriptsDir>
 
   </PropertyGroup>
