@@ -1625,8 +1625,6 @@ namespace System.Runtime.Serialization
         internal string TypeName { get; }
     }
 
-    // TODO: Temporary workaround.  Remove this once SerializationInfo.UpdateValue is exposed
-    // from coreclr for use by ObjectManager.
     internal static class SerializationInfoExtensions
     {
         private static readonly Action<SerializationInfo, string, object, Type> s_updateValue =
