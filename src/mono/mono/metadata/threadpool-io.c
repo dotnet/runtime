@@ -198,7 +198,7 @@ selector_thread_wakeup_drain_pipes (void)
 			break;
 		if (received == SOCKET_ERROR) {
 			if (WSAGetLastError () != WSAEINTR && WSAGetLastError () != WSAEWOULDBLOCK)
-				g_warning ("selector_thread_wakeup_drain_pipes: recv () failed, error (%d) %s\n", WSAGetLastError ());
+				g_warning ("selector_thread_wakeup_drain_pipes: recv () failed, error (%d)\n", WSAGetLastError ());
 			break;
 		}
 #endif
