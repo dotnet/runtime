@@ -6,7 +6,7 @@ if [ "$1" = "Linux" ]; then
        exit 1;
     fi
     sudo apt install cmake llvm-3.9 clang-3.9 lldb-3.9 liblldb-3.9-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev libkrb5-dev libnuma-dev
-    if [ "$?" != "0"]; then
+    if [ "$?" != "0" ]; then
         exit 1;
     fi
 elif [ "$1" = "OSX" ]; then
