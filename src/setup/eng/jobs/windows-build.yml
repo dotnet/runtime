@@ -27,6 +27,8 @@ jobs:
         release:
           _BuildConfig: Release
           _PublishType: blob
+    workspace:
+      clean: all
     variables: 
       CommonMSBuildArgs: "/p:ConfigurationGroup=$(_BuildConfig) 
                           /p:TargetArchitecture=${{ parameters.targetArchitecture }} 

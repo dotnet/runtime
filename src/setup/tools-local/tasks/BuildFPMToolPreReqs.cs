@@ -1,14 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Build.Framework;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using Microsoft.Build.Utilities;
-using Microsoft.Build.Framework;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.Build.Tasks
             }
             catch (Exception e)
             {
-                Log.LogError("Exception while processing RPM paramters: " + e.Message);
+                Log.LogErrorFromException(e, true);
             }
 
             return !Log.HasLoggedErrors;
@@ -95,7 +95,7 @@ namespace Microsoft.DotNet.Build.Tasks
             }
         }
 
-        public void UpdateCopyRight(ConfigJson configJson)
+        private void UpdateCopyRight(ConfigJson configJson)
         {
             try
             {
@@ -152,7 +152,31 @@ namespace Microsoft.DotNet.Build.Tasks
             // Build the list of dependencies as -d <dep1> -d <dep2>
             if (configJson.Rpm_Dependencies != null)
             {
-                foreach (RpmDependency rpmdep in configJson.Rpm_Dependencies)
+                IEnumerable<RpmDependency> dependencies;
+
+                switch (configJson.Rpm_Dependencies)
+                {
+                    case JArray dependencyArray:
+                        dependencies = dependencyArray.ToObject<RpmDependency[]>();
+                        break;
+
+                    case JObject dependencyDictionary:
+                        dependencies = dependencyDictionary
+                            .ToObject<Dictionary<string, string>>()
+                            .Select(pair => new RpmDependency
+                            {
+                                Package_Name = pair.Key,
+                                Package_Version = pair.Value
+                            });
+                        break;
+
+                    default:
+                        throw new ArgumentException(
+                            "Expected 'rpm_dependencies' to be JArray or JObject, but found " +
+                            configJson.Rpm_Dependencies.Type);
+                }
+
+                foreach (RpmDependency rpmdep in dependencies)
                 {
                     string dependency = "";
                     if (rpmdep.Package_Name != "")
@@ -167,7 +191,10 @@ namespace Microsoft.DotNet.Build.Tasks
                             dependency = string.Concat(rpmdep.Package_Name, " >= ", rpmdep.Package_Version);
                         }
                     }
-                    if (dependency != "") parameters.Add(string.Concat("-d ", EscapeArg(dependency)));
+                    if (dependency != "")
+                    {
+                        parameters.Add(string.Concat("-d ", EscapeArg(dependency)));
+                    }
                 }
             }
 
@@ -267,54 +294,58 @@ namespace Microsoft.DotNet.Build.Tasks
             }
             return false;
         }
-    }
 
-    /// <summary>
-    /// Model classes for reading and storing the JSON. 
-    /// </summary>
-    public class ConfigJson
-    {
-        public string Maintainer_Name { get; set; }
-        public string Maintainer_Email { get; set; }
-        public string Vendor { get; set; }
-        public string Package_Name { get; set; }
-        public string Install_Root { get; set; }
-        public string Install_Doc { get; set; }
-        public string Install_Man { get; set; }
-        public string Short_Description { get; set; }
-        public string Long_Description { get; set; }
-        public string Homepage { get; set; }
-        public string CopyRight { get; set; }
-        public Release Release { get; set; }
-        public Control Control { get; set; }
-        public License License { get; set; }
-        public List<RpmDependency> Rpm_Dependencies { get; set; }
-        public List<string> Package_Conflicts { get; set; }
-        public List<string> Directories { get; set; }
-        public string After_Install_Source { get; set; }
-        public string After_Remove_Source { get; set; }
-    }
-    public class Release
-    {
-        public string Package_Version { get; set; }
-        public string Package_Revision { get; set; }
-        public string Urgency { get; set; }
-        public string Changelog_Message { get; set; }
-    }
-    public class Control
-    {
-        public string Priority { get; set; }
-        public string Section { get; set; }
-        public string Architecture { get; set; }
-    }
-    public class License
-    {
-        public string Type { get; set; }
-        public string Full_Text { get; set; }
-    }
-    public class RpmDependency
-    {
-        public string Package_Name { get; set; }
-        public string Package_Version { get; set; }
+        /// <summary>
+        /// Model classes for reading and storing the JSON. 
+        /// </summary>
+        private class ConfigJson
+        {
+            public string Maintainer_Name { get; set; }
+            public string Maintainer_Email { get; set; }
+            public string Vendor { get; set; }
+            public string Package_Name { get; set; }
+            public string Install_Root { get; set; }
+            public string Install_Doc { get; set; }
+            public string Install_Man { get; set; }
+            public string Short_Description { get; set; }
+            public string Long_Description { get; set; }
+            public string Homepage { get; set; }
+            public string CopyRight { get; set; }
+            public Release Release { get; set; }
+            public Control Control { get; set; }
+            public License License { get; set; }
+            public JContainer Rpm_Dependencies { get; set; }
+            public List<string> Package_Conflicts { get; set; }
+            public List<string> Directories { get; set; }
+            public string After_Install_Source { get; set; }
+            public string After_Remove_Source { get; set; }
+        }
+
+        private class Release
+        {
+            public string Package_Version { get; set; }
+            public string Package_Revision { get; set; }
+            public string Urgency { get; set; }
+            public string Changelog_Message { get; set; }
+        }
+
+        private class Control
+        {
+            public string Priority { get; set; }
+            public string Section { get; set; }
+            public string Architecture { get; set; }
+        }
+
+        private class License
+        {
+            public string Type { get; set; }
+            public string Full_Text { get; set; }
+        }
+
+        private class RpmDependency
+        {
+            public string Package_Name { get; set; }
+            public string Package_Version { get; set; }
+        }
     }
 }

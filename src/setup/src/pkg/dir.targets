@@ -1,7 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Import Project="..\dir.targets" />
+  <Import Project="..\dir.targets" />
+  <PropertyGroup>
+    <RuntimeIdGraphDefinitionFile>$(PackagesDir)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsPackageVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
+  </PropertyGroup>
+
+  <!-- Create deb tool package and set up the project that consumes it as a CLI tool. -->
+  <Target Name="InitializeDotnetDebTool">
+    <!--
+      Build the deb tool and initialize the consumer project. Using an MSBuild task helps this
+      to only happen once if parallel projects depend on this target.
+    -->
+    <MSBuild Projects="$(MSBuildThisFileDirectory)deps\init-deb-tool-consumer.proj" />
+  </Target>
+
+  <!--
+    Check if the deb package build tool prereq is available.
+    This issue tracks adding a way to raise this as a build error: https://github.com/dotnet/core-setup/issues/5396
+  -->
+  <Target Name="TestDebuild">
+    <!-- run Debuild -->
+    <Exec Command="/usr/bin/env debuild -h" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="DebuildExitCode" />
+    </Exec>
+
+    <!-- Check if it successfully showed us a help message. -->
     <PropertyGroup>
-        <RuntimeIdGraphDefinitionFile>$(PackagesDir)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsPackageVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
+      <DebuildPresent>false</DebuildPresent>
+      <DebuildPresent Condition=" '$(DebuildExitCode)' == '0' ">true</DebuildPresent>
     </PropertyGroup>
+
+    <Message Condition=" '$(DebuildPresent)'  != 'true' "
+             Text="Debuild Not found, Debian packages will not be built."
+             Importance="High" />
+  </Target>
+
+  <!--
+    Check if the RPM package build tool prereq is available.
+    This issue tracks adding a way to raise this as a build error: https://github.com/dotnet/core-setup/issues/5396
+  -->
+  <Target Name="TestFPMTool">
+    <!-- run FPM  -->
+    <Exec Command="/usr/bin/env fpm -h" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="FPMExitCode" />
+    </Exec>
+
+    <!-- Check if it successfully showed us a help message. -->
+    <PropertyGroup>
+      <FPMPresent>false</FPMPresent>
+      <FPMPresent Condition=" '$(FPMExitCode)' == '0' ">true</FPMPresent>
+    </PropertyGroup>
+
+    <Message Condition=" '$(FPMPresent)'  != 'true' "
+             Text="FPM tool Not found, RPM packages will not be built."
+             Importance="High" />
+  </Target>
 </Project>

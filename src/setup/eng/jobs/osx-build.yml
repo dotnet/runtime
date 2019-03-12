@@ -13,6 +13,8 @@ jobs:
       release:
         _BuildConfig: Release
         _PublishType: blob
+  workspace:
+    clean: all
   steps:
   - script: $(Build.SourcesDirectory)/build.sh
       -OfficialBuildId=$(OfficialBuildId)

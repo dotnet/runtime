@@ -5,6 +5,13 @@
     <PackagePlatform>AnyCPU</PackagePlatform>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">obj/$(Configuration)/</IntermediateOutputPath>
     <IntermediateOutputPath Condition="'$(NuGetRuntimeIdentifier)' != ''">$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)/</IntermediateOutputPath>
+
+    <!--
+      Allow packaging one build's outputs for a different RID. For example, package portable bits
+      for multiple Debian-based distros.
+    -->
+    <InstallerSourceOSPlatformConfig Condition="'$(InstallerSourceOSPlatformConfig)' == ''">$(OSPlatformConfig)</InstallerSourceOSPlatformConfig>
+    <InstallerSourceIntermediateOutputDir>$(BaseIntermediateOutputPath)$(InstallerSourceOSPlatformConfig)\$(MSBuildProjectName)\</InstallerSourceIntermediateOutputDir>
     
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
@@ -17,6 +24,11 @@
     <BuildRuntimePackages>true</BuildRuntimePackages>
 
     <PackProjectDependencies>true</PackProjectDependencies>
+  </PropertyGroup>
+
+  <!-- In *.builds projects, the current phase's name is the same as the project name. -->
+  <PropertyGroup>
+    <BuildPhase>$(MSBuildProjectName)</BuildPhase>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
@@ -65,7 +77,7 @@
 
   <!-- Detect framework pack suffix and apply defaults. -->
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Ref'))">
-    <IsTargetingPack>true</IsTargetingPack>
+    <FrameworkPackType>targeting</FrameworkPackType>
 
     <!--
       Prevent 'runtime.<rid>.Microsoft.<framework>.App.Ref' packages from being built.
@@ -90,8 +102,38 @@
     <ExcludeLineupReference>true</ExcludeLineupReference>
     <PackProjectDependencies>false</PackProjectDependencies>
 
-    <!-- Location to lay out pack contents. Used later to create installers. -->
-    <PackLayoutDir>$(IntermediateOutputPath)layout/</PackLayoutDir>
+    <!-- Location to lay out pack contents, and where to grab bits to create installers. -->
+    <PackLayoutDir>$(InstallerSourceIntermediateOutputDir)layout/$(FrameworkPackType)/</PackLayoutDir>
+
+    <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <VersionedInstallerName>$(InstallerName)-$(PackageNameSuffix)</VersionedInstallerName>
+    <VersionedInstallerName>$(VersionedInstallerName.ToLowerInvariant())</VersionedInstallerName>
+    <InstallerPackageRelease>1</InstallerPackageRelease>
+
+    <InstallerPackageVersion>$(ProductionVersion)</InstallerPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
+    <InstallerPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</InstallerPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
+    <InstallerPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</InstallerPackageRelease>
+    <InstallerPackageRelease>$([System.String]::Copy('$(InstallerPackageRelease)').Replace('-', '_'))</InstallerPackageRelease>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <InstallerIntermediatesDir>$(PackagesIntermediateDir)$(InstallerName)/$(InstallerPackageVersion)/</InstallerIntermediatesDir>
+
+    <InstallerBuildPart>$(ProductMoniker)</InstallerBuildPart>
+    <InstallerBuildPart Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'"
+      >$(SharedFrameworkNugetVersion)-$(TargetArchitecture)</InstallerBuildPart>
+
+    <!-- Location to place the installer, in bin. -->
+    <InstallerFile>$(AssetOutputPath)$(InstallerName)-$(InstallerBuildPart)$(InstallerExtension)</InstallerFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.depproj'">
@@ -167,6 +209,18 @@
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == '' and '$(HasRuntimePackages)' != 'false'">
     <ProjectReference Include="@(RuntimeProject)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Create Debian and RPM packages for targeting packs. Similar to the runtime package, we only
+      make one for all distros.
+    -->
+    <InstallerPackageProject
+      Include="$(MSBuildProjectFullPath)"
+      Condition="
+        '$(FrameworkPackType)' == 'targeting' AND
+        '$(BuildDistroIndependentInstallers)' == 'true'" />
   </ItemGroup>
   
 </Project>
