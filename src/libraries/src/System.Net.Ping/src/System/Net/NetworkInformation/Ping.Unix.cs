@@ -328,12 +328,13 @@ namespace System.Net.NetworkInformation
                 if (finished == timeoutTask && !p.HasExited)
                 {
                     // Try to kill the ping process if it didn't return. If it is already in the process of exiting, 
-                    // a Win32Exception will be thrown.
+                    // a Win32Exception will be thrown or we will get InvalidOperationException if it already exited.
                     try
                     {
                         p.Kill();
                     }
                     catch (Win32Exception) { }
+                    catch (InvalidOperationException) { }
                     return CreateTimedOutPingReply();
                 }
                 else
