@@ -1,4 +1,7 @@
-﻿using Microsoft.DotNet.CoreSetup.Test;
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Microsoft.DotNet.CoreSetup.Test;
 using System;
 using System.IO;
 using Xunit;
