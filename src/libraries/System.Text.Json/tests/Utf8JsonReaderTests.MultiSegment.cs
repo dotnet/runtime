@@ -248,6 +248,62 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void TestSingleStringsByOne()
+        {
+            string jsonString = "\"Hello, \\u0041hson!\"";
+            string expectedString = "Hello, \\u0041hson!, ";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
+
+            for (int j = 0; j < dataUtf8.Length; j++)
+            {
+                var utf8JsonReader = new Utf8JsonReader(sequence.Slice(0, j), isFinalBlock: false, default);
+                byte[] resultSequence = JsonTestHelper.ReaderLoop(dataUtf8.Length, out int length, ref utf8JsonReader);
+                string actualStrSequence = Encoding.UTF8.GetString(resultSequence, 0, length);
+
+                long consumed = utf8JsonReader.BytesConsumed;
+                Assert.Equal(consumed, utf8JsonReader.CurrentState.BytesConsumed);
+                utf8JsonReader = new Utf8JsonReader(sequence.Slice(consumed), isFinalBlock: true, utf8JsonReader.CurrentState);
+                resultSequence = JsonTestHelper.ReaderLoop(dataUtf8.Length, out length, ref utf8JsonReader);
+                actualStrSequence += Encoding.UTF8.GetString(resultSequence, 0, length);
+                string message = $"Expected consumed: {dataUtf8.Length - consumed}, Actual consumed: {utf8JsonReader.BytesConsumed}, Index: {j}";
+                Assert.Equal(utf8JsonReader.BytesConsumed, utf8JsonReader.CurrentState.BytesConsumed);
+                Assert.True(dataUtf8.Length - consumed == utf8JsonReader.BytesConsumed, message);
+                Assert.Equal(expectedString, actualStrSequence);
+            }
+        }
+
+        [Fact]
+        public static void TestSingleStrings()
+        {
+            string jsonString = "\"Hello, \\u0041hson!\"";
+            string expectedString = "Hello, \\u0041hson!, ";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            ReadOnlySequence<byte> sequence = JsonTestHelper.CreateSegments(dataUtf8);
+
+            for (int j = 0; j < dataUtf8.Length; j++)
+            {
+                var utf8JsonReader = new Utf8JsonReader(sequence.Slice(0, j), isFinalBlock: false, default);
+                byte[] resultSequence = JsonTestHelper.ReaderLoop(dataUtf8.Length, out int length, ref utf8JsonReader);
+                string actualStrSequence = Encoding.UTF8.GetString(resultSequence, 0, length);
+
+                long consumed = utf8JsonReader.BytesConsumed;
+                Assert.Equal(consumed, utf8JsonReader.CurrentState.BytesConsumed);
+                utf8JsonReader = new Utf8JsonReader(sequence.Slice(consumed), isFinalBlock: true, utf8JsonReader.CurrentState);
+                resultSequence = JsonTestHelper.ReaderLoop(dataUtf8.Length, out length, ref utf8JsonReader);
+                actualStrSequence += Encoding.UTF8.GetString(resultSequence, 0, length);
+                string message = $"Expected consumed: {dataUtf8.Length - consumed}, Actual consumed: {utf8JsonReader.BytesConsumed}, Index: {j}";
+                Assert.Equal(utf8JsonReader.BytesConsumed, utf8JsonReader.CurrentState.BytesConsumed);
+                Assert.True(dataUtf8.Length - consumed == utf8JsonReader.BytesConsumed, message);
+                Assert.Equal(expectedString, actualStrSequence);
+            }
+        }
+
         private static void SpanSequenceStatesAreEqualInvalidJson(byte[] dataUtf8, ReadOnlySequence<byte> sequence, int maxDepth, JsonCommentHandling commentHandling)
         {
             var stateSpan = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
