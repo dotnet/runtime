@@ -227,8 +227,8 @@ HANDLES(ARRAY_13, "SetValueImpl",  ves_icall_System_Array_SetValueImpl, void, 3,
 
 ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_1)
 #if ENABLE_NETCORE
-ICALL(BUFFER_2, "_ByteLength", ves_icall_System_Buffer_ByteLengthInternal)
-NOHANDLES(ICALL(BUFFER_1, "__Memmove", ves_icall_System_Runtime_RuntimeImports_Memmove))
+ICALL(BUFFER_1, "_ByteLength", ves_icall_System_Buffer_ByteLengthInternal)
+NOHANDLES(ICALL(BUFFER_2, "__Memmove", ves_icall_System_Runtime_RuntimeImports_Memmove))
 #else
 ICALL(BUFFER_1, "InternalBlockCopy", ves_icall_System_Buffer_BlockCopyInternal)
 NOHANDLES(ICALL(BUFFER_5, "InternalMemcpy", ves_icall_System_Buffer_MemcpyInternal))
