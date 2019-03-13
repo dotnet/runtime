@@ -46,7 +46,7 @@ namespace System.Data.SqlClient
             _source = source;
         }
 
-        public static UnicodeEncoding DefaultEncoding
+        internal static UnicodeEncoding DefaultEncoding
         {
             get
             {
