@@ -19,6 +19,7 @@ class DECLSPEC_UUID("4DBD9B61-E372-499F-84DE-EFC70AA8A009") EventTesting;
 class DECLSPEC_UUID("4CEFE36D-F377-4B6E-8C34-819A8BB9CB04") AggregationTesting;
 class DECLSPEC_UUID("C222F472-DA5A-4FC6-9321-92F4F7053A65") ColorTesting;
 class DECLSPEC_UUID("66DB7882-E2B0-471D-92C7-B2B52A0EA535") LicenseTesting;
+class DECLSPEC_UUID("FAEF42AE-C1A4-419F-A912-B768AC2679EA") DefaultInterfaceTesting;
 
 #define CLSID_NumericTesting __uuidof(NumericTesting)
 #define CLSID_ArrayTesting __uuidof(ArrayTesting)
@@ -29,6 +30,7 @@ class DECLSPEC_UUID("66DB7882-E2B0-471D-92C7-B2B52A0EA535") LicenseTesting;
 #define CLSID_AggregationTesting __uuidof(AggregationTesting)
 #define CLSID_ColorTesting __uuidof(ColorTesting)
 #define CLSID_LicenseTesting __uuidof(LicenseTesting)
+#define CLSID_DefaultInterfaceTesting __uuidof(DefaultInterfaceTesting)
 
 #define IID_INumericTesting __uuidof(INumericTesting)
 #define IID_IArrayTesting __uuidof(IArrayTesting)
@@ -40,6 +42,8 @@ class DECLSPEC_UUID("66DB7882-E2B0-471D-92C7-B2B52A0EA535") LicenseTesting;
 #define IID_IAggregationTesting __uuidof(IAggregationTesting)
 #define IID_IColorTesting __uuidof(IColorTesting)
 #define IID_ILicenseTesting __uuidof(ILicenseTesting)
+#define IID_IDefaultInterfaceTesting __uuidof(IDefaultInterfaceTesting)
+#define IID_IDefaultInterfaceTesting2 __uuidof(IDefaultInterfaceTesting2)
 
 // Class used for COM activation when using CoreShim
 struct CoreShimComActivation
@@ -62,6 +66,58 @@ private:
         ::SetEnvironmentVariableW(W("CORESHIM_COMACT_ASSEMBLYNAME"), assemblyName);
         ::SetEnvironmentVariableW(W("CORESHIM_COMACT_TYPENAME"), typeName);
     }
+};
+
+template<typename T>
+struct ComSmartPtr
+{
+    ComSmartPtr()
+        : p{}
+    { }
+
+    ComSmartPtr(_In_ const ComSmartPtr &) = delete;
+    ComSmartPtr(_Inout_ ComSmartPtr &&) = delete;
+
+    ComSmartPtr& operator=(_In_ const ComSmartPtr &) = delete;
+    ComSmartPtr& operator=(_Inout_ ComSmartPtr &&) = delete;
+
+    ~ComSmartPtr()
+    {
+        if (p != nullptr)
+            p->Release();
+    }
+
+    operator T*()
+    {
+        return p;
+    }
+
+    T** operator&()
+    {
+        return &p;
+    }
+
+    T* operator->()
+    {
+        return p;
+    }
+
+    void Attach(_In_opt_ T *t)
+    {
+        if (p != nullptr)
+            p->Release();
+
+        p = t;
+    }
+
+    T *Detach()
+    {
+        T *tmp = p;
+        p = nullptr;
+        return tmp;
+    }
+
+    T *p;
 };
 
 #ifndef COM_CLIENT
