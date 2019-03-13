@@ -19,7 +19,7 @@ Please note that when choosing an image choosing the same image as the host os y
 Once you have chosen an image the build is one command run from the root of the coreclr repository:
 
 ```sh
-docker run --rm -v /home/dotnet-bot/coreclr:/coreclr -w /coreclr microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544 ./build.sh
+docker run --rm -v /home/dotnet-bot/coreclr:/coreclr -w /coreclr mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-c103199-20180628134544 ./build.sh
 ```
 
 Dissecting the command:
@@ -30,14 +30,14 @@ Dissecting the command:
 
 `-w: set /coreclr as working directory for the container`
 
-`microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544: image name`
+`mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-c103199-20180628134544: image name`
 
 `./build.sh: command to be run in the container`
 
 If you are attempting to cross build for arm/arm64 then use the crossrootfs location to set the ROOTFS_DIR. The command would add `-e ROOTFS_DIR=<crossrootfs location>`. See [Docker Images](#Docker-Images) for the crossrootfs location. In addition you will need to specify `cross`.
 
 ```sh
-docker run --rm -v /home/dotnet-bot/coreclr:/coreclr -w /coreclr -e ROOTFS_DIR=/crossrootfs/arm64 microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921 ./build.sh arm64 cross
+docker run --rm -v /home/dotnet-bot/coreclr:/coreclr -w /coreclr -e ROOTFS_DIR=/crossrootfs/arm64 mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921 ./build.sh arm64 cross
 ```
 
 Note that instructions on building the crossrootfs location can be found at https://github.com/dotnet/coreclr/blob/master/Documentation/building/cross-building.md. These instructions are suggested only if there are plans to change the rootfs, or the Docker images for arm/arm64 are insufficient for you build.
@@ -45,15 +45,15 @@ Note that instructions on building the crossrootfs location can be found at http
 Docker Images
 =============
 
-| OS             | Target Arch | Image location | crossrootfs location | Clang Version |
-| -------------- | ----------- | -------------- | -------------------- | ------------- |
-| Ubuntu 16.04   | x64         | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544` | - | - |
-| Alpine         | x64         | `microsoft/dotnet-buildtools-prereqs:alpine-3.6-e2521f8-20180716231200` | - | - |
-| CentOS 6 (build for RHEL 6) | x64 | `microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331` | - | - |
-| CentOS 7 (build for RHEL 7) | x64 | `microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424` | - | - |
-| Ubuntu 14.04   | arm32(armhf) | `microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420` | `/crossrootfs/arm` | - |
-| Ubuntu 16.04   | arm64 (arm64v8) | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921` | `/crossrootfs/arm64` | - |
-| Alpine | arm64 (arm64v8) | `microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917` | `/crossrootfs/arm64` | -clang5.0 |
+| OS                          | Target Arch     | Image location                                                                                      | crossrootfs location | Clang Version |
+| --------------------------- | --------------- | --------------------------------------------------------------------------------------------------- | -------------------- | ------------- |
+| Ubuntu 16.04                | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-c103199-20180628134544`                   | -                    | -             |
+| Alpine                      | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.6-e2521f8-20180716231200`                     | -                    | -             |
+| CentOS 6 (build for RHEL 6) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-376e1a3-20174311014331`                       | -                    | -             |
+| CentOS 7 (build for RHEL 7) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-d485f41-20173404063424`                       | -                    | -             |
+| Ubuntu 14.04                | arm32(armhf)    | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-cross-e435274-20180426002420`             | `/crossrootfs/arm`   | -             |
+| Ubuntu 16.04                | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921`       | `/crossrootfs/arm64` | -             |
+| Alpine                      | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917` | `/crossrootfs/arm64` | -clang5.0     |
 
 Environment
 ===========
