@@ -19,16 +19,16 @@ namespace System.ComponentModel.Design.Serialization.Tests
         }
 
         [Fact]
-        public void Ctor_NullSerializerType_ThrowsNullReferenceException()
+        public void Ctor_NullSerializerType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new DesignerSerializerAttribute((Type)null, typeof(int)));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>(() => new DesignerSerializerAttribute((Type)null, typeof(int)));
         }
 
         [Fact]
-        public void Ctor_NullBaseSerializerType_ThrowsNullReferenceException()
+        public void Ctor_NullBaseSerializerType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new DesignerSerializerAttribute(typeof(int), (Type)null));
-            Assert.Throws<NullReferenceException>(() => new DesignerSerializerAttribute("int", (Type)null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("baseSerializerType", () => new DesignerSerializerAttribute(typeof(int), (Type)null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("baseSerializerType", () => new DesignerSerializerAttribute("int", (Type)null));
         }
 
         [Theory]
@@ -65,7 +65,14 @@ namespace System.ComponentModel.Design.Serialization.Tests
         public void TypeId_NullBaseSerializerTypeName_ThrowsNullReferenceException()
         {
             var attribute = new DesignerSerializerAttribute("SerializerType", (string)null);
-            Assert.Throws<NullReferenceException>(() => attribute.TypeId);
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.Equal("System.ComponentModel.Design.Serialization.DesignerSerializerAttribute", attribute.TypeId);
+            }
+            else
+            {
+                Assert.Throws<NullReferenceException>(() => attribute.TypeId);
+            }
         }
     }
 }

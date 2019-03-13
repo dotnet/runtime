@@ -279,7 +279,7 @@ namespace System.Net
             {
                 if (throwOnError)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_size, cookie.ToString(), m_maxCookieSize));
+                    throw new CookieException(SR.Format(SR.net_cookie_size, cookie, m_maxCookieSize));
                 }
                 return;
             }

@@ -240,12 +240,12 @@ namespace System.Security.AccessControl
                 // Indicates that the marshaling logic in GetBinaryForm is busted
                 //
 
-                Debug.Assert(false, "binaryForm produced invalid output");
+                Debug.Fail("binaryForm produced invalid output");
                 throw new InvalidOperationException();
             }
             else if (error != Interop.Errors.ERROR_SUCCESS)
             {
-                Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.ConvertSdToSddl returned {0}", error));
+                Debug.Fail($"Win32.ConvertSdToSddl returned {error}");
                 throw new InvalidOperationException();
             }
 
@@ -666,7 +666,7 @@ nameof(sddlForm));
                     }
                     else if (error != Interop.Errors.ERROR_SUCCESS)
                     {
-                        Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Unexpected error out of Win32.ConvertStringSdToSd: {0}", error));
+                        Debug.Fail($"Unexpected error out of Win32.ConvertStringSdToSd: {error}");
                         throw new Win32Exception(error, SR.Format(SR.AccessControl_UnexpectedError, error));
                     }
                 }

@@ -4,6 +4,9 @@
 
 namespace System.Security.Permissions
 {
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
+#endif
     public enum PermissionState
     {
         None = 0,

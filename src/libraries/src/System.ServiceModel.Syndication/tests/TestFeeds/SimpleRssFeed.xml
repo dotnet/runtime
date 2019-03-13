@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<rss xmlns:a10="http://www.w3.org/2005/Atom" version="2.0">
+﻿<rss xmlns:a10="http://www.w3.org/2005/Atom" version="2.0">
   <channel xml:base="http://mypage.com/">
     <title>Contoso News</title>
     <link>http://www.Contoso.com/news</link>

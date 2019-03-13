@@ -225,7 +225,7 @@ namespace System.Xml.Xsl.Xslt
 
         QilNode IXPathBuilder<QilNode>.Predicate(QilNode node, QilNode condition, bool isReverseStep)
         {
-            Debug.Assert(false, "Should not call to this function.");
+            Debug.Fail("Should not call to this function.");
             return null;
         }
 

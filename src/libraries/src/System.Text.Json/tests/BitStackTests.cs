@@ -84,6 +84,7 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
+        [OuterLoop]
         [InlineData(3_200_000)]
         [InlineData(int.MaxValue / 32 + 1)]    // 67_108_864
         public static void BitStackPushPopLarge(int bitLength)

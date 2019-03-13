@@ -181,7 +181,7 @@ namespace System.Diagnostics.PerformanceData
             }
             if (instanceName.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.Perflib_Argument_EmptyInstanceName), nameof(instanceName));
+                throw new ArgumentException(SR.Perflib_Argument_EmptyInstanceName, nameof(instanceName));
             }
             if (_provider == null)
             {

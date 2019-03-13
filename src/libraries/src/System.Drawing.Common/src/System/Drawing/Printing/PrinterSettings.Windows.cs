@@ -732,7 +732,7 @@ namespace System.Drawing.Printing
                 bool status = SafeNativeMethods.PrintDlg(data);
 
                 if (!status)
-                    return SR.Format(SR.NoDefaultPrinter);
+                    return SR.NoDefaultPrinter;
 
                 IntPtr handle = data.hDevNames;
                 IntPtr names = SafeNativeMethods.GlobalLock(new HandleRef(data, handle));
@@ -756,7 +756,7 @@ namespace System.Drawing.Printing
                 bool status = SafeNativeMethods.PrintDlg(data);
 
                 if (!status)
-                    return SR.Format(SR.NoDefaultPrinter);
+                    return SR.NoDefaultPrinter;
 
                 IntPtr handle = data.hDevNames;
                 IntPtr names = SafeNativeMethods.GlobalLock(new HandleRef(data, handle));
@@ -785,7 +785,7 @@ namespace System.Drawing.Printing
                 data.Flags = SafeNativeMethods.PD_RETURNDEFAULT;
                 bool status = SafeNativeMethods.PrintDlg(data);
                 if (!status)
-                    return SR.Format(SR.NoDefaultPrinter);
+                    return SR.NoDefaultPrinter;
 
                 IntPtr handle = data.hDevNames;
                 IntPtr names = SafeNativeMethods.GlobalLock(new HandleRef(data, handle));
@@ -810,7 +810,7 @@ namespace System.Drawing.Printing
                 bool status = SafeNativeMethods.PrintDlg(data);
 
                 if (!status)
-                    return SR.Format(SR.NoDefaultPrinter);
+                    return SR.NoDefaultPrinter;
 
                 IntPtr handle = data.hDevNames;
                 IntPtr names = SafeNativeMethods.GlobalLock(new HandleRef(data, handle));

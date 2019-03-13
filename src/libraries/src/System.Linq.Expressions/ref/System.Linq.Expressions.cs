@@ -7,6 +7,26 @@
 
 namespace System.Dynamic
 {
+    public abstract partial class BinaryOperationBinder : System.Dynamic.DynamicMetaObjectBinder
+    {
+        protected BinaryOperationBinder(System.Linq.Expressions.ExpressionType operation) { }
+        public System.Linq.Expressions.ExpressionType Operation { get { throw null; } }
+        public sealed override System.Type ReturnType { get { throw null; } }
+        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
+        public System.Dynamic.DynamicMetaObject FallbackBinaryOperation(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject arg) { throw null; }
+        public abstract System.Dynamic.DynamicMetaObject FallbackBinaryOperation(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject arg, System.Dynamic.DynamicMetaObject errorSuggestion);
+    }
+    public abstract partial class BindingRestrictions
+    {
+        internal BindingRestrictions() { }
+        public static readonly System.Dynamic.BindingRestrictions Empty;
+        public static System.Dynamic.BindingRestrictions Combine(System.Collections.Generic.IList<System.Dynamic.DynamicMetaObject> contributingObjects) { throw null; }
+        public static System.Dynamic.BindingRestrictions GetExpressionRestriction(System.Linq.Expressions.Expression expression) { throw null; }
+        public static System.Dynamic.BindingRestrictions GetInstanceRestriction(System.Linq.Expressions.Expression expression, object instance) { throw null; }
+        public static System.Dynamic.BindingRestrictions GetTypeRestriction(System.Linq.Expressions.Expression expression, System.Type type) { throw null; }
+        public System.Dynamic.BindingRestrictions Merge(System.Dynamic.BindingRestrictions restrictions) { throw null; }
+        public System.Linq.Expressions.Expression ToExpression() { throw null; }
+    }
     public sealed partial class CallInfo
     {
         public CallInfo(int argCount, System.Collections.Generic.IEnumerable<string> argNames) { }
@@ -16,23 +36,43 @@ namespace System.Dynamic
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
-    public partial class DynamicObject : System.Dynamic.IDynamicMetaObjectProvider
+    public abstract partial class ConvertBinder : System.Dynamic.DynamicMetaObjectBinder
     {
-        protected DynamicObject() { }
-        public virtual System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() { throw null; }
-        public virtual System.Dynamic.DynamicMetaObject GetMetaObject(System.Linq.Expressions.Expression parameter) { throw null; }
-        public virtual bool TryBinaryOperation(System.Dynamic.BinaryOperationBinder binder, object arg, out object result) { throw null; }
-        public virtual bool TryConvert(System.Dynamic.ConvertBinder binder, out object result) { throw null; }
-        public virtual bool TryCreateInstance(System.Dynamic.CreateInstanceBinder binder, object[] args, out object result) { throw null; }
-        public virtual bool TryDeleteIndex(System.Dynamic.DeleteIndexBinder binder, object[] indexes) { throw null; }
-        public virtual bool TryDeleteMember(System.Dynamic.DeleteMemberBinder binder) { throw null; }
-        public virtual bool TryGetIndex(System.Dynamic.GetIndexBinder binder, object[] indexes, out object result) { throw null; }
-        public virtual bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object result) { throw null; }
-        public virtual bool TryInvoke(System.Dynamic.InvokeBinder binder, object[] args, out object result) { throw null; }
-        public virtual bool TryInvokeMember(System.Dynamic.InvokeMemberBinder binder, object[] args, out object result) { throw null; }
-        public virtual bool TrySetIndex(System.Dynamic.SetIndexBinder binder, object[] indexes, object value) { throw null; }
-        public virtual bool TrySetMember(System.Dynamic.SetMemberBinder binder, object value) { throw null; }
-        public virtual bool TryUnaryOperation(System.Dynamic.UnaryOperationBinder binder, out object result) { throw null; }
+        protected ConvertBinder(System.Type type, bool @explicit) { }
+        public bool Explicit { get { throw null; } }
+        public sealed override System.Type ReturnType { get { throw null; } }
+        public System.Type Type { get { throw null; } }
+        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
+        public System.Dynamic.DynamicMetaObject FallbackConvert(System.Dynamic.DynamicMetaObject target) { throw null; }
+        public abstract System.Dynamic.DynamicMetaObject FallbackConvert(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject errorSuggestion);
+    }
+    public abstract partial class CreateInstanceBinder : System.Dynamic.DynamicMetaObjectBinder
+    {
+        protected CreateInstanceBinder(System.Dynamic.CallInfo callInfo) { }
+        public System.Dynamic.CallInfo CallInfo { get { throw null; } }
+        public sealed override System.Type ReturnType { get { throw null; } }
+        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
+        public System.Dynamic.DynamicMetaObject FallbackCreateInstance(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
+        public abstract System.Dynamic.DynamicMetaObject FallbackCreateInstance(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args, System.Dynamic.DynamicMetaObject errorSuggestion);
+    }
+    public abstract partial class DeleteIndexBinder : System.Dynamic.DynamicMetaObjectBinder
+    {
+        protected DeleteIndexBinder(System.Dynamic.CallInfo callInfo) { }
+        public System.Dynamic.CallInfo CallInfo { get { throw null; } }
+        public sealed override System.Type ReturnType { get { throw null; } }
+        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
+        public System.Dynamic.DynamicMetaObject FallbackDeleteIndex(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] indexes) { throw null; }
+        public abstract System.Dynamic.DynamicMetaObject FallbackDeleteIndex(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] indexes, System.Dynamic.DynamicMetaObject errorSuggestion);
+    }
+    public abstract partial class DeleteMemberBinder : System.Dynamic.DynamicMetaObjectBinder
+    {
+        protected DeleteMemberBinder(string name, bool ignoreCase) { }
+        public bool IgnoreCase { get { throw null; } }
+        public string Name { get { throw null; } }
+        public sealed override System.Type ReturnType { get { throw null; } }
+        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
+        public System.Dynamic.DynamicMetaObject FallbackDeleteMember(System.Dynamic.DynamicMetaObject target) { throw null; }
+        public abstract System.Dynamic.DynamicMetaObject FallbackDeleteMember(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject errorSuggestion);
     }
     public partial class DynamicMetaObject
     {
@@ -70,93 +110,45 @@ namespace System.Dynamic
         public System.Dynamic.DynamicMetaObject Defer(params System.Dynamic.DynamicMetaObject[] args) { throw null; }
         public System.Linq.Expressions.Expression GetUpdateExpression(System.Type type) { throw null; }
     }
-    public partial interface IDynamicMetaObjectProvider
+    public partial class DynamicObject : System.Dynamic.IDynamicMetaObjectProvider
     {
-        System.Dynamic.DynamicMetaObject GetMetaObject(System.Linq.Expressions.Expression parameter);
-    }
-    public partial interface IInvokeOnGetBinder
-    {
-        bool InvokeOnGet { get; }
-    }
-    public abstract partial class BindingRestrictions
-    {
-        internal BindingRestrictions() { }
-        public static readonly System.Dynamic.BindingRestrictions Empty;
-        public static System.Dynamic.BindingRestrictions Combine(System.Collections.Generic.IList<System.Dynamic.DynamicMetaObject> contributingObjects) { throw null; }
-        public static System.Dynamic.BindingRestrictions GetExpressionRestriction(System.Linq.Expressions.Expression expression) { throw null; }
-        public static System.Dynamic.BindingRestrictions GetInstanceRestriction(System.Linq.Expressions.Expression expression, object instance) { throw null; }
-        public static System.Dynamic.BindingRestrictions GetTypeRestriction(System.Linq.Expressions.Expression expression, System.Type type) { throw null; }
-        public System.Dynamic.BindingRestrictions Merge(System.Dynamic.BindingRestrictions restrictions) { throw null; }
-        public System.Linq.Expressions.Expression ToExpression() { throw null; }
-    }
-    public abstract partial class BinaryOperationBinder : System.Dynamic.DynamicMetaObjectBinder
-    {
-        protected BinaryOperationBinder(System.Linq.Expressions.ExpressionType operation) { }
-        public System.Linq.Expressions.ExpressionType Operation { get { throw null; } }
-        public sealed override System.Type ReturnType { get { throw null; } }
-        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
-        public System.Dynamic.DynamicMetaObject FallbackBinaryOperation(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject arg) { throw null; }
-        public abstract System.Dynamic.DynamicMetaObject FallbackBinaryOperation(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject arg, System.Dynamic.DynamicMetaObject errorSuggestion);
-    }
-    public abstract partial class ConvertBinder : System.Dynamic.DynamicMetaObjectBinder
-    {
-        protected ConvertBinder(System.Type type, bool @explicit) { }
-        public bool Explicit { get { throw null; } }
-        public sealed override System.Type ReturnType { get { throw null; } }
-        public System.Type Type { get { throw null; } }
-        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
-        public System.Dynamic.DynamicMetaObject FallbackConvert(System.Dynamic.DynamicMetaObject target) { throw null; }
-        public abstract System.Dynamic.DynamicMetaObject FallbackConvert(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject errorSuggestion);
-    }
-    public abstract partial class CreateInstanceBinder : System.Dynamic.DynamicMetaObjectBinder
-    {
-        protected CreateInstanceBinder(System.Dynamic.CallInfo callInfo) { }
-        public System.Dynamic.CallInfo CallInfo { get { throw null; } }
-        public sealed override System.Type ReturnType { get { throw null; } }
-        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
-        public System.Dynamic.DynamicMetaObject FallbackCreateInstance(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
-        public abstract System.Dynamic.DynamicMetaObject FallbackCreateInstance(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args, System.Dynamic.DynamicMetaObject errorSuggestion);
+        protected DynamicObject() { }
+        public virtual System.Collections.Generic.IEnumerable<string> GetDynamicMemberNames() { throw null; }
+        public virtual System.Dynamic.DynamicMetaObject GetMetaObject(System.Linq.Expressions.Expression parameter) { throw null; }
+        public virtual bool TryBinaryOperation(System.Dynamic.BinaryOperationBinder binder, object arg, out object result) { throw null; }
+        public virtual bool TryConvert(System.Dynamic.ConvertBinder binder, out object result) { throw null; }
+        public virtual bool TryCreateInstance(System.Dynamic.CreateInstanceBinder binder, object[] args, out object result) { throw null; }
+        public virtual bool TryDeleteIndex(System.Dynamic.DeleteIndexBinder binder, object[] indexes) { throw null; }
+        public virtual bool TryDeleteMember(System.Dynamic.DeleteMemberBinder binder) { throw null; }
+        public virtual bool TryGetIndex(System.Dynamic.GetIndexBinder binder, object[] indexes, out object result) { throw null; }
+        public virtual bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object result) { throw null; }
+        public virtual bool TryInvoke(System.Dynamic.InvokeBinder binder, object[] args, out object result) { throw null; }
+        public virtual bool TryInvokeMember(System.Dynamic.InvokeMemberBinder binder, object[] args, out object result) { throw null; }
+        public virtual bool TrySetIndex(System.Dynamic.SetIndexBinder binder, object[] indexes, object value) { throw null; }
+        public virtual bool TrySetMember(System.Dynamic.SetMemberBinder binder, object value) { throw null; }
+        public virtual bool TryUnaryOperation(System.Dynamic.UnaryOperationBinder binder, out object result) { throw null; }
     }
     public sealed partial class ExpandoObject : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, object>>, System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>>, System.Collections.IEnumerable, System.ComponentModel.INotifyPropertyChanged, System.Dynamic.IDynamicMetaObjectProvider
     {
         public ExpandoObject() { }
-        int System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String, System.Object>>.Count { get { throw null; } }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String, System.Object>>.IsReadOnly { get { throw null; } }
-        object System.Collections.Generic.IDictionary<System.String, System.Object>.this[string key] { get { throw null; } set { } }
-        System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<System.String, System.Object>.Keys { get { throw null; } }
-        System.Collections.Generic.ICollection<object> System.Collections.Generic.IDictionary<System.String, System.Object>.Values { get { throw null; } }
+        int System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.Count { get { throw null; } }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.IsReadOnly { get { throw null; } }
+        object System.Collections.Generic.IDictionary<System.String,System.Object>.this[string key] { get { throw null; } set { } }
+        System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<System.String,System.Object>.Keys { get { throw null; } }
+        System.Collections.Generic.ICollection<object> System.Collections.Generic.IDictionary<System.String,System.Object>.Values { get { throw null; } }
         event System.ComponentModel.PropertyChangedEventHandler System.ComponentModel.INotifyPropertyChanged.PropertyChanged { add { } remove { } }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String, System.Object>>.Add(System.Collections.Generic.KeyValuePair<string, object> item) { }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String, System.Object>>.Clear() { }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String, System.Object>>.Contains(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String, System.Object>>.CopyTo(System.Collections.Generic.KeyValuePair<string, object>[] array, int arrayIndex) { }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String, System.Object>>.Remove(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
-        void System.Collections.Generic.IDictionary<System.String, System.Object>.Add(string key, object value) { }
-        bool System.Collections.Generic.IDictionary<System.String, System.Object>.ContainsKey(string key) { throw null; }
-        bool System.Collections.Generic.IDictionary<System.String, System.Object>.Remove(string key) { throw null; }
-        bool System.Collections.Generic.IDictionary<System.String, System.Object>.TryGetValue(string key, out object value) { throw null; }
-        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String, System.Object>>.GetEnumerator() { throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.Add(System.Collections.Generic.KeyValuePair<string, object> item) { }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.Contains(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.CopyTo(System.Collections.Generic.KeyValuePair<string, object>[] array, int arrayIndex) { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.Remove(System.Collections.Generic.KeyValuePair<string, object> item) { throw null; }
+        void System.Collections.Generic.IDictionary<System.String,System.Object>.Add(string key, object value) { }
+        bool System.Collections.Generic.IDictionary<System.String,System.Object>.ContainsKey(string key) { throw null; }
+        bool System.Collections.Generic.IDictionary<System.String,System.Object>.Remove(string key) { throw null; }
+        bool System.Collections.Generic.IDictionary<System.String,System.Object>.TryGetValue(string key, out object value) { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,System.Object>>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         System.Dynamic.DynamicMetaObject System.Dynamic.IDynamicMetaObjectProvider.GetMetaObject(System.Linq.Expressions.Expression parameter) { throw null; }
-    }
-    public abstract partial class DeleteIndexBinder : System.Dynamic.DynamicMetaObjectBinder
-    {
-        protected DeleteIndexBinder(System.Dynamic.CallInfo callInfo) { }
-        public System.Dynamic.CallInfo CallInfo { get { throw null; } }
-        public sealed override System.Type ReturnType { get { throw null; } }
-        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
-        public System.Dynamic.DynamicMetaObject FallbackDeleteIndex(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] indexes) { throw null; }
-        public abstract System.Dynamic.DynamicMetaObject FallbackDeleteIndex(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] indexes, System.Dynamic.DynamicMetaObject errorSuggestion);
-    }
-    public abstract partial class DeleteMemberBinder : System.Dynamic.DynamicMetaObjectBinder
-    {
-        protected DeleteMemberBinder(string name, bool ignoreCase) { }
-        public bool IgnoreCase { get { throw null; } }
-        public string Name { get { throw null; } }
-        public sealed override System.Type ReturnType { get { throw null; } }
-        public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
-        public System.Dynamic.DynamicMetaObject FallbackDeleteMember(System.Dynamic.DynamicMetaObject target) { throw null; }
-        public abstract System.Dynamic.DynamicMetaObject FallbackDeleteMember(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject errorSuggestion);
     }
     public abstract partial class GetIndexBinder : System.Dynamic.DynamicMetaObjectBinder
     {
@@ -176,6 +168,14 @@ namespace System.Dynamic
         public sealed override System.Dynamic.DynamicMetaObject Bind(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject[] args) { throw null; }
         public System.Dynamic.DynamicMetaObject FallbackGetMember(System.Dynamic.DynamicMetaObject target) { throw null; }
         public abstract System.Dynamic.DynamicMetaObject FallbackGetMember(System.Dynamic.DynamicMetaObject target, System.Dynamic.DynamicMetaObject errorSuggestion);
+    }
+    public partial interface IDynamicMetaObjectProvider
+    {
+        System.Dynamic.DynamicMetaObject GetMetaObject(System.Linq.Expressions.Expression parameter);
+    }
+    public partial interface IInvokeOnGetBinder
+    {
+        bool InvokeOnGet { get; }
     }
     public abstract partial class InvokeBinder : System.Dynamic.DynamicMetaObjectBinder
     {
@@ -694,15 +694,6 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.ParameterExpression Variable(System.Type type, string name) { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitChildren(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
     }
-    public sealed partial class Expression<TDelegate> : System.Linq.Expressions.LambdaExpression
-    {
-        internal Expression() { }
-        protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
-        public new TDelegate Compile() { throw null; }
-        public new TDelegate Compile(bool preferInterpretation) { throw null; }
-        public new TDelegate Compile(System.Runtime.CompilerServices.DebugInfoGenerator debugInfoGenerator) { throw null; }
-        public System.Linq.Expressions.Expression<TDelegate> Update(System.Linq.Expressions.Expression body, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression> parameters) { throw null; }
-    }
     public enum ExpressionType
     {
         Add = 0,
@@ -796,9 +787,8 @@ namespace System.Linq.Expressions
         protected ExpressionVisitor() { }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.Expression> Visit(System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.Expression> nodes) { throw null; }
         public virtual System.Linq.Expressions.Expression Visit(System.Linq.Expressions.Expression node) { throw null; }
-        public static System.Collections.ObjectModel.ReadOnlyCollection<T> Visit<T>(System.Collections.ObjectModel.ReadOnlyCollection<T> nodes, System.Func<T, T> elementVisitor) { throw null; }
-        public T VisitAndConvert<T>(T node, string callerName) where T : System.Linq.Expressions.Expression { throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<T> VisitAndConvert<T>(System.Collections.ObjectModel.ReadOnlyCollection<T> nodes, string callerName) where T : System.Linq.Expressions.Expression { throw null; }
+        public T VisitAndConvert<T>(T node, string callerName) where T : System.Linq.Expressions.Expression { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitBinary(System.Linq.Expressions.BinaryExpression node) { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitBlock(System.Linq.Expressions.BlockExpression node) { throw null; }
         protected virtual System.Linq.Expressions.CatchBlock VisitCatchBlock(System.Linq.Expressions.CatchBlock node) { throw null; }
@@ -833,6 +823,16 @@ namespace System.Linq.Expressions
         protected internal virtual System.Linq.Expressions.Expression VisitTry(System.Linq.Expressions.TryExpression node) { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitTypeBinary(System.Linq.Expressions.TypeBinaryExpression node) { throw null; }
         protected internal virtual System.Linq.Expressions.Expression VisitUnary(System.Linq.Expressions.UnaryExpression node) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> Visit<T>(System.Collections.ObjectModel.ReadOnlyCollection<T> nodes, System.Func<T, T> elementVisitor) { throw null; }
+    }
+    public sealed partial class Expression<TDelegate> : System.Linq.Expressions.LambdaExpression
+    {
+        internal Expression() { }
+        protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { throw null; }
+        public new TDelegate Compile() { throw null; }
+        public new TDelegate Compile(bool preferInterpretation) { throw null; }
+        public new TDelegate Compile(System.Runtime.CompilerServices.DebugInfoGenerator debugInfoGenerator) { throw null; }
+        public System.Linq.Expressions.Expression<TDelegate> Update(System.Linq.Expressions.Expression body, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression> parameters) { throw null; }
     }
     public sealed partial class GotoExpression : System.Linq.Expressions.Expression
     {
@@ -944,7 +944,9 @@ namespace System.Linq.Expressions
     }
     public sealed partial class MemberAssignment : System.Linq.Expressions.MemberBinding
     {
-        internal MemberAssignment() { }
+#pragma warning disable CS0618
+        internal MemberAssignment() : base (default(System.Linq.Expressions.MemberBindingType), default(System.Reflection.MemberInfo)) { }
+#pragma warning restore CS0618
         public System.Linq.Expressions.Expression Expression { get { throw null; } }
         public System.Linq.Expressions.MemberAssignment Update(System.Linq.Expressions.Expression expression) { throw null; }
     }
@@ -952,7 +954,6 @@ namespace System.Linq.Expressions
     {
         [System.ObsoleteAttribute("Do not use this constructor. It will be removed in future releases.")]
         protected MemberBinding(System.Linq.Expressions.MemberBindingType type, System.Reflection.MemberInfo member) { }
-        internal MemberBinding() { }
         public System.Linq.Expressions.MemberBindingType BindingType { get { throw null; } }
         public System.Reflection.MemberInfo Member { get { throw null; } }
         public override string ToString() { throw null; }
@@ -986,13 +987,17 @@ namespace System.Linq.Expressions
     }
     public sealed partial class MemberListBinding : System.Linq.Expressions.MemberBinding
     {
-        internal MemberListBinding() { }
+#pragma warning disable CS0618
+        internal MemberListBinding() : base (default(System.Linq.Expressions.MemberBindingType), default(System.Reflection.MemberInfo)) { }
+#pragma warning restore CS0618
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.ElementInit> Initializers { get { throw null; } }
         public System.Linq.Expressions.MemberListBinding Update(System.Collections.Generic.IEnumerable<System.Linq.Expressions.ElementInit> initializers) { throw null; }
     }
     public sealed partial class MemberMemberBinding : System.Linq.Expressions.MemberBinding
     {
-        internal MemberMemberBinding() { }
+#pragma warning disable CS0618
+        internal MemberMemberBinding() : base (default(System.Linq.Expressions.MemberBindingType), default(System.Reflection.MemberInfo)) { }
+#pragma warning restore CS0618
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.MemberBinding> Bindings { get { throw null; } }
         public System.Linq.Expressions.MemberMemberBinding Update(System.Collections.Generic.IEnumerable<System.Linq.Expressions.MemberBinding> bindings) { throw null; }
     }
@@ -1115,6 +1120,49 @@ namespace System.Linq.Expressions
 }
 namespace System.Runtime.CompilerServices
 {
+    public partial class CallSite
+    {
+        internal CallSite() { }
+        public System.Runtime.CompilerServices.CallSiteBinder Binder { get { throw null; } }
+        public static System.Runtime.CompilerServices.CallSite Create(System.Type delegateType, System.Runtime.CompilerServices.CallSiteBinder binder) { throw null; }
+    }
+    public abstract partial class CallSiteBinder
+    {
+        protected CallSiteBinder() { }
+        public static System.Linq.Expressions.LabelTarget UpdateLabel { get { throw null; } }
+        public abstract System.Linq.Expressions.Expression Bind(object[] args, System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.ParameterExpression> parameters, System.Linq.Expressions.LabelTarget returnLabel);
+        public virtual T BindDelegate<T>(System.Runtime.CompilerServices.CallSite<T> site, object[] args) where T : class { throw null; }
+        protected void CacheTarget<T>(T target) where T : class { }
+    }
+    public static partial class CallSiteHelpers
+    {
+        public static bool IsInternalFrame(System.Reflection.MethodBase mb) { throw null; }
+    }
+    public partial class CallSite<T> : System.Runtime.CompilerServices.CallSite where T : class
+    {
+        internal CallSite() { }
+        public T Target;
+        public T Update { get { throw null; } }
+        public static System.Runtime.CompilerServices.CallSite<T> Create(System.Runtime.CompilerServices.CallSiteBinder binder) { throw null; }
+    }
+    public abstract partial class DebugInfoGenerator
+    {
+        protected DebugInfoGenerator() { }
+        public static System.Runtime.CompilerServices.DebugInfoGenerator CreatePdbGenerator() { throw null; }
+        public abstract void MarkSequencePoint(System.Linq.Expressions.LambdaExpression method, int ilOffset, System.Linq.Expressions.DebugInfoExpression sequencePoint);
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct)]
+    public sealed partial class DynamicAttribute : System.Attribute
+    {
+        public DynamicAttribute() { }
+        public DynamicAttribute(bool[] transformFlags) { }
+        public System.Collections.Generic.IList<bool> TransformFlags { get { throw null; } }
+    }
+    public partial interface IRuntimeVariables
+    {
+        int Count { get; }
+        object this[int index] { get; set; }
+    }
     public sealed partial class ReadOnlyCollectionBuilder<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public ReadOnlyCollectionBuilder() { }
@@ -1149,49 +1197,6 @@ namespace System.Runtime.CompilerServices
         void System.Collections.IList.Remove(object value) { }
         public T[] ToArray() { throw null; }
         public System.Collections.ObjectModel.ReadOnlyCollection<T> ToReadOnlyCollection() { throw null; }
-    }
-    public abstract partial class CallSiteBinder
-    {
-        protected CallSiteBinder() { }
-        public static System.Linq.Expressions.LabelTarget UpdateLabel { get { throw null; } }
-        public abstract System.Linq.Expressions.Expression Bind(object[] args, System.Collections.ObjectModel.ReadOnlyCollection<System.Linq.Expressions.ParameterExpression> parameters, System.Linq.Expressions.LabelTarget returnLabel);
-        public virtual T BindDelegate<T>(System.Runtime.CompilerServices.CallSite<T> site, object[] args) where T : class { throw null; }
-        protected void CacheTarget<T>(T target) where T : class { }
-    }
-    public partial class CallSite<T> : System.Runtime.CompilerServices.CallSite where T : class
-    {
-        internal CallSite() { }
-        public T Target;
-        public T Update { get { throw null; } }
-        public static System.Runtime.CompilerServices.CallSite<T> Create(System.Runtime.CompilerServices.CallSiteBinder binder) { throw null; }
-    }
-    public partial class CallSite
-    {
-        internal CallSite() { }
-        public System.Runtime.CompilerServices.CallSiteBinder Binder { get { throw null; } }
-        public static System.Runtime.CompilerServices.CallSite Create(System.Type delegateType, System.Runtime.CompilerServices.CallSiteBinder binder) { throw null; }
-    }
-    public static partial class CallSiteHelpers
-    {
-        public static bool IsInternalFrame(System.Reflection.MethodBase mb) { throw null; }
-    }
-    public abstract partial class DebugInfoGenerator
-    {
-        protected DebugInfoGenerator() { }
-        public static System.Runtime.CompilerServices.DebugInfoGenerator CreatePdbGenerator() { throw null; }
-        public abstract void MarkSequencePoint(System.Linq.Expressions.LambdaExpression method, int ilOffset, System.Linq.Expressions.DebugInfoExpression sequencePoint);
-    }
-    public partial interface IRuntimeVariables
-    {
-        int Count { get; }
-        object this[int index] { get; set; }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10636))]
-    public sealed partial class DynamicAttribute : System.Attribute
-    {
-        public DynamicAttribute() { }
-        public DynamicAttribute(bool[] transformFlags) { }
-        public System.Collections.Generic.IList<bool> TransformFlags { get { throw null; } }
     }
     public partial class RuleCache<T> where T : class
     {

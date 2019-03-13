@@ -6,6 +6,7 @@
   <ItemGroup>
     <Compile Include="BasicScenarioTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\Rss20ItemFormatterTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Rss20FeedFormatterTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\Atom10ItemFormatterTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\Atom10FeedFormatterTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\SyndicationFeedFormatterTests.cs" />

@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
         /// but we try to keep this an implementation detail by exposing properties that return
         /// references for these particular facilities, that are implemented as returning "this".
         /// </remarks>
-        internal class Comparers : IEqualityComparer<HashBucket>, IEqualityComparer<KeyValuePair<TKey, TValue>>
+        internal sealed class Comparers : IEqualityComparer<HashBucket>, IEqualityComparer<KeyValuePair<TKey, TValue>>
         {
             /// <summary>
             /// The default instance to use when all the comparers used are their default values.

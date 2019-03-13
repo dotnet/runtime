@@ -165,7 +165,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public override string ToString()
         {
-            string str = CommandID.ToString() + " : ";
+            string str = (CommandID?.ToString() ?? "") + " : ";
             if ((_status & SUPPORTED) != 0)
             {
                 str += "Supported";

@@ -1052,7 +1052,7 @@ namespace System.Net.WebSockets
                         throw new ObjectDisposedException(GetType().FullName);
                     }
 
-                    Debug.Assert(false, "Only one outstanding async operation is allowed per HttpListenerAsyncEventArgs instance.");
+                    Debug.Fail("Only one outstanding async operation is allowed per HttpListenerAsyncEventArgs instance.");
                     // Only one at a time.
                     throw new InvalidOperationException();
                 }

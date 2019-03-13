@@ -155,7 +155,7 @@ namespace System.ComponentModel.Composition
             bool succeeded = ContractServices.TryCast(typeof(T), exportedValue, out typedExportedValue);
             if (!succeeded)
             {
-                throw new CompositionContractMismatchException(string.Format(CultureInfo.CurrentCulture,
+                throw new CompositionContractMismatchException(SR.Format(
                     SR.ContractMismatch_ExportedValueCannotBeCastToT,
                     element.DisplayName,
                     typeof(T)));

@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization.Json
                                 tempDelegate = tempDelegate ?? CreateJsonFormatReaderDelegate();
 
                                 if (tempDelegate == null)
-                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalClassDataContract.UnderlyingType.ToString()));
+                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalClassDataContract.UnderlyingType));
                             }
 #endif
                             else
@@ -101,7 +101,7 @@ namespace System.Runtime.Serialization.Json
                                 tempDelegate = tempDelegate ?? CreateJsonFormatWriterDelegate();
 
                                 if (tempDelegate == null)
-                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalClassDataContract.UnderlyingType.ToString()));
+                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalClassDataContract.UnderlyingType));
                             }
 #endif
                             else 

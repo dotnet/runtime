@@ -202,7 +202,7 @@ namespace System.Transactions
     }
     public partial struct TransactionOptions
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } set { } }
         public System.TimeSpan Timeout { get { throw null; } set { } }
         public override bool Equals(object obj) { throw null; }

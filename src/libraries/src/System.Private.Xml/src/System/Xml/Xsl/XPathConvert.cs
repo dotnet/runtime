@@ -2160,7 +2160,7 @@ namespace System.Xml.Xsl
 
             LNegative:
                 // bi was bigger than this.
-                Debug.Assert(false, "Who's subtracting to negative?");
+                Debug.Fail("Who's subtracting to negative?");
                 _length = 0;
                 AssertValid();
             }

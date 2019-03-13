@@ -54,7 +54,7 @@ namespace System.ComponentModel
             _tabClasses = new Type[] { tabClass };
             if (tabScope < PropertyTabScope.Document)
             {
-                throw new ArgumentException(SR.Format(SR.PropertyTabAttributeBadPropertyTabScope), nameof(tabScope));
+                throw new ArgumentException(SR.PropertyTabAttributeBadPropertyTabScope, nameof(tabScope));
             }
             TabScopes = new PropertyTabScope[] { tabScope };
         }
@@ -68,7 +68,7 @@ namespace System.ComponentModel
             _tabClassNames = new string[] { tabClassName };
             if (tabScope < PropertyTabScope.Document)
             {
-                throw new ArgumentException(SR.Format(SR.PropertyTabAttributeBadPropertyTabScope), nameof(tabScope));
+                throw new ArgumentException(SR.PropertyTabAttributeBadPropertyTabScope, nameof(tabScope));
             }
             TabScopes = new PropertyTabScope[] { tabScope };
         }

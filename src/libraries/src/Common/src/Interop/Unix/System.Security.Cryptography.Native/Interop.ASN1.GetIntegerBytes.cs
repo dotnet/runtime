@@ -40,7 +40,7 @@ internal static partial class Interop
                 asn1Integer);
 
             AsnReader reader = new AsnReader(derEncoded, AsnEncodingRules.DER);
-            return reader.GetIntegerBytes().ToArray();
+            return reader.ReadIntegerBytes().ToArray();
         }
     }
 }

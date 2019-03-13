@@ -256,15 +256,7 @@ namespace System.Drawing.Printing
 
         public override string ToString()
         {
-            string ret = "[PageSettings: Color={0}";
-            ret += ", Landscape={1}";
-            ret += ", Margins={2}";
-            ret += ", PaperSize={3}";
-            ret += ", PaperSource={4}";
-            ret += ", PrinterResolution={5}";
-            ret += "]";
-
-            return string.Format(ret, this.color, this.landscape, this.margins, this.paperSize, this.paperSource, this.printerResolution);
+            return $"[{nameof(PageSettings)}: {nameof(Color)}={color}, {nameof(Landscape)}={landscape}, {nameof(Margins)}={margins}, {nameof(PaperSize)}={paperSize}, {nameof(PaperSource)}={paperSource}, {nameof(PrinterResolution)}={printerResolution}]";
         }
     }
 }
