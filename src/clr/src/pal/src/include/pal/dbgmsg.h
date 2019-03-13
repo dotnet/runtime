@@ -355,8 +355,7 @@ bool DBG_ShouldCheckStackAlignment();
 
 #else /* defined(_DEBUG) */
 
-ANALYZER_NORETURN
-inline void AssertBreak()
+inline void ANALYZER_NORETURN AssertBreak()
 {
     if(g_Dbg_asserts_enabled)
     {
