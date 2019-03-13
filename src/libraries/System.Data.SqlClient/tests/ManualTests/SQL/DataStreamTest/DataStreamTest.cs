@@ -1829,7 +1829,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
     
-
         private static void TimeoutDuringReadAsyncWithClosedReaderTest(string connectionString)
         {
             // Create the proxy
