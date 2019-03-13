@@ -32,6 +32,29 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Reported OS version is newer or equal to the true OS version - no shims.");
         }
 
+        [Fact]
+        public void FrameworkDependent_DLL_LongPath_Succeeds()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return;
+            }
+
+            var fixture = sharedTestState.PortableAppWithLongPathFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            dotnet.Exec(appDll)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining("CreateDirectoryW with long path succeeded");
+        }
+
         // Testing the standalone version (apphost) would require to make a copy of the entire SDK
         // and overwrite the apphost.exe in it. Currently this is just too expensive for one test (160MB of data).
 
@@ -39,11 +62,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             private static RepoDirectoriesProvider RepoDirectories { get; set; }
 
-            public TestProjectFixture TestWindowsOsShimsAppFixture { get; set; }
+            public TestProjectFixture PortableAppWithLongPathFixture { get; }
+            public TestProjectFixture TestWindowsOsShimsAppFixture { get; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
+
+                PortableAppWithLongPathFixture = new TestProjectFixture("PortableAppWithLongPath", RepoDirectories)
+                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .BuildProject();
 
                 TestWindowsOsShimsAppFixture = new TestProjectFixture("TestWindowsOsShimsApp", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
@@ -52,6 +80,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public void Dispose()
             {
+                PortableAppWithLongPathFixture.Dispose();
                 TestWindowsOsShimsAppFixture.Dispose();
             }
         }
