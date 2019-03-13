@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  a source with two atom:icon elements produces an error
 Expect:       DuplicateElement{element:icon,parent:source}

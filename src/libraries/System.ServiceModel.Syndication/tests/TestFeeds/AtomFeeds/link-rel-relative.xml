@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  link with a rel which is a relative IRI but not a isegment-nz-nc produces an error
 Expect:       UnregisteredAtomLinkRel{element:link,parent:entry}

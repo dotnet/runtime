@@ -237,7 +237,7 @@ namespace System.Data.SqlClient
             }
             else
             {
-                Debug.Assert(false, "unexpected state switch");
+                Debug.Fail("unexpected state switch");
                 if (originalState != currentState)
                 {
                     OnStateChange(new StateChangeEventArgs(originalState, currentState));

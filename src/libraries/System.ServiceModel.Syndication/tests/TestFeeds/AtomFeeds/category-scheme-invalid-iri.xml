@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  category with a scheme attribute that is not a valid IRI produces an error
 Expect:       InvalidUriChar{element:scheme,parent:entry}

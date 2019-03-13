@@ -37,7 +37,16 @@ namespace System.ComponentModel
         /// </summary>
         public EditorAttribute(string typeName, Type baseType)
         {
-            EditorTypeName = typeName ?? throw new ArgumentNullException(nameof(typeName));
+            if (typeName == null)
+            {
+                throw new ArgumentNullException(nameof(typeName));
+            }
+            if (baseType == null)
+            {
+                throw new ArgumentNullException(nameof(baseType));
+            }
+
+            EditorTypeName = typeName;
             EditorBaseTypeName = baseType.AssemblyQualifiedName;
         }
 
@@ -46,6 +55,15 @@ namespace System.ComponentModel
         /// </summary>
         public EditorAttribute(Type type, Type baseType)
         {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+            if (baseType == null)
+            {
+                throw new ArgumentNullException(nameof(baseType));
+            }
+
             EditorTypeName = type.AssemblyQualifiedName;
             EditorBaseTypeName = baseType.AssemblyQualifiedName;
         }
@@ -73,7 +91,7 @@ namespace System.ComponentModel
             {
                 if (_typeId == null)
                 {
-                    string baseType = EditorBaseTypeName;
+                    string baseType = EditorBaseTypeName ?? string.Empty;
                     int comma = baseType.IndexOf(',');
                     if (comma != -1)
                     {

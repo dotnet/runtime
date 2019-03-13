@@ -43,7 +43,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(16945)] // Packet loss, potentially due to other tests running at the same time
+        [ActiveIssue(16945)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(Loopbacks))]
@@ -54,7 +54,7 @@ namespace System.Net.Sockets.Tests
             // TODO #5185: Harden against packet loss
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 1000;
+            const int AckTimeout = 5000;
             const int TestTimeout = 30000;
 
             var left = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -68,6 +68,8 @@ namespace System.Net.Sockets.Tests
 
             var receiverAck = new SemaphoreSlim(0);
             var senderAck = new SemaphoreSlim(0);
+
+            _output.WriteLine($"{DateTime.Now}: Sending data from {rightEndpoint} to {leftEndpoint}");
 
             var receivedChecksums = new uint?[DatagramsToSend];
             Task leftThread = Task.Run(async () =>
@@ -88,7 +90,8 @@ namespace System.Net.Sockets.Tests
                         receivedChecksums[datagramId] = Fletcher32.Checksum(recvBuffer, 0, result.ReceivedBytes);
 
                         receiverAck.Release();
-                        Assert.True(await senderAck.WaitAsync(TestTimeout));
+                        bool gotAck = await senderAck.WaitAsync(TestTimeout);
+                        Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {TestTimeout} for senderAck in iteration {i}");
                     }
                 }
             });
@@ -105,7 +108,8 @@ namespace System.Net.Sockets.Tests
 
                     int sent = await SendToAsync(right, new ArraySegment<byte>(sendBuffer), leftEndpoint);
 
-                    Assert.True(await receiverAck.WaitAsync(AckTimeout));
+                    bool gotAck = await receiverAck.WaitAsync(AckTimeout);
+                    Assert.True(gotAck, $"{DateTime.Now}: Timeout waiting {AckTimeout} for receiverAck in iteration {i} after sending {sent}. Receiver is in {leftThread.Status}");
                     senderAck.Release();
 
                     Assert.Equal(DatagramSize, sent);

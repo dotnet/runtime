@@ -104,7 +104,7 @@ namespace System.Xml
                 case State.InReadElementContent:
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return 0;
             }
 
@@ -160,7 +160,7 @@ namespace System.Xml
                 case State.InReadElementContent:
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return 0;
             }
 
@@ -216,7 +216,7 @@ namespace System.Xml
                     }
                     break;
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return 0;
             }
 
@@ -272,7 +272,7 @@ namespace System.Xml
                     }
                     break;
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return 0;
             }
 

@@ -340,7 +340,7 @@ namespace System.Drawing
         internal void SetNativeImage(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentException(SR.Format(SR.NativeHandle0), nameof(handle));
+                throw new ArgumentException(SR.NativeHandle0, nameof(handle));
 
             nativeImage = handle;
         }

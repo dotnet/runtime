@@ -200,7 +200,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
 
-            Debug.Fail(string.Format(CultureInfo.CurrentCulture, "PrincipalCollectionEnumerator.MoveNext: fell off end of function, mode = {0}", _currentMode.ToString()));
+            Debug.Fail($"PrincipalCollectionEnumerator.MoveNext: fell off end of function, mode = {_currentMode}");
             return false;
         }
 

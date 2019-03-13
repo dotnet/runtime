@@ -50,7 +50,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if (reflectionExportDefinition == null)
             {
                 throw new ArgumentException(
-                    string.Format(CultureInfo.CurrentCulture, SR.ReflectionModel_InvalidExportDefinition, exportDefinition.GetType()),
+                    SR.Format(SR.ReflectionModel_InvalidExportDefinition, exportDefinition.GetType()),
                     nameof(exportDefinition));
             }
 
@@ -65,7 +65,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if (reflectionMemberImportDefinition == null)
             {
                 throw new ArgumentException(
-                    string.Format(CultureInfo.CurrentCulture, SR.ReflectionModel_InvalidMemberImportDefinition, importDefinition.GetType()),
+                    SR.Format(SR.ReflectionModel_InvalidMemberImportDefinition, importDefinition.GetType()),
                     nameof(importDefinition));
             }
 
@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if (reflectionParameterImportDefinition == null)
             {
                 throw new ArgumentException(
-                    string.Format(CultureInfo.CurrentCulture, SR.ReflectionModel_InvalidParameterImportDefinition, importDefinition.GetType()),
+                    SR.Format(SR.ReflectionModel_InvalidParameterImportDefinition, importDefinition.GetType()),
                     nameof(importDefinition));
             }
 
@@ -96,7 +96,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if (reflectionImportDefinition == null)
             {
                 throw new ArgumentException(
-                    string.Format(CultureInfo.CurrentCulture, SR.ReflectionModel_InvalidImportDefinition, importDefinition.GetType()),
+                    SR.Format(SR.ReflectionModel_InvalidImportDefinition, importDefinition.GetType()),
                     nameof(importDefinition));
             }
 
@@ -119,7 +119,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if (partCreatorImportDefinition == null)
             {
                 throw new ArgumentException(
-                    string.Format(CultureInfo.CurrentCulture, SR.ReflectionModel_InvalidImportDefinition, importDefinition.GetType()),
+                    SR.Format(SR.ReflectionModel_InvalidImportDefinition, importDefinition.GetType()),
                     nameof(importDefinition));
             }
 
@@ -434,7 +434,7 @@ internal class ReflectionPartCreationInfo : IReflectionPartCreationInfo
                 if (reflectionExport == null)
                 {
                     throw new InvalidOperationException(
-                        string.Format(CultureInfo.CurrentCulture, SR.ReflectionModel_InvalidExportDefinition, export.GetType()));
+                        SR.Format(SR.ReflectionModel_InvalidExportDefinition, export.GetType()));
                 }
                 yield return reflectionExport;
             }
@@ -460,7 +460,7 @@ internal class ReflectionPartCreationInfo : IReflectionPartCreationInfo
                 if (reflectionImport == null)
                 {
                     throw new InvalidOperationException(
-                        string.Format(CultureInfo.CurrentCulture, SR.ReflectionModel_InvalidMemberImportDefinition, import.GetType()));
+                        SR.Format(SR.ReflectionModel_InvalidMemberImportDefinition, import.GetType()));
                 }
                 yield return reflectionImport;
             }

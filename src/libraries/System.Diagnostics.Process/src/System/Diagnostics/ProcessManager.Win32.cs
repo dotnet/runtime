@@ -262,7 +262,7 @@ namespace System.Diagnostics
 
             try
             {
-                do
+                while (true)
                 {
                     if (buffer == null)
                     {
@@ -277,6 +277,8 @@ namespace System.Diagnostics
 
                     unsafe
                     {
+                        // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed 
+                        // by GetProcessInfos below
                         fixed (long* bufferPtr = buffer)
                         {
                             status = Interop.NtDll.NtQuerySystemInformation(
@@ -284,23 +286,25 @@ namespace System.Diagnostics
                                 bufferPtr,
                                 bufferSize,
                                 out requiredSize);
+
+                            if (unchecked((uint)status) != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
+                            {
+                                // see definition of NT_SUCCESS(Status) in SDK
+                                if (status < 0)
+                                {
+                                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception(status));
+                                }
+
+                                // Parse the data block to get process information
+                                processInfos = GetProcessInfos(MemoryMarshal.AsBytes<long>(buffer), processIdFilter);
+                                break;
+                            }
                         }
                     }
 
-                    if (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
-                    {
-                        buffer = null;
-                        bufferSize = GetNewBufferSize(bufferSize, requiredSize);
-                    }
-                } while (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH);
-
-                if (status < 0)
-                { // see definition of NT_SUCCESS(Status) in SDK
-                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception(status));
+                    buffer = null;
+                    bufferSize = GetNewBufferSize(bufferSize, requiredSize);
                 }
-
-                // Parse the data block to get process information
-                processInfos = GetProcessInfos(MemoryMarshal.AsBytes<long>(buffer), processIdFilter);
             }
             finally
             {

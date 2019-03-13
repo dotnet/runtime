@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -144,12 +143,6 @@
   <data name="ExtensionNameNotSpecified" xml:space="preserve">
     <value>The name of the extension element must be specified.</value>
   </data>
-  <data name="FeedAuthorsIgnoredOnWrite" xml:space="preserve">
-    <value>The feed's authors were not serialized as part of serializing the feed in RSS 2.0 format.</value>
-  </data>
-  <data name="FeedContributorsIgnoredOnWrite" xml:space="preserve">
-    <value>The feed's contributors were not serialized as part of serializing the feed in RSS 2.0 format.</value>
-  </data>
   <data name="FeedCreatedNullCategory" xml:space="preserve">
     <value>The feed created a null category.</value>
   </data>
@@ -162,29 +155,8 @@
   <data name="FeedFormatterDoesNotHaveFeed" xml:space="preserve">
     <value>The syndication feed formatter must be configured with a syndication feed.</value>
   </data>
-  <data name="FeedHasNonContiguousItems" xml:space="preserve">
-    <value>The feed being deserialized has non-contiguous sets of items in it. This is not supported by '{0}'.</value>
-  </data>
-  <data name="FeedIdIgnoredOnWrite" xml:space="preserve">
-    <value>The feed's id was not serialized as part of serializing the feed in RSS 2.0 format.</value>
-  </data>
-  <data name="FeedLinksIgnoredOnWrite" xml:space="preserve">
-    <value>The feed's links were not serialized as part of serializing the feed in RSS 2.0 format.</value>
-  </data>
   <data name="InvalidObjectTypePassed" xml:space="preserve">
     <value>The Type of object passed as parameter '{0}' is not derived from {1}. Ensure that the type of object passed is either of type {1} or derived from {1}.</value>
-  </data>
-  <data name="ItemAuthorsIgnoredOnWrite" xml:space="preserve">
-    <value>The item's authors were not serialized as part of serializing the feed in RSS 2.0 format.</value>
-  </data>
-  <data name="ItemContentIgnoredOnWrite" xml:space="preserve">
-    <value>The item's content was not serialized as part of serializing the feed in RSS 2.0 format.</value>
-  </data>
-  <data name="ItemContributorsIgnoredOnWrite" xml:space="preserve">
-    <value>The item's contributors were not serialized as part of serializing the feed in RSS 2.0 format.</value>
-  </data>
-  <data name="ItemCopyrightIgnoredOnWrite" xml:space="preserve">
-    <value>The item's copyrights were not serialized as part of serializing the feed in RSS 2.0 format.</value>
   </data>
   <data name="ItemCreatedNullCategory" xml:space="preserve">
     <value>The item created a null category.</value>
@@ -194,12 +166,6 @@
   </data>
   <data name="ItemFormatterDoesNotHaveItem" xml:space="preserve">
     <value>The syndication item formatter must be configured with a syndication item.</value>
-  </data>
-  <data name="ItemLastUpdatedTimeIgnoredOnWrite" xml:space="preserve">
-    <value>The item's last updated time was not serialized as part of serializing the feed in RSS 2.0 format.</value>
-  </data>
-  <data name="ItemLinksIgnoredOnWrite" xml:space="preserve">
-    <value>The item's links were not serialized as part of serializing the feed in RSS 2.0 format.</value>
   </data>
   <data name="OuterElementNameNotSpecified" xml:space="preserve">
     <value>The outer element name must be specified.</value>

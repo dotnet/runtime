@@ -264,7 +264,7 @@ namespace System.Data.SqlClient
                         case Keywords.ConnectRetryInterval: ConnectRetryInterval = ConvertToInt32(value); break;
 
                         default:
-                            Debug.Assert(false, "unexpected keyword");
+                            Debug.Fail("unexpected keyword");
                             throw UnsupportedKeyword(keyword);
                     }
                 }
@@ -714,7 +714,7 @@ namespace System.Data.SqlClient
                 case Keywords.ConnectRetryInterval: return ConnectRetryInterval;
 
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw UnsupportedKeyword(s_validKeywords[(int)index]);
             }
         }
@@ -846,7 +846,7 @@ namespace System.Data.SqlClient
                     _workstationID = DbConnectionStringDefaults.WorkstationID;
                     break;
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw UnsupportedKeyword(s_validKeywords[(int)index]);
             }
         }

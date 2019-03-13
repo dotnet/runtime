@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Resources.Reader.cs" />
+    <Compile Include="System.Resources.Reader.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Resources.ResourceManager\ref\System.Resources.ResourceManager.csproj" />

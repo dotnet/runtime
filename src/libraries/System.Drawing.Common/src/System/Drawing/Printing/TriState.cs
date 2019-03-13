@@ -66,7 +66,7 @@ namespace System.Drawing.Printing
         public static explicit operator bool (TriState value)
         {
             if (value.IsDefault)
-                throw new InvalidCastException(SR.Format(SR.TriStateCompareError));
+                throw new InvalidCastException(SR.TriStateCompareError);
             else
                 return (value == TriState.True);
         }

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  link with a "rel" which matches isegment-nz-nc but is not in the IANA registry produces an error
 Expect:       UnregisteredAtomLinkRel{value:service.post,element:link,parent:feed}

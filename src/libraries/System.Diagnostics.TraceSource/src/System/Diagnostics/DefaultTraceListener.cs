@@ -172,7 +172,7 @@ namespace System.Diagnostics
             }
             catch (Exception e)
             {
-                WriteLine(string.Format(SR.ExceptionOccurred, LogFileName, e.ToString()), useLogFile: false);
+                WriteLine(SR.Format(SR.ExceptionOccurred, LogFileName, e), useLogFile: false);
             }
         }
     }

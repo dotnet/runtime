@@ -4,12 +4,12 @@
 
 #include "pal_x509.h"
 
-#include <stdbool.h>
+#include "../Common/pal_safecrt.h"
 #include <assert.h>
 #include <dirent.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
-#include "../Common/pal_safecrt.h"
 
 c_static_assert(PAL_X509_V_OK == X509_V_OK);
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT);
@@ -521,7 +521,8 @@ X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, const char* userTr
                 if (!X509_STORE_add_cert(store, cert))
                 {
                     // cert refcount is still 1
-                    if (ERR_get_error() != ERR_PACK(ERR_LIB_X509, X509_F_X509_STORE_ADD_CERT, X509_R_CERT_ALREADY_IN_HASH_TABLE))
+                    if (ERR_get_error() !=
+                        ERR_PACK(ERR_LIB_X509, X509_F_X509_STORE_ADD_CERT, X509_R_CERT_ALREADY_IN_HASH_TABLE))
                     {
                         // cert refcount goes to 0
                         X509_free(cert);
@@ -600,7 +601,6 @@ int32_t CryptoNative_X509StackAddDirectoryStore(X509Stack* stack, char* storePat
             // Just clear it all.
             ERR_clear_error();
         }
-
     }
 
     return clearError;
@@ -672,7 +672,13 @@ int32_t CryptoNative_X509StoreCtxCommitToChain(X509_STORE_CTX* storeCtx)
             // For a fully trusted chain this will add the trust root redundantly to the
             // untrusted lookup set, but the resulting extra work is small compared to the
             // risk of being wrong about promoting trust or losing the chain at this point.
-            sk_X509_push(untrusted, cur);
+            if (!sk_X509_push(untrusted, cur))
+            {
+                X509err(X509_F_X509_VERIFY_CERT, ERR_R_MALLOC_FAILURE);
+                X509_free(cur);
+                sk_X509_pop_free(chain, X509_free);
+                return 0;
+            }
         }
     }
 
@@ -680,6 +686,126 @@ int32_t CryptoNative_X509StoreCtxCommitToChain(X509_STORE_CTX* storeCtx)
     // and pop_free, other than free saves a bit of work.
     sk_X509_free(chain);
     return 1;
+}
+
+int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx, X509_STORE** newStore)
+{
+    if (storeCtx == NULL || newStore == NULL)
+    {
+        return -1;
+    }
+
+    *newStore = NULL;
+
+    int errorDepth = X509_STORE_CTX_get_error_depth(storeCtx);
+    X509Stack* chain = X509_STORE_CTX_get0_chain(storeCtx);
+    int chainLength = sk_X509_num(chain);
+    X509_STORE* store = X509_STORE_CTX_get0_store(storeCtx);
+
+    // If the signature error was reported at the last element
+    if (chainLength - 1 == errorDepth)
+    {
+        X509* root;
+        X509* last = sk_X509_value(chain, errorDepth);
+
+        // If the last element is in the trust store we need to build a new trust store.
+        if (X509_STORE_CTX_get1_issuer(&root, storeCtx, last))
+        {
+            if (root == last)
+            {
+                // We know it's a non-zero refcount after this because last has one, too.
+                // So go ahead and undo the get1.
+                X509_free(root);
+
+                X509_STORE* tmpNew = X509_STORE_new();
+
+                if (tmpNew == NULL)
+                {
+                    return 0;
+                }
+
+                X509* duplicate = X509_dup(last);
+
+                if (duplicate == NULL)
+                {
+                    X509_STORE_free(tmpNew);
+                    return 0;
+                }
+
+                if (!X509_STORE_add_cert(tmpNew, duplicate))
+                {
+                    X509_free(duplicate);
+                    X509_STORE_free(tmpNew);
+                    return 0;
+                }
+
+                *newStore = tmpNew;
+                store = tmpNew;
+                chainLength--;
+            }
+            else
+            {
+                // This really shouldn't happen, since if we could have resolved it now
+                // it should have resolved during chain walk.
+                //
+                // But better safe than sorry.
+                X509_free(root);
+            }
+        }
+    }
+
+    X509Stack* untrusted = X509_STORE_CTX_get0_untrusted(storeCtx);
+    X509* cur;
+
+    while ((cur = sk_X509_pop(untrusted)) != NULL)
+    {
+        X509_free(cur);
+    }
+
+    for (int i = chainLength - 1; i > 0; --i)
+    {
+        cur = sk_X509_value(chain, i);
+
+        // errorDepth and lower need to be duplicated to avoid x->valid taint.
+        if (i <= errorDepth)
+        {
+            X509* duplicate = X509_dup(cur);
+
+            if (duplicate == NULL)
+            {
+                return 0;
+            }
+
+            if (!sk_X509_push(untrusted, duplicate))
+            {
+                X509err(X509_F_X509_VERIFY_CERT, ERR_R_MALLOC_FAILURE);
+                X509_free(duplicate);
+                return 0;
+            }
+        }
+        else
+        {
+            if (sk_X509_push(untrusted, cur))
+            {
+                X509_up_ref(cur);
+            }
+            else
+            {
+                X509err(X509_F_X509_VERIFY_CERT, ERR_R_MALLOC_FAILURE);
+                return 0;
+            }
+        }
+    }
+
+    X509* leafDup = X509_dup(X509_STORE_CTX_get0_cert(storeCtx));
+
+    if (leafDup == NULL)
+    {
+        return 0;
+    }
+
+    X509_STORE_CTX_cleanup(storeCtx);
+    return CryptoNative_X509StoreCtxInit(storeCtx, store, leafDup, untrusted);
 }
 
 static char* BuildOcspCacheFilename(char* cachePath, X509* subject)
@@ -697,7 +823,8 @@ static char* BuildOcspCacheFilename(char* cachePath, X509* subject)
         unsigned long issuerHash = X509_issuer_name_hash(subject);
         unsigned long subjectHash = X509_subject_name_hash(subject);
 
-        size_t written = (size_t)snprintf(fullPath, allocSize, "%s/%08lx.%08lx.ocsp", cachePath, issuerHash, subjectHash);
+        size_t written =
+            (size_t)snprintf(fullPath, allocSize, "%s/%08lx.%08lx.ocsp", cachePath, issuerHash, subjectHash);
         assert(written == allocSize - 1);
         (void)written;
 
@@ -719,14 +846,13 @@ static OCSP_CERTID* MakeCertId(X509* subject, X509* issuer)
     return OCSP_cert_to_id(EVP_sha1(), subject, issuer);
 }
 
-static X509VerifyStatusCode CheckOcsp(
-    OCSP_REQUEST* req,
-    OCSP_RESPONSE* resp,
-    X509* subject,
-    X509* issuer,
-    X509_STORE_CTX* storeCtx,
-    ASN1_GENERALIZEDTIME** thisUpdate,
-    ASN1_GENERALIZEDTIME** nextUpdate)
+static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
+                                      OCSP_RESPONSE* resp,
+                                      X509* subject,
+                                      X509* issuer,
+                                      X509_STORE_CTX* storeCtx,
+                                      ASN1_GENERALIZEDTIME** thisUpdate,
+                                      ASN1_GENERALIZEDTIME** nextUpdate)
 {
     if (thisUpdate != NULL)
     {
@@ -887,9 +1013,7 @@ X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* s
             // if thisUpdate < oldest || nextUpdate < now, reject.
             //
             // Since X509_cmp(_current)_time returns 0 on error, do a <= 0 check.
-            if (nextUpdate == NULL ||
-                thisUpdate == NULL ||
-                X509_cmp_current_time(nextUpdate) <= 0 ||
+            if (nextUpdate == NULL || thisUpdate == NULL || X509_cmp_current_time(nextUpdate) <= 0 ||
                 X509_cmp_time(thisUpdate, &oldest) <= 0)
             {
                 ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
@@ -971,11 +1095,8 @@ OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx)
     return req;
 }
 
-X509VerifyStatusCode CryptoNative_X509ChainVerifyOcsp(
-    X509_STORE_CTX* storeCtx,
-    OCSP_REQUEST* req,
-    OCSP_RESPONSE* resp,
-    char* cachePath)
+X509VerifyStatusCode
+CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OCSP_RESPONSE* resp, char* cachePath)
 {
     if (storeCtx == NULL || req == NULL || resp == NULL)
     {
@@ -1018,9 +1139,7 @@ X509VerifyStatusCode CryptoNative_X509ChainVerifyOcsp(
 
             // If the response is within our caching policy (which requires a nextUpdate value)
             // then try to cache it.
-            if (nextUpdate != NULL &&
-                thisUpdate != NULL &&
-                X509_cmp_time(thisUpdate, &oldest) > 0)
+            if (nextUpdate != NULL && thisUpdate != NULL && X509_cmp_time(thisUpdate, &oldest) > 0)
             {
                 char* fullPath = BuildOcspCacheFilename(cachePath, subject);
 

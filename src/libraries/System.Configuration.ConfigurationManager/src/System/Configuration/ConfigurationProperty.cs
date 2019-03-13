@@ -101,7 +101,7 @@ namespace System.Configuration
                         // list of validators and executes them all
 
                         throw new ConfigurationErrorsException(
-                            string.Format(SR.Validator_multiple_validator_attributes, info.Name));
+                            SR.Format(SR.Validator_multiple_validator_attributes, info.Name));
                     }
 
                     ConfigurationValidatorAttribute validatorAttribute = (ConfigurationValidatorAttribute)attribute;
@@ -221,7 +221,7 @@ namespace System.Configuration
             if (typeof(ConfigurationSection).IsAssignableFrom(type))
             {
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Config_properties_may_not_be_derived_from_configuration_section, name));
+                    SR.Format(SR.Config_properties_may_not_be_derived_from_configuration_section, name));
             }
 
             // save the provided name so we can check for default collection names
@@ -251,7 +251,7 @@ namespace System.Configuration
             {
                 // Make sure the supplied validator supports the type of this property
                 if (!Validator.CanValidate(Type))
-                    throw new ConfigurationErrorsException(string.Format(SR.Validator_does_not_support_prop_type, Name));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Validator_does_not_support_prop_type, Name));
             }
         }
 
@@ -261,7 +261,7 @@ namespace System.Configuration
                 throw new ArgumentException(SR.String_null_or_empty, nameof(name));
 
             if (BaseConfigurationRecord.IsReservedAttributeName(name))
-                throw new ArgumentException(string.Format(SR.Property_name_reserved, name));
+                throw new ArgumentException(SR.Format(SR.Property_name_reserved, name));
         }
 
         private void SetDefaultValue(object value)
@@ -273,7 +273,7 @@ namespace System.Configuration
             if (!Type.IsInstanceOfType(value))
             {
                 if (!Converter.CanConvertFrom(value.GetType()))
-                    throw new ConfigurationErrorsException(string.Format(SR.Default_value_wrong_type, Name));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Default_value_wrong_type, Name));
 
                 value = Converter.ConvertFrom(value);
             }
@@ -301,7 +301,7 @@ namespace System.Configuration
                 }
                 catch (Exception ex)
                 {
-                    throw new ConfigurationErrorsException(string.Format(SR.Default_value_conversion_error_from_string,
+                    throw new ConfigurationErrorsException(SR.Format(SR.Default_value_conversion_error_from_string,
                         Name, ex.Message));
                 }
             }
@@ -332,7 +332,7 @@ namespace System.Configuration
             }
             catch (Exception ex)
             {
-                throw new ConfigurationErrorsException(string.Format(SR.Top_level_conversion_error_from_string, Name,
+                throw new ConfigurationErrorsException(SR.Format(SR.Top_level_conversion_error_from_string, Name,
                     ex.Message));
             }
 
@@ -356,7 +356,7 @@ namespace System.Configuration
             catch (Exception ex)
             {
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Top_level_conversion_error_to_string, Name, ex.Message));
+                    SR.Format(SR.Top_level_conversion_error_to_string, Name, ex.Message));
             }
         }
 
@@ -369,7 +369,7 @@ namespace System.Configuration
             catch (Exception ex)
             {
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Top_level_validation_error, Name, ex.Message), ex);
+                    SR.Format(SR.Top_level_validation_error, Name, ex.Message), ex);
             }
         }
 
@@ -397,7 +397,7 @@ namespace System.Configuration
                     !_converter.CanConvertTo(typeof(string)))
                 {
                     // Need to be able to convert to/from string
-                    throw new ConfigurationErrorsException(string.Format(SR.No_converter, Name, Type.Name));
+                    throw new ConfigurationErrorsException(SR.Format(SR.No_converter, Name, Type.Name));
                 }
             }
         }

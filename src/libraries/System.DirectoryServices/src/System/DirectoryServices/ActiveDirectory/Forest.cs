@@ -848,7 +848,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     default:
                         // should not happen since we are calling this only internally
-                        Debug.Assert(false, "Forest.GetRoleOwner: Invalid role type.");
+                        Debug.Fail("Forest.GetRoleOwner: Invalid role type.");
                         break;
                 }
 

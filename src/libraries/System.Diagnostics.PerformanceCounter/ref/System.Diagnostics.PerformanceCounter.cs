@@ -33,7 +33,7 @@ namespace System.Diagnostics
     }
     public readonly partial struct CounterSample
     {
-        private readonly int _dummy;
+        private readonly int _dummyPrimitive;
         public static System.Diagnostics.CounterSample Empty;
         public CounterSample(long rawValue, long baseValue, long counterFrequency, long systemFrequency, long timeStamp, long timeStamp100nSec, System.Diagnostics.PerformanceCounterType counterType) { throw null; }
         public CounterSample(long rawValue, long baseValue, long counterFrequency, long systemFrequency, long timeStamp, long timeStamp100nSec, System.Diagnostics.PerformanceCounterType counterType, long counterTimeStamp) { throw null; }
@@ -207,86 +207,86 @@ namespace System.Diagnostics
 }
 namespace System.Diagnostics.PerformanceData
 {
-    public sealed class CounterData
+    public sealed partial class CounterData
     {
-        unsafe internal CounterData(long* pCounterData) { }
-        public void Decrement() { throw null; }
-        public void Increment() { throw null; }
-        public void IncrementBy(long value) { throw null; }
+        internal CounterData() { }
         public long RawValue { get { throw null; } set { } }
         public long Value { get { throw null; } set { } }
+        public void Decrement() { }
+        public void Increment() { }
+        public void IncrementBy(long value) { }
     }
-    public class CounterSet : IDisposable
+    public partial class CounterSet : System.IDisposable
     {
-        ~CounterSet() { throw null; }
-        public void AddCounter(int counterId, CounterType counterType) { throw null; }
-        public void AddCounter(int counterId, CounterType counterType, string counterName) { throw null; }
-        public CounterSet(Guid providerGuid, Guid counterSetGuid, CounterSetInstanceType instanceType) { }
-        public CounterSetInstance CreateCounterSetInstance(string instanceName) { throw null; }
-        public void Dispose() { throw null; }
-        protected virtual void Dispose(bool disposing) { throw null; }
+        public CounterSet(System.Guid providerGuid, System.Guid counterSetGuid, System.Diagnostics.PerformanceData.CounterSetInstanceType instanceType) { }
+        public void AddCounter(int counterId, System.Diagnostics.PerformanceData.CounterType counterType) { }
+        public void AddCounter(int counterId, System.Diagnostics.PerformanceData.CounterType counterType, string counterName) { }
+        public System.Diagnostics.PerformanceData.CounterSetInstance CreateCounterSetInstance(string instanceName) { throw null; }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        ~CounterSet() { }
     }
-    public sealed class CounterSetInstance : IDisposable
+    public sealed partial class CounterSetInstance : System.IDisposable
     {
-        ~CounterSetInstance() { throw null; }
-        internal CounterSetInstance(CounterSet counterSetDefined, string instanceName) { }
-        public void Dispose() { throw null; }
-        public CounterSetInstanceCounterDataSet Counters { get { throw null; } }
+        internal CounterSetInstance() { }
+        public System.Diagnostics.PerformanceData.CounterSetInstanceCounterDataSet Counters { get { throw null; } }
+        public void Dispose() { }
+        ~CounterSetInstance() { }
     }
-    public sealed class CounterSetInstanceCounterDataSet : IDisposable
+    public sealed partial class CounterSetInstanceCounterDataSet : System.IDisposable
     {
-        ~CounterSetInstanceCounterDataSet() { throw null; }
-        internal CounterSetInstanceCounterDataSet(CounterSetInstance thisInst) { }
-        public void Dispose() { throw null; }
-        public CounterData this[int counterId] { get { throw null; } }
-        public CounterData this[string counterName] { get { throw null; } }
+        internal CounterSetInstanceCounterDataSet() { }
+        public System.Diagnostics.PerformanceData.CounterData this[int counterId] { get { throw null; } }
+        public System.Diagnostics.PerformanceData.CounterData this[string counterName] { get { throw null; } }
+        public void Dispose() { }
+        ~CounterSetInstanceCounterDataSet() { }
+    }
+    public enum CounterSetInstanceType
+    {
+        GlobalAggregate = 4,
+        GlobalAggregateWithHistory = 11,
+        InstanceAggregate = 22,
+        Multiple = 2,
+        MultipleAggregate = 6,
+        Single = 0,
     }
     public enum CounterType
     {
-        RawDataHex32 = 0,
-        RawDataHex64 = 256,
-        RawData32 = 65536,
-        RawData64 = 65792,
+        AverageBase = 1073939458,
+        AverageCount64 = 1073874176,
+        AverageTimer32 = 805438464,
         Delta32 = 4195328,
         Delta64 = 4195584,
-        SampleCounter = 4260864,
-        QueueLength = 4523008,
+        ElapsedTime = 807666944,
         LargeQueueLength = 4523264,
-        QueueLength100Ns = 5571840,
-        QueueLengthObjectTime = 6620416,
-        RateOfCountPerSecond32 = 272696320,
-        RateOfCountPerSecond64 = 272696576,
-        RawFraction32 = 537003008,
-        RawFraction64 = 537003264,
-        PercentageActive = 541132032,
-        PrecisionSystemTimer = 541525248,
-        PercentageActive100Ns = 542180608,
-        PrecisionTimer100Ns = 542573824,
-        ObjectSpecificTimer = 543229184,
-        PrecisionObjectSpecificTimer = 543622400,
-        SampleFraction = 549585920,
-        PercentageNotActive = 557909248,
-        PercentageNotActive100Ns = 558957824,
+        MultiTimerBase = 1107494144,
         MultiTimerPercentageActive = 574686464,
         MultiTimerPercentageActive100Ns = 575735040,
         MultiTimerPercentageNotActive = 591463680,
         MultiTimerPercentageNotActive100Ns = 592512256,
-        AverageTimer32 = 805438464,
-        ElapsedTime = 807666944,
-        AverageCount64 = 1073874176,
-        SampleBase = 1073939457,
-        AverageBase = 1073939458,
+        ObjectSpecificTimer = 543229184,
+        PercentageActive = 541132032,
+        PercentageActive100Ns = 542180608,
+        PercentageNotActive = 557909248,
+        PercentageNotActive100Ns = 558957824,
+        PrecisionObjectSpecificTimer = 543622400,
+        PrecisionSystemTimer = 541525248,
+        PrecisionTimer100Ns = 542573824,
+        QueueLength = 4523008,
+        QueueLength100Ns = 5571840,
+        QueueLengthObjectTime = 6620416,
+        RateOfCountPerSecond32 = 272696320,
+        RateOfCountPerSecond64 = 272696576,
         RawBase32 = 1073939459,
         RawBase64 = 1073939712,
-        MultiTimerBase = 1107494144
-    }
-    public enum CounterSetInstanceType
-    {
-        Single = 0,
-        Multiple = 2,
-        GlobalAggregate = 4,
-        MultipleAggregate = 6,
-        GlobalAggregateWithHistory = 11,
-        InstanceAggregate = 22
+        RawData32 = 65536,
+        RawData64 = 65792,
+        RawDataHex32 = 0,
+        RawDataHex64 = 256,
+        RawFraction32 = 537003008,
+        RawFraction64 = 537003264,
+        SampleBase = 1073939457,
+        SampleCounter = 4260864,
+        SampleFraction = 549585920,
     }
 }

@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Throws<CryptographicException>(() => reader.ThrowIfNotEmpty());
 
             // Consume the current value and move on.
-            reader.GetEncodedValue();
+            reader.ReadEncodedValue();
 
             Assert.False(reader.HasData);
             // Assert.NoThrow

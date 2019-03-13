@@ -21,7 +21,7 @@ namespace System.Configuration
         internal void ValidateType(object value, Type expected)
         {
             if ((value != null) && (value.GetType() != expected))
-                throw new ArgumentException(string.Format(SR.Converter_unsupported_value_type, expected.Name));
+                throw new ArgumentException(SR.Format(SR.Converter_unsupported_value_type, expected.Name));
         }
     }
 }

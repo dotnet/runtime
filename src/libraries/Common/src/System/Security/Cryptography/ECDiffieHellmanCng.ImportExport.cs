@@ -29,7 +29,7 @@ namespace System.Security.Cryptography
                     if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
                     {
                         throw new PlatformNotSupportedException(
-                            string.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
+                            SR.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
                     }
 
                     byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref parameters, ecdh: true);
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
                 else
                 {
                     throw new PlatformNotSupportedException(
-                        string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
+                        SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
                 }
             }
 

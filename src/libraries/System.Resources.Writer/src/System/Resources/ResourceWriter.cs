@@ -642,7 +642,7 @@ namespace System.Resources
                     }
 
                 default:
-                    Debug.Assert(typeCode >= ResourceTypeCode.StartOfUserTypes, string.Format(CultureInfo.InvariantCulture, "ResourceReader: Unsupported ResourceTypeCode in .resources file!  {0}", typeCode));
+                    Debug.Assert(typeCode >= ResourceTypeCode.StartOfUserTypes, $"ResourceReader: Unsupported ResourceTypeCode in .resources file!  {typeCode}");
                     throw new PlatformNotSupportedException(SR.NotSupported_BinarySerializedResources);
             }
         }
