@@ -18,5 +18,6 @@ namespace Server.Contract
         public const string AggregationTesting = "4CEFE36D-F377-4B6E-8C34-819A8BB9CB04";
         public const string ColorTesting = "C222F472-DA5A-4FC6-9321-92F4F7053A65";
         public const string LicenseTesting = "66DB7882-E2B0-471D-92C7-B2B52A0EA535";
+        public const string DefaultInterfaceTesting = "FAEF42AE-C1A4-419F-A912-B768AC2679EA";
     }
 }
