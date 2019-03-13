@@ -1274,15 +1274,6 @@ namespace System.Data.SqlClient
                 AssertValidState();
             }
 
-            if ((_messageStatus != TdsEnums.ST_EOM) && ((_inBytesPacket == 0) || (_inBytesUsed == _inBytesRead)))
-            {
-                if (!TryPrepareBuffer())
-                {
-                    return false;
-                }
-            }
-
-            AssertValidState();
             return true;
         }
 
