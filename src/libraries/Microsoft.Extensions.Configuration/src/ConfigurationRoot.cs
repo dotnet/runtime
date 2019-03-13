@@ -52,8 +52,10 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                foreach (var provider in _providers.Reverse())
+                for (var i = _providers.Count - 1; i >= 0; i--)
                 {
+                    var provider = _providers[i];
+
                     if (provider.TryGet(key, out var value))
                     {
                         return value;
