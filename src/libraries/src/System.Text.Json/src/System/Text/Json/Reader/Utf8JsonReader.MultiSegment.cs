@@ -905,16 +905,17 @@ namespace System.Text.Json
                                                 // We found less than 4 hex digits.
                                                 _lineNumber = prevLineNumber;
                                                 _bytePositionInLine = prevPosition;
+                                                _totalConsumed = prevTotalConsumed;
                                                 return false;
                                             }
 
                                             _totalConsumed += localBuffer.Length;
 
                                             localBuffer = _buffer;
+                                            numberOfHexDigits -= j - idx;
                                             idx = 0;
                                             j = 0;
                                             movedToNext = true;
-                                            numberOfHexDigits -= j - idx;
                                         }
 
                                     DoneWithHex:
@@ -940,6 +941,7 @@ namespace System.Text.Json
                                 }
                                 _lineNumber = prevLineNumber;
                                 _bytePositionInLine = prevPosition;
+                                _totalConsumed = prevTotalConsumed;
                                 return false;
                             }
 
@@ -1080,11 +1082,11 @@ namespace System.Text.Json
                                 }
 
                                 data = _buffer;
+                                numberOfHexDigits -= j - idx;
                                 idx = 0;
                                 j = 0;
                                 HasValueSequence = true;
                                 movedToNext = true;
-                                numberOfHexDigits -= j - idx;
                             }
 
                         DoneWithHex:

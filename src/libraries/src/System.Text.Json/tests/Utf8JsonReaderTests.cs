@@ -189,6 +189,64 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void TestPartialJsonReader()
+        {
+            string jsonString = "\"Hello, \\u0041hson!\"";
+            string expectedString = "Hello, \\u0041hson!, ";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            byte[] result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out int outputLength);
+            var outputArray = new byte[outputLength];
+            Span<byte> outputSpan = outputArray;
+
+            for (int i = 0; i < dataUtf8.Length; i++)
+            {
+                JsonReaderState state = default;
+                var json = new Utf8JsonReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                byte[] output = JsonTestHelper.ReaderLoop(outputSpan.Length, out int firstLength, ref json);
+                output.AsSpan(0, firstLength).CopyTo(outputSpan);
+                int written = firstLength;
+
+                long consumed = json.BytesConsumed;
+                Assert.Equal(consumed, json.CurrentState.BytesConsumed);
+                Assert.Equal(default, json.Position);
+
+                for (long j = consumed; j < dataUtf8.Length - consumed; j++)
+                {
+                    // Need to re-initialize the state and reader to avoid using the previous state stack.
+                    state = default;
+                    json = new Utf8JsonReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                    while (json.Read())
+                        ;
+
+                    JsonReaderState jsonState = json.CurrentState;
+
+                    written = firstLength;
+                    json = new Utf8JsonReader(dataUtf8.AsSpan((int)consumed, (int)j), isFinalBlock: false, jsonState);
+                    output = JsonTestHelper.ReaderLoop(outputSpan.Length - written, out int length, ref json);
+                    output.AsSpan(0, length).CopyTo(outputSpan.Slice(written));
+                    written += length;
+
+                    long consumedInner = json.BytesConsumed;
+                    Assert.Equal(consumedInner, json.CurrentState.BytesConsumed);
+                    json = new Utf8JsonReader(dataUtf8.AsSpan((int)(consumed + consumedInner)), isFinalBlock: true, json.CurrentState);
+                    output = JsonTestHelper.ReaderLoop(outputSpan.Length - written, out length, ref json);
+                    output.AsSpan(0, length).CopyTo(outputSpan.Slice(written));
+                    written += length;
+                    Assert.Equal(dataUtf8.Length - consumedInner - consumed, json.BytesConsumed);
+                    Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+                    Assert.Equal(default, json.Position);
+                    Assert.Equal(default, json.CurrentState.Position);
+
+                    Assert.Equal(outputSpan.Length, written);
+                    string actualStr = Encoding.UTF8.GetString(outputArray);
+                    Assert.Equal(expectedString, actualStr);
+                }
+            }
+        }
+
         [Theory]
         // Pad depth by nested objects, but minimize the text
         [InlineData(1, true, true)]
