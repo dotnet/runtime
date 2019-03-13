@@ -10,6 +10,9 @@ using System;
 
 namespace System.Security.Principal
 {
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Security.Principal")]
+#endif
     public interface IPrincipal
     {
         // Retrieve the identity object
