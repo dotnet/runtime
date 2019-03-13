@@ -123,7 +123,7 @@ namespace System.Drawing
             if (x == null || y == null || width == null || height == null ||
                 !(x is int) || !(y is int) || !(width is int) || !(height is int))
             {
-                throw new ArgumentException(SR.Format(SR.PropertyValueInvalidEntry));
+                throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }
 
             return new Rectangle((int)x, (int)y, (int)width, (int)height);

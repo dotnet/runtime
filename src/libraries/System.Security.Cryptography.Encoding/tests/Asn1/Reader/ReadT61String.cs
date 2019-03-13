@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            string value = reader.GetCharacterString(UniversalTagNumber.T61String);
+            string value = reader.ReadCharacterString(UniversalTagNumber.T61String);
 
             Assert.Equal(expectedValue, value);
         }

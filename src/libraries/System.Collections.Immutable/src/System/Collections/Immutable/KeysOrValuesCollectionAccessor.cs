@@ -165,7 +165,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A lightweight collection view over and IEnumerable of keys.
     /// </summary>
-    internal class KeysCollectionAccessor<TKey, TValue> : KeysOrValuesCollectionAccessor<TKey, TValue, TKey>
+    internal sealed class KeysCollectionAccessor<TKey, TValue> : KeysOrValuesCollectionAccessor<TKey, TValue, TKey>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="KeysCollectionAccessor{TKey, TValue}"/> class.
@@ -187,7 +187,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A lightweight collection view over and IEnumerable of values.
     /// </summary>
-    internal class ValuesCollectionAccessor<TKey, TValue> : KeysOrValuesCollectionAccessor<TKey, TValue, TValue>
+    internal sealed class ValuesCollectionAccessor<TKey, TValue> : KeysOrValuesCollectionAccessor<TKey, TValue, TValue>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ValuesCollectionAccessor{TKey, TValue}"/> class.

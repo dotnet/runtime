@@ -194,7 +194,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
                 default:
                     // means missing resources match the code entry
-                    Debug.Assert(false, "Missing resources for the error " + code.ToString());
+                    Debug.Fail("Missing resources for the error " + code.ToString());
                     codeStr = null;
                     break;
             }

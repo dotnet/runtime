@@ -51,6 +51,20 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal("Rss20", formatter.Version);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Ctor_SyndicationItem_Bool(bool serializeExtensionsAsAtom)
+        {
+            var item = new SyndicationItem();
+            var formatter = new Formatter(item, serializeExtensionsAsAtom);
+            Assert.Equal(typeof(SyndicationItem), formatter.ItemTypeEntryPoint);
+            Assert.Same(item, formatter.Item);
+            Assert.True(formatter.PreserveAttributeExtensions);
+            Assert.True(formatter.PreserveElementExtensions);
+            Assert.Equal("Rss20", formatter.Version);
+        }
+
         [Fact]
         public void Ctor_GenericSyndicationItem()
         {
@@ -58,6 +72,20 @@ namespace System.ServiceModel.Syndication.Tests
             var formatter = new GenericFormatter<SyndicationItem>(item);
             Assert.Same(item, formatter.Item);
             Assert.Equal(typeof(SyndicationItem), formatter.ItemTypeEntryPoint);
+            Assert.True(formatter.PreserveAttributeExtensions);
+            Assert.True(formatter.PreserveElementExtensions);
+            Assert.Equal("Rss20", formatter.Version);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Ctor_GenericSyndicationItem_Bool(bool serializeExtensionsAsAtom)
+        {
+            var item = new SyndicationItem();
+            var formatter = new GenericFormatter<SyndicationItem>(item, serializeExtensionsAsAtom);
+            Assert.Equal(typeof(SyndicationItem), formatter.ItemTypeEntryPoint);
+            Assert.Same(item, formatter.Item);
             Assert.True(formatter.PreserveAttributeExtensions);
             Assert.True(formatter.PreserveElementExtensions);
             Assert.Equal("Rss20", formatter.Version);
@@ -512,7 +540,7 @@ namespace System.ServiceModel.Syndication.Tests
 
         [Theory]
         [MemberData(nameof(WriteTo_TestData))]
-        public void WriteTo_HasItem_SerializesExpected(SyndicationItem item, bool serializeExtensionsAsAtom, string expected)
+        public void WriteTo_Invoke_SerializesExpected(SyndicationItem item, bool serializeExtensionsAsAtom, string expected)
         {
             var formatter = new Rss20ItemFormatter(item) { SerializeExtensionsAsAtom = serializeExtensionsAsAtom };
             CompareHelper.AssertEqualWriteOutput(expected, writer => formatter.WriteTo(writer));
@@ -1843,6 +1871,8 @@ namespace System.ServiceModel.Syndication.Tests
 
             public Formatter(SyndicationItem itemToWrite) : base(itemToWrite) { }
 
+            public Formatter(SyndicationItem itemToWrite, bool serializeExtensionsAsAtom) : base(itemToWrite, serializeExtensionsAsAtom) { }
+
             public Formatter(Type itemTypeToCreate) : base(itemTypeToCreate) { }
 
             public Type ItemTypeEntryPoint => ItemType;
@@ -1855,6 +1885,8 @@ namespace System.ServiceModel.Syndication.Tests
             public GenericFormatter() : base() { }
 
             public GenericFormatter(T itemToWrite) : base(itemToWrite) { }
+
+            public GenericFormatter(T itemToWrite, bool serializeExtensionsAsAtom) : base(itemToWrite, serializeExtensionsAsAtom) { }
 
             public Type ItemTypeEntryPoint => ItemType;
 

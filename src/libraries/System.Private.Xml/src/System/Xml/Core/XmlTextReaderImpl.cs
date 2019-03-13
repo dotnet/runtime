@@ -436,7 +436,7 @@ namespace System.Xml
                     _fragmentType = XmlNodeType.Document;
                     break;
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected conformance level {settings.ConformanceLevel}");
                     goto case ConformanceLevel.Document;
             }
         }
@@ -814,7 +814,7 @@ namespace System.Xml
                     case XmlNodeType.None: settings.ConformanceLevel = ConformanceLevel.Auto; break;
                     case XmlNodeType.Element: settings.ConformanceLevel = ConformanceLevel.Fragment; break;
                     case XmlNodeType.Document: settings.ConformanceLevel = ConformanceLevel.Document; break;
-                    default: Debug.Assert(false); goto case XmlNodeType.None;
+                    default: Debug.Fail($"Unexpected fragment type {_fragmentType}"); goto case XmlNodeType.None;
                 }
                 settings.CheckCharacters = _checkCharacters;
                 settings.LineNumberOffset = _lineNumberOffset;
@@ -1180,7 +1180,7 @@ namespace System.Xml
                     break;
                 default:
                     //should never hit here
-                    Debug.Assert(false, "Invalid InitInputType");
+                    Debug.Fail("Invalid InitInputType");
                     break;
             }
         }
@@ -1304,7 +1304,7 @@ namespace System.Xml
                         FinishReadElementContentAsBinary();
                         continue;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected parsing function {_parsingFunction}");
                         break;
                 }
             }
@@ -1332,7 +1332,7 @@ namespace System.Xml
                 switch (_parsingFunction)
                 {
                     case ParsingFunction.InReadAttributeValue:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected parsing function {_parsingFunction}");
                         break;
                     case ParsingFunction.InIncrementalRead:
                         FinishIncrementalRead();
@@ -1486,7 +1486,7 @@ namespace System.Xml
                         _emptyEntityInAttributeResolved = true;
                         break;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail("Unexpected entity type");
                         throw new XmlException(SR.Xml_InternalError, string.Empty);
                 }
             }
@@ -1512,7 +1512,7 @@ namespace System.Xml
                         _parsingFunction = ParsingFunction.AfterResolveEmptyEntityInContent;
                         break;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail("Unexpected entity type");
                         throw new XmlException(SR.Xml_InternalError, string.Empty);
                 }
             }
@@ -3064,7 +3064,7 @@ namespace System.Xml
                     ParseDtdFromParserContext();
                     break;
                 default:
-                    Debug.Assert(false, "Unhandled DtdProcessing enumeration value.");
+                    Debug.Fail("Unhandled DtdProcessing enumeration value.");
                     break;
             }
         }
@@ -3544,7 +3544,7 @@ namespace System.Xml
                     charsDecoded += chDec;
                     bytesDecoded += bDec;
                 }
-                Debug.Assert(false, "We should get an exception again.");
+                Debug.Fail("We should get an exception again.");
             }
             catch (ArgumentException)
             {
@@ -3849,7 +3849,7 @@ namespace System.Xml
                             xmlDeclState = 3;
                             break;
                         default:
-                            Debug.Assert(false);
+                            Debug.Fail($"Unexpected xmlDeclState {xmlDeclState}");
                             break;
                     }
                     sb.Append(chars, _ps.charPos, pos - _ps.charPos);
@@ -4682,7 +4682,7 @@ namespace System.Xml
                     ThrowUnexpectedToken(pos, ">");
                 }
 
-                Debug.Assert(false, "We should never get to this point.");
+                Debug.Fail("We should never get to this point.");
 
             ReadData:
                 if (ReadData() == 0)
@@ -5398,7 +5398,7 @@ namespace System.Xml
                     {
                         if (_ps.chars[_ps.charPos] != (char)0xD)
                         {
-                            Debug.Assert(false, "We should never get to this point.");
+                            Debug.Fail("We should never get to this point.");
                             Throw(SR.Xml_UnexpectedEOF1);
                         }
                         Debug.Assert(_ps.isEof);
@@ -5418,8 +5418,8 @@ namespace System.Xml
                             Throw(SR.Xml_UnclosedQuote);
                         }
                         if (HandleEntityEnd(true))
-                        { // no EndEntity reporting while parsing attributes
-                            Debug.Assert(false);
+                        {
+                            Debug.Fail("no EndEntity reporting while parsing attributes");
                             Throw(SR.Xml_InternalError);
                         }
                         // update info for the next attribute value chunk
@@ -6202,7 +6202,7 @@ namespace System.Xml
         {
             if (_parsingStatesStackTop == -1)
             {
-                Debug.Assert(false);
+                Debug.Fail($"Unexpected parsing states stack top {_parsingStatesStackTop}");
                 Throw(SR.Xml_InternalError);
             }
 
@@ -7122,7 +7122,7 @@ namespace System.Xml
                     {
                         if (_ps.chars[_ps.charPos] != (char)0xD)
                         {
-                            Debug.Assert(false, "We should never get to this point.");
+                            Debug.Fail("We should never get to this point.");
                             Throw(SR.Xml_UnexpectedEOF1);
                         }
                         Debug.Assert(_ps.isEof);
@@ -7228,7 +7228,7 @@ namespace System.Xml
                     }
                     if (_ps.chars[_ps.charPos] != (char)0xD)
                     {
-                        Debug.Assert(false, "We should never get to this point.");
+                        Debug.Fail("We should never get to this point.");
                         Throw(SR.Xml_UnexpectedEOF1);
                     }
                     Debug.Assert(_ps.isEof);
@@ -8352,7 +8352,7 @@ namespace System.Xml
                         pos = startPos;
                         break;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected read state {_incReadState}");
                         break;
                 }
                 Debug.Assert(_incReadState == IncrementalReadState.Text ||
@@ -8739,7 +8739,7 @@ namespace System.Xml
                                     goto ReturnText;
                                 }
                             default:
-                                Debug.Assert(false, "We should never get to this point.");
+                                Debug.Fail("We should never get to this point.");
                                 break;
                         }
                         chars = _ps.chars;
@@ -8794,7 +8794,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            Debug.Assert(false, "We should never get to this point.");
+                            Debug.Fail("We should never get to this point.");
                         }
                     }
                 }

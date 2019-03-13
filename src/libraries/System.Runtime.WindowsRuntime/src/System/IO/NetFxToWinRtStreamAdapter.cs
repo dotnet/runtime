@@ -275,7 +275,7 @@ namespace System.IO
                 //    break;
 
                 default:
-                    Debug.Assert(false, "We should never get here. Someone forgot to handle an input stream optimisation option.");
+                    Debug.Fail("We should never get here. Someone forgot to handle an input stream optimisation option.");
                     readAsyncOperation = null;
                     break;
             }

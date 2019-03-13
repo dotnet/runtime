@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -98,7 +102,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
-                decoded.Reasons = sequenceReader.GetNamedBitListValue<System.Security.Cryptography.X509Certificates.Asn1.ReasonFlagsAsn>(new Asn1Tag(TagClass.ContextSpecific, 1));
+                decoded.Reasons = sequenceReader.ReadNamedBitListValue<System.Security.Cryptography.X509Certificates.Asn1.ReasonFlagsAsn>(new Asn1Tag(TagClass.ContextSpecific, 1));
             }
 
 

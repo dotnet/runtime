@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
                 if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
                 {
                     throw new PlatformNotSupportedException(
-                        string.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
+                        SR.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
                 }
 
                 // Map curve name to algorithm to support pre-Win10 curves
@@ -144,7 +144,7 @@ namespace System.Security.Cryptography
                             errorCode == Interop.NCrypt.ErrorCode.NTE_NOT_SUPPORTED)
                         {
                             throw new PlatformNotSupportedException(
-                                string.Format(SR.Cryptography_CurveNotSupported, curve.Oid.FriendlyName), e);
+                                SR.Format(SR.Cryptography_CurveNotSupported, curve.Oid.FriendlyName), e);
                         }
 
                         throw;
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography
                             keySize = 521;
                             break;
                         default:
-                            Debug.Fail(string.Format("Unknown algorithm {0}", algorithm.ToString()));
+                            Debug.Fail($"Unknown algorithm {algorithm}");
                             throw new ArgumentException(SR.Cryptography_InvalidKeySize);
                     }
 
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography
             else
             {
                 throw new PlatformNotSupportedException(
-                    string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
+                    SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
             }
 
             _lastAlgorithm = algorithm;

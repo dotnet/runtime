@@ -164,7 +164,7 @@ uint32_t NetSecurityNative_ImportTargetName(uint32_t* minorStatus,
     }
     else
     {
-        nameType = GSS_KRB5_NT_PRINCIPAL_NAME;
+        nameType = (gss_OID)(unsigned long)GSS_KRB5_NT_PRINCIPAL_NAME;
     }
 
     GssBuffer inputNameBuffer = {.length = inputNameLen, .value = inputName};
@@ -226,7 +226,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
     }
 
     gss_OID desiredMech = &gss_mech_OID_desc;
-    gss_OID krbMech = gss_mech_krb5;
+    gss_OID krbMech = (gss_OID)(unsigned long)gss_mech_krb5;
 #endif
 
     *isNtlmUsed = 1;

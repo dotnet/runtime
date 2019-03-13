@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  link with a title attribute which appears to contain HTML produces a warning  
 Expect:       ContainsHTML{element:link,parent:entry}

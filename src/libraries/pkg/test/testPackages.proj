@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
 
   <ItemGroup>
@@ -28,13 +27,13 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TestDir>$(BinDir)testPkg/</TestDir>
+    <TestDir>$(ArtifactsBinDir)testPkg/</TestDir>
     <TestSupportDir>$(TestDir)support/</TestSupportDir>
     <TestProjectName>test.msbuild</TestProjectName>
     <TestProject>$(TestSupportDir)$(TestProjectName)</TestProject>
     <TestToolsDir>$(TestSupportDir)tools/</TestToolsDir>
     <TestProjectDir>$(TestDir)projects/</TestProjectDir>
-    <TestPackageDir>$(BinDir)testPackages</TestPackageDir>
+    <TestPackageDir>$(ArtifactsBinDir)testPackages</TestPackageDir>
     <TestDotNetPath>$(TestToolsDir)/dotnet</TestDotNetPath>
 
     <ProjectTemplate>project.csproj.template</ProjectTemplate>

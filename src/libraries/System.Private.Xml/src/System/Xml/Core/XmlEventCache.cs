@@ -243,13 +243,13 @@ namespace System.Xml
                             break;
 
                         default:
-                            Debug.Assert(false, "Unknown event: " + page[idxEvent].EventType);
+                            Debug.Fail("Unknown event: " + page[idxEvent].EventType);
                             break;
                     }
                 }
             }
 
-            Debug.Assert(false, "Unknown event should be added to end of event sequence.");
+            Debug.Fail("Unknown event should be added to end of event sequence.");
         }
 
         /// <summary>
@@ -306,7 +306,7 @@ namespace System.Xml
                 }
             }
 
-            Debug.Assert(false, "Unknown event should be added to end of event sequence.");
+            Debug.Fail("Unknown event should be added to end of event sequence.");
             return string.Empty;
         }
 

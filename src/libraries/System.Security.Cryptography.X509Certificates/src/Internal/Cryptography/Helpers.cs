@@ -205,7 +205,7 @@ namespace Internal.Cryptography
                 }
 
                 // Skip past the current value.
-                reader.GetEncodedValue();
+                reader.ReadEncodedValue();
             }
         }
     }
@@ -231,7 +231,7 @@ namespace Internal.Cryptography
                     // .NET's string comparisons start by checking the length, so a trailing
                     // NULL character which was literally embedded in the DER would cause a
                     // failure in .NET whereas it wouldn't have with strcmp.
-                    return tavReader.GetCharacterString((UniversalTagNumber)tag.TagValue).TrimEnd('\0');
+                    return tavReader.ReadCharacterString((UniversalTagNumber)tag.TagValue).TrimEnd('\0');
                     
                 default:
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);

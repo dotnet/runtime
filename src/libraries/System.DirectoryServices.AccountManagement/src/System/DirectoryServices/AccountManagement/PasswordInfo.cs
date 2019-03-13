@@ -279,7 +279,7 @@ namespace System.DirectoryServices.AccountManagement
                     break;
 
                 default:
-                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "PasswordInfo.LoadValueIntoProperty: fell off end looking for {0}", propertyName));
+                    Debug.Fail($"PasswordInfo.LoadValueIntoProperty: fell off end looking for {propertyName}");
                     break;
             }
         }
@@ -314,7 +314,7 @@ namespace System.DirectoryServices.AccountManagement
                     return (_expirePasswordImmediately != false);
 
                 default:
-                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "PasswordInfo.GetChangeStatusForProperty: fell off end looking for {0}", propertyName));
+                    Debug.Fail($"PasswordInfo.GetChangeStatusForProperty: fell off end looking for {propertyName}");
                     return false;
             }
         }
@@ -345,7 +345,7 @@ namespace System.DirectoryServices.AccountManagement
                     return _expirePasswordImmediately;
 
                 default:
-                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "PasswordInfo.GetValueForProperty: fell off end looking for {0}", propertyName));
+                    Debug.Fail($"PasswordInfo.GetValueForProperty: fell off end looking for {propertyName}");
                     return null;
             }
         }

@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             // Read to ensure that there is precisely one legally encoded value.
             AsnReader reader = new AsnReader(encodedCertificate, AsnEncodingRules.BER);
-            reader.GetEncodedValue();
+            reader.ReadEncodedValue();
             reader.ThrowIfNotEmpty();
 
             // No need to copy encodedCertificate here, because it will be copied into the

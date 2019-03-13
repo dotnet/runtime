@@ -4,35 +4,40 @@
       "StableVersions": [
         "4.4.0",
         "4.3.0",
-        "4.4.1"
+        "4.4.1",
+        "4.5.3"
       ]
     },
     "System.ServiceModel.Duplex": {
       "StableVersions": [
         "4.4.0",
         "4.3.0",
-        "4.4.1"
+        "4.4.1",
+        "4.5.3"
       ]
     },
     "System.ServiceModel.Http": {
       "StableVersions": [
         "4.4.0",
         "4.3.0",
-        "4.4.1"
+        "4.4.1",
+        "4.5.3"
       ]
     },
     "System.ServiceModel.NetTcp": {
       "StableVersions": [
         "4.4.0",
         "4.3.0",
-        "4.4.1"
+        "4.4.1",
+        "4.5.3"
       ]
     },
     "System.ServiceModel.Security": {
       "StableVersions": [
         "4.4.0",
         "4.3.0",
-        "4.4.1"
+        "4.4.1",
+        "4.5.3"
       ]
     }
   }

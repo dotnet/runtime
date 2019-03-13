@@ -31,14 +31,14 @@ namespace System.Net.NetworkInformation
 
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
-            // Since isAsync == false, DoSendPingCore will execute synchronously and return a completed 
+            // Since isAsync == false, DoSendPingCore will execute synchronously and return a completed
             // Task - so no blocking here
-            return DoSendPingCore(address, buffer, timeout, options, isAsync: false).Result;
+            return DoSendPingCore(address, buffer, timeout, options, isAsync: false).GetAwaiter().GetResult();
         }
 
         private Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
-            // Since isAsync == true, DoSendPingCore will execute asynchronously and return an active Task 
+            // Since isAsync == true, DoSendPingCore will execute asynchronously and return an active Task
             return DoSendPingCore(address, buffer, timeout, options, isAsync: true);
         }
 
@@ -77,7 +77,7 @@ namespace System.Net.NetworkInformation
             }
             catch
             {
-                Cleanup(isAsync, isComplete: false);
+                Cleanup(isAsync);
                 throw;
             }
 
@@ -88,7 +88,7 @@ namespace System.Net.NetworkInformation
                 // Only skip Async IO Pending error value.
                 if (!isAsync || error != Interop.IpHlpApi.ERROR_IO_PENDING)
                 {
-                    Cleanup(isAsync, isComplete: false);
+                    Cleanup(isAsync);
                     throw new Win32Exception(error);
                 }
             }
@@ -96,7 +96,7 @@ namespace System.Net.NetworkInformation
             if (isAsync)
                 return tcs.Task;
 
-            Cleanup(isAsync: false, isComplete: true);
+            Cleanup(isAsync);
             return Task.FromResult(CreatePingReply());
         }
 
@@ -215,7 +215,7 @@ namespace System.Net.NetworkInformation
             return CreatePingReplyFromIcmpEchoReply(icmpReply);
         }
 
-        private void Cleanup(bool isAsync, bool isComplete)
+        private void Cleanup(bool isAsync)
         {
             FreeUnmanagedStructures();
 
@@ -223,13 +223,8 @@ namespace System.Net.NetworkInformation
             {
                 UnregisterWaitHandle();
             }
-
-            if (isComplete)
-            {
-                Finish();
-            }
         }
-        
+
         partial void InternalDisposeCore()
         {
             if (_handlePingV4 != null)
@@ -285,7 +280,7 @@ namespace System.Net.NetworkInformation
             }
             finally
             {
-                Cleanup(isAsync: true, isComplete: true);
+                Cleanup(isAsync: true);
             }
 
             // Once we've called Finish, complete the task

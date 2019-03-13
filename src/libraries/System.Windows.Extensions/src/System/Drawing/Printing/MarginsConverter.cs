@@ -156,7 +156,7 @@ namespace System.Drawing.Printing
             if (left == null || right == null || bottom == null || top == null ||
                 !(left is int) || !(right is int) || !(bottom is int) || !(top is int))
             {
-                throw new ArgumentException(SR.Format(SR.PropertyValueInvalidEntry));
+                throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }
 
             return new Margins((int)left,

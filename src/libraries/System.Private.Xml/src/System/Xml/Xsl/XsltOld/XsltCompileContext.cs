@@ -726,7 +726,7 @@ namespace System.Xml.Xsl.XsltOld
                     case XPathResultType.Error:
                         return val;
                     default:
-                        Debug.Assert(false, "unexpected XPath type");
+                        Debug.Fail("unexpected XPath type");
                         return val;
                 }
             }

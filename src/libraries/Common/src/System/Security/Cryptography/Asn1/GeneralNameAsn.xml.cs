@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -82,14 +86,14 @@ namespace System.Security.Cryptography.Asn1
                 
                 // Validator for tag constraint for X400Address
                 {
-                    if (!Asn1Tag.TryParse(X400Address.Value.Span, out Asn1Tag validateTag, out _) ||
+                    if (!Asn1Tag.TryDecode(X400Address.Value.Span, out Asn1Tag validateTag, out _) ||
                         !validateTag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 3)))
                     {
                         throw new CryptographicException();
                     }
                 }
 
-                writer.WriteEncodedValue(X400Address.Value);
+                writer.WriteEncodedValue(X400Address.Value.Span);
                 wroteValue = true;
             }
 
@@ -99,7 +103,7 @@ namespace System.Security.Cryptography.Asn1
                     throw new CryptographicException();
                 
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 4));
-                writer.WriteEncodedValue(DirectoryName.Value);
+                writer.WriteEncodedValue(DirectoryName.Value.Span);
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 4));
                 wroteValue = true;
             }
@@ -173,20 +177,20 @@ namespace System.Security.Cryptography.Asn1
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
-                decoded.Rfc822Name = reader.GetCharacterString(new Asn1Tag(TagClass.ContextSpecific, 1), UniversalTagNumber.IA5String);
+                decoded.Rfc822Name = reader.ReadCharacterString(new Asn1Tag(TagClass.ContextSpecific, 1), UniversalTagNumber.IA5String);
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 2)))
             {
-                decoded.DnsName = reader.GetCharacterString(new Asn1Tag(TagClass.ContextSpecific, 2), UniversalTagNumber.IA5String);
+                decoded.DnsName = reader.ReadCharacterString(new Asn1Tag(TagClass.ContextSpecific, 2), UniversalTagNumber.IA5String);
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 3)))
             {
-                decoded.X400Address = reader.GetEncodedValue();
+                decoded.X400Address = reader.ReadEncodedValue();
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 4)))
             {
                 explicitReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 4));
-                decoded.DirectoryName = explicitReader.GetEncodedValue();
+                decoded.DirectoryName = explicitReader.ReadEncodedValue();
                 explicitReader.ThrowIfNotEmpty();
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 5)))
@@ -198,12 +202,12 @@ namespace System.Security.Cryptography.Asn1
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 6)))
             {
-                decoded.Uri = reader.GetCharacterString(new Asn1Tag(TagClass.ContextSpecific, 6), UniversalTagNumber.IA5String);
+                decoded.Uri = reader.ReadCharacterString(new Asn1Tag(TagClass.ContextSpecific, 6), UniversalTagNumber.IA5String);
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 7)))
             {
 
-                if (reader.TryGetPrimitiveOctetStringBytes(new Asn1Tag(TagClass.ContextSpecific, 7), out ReadOnlyMemory<byte> tmpIPAddress))
+                if (reader.TryReadPrimitiveOctetStringBytes(new Asn1Tag(TagClass.ContextSpecific, 7), out ReadOnlyMemory<byte> tmpIPAddress))
                 {
                     decoded.IPAddress = tmpIPAddress;
                 }

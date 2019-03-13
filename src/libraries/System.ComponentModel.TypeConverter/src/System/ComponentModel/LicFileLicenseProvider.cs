@@ -35,7 +35,7 @@ namespace System.ComponentModel
         protected virtual string GetKey(Type type)
         {
             // This string should not be localized.
-            return string.Format(CultureInfo.InvariantCulture, "{0} is a licensed component.", type.FullName);
+            return type.FullName + " is a licensed component.";
         }
 
         /// <summary>

@@ -341,6 +341,7 @@ namespace System.Net.Mail
                 if (newResult.CompletedSynchronously)
                 {
                     writer.EndGetContentStream(newResult).Close();
+                    result.InvokeCallback();
                 }
                 return result;
             }
