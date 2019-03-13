@@ -5,47 +5,6 @@
 
 #include <comdef.h>
 
-//
-// Forward references and typedefs
-//
-
-struct __declspec(uuid("05655a94-a915-4926-815d-a9ea648baad9"))
-/* interface */ INumericTesting;
-struct __declspec(uuid("7731cb31-e063-4cc8-bcd2-d151d6bc8f43"))
-/* interface */ IArrayTesting;
-struct __declspec(uuid("7044c5c0-c6c6-4713-9294-b4a4e86d58cc"))
-/* interface */ IStringTesting;
-struct __declspec(uuid("592386a5-6837-444d-9de3-250815d18556"))
-/* interface */ IErrorMarshalTesting;
-struct __declspec(uuid("a5e04c1c-474e-46d2-bbc0-769d04e12b54"))
-/* interface */ IDispatchTesting;
-struct __declspec(uuid("83AFF8E4-C46A-45DB-9D91-2ADB5164545E"))
-/* interface */ IEventTesting;
-struct __declspec(uuid("98cc27f0-d521-4f79-8b63-e980e3a92974"))
-/* interface */ IAggregationTesting;
-struct __declspec(uuid("E6D72BA7-0936-4396-8A69-3B76DA1108DA"))
-/* interface */ IColorTesting;
-struct __declspec(uuid("6C9E230E-411F-4219-ABFD-E71F2B84FD50"))
-/* interface */ ILicenseTesting;
-
-//
-// Smart pointer typedef declarations
-//
-
-_COM_SMARTPTR_TYPEDEF(INumericTesting, __uuidof(INumericTesting));
-_COM_SMARTPTR_TYPEDEF(IArrayTesting, __uuidof(IArrayTesting));
-_COM_SMARTPTR_TYPEDEF(IStringTesting, __uuidof(IStringTesting));
-_COM_SMARTPTR_TYPEDEF(IErrorMarshalTesting, __uuidof(IErrorMarshalTesting));
-_COM_SMARTPTR_TYPEDEF(IDispatchTesting, __uuidof(IDispatchTesting));
-_COM_SMARTPTR_TYPEDEF(IEventTesting, __uuidof(IEventTesting));
-_COM_SMARTPTR_TYPEDEF(IAggregationTesting, __uuidof(IAggregationTesting));
-_COM_SMARTPTR_TYPEDEF(IColorTesting, __uuidof(IColorTesting));
-_COM_SMARTPTR_TYPEDEF(ILicenseTesting, __uuidof(ILicenseTesting));
-
-//
-// Type library items
-//
-
 struct __declspec(uuid("05655a94-a915-4926-815d-a9ea648baad9"))
 INumericTesting : IUnknown
 {
@@ -497,6 +456,22 @@ ILicenseTesting : IUnknown
     virtual HRESULT STDMETHODCALLTYPE GetLicense(_Out_ BSTR *lic) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE SetNextLicense(_In_z_ LPCOLESTR lic) = 0;
+};
+
+struct __declspec(uuid("FB6DF997-4CEF-4DF7-ADBD-E7FA395A7E0C"))
+IDefaultInterfaceTesting : IUnknown
+{
+    virtual HRESULT STDMETHODCALLTYPE DefOnInterfaceRet2(_Out_ int *p) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE DefOnClassRet3(_Out_ int *p) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE DefOnInterface2Ret5(_Out_ int *p) = 0;
+};
+
+struct __declspec(uuid("9B3CE792-F063-427D-B48E-4354094BF7A0"))
+IDefaultInterfaceTesting2 : IDefaultInterfaceTesting
+{
+
 };
 
 #pragma pack(pop)

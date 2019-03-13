@@ -161,6 +161,28 @@ namespace Server.Contract.Servers
     internal class LicenseTestingClass
     {
     }
+
+/** Implement when main line C# compiler supports default interfaces.
+
+    /// <summary>
+    /// Managed definition of CoClass
+    /// </summary>
+    [ComImport]
+    [CoClass(typeof(DefaultInterfaceTestingClass))]
+    [Guid("FB6DF997-4CEF-4DF7-ADBD-E7FA395A7E0C")]
+    internal interface DefaultInterfaceTesting : Server.Contract.IDefaultInterfaceTesting
+    {
+    }
+
+    /// <summary>
+    /// Managed activation for CoClass
+    /// </summary>
+    [ComImport]
+    [Guid(Server.Contract.Guids.DefaultInterfaceTesting)]
+    internal class DefaultInterfaceTestingClass
+    {
+    }
+*/
 }
 
 #pragma warning restore 618 // Must test deprecated features
