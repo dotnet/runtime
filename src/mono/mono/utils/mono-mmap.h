@@ -53,6 +53,7 @@ MONO_API guint64      mono_file_map_size  (MonoFileMap *fmap);
 MONO_API int          mono_file_map_fd    (MonoFileMap *fmap);
 MONO_API int          mono_file_map_close (MonoFileMap *fmap);
 
+MONO_API void  mono_setmmapjit (int flag);
 MONO_API int   mono_pagesize   (void);
 MONO_API int   mono_valloc_granule (void);
 MONO_API void* mono_valloc     (void *addr, size_t length, int flags, MonoMemAccountType type);

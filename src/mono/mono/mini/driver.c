@@ -2395,6 +2395,8 @@ mono_main (int argc, char* argv[])
 			mono_parse_response_options (response_options, &argc, &argv, FALSE);
 			g_free (response_content);
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
+		} else if (strcmp (argv [i], "--use-map-jit") == 0){
+			mono_setmmapjit (TRUE);
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
 			return 1;
