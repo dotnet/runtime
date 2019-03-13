@@ -30,8 +30,7 @@ bool GetStackTraceAtContext(SString & s, struct _CONTEXT * pContext);
 void _cdecl DbgWriteEx(LPCTSTR szFmt, ...);
 bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);
 
-ANALYZER_NORETURN
-extern VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);
+extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);
 
 #define TRACE_BUFF_SIZE (cchMaxAssertStackLevelStringLen * cfrMaxAssertStackLevels + cchMaxAssertExprLen + 1)
 extern char g_szExprWithStack[TRACE_BUFF_SIZE];
