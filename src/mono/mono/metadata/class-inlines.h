@@ -143,6 +143,20 @@ m_class_is_string (MonoClass *klass)
 }
 
 static inline gboolean
+m_class_is_primitive (MonoClass *klass)
+{
+	return mono_type_is_primitive (m_class_get_byval_arg (klass));
+}
+
+static inline gboolean
+m_class_is_native_pointer (MonoClass *klass)
+{
+	MonoType *t = m_class_get_byval_arg (klass);
+
+	return t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR;
+}
+
+static inline gboolean
 m_class_is_nullable (MonoClass *klass)
 {
 	return mono_class_is_nullable (klass);
