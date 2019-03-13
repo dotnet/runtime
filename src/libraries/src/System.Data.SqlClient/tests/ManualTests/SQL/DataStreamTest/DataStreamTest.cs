@@ -1755,6 +1755,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
        private static void TestXEventsStreaming(string connectionString)
         {   
             string sessionName = "xeventStreamTest";
+            //Create XEvent
             SetupXevent(connectionString, sessionName);
             Task.Factory.StartNew(() =>
             {
@@ -1792,12 +1793,12 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     }
                 }
             }).Wait(10000);
+            //Delete XEvent 
+            DeleteXevent(connectionString, sessionName);
         }
 
         private static void SetupXevent(string connectionString, string sessionName)
-        {
-            string deleteXeventSessionCommand = @"IF EXISTS (select * from sys.server_event_sessions where name ='" + sessionName + "') DROP  EVENT SESSION [" + sessionName + "] ON SERVER";
-
+        {            
             string xEventCreateAndStartCommandText = @"CREATE EVENT SESSION [" + sessionName + @"] ON SERVER 
                         ADD EVENT sqlserver.user_event(ACTION(package0.event_sequence))
                         ADD TARGET package0.ring_buffer
@@ -1811,14 +1812,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             STARTUP_STATE=OFF)
                             
                         ALTER EVENT SESSION [" + sessionName + "] ON SERVER STATE = START ";
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                using (SqlCommand deleteXeventSession = new SqlCommand(deleteXeventSessionCommand, connection))
-                {
-                    deleteXeventSession.ExecuteNonQuery();
-                }
-            }
+            
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
@@ -1827,6 +1821,21 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     createXeventSession.ExecuteNonQuery();                    
                 }
             }
+        }
+
+        private static void DeleteXevent(string connectionString, string sessionName)
+        { 
+            string deleteXeventSessionCommand = @"IF EXISTS (select * from sys.server_event_sessions where name ='" + sessionName + "') DROP  EVENT SESSION [" + sessionName + "] ON SERVER";
+            
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (SqlCommand deleteXeventSession = new SqlCommand(deleteXeventSessionCommand, connection))
+                {
+                    deleteXeventSession.ExecuteNonQuery();
+                }
+            }
+            
         }
     
         private static void TimeoutDuringReadAsyncWithClosedReaderTest(string connectionString)
