@@ -14,7 +14,7 @@ namespace System.Xml.Serialization
     {
         internal static Exception NotSupported(string msg)
         {
-            System.Diagnostics.Debug.Assert(false, msg);
+            System.Diagnostics.Debug.Fail(msg);
             return new NotSupportedException(msg);
         }
     }

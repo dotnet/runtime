@@ -1027,7 +1027,7 @@ namespace System.Data.Common
                                     dataCommand = _IDbDataAdapter.UpdateCommand;
                                     break;
                                 default:
-                                    Debug.Assert(false, "InvalidDataRowState");
+                                    Debug.Fail("InvalidDataRowState");
                                     throw ADP.InvalidDataRowState(dataRow.RowState); // out of Update without completing batch
                             }
 
@@ -1540,7 +1540,7 @@ namespace System.Data.Common
             else
             {
                 // StatementType.Select, StatementType.Batch
-                Debug.Assert(false, "unexpected StatementType");
+                Debug.Fail("unexpected StatementType");
             }
 
             // map the parameter results to the dataSet

@@ -5,17 +5,9 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.OnDeserializedAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.OnDeserializingAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.OnSerializedAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.OnSerializingAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.SerializationException))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.StreamingContext))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.Serialization.StreamingContextStates))]
-
 namespace System.Runtime.Serialization
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
     public sealed partial class CollectionDataContractAttribute : System.Attribute
     {
         public CollectionDataContractAttribute() { }
@@ -32,14 +24,14 @@ namespace System.Runtime.Serialization
         public string Namespace { get { throw null; } set { } }
         public string ValueName { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(3), Inherited = false, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module, Inherited=false, AllowMultiple=true)]
     public sealed partial class ContractNamespaceAttribute : System.Attribute
     {
         public ContractNamespaceAttribute(string contractNamespace) { }
         public string ClrNamespace { get { throw null; } set { } }
         public string ContractNamespace { get { throw null; } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(28), Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
     public sealed partial class DataContractAttribute : System.Attribute
     {
         public DataContractAttribute() { }
@@ -50,7 +42,7 @@ namespace System.Runtime.Serialization
         public string Name { get { throw null; } set { } }
         public string Namespace { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(384), Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
     public sealed partial class DataMemberAttribute : System.Attribute
     {
         public DataMemberAttribute() { }
@@ -60,14 +52,14 @@ namespace System.Runtime.Serialization
         public string Name { get { throw null; } set { } }
         public int Order { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(256), Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false, AllowMultiple=false)]
     public sealed partial class EnumMemberAttribute : System.Attribute
     {
         public EnumMemberAttribute() { }
         public bool IsValueSetExplicitly { get { throw null; } }
         public string Value { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(384), Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
     public sealed partial class IgnoreDataMemberAttribute : System.Attribute
     {
         public IgnoreDataMemberAttribute() { }
@@ -75,9 +67,9 @@ namespace System.Runtime.Serialization
     public partial class InvalidDataContractException : System.Exception
     {
         public InvalidDataContractException() { }
+        protected InvalidDataContractException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidDataContractException(string message) { }
         public InvalidDataContractException(string message, System.Exception innerException) { }
-        protected InvalidDataContractException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
     public partial interface ISerializationSurrogateProvider
     {
@@ -85,7 +77,7 @@ namespace System.Runtime.Serialization
         object GetObjectToSerialize(object obj, System.Type targetType);
         System.Type GetSurrogateType(System.Type type);
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited = true, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=true, AllowMultiple=true)]
     public sealed partial class KnownTypeAttribute : System.Attribute
     {
         public KnownTypeAttribute(string methodName) { }

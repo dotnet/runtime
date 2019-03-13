@@ -167,8 +167,7 @@ namespace System.DirectoryServices.AccountManagement
                         else
                         {
                             lastError = Marshal.GetLastWin32Error();
-                            // With a zero-length buffer, this should have never succeeded
-                            Debug.Assert(false);
+                            Debug.Fail("With a zero-length buffer, this should have never succeeded");
                         }
                     }
                     else
@@ -186,8 +185,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "Failed to retrieve group list, {0}", lastError);
 
                     throw new PrincipalOperationException(
-                                    string.Format(
-                                            CultureInfo.CurrentCulture,
+                                    SR.Format(
                                             SR.AuthZFailedToRetrieveGroupList,
                                             lastError));
                 }
@@ -647,7 +645,7 @@ namespace System.DirectoryServices.AccountManagement
                             {
                                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: couldn't get policy handle, err={0}", err);                                                                
 
-                                throw new PrincipalOperationException(String.Format(CultureInfo.CurrentCulture,
+                                throw new PrincipalOperationException(SR.Format(
                                                                            SR.AuthZErrorEnumeratingGroups,
                                                                            SafeNativeMethods.LsaNtStatusToWinError(err)));
                             }
@@ -669,7 +667,7 @@ namespace System.DirectoryServices.AccountManagement
                             {
                                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: LsaLookupSids failed, err={0}", err);                                                                
 
-                                throw new PrincipalOperationException(String.Format(CultureInfo.CurrentCulture,
+                                throw new PrincipalOperationException(SR.Format(
                                                                            SR.AuthZErrorEnumeratingGroups,
                                                                            SafeNativeMethods.LsaNtStatusToWinError(err)));
                             }

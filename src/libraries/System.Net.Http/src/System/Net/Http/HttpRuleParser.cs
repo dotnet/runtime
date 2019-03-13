@@ -413,7 +413,7 @@ namespace System.Net.Http
                                 break;
 
                             case HttpParseResult.NotParsed:
-                                Debug.Assert(false, "'NotParsed' is unexpected: We started nested expression " +
+                                Debug.Fail("'NotParsed' is unexpected: We started nested expression " +
                                     "parsing, because we found the open-char. So either it's a valid nested " +
                                     "expression or it has invalid format.");
                                 break;
@@ -423,7 +423,7 @@ namespace System.Net.Http
                                 return HttpParseResult.InvalidFormat;
 
                             default:
-                                Debug.Assert(false, "Unknown enum result: " + nestedResult);
+                                Debug.Fail("Unknown enum result: " + nestedResult);
                                 break;
                         }
                     }
@@ -431,6 +431,9 @@ namespace System.Net.Http
                     {
                         nestedCount--;
                     }
+
+                    // after nested call we continue with parsing
+                    continue;
                 }
 
                 if (input[current] == closeChar)

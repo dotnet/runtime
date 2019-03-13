@@ -51,5 +51,31 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Verify(writer, "87000500");
             }
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void WriteAfterDispose(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteBoolean(true);
+                }
+
+                writer.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteNull());
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteNull(Asn1Tag.Integer));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteNull(new Asn1Tag(TagClass.Private, 3)));
+            }
+        }
     }
 }

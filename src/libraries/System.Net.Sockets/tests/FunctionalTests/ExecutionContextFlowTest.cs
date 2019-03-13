@@ -450,7 +450,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(35493)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

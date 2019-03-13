@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  Remote content should produce no NotBlank warning
 Expect:       !NotBlank

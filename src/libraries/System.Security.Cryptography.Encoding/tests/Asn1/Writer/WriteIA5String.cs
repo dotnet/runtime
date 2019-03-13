@@ -284,5 +284,17 @@ namespace System.Security.Cryptography.Tests.Asn1
         [MemberData(nameof(InvalidInputs))]
         public new void VerifyWrite_Span_NonEncodable(string input) =>
             base.VerifyWrite_Span_NonEncodable(input);
+        
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public new void WriteAfterDispose_Span(bool empty) =>
+            base.WriteAfterDispose_Span(empty);
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public new void WriteAfterDispose_String(bool empty) =>
+            base.WriteAfterDispose_String(empty);
     }
 }

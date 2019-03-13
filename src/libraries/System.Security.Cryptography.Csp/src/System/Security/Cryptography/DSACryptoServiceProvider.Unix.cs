@@ -196,7 +196,7 @@ namespace System.Security.Cryptography
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
             if (rgbHash.Length != SHA1_HASHSIZE)
-                throw new CryptographicException(string.Format(SR.Cryptography_InvalidHashSize, "SHA1", SHA1_HASHSIZE));
+                throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHashSize, "SHA1", SHA1_HASHSIZE));
 
             // Only SHA1 allowed; the default value is SHA1
             if (str != null && !string.Equals(str, "SHA1", StringComparison.OrdinalIgnoreCase))

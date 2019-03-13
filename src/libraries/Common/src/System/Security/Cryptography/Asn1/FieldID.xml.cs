@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -21,7 +25,7 @@ namespace System.Security.Cryptography.Asn1
             writer.PushSequence(tag);
             
             writer.WriteObjectIdentifier(FieldType);
-            writer.WriteEncodedValue(Parameters);
+            writer.WriteEncodedValue(Parameters.Span);
             writer.PopSequence(tag);
         }
 
@@ -56,7 +60,7 @@ namespace System.Security.Cryptography.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             
             decoded.FieldType = sequenceReader.ReadObjectIdentifierAsString();
-            decoded.Parameters = sequenceReader.GetEncodedValue();
+            decoded.Parameters = sequenceReader.ReadEncodedValue();
 
             sequenceReader.ThrowIfNotEmpty();
         }

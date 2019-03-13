@@ -181,7 +181,7 @@ namespace System.Net.Mime
 
         // outputs the RFC 2822 formatted date string including time zone
         public override string ToString() =>
-            string.Format("{0} {1}", FormatDate(_date), _unknownTimeZone ? UnknownTimeZoneDefaultOffset : TimeSpanToOffset(_timeZone));
+            FormatDate(_date) + " " + (_unknownTimeZone ? UnknownTimeZoneDefaultOffset : TimeSpanToOffset(_timeZone));
 
         // returns true if the offset is of the form [+|-]dddd and 
         // within the range 0000 to 9959

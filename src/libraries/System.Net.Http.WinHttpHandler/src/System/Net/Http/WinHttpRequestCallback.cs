@@ -161,7 +161,7 @@ namespace System.Net.Http
                 && state.ExpectedBytesToRead.HasValue
                 && state.CurrentBytesRead < state.ExpectedBytesToRead.Value)
             {
-                state.LifecycleAwaitable.SetException(new IOException(string.Format(
+                state.LifecycleAwaitable.SetException(new IOException(SR.Format(
                     SR.net_http_io_read_incomplete,
                     state.ExpectedBytesToRead.Value,
                     state.CurrentBytesRead)));

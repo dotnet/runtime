@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  RFC 2822 "name-addr" style email address
 Expect:       InvalidAddrSpec{element:email,parent:contributor}

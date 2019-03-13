@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -22,14 +26,14 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             
             // Validator for tag constraint for Issuer
             {
-                if (!Asn1Tag.TryParse(Issuer.Span, out Asn1Tag validateTag, out _) ||
+                if (!Asn1Tag.TryDecode(Issuer.Span, out Asn1Tag validateTag, out _) ||
                     !validateTag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
                 {
                     throw new CryptographicException();
                 }
             }
 
-            writer.WriteEncodedValue(Issuer);
+            writer.WriteEncodedValue(Issuer.Span);
             writer.WriteInteger(SerialNumber.Span);
             writer.PopSequence(tag);
         }
@@ -69,8 +73,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 throw new CryptographicException();
             }
 
-            decoded.Issuer = sequenceReader.GetEncodedValue();
-            decoded.SerialNumber = sequenceReader.GetIntegerBytes();
+            decoded.Issuer = sequenceReader.ReadEncodedValue();
+            decoded.SerialNumber = sequenceReader.ReadIntegerBytes();
 
             sequenceReader.ThrowIfNotEmpty();
         }

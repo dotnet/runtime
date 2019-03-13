@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{3BB28F2F-51DF-49A3-A0BF-E1C5C0D7E3E0}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -8,6 +8,8 @@
   <ItemGroup>
     <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingDecode.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingDecode.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetDecoder.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetEncoder.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxByteCount.cs" />

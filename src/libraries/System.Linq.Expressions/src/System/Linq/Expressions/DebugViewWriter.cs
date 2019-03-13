@@ -1251,7 +1251,7 @@ namespace System.Linq.Expressions
 
         private static string QuoteName(string name)
         {
-            return string.Format(CultureInfo.CurrentCulture, "'{0}'", name);
+            return "'" + name + "'";
         }
 
         private static string GetDisplayName(string name)

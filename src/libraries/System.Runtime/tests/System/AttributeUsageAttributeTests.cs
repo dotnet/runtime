@@ -2,30 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Tests
 {
-    public static class AttributeUsageAttributeTests
+    public class AttributeUsageAttributeTests
     {
-        [Fact]
-        public static void Ctor()
+        [Theory]
+        [InlineData(AttributeTargets.Delegate | AttributeTargets.GenericParameter)]
+        [InlineData((AttributeTargets)(AttributeTargets.All + 1))]
+        public void Ctor_AttributeTargets(AttributeTargets validOn)
         {
-            var attribute = new AttributeUsageAttribute(AttributeTargets.Delegate | AttributeTargets.GenericParameter);
-            Assert.Equal(AttributeTargets.Delegate | AttributeTargets.GenericParameter, attribute.ValidOn);
-
+            var attribute = new AttributeUsageAttribute(validOn);
+            Assert.Equal(validOn, attribute.ValidOn);
             Assert.False(attribute.AllowMultiple);
-            attribute.AllowMultiple = true;
-            Assert.True(attribute.AllowMultiple);
-            attribute.AllowMultiple = false;
-            Assert.False(attribute.AllowMultiple);
+            Assert.True(attribute.Inherited);
+        }
 
-            Assert.True(attribute.Inherited);
-            attribute.Inherited = false;
-            Assert.False(attribute.Inherited);
-            attribute.Inherited = true;
-            Assert.True(attribute.Inherited);
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AllowMultiple_Set_GetReturnsExpected(bool value)
+        {
+            var attribute = new AttributeUsageAttribute(AttributeTargets.All)
+            {
+                AllowMultiple = value
+            };
+            Assert.Equal(value, attribute.AllowMultiple);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Inherited_Set_GetReturnsExpected(bool value)
+        {
+            var attribute = new AttributeUsageAttribute(AttributeTargets.All)
+            {
+                Inherited = value
+            };
+            Assert.Equal(value, attribute.Inherited);
         }
     }
 }

@@ -177,7 +177,7 @@ namespace System.Configuration.Internal
 
             if (!writeSucceeded)
             {
-                throw new ConfigurationErrorsException(string.Format(SR.Config_write_failed, target));
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_write_failed, target));
             }
         }
 

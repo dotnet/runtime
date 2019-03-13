@@ -399,14 +399,14 @@ namespace System.Threading.Tasks
 
         internal virtual void OnCompleted(TCompletedHandler userCompletionHandler, AsyncStatus asyncStatus)
         {
-            Debug.Assert(false, "This (sub-)type of IAsyncInfo does not support completion notifications "
+            Debug.Fail("This (sub-)type of IAsyncInfo does not support completion notifications "
                                  + " (" + this.GetType().ToString() + ")");
         }
 
 
         internal virtual void OnProgress(TProgressHandler userProgressHandler, TProgressInfo progressInfo)
         {
-            Debug.Assert(false, "This (sub-)type of IAsyncInfo does not support progress notifications "
+            Debug.Fail("This (sub-)type of IAsyncInfo does not support progress notifications "
                                  + " (" + this.GetType().ToString() + ")");
         }
 
@@ -621,7 +621,7 @@ namespace System.Threading.Tasks
                     break;
 
                 default:
-                    Debug.Assert(false, "Unexpected task.Status: It should be terminal if TaskCompleted() is called.");
+                    Debug.Fail("Unexpected task.Status: It should be terminal if TaskCompleted() is called.");
                     break;
             }
 
@@ -685,7 +685,7 @@ namespace System.Threading.Tasks
             switch (asyncState)
             {
                 case STATE_NOT_INITIALIZED:
-                    Debug.Assert(false, "STATE_NOT_INITIALIZED should only occur when this object was not"
+                    Debug.Fail("STATE_NOT_INITIALIZED should only occur when this object was not"
                                          + " fully constructed, in which case we should never get here");
                     return AsyncStatus.Error;
 
@@ -703,11 +703,11 @@ namespace System.Threading.Tasks
                     return AsyncStatus.Error;
 
                 case STATE_CLOSED:
-                    Debug.Assert(false, "This method should never be called is this IAsyncInfo is CLOSED");
+                    Debug.Fail("This method should never be called is this IAsyncInfo is CLOSED");
                     return AsyncStatus.Error;
             }
 
-            Debug.Assert(false, "The switch above is missing a case");
+            Debug.Fail("The switch above is missing a case");
             return AsyncStatus.Error;
         }
 
@@ -789,7 +789,7 @@ namespace System.Threading.Tasks
                 return funcCTokIPrgrTask(_cancelTokenSource.Token, this);
             }
 
-            Debug.Assert(false, "We should never get here!"
+            Debug.Fail("We should never get here!"
                                  + " Public methods creating instances of this class must be typesafe to ensure that taskProvider"
                                  + " can always be cast to one of the above Func types."
                                  + " The taskProvider is " + (taskProvider == null

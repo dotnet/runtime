@@ -544,7 +544,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     mask = symbmask_t.MASK_MethodSymbol;
                     break;
                 default:
-                    Debug.Assert(false, "Unhandled kind");
+                    Debug.Fail("Unhandled kind");
                     break;
             }
 
@@ -739,7 +739,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             if (swt.Sym.getKind() != SYMKIND.SK_MethodSymbol)
             {
-                Debug.Assert(false, "Unexpected type returned from lookup");
+                Debug.Fail("Unexpected type returned from lookup");
                 throw Error.InternalCompilerError();
             }
 
@@ -1061,7 +1061,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             switch (p)
             {
                 default:
-                    Debug.Assert(false, "Unknown operator: " + p);
+                    Debug.Fail("Unknown operator: " + p);
                     throw Error.InternalCompilerError();
 
                 // Binary Operators
@@ -1222,7 +1222,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     throw Error.BindPropertyFailedEvent(name);
 
                 default:
-                    Debug.Assert(false, "Unexpected type returned from lookup");
+                    Debug.Fail("Unexpected type returned from lookup");
                     throw Error.InternalCompilerError();
             }
         }

@@ -36,7 +36,7 @@ internal static partial class Interop
                 key?.Dispose();
                 Interop.Crypto.ErrClearError();
                 
-                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, oid));
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
             }
             return key;
         }
@@ -69,7 +69,7 @@ internal static partial class Interop
             }
             else
             {
-                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
             }
 
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(

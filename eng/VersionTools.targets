@@ -1,0 +1,16 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Properties required by VersionTools which we don't wish to make avaiable broadly -->
+    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'core'">$(PkgMicrosoft_DotNet_BuildTools)\lib\net46\</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' == 'core'">$(PkgMicrosoft_DotNet_BuildTools)\lib\</BuildToolsTaskDir>
+    <ProjectDir>$(RepoRoot)</ProjectDir>
+  </PropertyGroup>
+  <Import Project="$(PkgMicrosoft_DotNet_BuildTools)\lib\VersionTools.targets" Condition="Exists('$(PkgMicrosoft_DotNet_BuildTools)\lib\VersionTools.targets')" />
+  <PropertyGroup>
+    <BuildToolsTaskDir />
+    <ProjectDir />
+
+    <!-- point BuildInfoCacheDir to a writable location under artifacts -->
+    <BuildInfoCacheDir>$(ToolSetCommonDirectory)BuildInfoCache/</BuildInfoCacheDir>
+  </PropertyGroup>
+</Project>

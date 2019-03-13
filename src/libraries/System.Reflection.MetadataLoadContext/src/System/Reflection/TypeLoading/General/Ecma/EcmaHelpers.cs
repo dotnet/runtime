@@ -51,7 +51,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 case PrimitiveTypeCode.UIntPtr: return CoreType.UIntPtr;
                 case PrimitiveTypeCode.Void: return CoreType.Void;
                 default:
-                    Debug.Assert(false, "Unexpected PrimitiveTypeCode: " + typeCode);
+                    Debug.Fail("Unexpected PrimitiveTypeCode: " + typeCode);
                     return CoreType.Void;
             }
         }

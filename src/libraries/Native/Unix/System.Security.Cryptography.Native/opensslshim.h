@@ -523,6 +523,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     FALLBACK_FUNCTION(X509_STORE_CTX_get0_store) \
     FALLBACK_FUNCTION(X509_STORE_CTX_get0_untrusted) \
     REQUIRED_FUNCTION(X509_STORE_CTX_get1_chain) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_get1_issuer) \
     REQUIRED_FUNCTION(X509_STORE_CTX_init) \
     REQUIRED_FUNCTION(X509_STORE_CTX_new) \
     REQUIRED_FUNCTION(X509_STORE_CTX_set_flags) \
@@ -906,6 +907,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_STORE_CTX_get0_store X509_STORE_CTX_get0_store_ptr
 #define X509_STORE_CTX_get0_untrusted X509_STORE_CTX_get0_untrusted_ptr
 #define X509_STORE_CTX_get1_chain X509_STORE_CTX_get1_chain_ptr
+#define X509_STORE_CTX_get1_issuer X509_STORE_CTX_get1_issuer_ptr
 #define X509_STORE_CTX_get_error X509_STORE_CTX_get_error_ptr
 #define X509_STORE_CTX_get_error_depth X509_STORE_CTX_get_error_depth_ptr
 #define X509_STORE_CTX_init X509_STORE_CTX_init_ptr
