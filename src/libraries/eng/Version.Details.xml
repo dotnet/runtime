@@ -1,4 +1,3 @@
-
 <Dependencies>
   <ProductDependencies>
     <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview4-27511-77">
@@ -91,9 +90,9 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>ec366687c8caead948e58704ad61ed644eb91b5b</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190308.5">
+    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190312.5">
       <Uri>https://dnceng@dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>5fdf7f90d84111d4897438d4e5d8e88e0af4f3fb</Sha>
+      <Sha>0d3aa31d3df3deb25dc2d2d217a375304b76add9</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
