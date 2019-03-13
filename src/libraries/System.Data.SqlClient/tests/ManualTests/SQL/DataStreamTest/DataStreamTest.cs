@@ -1763,7 +1763,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 using (SqlConnection xEventsReadConnection = new SqlConnection(connectionString))
                 {
                     xEventsReadConnection.Open();
-                    string xEventDataStreamCommand = @"select [type], [data] from sys.fn_MSxe_read_event_stream ('" + sessionName + "',0)";
+                    string xEventDataStreamCommand ="USE master; " + @"select [type], [data] from sys.fn_MSxe_read_event_stream ('" + sessionName + "',0)";
                     using (SqlCommand cmd = new SqlCommand(xEventDataStreamCommand, xEventsReadConnection))
                     {
                         SqlDataReader reader = cmd.ExecuteReader(System.Data.CommandBehavior.SequentialAccess);
