@@ -155,7 +155,7 @@ namespace System.Net.Http
         {
             if (!IsSuccessStatusCode)
             {
-                throw new HttpRequestException(string.Format(
+                throw new HttpRequestException(SR.Format(
                     System.Globalization.CultureInfo.InvariantCulture,
                     SR.net_http_message_not_success_statuscode,
                     (int)_statusCode,

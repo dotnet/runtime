@@ -1159,7 +1159,7 @@ namespace System.ComponentModel
                     name = ci.ToString(CultureInfo.InvariantCulture);
                 }
 
-                suffix = string.Format(CultureInfo.InvariantCulture, "_{0}", name);
+                suffix = "_" + name;
             }
 
             return suffix;

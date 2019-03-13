@@ -83,12 +83,12 @@ namespace System.Net.Http
             if (boundary.Length > 70)
             {
                 throw new ArgumentOutOfRangeException(nameof(boundary), boundary,
-                    string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_field_too_long, 70));
+                    SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_field_too_long, 70));
             }
             // Cannot end with space.
             if (boundary.EndsWith(" ", StringComparison.Ordinal))
             {
-                throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
+                throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
             Contract.EndContractBlock();
 
@@ -105,7 +105,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
+                    throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
                 }
             }
         }

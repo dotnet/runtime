@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <Configuration>
 <!--
     To enable the tests marked with [ConditionalFact(nameof(IsActiveDirectoryServer))], need to setup a Windows Active Directory server and provide the needed server info here.

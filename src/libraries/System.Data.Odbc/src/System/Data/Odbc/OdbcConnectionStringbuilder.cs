@@ -88,7 +88,7 @@ namespace System.Data.Odbc
                             case Keywords.Dsn: Dsn = ConvertToString(value); break;
                             //                      case Keywords.NamedConnection: NamedConnection = ConvertToString(value); break;
                             default:
-                                Debug.Assert(false, "unexpected keyword");
+                                Debug.Fail("unexpected keyword");
                                 throw ADP.KeywordNotSupported(keyword);
                         }
                     }
@@ -226,7 +226,7 @@ namespace System.Data.Odbc
                 case Keywords.Dsn: return Dsn;
                 //          case Keywords.NamedConnection: return NamedConnection;
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }
@@ -303,7 +303,7 @@ namespace System.Data.Odbc
                 //               _namedConnection = DbConnectionStringDefaults.NamedConnection;
                 //                break;
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }

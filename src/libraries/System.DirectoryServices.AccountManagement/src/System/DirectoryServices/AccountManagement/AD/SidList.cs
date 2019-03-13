@@ -150,7 +150,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: couldn't get policy handle, err={0}", err);
 
-                    throw new PrincipalOperationException(string.Format(CultureInfo.CurrentCulture,
+                    throw new PrincipalOperationException(SR.Format(
                                                                SR.AuthZErrorEnumeratingGroups,
                                                                SafeNativeMethods.LsaNtStatusToWinError(err)));
                 }
@@ -176,7 +176,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: LsaLookupSids failed, err={0}", err);
 
-                    throw new PrincipalOperationException(string.Format(CultureInfo.CurrentCulture,
+                    throw new PrincipalOperationException(SR.Format(
                                                                SR.AuthZErrorEnumeratingGroups,
                                                                SafeNativeMethods.LsaNtStatusToWinError(err)));
                 }

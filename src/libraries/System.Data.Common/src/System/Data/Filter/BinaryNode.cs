@@ -1251,7 +1251,7 @@ namespace System.Data
                 case DataTypePrecedence.SqlBinary: return StorageType.SqlBinary;
                 case DataTypePrecedence.SqlMoney: return StorageType.SqlMoney;
                 default:
-                    Debug.Assert(false, "Invalid (unmapped) precedence " + code.ToString());
+                    Debug.Fail("Invalid (unmapped) precedence " + code.ToString());
                     goto case DataTypePrecedence.Error;
             }
         }
@@ -1579,7 +1579,7 @@ namespace System.Data
                     string s2 = substring.TrimEnd(trimChars);
                     return table.IsSuffix(s1, s2);
                 default:
-                    Debug.Assert(false, "Unexpected LIKE kind");
+                    Debug.Fail("Unexpected LIKE kind");
                     return DBNull.Value;
             }
         }

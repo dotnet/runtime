@@ -186,8 +186,11 @@ namespace System.Composition.Hosting.Core
                 if (!second.TryGetValue(firstItem.Key, out object secondValue))
                     return false;
 
-                if (firstItem.Value == null && secondValue != null ||
-                    secondValue == null && firstItem.Value != null)
+                if (firstItem.Value == null)
+                {
+                    return secondValue == null;
+                }
+                else if (secondValue == null)
                 {
                     return false;
                 }

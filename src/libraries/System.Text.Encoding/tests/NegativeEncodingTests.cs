@@ -16,13 +16,18 @@ namespace System.Text.Tests
             yield return new object[] { new UnicodeEncoding(true, false) };
             yield return new object[] { new UnicodeEncoding(true, true) };
             yield return new object[] { new UnicodeEncoding(true, true) };
+            yield return new object[] { Encoding.BigEndianUnicode };
+            yield return new object[] { Encoding.Unicode };
             yield return new object[] { new UTF7Encoding(true) };
             yield return new object[] { new UTF7Encoding(false) };
+            yield return new object[] { Encoding.UTF7 };
             yield return new object[] { new UTF8Encoding(true, true) };
             yield return new object[] { new UTF8Encoding(false, true) };
             yield return new object[] { new UTF8Encoding(true, false) };
             yield return new object[] { new UTF8Encoding(false, false) };
+            yield return new object[] { Encoding.UTF8 };
             yield return new object[] { new ASCIIEncoding() };
+            yield return new object[] { Encoding.ASCII };
             yield return new object[] { new UTF32Encoding(true, true, true) };
             yield return new object[] { new UTF32Encoding(true, true, false) };
             yield return new object[] { new UTF32Encoding(true, false, false) };
@@ -31,6 +36,7 @@ namespace System.Text.Tests
             yield return new object[] { new UTF32Encoding(false, true, false) };
             yield return new object[] { new UTF32Encoding(false, false, false) };
             yield return new object[] { new UTF32Encoding(false, false, true) };
+            yield return new object[] { Encoding.UTF32 };
             yield return new object[] { Encoding.GetEncoding("latin1") };
         }
 

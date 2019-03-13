@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void IntPayload()
         {
-            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            using (DiagnosticListener listener = new DiagnosticListener("TestingIntPayload"))
             {
                 DiagnosticSource source = listener;
                 var result = new List<KeyValuePair<string, object>>();
@@ -48,7 +48,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StructPayload()
         {
-            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            using (DiagnosticListener listener = new DiagnosticListener("TestingStructPayload"))
             {
                 DiagnosticSource source = listener;
                 var result = new List<KeyValuePair<string, object>>();
@@ -76,7 +76,7 @@ namespace System.Diagnostics.Tests
         {
             var result = new List<KeyValuePair<string, object>>();
             var observer = new ObserverToList<TelemData>(result);
-            var listener = new DiagnosticListener("MyListener");
+            var listener = new DiagnosticListener("TestingCompleted");
             var subscription = listener.Subscribe(observer);
 
             listener.Write("IntPayload", 5);
@@ -105,7 +105,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void BasicIsEnabled()
         {
-            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            using (DiagnosticListener listener = new DiagnosticListener("TestingBasicIsEnabled"))
             {
                 DiagnosticSource source = listener;
                 var result = new List<KeyValuePair<string, object>>();
@@ -122,7 +122,7 @@ namespace System.Diagnostics.Tests
                     return name == "StructPayload";
                 };
 
-                Assert.False(listener.IsEnabled());
+                // Assert.False(listener.IsEnabled());  Since other things might turn on all DiagnosticSources, we can't ever test that it is not enabled. 
                 using (listener.Subscribe(new ObserverToList<TelemData>(result), predicate))
                 {
                     Assert.False(source.IsEnabled("Uninteresting"));
@@ -142,7 +142,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void IsEnabledMultipleArgs()
         {
-            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            using (DiagnosticListener listener = new DiagnosticListener("TestingIsEnabledMultipleArgs"))
             {
                 DiagnosticSource source = listener;
                 var result = new List<KeyValuePair<string, object>>();
@@ -174,7 +174,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void MultiSubscriber()
         {
-            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            using (DiagnosticListener listener = new DiagnosticListener("TestingMultiSubscriber"))
             {
                 DiagnosticSource source = listener;
                 var subscriber1Result = new List<KeyValuePair<string, object>>();
@@ -545,7 +545,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void DoubleDisposeOfListener()
         {
-            var listener = new DiagnosticListener("MyListener");
+            var listener = new DiagnosticListener("TestingDoubleDisposeOfListener");
             int completionCount = 0;
 
             IDisposable subscription = listener.Subscribe(MakeObserver<KeyValuePair<string, object>>(_ => { }, () => completionCount++));
@@ -603,7 +603,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void SubscribeWithNullPredicate()
         {
-            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            using (DiagnosticListener listener = new DiagnosticListener("TestingSubscribeWithNullPredicate"))
             {
                 Predicate<string> predicate = null;
                 using (listener.Subscribe(new ObserverToList<TelemData>(new List<KeyValuePair<string, object>>()), predicate))
@@ -615,7 +615,7 @@ namespace System.Diagnostics.Tests
                 }
             }
 
-            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            using (DiagnosticListener listener = new DiagnosticListener("TestingSubscribeWithNullPredicate"))
             {
                 DiagnosticSource source = listener;
                 Func<string, object, object, bool> predicate = null;

@@ -180,23 +180,23 @@ namespace System.Xml.Xsl.Runtime
 
         public override void WriteStartElement(string prefix, string localName, string ns)
         {
-            Debug.Assert(false, "Should never be called on XmlAttributeCache.");
+            Debug.Fail("Should never be called on XmlAttributeCache.");
         }
         internal override void WriteEndElement(string prefix, string localName, string ns)
         {
-            Debug.Assert(false, "Should never be called on XmlAttributeCache.");
+            Debug.Fail("Should never be called on XmlAttributeCache.");
         }
         public override void WriteComment(string text)
         {
-            Debug.Assert(false, "Should never be called on XmlAttributeCache.");
+            Debug.Fail("Should never be called on XmlAttributeCache.");
         }
         public override void WriteProcessingInstruction(string name, string text)
         {
-            Debug.Assert(false, "Should never be called on XmlAttributeCache.");
+            Debug.Fail("Should never be called on XmlAttributeCache.");
         }
         public override void WriteEntityRef(string name)
         {
-            Debug.Assert(false, "Should never be called on XmlAttributeCache.");
+            Debug.Fail("Should never be called on XmlAttributeCache.");
         }
 
         /// <summary>

@@ -441,8 +441,7 @@ namespace System.IO.Ports
         {
             if (!pollReadEvents && !pollWriteEvents)
             {
-                // This should not happen
-                Debug.Assert(false);
+                Debug.Fail("This should not happen");
                 throw new Exception();
             }
 

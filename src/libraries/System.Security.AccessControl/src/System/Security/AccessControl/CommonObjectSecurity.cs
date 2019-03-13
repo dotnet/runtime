@@ -275,7 +275,7 @@ nameof(targetType));
                             result = _securityDescriptor.DiscretionaryAcl.RemoveAccess(AccessControlType.Allow, sid, -1, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, 0);
                             if (result == false)
                             {
-                                Debug.Assert(false, "Invalid operation");
+                                Debug.Fail("Invalid operation");
                                 throw new InvalidOperationException();
                             }
 
@@ -316,7 +316,7 @@ nameof(modification),
                             result = _securityDescriptor.DiscretionaryAcl.RemoveAccess(AccessControlType.Deny, sid, -1, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, 0);
                             if (result == false)
                             {
-                                Debug.Assert(false, "Invalid operation");
+                                Debug.Fail("Invalid operation");
                                 throw new InvalidOperationException();
                             }
 
@@ -334,7 +334,7 @@ nameof(modification),
                 }
                 else
                 {
-                    Debug.Assert(false, "rule.AccessControlType unrecognized");
+                    Debug.Fail("rule.AccessControlType unrecognized");
                     throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)rule.AccessControlType), "rule.AccessControlType");
                 }
 

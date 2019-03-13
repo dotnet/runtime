@@ -30,6 +30,8 @@ DLLEXPORT int32_t SystemNative_ForkAndExecProcess(
                    int32_t setCredentials, // whether to set the userId and groupId for the child process
                    uint32_t userId,        // the user id under which the child process should run
                    uint32_t groupId,       // the group id under which the child process should run
+                   uint32_t* groups,       // the groups under which the child process should run
+                   int32_t groupsLength,   // the length of groups
                    int32_t* childPid,      // [out] the child process' id
                    int32_t* stdinFd,       // [out] if redirectStdin, the parent's fd for the child's stdin
                    int32_t* stdoutFd,      // [out] if redirectStdout, the parent's fd for the child's stdout

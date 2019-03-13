@@ -50,8 +50,10 @@
     <Compile Include="CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\SubjectAltNameBuilderTests.cs" />
     <Compile Include="DSAOther.cs" />
+    <Compile Include="DynamicChainTests.cs" />
     <Compile Include="ECDsaOther.cs" />
     <Compile Include="RSAOther.cs" />
+    <Compile Include="TestDataGenerator.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
     <Compile Include="X509FilesystemTests.Unix.cs" />

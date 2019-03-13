@@ -28,7 +28,7 @@ namespace System.ComponentModel
     }
     public static partial class AsyncOperationManager
     {
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Threading.SynchronizationContext SynchronizationContext { get { throw null; } set { } }
         public static System.ComponentModel.AsyncOperation CreateOperation(object userSuppliedState) { throw null; }
     }
@@ -70,9 +70,9 @@ namespace System.ComponentModel
     public delegate void ProgressChangedEventHandler(object sender, System.ComponentModel.ProgressChangedEventArgs e);
     public partial class RunWorkerCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs
     {
-        public RunWorkerCompletedEventArgs(object result, System.Exception error, bool cancelled) : base(default(System.Exception), default(bool), default(object)) { }
+        public RunWorkerCompletedEventArgs(object result, System.Exception error, bool cancelled) : base (default(System.Exception), default(bool), default(object)) { }
         public object Result { get { throw null; } }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public new object UserState { get { throw null; } }
     }
     public delegate void RunWorkerCompletedEventHandler(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e);

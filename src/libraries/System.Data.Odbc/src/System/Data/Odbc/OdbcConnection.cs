@@ -723,7 +723,7 @@ namespace System.Data.Odbc
                     ProviderInfo.NoConnectionDead = true;
                     break;
                 default:
-                    Debug.Assert(false, "Can't flag unknown Attribute");
+                    Debug.Fail("Can't flag unknown Attribute");
                     break;
             }
         }
@@ -742,7 +742,7 @@ namespace System.Data.Odbc
                     ProviderInfo.NoSqlSoptSSHiddenColumns = true;
                     break;
                 default:
-                    Debug.Assert(false, "Can't flag unknown Attribute");
+                    Debug.Fail("Can't flag unknown Attribute");
                     break;
             }
         }
@@ -759,7 +759,7 @@ namespace System.Data.Odbc
                         break;
                     // SSS_WARNINGS_ON
                     default:
-                        Debug.Assert(false, "Can't flag unknown Attribute");
+                        Debug.Fail("Can't flag unknown Attribute");
                         break;
                 }
             }
@@ -768,7 +768,7 @@ namespace System.Data.Odbc
                 switch (v2FieldId)
                 {
                     default:
-                        Debug.Assert(false, "Can't flag unknown Attribute");
+                        Debug.Fail("Can't flag unknown Attribute");
                         break;
                 }
             }
@@ -787,7 +787,7 @@ namespace System.Data.Odbc
             }
             else
             {
-                Debug.Assert(false, "GetFunctions called and ConnectionHandle is null (connection is disposed?)");
+                Debug.Fail("GetFunctions called and ConnectionHandle is null (connection is disposed?)");
                 throw ODBC.ConnectionClosed();
             }
 
@@ -838,7 +838,7 @@ namespace System.Data.Odbc
                         break;
                     }
                 default:
-                    Debug.Assert(false, "Testing that sqltype is currently not supported");
+                    Debug.Fail("Testing that sqltype is currently not supported");
                     return false;
             }
             // now we can check if we have already tested that type
@@ -875,7 +875,7 @@ namespace System.Data.Odbc
                         break;
                     }
                 default:
-                    Debug.Assert(false, "Testing that sqltype is currently not supported");
+                    Debug.Fail("Testing that sqltype is currently not supported");
                     return false;
             }
             return (0 != (ProviderInfo.RestrictedSQLBindTypes & (int)sqlcvt));

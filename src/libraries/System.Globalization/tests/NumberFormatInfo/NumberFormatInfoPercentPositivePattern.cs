@@ -26,13 +26,13 @@ namespace System.Globalization.Tests
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [MemberData(nameof(PercentPositivePattern_TestData))]
-        public void PercentPositivePattern_Get(NumberFormatInfo format, int expected)
+        public void PercentPositivePattern_Get_ReturnsExpected(NumberFormatInfo format, int expected)
         {
             Assert.Equal(expected, format.PercentPositivePattern);
         }
 
         [Fact]
-        public void PercentPositivePattern_Invariant_Get()
+        public void PercentPositivePattern_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal(0, NumberFormatInfo.InvariantInfo.PercentPositivePattern);
         }
@@ -41,19 +41,25 @@ namespace System.Globalization.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(3)]
-        public void PercentPositivePattern_Set(int newPercentPositivePattern)
+        public void PercentPositivePattern_Set_GetReturnsExpected(int newPercentPositivePattern)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.PercentPositivePattern = newPercentPositivePattern;
             Assert.Equal(newPercentPositivePattern, format.PercentPositivePattern);
         }
 
-        [Fact]
-        public void PercentPositivePattern_Set_Invalid()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(4)]
+        public void PercentPositivePattern_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("PercentPositivePattern", () => new NumberFormatInfo().PercentPositivePattern = -1);
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("PercentPositivePattern", () => new NumberFormatInfo().PercentPositivePattern = 4);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", "PercentPositivePattern", () => format.PercentPositivePattern = value);
+        }
 
+        [Fact]
+        public void PercentPositivePattern_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentPositivePattern = 1);
         }
     }

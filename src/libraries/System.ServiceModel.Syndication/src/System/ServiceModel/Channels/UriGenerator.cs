@@ -12,26 +12,9 @@ namespace System.ServiceModel.Channels
         private long _id;
         private readonly string _prefix;
 
-        public UriGenerator() : this("uuid")
+        public UriGenerator()
         {
-        }
-
-        public UriGenerator(string scheme) : this(scheme, ";")
-        {
-        }
-
-        public UriGenerator(string scheme, string delimiter)
-        {
-            if (scheme == null)
-            {
-                throw new ArgumentNullException(nameof(scheme));
-            }
-            if (scheme.Length == 0)
-            {
-                throw new ArgumentException(SR.UriGeneratorSchemeMustNotBeEmpty, nameof(scheme));
-            }
-
-            _prefix = string.Concat(scheme, ":", Guid.NewGuid().ToString(), delimiter, "id=");
+            _prefix = string.Concat("uuid:", Guid.NewGuid().ToString(), ";id=");
         }
 
         public string Next()

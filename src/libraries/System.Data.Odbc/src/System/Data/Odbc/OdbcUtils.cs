@@ -141,7 +141,7 @@ namespace System.Data.Odbc
                     break;
 
                 default:
-                    Debug.Assert(false, "UnknownSQLCType");
+                    Debug.Fail("UnknownSQLCType");
                     value = null;
                     break;
             };
@@ -313,7 +313,7 @@ namespace System.Data.Odbc
                     }
 
                 default:
-                    Debug.Assert(false, "UnknownSQLCType");
+                    Debug.Fail("UnknownSQLCType");
                     break;
             }
         }

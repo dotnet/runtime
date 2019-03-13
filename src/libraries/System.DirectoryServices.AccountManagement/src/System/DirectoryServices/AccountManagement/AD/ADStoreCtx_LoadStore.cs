@@ -1183,7 +1183,7 @@ namespace System.DirectoryServices.AccountManagement
             if ((value == null) || (value.Length > 0))
                 de.Properties[suggestedAdProperty].Value = value;
             else
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.InvalidStringValueForStore, propertyName));
+                throw new ArgumentException(SR.Format(SR.InvalidStringValueForStore, propertyName));
         }
 
         protected static void BinaryToLdapConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedAdProperty)
@@ -1532,7 +1532,7 @@ namespace System.DirectoryServices.AccountManagement
                         (!memberType.IsSubclassOf(typeof(AuthenticablePrincipal))))
                     {
                         throw new InvalidOperationException(
-                                        string.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType.ToString()));
+                                        SR.Format(SR.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType));
                     }
                     // Can't inserted unpersisted principal
                     if (member.unpersisted)

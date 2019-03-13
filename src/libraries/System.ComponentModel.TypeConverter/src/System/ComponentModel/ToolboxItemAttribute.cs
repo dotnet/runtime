@@ -57,6 +57,11 @@ namespace System.ComponentModel
         /// </summary>
         public ToolboxItemAttribute(Type toolboxItemType)
         {
+            if (toolboxItemType == null)
+            {
+                throw new ArgumentNullException(nameof(toolboxItemType));
+            }
+
             _toolboxItemType = toolboxItemType;
             _toolboxItemTypeName = toolboxItemType.AssemblyQualifiedName;
         }
