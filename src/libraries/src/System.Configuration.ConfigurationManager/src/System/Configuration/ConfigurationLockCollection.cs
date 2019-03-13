@@ -127,7 +127,7 @@ namespace System.Configuration
         {
             if (((_thisElement.ItemLocked & ConfigurationValueFlags.Locked) != 0) &&
                 ((_thisElement.ItemLocked & ConfigurationValueFlags.Inherited) != 0))
-                throw new ConfigurationErrorsException(string.Format(SR.Config_base_attribute_locked, name));
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_base_attribute_locked, name));
 
             ConfigurationValueFlags flags = ConfigurationValueFlags.Modified;
 
@@ -160,7 +160,7 @@ namespace System.Configuration
                 // the lock is in the property bag but is it the correct type?
                 if ((propToLock != null) && propToLock.IsRequired)
                 {
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_base_required_attribute_lock_attempt,
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_base_required_attribute_lock_attempt,
                         propToLock.Name));
                 }
 
@@ -247,7 +247,7 @@ namespace System.Configuration
         public void Remove(string name)
         {
             if (!_internalDictionary.Contains(name))
-                throw new ConfigurationErrorsException(string.Format(SR.Config_base_collection_entry_not_found, name));
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_base_collection_entry_not_found, name));
 
             // in a locked list you cannot remove items that were locked in the parent
             // in an exception list this is legal because it makes the list more restrictive
@@ -255,7 +255,7 @@ namespace System.Configuration
                 (((ConfigurationValueFlags)_internalDictionary[name] & ConfigurationValueFlags.Inherited) != 0))
             {
                 if (((ConfigurationValueFlags)_internalDictionary[name] & ConfigurationValueFlags.Modified) == 0)
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_base_attribute_locked, name));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_base_attribute_locked, name));
 
                 // allow the local one to be "removed" so it won't write out but throw if they try and remove
                 // one that is only inherited
@@ -318,7 +318,7 @@ namespace System.Configuration
         public bool IsReadOnly(string name)
         {
             if (!_internalDictionary.Contains(name))
-                throw new ConfigurationErrorsException(string.Format(SR.Config_base_collection_entry_not_found, name));
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_base_collection_entry_not_found, name));
             return
                 ((ConfigurationValueFlags)_internalDictionary[name] & ConfigurationValueFlags.Inherited) != 0;
         }

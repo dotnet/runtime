@@ -56,7 +56,7 @@ namespace System.IO.IsolatedStorage
         {
             get
             {
-                throw new InvalidOperationException(string.Format(SR.IsolatedStorage_CurrentSizeUndefined, nameof(CurrentSize)));
+                throw new InvalidOperationException(SR.Format(SR.IsolatedStorage_CurrentSizeUndefined, nameof(CurrentSize)));
             }
         }
 
@@ -64,7 +64,7 @@ namespace System.IO.IsolatedStorage
         {
             get
             {
-                throw new InvalidOperationException(string.Format(SR.IsolatedStorage_QuotaIsUndefined, nameof(UsedSize)));
+                throw new InvalidOperationException(SR.Format(SR.IsolatedStorage_QuotaIsUndefined, nameof(UsedSize)));
             }
         }
 
@@ -72,7 +72,7 @@ namespace System.IO.IsolatedStorage
         {
             get
             {
-                throw new InvalidOperationException(string.Format(SR.IsolatedStorage_QuotaIsUndefined, nameof(AvailableFreeSpace)));
+                throw new InvalidOperationException(SR.Format(SR.IsolatedStorage_QuotaIsUndefined, nameof(AvailableFreeSpace)));
             }
         }
 
@@ -85,7 +85,7 @@ namespace System.IO.IsolatedStorage
                 if (_validQuota)
                     return _quota;
 
-                throw new InvalidOperationException(string.Format(SR.IsolatedStorage_QuotaIsUndefined, nameof(MaximumSize)));
+                throw new InvalidOperationException(SR.Format(SR.IsolatedStorage_QuotaIsUndefined, nameof(MaximumSize)));
             }
         }
 
@@ -96,7 +96,7 @@ namespace System.IO.IsolatedStorage
                 if (_validQuota)
                     return (long)_quota;
 
-                throw new InvalidOperationException(string.Format(SR.IsolatedStorage_QuotaIsUndefined, nameof(Quota)));
+                throw new InvalidOperationException(SR.Format(SR.IsolatedStorage_QuotaIsUndefined, nameof(Quota)));
             }
 
             internal set

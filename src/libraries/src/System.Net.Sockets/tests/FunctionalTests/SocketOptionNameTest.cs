@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -152,11 +152,13 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
-            if (PlatformDetection.IsFedora || PlatformDetection.IsRedHatFamily7 || PlatformDetection.IsOSX)
+            if (PlatformDetection.IsRedHatFamily7)
             {
-                return; // [ActiveIssue(24008)]
+                // RH7 seems to have issues with multicast in Azure. Same code and setup can pass when executed outside of Azure.
+                throw new SkipTestException("IPv6 multicast environment not available");
             }
 
             // On all platforms, index 0 means "any interface"

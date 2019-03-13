@@ -1621,7 +1621,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                Debug.Assert(false);
+                Debug.Fail("Unexpected particle");
             }
 
             return false;
@@ -3081,7 +3081,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                Debug.Assert(false);
+                Debug.Fail("Unexpected particle");
             }
             if (particle.MinOccurs == decimal.One && particle.MaxOccurs == decimal.One)
             {

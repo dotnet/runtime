@@ -59,7 +59,7 @@ internal static class DataSetUtil
 
     static internal ArgumentOutOfRangeException InvalidEnumerationValue(Type type, int value)
     {
-        return ArgumentOutOfRange(string.Format(SR.DataSetLinq_InvalidEnumerationValue, type.Name, value.ToString(System.Globalization.CultureInfo.InvariantCulture)), type.Name);
+        return ArgumentOutOfRange(SR.Format(SR.DataSetLinq_InvalidEnumerationValue, type.Name, value.ToString(System.Globalization.CultureInfo.InvariantCulture)), type.Name);
     }
 
     static internal ArgumentOutOfRangeException InvalidDataRowState(DataRowState value)
@@ -72,7 +72,7 @@ internal static class DataSetUtil
             case DataRowState.Added:
             case DataRowState.Deleted:
             case DataRowState.Modified:
-                Debug.Assert(false, "valid DataRowState " + value.ToString());
+                Debug.Fail("valid DataRowState " + value.ToString());
                 break;
         }
 #endif
@@ -87,7 +87,7 @@ internal static class DataSetUtil
             case LoadOption.OverwriteChanges:
             case LoadOption.PreserveChanges:
             case LoadOption.Upsert:
-                Debug.Assert(false, "valid LoadOption " + value.ToString());
+                Debug.Fail("valid LoadOption " + value.ToString());
                 break;
         }
 #endif

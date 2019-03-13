@@ -1249,7 +1249,7 @@ namespace System.DirectoryServices.AccountManagement
                     return _extensionCache;
 
                 default:
-                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "Principal.GetValueForProperty: Ran off end of list looking for {0}", propertyName));
+                    Debug.Fail($"Principal.GetValueForProperty: Ran off end of list looking for {propertyName}");
                     return null;
             }
         }

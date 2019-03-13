@@ -643,7 +643,7 @@ namespace System.Data
         //
         // Storage
         //
-        public static Exception AggregateException(AggregateType aggregateType, Type type) => _Data(SR.Format(SR.DataStorage_AggregateException, aggregateType.ToString(), type.Name));
+        public static Exception AggregateException(AggregateType aggregateType, Type type) => _Data(SR.Format(SR.DataStorage_AggregateException, aggregateType, type.Name));
         public static Exception InvalidStorageType(TypeCode typecode) => _Data(SR.Format(SR.DataStorage_InvalidStorageType, typecode.ToString()));
         public static Exception RangeArgument(int min, int max) => _Argument(SR.Format(SR.Range_Argument, (min).ToString(CultureInfo.InvariantCulture), (max).ToString(CultureInfo.InvariantCulture)));
         public static Exception NullRange() => _Data(SR.Range_NullRange);

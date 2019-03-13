@@ -416,7 +416,7 @@ namespace System.Xml.Xsl.Runtime
                     return DocOrderMerge();
             }
 
-            Debug.Assert(false, "Invalid IteratorState " + _state);
+            Debug.Fail($"Invalid IteratorState {_state}");
             return IteratorResult.NoMoreNodes;
         }
 

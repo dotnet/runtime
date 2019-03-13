@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(PercentGroupSizes_TestData))]
-        public void PercentGroupSizes_Get(NumberFormatInfo format, int[] expected)
+        public void PercentGroupSizes_Get_ReturnsExpected(NumberFormatInfo format, int[] expected)
         {
             Assert.Equal(expected, format.PercentGroupSizes);
         }
@@ -27,7 +27,7 @@ namespace System.Globalization.Tests
         [InlineData(new int[] { 2, 3, 4 })]
         [InlineData(new int[] { 2, 3, 4, 0 })]
         [InlineData(new int[] { 0 })]
-        public void PercentGroupSizes_Set(int[] newPercentGroupSizes)
+        public void PercentGroupSizes_Set_GetReturnsExpected(int[] newPercentGroupSizes)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.PercentGroupSizes = newPercentGroupSizes;
@@ -35,14 +35,25 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void PercentGroupSizes_Set_Invalid()
+        public void PercentGroupSizes_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "PercentGroupSizes", () => format.PercentGroupSizes = null);
+        }
 
-            AssertExtensions.Throws<ArgumentException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = new int[] { -1, 1, 2 });
-            AssertExtensions.Throws<ArgumentException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = new int[] { 98, 99, 100 });
-            AssertExtensions.Throws<ArgumentException>("PercentGroupSizes", () => new NumberFormatInfo().PercentGroupSizes = new int[] { 0, 1, 2 });
+        [Theory]
+        [InlineData(new int[] { -1, 1, 2 })]
+        [InlineData(new int[] { 98, 99, 100 })]
+        [InlineData(new int[] { 0, 1, 2 })]
+        public void PercentGroupSizes_SetInvalid_ThrowsArgumentException(int[] value)
+        {
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentException>("value", "PercentGroupSizes", () => format.PercentGroupSizes = value);
+        }
 
+        [Fact]
+        public void PercentGroupSizes_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentGroupSizes = new int[] { 1, 2, 3 });
         }
     }

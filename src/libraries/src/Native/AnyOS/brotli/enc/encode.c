@@ -496,6 +496,8 @@ static void DecideOverLiteralContextModeling(const uint8_t* input,
 static BROTLI_BOOL ShouldCompress(
     const uint8_t* data, const size_t mask, const uint64_t last_flush_pos,
     const size_t bytes, const size_t num_literals, const size_t num_commands) {
+  /* TODO: find more precise minimal block overhead. */
+  if (bytes <= 2) return BROTLI_FALSE;
   if (num_commands < (bytes >> 8) + 2) {
     if (num_literals > 0.99 * (double)bytes) {
       uint32_t literal_histo[256] = { 0 };
@@ -674,11 +676,13 @@ static BROTLI_BOOL EnsureInitialized(BrotliEncoderState* s) {
   if (BROTLI_IS_OOM(&s->memory_manager_)) return BROTLI_FALSE;
   if (s->is_initialized_) return BROTLI_TRUE;
 
+  s->last_bytes_bits_ = 0;
+  s->last_bytes_ = 0;
+  s->remaining_metadata_bytes_ = BROTLI_UINT32_MAX;
+
   SanitizeParams(&s->params);
   s->params.lgblock = ComputeLgBlock(&s->params);
   ChooseDistanceParams(&s->params);
-
-  s->remaining_metadata_bytes_ = BROTLI_UINT32_MAX;
 
   RingBufferSetup(&s->params, &s->ringbuffer_);
 
@@ -1029,23 +1033,20 @@ static BROTLI_BOOL EncodeData(
 
   if (s->params.quality == ZOPFLIFICATION_QUALITY) {
     BROTLI_DCHECK(s->params.hasher.type == 10);
-    BrotliCreateZopfliBackwardReferences(m,
-        bytes, wrapped_last_processed_pos,
+    BrotliCreateZopfliBackwardReferences(m, bytes, wrapped_last_processed_pos,
         data, mask, &s->params, s->hasher_, s->dist_cache_,
         &s->last_insert_len_, &s->commands_[s->num_commands_],
         &s->num_commands_, &s->num_literals_);
     if (BROTLI_IS_OOM(m)) return BROTLI_FALSE;
   } else if (s->params.quality == HQ_ZOPFLIFICATION_QUALITY) {
     BROTLI_DCHECK(s->params.hasher.type == 10);
-    BrotliCreateHqZopfliBackwardReferences(m,
-        bytes, wrapped_last_processed_pos,
+    BrotliCreateHqZopfliBackwardReferences(m, bytes, wrapped_last_processed_pos,
         data, mask, &s->params, s->hasher_, s->dist_cache_,
         &s->last_insert_len_, &s->commands_[s->num_commands_],
         &s->num_commands_, &s->num_literals_);
     if (BROTLI_IS_OOM(m)) return BROTLI_FALSE;
   } else {
-    BrotliCreateBackwardReferences(
-        bytes, wrapped_last_processed_pos,
+    BrotliCreateBackwardReferences(bytes, wrapped_last_processed_pos,
         data, mask, &s->params, s->hasher_, s->dist_cache_,
         &s->last_insert_len_, &s->commands_[s->num_commands_],
         &s->num_commands_, &s->num_literals_);
@@ -1166,7 +1167,6 @@ static BROTLI_BOOL BrotliCompressBufferQuality10(
   MemoryManager* m = &memory_manager;
 
   const size_t mask = BROTLI_SIZE_MAX >> 1;
-  const size_t max_backward_limit = BROTLI_MAX_BACKWARD_LIMIT(lgwin);
   int dist_cache[4] = { 4, 11, 15, 16 };
   int saved_dist_cache[4] = { 4, 11, 15, 16 };
   BROTLI_BOOL ok = BROTLI_TRUE;
@@ -1176,8 +1176,8 @@ static BROTLI_BOOL BrotliCompressBufferQuality10(
   uint8_t last_bytes_bits;
   HasherHandle hasher = NULL;
 
-  const size_t hasher_eff_size =
-      BROTLI_MIN(size_t, input_size, max_backward_limit + BROTLI_WINDOW_GAP);
+  const size_t hasher_eff_size = BROTLI_MIN(size_t,
+      input_size, BROTLI_MAX_BACKWARD_LIMIT(lgwin) + BROTLI_WINDOW_GAP);
 
   BrotliEncoderParams params;
 
@@ -1238,9 +1238,9 @@ static BROTLI_BOOL BrotliCompressBufferQuality10(
       BrotliInitZopfliNodes(nodes, block_size + 1);
       StitchToPreviousBlockH10(hasher, block_size, block_start,
                                input_buffer, mask);
-      path_size = BrotliZopfliComputeShortestPath(m,
-          block_size, block_start, input_buffer, mask, &params,
-          max_backward_limit, dist_cache, hasher, nodes);
+      path_size = BrotliZopfliComputeShortestPath(m, block_size, block_start,
+          input_buffer, mask, &params, dist_cache, hasher,
+          nodes);
       if (BROTLI_IS_OOM(m)) goto oom;
       /* We allocate a command buffer in the first iteration of this loop that
          will be likely big enough for the whole metablock, so that for most
@@ -1262,10 +1262,8 @@ static BROTLI_BOOL BrotliCompressBufferQuality10(
         }
         commands = new_commands;
       }
-      BrotliZopfliCreateCommands(block_size, block_start, max_backward_limit,
-                                 &nodes[0], dist_cache, &last_insert_len,
-                                 &params, &commands[num_commands],
-                                 &num_literals);
+      BrotliZopfliCreateCommands(block_size, block_start, &nodes[0], dist_cache,
+          &last_insert_len, &params, &commands[num_commands], &num_literals);
       num_commands += path_size;
       block_start += block_size;
       metablock_size += block_size;

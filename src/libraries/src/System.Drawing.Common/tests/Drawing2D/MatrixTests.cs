@@ -25,6 +25,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Drawing.Drawing2D.Tests
@@ -348,6 +349,12 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Multiply_TestData))]
         public void Multiply_Matrix_Success(Matrix matrix, Matrix multiple, MatrixOrder order, float[] expected)
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             try
             {
                 if (order == MatrixOrder.Prepend)
@@ -611,6 +618,12 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Scale_TestData))]
         public void Scale_Matrix_Succss(Matrix matrix, float scaleX, float scaleY, MatrixOrder order, float[] expectedElements)
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             try
             {
                 if (order == MatrixOrder.Prepend)
@@ -687,6 +700,12 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Shear_TestData))]
         public void Shear_Matrix_Succss(Matrix matrix, float shearX, float shearY, MatrixOrder order, float[] expectedElements)
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             try
             {
                 if (order == MatrixOrder.Prepend)
@@ -755,6 +774,12 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Translate_TestData))]
         public void Translate_Matrix_Success(Matrix matrix, float offsetX, float offsetY, MatrixOrder order, float[] expectedElements)
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             try
             {
                 if (order == MatrixOrder.Prepend)

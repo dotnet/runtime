@@ -46,7 +46,7 @@ namespace System.Configuration
             {
                 _addElement = value;
                 if (BaseConfigurationRecord.IsReservedAttributeName(value))
-                    throw new ArgumentException(string.Format(SR.Item_name_reserved, DefaultAddItemName, value));
+                    throw new ArgumentException(SR.Format(SR.Item_name_reserved, DefaultAddItemName, value));
             }
         }
 
@@ -56,7 +56,7 @@ namespace System.Configuration
             set
             {
                 if (BaseConfigurationRecord.IsReservedAttributeName(value))
-                    throw new ArgumentException(string.Format(SR.Item_name_reserved, DefaultRemoveItemName, value));
+                    throw new ArgumentException(SR.Format(SR.Item_name_reserved, DefaultRemoveItemName, value));
                 _removeElement = value;
             }
         }
@@ -67,7 +67,7 @@ namespace System.Configuration
             set
             {
                 if (BaseConfigurationRecord.IsReservedAttributeName(value))
-                    throw new ArgumentException(string.Format(SR.Item_name_reserved, DefaultClearItemsName, value));
+                    throw new ArgumentException(SR.Format(SR.Item_name_reserved, DefaultClearItemsName, value));
                 _clearElement = value;
             }
         }
@@ -505,7 +505,7 @@ namespace System.Configuration
             if (IsReadOnly()) throw new ConfigurationErrorsException(SR.Config_base_read_only);
 
             if (LockItem && (ignoreLocks == false))
-                throw new ConfigurationErrorsException(string.Format(SR.Config_base_element_locked, _addElement));
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_base_element_locked, _addElement));
 
             object key = GetElementKeyInternal(element);
             int iFoundItem = -1;
@@ -522,7 +522,7 @@ namespace System.Configuration
                     if (!element.Equals(entry.Value))
                     {
                         throw new ConfigurationErrorsException(
-                            string.Format(SR.Config_base_collection_entry_already_exists, key),
+                            SR.Format(SR.Config_base_collection_entry_already_exists, key),
                             element.PropertyFileName(""), element.PropertyLineNumber(""));
                     }
 
@@ -623,7 +623,7 @@ namespace System.Configuration
                     (CollectionType == ConfigurationElementCollectionType.BasicMapAlternate))
                 {
                     if (BaseConfigurationRecord.IsReservedAttributeName(ElementName))
-                        throw new ArgumentException(string.Format(SR.Basicmap_item_name_reserved, ElementName));
+                        throw new ArgumentException(SR.Format(SR.Basicmap_item_name_reserved, ElementName));
                     CheckLockedElement(ElementName, null);
                 }
 
@@ -659,7 +659,7 @@ namespace System.Configuration
             if (index >= 0)
             {
                 if (index > Items.Count)
-                    throw new ConfigurationErrorsException(string.Format(SR.IndexOutOfRange, index));
+                    throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
                 Items.Insert(index, new Entry(entryType, key, element));
             }
             else
@@ -678,7 +678,7 @@ namespace System.Configuration
         private void BaseAdd(int index, ConfigurationElement element, bool ignoreLocks)
         {
             if (IsReadOnly()) throw new ConfigurationErrorsException(SR.Config_base_read_only);
-            if (index < -1) throw new ConfigurationErrorsException(string.Format(SR.IndexOutOfRange, index));
+            if (index < -1) throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
 
             if ((index != -1) &&
                 ((CollectionType == ConfigurationElementCollectionType.AddRemoveClearMap) ||
@@ -709,7 +709,7 @@ namespace System.Configuration
                     if (!element.Equals(entry.Value))
                     {
                         throw new ConfigurationErrorsException(
-                            string.Format(SR.Config_base_collection_entry_already_exists, key),
+                            SR.Format(SR.Config_base_collection_entry_already_exists, key),
                             element.PropertyFileName(""), element.PropertyLineNumber(""));
                     }
 
@@ -740,13 +740,13 @@ namespace System.Configuration
                         if (throwIfMissing)
                         {
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_base_collection_entry_not_found, key));
+                                SR.Format(SR.Config_base_collection_entry_not_found, key));
                         }
                         return;
                     }
 
                     if (entry.Value.LockItem)
-                        throw new ConfigurationErrorsException(string.Format(SR.Config_base_attribute_locked, key));
+                        throw new ConfigurationErrorsException(SR.Format(SR.Config_base_attribute_locked, key));
 
                     if (entry.Value.ElementPresent == false)
                         CheckLockedElement(_removeElement, null); // has remove been locked?
@@ -811,7 +811,7 @@ namespace System.Configuration
             //  remove the item at the parent level.
 
             if (throwIfMissing)
-                throw new ConfigurationErrorsException(string.Format(SR.Config_base_collection_entry_not_found, key));
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_base_collection_entry_not_found, key));
 
             if ((CollectionType != ConfigurationElementCollectionType.AddRemoveClearMap) &&
                 (CollectionType != ConfigurationElementCollectionType.AddRemoveClearMapAlternate))
@@ -846,7 +846,7 @@ namespace System.Configuration
 
         protected internal ConfigurationElement BaseGet(int index)
         {
-            if (index < 0) throw new ConfigurationErrorsException(string.Format(SR.IndexOutOfRange, index));
+            if (index < 0) throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
 
             int virtualIndex = 0;
             Entry entry = null;
@@ -864,7 +864,7 @@ namespace System.Configuration
             if (entry != null)
                 return entry.Value;
 
-            throw new ConfigurationErrorsException(string.Format(SR.IndexOutOfRange, index));
+            throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
         }
 
         protected internal object[] BaseGetAllKeys()
@@ -884,7 +884,7 @@ namespace System.Configuration
         {
             int virtualIndex = 0;
             Entry entry = null;
-            if (index < 0) throw new ConfigurationErrorsException(string.Format(SR.IndexOutOfRange, index));
+            if (index < 0) throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
 
             foreach (Entry entryfound in Items)
             {
@@ -898,7 +898,7 @@ namespace System.Configuration
             }
 
             // Entry entry = (Entry)_items[index];
-            if (entry == null) throw new ConfigurationErrorsException(string.Format(SR.IndexOutOfRange, index));
+            if (entry == null) throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
 
             return entry.GetKey(this);
         }
@@ -973,10 +973,10 @@ namespace System.Configuration
                 if (entryfound.EntryType != EntryType.Removed) virtualIndex++;
             }
 
-            if (entry == null) throw new ConfigurationErrorsException(string.Format(SR.IndexOutOfRange, index));
+            if (entry == null) throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
             if (entry.Value.LockItem)
             {
-                throw new ConfigurationErrorsException(string.Format(SR.Config_base_attribute_locked,
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_base_attribute_locked,
                     entry.GetKey(this)));
             }
 
@@ -1059,7 +1059,7 @@ namespace System.Configuration
                             {
                                 if (BaseConfigurationRecord.IsReservedAttributeName(ElementName))
                                 {
-                                    throw new ArgumentException(string.Format(SR.Basicmap_item_name_reserved,
+                                    throw new ArgumentException(SR.Format(SR.Basicmap_item_name_reserved,
                                         ElementName));
                                 }
 
@@ -1120,7 +1120,7 @@ namespace System.Configuration
                             {
                                 string propertyName = reader.Name;
                                 throw new ConfigurationErrorsException(
-                                    string.Format(SR.Config_base_unrecognized_attribute, propertyName), reader);
+                                    SR.Format(SR.Config_base_unrecognized_attribute, propertyName), reader);
                             }
                         }
 
@@ -1136,7 +1136,7 @@ namespace System.Configuration
                 if (elementName == ElementName)
                 {
                     if (BaseConfigurationRecord.IsReservedAttributeName(elementName))
-                        throw new ArgumentException(string.Format(SR.Basicmap_item_name_reserved, elementName));
+                        throw new ArgumentException(SR.Format(SR.Basicmap_item_name_reserved, elementName));
                     ConfigurationElement elem = CallCreateNewElement();
                     elem.ResetLockLists(this);
                     elem.DeserializeElement(reader, false);
@@ -1148,7 +1148,7 @@ namespace System.Configuration
 
                     // this section handle the collection like the allow deny senario which
                     if (BaseConfigurationRecord.IsReservedAttributeName(elementName))
-                        throw new ArgumentException(string.Format(SR.Basicmap_item_name_reserved, elementName));
+                        throw new ArgumentException(SR.Format(SR.Basicmap_item_name_reserved, elementName));
 
                     // have multiple tags for the collection
                     ConfigurationElement elem = CallCreateNewElement(elementName);

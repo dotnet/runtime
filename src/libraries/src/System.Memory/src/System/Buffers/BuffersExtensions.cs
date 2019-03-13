@@ -22,7 +22,7 @@ namespace System.Buffers
                 int index = source.First.Span.IndexOf(value);
                 if (index != -1)
                 {
-                    return source.GetPosition(index);
+                    return source.Seek(index);
                 }
 
                 return null;
@@ -63,12 +63,12 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(in this ReadOnlySequence<T> source, Span<T> destination)
         {
-            if (source.Length > destination.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.destination);
-
             if (source.IsSingleSegment)
             {
-                source.First.Span.CopyTo(destination);
+                ReadOnlySpan<T> span = source.First.Span;
+                if (span.Length > destination.Length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.destination);
+                span.CopyTo(destination);
             }
             else
             {
@@ -78,6 +78,9 @@ namespace System.Buffers
 
         private static void CopyToMultiSegment<T>(in ReadOnlySequence<T> sequence, Span<T> destination)
         {
+            if (sequence.Length > destination.Length)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.destination);
+
             SequencePosition position = sequence.Start;
             while (sequence.TryGet(ref position, out ReadOnlyMemory<T> memory))
             {

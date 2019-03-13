@@ -922,7 +922,7 @@ namespace System.Collections.Immutable
                         {
                             if (!_valueComparer.Equals(value, item.Value))
                             {
-                                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, item.Key));
+                                throw new ArgumentException(SR.Format(SR.DuplicateKey, item.Key));
                             }
                         }
                         else

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -101,9 +102,29 @@ namespace System
 
         public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, Action action)
             where TNetCoreExceptionType : ArgumentException
-            where TNetFxExceptionType : ArgumentException
+            where TNetFxExceptionType : Exception
         {
-            Throws<TNetCoreExceptionType, TNetFxExceptionType>(paramName, paramName, action);
+            if (IsFullFramework)
+            {
+                // Support cases where the .NET Core exception derives from ArgumentException
+                // but the .NET Framework exception is not.
+                if (typeof(ArgumentException).IsAssignableFrom(typeof(TNetFxExceptionType)))
+                {
+                    Exception exception = Assert.Throws(typeof(TNetFxExceptionType), action);
+                    if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
+                    {
+                        Assert.Equal(paramName, ((ArgumentException)exception).ParamName);
+                    }
+                }
+                else
+                {
+                    AssertExtensions.Throws<TNetFxExceptionType>(action);
+                }
+            }
+            else
+            {
+                AssertExtensions.Throws<TNetCoreExceptionType>(paramName, action);
+            }
         }
 
         public static Exception Throws<TNetCoreExceptionType, TNetFxExceptionType>(Action action)
@@ -315,6 +336,15 @@ namespace System
                 string expectedString = string.Join(", ", expected);
                 string actualString = string.Join(", ", actual);
                 throw new AssertActualExpectedException(expectedString, actualString, null);
+            }
+        }
+
+        /// <summary>Validates that the two sets contains the same elements. XUnit doesn't display the full collections.</summary>
+        public static void Equal<T>(HashSet<T> expected, HashSet<T> actual)
+        {
+            if (!actual.SetEquals(expected))
+            {
+                throw new XunitException($"Expected: {string.Join(", ", expected)}{Environment.NewLine}Actual: {string.Join(", ", actual)}");
             }
         }
     }

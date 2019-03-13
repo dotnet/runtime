@@ -65,8 +65,8 @@ namespace System.Xml.Schema
         [XmlIgnore]
         internal virtual string IdAttribute
         {
-            get { Debug.Assert(false); return null; }
-            set { Debug.Assert(false); }
+            get { Debug.Fail("Should not use base property"); return null; }
+            set { Debug.Fail("Should not use base property"); }
         }
 
         internal virtual void SetUnhandledAttributes(XmlAttribute[] moreAttributes) { }
@@ -75,8 +75,8 @@ namespace System.Xml.Schema
         [XmlIgnore]
         internal virtual string NameAttribute
         {
-            get { Debug.Assert(false); return null; }
-            set { Debug.Assert(false); }
+            get { Debug.Fail("Should not use base property"); return null; }
+            set { Debug.Fail("Should not use base property"); }
         }
 
         [XmlIgnore]

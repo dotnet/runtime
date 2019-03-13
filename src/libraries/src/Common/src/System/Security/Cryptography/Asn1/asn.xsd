@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<xs:schema id="asn"
+﻿<xs:schema id="asn"
     targetNamespace="http://schemas.dot.net/asnxml/201808/"
     elementFormDefault="qualified"
     xmlns="http://schemas.dot.net/asnxml/201808/"

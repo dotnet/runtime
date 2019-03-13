@@ -305,25 +305,29 @@ namespace System.Net.Mail.Tests
             }
         }
 
-        [Fact]
-        public async Task TestMailDeliveryAsync()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and could hang in case of null or empty body")]
+        [Theory]
+        [InlineData("howdydoo")]
+        [InlineData("")]
+        [InlineData(null)]
+        public async Task TestMailDeliveryAsync(string body)
         {
             SmtpServer server = new SmtpServer();
             SmtpClient client = new SmtpClient("localhost", server.EndPoint.Port);
-            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", body);
             string clientDomain = IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
 
             try
             {
                 Thread t = new Thread(server.Run);
                 t.Start();
-                await client.SendMailAsync(msg);
+                await client.SendMailAsync(msg).TimeoutAfter((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
                 t.Join();
 
                 Assert.Equal("<foo@example.com>", server.MailFrom);
                 Assert.Equal("<bar@example.com>", server.MailTo);
                 Assert.Equal("hello", server.Subject);
-                Assert.Equal("howdydoo", server.Body);
+                Assert.Equal(body ?? "", server.Body);
                 Assert.Equal(clientDomain, server.ClientDomain);
             }
             finally

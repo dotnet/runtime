@@ -230,7 +230,7 @@ namespace System.ComponentModel.Composition.Primitives
                     if ((metadataItem.Key == null) || (metadataItem.Value == null))
                     {
                         throw new InvalidOperationException(
-                            string.Format(CultureInfo.CurrentCulture, SR.Argument_NullElement, "requiredMetadata"));
+                            SR.Format(SR.Argument_NullElement, "requiredMetadata"));
                     }
                 }
                 _isRequiredMetadataValidated = true;
@@ -385,7 +385,7 @@ namespace System.ComponentModel.Composition.Primitives
 
             if(_requiredMetadata.Count() > 0)
             {
-                sb.Append(string.Format("\n\tRequiredMetadata"));
+                sb.Append("\n\tRequiredMetadata");
                 foreach (KeyValuePair<string, Type> metadataItem in _requiredMetadata)
                 {
                     sb.Append(string.Format("\n\t\t{0}\t({1})", metadataItem.Key, metadataItem.Value));

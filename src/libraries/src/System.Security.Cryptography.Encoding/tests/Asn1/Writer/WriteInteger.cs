@@ -401,5 +401,93 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Verify(writer, "020100800100020100800100020100800100");
             }
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void WriteAfterDispose(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteNull();
+                }
+
+                writer.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(1));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(1UL));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(BigInteger.One));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(BigInteger.One.ToByteArray()));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(Array.Empty<byte>()));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(new byte[] { 0, 0 }));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(new byte[] { 0xFF, 0xFF }));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteInteger(Asn1Tag.Boolean, 1));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteInteger(Asn1Tag.Boolean, 1UL));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteInteger(Asn1Tag.Boolean, BigInteger.One));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteInteger(Asn1Tag.Boolean, BigInteger.One.ToByteArray()));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteInteger(Asn1Tag.Boolean, Array.Empty<byte>()));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteInteger(Asn1Tag.Boolean, new byte[] { 0, 0 }));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteInteger(Asn1Tag.Boolean, new byte[] { 0xFF, 0xFF }));
+
+                Asn1Tag tag = new Asn1Tag(TagClass.Application, 0);
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(tag, 1));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(tag, 1UL));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(tag, BigInteger.One));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(tag, BigInteger.One.ToByteArray()));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(tag, Array.Empty<byte>()));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(tag, new byte[] { 0, 0 }));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteInteger(tag, new byte[] { 0xFF, 0xFF }));
+            }
+        }
     }
 }

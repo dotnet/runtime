@@ -264,8 +264,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // Must be a property we don't support
                     throw new NotSupportedException(
-                                string.Format(
-                                        CultureInfo.CurrentCulture,
+                                SR.Format(
                                         SR.StoreCtxUnsupportedPropertyForQuery,
                                         PropertyNamesExternal.GetExternalForm(filter.PropertyName)));
                 }

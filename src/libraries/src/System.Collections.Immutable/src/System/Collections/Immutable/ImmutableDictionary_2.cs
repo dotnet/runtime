@@ -908,7 +908,7 @@ namespace System.Collections.Immutable
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
                 TValue value;
-                return bucket.TryGetValue(key, origin.KeyOnlyComparer, out value);
+                return bucket.TryGetValue(key, origin.Comparers, out value);
             }
 
             return false;
@@ -924,7 +924,7 @@ namespace System.Collections.Immutable
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
                 TValue value;
-                return bucket.TryGetValue(keyValuePair.Key, origin.KeyOnlyComparer, out value)
+                return bucket.TryGetValue(keyValuePair.Key, origin.Comparers, out value)
                     && origin.ValueComparer.Equals(value, keyValuePair.Value);
             }
 
@@ -940,7 +940,7 @@ namespace System.Collections.Immutable
             HashBucket bucket;
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
-                return bucket.TryGetValue(key, origin.KeyOnlyComparer, out value);
+                return bucket.TryGetValue(key, origin.Comparers, out value);
             }
 
             value = default(TValue);
@@ -956,7 +956,7 @@ namespace System.Collections.Immutable
             HashBucket bucket;
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
-                return bucket.TryGetKey(equalKey, origin.KeyOnlyComparer, out actualKey);
+                return bucket.TryGetKey(equalKey, origin.Comparers, out actualKey);
             }
 
             actualKey = equalKey;

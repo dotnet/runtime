@@ -5,8 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CryptographicException))]
-
 namespace System.Security.Cryptography
 {
     public abstract partial class AsymmetricAlgorithm : System.IDisposable
@@ -23,35 +21,35 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.AsymmetricAlgorithm Create(string algName) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public virtual byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public virtual byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
+        public virtual byte[] ExportPkcs8PrivateKey() { throw null; }
+        public virtual byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public virtual void FromXmlString(string xmlString) { }
+        public virtual void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
+        public virtual void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
+        public virtual void ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
+        public virtual void ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
         public virtual string ToXmlString(bool includePrivateParameters) { throw null; }
-        public virtual void ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source, out int bytesRead) => throw null;
-        public virtual void ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source, out int bytesRead) => throw null;
-        public virtual void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead) => throw null;
-        public virtual void ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead) => throw null;
-        public virtual byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters) => throw null;
-        public virtual byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters) => throw null;
-        public virtual byte[] ExportPkcs8PrivateKey() => throw null;
-        public virtual byte[] ExportSubjectPublicKeyInfo() => throw null;
-        public virtual bool TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters, Span<byte> destination, out int bytesWritten) => throw null;
-        public virtual bool TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters, Span<byte> destination, out int bytesWritten) => throw null;
-        public virtual bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten) => throw null;
-        public virtual bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) => throw null;
+        public virtual bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public virtual bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public virtual bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public virtual bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public enum CipherMode
     {
         CBC = 1,
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         CFB = 4,
         CTS = 5,
         ECB = 2,
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         OFB = 3,
     }
     public static partial class CryptographicOperations
     {
-        public static bool FixedTimeEquals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) => throw null;
-        public static void ZeroMemory(System.Span<byte> buffer) => throw null;
+        public static bool FixedTimeEquals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static void ZeroMemory(System.Span<byte> buffer) { }
     }
     public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException
     {
@@ -191,18 +189,18 @@ namespace System.Security.Cryptography
     }
     public enum PbeEncryptionAlgorithm
     {
-        Unknown = 0,
         Aes128Cbc = 1,
         Aes192Cbc = 2,
         Aes256Cbc = 3,
         TripleDes3KeyPkcs12 = 4,
+        Unknown = 0,
     }
-    public sealed class PbeParameters
+    public sealed partial class PbeParameters
     {
-        public PbeEncryptionAlgorithm EncryptionAlgorithm { get; }
-        public HashAlgorithmName HashAlgorithm { get; }
-        public int IterationCount { get; }
-        public PbeParameters(PbeEncryptionAlgorithm encryptionAlgorithm, HashAlgorithmName hashAlgorithm, int iterationCount) { }
+        public PbeParameters(System.Security.Cryptography.PbeEncryptionAlgorithm encryptionAlgorithm, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, int iterationCount) { }
+        public System.Security.Cryptography.PbeEncryptionAlgorithm EncryptionAlgorithm { get { throw null; } }
+        public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
+        public int IterationCount { get { throw null; } }
     }
     public abstract partial class SymmetricAlgorithm : System.IDisposable
     {

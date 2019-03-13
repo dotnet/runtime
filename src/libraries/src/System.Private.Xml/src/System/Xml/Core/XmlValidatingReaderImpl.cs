@@ -569,7 +569,7 @@ namespace System.Xml
                     _readBinaryHelper.Finish();
                     goto case ParsingFunction.Read;
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected parsing function {_parsingFunction}");
                     return false;
             }
         }

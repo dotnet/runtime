@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security;
 #if ES_BUILD_STANDALONE
@@ -16,6 +17,10 @@ using Internal.Win32;
 #endif
 using System.Threading;
 using System;
+
+#if ES_BUILD_STANDALONE
+using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
+#endif
 
 #if !ES_BUILD_AGAINST_DOTNET_V35
 using Contract = System.Diagnostics.Contracts.Contract;
@@ -44,8 +49,8 @@ namespace System.Diagnostics.Tracing
     internal enum ControllerCommand
     {
         // Strictly Positive numbers are for provider-specific commands, negative number are for 'shared' commands. 256
-        // The first 256 negative numbers are reserved for the framework.  
-        Update = 0,                 // Not used by EventPrividerBase.  
+        // The first 256 negative numbers are reserved for the framework.
+        Update = 0, // Not used by EventProviderBase.
         SendManifest = -1,
         Enable = -2,
         Disable = -3,
@@ -207,14 +212,15 @@ namespace System.Diagnostics.Tracing
             //
             // check if the object has been already disposed
             //
-            if (m_disposed) return;
+            if (m_disposed)
+                return;
 
             // Disable the provider.  
             m_enabled = false;
 
             // Do most of the work under a lock to avoid shutdown race.
 
-            long registrationHandle = 0;  
+            long registrationHandle = 0;
             lock (EventListener.EventListenersLock)
             {
                 // Double check
@@ -425,10 +431,9 @@ namespace System.Diagnostics.Tracing
             return changedSessionList;
         }
 
-
         /// <summary>
-        /// This method is the callback used by GetSessions() when it calls into GetSessionInfo(). 
-        /// It updates a List{SessionInfo} based on the etwSessionId and matchAllKeywords that 
+        /// This method is the callback used by GetSessions() when it calls into GetSessionInfo().
+        /// It updates a List{SessionInfo} based on the etwSessionId and matchAllKeywords that
         /// GetSessionInfo() passes in.
         /// </summary>
         private static void GetSessionInfoCallback(int etwSessionId, long matchAllKeywords,
@@ -437,26 +442,29 @@ namespace System.Diagnostics.Tracing
             uint sessionIdBitMask = (uint)SessionMask.FromEventKeywords(unchecked((ulong)matchAllKeywords));
             // an ETW controller that specifies more than the mandated bit for our EventSource
             // will be ignored...
-            if (bitcount(sessionIdBitMask) > 1)
+            int val = BitOperations.PopCount(sessionIdBitMask);
+            if (val > 1)
                 return;
 
             if (sessionList == null)
                 sessionList = new List<SessionInfo>(8);
 
-            if (bitcount(sessionIdBitMask) == 1)
+            if (val == 1)
             {
                 // activity-tracing-aware etw session
-                sessionList.Add(new SessionInfo(bitindex(sessionIdBitMask) + 1, etwSessionId));
+                val = BitOperations.TrailingZeroCount(sessionIdBitMask);
             }
             else
             {
                 // legacy etw session
-                sessionList.Add(new SessionInfo(bitcount((uint)SessionMask.All) + 1, etwSessionId));
+                val = BitOperations.PopCount((uint)SessionMask.All);
             }
+
+            sessionList.Add(new SessionInfo(val + 1, etwSessionId));
         }
 
         private delegate void SessionInfoCallback(int etwSessionId, long matchAllKeywords, ref List<SessionInfo> sessionList);
-        
+
         /// <summary>
         /// This method enumerates over all active ETW sessions that have enabled 'this.m_Guid' 
         /// for the current process ID, calling 'action' for each session, and passing it the
@@ -615,7 +623,7 @@ namespace System.Diagnostics.Tracing
 #endif
                 using (var key = Registry.LocalMachine.OpenSubKey(regKey))
                 {
-                    data =  key?.GetValue(valueName, null) as byte[];
+                    data = key?.GetValue(valueName, null) as byte[];
                     if (data != null)
                     {
                         // We only used the persisted data from the registry for updates.   
@@ -1233,23 +1241,6 @@ namespace System.Diagnostics.Tracing
         {
             return m_eventProvider.EventUnregister(registrationHandle);
         }
-
-        static int[] nibblebits = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
-        private static int bitcount(uint n)
-        {
-            int count = 0;
-            for (; n != 0; n = n >> 4)
-                count += nibblebits[n & 0x0f];
-            return count;
-        }
-        private static int bitindex(uint n)
-        {
-            Debug.Assert(bitcount(n) == 1);
-            int idx = 0;
-            while ((n & (1 << idx)) == 0)
-                idx++;
-            return idx;
-        }
     }
 
 #if PLATFORM_WINDOWS
@@ -1306,7 +1297,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength)
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte* pMetadata, uint metadataLength)
         {
             throw new System.NotSupportedException();
         }
@@ -1347,10 +1338,9 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength)
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte* pMetadata, uint metadataLength)
         {
             return IntPtr.Zero;
         }
     }
 }
-

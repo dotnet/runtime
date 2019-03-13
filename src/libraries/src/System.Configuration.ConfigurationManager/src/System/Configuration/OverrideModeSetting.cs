@@ -313,7 +313,7 @@ namespace System.Configuration
                         result = false;
                         break;
                     default:
-                        Debug.Assert(false, "Unrecognized OverrideMode");
+                        Debug.Fail("Unrecognized OverrideMode");
                         break;
                 }
 
