@@ -22,9 +22,4 @@
     <optimizationIBCCoreCLRPackage>optimization.IBC.CoreCLR</optimizationIBCCoreCLRPackage>
     <optimizationPGOCoreCLRPackage>optimization.PGO.CoreCLR</optimizationPGOCoreCLRPackage>
   </PropertyGroup>
-  <PropertyGroup>
-    <!-- Override signing package version. Current version breaks signing SPC, remove
-         this property group once SignTool supports the scenario. -->
-    <MicrosoftDotNetSignToolVersion>1.0.0-beta.19067.6</MicrosoftDotNetSignToolVersion>
-  </PropertyGroup>
 </Project>
