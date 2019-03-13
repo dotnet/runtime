@@ -68,12 +68,15 @@ class Program
 
 	class CaseData {
 		public object[] Values;
+		public MemberDataAttribute MemberData;
+		public MemberInfo Member;
 	}
 
 	static CodeExpression EncodeValue (object val)
 	{
 		if (val is int || val is long || val is uint || val is ulong || val is byte || val is sbyte || val is short || val is ushort || val is bool || val is string || val is char || val is float || val is double)
-			return new CodePrimitiveExpression (val);
+			//return new CodePrimitiveExpression (val);
+			return new CodeCastExpression (new CodeTypeReference (val.GetType ()), new CodePrimitiveExpression (val));
 		else if (val is Type)
 			return new CodeTypeOfExpression ((Type)val);
 		else if (val is Enum) {
@@ -107,6 +110,20 @@ class Program
 		var outfile_name = args [0];
 		var sdkdir = args [1] + "/artifacts/bin/runtime/netcoreapp-OSX-Debug-x64";
 		args = args.Skip (2).ToArray ();
+		// Response file support
+		var extra_args = new List<string> ();
+		for (int i = 0; i < args.Length; ++i) {
+			var arg = args [i];
+			if (arg [0] == '@') {
+				foreach (var line in File.ReadAllLines (arg.Substring (1))) {
+					if (line.Length == 0 || line [0] == '#')
+						continue;
+					extra_args.AddRange (line.Split (' '));
+				}
+				args [i] = "";
+			}
+		}
+		args = args.Where (s => s != String.Empty).Concat (extra_args).ToArray ();
 
 		// Despite a lot of effort, couldn't get dotnet to load these assemblies from the sdk dir, so copy them to our binary dir
 		File.Copy ($"{sdkdir}/Microsoft.DotNet.PlatformAbstractions.dll", AppContext.BaseDirectory, true);
@@ -193,16 +210,23 @@ class Program
 		var statements = code_main.Statements;
 		statements.Add (new CodeVariableDeclarationStatement (typeof (int), "nrun", new CodePrimitiveExpression (0)));
 		statements.Add (new CodeVariableDeclarationStatement (typeof (int), "nfailed", new CodePrimitiveExpression (0)));
+		statements.Add (new CodeVariableDeclarationStatement (typeof (int), "nskip", new CodePrimitiveExpression (0)));
+
+		int nskipped = 0;
 
 		var filters = cmdline.Project.Filters;
 		foreach (XunitTestCase tc in sink.TestCases) {
 			var m = ((ReflectionMethodInfo)tc.Method).MethodInfo;
 			//Console.WriteLine ("" + m.ReflectedType + " " + m + " " + (tc.TestMethodArguments == null));
 			var t = m.ReflectedType;
-			if (t.IsGenericType)
+			if (t.IsGenericType) {
+				nskipped ++;
 				continue;
-			if (!filters.Filter (tc))
+			}
+			if (!filters.Filter (tc)) {
+				nskipped ++;
 				continue;
+			}
 
 			var cases = tc_data [tc];
 
@@ -211,9 +235,9 @@ class Program
 				string typename = GetTypeName (t);
 				string msg;
 				if (cases.Count > 1)
-					msg = $"{typename}:{m.Name}[{caseindex}]...";
+					msg = $"{typename}.{m.Name}[{caseindex}] ...";
 				else
-					msg = $"{typename}:{m.Name}...";
+					msg = $"{typename}.{m.Name} ...";
 				caseindex ++;
 				statements.Add (new CodeMethodInvokeExpression (new CodeTypeReferenceExpression ("Console"), "WriteLine", new CodeExpression [] { new CodePrimitiveExpression (msg) }));
 				statements.Add (new CodeAssignStatement (new CodeVariableReferenceExpression ("nrun"), new CodeBinaryOperatorExpression (new CodeVariableReferenceExpression ("nrun"), CodeBinaryOperatorType.Add, new CodePrimitiveExpression (1))));
@@ -225,6 +249,7 @@ class Program
 				}
 				if (!m.IsPublic) {
 					// FIXME:
+					nskipped ++;
 				} else {
 					CodeMethodInvokeExpression call;
 
@@ -251,7 +276,24 @@ class Program
 			}
 		}
 
-		//w.WriteLine ("\t\tConsole.WriteLine (\"RUN: \" + nrun + \", FAILED: \" + nfailed);");
+		statements.Add (new CodeMethodInvokeExpression (new CodeTypeReferenceExpression ("Console"), "WriteLine", new CodeExpression [] {
+					new CodeBinaryOperatorExpression (
+													  new CodePrimitiveExpression ("RUN: "),
+													  CodeBinaryOperatorType.Add,
+													  new CodeVariableReferenceExpression ("nrun"))
+				}));
+		statements.Add (new CodeMethodInvokeExpression (new CodeTypeReferenceExpression ("Console"), "WriteLine", new CodeExpression [] {
+					new CodeBinaryOperatorExpression (
+													  new CodePrimitiveExpression ("FAILURES: "),
+													  CodeBinaryOperatorType.Add,
+													  new CodeVariableReferenceExpression ("nfailed"))
+				}));
+		statements.Add (new CodeMethodInvokeExpression (new CodeTypeReferenceExpression ("Console"), "WriteLine", new CodeExpression [] {
+					new CodeBinaryOperatorExpression (
+													  new CodePrimitiveExpression ("SKIPPED: "),
+													  CodeBinaryOperatorType.Add,
+													  new CodePrimitiveExpression (nskipped))
+				}));
 		statements.Add (new CodeMethodReturnStatement (new CodePrimitiveExpression (0)));
 
 		var provider = new CSharpCodeProvider ();

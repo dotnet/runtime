@@ -8,6 +8,11 @@ This is a small netcore app to convert a corefx test assembly into a console app
 dotnet run ../runner.cs ~/git/corefx/ ~/git/corefx//artifacts/bin/System.Runtime.Tests/netcoreapp-Unix-Debug/System.Runtime.Tests.dll -notrait category=nonosxtests -notrait category=failing -notrait category=Outerloop -stoponfail
 ```
 
+There is support for response files, i.e.
+```
+dotnet run ../runner.cs ~/git/corefx/ ~/git/corefx//artifacts/bin/System.Runtime.Tests/netcoreapp-Unix-Debug/System.Runtime.Tests.dll @excludes.rsp
+```
+
 # Notes
 
 - If xunit can't laod a trait discoverer assembly, it silently ignores the error.
