@@ -4,7 +4,7 @@
       <!-- We use the PackageVersion property defined in Packaging.props for the Prerelease packages which are using it to be built -->
     <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
     <PackageVersion>2.1.0</PackageVersion>
-    <ServiceModelVersion>4.4.1</ServiceModelVersion>
+    <ServiceModelVersion>4.5.3</ServiceModelVersion>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
