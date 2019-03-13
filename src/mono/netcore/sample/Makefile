@@ -1,4 +1,4 @@
-all: run
+all: build-sample
 
 URL:=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/3.0.100-preview4-010272/dotnet-sdk-3.0.100-preview4-010272-osx-x64.tar.gz
 
@@ -20,7 +20,7 @@ link-mono:
 prepare: download-macos build-sample link-mono 
 
 run:
-	@./dotnet --fx-version "$(VERSION)" HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
+	COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(VERSION)" HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
 
 clean:
 	rm -rf sdk shared host dotnet LICENCE.txt ThirdPartyNotices.txt
