@@ -104,6 +104,7 @@
 #include <mono/utils/mono-merp.h>
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/mono-math.h>
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
 #endif
@@ -175,6 +176,13 @@ ves_icall_System_Array_GetValueImpl (MonoArrayHandle array, guint32 pos, MonoErr
 	MonoClass * const array_class = mono_handle_class (array);
 	MonoClass * const element_class = m_class_get_element_class (array_class);
 
+#ifdef ENABLE_NETCORE
+	if (m_class_is_native_pointer (element_class)) {
+		mono_error_set_not_supported (error, NULL);
+		return NULL_HANDLE;
+	}
+#endif
+
 	if (m_class_is_valuetype (element_class)) {
 		gsize element_size = mono_array_element_size (array_class);
 		gpointer element_address = mono_array_addr_with_size_fast (MONO_HANDLE_RAW (array), element_size, (gsize)pos);
@@ -238,6 +246,13 @@ ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value
 	array_set_value_impl (arr, value, pos, error);
 }
 
+static inline void
+set_invalid_cast (MonoError *error, MonoClass *src_class, MonoClass *dst_class)
+{
+	mono_get_runtime_callbacks ()->set_cast_details (src_class, dst_class);
+	mono_error_set_invalid_cast (error);
+}
+
 static void
 array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle, guint32 pos, MonoError *error)
 {
@@ -262,6 +277,13 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 	esize = mono_array_element_size (ac);
 
 	if (mono_class_is_nullable (ec)) {
+#ifdef ENABLE_NETCORE
+		if (vc && m_class_is_primitive (vc) && vc != m_class_get_nullable_elem_class (ec)) {
+            // T -> Nullable<T>  T must be exact
+			set_invalid_cast (error, vc, ec);
+			goto leave;
+		}
+#endif
 		MONO_ENTER_NO_SAFEPOINTS;
 		ea = (gpointer*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (arr_handle), esize, pos);
 		if (!MONO_HANDLE_IS_NULL (value_handle))
@@ -279,14 +301,20 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 		goto leave;
 	}
 
+#ifdef ENABLE_NETCORE
+#define WIDENING_MSG NULL
+#else
+#define WIDENING_MSG "not a widening conversion"
+#endif
+
 #define NO_WIDENING_CONVERSION G_STMT_START{				\
-		mono_error_set_argument (error, "value", "not a widening conversion"); \
+		mono_error_set_argument (error, "value", WIDENING_MSG); \
 		break;							\
 	}G_STMT_END
 
 #define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{			\
 		if (esize < vsize + (extra)) {				\
-			mono_error_set_argument (error, "value", "not a widening conversion"); \
+			mono_error_set_argument (error, "value", WIDENING_MSG); \
 			break;						\
 		}							\
 	}G_STMT_END
@@ -301,6 +329,13 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 	et = m_class_get_byval_arg (ec)->type;
 	MonoTypeEnum vt;
 	vt = m_class_get_byval_arg (vc)->type;
+
+#ifdef ENABLE_NETCORE
+	if (m_class_is_enumtype (ec) && m_class_is_primitive (vc))
+		/* Can't convert a primitive to an enum */
+		INVALID_CAST;
+#endif
+
 	/* Check element (destination) type. */
 	switch (et) {
 	case MONO_TYPE_STRING:
@@ -591,7 +626,11 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 	error_init (error);
 
 	if (MONO_HANDLE_IS_NULL (idxs)) {
+#ifdef ENABLE_NETCORE
+		mono_error_set_argument_null (error, "indices", "");
+#else
 		mono_error_set_argument_null (error, "idxs", "");
+#endif
 		return;
 	}
 
@@ -807,6 +846,9 @@ ves_icall_System_Array_FastCopy (MonoArrayHandle source, int source_idx, MonoArr
 		/* It's only safe to copy between arrays if we can ensure the source will always have a subtype of the destination. We bail otherwise. */
 		if (!mono_class_is_subclass_of (src_class, dest_class, FALSE))
 			return FALSE;
+
+		if (m_class_is_native_pointer (src_class) || m_class_is_native_pointer (dest_class))
+			return FALSE;
 	}
 
 	if (m_class_is_valuetype (dest_class)) {
@@ -825,7 +867,6 @@ ves_icall_System_Array_FastCopy (MonoArrayHandle source, int source_idx, MonoArr
 		}
 
 		MONO_EXIT_NO_SAFEPOINTS;
-
 	} else {
 		mono_array_handle_memcpy_refs (dest, dest_idx, source, source_idx, length);
 	}
@@ -1287,24 +1328,32 @@ ves_icall_System_ValueType_Equals (MonoObject *this_obj, MonoObject *that, MonoA
 				return FALSE;
 			break;
 
-		case MONO_TYPE_R4:
+		case MONO_TYPE_R4: {
+			float d1, d2;
 #ifdef NO_UNALIGNED_ACCESS
-			if (G_UNLIKELY ((intptr_t) this_field & 3 || (intptr_t) that_field & 3))
-				UNALIGNED_COMPARE (float);
-			else
+			memcpy (&d1, this_field, sizeof (float));
+			memcpy (&d2, that_field, sizeof (float));
+#else
+			d1 = *(float *) this_field;
+			d2 = *(float *) that_field;
 #endif
-			if (*(float *) this_field != *(float *) that_field)
+			if (d1 != d2 && !(mono_isnan (d1) && mono_isnan (d2)))
 				return FALSE;
 			break;
-		case MONO_TYPE_R8:
+		}
+		case MONO_TYPE_R8: {
+			double d1, d2;
 #ifdef NO_UNALIGNED_ACCESS
-			if (G_UNLIKELY ((intptr_t) this_field & 7 || (intptr_t) that_field & 7))
-				UNALIGNED_COMPARE (double);
-			else
+			memcpy (&d1, this_field, sizeof (double));
+			memcpy (&d2, that_field, sizeof (double));
+#else
+			d1 = *(double *) this_field;
+			d2 = *(double *) that_field;
 #endif
-			if (*(double *) this_field != *(double *) that_field)
+			if (d1 != d2 && !(mono_isnan (d1) && mono_isnan (d2)))
 				return FALSE;
 			break;
+		}
 		case MONO_TYPE_PTR:
 #ifdef NO_UNALIGNED_ACCESS
 			if (G_UNLIKELY ((intptr_t) this_field & 7 || (intptr_t) that_field & 7))
