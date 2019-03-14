@@ -413,7 +413,7 @@ namespace System.Data.SqlTypes
             byte bActualPrecision = BActualPrec();
             _bPrec = bPrec;  // restore current value
 
-            Debug.Assert(precision == bActualPrecision, string.Format(null, "CalculatePrecision={0}, BActualPrec={1}. Results must be equal!", precision, bActualPrecision));
+            Debug.Assert(precision == bActualPrecision, $"CalculatePrecision={precision}, BActualPrec={bActualPrecision}. Results must be equal!");
 #endif
             return precision;
         }

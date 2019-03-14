@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            string value = reader.GetCharacterString(UniversalTagNumber.IA5String);
+            string value = reader.ReadCharacterString(UniversalTagNumber.IA5String);
 
             Assert.Equal(expectedValue, value);
         }
@@ -351,7 +351,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetCharacterString(UniversalTagNumber.IA5String));
+                () => reader.ReadCharacterString(UniversalTagNumber.IA5String));
         }
 
         [Theory]
@@ -681,7 +681,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             this AsnReader reader,
             out ReadOnlyMemory<byte> contents)
         {
-            return reader.TryGetPrimitiveCharacterStringBytes(
+            return reader.TryReadPrimitiveCharacterStringBytes(
                 UniversalTagNumber.IA5String,
                 out contents);
         }
@@ -691,7 +691,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Asn1Tag expectedTag,
             out ReadOnlyMemory<byte> contents)
         {
-            return reader.TryGetPrimitiveCharacterStringBytes(
+            return reader.TryReadPrimitiveCharacterStringBytes(
                 expectedTag,
                 UniversalTagNumber.IA5String,
                 out contents);

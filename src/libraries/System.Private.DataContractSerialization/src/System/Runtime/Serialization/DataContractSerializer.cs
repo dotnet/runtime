@@ -134,7 +134,7 @@ namespace System.Runtime.Serialization
             }
 
             if (maxItemsInObjectGraph < 0)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(maxItemsInObjectGraph), SR.Format(SR.ValueMustBeNonNegative)));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(maxItemsInObjectGraph), SR.ValueMustBeNonNegative));
             _maxItemsInObjectGraph = maxItemsInObjectGraph;
 
             _ignoreExtensionDataObject = ignoreExtensionDataObject;

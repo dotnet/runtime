@@ -513,7 +513,7 @@ namespace System.Security.Claims
         {
             if (!TryRemoveClaim(claim))
             {
-                throw new InvalidOperationException(string.Format(SR.InvalidOperation_ClaimCannotBeRemoved, claim));
+                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ClaimCannotBeRemoved, claim));
             }
         }
 

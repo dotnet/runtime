@@ -52,7 +52,7 @@ namespace System.DirectoryServices.AccountManagement
                     else
                     {
                         throw new InvalidOperationException(
-                                        string.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForSave, principalType.ToString()));
+                                        SR.Format(SR.StoreCtxUnsupportedPrincipalTypeForSave, principalType));
                     }
 
                     // Determine the SAM account name for the entry we'll be creating.  Use the name from the NT4 IdentityClaim.
@@ -904,10 +904,9 @@ namespace System.DirectoryServices.AccountManagement
         private static void ExceptionToWinNTConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedWinNTProperty, bool isLSAM)
         {
             throw new InvalidOperationException(
-                            string.Format(CultureInfo.CurrentCulture,
-                                          SR.PrincipalUnsupportPropertyForType,
-                                          p.GetType().ToString(),
-                                          PropertyNamesExternal.GetExternalForm(propertyName)));
+                            SR.Format(SR.PrincipalUnsupportPropertyForType,
+                                      p.GetType(),
+                                      PropertyNamesExternal.GetExternalForm(propertyName)));
         }
 
         private static void StringToWinNTConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedWinNTProperty, bool isLSAM)
@@ -957,9 +956,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (!isLSAM)
                 throw new InvalidOperationException(
-                    string.Format(CultureInfo.CurrentCulture,
-                                  SR.PrincipalUnsupportPropertyForPlatform,
-                                  PropertyNamesExternal.GetExternalForm(propertyName)));
+                    SR.Format(SR.PrincipalUnsupportPropertyForPlatform, PropertyNamesExternal.GetExternalForm(propertyName)));
         }
 
         private static void GroupTypeToWinNTConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedWinNTProperty, bool isLSAM)
@@ -968,9 +965,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 if (!isLSAM)
                     throw new InvalidOperationException(
-                        string.Format(CultureInfo.CurrentCulture,
-                                      SR.PrincipalUnsupportPropertyForPlatform,
-                                      PropertyNamesExternal.GetExternalForm(propertyName)));
+                        SR.Format(SR.PrincipalUnsupportPropertyForPlatform, PropertyNamesExternal.GetExternalForm(propertyName)));
             }
             else
             {
@@ -988,9 +983,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (!isLSAM)
                 throw new InvalidOperationException(
-                    string.Format(CultureInfo.CurrentCulture,
-                                  SR.PrincipalUnsupportPropertyForPlatform,
-                                  PropertyNamesExternal.GetExternalForm(propertyName)));
+                    SR.Format(SR.PrincipalUnsupportPropertyForPlatform, PropertyNamesExternal.GetExternalForm(propertyName)));
         }
 
         private static void AcctExpirDateToNTConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedWinNTProperty, bool isLSAM)
@@ -1063,8 +1056,7 @@ namespace System.DirectoryServices.AccountManagement
                         GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "UpdateGroupMembership: error while clearing, hr={0}", hr);
 
                         throw new PrincipalOperationException(
-                                        string.Format(
-                                                CultureInfo.CurrentCulture,
+                                        SR.Format(
                                                 SR.SAMStoreCtxFailedToClearGroup,
                                                 hr.ToString(CultureInfo.InvariantCulture)));
                     }
@@ -1085,7 +1077,7 @@ namespace System.DirectoryServices.AccountManagement
                          (memberType != typeof(GroupPrincipal)) && (!memberType.IsSubclassOf(typeof(GroupPrincipal))))
                     {
                         throw new InvalidOperationException(
-                                        string.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType.ToString()));
+                                        SR.Format(SR.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType));
                     }
 
                     // Can't inserted unpersisted principal

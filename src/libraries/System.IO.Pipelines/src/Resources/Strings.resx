@@ -118,10 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AdvanceToInvalidCursor" xml:space="preserve">
-    <value>Pipe is already advanced past provided cursor.</value>
-  </data>
-  <data name="BackpressureDeadlock" xml:space="preserve">
-    <value>The maximum buffer limit of {0} bytes was exceeded by the writer.</value>
+    <value>The PipeReader has already advanced past the provided position.</value>
   </data>
   <data name="CannotCompleteWhileReading" xml:space="preserve">
     <value>Can't complete reader while reading.</value>
@@ -137,6 +134,12 @@
   </data>
   <data name="GetResultBeforeCompleted" xml:space="preserve">
     <value>Can't GetResult unless awaiter is completed.</value>
+  </data>
+  <data name="InvalidExaminedOrConsumedPosition" xml:space="preserve">
+    <value>The examined position must be greater than or equal to the consumed position.</value>
+  </data>
+  <data name="InvalidExaminedPosition" xml:space="preserve">
+    <value>The examined position cannot be less than the previously examined position.</value>
   </data>
   <data name="InvalidZeroByteRead" xml:space="preserve">
     <value>The PipeReader returned 0 bytes when the ReadResult was not completed or canceled.</value>

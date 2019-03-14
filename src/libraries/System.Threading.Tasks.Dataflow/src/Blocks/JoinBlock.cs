@@ -15,7 +15,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Security;
 using System.Threading.Tasks.Dataflow.Internal;
@@ -53,7 +52,6 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
-            Contract.EndContractBlock();
 
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
@@ -148,7 +146,6 @@ namespace System.Threading.Tasks.Dataflow
         void IDataflowBlock.Fault(Exception exception)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
-            Contract.EndContractBlock();
 
             Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
             Debug.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
@@ -288,7 +285,6 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
-            Contract.EndContractBlock();
 
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
@@ -383,7 +379,6 @@ namespace System.Threading.Tasks.Dataflow
         void IDataflowBlock.Fault(Exception exception)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
-            Contract.EndContractBlock();
 
             Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
             Debug.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
@@ -845,7 +840,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
             if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, nameof(consumeToAccept));
-            Contract.EndContractBlock();
 
             lock (_sharedResources.IncomingLock)
             {
@@ -956,7 +950,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         void IDataflowBlock.Fault(Exception exception)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
-            Contract.EndContractBlock();
 
             CompleteCore(exception, dropPendingMessages: true, releaseReservedMessages: false);
         }

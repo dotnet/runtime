@@ -304,7 +304,6 @@ namespace System.Collections.Immutable
         public ImmutableDictionary<TKey, TValue> Add(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             var result = Add(key, value, KeyCollisionBehavior.ThrowIfValueDifferent, this.Origin);
             return result.Finalize(this);
@@ -318,7 +317,6 @@ namespace System.Collections.Immutable
         public ImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs)
         {
             Requires.NotNull(pairs, nameof(pairs));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             return this.AddRange(pairs, false);
         }
@@ -330,8 +328,6 @@ namespace System.Collections.Immutable
         public ImmutableDictionary<TKey, TValue> SetItem(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
-            Contract.Ensures(!Contract.Result<ImmutableDictionary<TKey, TValue>>().IsEmpty);
 
             var result = Add(key, value, KeyCollisionBehavior.SetValue, this.Origin);
             return result.Finalize(this);
@@ -347,7 +343,6 @@ namespace System.Collections.Immutable
         public ImmutableDictionary<TKey, TValue> SetItems(IEnumerable<KeyValuePair<TKey, TValue>> items)
         {
             Requires.NotNull(items, nameof(items));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             var result = AddRange(items, this.Origin, KeyCollisionBehavior.SetValue);
             return result.Finalize(this);
@@ -360,7 +355,6 @@ namespace System.Collections.Immutable
         public ImmutableDictionary<TKey, TValue> Remove(TKey key)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             var result = Remove(key, this.Origin);
             return result.Finalize(this);
@@ -373,7 +367,6 @@ namespace System.Collections.Immutable
         public ImmutableDictionary<TKey, TValue> RemoveRange(IEnumerable<TKey> keys)
         {
             Requires.NotNull(keys, nameof(keys));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             int count = _count;
             var root = _root;
@@ -908,7 +901,7 @@ namespace System.Collections.Immutable
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
                 TValue value;
-                return bucket.TryGetValue(key, origin.KeyOnlyComparer, out value);
+                return bucket.TryGetValue(key, origin.Comparers, out value);
             }
 
             return false;
@@ -924,7 +917,7 @@ namespace System.Collections.Immutable
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
                 TValue value;
-                return bucket.TryGetValue(keyValuePair.Key, origin.KeyOnlyComparer, out value)
+                return bucket.TryGetValue(keyValuePair.Key, origin.Comparers, out value)
                     && origin.ValueComparer.Equals(value, keyValuePair.Value);
             }
 
@@ -940,7 +933,7 @@ namespace System.Collections.Immutable
             HashBucket bucket;
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
-                return bucket.TryGetValue(key, origin.KeyOnlyComparer, out value);
+                return bucket.TryGetValue(key, origin.Comparers, out value);
             }
 
             value = default(TValue);
@@ -956,7 +949,7 @@ namespace System.Collections.Immutable
             HashBucket bucket;
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
-                return bucket.TryGetKey(equalKey, origin.KeyOnlyComparer, out actualKey);
+                return bucket.TryGetKey(equalKey, origin.Comparers, out actualKey);
             }
 
             actualKey = equalKey;
@@ -1091,7 +1084,6 @@ namespace System.Collections.Immutable
         private ImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs, bool avoidToHashMap)
         {
             Requires.NotNull(pairs, nameof(pairs));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             // Some optimizations may apply if we're an empty list.
             if (this.IsEmpty && !avoidToHashMap)

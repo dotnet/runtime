@@ -1029,7 +1029,7 @@ namespace System.Xml
                         break;
 
                     default:
-                        throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, SR.Xdom_Import, node.NodeType.ToString()));
+                        throw new InvalidOperationException(SR.Format(CultureInfo.InvariantCulture, SR.Xdom_Import, node.NodeType));
                 }
             }
 

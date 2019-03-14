@@ -714,7 +714,7 @@ namespace System.Xml.Serialization
 
             if (XmlMapping.IsShallow(mappings))
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlMelformMapping));
+                throw new InvalidOperationException(SR.XmlMelformMapping);
             }
 
             Assembly assembly = null;

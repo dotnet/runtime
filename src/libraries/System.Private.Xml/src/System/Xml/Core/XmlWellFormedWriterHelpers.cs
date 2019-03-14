@@ -379,7 +379,7 @@ namespace System.Xml
                             writer.WriteValue((string)item.data);
                             break;
                         default:
-                            Debug.Assert(false, "Unexpected ItemType value.");
+                            Debug.Fail("Unexpected ItemType value.");
                             break;
                     }
                 }

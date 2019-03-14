@@ -27,7 +27,7 @@ namespace System.Drawing.Printing
         {
             if (settings.IsDefaultPrinter)
             {
-                return SR.Format(SR.InvalidPrinterException_NoDefaultPrinter);
+                return SR.InvalidPrinterException_NoDefaultPrinter;
             }
             else
             {
@@ -37,7 +37,7 @@ namespace System.Drawing.Printing
                 }
                 catch (SecurityException)
                 {
-                    return SR.Format(SR.InvalidPrinterException_InvalidPrinter, SR.Format(SR.CantTellPrinterName));
+                    return SR.Format(SR.InvalidPrinterException_InvalidPrinter, SR.CantTellPrinterName);
                 }
             }
         }

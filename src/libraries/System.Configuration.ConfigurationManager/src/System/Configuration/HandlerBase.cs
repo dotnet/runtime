@@ -21,7 +21,7 @@ namespace System.Configuration
             if (fRequired && a == null)
             {
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Config_missing_required_attribute, attrib, node.Name),
+                    SR.Format(SR.Config_missing_required_attribute, attrib, node.Name),
                     node);
             }
 
@@ -55,7 +55,7 @@ namespace System.Configuration
                 catch (Exception e)
                 {
                     throw new ConfigurationErrorsException(
-                            string.Format(SR.Config_invalid_boolean_attribute, a.Name),
+                            SR.Format(SR.Config_invalid_boolean_attribute, a.Name),
                             e, a);
                 }
             }
@@ -77,7 +77,7 @@ namespace System.Configuration
                 if (a.Value.Trim() != a.Value)
                 {
                     throw new ConfigurationErrorsException(
-                        string.Format(SR.Config_invalid_integer_attribute, a.Name), a);
+                        SR.Format(SR.Config_invalid_integer_attribute, a.Name), a);
                 }
 
                 try
@@ -87,7 +87,7 @@ namespace System.Configuration
                 catch (Exception e)
                 {
                     throw new ConfigurationErrorsException(
-                        string.Format(SR.Config_invalid_integer_attribute, a.Name),
+                        SR.Format(SR.Config_invalid_integer_attribute, a.Name),
                         e, a);
                 }
             }
@@ -105,7 +105,7 @@ namespace System.Configuration
             if (node.Attributes.Count != 0)
             {
                 throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_base_unrecognized_attribute, node.Attributes[0].Name),
+                                SR.Format(SR.Config_base_unrecognized_attribute, node.Attributes[0].Name),
                                 node);
             }
         }
@@ -137,14 +137,14 @@ namespace System.Configuration
             if (attribute == null)
             {
                 throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_base_required_attribute_missing, name),
+                                SR.Format(SR.Config_base_required_attribute_missing, name),
                                 node);
             }
 
             if (string.IsNullOrEmpty(attribute.Value) && allowEmpty == false)
             {
                 throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_base_required_attribute_empty, name),
+                                SR.Format(SR.Config_base_required_attribute_empty, name),
                                 node);
             }
 

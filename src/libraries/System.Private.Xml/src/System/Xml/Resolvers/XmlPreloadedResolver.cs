@@ -234,7 +234,7 @@ namespace System.Xml.Resolvers
                 {
                     return _fallbackResolver.GetEntity(absoluteUri, role, ofObjectToReturn);
                 }
-                throw new XmlException(SR.Format(SR.Xml_CannotResolveUrl, absoluteUri.ToString()));
+                throw new XmlException(SR.Format(SR.Xml_CannotResolveUrl, absoluteUri));
             }
 
             if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(object))

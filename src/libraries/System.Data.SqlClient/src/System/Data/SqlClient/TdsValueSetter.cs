@@ -99,16 +99,16 @@ namespace System.Data.SqlClient
                         break;
                     case SqlDbType.Udt:
                     case SqlDbType.Xml:
-                        Debug.Assert(false, "PLP-only types shouldn't get to this point. Type: " + _metaData.SqlDbType);
+                        Debug.Fail("PLP-only types shouldn't get to this point. Type: " + _metaData.SqlDbType);
                         break;
                     case SqlDbType.Variant:
                         _stateObj.Parser.WriteInt(TdsEnums.FIXEDNULL, _stateObj);
                         break;
                     case SqlDbType.Structured:
-                        Debug.Assert(false, "Not yet implemented.  Not needed until Structured UDTs");
+                        Debug.Fail("Not yet implemented.  Not needed until Structured UDTs");
                         break;
                     default:
-                        Debug.Assert(false, "Unexpected SqlDbType: " + _metaData.SqlDbType);
+                        Debug.Fail("Unexpected SqlDbType: " + _metaData.SqlDbType);
                         break;
                 }
             }

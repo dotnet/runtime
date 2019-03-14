@@ -483,14 +483,14 @@ namespace System.Configuration
                     Type providerType = Type.GetType(providerTypeName);
                     if (providerType == null)
                     {
-                        throw new ConfigurationErrorsException(string.Format(SR.ProviderTypeLoadFailed, providerTypeName));
+                        throw new ConfigurationErrorsException(SR.Format(SR.ProviderTypeLoadFailed, providerTypeName));
                     }
 
                     SettingsProvider settingsProvider = TypeUtil.CreateInstance(providerType) as SettingsProvider;
 
                     if (settingsProvider == null)
                     {
-                        throw new ConfigurationErrorsException(string.Format(SR.ProviderInstantiationFailed, providerTypeName));
+                        throw new ConfigurationErrorsException(SR.Format(SR.ProviderInstantiationFailed, providerTypeName));
                     }
 
                     settingsProvider.Initialize(null, null);
@@ -649,12 +649,12 @@ namespace System.Configuration
                                         }
                                         else
                                         {
-                                            throw new ConfigurationErrorsException(string.Format(SR.ProviderInstantiationFailed, providerTypeName));
+                                            throw new ConfigurationErrorsException(SR.Format(SR.ProviderInstantiationFailed, providerTypeName));
                                         }
                                     }
                                     else
                                     {
-                                        throw new ConfigurationErrorsException(string.Format(SR.ProviderTypeLoadFailed, providerTypeName));
+                                        throw new ConfigurationErrorsException(SR.Format(SR.ProviderTypeLoadFailed, providerTypeName));
                                     }
                                 }
                                 else if (attr is SettingsSerializeAsAttribute)

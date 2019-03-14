@@ -62,8 +62,8 @@ namespace System.Collections.Immutable
             /// </summary>
             private Node()
             {
-                Contract.Ensures(this.IsEmpty);
                 _frozen = true; // the empty node is *always* frozen.
+                Debug.Assert(this.IsEmpty);
             }
 
             /// <summary>
@@ -81,10 +81,6 @@ namespace System.Collections.Immutable
                 Requires.NotNull(left, nameof(left));
                 Requires.NotNull(right, nameof(right));
                 Debug.Assert(!frozen || (left._frozen && right._frozen));
-                Contract.Ensures(!this.IsEmpty);
-                Contract.Ensures(_key != null);
-                Contract.Ensures(_left == left);
-                Contract.Ensures(_right == right);
 
                 _key = key;
                 _value = value;
@@ -92,6 +88,8 @@ namespace System.Collections.Immutable
                 _right = right;
                 _height = checked((byte)(1 + Math.Max(left._height, right._height)));
                 _frozen = frozen;
+
+                Debug.Assert(!this.IsEmpty);
             }
 
             /// <summary>
@@ -104,7 +102,6 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    Contract.Ensures((_left != null && _right != null) || Contract.Result<bool>());
                     return _left == null;
                 }
             }
@@ -276,7 +273,6 @@ namespace System.Collections.Immutable
             internal static Node NodeTreeFromSortedDictionary(SortedDictionary<TKey, TValue> dictionary)
             {
                 Requires.NotNull(dictionary, nameof(dictionary));
-                Contract.Ensures(Contract.Result<Node>() != null);
 
                 var list = dictionary.AsOrderedCollection();
                 return NodeTreeFromList(list, 0, list.Count);
@@ -505,7 +501,6 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
-                Contract.Ensures(Contract.Result<Node>() != null);
 
                 if (tree._right.IsEmpty)
                 {
@@ -525,7 +520,6 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
-                Contract.Ensures(Contract.Result<Node>() != null);
 
                 if (tree._left.IsEmpty)
                 {
@@ -545,7 +539,6 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
-                Contract.Ensures(Contract.Result<Node>() != null);
 
                 if (tree._right.IsEmpty)
                 {
@@ -565,7 +558,6 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
-                Contract.Ensures(Contract.Result<Node>() != null);
 
                 if (tree._left.IsEmpty)
                 {
@@ -626,7 +618,6 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(tree, nameof(tree));
                 Debug.Assert(!tree.IsEmpty);
-                Contract.Ensures(Contract.Result<Node>() != null);
 
                 if (IsRightHeavy(tree))
                 {
@@ -656,7 +647,6 @@ namespace System.Collections.Immutable
                 Requires.NotNull(items, nameof(items));
                 Requires.Range(start >= 0, nameof(start));
                 Requires.Range(length >= 0, nameof(length));
-                Contract.Ensures(Contract.Result<Node>() != null);
 
                 if (length == 0)
                 {
@@ -728,7 +718,7 @@ namespace System.Collections.Immutable
                         }
                         else
                         {
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                            throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                         }
                     }
 

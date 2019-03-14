@@ -230,7 +230,7 @@ namespace System.Composition.TypedParts.Discovery
             }
             else if (!contractType.IsAssignableFrom(partType))
             {
-                string message = string.Format(SR.TypeInspector_ContractNotAssignable, contractType.Name, partType.Name);
+                string message = SR.Format(SR.TypeInspector_ContractNotAssignable, contractType.Name, partType.Name);
                 throw new CompositionFailedException(message);
             }
         }

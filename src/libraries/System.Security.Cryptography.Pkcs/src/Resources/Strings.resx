@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -63,6 +62,9 @@
   </data>
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
+  </data>
+  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
+    <value>The destination is too small to hold the encoded value.</value>
   </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>

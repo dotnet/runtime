@@ -157,13 +157,13 @@ namespace System.Collections.Immutable
                         case KeyCollisionBehavior.ThrowIfValueDifferent:
                             if (!valueComparer.Equals(_firstValue.Value, value))
                             {
-                                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                                throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                             }
 
                             result = OperationResult.NoChangeRequired;
                             return this;
                         case KeyCollisionBehavior.ThrowAlways:
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                            throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                         default:
                             throw new InvalidOperationException(); // unreachable
                     }
@@ -193,13 +193,13 @@ namespace System.Collections.Immutable
 #endif
                             if (!valueComparer.Equals(existingEntry.Value, value))
                             {
-                                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                                throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                             }
 
                             result = OperationResult.NoChangeRequired;
                             return this;
                         case KeyCollisionBehavior.ThrowAlways:
-                            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
+                            throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                         default:
                             throw new InvalidOperationException(); // unreachable
                     }
@@ -256,10 +256,10 @@ namespace System.Collections.Immutable
             /// Gets the value for the given key in the collection if one exists..
             /// </summary>
             /// <param name="key">The key to search for.</param>
-            /// <param name="keyOnlyComparer">The key comparer.</param>
+            /// <param name="comparers">The comparers.</param>
             /// <param name="value">The value for the given key.</param>
             /// <returns>A value indicating whether the key was found.</returns>
-            internal bool TryGetValue(TKey key, IEqualityComparer<KeyValuePair<TKey, TValue>> keyOnlyComparer, out TValue value)
+            internal bool TryGetValue(TKey key, Comparers comparers, out TValue value)
             {
                 if (this.IsEmpty)
                 {
@@ -267,14 +267,14 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                var kv = new KeyValuePair<TKey, TValue>(key, default(TValue));
-                if (keyOnlyComparer.Equals(_firstValue, kv))
+                if (comparers.KeyComparer.Equals(_firstValue.Key, key))
                 {
                     value = _firstValue.Value;
                     return true;
                 }
 
-                var index = _additionalElements.IndexOf(kv, keyOnlyComparer);
+                var kv = new KeyValuePair<TKey, TValue>(key, default(TValue));
+                var index = _additionalElements.IndexOf(kv, comparers.KeyOnlyComparer);
                 if (index < 0)
                 {
                     value = default(TValue);
@@ -293,7 +293,7 @@ namespace System.Collections.Immutable
             /// Searches the dictionary for a given key and returns the equal key it finds, if any.
             /// </summary>
             /// <param name="equalKey">The key to search for.</param>
-            /// <param name="keyOnlyComparer">The key comparer.</param>
+            /// <param name="comparers">The comparers.</param>
             /// <param name="actualKey">The key from the dictionary that the search found, or <paramref name="equalKey"/> if the search yielded no match.</param>
             /// <returns>A value indicating whether the search was successful.</returns>
             /// <remarks>
@@ -302,7 +302,7 @@ namespace System.Collections.Immutable
             /// the canonical value, or a value that has more complete data than the value you currently have,
             /// although their comparer functions indicate they are equal.
             /// </remarks>
-            internal bool TryGetKey(TKey equalKey, IEqualityComparer<KeyValuePair<TKey, TValue>> keyOnlyComparer, out TKey actualKey)
+            internal bool TryGetKey(TKey equalKey, Comparers comparers, out TKey actualKey)
             {
                 if (this.IsEmpty)
                 {
@@ -310,14 +310,14 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                var kv = new KeyValuePair<TKey, TValue>(equalKey, default(TValue));
-                if (keyOnlyComparer.Equals(_firstValue, kv))
+                if (comparers.KeyComparer.Equals(_firstValue.Key, equalKey))
                 {
                     actualKey = _firstValue.Key;
                     return true;
                 }
 
-                var index = _additionalElements.IndexOf(kv, keyOnlyComparer);
+                var kv = new KeyValuePair<TKey, TValue>(equalKey, default(TValue));
+                var index = _additionalElements.IndexOf(kv, comparers.KeyOnlyComparer);
                 if (index < 0)
                 {
                     actualKey = equalKey;

@@ -217,7 +217,7 @@ namespace System.Data
 
         public static Exception ArgumentType(string function, int arg, Type type)
         {
-            return _Eval(SR.Format(SR.Expr_ArgumentType, function, arg.ToString(CultureInfo.InvariantCulture), type.ToString()));
+            return _Eval(SR.Format(SR.Expr_ArgumentType, function, arg.ToString(CultureInfo.InvariantCulture), type));
         }
 
         public static Exception ArgumentTypeInteger(string function, int arg)
@@ -227,12 +227,12 @@ namespace System.Data
 
         public static Exception TypeMismatchInBinop(int op, Type type1, Type type2)
         {
-            return _Eval(SR.Format(SR.Expr_TypeMismatchInBinop, Operators.ToString(op), type1.ToString(), type2.ToString()));
+            return _Eval(SR.Format(SR.Expr_TypeMismatchInBinop, Operators.ToString(op), type1, type2));
         }
 
         public static Exception AmbiguousBinop(int op, Type type1, Type type2)
         {
-            return _Eval(SR.Format(SR.Expr_AmbiguousBinop, Operators.ToString(op), type1.ToString(), type2.ToString()));
+            return _Eval(SR.Format(SR.Expr_AmbiguousBinop, Operators.ToString(op), type1, type2));
         }
 
         public static Exception UnsupportedOperator(int op)

@@ -47,14 +47,14 @@ namespace System.Xml.Schema
             {
                 case XmlNodeType.Document:
                     source = ((XDocument)source).Root;
-                    if (source == null) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_MissingRoot));
+                    if (source == null) throw new InvalidOperationException(SR.InvalidOperation_MissingRoot);
                     validationFlags |= XmlSchemaValidationFlags.ProcessIdentityConstraints;
                     break;
                 case XmlNodeType.Element:
                     break;
                 case XmlNodeType.Attribute:
                     if (((XAttribute)source).IsNamespaceDeclaration) goto default;
-                    if (source.Parent == null) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_MissingParent));
+                    if (source.Parent == null) throw new InvalidOperationException(SR.InvalidOperation_MissingParent);
                     break;
                 default:
                     throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadNodeType, nt));
