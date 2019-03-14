@@ -147,7 +147,7 @@ namespace System.ComponentModel
                         string childName = _name;
                         if (ownerName != null)
                         {
-                            childName = string.Format(CultureInfo.InvariantCulture, "{0}.{1}", ownerName, childName);
+                            childName = ownerName + "." + childName;
                         }
 
                         return childName;

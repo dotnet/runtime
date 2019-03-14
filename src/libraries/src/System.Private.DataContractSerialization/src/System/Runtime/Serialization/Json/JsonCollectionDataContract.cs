@@ -49,7 +49,7 @@ namespace System.Runtime.Serialization.Json
                                 tempDelegate = tempDelegate ?? CreateJsonFormatReaderDelegate();
 
                                 if (tempDelegate == null)
-                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalCollectionDataContract.UnderlyingType.ToString()));
+                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalCollectionDataContract.UnderlyingType));
                             }
 #endif
                             else 
@@ -106,7 +106,7 @@ namespace System.Runtime.Serialization.Json
                                 tempDelegate = tempDelegate ?? CreateJsonFormatGetOnlyReaderDelegate();
 
                                 if (tempDelegate == null)
-                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalCollectionDataContract.UnderlyingType.ToString()));
+                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalCollectionDataContract.UnderlyingType));
                             }
 #endif
                             else
@@ -158,7 +158,7 @@ namespace System.Runtime.Serialization.Json
                                 tempDelegate = tempDelegate ?? CreateJsonFormatWriterDelegate();
 
                                 if (tempDelegate == null)
-                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalCollectionDataContract.UnderlyingType.ToString()));
+                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalCollectionDataContract.UnderlyingType));
                             }
 #endif
                             else

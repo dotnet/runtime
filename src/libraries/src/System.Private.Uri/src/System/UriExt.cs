@@ -386,7 +386,7 @@ namespace System
         internal unsafe bool InternalIsWellFormedOriginalString()
         {
             if (UserDrivenParsing)
-                throw new InvalidOperationException(SR.Format(SR.net_uri_UserDrivenParsing, this.GetType().ToString()));
+                throw new InvalidOperationException(SR.Format(SR.net_uri_UserDrivenParsing, this.GetType()));
 
             fixed (char* str = _string)
             {
@@ -935,7 +935,7 @@ namespace System
                     if (otherUri._string[portIndex] != ':')
                     {
                         // Something wrong with the NotDefaultPort flag.  Reset to path index
-                        Debug.Assert(false, "Uri failed to locate custom port at index: " + portIndex);
+                        Debug.Fail("Uri failed to locate custom port at index: " + portIndex);
                         portIndex = otherUri._info.Offset.Path;
                     }
                 }

@@ -21,5 +21,18 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new PEHeaderBuilder(fileAlignment: int.MaxValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => new PEHeaderBuilder(fileAlignment: int.MinValue));
         }
+
+        [Fact]
+        public void ValidateFactoryMethods()
+        {
+            var peHeaderExe = PEHeaderBuilder.CreateExecutableHeader();
+            Assert.NotNull(peHeaderExe);
+            Assert.True((peHeaderExe.ImageCharacteristics & Characteristics.ExecutableImage) != 0);
+
+            var peHeaderLib = PEHeaderBuilder.CreateLibraryHeader();
+            Assert.NotNull(peHeaderLib);
+            Assert.True((peHeaderLib.ImageCharacteristics & Characteristics.ExecutableImage) != 0);
+            Assert.True((peHeaderLib.ImageCharacteristics & Characteristics.Dll) != 0);
+        }
     }
 }

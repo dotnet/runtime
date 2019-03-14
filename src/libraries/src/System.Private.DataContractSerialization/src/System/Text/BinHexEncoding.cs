@@ -36,7 +36,7 @@ namespace System.Text
             if (charCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(charCount), SR.ValueMustBeNonNegative);
             if ((charCount % 2) != 0)
-                throw new FormatException(SR.Format(SR.XmlInvalidBinHexLength, charCount.ToString(NumberFormatInfo.CurrentInfo)));
+                throw new FormatException(SR.Format(SR.XmlInvalidBinHexLength, charCount.ToString()));
             return charCount / 2;
         }
 

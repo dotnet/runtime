@@ -5,13 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.ArrayList))]
-#pragma warning disable 0618
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.IHashCodeProvider))]
-#pragma warning restore 0618
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Hashtable))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Comparer))]
-
 namespace System.Collections
 {
     public partial class CaseInsensitiveComparer : System.Collections.IComparer
@@ -22,14 +15,14 @@ namespace System.Collections
         public static System.Collections.CaseInsensitiveComparer DefaultInvariant { get { throw null; } }
         public int Compare(object a, object b) { throw null; }
     }
-    [System.ObsoleteAttribute("Please use StringComparer instead.")] 
-    public partial class CaseInsensitiveHashCodeProvider : System.Collections.IHashCodeProvider 
-    { 
-        public CaseInsensitiveHashCodeProvider() { } 
-        public CaseInsensitiveHashCodeProvider(System.Globalization.CultureInfo culture) { } 
-        public static System.Collections.CaseInsensitiveHashCodeProvider Default { get { throw null; } } 
-        public static System.Collections.CaseInsensitiveHashCodeProvider DefaultInvariant { get { throw null; } } 
-        public int GetHashCode(object obj) { throw null; } 
+    [System.ObsoleteAttribute("Please use StringComparer instead.")]
+    public partial class CaseInsensitiveHashCodeProvider : System.Collections.IHashCodeProvider
+    {
+        public CaseInsensitiveHashCodeProvider() { }
+        public CaseInsensitiveHashCodeProvider(System.Globalization.CultureInfo culture) { }
+        public static System.Collections.CaseInsensitiveHashCodeProvider Default { get { throw null; } }
+        public static System.Collections.CaseInsensitiveHashCodeProvider DefaultInvariant { get { throw null; } }
+        public int GetHashCode(object obj) { throw null; }
     }
     public abstract partial class CollectionBase : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {

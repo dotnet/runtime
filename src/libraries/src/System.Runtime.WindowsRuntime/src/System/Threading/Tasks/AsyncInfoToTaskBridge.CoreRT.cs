@@ -5,7 +5,6 @@
 using Internal.Interop;
 using Internal.Threading.Tasks;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using Windows.Foundation;
 
@@ -72,7 +71,7 @@ namespace System.Threading.Tasks
 
                 if (!base.Task.IsFaulted)
                 {
-                    Debug.Assert(false, string.Format("Expected base task to already be faulted but found it in state {0}", base.Task.Status));
+                    Debug.Fail($"Expected base task to already be faulted but found it in state {base.Task.Status}");
                     base.TrySetException(ex);
                 }
             }
@@ -119,8 +118,6 @@ namespace System.Threading.Tasks
             if (asyncInfo == null)
                 throw new ArgumentNullException(nameof(asyncInfo));
 
-            Contract.EndContractBlock();
-            
             AsyncCausalitySupport.RemoveFromActiveTasks(this.Task);
 
             try
@@ -170,7 +167,7 @@ namespace System.Threading.Tasks
                         // Defend against a faulty IAsyncInfo implementation:
                         if (error == null)
                         {
-                            Debug.Assert(false, "IAsyncInfo.Status == Error, but ErrorCode returns a null Exception (implying S_OK).");
+                            Debug.Fail("IAsyncInfo.Status == Error, but ErrorCode returns a null Exception (implying S_OK).");
                             error = new InvalidOperationException(SR.InvalidOperation_InvalidAsyncCompletion);
                         }
                         else
@@ -220,7 +217,7 @@ namespace System.Threading.Tasks
                 {
                     // This really shouldn't happen, but could in a variety of misuse cases
                     // such as a faulty underlying IAsyncInfo implementation.
-                    Debug.Assert(false, string.Format("Unexpected exception in Complete: {0}", exc.ToString()));
+                    Debug.Fail($"Unexpected exception in Complete: {exc}");
 
                     if (AsyncCausalitySupport.LoggingOn)
                         AsyncCausalitySupport.TraceOperationCompletedError(this.Task);
@@ -230,7 +227,7 @@ namespace System.Threading.Tasks
                     // do we allow it to be propagated out to the invoker of the Completed handler.
                     if (!base.TrySetException(exc))
                     {
-                        Debug.Assert(false, "The task was already completed and thus the exception couldn't be stored.");
+                        Debug.Fail("The task was already completed and thus the exception couldn't be stored.");
                         throw;
                     }
                 }

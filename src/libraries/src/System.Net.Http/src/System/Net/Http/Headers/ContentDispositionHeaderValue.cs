@@ -301,7 +301,7 @@ namespace System.Net.Http.Headers
             int dispositionTypeLength = GetDispositionTypeExpressionLength(dispositionType, 0, out tempDispositionType);
             if ((dispositionTypeLength == 0) || (tempDispositionType.Length != dispositionType.Length))
             {
-                throw new FormatException(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture,
                     SR.net_http_headers_invalid_value, dispositionType));
             }
         }
@@ -438,7 +438,7 @@ namespace System.Net.Http.Headers
 
             if (result.IndexOf("\"", 0, StringComparison.Ordinal) >= 0) // Only bounding quotes are allowed.
             {
-                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
+                throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
                     SR.net_http_headers_invalid_value, input));
             }
             else if (RequiresEncoding(result))

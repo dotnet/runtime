@@ -100,7 +100,7 @@ namespace System.IO.Pipes
                     
                     if (serverEUID != peerID)
                     {
-                        throw new UnauthorizedAccessException(string.Format(SR.UnauthorizedAccess_ClientIsNotCurrentUser, peerID, serverEUID));
+                        throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_ClientIsNotCurrentUser, peerID, serverEUID));
                     }
                 }
 

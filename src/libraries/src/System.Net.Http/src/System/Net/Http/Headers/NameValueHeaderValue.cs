@@ -357,7 +357,7 @@ namespace System.Net.Http.Headers
             // Either value is null/empty or a valid token/quoted string
             if (!(string.IsNullOrEmpty(value) || (GetValueLength(value, 0) == value.Length)))
             {
-                throw new FormatException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 

@@ -197,7 +197,7 @@ namespace System.Data.Common
                                 // found duplicate name
                                 // the name unchanged name wins
                                 int iMutatedName = _isMutatedName[j] ? j : i;
-                                Debug.Assert(_isMutatedName[iMutatedName], string.Format(CultureInfo.InvariantCulture, "{0} expected to be a mutated name", _baseParameterNames[iMutatedName]));
+                                Debug.Assert(_isMutatedName[iMutatedName], $"{_baseParameterNames[iMutatedName]} expected to be a mutated name");
                                 _baseParameterNames[iMutatedName] = null;   // null out the culprit
                             }
                         }
@@ -601,7 +601,7 @@ namespace System.Data.Common
                     }
                     else
                     {
-                        Debug.Assert(false, "Rowcount expected to be 1");
+                        Debug.Fail("Rowcount expected to be 1");
                         useColumnsForParameterNames = false;
                     }
                 }
@@ -1539,7 +1539,7 @@ namespace System.Data.Common
                         switch (stmtType)
                         {
                             case StatementType.Select:
-                                Debug.Assert(false, "how did we get here?");
+                                Debug.Fail("how did we get here?");
                                 return; // don't mess with it
                             case StatementType.Insert:
                                 command = InsertCommand;
@@ -1604,7 +1604,7 @@ namespace System.Data.Common
                     break;
 #if DEBUG
                 case StatementType.Select:
-                    Debug.Assert(false, "how did we get here?");
+                    Debug.Fail("how did we get here?");
                     goto default;
 #endif
                 default:

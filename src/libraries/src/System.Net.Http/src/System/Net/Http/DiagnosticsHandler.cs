@@ -78,9 +78,27 @@ namespace System.Net.Http
             // If we are on at all, we propagate any activity information
             // unless tracing system or user injected Request-Id for backward compatibility reasons.
             Activity currentActivity = Activity.Current;
-            if (currentActivity != null && !request.Headers.Contains(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName))
+            if (currentActivity != null)
             {
-                request.Headers.Add(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, currentActivity.Id);
+                if (currentActivity.IdFormat == ActivityIdFormat.W3C)
+                {
+                    if (!request.Headers.Contains(DiagnosticsHandlerLoggingStrings.TraceParentHeaderName))
+                    {
+                        request.Headers.Add(DiagnosticsHandlerLoggingStrings.TraceParentHeaderName, currentActivity.Id);
+                        if (currentActivity.TraceStateString != null)
+                        {
+                            request.Headers.Add(DiagnosticsHandlerLoggingStrings.TraceStateHeaderName, currentActivity.TraceStateString);
+                        }
+                    }
+                }
+                else
+                {
+                    if (!request.Headers.Contains(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName))
+                    {
+                        request.Headers.Add(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, currentActivity.Id);
+                    }
+                }
+
                 //we expect baggage to be empty or contain a few items
                 using (IEnumerator<KeyValuePair<string, string>> e = currentActivity.Baggage.GetEnumerator())
                 {

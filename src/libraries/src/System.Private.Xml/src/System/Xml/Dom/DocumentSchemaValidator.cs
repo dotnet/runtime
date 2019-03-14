@@ -325,7 +325,7 @@ namespace System.Xml
                     break;
 
                 default:
-                    throw new InvalidOperationException(SR.Format(SR.Xml_UnexpectedNodeType, new string[] { _currentNode.NodeType.ToString() }));
+                    throw new InvalidOperationException(SR.Format(SR.Xml_UnexpectedNodeType, _currentNode.NodeType));
             }
         }
 
@@ -762,7 +762,7 @@ namespace System.Xml
                         break;
 
                     default:
-                        throw new InvalidOperationException(SR.Format(SR.Xml_UnexpectedNodeType, new string[] { _currentNode.NodeType.ToString() }));
+                        throw new InvalidOperationException(SR.Format(SR.Xml_UnexpectedNodeType, _currentNode.NodeType));
                 }
             }
             Debug.Assert(child == childToStopAt);

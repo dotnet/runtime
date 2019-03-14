@@ -265,7 +265,7 @@ namespace System.Xml.Schema
                     break;
 
                 default:
-                    Debug.Assert(false, "Type code " + typeCode + " is not supported.");
+                    Debug.Fail("Type code " + typeCode + " is not supported.");
                     break;
             }
 
@@ -749,7 +749,7 @@ namespace System.Xml.Schema
 
             prefix = nsResolver.LookupPrefix(qname.Namespace);
             if (prefix == null)
-                throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoPrefix, qname.ToString(), qname.Namespace));
+                throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoPrefix, qname, qname.Namespace));
 
             return (prefix.Length != 0) ? string.Concat(prefix, ":", qname.Name) : qname.Name;
         }

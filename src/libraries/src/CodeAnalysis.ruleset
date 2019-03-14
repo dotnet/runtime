@@ -1,0 +1,41 @@
+﻿<RuleSet Name="Rules for Security Issues" Description="Code analysis rules for Security Issues." ToolsVersion="14.0">
+  <Rules AnalyzerId="Desktop.Analyzers" RuleNamespace="Desktop.Analyzers">
+    <Rule Id="CA5350" Action="Error" /> <!-- Do not use Weak/Broken cryptographic algorithms -->
+    <Rule Id="CA5351" Action="Error" />
+    <Rule Id="CA2153" Action="Error"/> <!-- Do not catch corrupted process state exceptions -->
+  </Rules>
+  <Rules AnalyzerId="Desktop.CSharp.Analyzers" RuleNamespace="Desktop.Analyzers">
+    <Rule Id="CA5350" Action="Error" /> <!-- Do not use Weak/Broken cryptographic algorithms -->
+    <Rule Id="CA5351" Action="Error" />
+    <Rule Id="CA2153" Action="Error"/> <!-- Do not catch corrupted process state exceptions -->
+  </Rules>
+  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+    <Rule Id="CA1001" Action="None" /> <!-- Non disposable class owns disposable fields -->
+    <Rule Id="CA1018" Action="Error" /> <!-- Specify attribute usage on attribute -->
+    <Rule Id="CA1036" Action="None" /> <!-- Overload comparison operators when implementing System.IComparable -->
+    <Rule Id="CA1715" Action="None" /> <!-- Type parameters names should be prefixed with T -->
+    <Rule Id="CA2213" Action="None" /> <!-- Disposable Fields should be disposed -->
+    <Rule Id="CA2229" Action="Error" /> <!-- Serializable type doesn't have a serialization constructor -->
+    <Rule Id="CA2235" Action="None" /> <!-- Serializable type has non serializable field -->
+    <Rule Id="CA2231" Action="None" /> <!-- Overload operator equals when overriding ValueType.Equals -->
+    <Rule Id="CA2237" Action="None" /> <!-- Add [Serializable] to types that implement ISerializable -->
+
+    <Rule Id="CA2200" Action="None"/> <!-- Rethrowing caught exception changes stack information -->
+
+    <Rule Id="CA2101" Action="None" /> <!-- Specify marshaling for P/Invoke string arguments -->
+    <Rule Id="CA1401" Action="None" /> <!-- P/Invoke method should not be visible -->
+
+    <Rule Id="CA2214" Action="None" /> <!-- Do not call overridable methods in constructors -->
+  </Rules>
+  <Rules AnalyzerId="System.Runtime.Analyzers" RuleNamespace="System.Runtime.Analyzers">
+    <Rule Id="CA2002" Action="Error" /> <!-- Do not lock on objects with weak identity -->
+  </Rules>
+  <Rules AnalyzerId="System.Security.Cryptography.Hashing.Algorithms.Analyzers" RuleNamespace="System.Security.Cryptography.Hashing.Algorithms.Analyzers">
+    <Rule Id="CA5350" Action="Error" /> <!-- Do not use Weak/Broken cryptographic algorithms -->
+    <Rule Id="CA5351" Action="Error" />
+  </Rules>
+  <Rules AnalyzerId="Microsoft.AnalyzerPowerPack.CSharp" RuleNamespace="Microsoft.AnalyzerPowerPack.CSharp">
+    <!-- Disable analyzer warning 1821 until https://github.com/dotnet/roslyn-analyzers/issues/1804 is resolved -->
+    <Rule Id="CA1821" Action="None" />
+  </Rules>
+</RuleSet>

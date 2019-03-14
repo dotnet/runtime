@@ -355,7 +355,7 @@ namespace System.DirectoryServices.AccountManagement
                     break;
 
                 default:
-                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "AccountInfo.LoadValueIntoProperty: fell off end looking for {0}", propertyName));
+                    Debug.Fail($"AccountInfo.LoadValueIntoProperty: fell off end looking for {propertyName}");
                     break;
             }
         }
@@ -403,7 +403,7 @@ namespace System.DirectoryServices.AccountManagement
                     return _scriptPathChanged == LoadState.Changed;
 
                 default:
-                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "AccountInfo.GetChangeStatusForProperty: fell off end looking for {0}", propertyName));
+                    Debug.Fail($"AccountInfo.GetChangeStatusForProperty: fell off end looking for {propertyName}");
                     return false;
             }
         }
@@ -440,7 +440,7 @@ namespace System.DirectoryServices.AccountManagement
                     return _scriptPath;
 
                 default:
-                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "AccountInfo.GetValueForProperty: fell off end looking for {0}", propertyName));
+                    Debug.Fail($"AccountInfo.GetValueForProperty: fell off end looking for {propertyName}");
                     return null;
             }
         }

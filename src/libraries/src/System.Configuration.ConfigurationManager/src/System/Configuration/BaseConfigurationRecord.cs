@@ -1353,7 +1353,7 @@ namespace System.Configuration
             catch (Exception e)
             {
                 throw ExceptionUtil.WrapAsConfigException(
-                    string.Format(SR.Config_exception_creating_section, factoryRecord.ConfigKey),
+                    SR.Format(SR.Config_exception_creating_section, factoryRecord.ConfigKey),
                     e, input.SectionXmlInfo);
             }
 
@@ -1496,7 +1496,7 @@ namespace System.Configuration
                 if (stream == null)
                 {
                     throw new ConfigurationErrorsException(
-                        string.Format(SR.Config_cannot_open_config_source, sectionXmlInfo.ConfigSource),
+                        SR.Format(SR.Config_cannot_open_config_source, sectionXmlInfo.ConfigSource),
                         sectionXmlInfo);
                 }
 
@@ -1598,7 +1598,7 @@ namespace System.Configuration
 
             if (!throwIfNotFound) return null;
 
-            throw new ConfigurationErrorsException(string.Format(SR.ProtectedConfigurationProvider_not_found,
+            throw new ConfigurationErrorsException(SR.Format(SR.ProtectedConfigurationProvider_not_found,
                 providerName));
         }
 
@@ -1635,7 +1635,7 @@ namespace System.Configuration
             catch (Exception e)
             {
                 throw ExceptionUtil.WrapAsConfigException(
-                    string.Format(SR.Config_exception_creating_section_handler, factoryRecord.ConfigKey), e, filename,
+                    SR.Format(SR.Config_exception_creating_section_handler, factoryRecord.ConfigKey), e, filename,
                     line);
             }
 
@@ -1738,7 +1738,7 @@ namespace System.Configuration
                 catch (Exception e)
                 {
                     throw ExceptionUtil.WrapAsConfigException(
-                        string.Format(SR.Config_exception_creating_section_handler, factoryRecord.ConfigKey), e,
+                        SR.Format(SR.Config_exception_creating_section_handler, factoryRecord.ConfigKey), e,
                         factoryRecord);
                 }
             }
@@ -1760,7 +1760,7 @@ namespace System.Configuration
             // Check for a root <configuration>
             if ((xmlUtil.Reader.NodeType != XmlNodeType.Element) || (xmlUtil.Reader.Name != ConfigurationTag))
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Config_file_doesnt_have_root_configuration, xmlUtil.Filename), xmlUtil);
+                    SR.Format(SR.Config_file_doesnt_have_root_configuration, xmlUtil.Filename), xmlUtil);
 
             // Look at the configuration attributes
             while (xmlUtil.Reader.MoveToNextAttribute())
@@ -1777,7 +1777,7 @@ namespace System.Configuration
                         {
                             // A configuration namespace was defined that we don't understand
                             ConfigurationErrorsException ce = new ConfigurationErrorsException(
-                                string.Format(SR.Config_namespace_invalid, xmlUtil.Reader.Value, ConfigurationNamespace),
+                                SR.Format(SR.Config_namespace_invalid, xmlUtil.Reader.Value, ConfigurationNamespace),
                                 xmlUtil);
                             xmlUtil.SchemaErrors.AddError(ce, ExceptionAction.Global);
                         }
@@ -1867,7 +1867,7 @@ namespace System.Configuration
                                 {
                                     // Error: duplicate <sectionGroup> declaration
                                     xmlUtil.SchemaErrors.AddError(
-                                        new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined_at_this_level, tagName), xmlUtil),
+                                        new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined_at_this_level, tagName), xmlUtil),
                                         ExceptionAction.Local);
                                 }
                                 else
@@ -1883,7 +1883,7 @@ namespace System.Configuration
                                             (!parentFactoryRecord.IsGroup || !parentFactoryRecord.IsEquivalentSectionGroupFactory(Host, typeName)))
                                         {
                                             xmlUtil.SchemaErrors.AddError(
-                                                new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined, tagName), xmlUtil),
+                                                new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, tagName), xmlUtil),
                                                 ExceptionAction.Local);
                                             parentFactoryRecord = null;
                                         }
@@ -2004,7 +2004,7 @@ namespace System.Configuration
                                     // Error: duplicate section declaration
                                     xmlUtil.SchemaErrors.AddError(
                                         new ConfigurationErrorsException(
-                                            string.Format(SR.Config_tag_name_already_defined_at_this_level, tagName),
+                                            SR.Format(SR.Config_tag_name_already_defined_at_this_level, tagName),
                                             xmlUtil),
                                         ExceptionAction.Local);
                                 }
@@ -2022,7 +2022,7 @@ namespace System.Configuration
                                             // Already a <sectionGroup> with this name
                                             xmlUtil.SchemaErrors.AddError(
                                                 new ConfigurationErrorsException(
-                                                    string.Format(SR.Config_tag_name_already_defined, tagName), xmlUtil),
+                                                    SR.Format(SR.Config_tag_name_already_defined, tagName), xmlUtil),
                                                 ExceptionAction.Local);
                                             parentFactoryRecord = null;
                                         }
@@ -2031,7 +2031,7 @@ namespace System.Configuration
                                         {
                                             // Already a <section> with the same name
                                             xmlUtil.SchemaErrors.AddError(
-                                                new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined, tagName), xmlUtil),
+                                                new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, tagName), xmlUtil),
                                                 ExceptionAction.Local);
                                             parentFactoryRecord = null;
                                         }
@@ -2373,7 +2373,7 @@ namespace System.Configuration
                     case ConfigSectionsTag: // <configSections>
                         // Either a duplicate or not the first tag under <configuration>
                         xmlUtil.SchemaErrors.AddError(
-                            new ConfigurationErrorsException(string.Format(SR.Config_client_config_too_many_configsections_elements, tagName), xmlUtil),
+                            new ConfigurationErrorsException(SR.Format(SR.Config_client_config_too_many_configsections_elements, tagName), xmlUtil),
                             ExceptionAction.NonSpecific);
                         xmlUtil.StrictSkipToNextElement(ExceptionAction.NonSpecific);
                         continue;
@@ -2415,7 +2415,7 @@ namespace System.Configuration
                     {
                         xmlUtil.SchemaErrors.AddError(
                             new ConfigurationErrorsException(
-                                string.Format(SR.Config_unrecognized_configuration_section, configKey), xmlUtil),
+                                SR.Format(SR.Config_unrecognized_configuration_section, configKey), xmlUtil),
                             ExceptionAction.Local);
                     }
 
@@ -3072,7 +3072,7 @@ namespace System.Configuration
                 }
 
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Cannot_declare_or_remove_implicit_section, name), errorInfo);
+                    SR.Format(SR.Cannot_declare_or_remove_implicit_section, name), errorInfo);
             }
 
             if (StringUtil.StartsWithOrdinal(name, "config"))
@@ -3238,7 +3238,7 @@ namespace System.Configuration
                 {
                     if (streamInfo.SectionName != configKey)
                     {
-                        throw new ConfigurationErrorsException(string.Format(SR.Config_source_cannot_be_shared,
+                        throw new ConfigurationErrorsException(SR.Format(SR.Config_source_cannot_be_shared,
                             streamname));
                     }
 
@@ -3328,7 +3328,7 @@ namespace System.Configuration
                     if ((streamInfo != null) && (streamInfo.SectionName != configKey))
                     {
                         throw new ConfigurationErrorsException(
-                            string.Format(SR.Config_source_cannot_be_shared, configSourceArg),
+                            SR.Format(SR.Config_source_cannot_be_shared, configSourceArg),
                             errorInfo);
                     }
                 }
@@ -3354,7 +3354,7 @@ namespace System.Configuration
                         if (streamInfo != null)
                         {
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_source_parent_conflict, configSourceArg),
+                                SR.Format(SR.Config_source_parent_conflict, configSourceArg),
                                 errorInfo);
                         }
                     }
@@ -3629,7 +3629,7 @@ namespace System.Configuration
             catch (Exception e)
             {
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Decryption_failed, protectionProvider.Name, e.Message), e, filename, lineNumber);
+                    SR.Format(SR.Decryption_failed, protectionProvider.Name, e.Message), e, filename, lineNumber);
             }
 
             // Detect if there is any XML left over after <EncryptedData>
@@ -3808,8 +3808,7 @@ namespace System.Configuration
                     return -1;
                 }
 
-                Debug.Assert(false,
-                    "It's not possible for two location input to come from the same config file and point to the same target");
+                Debug.Fail("It's not possible for two location input to come from the same config file and point to the same target");
                 return 0;
             }
         }

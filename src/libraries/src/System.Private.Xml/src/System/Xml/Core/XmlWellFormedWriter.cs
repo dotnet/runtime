@@ -305,7 +305,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    Debug.Assert(false, "Expected currentState <= State.Error ");
+                    Debug.Fail("Expected currentState <= State.Error ");
                     return WriteState.Error;
                 }
             }
@@ -1614,7 +1614,7 @@ namespace System.Xml
             else if (State.RootLevelAttr == _currentState)
                 _currentState = State.RootLevelSpecAttr;
             else
-                Debug.Assert(false, "State.Attribute == currentState || State.RootLevelAttr == currentState");
+                Debug.Fail("State.Attribute == currentState || State.RootLevelAttr == currentState");
 
             if (_attrValueCache == null)
             {
@@ -2041,7 +2041,7 @@ namespace System.Xml
                         break;
 
                     default:
-                        Debug.Assert(false, "We should not get to this point.");
+                        Debug.Fail("We should not get to this point.");
                         break;
                 }
             }
@@ -2071,7 +2071,7 @@ namespace System.Xml
         {
             if (state >= State.Error)
             {
-                Debug.Assert(false, "We should never get to this point. State = " + state);
+                Debug.Fail("We should never get to this point. State = " + state);
                 return "Error";
             }
             else

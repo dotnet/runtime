@@ -2316,10 +2316,6 @@ namespace System.Threading.Tasks.Tests
                 ManualResetEvent mreFaulted = new ManualResetEvent(false);
                 bool innerStarted = false;
 
-                // I Think SpinWait has been implemented on all future platforms because
-                // it is in the Contract.
-                // So we can ignore this Thread.SpinWait(100);
-
                 SpinWait sw = new SpinWait();
                 Task tFaulted = Task.Factory.StartNew(delegate
                 {

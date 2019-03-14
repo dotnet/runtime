@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.1' or '$(TargetGroup)' == 'netstandard1.3'">
+    <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

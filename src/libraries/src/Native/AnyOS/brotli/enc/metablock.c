@@ -181,7 +181,8 @@ void BrotliBuildMetaBlock(MemoryManager* m,
     ComputeDistanceCost(cmds, num_commands,
                         &orig_params.dist, &orig_params.dist, &dist_cost);
     if (dist_cost < best_dist_cost) {
-      best_dist_cost = dist_cost;
+      /* NB: currently unused; uncomment when more param tuning is added. */
+      /* best_dist_cost = dist_cost; */
       params->dist = orig_params.dist;
     }
   }

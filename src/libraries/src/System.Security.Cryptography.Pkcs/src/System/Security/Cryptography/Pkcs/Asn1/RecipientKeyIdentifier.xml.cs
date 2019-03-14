@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -68,7 +72,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSubjectKeyIdentifier))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSubjectKeyIdentifier))
             {
                 decoded.SubjectKeyIdentifier = tmpSubjectKeyIdentifier;
             }
@@ -80,7 +84,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.GeneralizedTime))
             {
-                decoded.Date = sequenceReader.GetGeneralizedTime();
+                decoded.Date = sequenceReader.ReadGeneralizedTime();
             }
 
 

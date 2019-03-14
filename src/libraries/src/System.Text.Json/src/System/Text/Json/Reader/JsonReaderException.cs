@@ -29,6 +29,12 @@ namespace System.Text.Json
             BytePositionInLine = bytePositionInLine;
         }
 
+        internal JsonReaderException(string message, in JsonReaderState state) : base(message)
+        {
+            LineNumber = state._lineNumber;
+            BytePositionInLine = state._bytePositionInLine;
+        }
+
         private JsonReaderException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             LineNumber = info.GetInt64("LineNumber");

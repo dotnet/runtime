@@ -303,7 +303,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(
                     "time",
                     ticks,
-                    string.Format(
+                    SR.Format(
                         CultureInfo.InvariantCulture,
                         SR.ArgumentOutOfRange_CalendarRange,
                         s_minDate,

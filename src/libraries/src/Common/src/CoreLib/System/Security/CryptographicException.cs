@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
         }
 
         public CryptographicException(string format, string insert)
-            : base(string.Format(CultureInfo.CurrentCulture, format, insert))
+            : base(string.Format(format, insert))
         {
         }
 

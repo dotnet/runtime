@@ -793,7 +793,7 @@ namespace System.Xml.Xsl.XsltOld
                     break;
 
                 default:
-                    Debug.Assert(false, "Unexpected node type.");
+                    Debug.Fail("Unexpected node type.");
                     break;
             }
         }

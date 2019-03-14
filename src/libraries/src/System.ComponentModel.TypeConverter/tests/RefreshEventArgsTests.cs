@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.ComponentModel.Tests
@@ -18,19 +19,23 @@ namespace System.ComponentModel.Tests
             Assert.Same(typeChanged, args.TypeChanged);
         }
 
-        [Fact]
-        public void Ctor_Object()
+        public static IEnumerable<object[]> Ctor_Object_TestData()
         {
-            object componentChanged = "componentChanged";
-            var args = new RefreshEventArgs(componentChanged);
-            Assert.Same(componentChanged, args.ComponentChanged);
-            Assert.Equal(typeof(string), args.TypeChanged);
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { null, null };
+            }
+
+                yield return new object[] { "componentChanged", typeof(string) };
         }
 
-        [Fact]
-        public void Ctor_NullComponentChanged_ThrowsNullReferenceException()
+        [Theory]
+        [MemberData(nameof(Ctor_Object_TestData))]
+        public void Ctor_Object(object componentChanged, Type expectedTypeChanged)
         {
-            Assert.Throws<NullReferenceException>(() => new RefreshEventArgs((object)null));
+            var args = new RefreshEventArgs(componentChanged);
+            Assert.Same(componentChanged, args.ComponentChanged);
+            Assert.Equal(expectedTypeChanged, args.TypeChanged);
         }
     }
 }

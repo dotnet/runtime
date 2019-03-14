@@ -7,6 +7,7 @@
   <ItemGroup>
     <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM);uap10.0.16299" />
     <Compile Include="System.Data.SqlClient.cs" />
+    <Compile Include="System.Data.SqlClient.Forwards.cs" />
     <Compile Condition="'$(TargetsNetFx)' != 'true'" Include="System.Data.SqlClient.Manual.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNETCoreApp)' == 'true'">

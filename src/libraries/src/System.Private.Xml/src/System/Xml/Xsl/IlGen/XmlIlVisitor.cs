@@ -2022,7 +2022,7 @@ namespace System.Xml.Xsl.IlGen
                         return true;
 
                     default:
-                        Debug.Assert(false, "Pattern " + step.NodeType + " should have been handled.");
+                        Debug.Fail($"Pattern {step.NodeType} should have been handled.");
                         break;
                 }
             }
@@ -2466,7 +2466,7 @@ namespace System.Xml.Xsl.IlGen
                             return true;
 
                         default:
-                            Debug.Assert(false, "Pattern " + step.NodeType + " should have been handled.");
+                            Debug.Fail($"Pattern {step.NodeType} should have been handled.");
                             break;
                     }
                 }
@@ -2492,7 +2492,7 @@ namespace System.Xml.Xsl.IlGen
                             return true;
 
                         default:
-                            Debug.Assert(false, "Pattern " + step.NodeType + " should have been handled.");
+                            Debug.Fail($"Pattern {step.NodeType} should have been handled.");
                             break;
                     }
                 }
@@ -3129,7 +3129,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected node type {ndProp.NodeType}");
                     break;
             }
 
@@ -4297,7 +4297,7 @@ namespace System.Xml.Xsl.IlGen
                             case QilNodeType.Le: opcode = OpCodes.Bgt_Un; break;
                             case QilNodeType.Eq: opcode = OpCodes.Bne_Un; break;
                             case QilNodeType.Ne: opcode = OpCodes.Beq; break;
-                            default: Debug.Assert(false); opcode = OpCodes.Nop; break;
+                            default: Debug.Fail($"Unexpected rel op {relOp}"); opcode = OpCodes.Nop; break;
                         }
                     }
                     else
@@ -4310,7 +4310,7 @@ namespace System.Xml.Xsl.IlGen
                             case QilNodeType.Le: opcode = OpCodes.Bgt; break;
                             case QilNodeType.Eq: opcode = OpCodes.Bne_Un; break;
                             case QilNodeType.Ne: opcode = OpCodes.Beq; break;
-                            default: Debug.Assert(false); opcode = OpCodes.Nop; break;
+                            default: Debug.Fail($"Unexpected rel op {relOp}"); opcode = OpCodes.Nop; break;
                         }
                     }
                     _helper.Emit(opcode, _iterCurr.LabelBranch);
@@ -4326,7 +4326,7 @@ namespace System.Xml.Xsl.IlGen
                         case QilNodeType.Le: opcode = OpCodes.Ble; break;
                         case QilNodeType.Eq: opcode = OpCodes.Beq; break;
                         case QilNodeType.Ne: opcode = OpCodes.Bne_Un; break;
-                        default: Debug.Assert(false); opcode = OpCodes.Nop; break;
+                        default: Debug.Fail($"Unexpected rel op {relOp}"); opcode = OpCodes.Nop; break;
                     }
                     _helper.Emit(opcode, _iterCurr.LabelBranch);
                     _iterCurr.Storage = StorageDescriptor.None();
@@ -4345,7 +4345,7 @@ namespace System.Xml.Xsl.IlGen
                                 case QilNodeType.Ge: opcode = OpCodes.Bge_S; break;
                                 case QilNodeType.Le: opcode = OpCodes.Ble_S; break;
                                 case QilNodeType.Ne: opcode = OpCodes.Bne_Un_S; break;
-                                default: Debug.Assert(false); opcode = OpCodes.Nop; break;
+                                default: Debug.Fail($"Unexpected rel op {relOp}"); opcode = OpCodes.Nop; break;
                             }
 
                             // Push "true" if comparison succeeds, "false" otherwise
@@ -4592,7 +4592,7 @@ namespace System.Xml.Xsl.IlGen
                 case QilNodeType.NamespaceDecl: return XPathNodeType.Namespace;
             }
 
-            Debug.Assert(false, "Cannot map QilNodeType " + typ + " to an XPathNodeType");
+            Debug.Fail($"Cannot map QilNodeType {typ} to an XPathNodeType");
             return XPathNodeType.All;
         }
 

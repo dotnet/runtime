@@ -66,7 +66,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public void Ctor_NullDesignerTypeName_ThrowsArgumentNullExceptionException()
+        public void Ctor_NullDesignerTypeName_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException, NullReferenceException>(() => new DesignerAttribute((string)null));
             AssertExtensions.Throws<ArgumentNullException, NullReferenceException>(() => new DesignerAttribute(null, "designerBaseTypeName"));
@@ -74,17 +74,17 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public void Ctor_NullDesignerType_ThrowsNullReferenceException()
+        public void Ctor_NullDesignerType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new DesignerAttribute((Type)null));
-            Assert.Throws<NullReferenceException>(() => new DesignerAttribute((Type)null, typeof(int)));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("designerType", () => new DesignerAttribute((Type)null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("designerType", () => new DesignerAttribute((Type)null, typeof(int)));
         }
 
         [Fact]
-        public void Ctor_NullDesignerBaseType_ThrowsNullReferenceException()
+        public void Ctor_NullDesignerBaseType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new DesignerAttribute("designerTypeName", (Type)null));
-            Assert.Throws<NullReferenceException>(() => new DesignerAttribute(typeof(int), null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("designerBaseType", () => new DesignerAttribute("designerTypeName", (Type)null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("designerBaseType", () => new DesignerAttribute(typeof(int), null));
         }
 
         [Theory]
@@ -101,7 +101,14 @@ namespace System.ComponentModel.Tests
         public void TypeId_NullDesignerDesignerTypeName_ThrowsNullReferenceException()
         {
             var attribute = new DesignerAttribute("DesignerType", (string)null);
-            Assert.Throws<NullReferenceException>(() => attribute.TypeId);
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.Equal("System.ComponentModel.DesignerAttribute", attribute.TypeId);
+            }
+            else
+            {
+                Assert.Throws<NullReferenceException>(() => attribute.TypeId);
+            }
         }
 
         public static IEnumerable<object[]> Equals_TestData()

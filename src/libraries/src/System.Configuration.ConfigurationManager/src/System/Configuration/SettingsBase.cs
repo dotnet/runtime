@@ -54,17 +54,17 @@ namespace System.Configuration
         private object GetPropertyValueByName(string propertyName)
         {
             if (Properties == null || _propertyValues == null || Properties.Count == 0)
-                throw new SettingsPropertyNotFoundException(string.Format(SR.SettingsPropertyNotFound, propertyName));
+                throw new SettingsPropertyNotFoundException(SR.Format(SR.SettingsPropertyNotFound, propertyName));
             SettingsProperty pp = Properties[propertyName];
             if (pp == null)
-                throw new SettingsPropertyNotFoundException(string.Format(SR.SettingsPropertyNotFound, propertyName));
+                throw new SettingsPropertyNotFoundException(SR.Format(SR.SettingsPropertyNotFound, propertyName));
             SettingsPropertyValue p = _propertyValues[propertyName];
             if (p == null)
             {
                 GetPropertiesFromProvider(pp.Provider);
                 p = _propertyValues[propertyName];
                 if (p == null)
-                    throw new SettingsPropertyNotFoundException(string.Format(SR.SettingsPropertyNotFound, propertyName));
+                    throw new SettingsPropertyNotFoundException(SR.Format(SR.SettingsPropertyNotFound, propertyName));
             }
             return p.PropertyValue;
         }
@@ -72,17 +72,17 @@ namespace System.Configuration
         private void SetPropertyValueByName(string propertyName, object propertyValue)
         {
             if (Properties == null || _propertyValues == null || Properties.Count == 0)
-                throw new SettingsPropertyNotFoundException(string.Format(SR.SettingsPropertyNotFound, propertyName));
+                throw new SettingsPropertyNotFoundException(SR.Format(SR.SettingsPropertyNotFound, propertyName));
 
             SettingsProperty pp = Properties[propertyName];
             if (pp == null)
-                throw new SettingsPropertyNotFoundException(string.Format(SR.SettingsPropertyNotFound, propertyName));
+                throw new SettingsPropertyNotFoundException(SR.Format(SR.SettingsPropertyNotFound, propertyName));
 
             if (pp.IsReadOnly)
-                throw new SettingsPropertyIsReadOnlyException(string.Format(SR.SettingsPropertyReadOnly, propertyName));
+                throw new SettingsPropertyIsReadOnlyException(SR.Format(SR.SettingsPropertyReadOnly, propertyName));
 
             if (propertyValue != null && !pp.PropertyType.IsInstanceOfType(propertyValue))
-                throw new SettingsPropertyWrongTypeException(string.Format(SR.SettingsPropertyWrongType, propertyName));
+                throw new SettingsPropertyWrongTypeException(SR.Format(SR.SettingsPropertyWrongType, propertyName));
 
             SettingsPropertyValue p = _propertyValues[propertyName];
             if (p == null)
@@ -90,7 +90,7 @@ namespace System.Configuration
                 GetPropertiesFromProvider(pp.Provider);
                 p = _propertyValues[propertyName];
                 if (p == null)
-                    throw new SettingsPropertyNotFoundException(string.Format(SR.SettingsPropertyNotFound, propertyName));
+                    throw new SettingsPropertyNotFoundException(SR.Format(SR.SettingsPropertyNotFound, propertyName));
             }
 
             p.PropertyValue = propertyValue;
