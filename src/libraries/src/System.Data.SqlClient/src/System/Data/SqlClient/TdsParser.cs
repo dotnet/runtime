@@ -9281,8 +9281,7 @@ namespace System.Data.SqlClient
                 }
             }
 
-            Array.Clear(inBuff, 0, constTextBufferSize);
-            ArrayPool<char>.Shared.Return(inBuff, clearArray: false);
+            ArrayPool<char>.Shared.Return(inBuff, clearArray: true);
         }
 
         private async Task WriteStreamFeed(StreamDataFeed feed, TdsParserStateObject stateObj, int len)
@@ -9330,8 +9329,7 @@ namespace System.Data.SqlClient
                 } while (len <= 0 || nWritten < len);
             }
 
-            Array.Clear(buff, 0, constTextBufferSize);
-            ArrayPool<byte>.Shared.Return(buff, clearArray: false);
+            ArrayPool<byte>.Shared.Return(buff, clearArray: true);
         }
 
         private Task NullIfCompletedWriteTask(Task task)
