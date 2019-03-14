@@ -3488,8 +3488,8 @@ def static CreateNonWindowsCrossGenComparisonTestJob(def dslFactory, def project
         } // steps
     }  // job
 
-    Utilities.addArchival(newJob, "${workspaceRelativeNativeArchResultDir}/**")
-    Utilities.addArchival(newJob, "${workspaceRelativeCrossArchResultDir}/**")
+    Utilities.addArchival(newJob, "${workspaceRelativeNativeArchResultDir}/**", "", /* doNotFailIfNothingArchived */ true, /* archiveOnlyIfSuccessful */ false)
+    Utilities.addArchival(newJob, "${workspaceRelativeCrossArchResultDir}/**", "", /* doNotFailIfNothingArchived */ true, /* archiveOnlyIfSuccessful */ false)
 
     return newJob
 }
