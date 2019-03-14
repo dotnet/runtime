@@ -14,16 +14,6 @@
 typedef wchar_t char_t;
 typedef std::wstring string_t;
 
-// Only create undecorated exports on Windows x86
-#if defined _X86_
-
-// Define undecorated exports to ease test set up from native code
-#pragma comment(linker, "/export:Set_corehost_resolve_component_dependencies_Callback=_Set_corehost_resolve_component_dependencies_Callback@4")
-#pragma comment(linker, "/export:Set_corehost_resolve_component_dependencies_Values=_Set_corehost_resolve_component_dependencies_Values@16")
-#pragma comment(linker, "/export:Set_corehost_set_error_writer_returnValue=_Set_corehost_set_error_writer_returnValue@4")
-
-#endif
-
 #else //!_WIN32
 
 #if __GNUC__ >= 4
@@ -42,15 +32,15 @@ string_t g_corehost_resolve_component_dependencies_assemblyPaths;
 string_t g_corehost_resolve_component_dependencies_nativeSearchPaths;
 string_t g_corehost_resolve_component_dependencies_resourceSearchPaths;
 
-typedef void(*Callback_corehost_resolve_component_dependencies)(const char_t *component_main_assembly_path);
+typedef void(__cdecl *Callback_corehost_resolve_component_dependencies)(const char_t *component_main_assembly_path);
 Callback_corehost_resolve_component_dependencies g_corehost_resolve_component_dependencies_Callback;
 
-typedef void(*corehost_resolve_component_dependencies_result_fn)(
+typedef void(__cdecl *corehost_resolve_component_dependencies_result_fn)(
     const char_t* assembly_paths,
     const char_t* native_search_paths,
     const char_t* resource_search_paths);
 
-SHARED_API int corehost_resolve_component_dependencies(
+SHARED_API int __cdecl corehost_resolve_component_dependencies(
     const char_t *component_main_assembly_path,
     corehost_resolve_component_dependencies_result_fn result)
 {
@@ -70,7 +60,7 @@ SHARED_API int corehost_resolve_component_dependencies(
     return g_corehost_resolve_component_dependencies_returnValue;
 }
 
-SHARED_API void Set_corehost_resolve_component_dependencies_Values(
+SHARED_API void __cdecl Set_corehost_resolve_component_dependencies_Values(
     int returnValue,
     const char_t *assemblyPaths,
     const char_t *nativeSearchPaths,
@@ -82,29 +72,29 @@ SHARED_API void Set_corehost_resolve_component_dependencies_Values(
     g_corehost_resolve_component_dependencies_resourceSearchPaths.assign(resourceSearchPaths);
 }
 
-SHARED_API void Set_corehost_resolve_component_dependencies_Callback(
+SHARED_API void __cdecl Set_corehost_resolve_component_dependencies_Callback(
     Callback_corehost_resolve_component_dependencies callback)
 {
     g_corehost_resolve_component_dependencies_Callback = callback;
 }
 
 
-typedef void(*corehost_error_writer_fn)(const char_t* message);
+typedef void(__cdecl *corehost_error_writer_fn)(const char_t* message);
 corehost_error_writer_fn g_corehost_set_error_writer_lastSet_error_writer;
 corehost_error_writer_fn g_corehost_set_error_writer_returnValue;
 
-SHARED_API corehost_error_writer_fn corehost_set_error_writer(corehost_error_writer_fn error_writer)
+SHARED_API corehost_error_writer_fn __cdecl corehost_set_error_writer(corehost_error_writer_fn error_writer)
 {
     g_corehost_set_error_writer_lastSet_error_writer = error_writer;
     return g_corehost_set_error_writer_returnValue;
 }
 
-SHARED_API void Set_corehost_set_error_writer_returnValue(corehost_error_writer_fn error_writer)
+SHARED_API void __cdecl Set_corehost_set_error_writer_returnValue(corehost_error_writer_fn error_writer)
 {
     g_corehost_set_error_writer_returnValue = error_writer;
 }
 
-SHARED_API corehost_error_writer_fn Get_corehost_set_error_writer_lastSet_error_writer()
+SHARED_API corehost_error_writer_fn __cdecl Get_corehost_set_error_writer_lastSet_error_writer()
 {
     return g_corehost_set_error_writer_lastSet_error_writer;
 }

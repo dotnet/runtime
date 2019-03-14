@@ -181,7 +181,7 @@ HRESULT coreclr::GetCoreClrInstance(_Outptr_ coreclr **instance, _In_opt_z_ cons
                 return E_UNEXPECTED;
 
             // Initialize the hostpolicy mock to a default state
-            using Set_corehost_resolve_component_dependencies_Values_fn = void(STDMETHODCALLTYPE *)(
+            using Set_corehost_resolve_component_dependencies_Values_fn = void(__cdecl *)(
                 int returnValue,
                 const WCHAR *assemblyPaths,
                 const WCHAR *nativeSearchPaths,
