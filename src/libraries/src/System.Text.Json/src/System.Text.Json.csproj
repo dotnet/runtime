@@ -34,6 +34,7 @@
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderHelper.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderHelper.Date.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderHelper.Unescaping.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderOptions.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderState.cs" />
