@@ -24,6 +24,8 @@ struct CallCounterEntry
     int tier0CallCountLimit;
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    static CallCounterEntry CreateWithTier0CallCountingDisabled(const MethodDesc *m);
+
     bool IsTier0CallCountingEnabled() const
     {
         LIMITED_METHOD_CONTRACT;
