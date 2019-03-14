@@ -8053,12 +8053,11 @@ ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const **mantissas,
 }
 
 static gboolean
-add_modifier_to_array (MonoDomain *domain, MonoImage *image, MonoCustomMod *modifier, MonoArrayHandle dest, int dest_idx, MonoError *error)
+add_modifier_to_array (MonoDomain *domain, MonoType *type, MonoArrayHandle dest, int dest_idx, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
-	MonoClass *klass = mono_class_get_checked (image, modifier->token, error);
-	goto_if_nok (error, leave);
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
 
 	MonoReflectionTypeHandle rt;
 	rt = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
@@ -8079,13 +8078,16 @@ type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoE
 	int i, count = 0;
 	MonoDomain *domain = mono_domain_get ();
 
-	MonoCustomModContainer *cmods = mono_type_get_cmods (type);
-	if (!cmods)
+	int cmod_count = mono_type_custom_modifier_count (type);
+	if (cmod_count == 0)
 		goto fail;
 
 	error_init (error);
-	for (i = 0; i < cmods->count; ++i) {
-		if ((optional && !cmods->modifiers [i].required) || (!optional && cmods->modifiers [i].required))
+	for (i = 0; i < cmod_count; ++i) {
+		gboolean required;
+		(void) mono_type_get_custom_modifier (type, i, &required, error);
+		goto_if_nok (error, fail);
+		if ((optional && !required) || (!optional && required))
 			count++;
 	}
 	if (!count)
@@ -8095,9 +8097,12 @@ type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoE
 	res = mono_array_new_handle (domain, mono_defaults.systemtype_class, count, error);
 	goto_if_nok (error, fail);
 	count = 0;
-	for (i = cmods->count - 1; i >= 0; --i) {
-		if ((optional && !cmods->modifiers [i].required) || (!optional && cmods->modifiers [i].required)) {
-			if (!add_modifier_to_array (domain, image, &cmods->modifiers [i], res, count , error))
+	for (i = 0; i < cmod_count; ++i) {
+		gboolean required;
+		MonoType *cmod_type = mono_type_get_custom_modifier (type, i, &required, error);
+		goto_if_nok (error, fail);
+		if ((optional && !required) || (!optional && required)) {
+			if (!add_modifier_to_array (domain, cmod_type, res, count, error))
 				goto fail;
 			count++;
 		}

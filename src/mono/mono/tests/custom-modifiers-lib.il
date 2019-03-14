@@ -20,6 +20,7 @@ extends [mscorlib]System.Object
 {
 	.field public int32 modreq([mscorlib]System.Runtime.CompilerServices.IsBoxed) field_1
 	.field public int32 modopt([mscorlib]System.Runtime.CompilerServices.IsVolatile) field_2
+	.field public int32 modopt([mscorlib]System.Runtime.CompilerServices.IsLong) modopt([mscorlib]System.Runtime.CompilerServices.IsConst) field_3
 } // end of class CustomModifiers
 
 

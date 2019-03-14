@@ -438,10 +438,13 @@ get_custom_mod (MonoImage *m, const char *ptr, char **return_value)
 		ptr++;
 		ptr = get_encoded_typedef_or_ref (m, ptr, &s);
 
+		/* cmods are encoded in reverse order from how we want to print them.
+		 * "int32 modopt (Foo) modopt (Bar)" is encoded as "cmod_opt [typedef_or_ref "Bar"] cmod_opt [typedef_or_ref "Foo"] I4"
+		 */
 		if (*return_value == NULL)
 			*return_value = g_strconcat (" ", mod, " (", s, ")", NULL);
 		else
-			*return_value = g_strconcat (*return_value, " ", mod, " (", s, ")", NULL);
+			*return_value = g_strconcat (mod, " (", s, ") ", *return_value, NULL);
 		g_free (s);
 	}
 	return ptr;

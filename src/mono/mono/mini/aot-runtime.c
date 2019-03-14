@@ -667,23 +667,26 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 
 		int count = decode_value (p, &p);
 
-		t = (MonoType*)g_malloc0 (mono_sizeof_type_with_mods (count));
-		t->has_cmods = TRUE;
+		/* TODO: encode aggregate cmods differently than simple cmods and make it possible to use the more compact encoding here. */
+		t = (MonoType*)g_malloc0 (mono_sizeof_type_with_mods (count, TRUE));
+		mono_type_with_mods_init (t, count, TRUE);
 
-		MonoCustomModContainer *cm = mono_type_get_cmods (t);
-		int iindex = decode_value (p, &p);
-		cm->image = load_image (module, iindex, error);
-		if (!cm->image) {
-			g_free (t);
-			return NULL;
-		}
+		/* Try not to blow up the stack. See comment on MONO_MAX_EXPECTED_CMODS */
+		g_assert (count < MONO_MAX_EXPECTED_CMODS);
+		MonoAggregateModContainer *cm = g_alloca (mono_sizeof_aggregate_modifiers (count));
 		cm->count = count;
-		for (int i = 0; i < cm->count; ++i) {
-			cm->modifiers [i].required = decode_value (p, &p);
-			cm->modifiers [i].token = decode_value (p, &p);
+		for (int i = 0; i < count; ++i) {
+			MonoSingleCustomMod *cmod = &cm->modifiers [i];
+			cmod->required = decode_value (p, &p);
+			cmod->type = decode_type (module, p, &p, error);
+			goto_if_nok (error, fail);
 		}
+
+		mono_type_set_amods (t, mono_metadata_get_canonical_aggregate_modifiers (cm));
+		for (int i = 0; i < count; ++i)
+			mono_metadata_free_type (cm->modifiers [i].type);
 	} else {
-		t = (MonoType *) g_malloc0 (sizeof (MonoType));
+		t = (MonoType *) g_malloc0 (MONO_SIZEOF_TYPE);
 	}
 
 	while (TRUE) {

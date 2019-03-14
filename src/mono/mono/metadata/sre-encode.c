@@ -273,22 +273,39 @@ encode_custom_modifiers (MonoDynamicImage *assembly, MonoArrayHandle modreq, Mon
 
 	error_init (error);
 
-	if (!MONO_HANDLE_IS_NULL (modreq)) {
-		for (i = 0; i < mono_array_handle_length (modreq); ++i) {
-			MonoType *mod = mono_type_array_get_and_resolve (modreq, i, error);
-			goto_if_nok (error, leave);
-			sigbuffer_add_byte (buf, MONO_TYPE_CMOD_REQD);
-			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, mod));
-		}
-	}
+	/* Have to follow .NET Framework behavior here.  For an IL type spec like:
+	 * int32 modreq(A) modreq(B) modopt(C) modopt(D)
+	 *
+	 * we emit:
+	 * cmod_opt [encoding of D] cmod_opt [encoding of C] cmod_req [encoding of B] cmod_req [encoding of A] I4.
+	 *
+	 * Even though the reflection API specifies required and optional
+	 * modifiers in separate arrays, the .NET Framework creates a typespec
+	 * as above: required mods first, then optional.  (And so we emit the
+	 * optional ones first, then required).
+	 */
+
 	if (!MONO_HANDLE_IS_NULL (modopt)) {
-		for (i = 0; i < mono_array_handle_length (modopt); ++i) {
+		int count = mono_array_handle_length (modopt);
+		g_assert (count > 0);
+		for (i = count - 1; i >= 0 ; --i) {
 			MonoType *mod = mono_type_array_get_and_resolve (modopt, i, error);
 			goto_if_nok (error, leave);
 			sigbuffer_add_byte (buf, MONO_TYPE_CMOD_OPT);
 			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, mod));
 		}
 	}
+	if (!MONO_HANDLE_IS_NULL (modreq)) {
+		int count = mono_array_handle_length (modreq);
+		g_assert (count > 0);
+		for (i = count - 1; i >= 0 ; --i) {
+			MonoType *mod = mono_type_array_get_and_resolve (modreq, i, error);
+			goto_if_nok (error, leave);
+			sigbuffer_add_byte (buf, MONO_TYPE_CMOD_REQD);
+			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, mod));
+		}
+	}
+
 leave:
 	HANDLE_FUNCTION_RETURN ();
 }
