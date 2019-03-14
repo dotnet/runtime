@@ -1080,14 +1080,14 @@ namespace System.Diagnostics.Tests
             }
             catch (NotEmptyException)
             {
-                throw new TrueException(PrintProcesses(), false);
+                throw new TrueException(PrintProcesses(currentProcess), false);
             }
 
             Assert.All(processes, process => Assert.Equal(".", process.MachineName));
             return;
 
             // Outputs a list of active processes in case of failure: https://github.com/dotnet/corefx/issues/35783
-            string PrintProcesses()
+            string PrintProcesses(Process currentProcess)
             {
                 StringBuilder builder = new StringBuilder();
                 foreach (Process process in Process.GetProcesses())
@@ -1104,7 +1104,7 @@ namespace System.Diagnostics.Tests
                     builder.AppendLine();
                 }
                 
-                builder.AppendFormat("Current process id: {0}", Process.GetCurrentProcess().Id);
+                builder.AppendFormat("Current process id: {0} Process name: '{1}'", currentProcess.Id, currentProcess.ProcessName);
                 return builder.ToString();
             }
         }
