@@ -133,5 +133,140 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Verify(writer, "170D3137313131363137333530315A" + "830D3137313131363137333530315A");
             }
         }
+
+        [Theory]
+        [MemberData(nameof(TestCases))]
+        public void VerifyWriteUtcTime_RespectsYearMax_DER(DateTimeOffset input, string expectedHexPayload)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                Assert.Equal(0, writer.GetEncodedLength());
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "value",
+                    () => writer.WriteUtcTime(input, input.Year - 1));
+
+                Assert.Equal(0, writer.GetEncodedLength());
+
+                writer.WriteUtcTime(input, input.Year);
+                Assert.Equal(15, writer.GetEncodedLength());
+
+                writer.WriteUtcTime(input, input.Year + 99);
+                Assert.Equal(30, writer.GetEncodedLength());
+
+                writer.Reset();
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "value",
+                    () => writer.WriteUtcTime(input, input.Year + 100));
+
+                Assert.Equal(0, writer.GetEncodedLength());
+            }
+        }
+
+        [Fact]
+        public void VerifyWriteUtcTime_RespectsYearMax_UniversalLimit()
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.Private, 11);
+
+                // 1950 afte ToUniversal
+                writer.WriteUtcTime(
+                    tag,
+                    new DateTimeOffset(1949, 12, 31, 23, 11, 19, TimeSpan.FromHours(-8)),
+                    2049);
+
+                Assert.Equal(15, writer.GetEncodedLength());
+
+                // 1949 after ToUniversal
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "value",
+                    () =>
+                        writer.WriteUtcTime(
+                            tag,
+                            new DateTimeOffset(1950, 1, 1, 3, 11, 19, TimeSpan.FromHours(8)),
+                            2049));
+
+                Assert.Equal(15, writer.GetEncodedLength());
+
+                // 2050 after ToUniversal
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "value",
+                    () =>
+                        writer.WriteUtcTime(
+                            tag,
+                            new DateTimeOffset(2049, 12, 31, 23, 11, 19, TimeSpan.FromHours(-8)),
+                            2049));
+
+                Assert.Equal(15, writer.GetEncodedLength());
+
+                // 1950 afte ToUniversal
+                writer.WriteUtcTime(
+                    tag,
+                    new DateTimeOffset(2050, 1, 1, 3, 11, 19, TimeSpan.FromHours(8)),
+                    2049);
+
+                Assert.Equal(30, writer.GetEncodedLength());
+
+                string hex =
+                    Stringify(tag) + "0D3530303130313037313131395A" +
+                    Stringify(tag) + "0D3439313233313139313131395A";
+
+                Verify(writer, hex);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void WriteAfterDispose(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteNull();
+                }
+
+                writer.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteUtcTime(DateTimeOffset.Now));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "value",
+                    () => writer.WriteUtcTime(DateTimeOffset.Now, 1999));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "value",
+                    () => writer.WriteUtcTime(DateTimeOffset.Now, 8999));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteUtcTime(Asn1Tag.Integer, DateTimeOffset.Now));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteUtcTime(Asn1Tag.Integer, DateTimeOffset.Now, 1999));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => writer.WriteUtcTime(Asn1Tag.Integer, DateTimeOffset.Now, 8999));
+
+                Asn1Tag tag = new Asn1Tag(TagClass.Application, 3);
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.WriteUtcTime(tag, DateTimeOffset.Now));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "value",
+                    () => writer.WriteUtcTime(tag, DateTimeOffset.Now, 1999));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    "value",
+                    () => writer.WriteUtcTime(tag, DateTimeOffset.Now, 8999));
+            }
+        }
     }
 }

@@ -1574,12 +1574,12 @@ namespace System.Xml
 
         internal static Exception CreateReadContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
-            return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
+            return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadContentAs, methodName, nodeType), lineInfo));
         }
 
         internal static Exception CreateReadElementContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
         {
-            return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadElementContentAs, new string[] { methodName, nodeType.ToString() }), lineInfo));
+            return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadElementContentAs, methodName, nodeType), lineInfo));
         }
 
         private static string AddLineInfo(string message, IXmlLineInfo lineInfo)

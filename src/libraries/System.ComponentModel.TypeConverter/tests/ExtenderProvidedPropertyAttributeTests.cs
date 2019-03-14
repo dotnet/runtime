@@ -43,7 +43,14 @@ namespace System.ComponentModel.Tests
         public void Equals_NullProperties_ThrowsNullReferenceException()
         {
             var attribute = new ExtenderProvidedPropertyAttribute();
-            Assert.Throws<NullReferenceException>(() => attribute.Equals(new ExtenderProvidedPropertyAttribute()));
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.True(attribute.Equals(new ExtenderProvidedPropertyAttribute()));
+            }
+            else
+            {
+                Assert.Throws<NullReferenceException>(() => attribute.Equals(new ExtenderProvidedPropertyAttribute()));
+            }
         }
     }
 }

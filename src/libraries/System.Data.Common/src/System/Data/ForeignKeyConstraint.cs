@@ -345,7 +345,7 @@ namespace System.Data
                     }
                 default:
                     {
-                        Debug.Assert(false, "Unknown Rule value");
+                        Debug.Fail("Unknown Rule value");
                         break;
                     }
             }
@@ -479,7 +479,7 @@ namespace System.Data
                     }
                 default:
                     {
-                        Debug.Assert(false, "Unknown Rule value");
+                        Debug.Fail("Unknown Rule value");
                         break;
                     }
             }
@@ -542,7 +542,7 @@ namespace System.Data
                 }
                 else
                 {
-                    Debug.Assert(false, "attempt to cascade unknown action: " + action.ToString());
+                    Debug.Fail("attempt to cascade unknown action: " + action.ToString());
                 }
             }
             finally

@@ -434,7 +434,7 @@ namespace System.Data.SqlTypes
                     break;
 
                 default:
-                    Debug.Assert(false, "Invalid ecExpectedResult");
+                    Debug.Fail("Invalid ecExpectedResult");
                     return SqlBoolean.Null;
             }
 

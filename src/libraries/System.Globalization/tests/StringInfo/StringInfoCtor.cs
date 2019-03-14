@@ -10,7 +10,7 @@ namespace System.Globalization.Tests
     public class StringInfoCtorTests
     {
         [Fact]
-        public void Ctor_Empty()
+        public void Ctor_Default()
         {
             StringInfo stringInfo = new StringInfo();
             Assert.Equal(string.Empty, stringInfo.String);
@@ -41,9 +41,9 @@ namespace System.Globalization.Tests
         }
         
         [Fact]
-        public void Ctor_String_Null_ThrowsArgumentNullException()
+        public void Ctor_NullValue_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("String", () => new StringInfo(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", "String", () => new StringInfo(null));
         }
     }
 }

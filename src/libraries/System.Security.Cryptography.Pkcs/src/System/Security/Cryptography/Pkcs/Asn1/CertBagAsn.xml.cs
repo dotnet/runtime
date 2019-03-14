@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -22,7 +26,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             
             writer.WriteObjectIdentifier(CertId);
             writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            writer.WriteEncodedValue(CertValue);
+            writer.WriteEncodedValue(CertValue.Span);
             writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
             writer.PopSequence(tag);
         }
@@ -61,7 +65,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             decoded.CertId = sequenceReader.ReadObjectIdentifierAsString();
 
             explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            decoded.CertValue = explicitReader.GetEncodedValue();
+            decoded.CertValue = explicitReader.ReadEncodedValue();
             explicitReader.ThrowIfNotEmpty();
 
 

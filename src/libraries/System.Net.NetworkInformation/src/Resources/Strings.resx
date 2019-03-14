@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -86,7 +85,7 @@
     <value>No loopback interface was found on the local machine.</value>
   </data>
   <data name="net_InformationUnavailableOnPlatform" xml:space="preserve">
-    <value>The information requested in unavailable on the current platform.</value>
+    <value>The information requested is unavailable on the current platform.</value>
   </data>
   <data name="net_PInvokeError" xml:space="preserve">
     <value>An error was encountered while querying information from the operating system.</value>

@@ -63,4 +63,22 @@ DLLEXPORT uint32_t SystemNative_GetEGid(void);
 *
 * Returns 0 for success. On error, -1 is returned and errno is set.
 */
-DLLEXPORT int32_t SystemNative_SetEUid(uid_t euid);
+DLLEXPORT int32_t SystemNative_SetEUid(uint32_t euid);
+
+/**
+* Gets the list of groups to which a user belongs.
+* Implemented as a shim to getgrouplist.
+*
+* Returns number of groups for success.
+* If the buffer is too small, -1 is returned and ngroups contains the required size.
+* On error, -1 is returned and errno is set.
+*/
+DLLEXPORT int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* groups, int32_t* ngroups);
+
+/**
+* Gets and returns the real user's identity.
+* Implemented as shim to getuid(2).
+*
+* Always succeeds.
+*/
+DLLEXPORT uint32_t SystemNative_GetUid(void);

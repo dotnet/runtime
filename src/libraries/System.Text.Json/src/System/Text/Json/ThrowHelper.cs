@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
-    internal static class ThrowHelper
+    internal static partial class ThrowHelper
     {
         public static ArgumentException GetArgumentException_MaxDepthMustBePositive()
         {
@@ -150,7 +150,7 @@ namespace System.Text.Json
             }
             else
             {
-                return new InvalidOperationException(SR.Format(SR.EmptyJsonIsInvalid));
+                return new InvalidOperationException(SR.EmptyJsonIsInvalid);
             }
         }
 
@@ -236,7 +236,7 @@ namespace System.Text.Json
             switch (resource)
             {
                 case ExceptionResource.ArrayDepthTooLarge:
-                    message = SR.Format(SR.ArrayDepthTooLarge, json.CurrentDepth + 1, json.CurrentState.MaxDepth);
+                    message = SR.Format(SR.ArrayDepthTooLarge, json.CurrentDepth + 1, json.CurrentState.Options.MaxDepth);
                     break;
                 case ExceptionResource.MismatchedObjectArray:
                     message = SR.Format(SR.MismatchedObjectArray, character);
@@ -284,7 +284,7 @@ namespace System.Text.Json
                     message = SR.Format(SR.InvalidEndOfJsonNonPrimitive, json.TokenType);
                     break;
                 case ExceptionResource.ObjectDepthTooLarge:
-                    message = SR.Format(SR.ObjectDepthTooLarge, json.CurrentDepth + 1, json.CurrentState.MaxDepth);
+                    message = SR.Format(SR.ObjectDepthTooLarge, json.CurrentDepth + 1, json.CurrentState.Options.MaxDepth);
                     break;
                 case ExceptionResource.ExpectedFalse:
                     message = SR.Format(SR.ExpectedFalse, characters);
@@ -350,7 +350,7 @@ namespace System.Text.Json
                 builder.Append("...");
             }
 
-            throw new ArgumentException(SR.Format(SR.CannotWriteInvalidUTF8, builder.ToString()));
+            throw new ArgumentException(SR.Format(SR.CannotWriteInvalidUTF8, builder));
         }
 
         public static void ThrowArgumentException_InvalidUTF16(int charAsInt)
@@ -450,6 +450,26 @@ namespace System.Text.Json
             }
             return new FormatException(message);
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static FormatException GetFormatException(DateType dateType)
+        {
+            string message = "";
+
+            switch (dateType)
+            {
+                case DateType.DateTime:
+                    message = SR.FormatDateTime;
+                    break;
+                case DateType.DateTimeOffset:
+                    message = SR.FormatDateTimeOffset;
+                    break;
+                default:
+                    Debug.Fail($"The DateType enum value: {dateType} is not part of the switch. Add the appropriate case and exception message.");
+                    break;
+            }
+            return new FormatException(message);
+        }
     }
 
     internal enum ExceptionResource
@@ -499,5 +519,11 @@ namespace System.Text.Json
         Single,
         Double,
         Decimal
+    }
+
+    internal enum DateType
+    {
+        DateTime,
+        DateTimeOffset
     }
 }

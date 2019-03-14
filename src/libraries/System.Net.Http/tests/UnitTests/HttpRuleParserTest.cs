@@ -241,6 +241,8 @@ namespace System.Net.Http.Tests
             AssertGetCommentLength("((\\)))", 0, 6, HttpParseResult.Parsed); // ((\))) -> quoted-pair )
             AssertGetCommentLength("((\\())", 0, 6, HttpParseResult.Parsed); // ((\()) -> quoted-pair (
             AssertGetCommentLength("((x)))", 0, 5, HttpParseResult.Parsed); // final ) ignored
+            AssertGetCommentLength("(x (y)(z))", 0, 10, HttpParseResult.Parsed);
+            AssertGetCommentLength("(x(y)\\()", 0, 8, HttpParseResult.Parsed);
         }
 
         [Fact]
@@ -257,6 +259,12 @@ namespace System.Net.Http.Tests
             // of nested comments. I.e. the following comment is considered invalid since it is considered a 
             // "malicious" comment.
             AssertGetCommentLength("((((((((((x))))))))))", 0, 0, HttpParseResult.InvalidFormat);
+            AssertGetCommentLength("(x(x)", 0, 0, HttpParseResult.InvalidFormat);
+            AssertGetCommentLength("(x(x(", 0, 0, HttpParseResult.InvalidFormat);
+            AssertGetCommentLength("(x(()", 0, 0, HttpParseResult.InvalidFormat);
+            AssertGetCommentLength("(()", 0, 0, HttpParseResult.InvalidFormat);
+            AssertGetCommentLength("(", 0, 0, HttpParseResult.InvalidFormat);
+            AssertGetCommentLength("((x)", 0, 0, HttpParseResult.InvalidFormat);
         }
 
         [Fact]

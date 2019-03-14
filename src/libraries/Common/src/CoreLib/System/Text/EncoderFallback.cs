@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Threading;
 
@@ -86,12 +87,14 @@ namespace System.Text
         // These help us with our performance and messages internally
         internal unsafe char* charStart;
         internal unsafe char* charEnd;
-        internal EncoderNLS encoder;
+        internal EncoderNLS encoder; // TODO: MAKE ME PRIVATE
         internal bool setEncoder;
         internal bool bUsedEncoder;
         internal bool bFallingBack = false;
         internal int iRecursionCount = 0;
         private const int iMaxRecursion = 250;
+        private Encoding encoding;
+        private int originalCharCount;
 
         // Internal Reset
         // For example, what if someone fails a conversion and wants to reset one of our fallback buffers?
@@ -116,12 +119,192 @@ namespace System.Text
             this.iRecursionCount = 0;
         }
 
+        internal static EncoderFallbackBuffer CreateAndInitialize(Encoding encoding, EncoderNLS encoder, int originalCharCount)
+        {
+            // The original char count is only used for keeping track of what 'index' value needs
+            // to be passed to the abstract Fallback method. The index value is calculated by subtracting
+            // 'chars.Length' (where chars is expected to be the entire remaining input buffer)
+            // from the 'originalCharCount' value specified here.
+
+            EncoderFallbackBuffer fallbackBuffer = (encoder is null) ? encoding.EncoderFallback.CreateFallbackBuffer() : encoder.FallbackBuffer;
+
+            fallbackBuffer.encoding = encoding;
+            fallbackBuffer.encoder = encoder;
+            fallbackBuffer.originalCharCount = originalCharCount;
+
+            return fallbackBuffer;
+        }
+
         internal char InternalGetNextChar()
         {
             char ch = GetNextChar();
             bFallingBack = (ch != 0);
             if (ch == 0) iRecursionCount = 0;
             return ch;
+        }
+
+        private bool InternalFallback(ReadOnlySpan<char> chars, out int charsConsumed)
+        {
+            Debug.Assert(!chars.IsEmpty, "Caller shouldn't invoke this if there's no data to fall back.");
+
+            // First, try falling back a single BMP character or a standalone low surrogate.
+            // If the first char is a high surrogate, we'll try to combine it with the next
+            // char in the input sequence.
+
+            char firstChar = chars[0];
+            char secondChar = default;
+
+            if (!chars.IsEmpty)
+            {
+                firstChar = chars[0];
+
+                if (1 < (uint)chars.Length)
+                {
+                    secondChar = chars[1];
+                }
+            }
+
+            // Ask the subclassed type to initiate fallback logic.
+
+            int index = originalCharCount - chars.Length;
+
+            if (!char.IsSurrogatePair(firstChar, secondChar))
+            {
+                // This code path is also used when 'firstChar' is a standalone surrogate or
+                // if it's a high surrogate at the end of the input buffer.
+
+                charsConsumed = 1;
+                return Fallback(firstChar, index);
+            }
+            else
+            {
+                charsConsumed = 2;
+                return Fallback(firstChar, secondChar, index);
+            }
+        }
+
+        internal int InternalFallbackGetByteCount(ReadOnlySpan<char> chars, out int charsConsumed)
+        {
+            int bytesWritten = 0;
+
+            if (InternalFallback(chars, out charsConsumed))
+            {
+                // There's data in the fallback buffer - pull it out now.
+
+                bytesWritten = DrainRemainingDataForGetByteCount();
+            }
+
+            return bytesWritten;
+        }
+
+        internal bool TryInternalFallbackGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsConsumed, out int bytesWritten)
+        {
+            if (InternalFallback(chars, out charsConsumed))
+            {
+                // There's data in the fallback buffer - pull it out now.
+
+                return TryDrainRemainingDataForGetBytes(bytes, out bytesWritten);
+            }
+            else
+            {
+                // There's no data in the fallback buffer.
+
+                bytesWritten = 0;
+                return true; // true = didn't run out of space in destination buffer
+            }
+        }
+
+        internal bool TryDrainRemainingDataForGetBytes(Span<byte> bytes, out int bytesWritten)
+        {
+            int originalBytesLength = bytes.Length;
+
+            Rune thisRune;
+            while ((thisRune = GetNextRune()).Value != 0)
+            {
+                switch (encoding.EncodeRune(thisRune, bytes, out int bytesWrittenJustNow))
+                {
+                    case OperationStatus.Done:
+
+                        bytes = bytes.Slice(bytesWrittenJustNow);
+                        continue;
+
+                    case OperationStatus.DestinationTooSmall:
+
+                        // Since we're not consuming the Rune we just read, back up as many chars as necessary
+                        // to undo the read we just performed, then report to our caller that we ran out of space.
+
+                        for (int i = 0; i < thisRune.Utf16SequenceLength; i++)
+                        {
+                            MovePrevious();
+                        }
+
+                        bytesWritten = originalBytesLength - bytes.Length;
+                        return false; // ran out of destination buffer
+
+                    case OperationStatus.InvalidData:
+
+                        // We can't fallback the fallback. We can't make forward progress, so report to our caller
+                        // that something went terribly wrong. The error message contains the fallback char that
+                        // couldn't be converted. (Ideally we'd provide the first char that originally triggered
+                        // the fallback, but it's complicated to keep this state around, and a fallback producing
+                        // invalid data should be a very rare occurrence.)
+
+                        ThrowLastCharRecursive(thisRune.Value);
+                        break; // will never be hit; call above throws
+
+                    default:
+
+                        Debug.Fail("Unexpected return value.");
+                        break;
+                }
+            }
+
+            bytesWritten = originalBytesLength - bytes.Length;
+            return true; // finished successfully
+        }
+
+        internal int DrainRemainingDataForGetByteCount()
+        {
+            int totalByteCount = 0;
+
+            Rune thisRune;
+            while ((thisRune = GetNextRune()).Value != 0)
+            {
+                if (!encoding.TryGetByteCount(thisRune, out int byteCountThisIteration))
+                {
+                    // We can't fallback the fallback. We can't make forward progress, so report to our caller
+                    // that something went terribly wrong. The error message contains the fallback char that
+                    // couldn't be converted. (Ideally we'd provide the first char that originally triggered
+                    // the fallback, but it's complicated to keep this state around, and a fallback producing
+                    // invalid data should be a very rare occurrence.)
+
+                    ThrowLastCharRecursive(thisRune.Value);
+                }
+
+                Debug.Assert(byteCountThisIteration >= 0, "Encoding shouldn't have returned a negative byte count.");
+
+                // We need to check for overflow while tallying the fallback byte count.
+
+                totalByteCount += byteCountThisIteration;
+                if (totalByteCount < 0)
+                {
+                    InternalReset();
+                    Encoding.ThrowConversionOverflow();
+                }
+            }
+
+            return totalByteCount;
+        }
+
+        private Rune GetNextRune()
+        {
+            char firstChar = GetNextChar();
+            if (Rune.TryCreate(firstChar, out Rune value) || Rune.TryCreate(firstChar, GetNextChar(), out value))
+            {
+                return value;
+            }
+
+            throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
         }
 
         // Fallback the current character using the remaining buffer and encoder if necessary

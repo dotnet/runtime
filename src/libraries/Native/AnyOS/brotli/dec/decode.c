@@ -6,10 +6,6 @@
 
 #include <brotli/decode.h>
 
-#if defined(__ARM_NEON__)
-#include <arm_neon.h>
-#endif
-
 #include <stdlib.h>  /* free, malloc */
 #include <string.h>  /* memcpy, memset */
 
@@ -23,6 +19,10 @@
 #include "./huffman.h"
 #include "./prefix.h"
 #include "./state.h"
+
+#if defined(BROTLI_TARGET_NEON)
+#include <arm_neon.h>
+#endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -167,7 +167,7 @@ static BrotliDecoderErrorCode DecodeWindowBits(BrotliDecoderState* s,
 }
 
 static BROTLI_INLINE void memmove16(uint8_t* dst, uint8_t* src) {
-#if defined(__ARM_NEON__)
+#if defined(BROTLI_TARGET_NEON)
   vst1q_u8(dst, vld1q_u8(src));
 #else
   uint32_t buffer[4];
@@ -347,15 +347,17 @@ static BrotliDecoderErrorCode BROTLI_NOINLINE DecodeMetaBlockLength(
 static BROTLI_INLINE uint32_t DecodeSymbol(uint32_t bits,
                                            const HuffmanCode* table,
                                            BrotliBitReader* br) {
-  table += bits & HUFFMAN_TABLE_MASK;
-  if (table->bits > HUFFMAN_TABLE_BITS) {
-    uint32_t nbits = table->bits - HUFFMAN_TABLE_BITS;
+  BROTLI_HC_MARK_TABLE_FOR_FAST_LOAD(table);
+  BROTLI_HC_ADJUST_TABLE_INDEX(table, bits & HUFFMAN_TABLE_MASK);
+  if (BROTLI_HC_FAST_LOAD_BITS(table) > HUFFMAN_TABLE_BITS) {
+    uint32_t nbits = BROTLI_HC_FAST_LOAD_BITS(table) - HUFFMAN_TABLE_BITS;
     BrotliDropBits(br, HUFFMAN_TABLE_BITS);
-    table += table->value;
-    table += (bits >> HUFFMAN_TABLE_BITS) & BitMask(nbits);
+    BROTLI_HC_ADJUST_TABLE_INDEX(table,
+        BROTLI_HC_FAST_LOAD_VALUE(table) +
+        ((bits >> HUFFMAN_TABLE_BITS) & BitMask(nbits)));
   }
-  BrotliDropBits(br, table->bits);
-  return table->value;
+  BrotliDropBits(br, BROTLI_HC_FAST_LOAD_BITS(table));
+  return BROTLI_HC_FAST_LOAD_VALUE(table);
 }
 
 /* Reads and decodes the next Huffman code from bit-stream.
@@ -371,19 +373,20 @@ static BROTLI_NOINLINE BROTLI_BOOL SafeDecodeSymbol(
     const HuffmanCode* table, BrotliBitReader* br, uint32_t* result) {
   uint32_t val;
   uint32_t available_bits = BrotliGetAvailableBits(br);
+  BROTLI_HC_MARK_TABLE_FOR_FAST_LOAD(table);
   if (available_bits == 0) {
-    if (table->bits == 0) {
-      *result = table->value;
+    if (BROTLI_HC_FAST_LOAD_BITS(table) == 0) {
+      *result = BROTLI_HC_FAST_LOAD_VALUE(table);
       return BROTLI_TRUE;
     }
     return BROTLI_FALSE;  /* No valid bits at all. */
   }
   val = (uint32_t)BrotliGetBitsUnmasked(br);
-  table += val & HUFFMAN_TABLE_MASK;
-  if (table->bits <= HUFFMAN_TABLE_BITS) {
-    if (table->bits <= available_bits) {
-      BrotliDropBits(br, table->bits);
-      *result = table->value;
+  BROTLI_HC_ADJUST_TABLE_INDEX(table, val & HUFFMAN_TABLE_MASK);
+  if (BROTLI_HC_FAST_LOAD_BITS(table) <= HUFFMAN_TABLE_BITS) {
+    if (BROTLI_HC_FAST_LOAD_BITS(table) <= available_bits) {
+      BrotliDropBits(br, BROTLI_HC_FAST_LOAD_BITS(table));
+      *result = BROTLI_HC_FAST_LOAD_VALUE(table);
       return BROTLI_TRUE;
     } else {
       return BROTLI_FALSE;  /* Not enough bits for the first level. */
@@ -394,15 +397,15 @@ static BROTLI_NOINLINE BROTLI_BOOL SafeDecodeSymbol(
   }
 
   /* Speculatively drop HUFFMAN_TABLE_BITS. */
-  val = (val & BitMask(table->bits)) >> HUFFMAN_TABLE_BITS;
+  val = (val & BitMask(BROTLI_HC_FAST_LOAD_BITS(table))) >> HUFFMAN_TABLE_BITS;
   available_bits -= HUFFMAN_TABLE_BITS;
-  table += table->value + val;
-  if (available_bits < table->bits) {
+  BROTLI_HC_ADJUST_TABLE_INDEX(table, BROTLI_HC_FAST_LOAD_VALUE(table) + val);
+  if (available_bits < BROTLI_HC_FAST_LOAD_BITS(table)) {
     return BROTLI_FALSE;  /* Not enough bits for the second level. */
   }
 
-  BrotliDropBits(br, HUFFMAN_TABLE_BITS + table->bits);
-  *result = table->value;
+  BrotliDropBits(br, HUFFMAN_TABLE_BITS + BROTLI_HC_FAST_LOAD_BITS(table));
+  *result = BROTLI_HC_FAST_LOAD_VALUE(table);
   return BROTLI_TRUE;
 }
 
@@ -425,9 +428,10 @@ static BROTLI_INLINE void PreloadSymbol(int safe,
   if (safe) {
     return;
   }
-  table += BrotliGetBits(br, HUFFMAN_TABLE_BITS);
-  *bits = table->bits;
-  *value = table->value;
+  BROTLI_HC_MARK_TABLE_FOR_FAST_LOAD(table);
+  BROTLI_HC_ADJUST_TABLE_INDEX(table, BrotliGetBits(br, HUFFMAN_TABLE_BITS));
+  *bits = BROTLI_HC_FAST_LOAD_BITS(table);
+  *value = BROTLI_HC_FAST_LOAD_VALUE(table);
 }
 
 /* Decodes the next Huffman code using data prepared by PreloadSymbol.
@@ -441,10 +445,11 @@ static BROTLI_INLINE uint32_t ReadPreloadedSymbol(const HuffmanCode* table,
     uint32_t val = BrotliGet16BitsUnmasked(br);
     const HuffmanCode* ext = table + (val & HUFFMAN_TABLE_MASK) + *value;
     uint32_t mask = BitMask((*bits - HUFFMAN_TABLE_BITS));
+    BROTLI_HC_MARK_TABLE_FOR_FAST_LOAD(ext);
     BrotliDropBits(br, HUFFMAN_TABLE_BITS);
-    ext += (val >> HUFFMAN_TABLE_BITS) & mask;
-    BrotliDropBits(br, ext->bits);
-    result = ext->value;
+    BROTLI_HC_ADJUST_TABLE_INDEX(ext, (val >> HUFFMAN_TABLE_BITS) & mask);
+    BrotliDropBits(br, BROTLI_HC_FAST_LOAD_BITS(ext));
+    result = BROTLI_HC_FAST_LOAD_VALUE(ext);
   } else {
     BrotliDropBits(br, *bits);
   }
@@ -597,6 +602,7 @@ static BrotliDecoderErrorCode ReadSymbolCodeLengths(
   while (symbol < alphabet_size && space > 0) {
     const HuffmanCode* p = s->table;
     uint32_t code_len;
+    BROTLI_HC_MARK_TABLE_FOR_FAST_LOAD(p);
     if (!BrotliCheckInputAmount(br, BROTLI_SHORT_FILL_BIT_WINDOW_READ)) {
       s->symbol = symbol;
       s->repeat = repeat;
@@ -606,10 +612,10 @@ static BrotliDecoderErrorCode ReadSymbolCodeLengths(
       return BROTLI_DECODER_NEEDS_MORE_INPUT;
     }
     BrotliFillBitWindow16(br);
-    p += BrotliGetBitsUnmasked(br) &
-        BitMask(BROTLI_HUFFMAN_MAX_CODE_LENGTH_CODE_LENGTH);
-    BrotliDropBits(br, p->bits);  /* Use 1..5 bits. */
-    code_len = p->value;  /* code_len == 0..17 */
+    BROTLI_HC_ADJUST_TABLE_INDEX(p, BrotliGetBitsUnmasked(br) &
+        BitMask(BROTLI_HUFFMAN_MAX_CODE_LENGTH_CODE_LENGTH));
+    BrotliDropBits(br, BROTLI_HC_FAST_LOAD_BITS(p));  /* Use 1..5 bits. */
+    code_len = BROTLI_HC_FAST_LOAD_VALUE(p);  /* code_len == 0..17 */
     if (code_len < BROTLI_REPEAT_PREVIOUS_CODE_LENGTH) {
       ProcessSingleCodeLength(code_len, &symbol, &repeat, &space,
           &prev_code_len, symbol_lists, code_length_histo, next_symbol);
@@ -637,31 +643,34 @@ static BrotliDecoderErrorCode SafeReadSymbolCodeLengths(
     uint32_t code_len;
     uint32_t available_bits;
     uint32_t bits = 0;
+    BROTLI_HC_MARK_TABLE_FOR_FAST_LOAD(p);
     if (get_byte && !BrotliPullByte(br)) return BROTLI_DECODER_NEEDS_MORE_INPUT;
     get_byte = BROTLI_FALSE;
     available_bits = BrotliGetAvailableBits(br);
     if (available_bits != 0) {
       bits = (uint32_t)BrotliGetBitsUnmasked(br);
     }
-    p += bits & BitMask(BROTLI_HUFFMAN_MAX_CODE_LENGTH_CODE_LENGTH);
-    if (p->bits > available_bits) {
+    BROTLI_HC_ADJUST_TABLE_INDEX(p,
+        bits & BitMask(BROTLI_HUFFMAN_MAX_CODE_LENGTH_CODE_LENGTH));
+    if (BROTLI_HC_FAST_LOAD_BITS(p) > available_bits) {
       get_byte = BROTLI_TRUE;
       continue;
     }
-    code_len = p->value;  /* code_len == 0..17 */
+    code_len = BROTLI_HC_FAST_LOAD_VALUE(p);  /* code_len == 0..17 */
     if (code_len < BROTLI_REPEAT_PREVIOUS_CODE_LENGTH) {
-      BrotliDropBits(br, p->bits);
+      BrotliDropBits(br, BROTLI_HC_FAST_LOAD_BITS(p));
       ProcessSingleCodeLength(code_len, &s->symbol, &s->repeat, &s->space,
           &s->prev_code_len, s->symbol_lists, s->code_length_histo,
           s->next_symbol);
     } else {  /* code_len == 16..17, extra_bits == 2..3 */
       uint32_t extra_bits = code_len - 14U;
-      uint32_t repeat_delta = (bits >> p->bits) & BitMask(extra_bits);
-      if (available_bits < p->bits + extra_bits) {
+      uint32_t repeat_delta = (bits >> BROTLI_HC_FAST_LOAD_BITS(p)) &
+          BitMask(extra_bits);
+      if (available_bits < BROTLI_HC_FAST_LOAD_BITS(p) + extra_bits) {
         get_byte = BROTLI_TRUE;
         continue;
       }
-      BrotliDropBits(br, p->bits + extra_bits);
+      BrotliDropBits(br, BROTLI_HC_FAST_LOAD_BITS(p) + extra_bits);
       ProcessRepeatedCodeLength(code_len, repeat_delta, alphabet_size,
           &s->symbol, &s->repeat, &s->space, &s->prev_code_len,
           &s->repeat_code_len, s->symbol_lists, s->code_length_histo,

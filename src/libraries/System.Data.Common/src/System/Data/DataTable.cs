@@ -5150,7 +5150,7 @@ namespace System.Data
                             }
                             break;
                         case DataRowState.Deleted:
-                            Debug.Assert(false, "LoadOption.Upsert with deleted row, should not be here");
+                            Debug.Fail("LoadOption.Upsert with deleted row, should not be here");
                             break;
                         default:
                             action = DataRowAction.Change;

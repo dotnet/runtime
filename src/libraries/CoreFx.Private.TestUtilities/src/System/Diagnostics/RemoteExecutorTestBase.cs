@@ -290,6 +290,9 @@ namespace System.Diagnostics
             {
                 psi.FileName = "sudo";
                 psi.Arguments = HostRunner + " " + testConsoleAppArgs;
+
+                // Create exception file up front so there are no permission issue when RemoteInvokeHandle tries to delete it.
+                File.WriteAllText(options.ExceptionFile, "");
             }
             else
             {
@@ -372,7 +375,8 @@ namespace System.Diagnostics
                         Assert.True(Process.WaitForExit(Options.TimeOut),
                             $"Timed out after {Options.TimeOut}ms waiting for remote process {Process.Id}");
 
-                        if (File.Exists(Options.ExceptionFile))
+                        FileInfo exceptionFileInfo = new FileInfo(Options.ExceptionFile);
+                        if (exceptionFileInfo.Exists && exceptionFileInfo.Length != 0)
                         {
                             throw new RemoteExecutionException(File.ReadAllText(Options.ExceptionFile));
                         }

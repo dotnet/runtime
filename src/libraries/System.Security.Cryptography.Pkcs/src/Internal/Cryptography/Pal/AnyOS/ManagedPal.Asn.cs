@@ -38,7 +38,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             try
             {
-                if (!reader.TryGetPrimitiveOctetStringBytes(out var contents))
+                if (!reader.TryReadPrimitiveOctetStringBytes(out var contents))
                 {
                     if (reader.TryCopyOctetStringBytes(tmp, out int bytesWritten))
                     {
@@ -78,7 +78,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         public override byte[] EncodeUtcTime(DateTime utcTime)
         {
-            const int minLegalYear = 1950;
+            const int maxLegalYear = 2049;
             // Write using DER to support the most readers.
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
@@ -90,11 +90,11 @@ namespace Internal.Cryptography.Pal.AnyOS
                     // Unknown => Local (adjust) => UTC (adjust "back", add Z marker; matches Windows)
                     if (utcTime.Kind == DateTimeKind.Unspecified)
                     {
-                        writer.WriteUtcTime(utcTime.ToLocalTime(), minLegalYear);
+                        writer.WriteUtcTime(utcTime.ToLocalTime(), maxLegalYear);
                     }
                     else
                     {
-                        writer.WriteUtcTime(utcTime, minLegalYear);
+                        writer.WriteUtcTime(utcTime, maxLegalYear);
                     }
 
                     return writer.Encode();
@@ -110,7 +110,7 @@ namespace Internal.Cryptography.Pal.AnyOS
         {
             // Read using BER because the CMS specification says the encoding is BER.
             AsnReader reader = new AsnReader(encodedUtcTime, AsnEncodingRules.BER);
-            DateTimeOffset value = reader.GetUtcTime();
+            DateTimeOffset value = reader.ReadUtcTime();
             reader.ThrowIfNotEmpty();
             return value.UtcDateTime;
         }

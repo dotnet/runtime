@@ -1,17 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <PropertyGroup>
     <!-- Enable targeting netcoreapp3.0 even in an older CLI -->
     <NETCoreAppMaximumVersion>3.0</NETCoreAppMaximumVersion>
     <!-- use the most recent MS.NETCore.App we have from upstack -->
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <!-- unsafe is part of the framework but we don't yet have a MicrosoftNETCoreAppPackageVersion with that change -->
-    <IgnoredReference Include="System.Runtime.CompilerServices.Unsafe"/>
+  <!-- Unix CoreLib contains EventRegistrationToken but no other
+       types from System.Runtime.InteropServices.WindowsRuntime.
+       https://github.com/dotnet/corefx/issues/35792 -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != '' AND !$(RuntimeIdentifier.StartsWith('win'))">
+    <IgnoredTypes Include="System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken" />
   </ItemGroup>
-  <Target Name="CheckForWorkaroundRemoval" AfterTargets="ResolveReferences">
-    <Error Condition="'%(Reference.FileName)' == 'System.Runtime.CompilerServices.Unsafe' AND '%(Reference.NuGetPackageId)' == 'Microsoft.NETCore.App'"
-           Text="Please remove IgnoredReference workaround from pkg\test\frameworkSettings\netcoreapp3.0\settings.targets" />
-  </Target>
 </Project>

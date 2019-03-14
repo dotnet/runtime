@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Store(StoreName storeName, StoreLocation storeLocation)
         {
             if (storeLocation != StoreLocation.CurrentUser && storeLocation != StoreLocation.LocalMachine)
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, nameof(storeLocation)));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(storeLocation)));
 
             switch (storeName)
             {
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Name = "TrustedPublisher";
                     break;
                 default:
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, nameof(storeName)));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(storeName)));
             }
 
             Location = storeLocation;
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Store(string storeName, StoreLocation storeLocation)
         {
             if (storeLocation != StoreLocation.CurrentUser && storeLocation != StoreLocation.LocalMachine)
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, nameof(storeLocation)));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, nameof(storeLocation)));
 
             Location = storeLocation;
             Name = storeName;

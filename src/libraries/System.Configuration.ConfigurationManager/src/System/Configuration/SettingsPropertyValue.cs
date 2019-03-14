@@ -151,12 +151,12 @@ namespace System.Configuration
                     }
                     catch (Exception e)
                     {
-                        throw new ArgumentException(string.Format(SR.Could_not_create_from_default_value, Property.Name, e.Message));
+                        throw new ArgumentException(SR.Format(SR.Could_not_create_from_default_value, Property.Name, e.Message));
                     }
                 }
 
                 if (value != null && !Property.PropertyType.IsAssignableFrom(value.GetType())) // is it the correct type
-                    throw new ArgumentException(string.Format(SR.Could_not_create_from_default_value_2, Property.Name));
+                    throw new ArgumentException(SR.Format(SR.Could_not_create_from_default_value_2, Property.Name));
             }
 
             // Attempt 3: Create via the parameterless constructor
@@ -206,7 +206,7 @@ namespace System.Configuration
                     TypeConverter converter = TypeDescriptor.GetConverter(type);
                     if (converter != null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
                         return converter.ConvertFromInvariantString(serializedValue);
-                    throw new ArgumentException(string.Format(SR.Unable_to_convert_type_from_string, type.ToString()), nameof(type));
+                    throw new ArgumentException(SR.Format(SR.Unable_to_convert_type_from_string, type), nameof(type));
                 default:
                     return null;
             }
@@ -246,7 +246,7 @@ namespace System.Configuration
                         TypeConverter converter = TypeDescriptor.GetConverter(type);
                         if (converter != null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
                             return converter.ConvertToInvariantString(propertyValue);
-                        throw new ArgumentException(string.Format(SR.Unable_to_convert_type_to_string, type.ToString()), nameof(type));
+                        throw new ArgumentException(SR.Format(SR.Unable_to_convert_type_to_string, type), nameof(type));
                     case SettingsSerializeAs.Xml:
                         XmlSerializer xs = new XmlSerializer(type);
                         StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);

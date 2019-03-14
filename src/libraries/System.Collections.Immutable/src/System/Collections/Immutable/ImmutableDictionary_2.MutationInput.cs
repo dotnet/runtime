@@ -60,6 +60,14 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Gets the set of comparers.
+            /// </summary>
+            internal Comparers Comparers
+            {
+                get { return _comparers; }
+            }
+
+            /// <summary>
             /// Gets the key comparer.
             /// </summary>
             internal IEqualityComparer<TKey> KeyComparer

@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] data = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(data, (AsnEncodingRules)ruleSet);
 
-            Assert.Throws<CryptographicException>(() => reader.GetIntegerBytes());
+            Assert.Throws<CryptographicException>(() => reader.ReadIntegerBytes());
         }
 
         [Theory]
@@ -403,7 +403,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Fact]
-        public static void GetIntegerBytes()
+        public static void ReadIntegerBytes()
         {
             const string Payload = "0102030405060708090A0B0C0D0E0F10";
 
@@ -411,7 +411,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] data = ("0210" + Payload + "020100").HexToByteArray();
             AsnReader reader = new AsnReader(data, AsnEncodingRules.DER);
 
-            ReadOnlyMemory<byte> contents = reader.GetIntegerBytes();
+            ReadOnlyMemory<byte> contents = reader.ReadIntegerBytes();
             Assert.Equal(0x10, contents.Length);
             Assert.Equal(Payload, contents.ByteArrayToHex());
         }
@@ -446,7 +446,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 "79473593821332264673455059897928082590541");
 
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            Assert.Equal(expected, reader.GetInteger());
+            Assert.Equal(expected, reader.ReadInteger());
         }
 
         [Theory]
@@ -484,7 +484,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 "86109928634475300812601680679147599027");
 
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            Assert.Equal(expected, reader.GetInteger());
+            Assert.Equal(expected, reader.ReadInteger());
         }
 
         [Theory]
@@ -519,7 +519,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 "79473593821332264673455059897928082590541") >> 8;
 
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            Assert.Equal(expected, reader.GetInteger());
+            Assert.Equal(expected, reader.ReadInteger());
         }
 
         [Theory]
@@ -533,15 +533,15 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.GetIntegerBytes(Asn1Tag.Null));
+                () => reader.ReadIntegerBytes(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.GetIntegerBytes(new Asn1Tag(TagClass.ContextSpecific, 0)));
+            Assert.Throws<CryptographicException>(() => reader.ReadIntegerBytes(new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
-            ReadOnlyMemory<byte> value = reader.GetIntegerBytes();
+            ReadOnlyMemory<byte> value = reader.ReadIntegerBytes();
             Assert.Equal("7E", value.ByteArrayToHex());
             Assert.False(reader.HasData, "HasData after read");
         }
@@ -557,23 +557,23 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.GetIntegerBytes(Asn1Tag.Null));
+                () => reader.ReadIntegerBytes(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.GetIntegerBytes());
+            Assert.Throws<CryptographicException>(() => reader.ReadIntegerBytes());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
-            Assert.Throws<CryptographicException>(() => reader.GetIntegerBytes(new Asn1Tag(TagClass.Application, 0)));
+            Assert.Throws<CryptographicException>(() => reader.ReadIntegerBytes(new Asn1Tag(TagClass.Application, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
-            Assert.Throws<CryptographicException>(() => reader.GetIntegerBytes(new Asn1Tag(TagClass.ContextSpecific, 1)));
+            Assert.Throws<CryptographicException>(() => reader.ReadIntegerBytes(new Asn1Tag(TagClass.ContextSpecific, 1)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
-            ReadOnlyMemory<byte> value = reader.GetIntegerBytes(new Asn1Tag(TagClass.ContextSpecific, 7));
+            ReadOnlyMemory<byte> value = reader.ReadIntegerBytes(new Asn1Tag(TagClass.ContextSpecific, 7));
             Assert.Equal("0080", value.ByteArrayToHex());
             Assert.False(reader.HasData, "HasData after reading value");
         }
@@ -593,10 +593,10 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            ReadOnlyMemory<byte> val1 = reader.GetIntegerBytes(new Asn1Tag((TagClass)tagClass, tagValue, true));
+            ReadOnlyMemory<byte> val1 = reader.ReadIntegerBytes(new Asn1Tag((TagClass)tagClass, tagValue, true));
             Assert.False(reader.HasData);
             reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            ReadOnlyMemory<byte> val2 = reader.GetIntegerBytes(new Asn1Tag((TagClass)tagClass, tagValue, false));
+            ReadOnlyMemory<byte> val2 = reader.ReadIntegerBytes(new Asn1Tag((TagClass)tagClass, tagValue, false));
             Assert.False(reader.HasData);
 
             Assert.Equal(val1.ByteArrayToHex(), val2.ByteArrayToHex());

@@ -14,7 +14,6 @@
     <Compile Include="Drawing\RectangleConverterTests.cs" />
     <Compile Include="Drawing\SizeConverterTests.cs" />
     <Compile Include="Drawing\SizeFConverterTests.cs" />
-    <Compile Include="LicenseManagerInteropTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Design\Serialization\ComponentSerializationServiceTests.cs" />
