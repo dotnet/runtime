@@ -22,12 +22,14 @@ internal static partial class Interop
             long protocolListSize = 0;
             for (int i = 0; i < applicationProtocols.Count; i++)
             {
-                if (applicationProtocols[i].Protocol.Length == 0 || applicationProtocols[i].Protocol.Length > byte.MaxValue)
+                int protocolLength = applicationProtocols[i].Protocol.Length;
+
+                if (protocolLength == 0 || protocolLength > byte.MaxValue)
                 {
                     throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
                 }
 
-                protocolListSize += applicationProtocols[i].Protocol.Length + 1;
+                protocolListSize += protocolLength + 1;
 
                 if (protocolListSize > short.MaxValue)
                 {
@@ -51,9 +53,10 @@ internal static partial class Interop
 
             for (int i = 0; i < applicationProtocols.Count; i++)
             {
-                buffer[index++] = (byte)applicationProtocols[i].Protocol.Length;
-                applicationProtocols[i].Protocol.Span.CopyTo(buffer.AsSpan(index));
-                index += applicationProtocols[i].Protocol.Length;
+                ReadOnlySpan<byte> protocol = applicationProtocols[i].Protocol.Span;
+                buffer[index++] = (byte)protocol.Length;
+                protocol.CopyTo(buffer.AsSpan(index));
+                index += protocol.Length;
             }
 
             return buffer;
