@@ -290,23 +290,23 @@ namespace System.Runtime.Loader
         }
 #endif
 
-        [UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet = HostpolicyCharSet)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
         internal delegate void corehost_resolve_component_dependencies_result_fn(
             string assembly_paths,
             string native_search_paths,
             string resource_search_paths);
 
-        [UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet = HostpolicyCharSet)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
         internal delegate void corehost_error_writer_fn(
             string message);
 
 #pragma warning disable BCL0015 // Disable Pinvoke analyzer errors.
-        [DllImport("hostpolicy", CharSet = HostpolicyCharSet)]
+        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
         private static extern int corehost_resolve_component_dependencies(
             string component_main_assembly_path,
             corehost_resolve_component_dependencies_result_fn result);
 
-        [DllImport("hostpolicy", CharSet = HostpolicyCharSet)]
+        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
         private static extern IntPtr corehost_set_error_writer(IntPtr error_writer);
 #pragma warning restore
     }
