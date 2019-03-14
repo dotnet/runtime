@@ -12,7 +12,7 @@ namespace System.Net.Http
     internal static class HttpRuleParser
     {
         private static readonly bool[] s_tokenChars = CreateTokenChars();
-        private const int maxNestedCount = 5;
+        private const int MaxNestedCount = 5;
 
         internal const char CR = (char)13;
         internal const char LF = (char)10;
@@ -306,14 +306,12 @@ namespace System.Net.Http
 
         internal static HttpParseResult GetCommentLength(string input, int startIndex, out int length)
         {
-            int nestedCount = 0;
-            return GetExpressionLength(input, startIndex, '(', ')', true, ref nestedCount, out length);
+            return GetExpressionLength(input, startIndex, '(', ')', true, 1, out length);
         }
 
         internal static HttpParseResult GetQuotedStringLength(string input, int startIndex, out int length)
         {
-            int nestedCount = 0;
-            return GetExpressionLength(input, startIndex, '"', '"', false, ref nestedCount, out length);
+            return GetExpressionLength(input, startIndex, '"', '"', false, 1, out length);
         }
 
         // quoted-pair = "\" CHAR
@@ -354,7 +352,7 @@ namespace System.Net.Http
         // comments, resulting in a stack overflow exception. In addition having more than 1 nested comment (if any)
         // is unusual.
         private static HttpParseResult GetExpressionLength(string input, int startIndex, char openChar,
-            char closeChar, bool supportsNesting, ref int nestedCount, out int length)
+            char closeChar, bool supportsNesting, int nestedCount, out int length)
         {
             Debug.Assert(input != null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
@@ -385,43 +383,35 @@ namespace System.Net.Http
                 // If we support nested expressions and we find an open-char, then parse the nested expressions.
                 if (supportsNesting && (input[current] == openChar))
                 {
-                    nestedCount++;
-                    try
+                    // Check if we exceeded the number of nested calls.
+                    if (nestedCount > MaxNestedCount)
                     {
-                        // Check if we exceeded the number of nested calls.
-                        if (nestedCount > maxNestedCount)
-                        {
-                            return HttpParseResult.InvalidFormat;
-                        }
-
-                        int nestedLength = 0;
-                        HttpParseResult nestedResult = GetExpressionLength(input, current, openChar, closeChar,
-                            supportsNesting, ref nestedCount, out nestedLength);
-
-                        switch (nestedResult)
-                        {
-                            case HttpParseResult.Parsed:
-                                current += nestedLength; // Add the length of the nested expression and continue.
-                                break;
-
-                            case HttpParseResult.NotParsed:
-                                Debug.Fail("'NotParsed' is unexpected: We started nested expression " +
-                                    "parsing, because we found the open-char. So either it's a valid nested " +
-                                    "expression or it has invalid format.");
-                                break;
-
-                            case HttpParseResult.InvalidFormat:
-                                // If the nested expression is invalid, we can't continue, so we fail with invalid format.
-                                return HttpParseResult.InvalidFormat;
-
-                            default:
-                                Debug.Fail("Unknown enum result: " + nestedResult);
-                                break;
-                        }
+                        return HttpParseResult.InvalidFormat;
                     }
-                    finally
+
+                    int nestedLength = 0;
+                    HttpParseResult nestedResult = GetExpressionLength(input, current, openChar, closeChar,
+                        supportsNesting, nestedCount + 1, out nestedLength);
+
+                    switch (nestedResult)
                     {
-                        nestedCount--;
+                        case HttpParseResult.Parsed:
+                            current += nestedLength; // Add the length of the nested expression and continue.
+                            break;
+
+                        case HttpParseResult.NotParsed:
+                            Debug.Fail("'NotParsed' is unexpected: We started nested expression " +
+                                "parsing, because we found the open-char. So either it's a valid nested " +
+                                "expression or it has invalid format.");
+                            break;
+
+                        case HttpParseResult.InvalidFormat:
+                            // If the nested expression is invalid, we can't continue, so we fail with invalid format.
+                            return HttpParseResult.InvalidFormat;
+
+                        default:
+                            Debug.Fail("Unknown enum result: " + nestedResult);
+                            break;
                     }
 
                     // after nested call we continue with parsing
