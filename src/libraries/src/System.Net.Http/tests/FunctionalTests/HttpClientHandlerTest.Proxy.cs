@@ -196,7 +196,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public async Task Proxy_SslProxyUnsupported_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

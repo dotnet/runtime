@@ -406,7 +406,7 @@ namespace System.Net.Sockets.Tests
             ReuseAddress(exclusiveAddressUse, firstSocketReuseAddress, secondSocketReuseAddress, expectFailure);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows defaults are different
         public void ExclusiveAddress_Default_Unix()
         {
@@ -418,7 +418,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [InlineData(1)]
         [InlineData(0)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix does not have separate options for ExclusiveAddressUse and ReuseAddress.
@@ -468,7 +468,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public void ExclusiveAddressUseTcp()
         {
             using (Socket a = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
