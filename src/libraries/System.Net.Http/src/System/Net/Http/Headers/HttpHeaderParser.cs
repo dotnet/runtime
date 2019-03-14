@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Net.Http.Headers
 {

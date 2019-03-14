@@ -128,10 +128,6 @@ namespace System.Threading.Tasks
                             || (null != (taskProvider as Func<IProgress<TProgressInfo>, Task>))
                             || (null != (taskProvider as Func<CancellationToken, IProgress<TProgressInfo>, Task>)));
 
-            Contract.Ensures(!this.CompletedSynchronously);
-
-            Contract.EndContractBlock();
-
             // The IAsyncInfo is reasonably expected to be created/started by the same code that wires up the Completed and Progress handlers.
             // Record the current SynchronizationContext so that we can invoke completion and progress callbacks in it later.
             _startingContext = GetStartingContext();
@@ -175,10 +171,6 @@ namespace System.Threading.Tasks
             if (underlyingTask.Status == TaskStatus.Created)
                 throw new InvalidOperationException(SR.InvalidOperation_UnstartedTaskSpecified);
 
-            Contract.Ensures(!this.CompletedSynchronously);
-
-            Contract.EndContractBlock();
-
             // The IAsyncInfo is reasonably expected to be created/started by the same code that wires up the Completed and Progress handlers.
             // Record the current SynchronizationContext so that we can invoke completion and progress callbacks in it later.
             _startingContext = GetStartingContext();
@@ -209,9 +201,6 @@ namespace System.Threading.Tasks
         /// <param name="synchronousResult">The result of this synchronously completed IAsyncInfo.</param>
         internal TaskToAsyncInfoAdapter(TResult synchronousResult)
         {
-            Contract.Ensures(this.CompletedSynchronously);
-            Contract.Ensures(this.IsInRunToCompletionState);
-
             // We already completed. There will be no progress callback invokations and a potential completed handler invokation will be synchronous.
             // We do not need the starting SynchronizationContext:
             _startingContext = null;
@@ -368,8 +357,6 @@ namespace System.Threading.Tasks
             get
             {
                 EnsureNotClosed();
-                Contract.Ensures(CompletedSynchronously || Contract.Result<Task>() != null);
-                Contract.EndContractBlock();
 
                 if (CompletedSynchronously)
                     return null;
@@ -761,8 +748,6 @@ namespace System.Threading.Tasks
 
         private Task InvokeTaskProvider(Delegate taskProvider)
         {
-            Contract.EndContractBlock();
-
             var funcVoidTask = taskProvider as Func<Task>;
             if (funcVoidTask != null)
             {

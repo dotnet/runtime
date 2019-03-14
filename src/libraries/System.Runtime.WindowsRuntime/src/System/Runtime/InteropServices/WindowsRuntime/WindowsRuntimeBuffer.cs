@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -37,11 +36,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
 
-            Contract.Ensures(Contract.Result<IBuffer>() != null);
-            Contract.Ensures(Contract.Result<IBuffer>().Length == unchecked((uint)0));
-            Contract.Ensures(Contract.Result<IBuffer>().Capacity == unchecked((uint)capacity));
-            Contract.EndContractBlock();
-
             return new WindowsRuntimeBuffer(capacity);
         }
 
@@ -56,12 +50,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (data.Length - offset < length) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (data.Length - offset < capacity) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (capacity < length) throw new ArgumentException(SR.Argument_InsufficientBufferCapacity);
-
-            Contract.Ensures(Contract.Result<IBuffer>() != null);
-            Contract.Ensures(Contract.Result<IBuffer>().Length == unchecked((uint)length));
-            Contract.Ensures(Contract.Result<IBuffer>().Capacity == unchecked((uint)capacity));
-
-            Contract.EndContractBlock();
 
             byte[] underlyingData = new byte[capacity];
             Buffer.BlockCopy(data, offset, underlyingData, 0, length);
@@ -130,8 +118,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity));
 
-            Contract.EndContractBlock();
-
             _data = new byte[capacity];
             _dataStartOffs = 0;
             _usefulDataLength = 0;
@@ -149,7 +135,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (data.Length - offset < length) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (data.Length - offset < capacity) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (capacity < length) throw new ArgumentException(SR.Argument_InsufficientBufferCapacity);
-            Contract.EndContractBlock();
 
             _data = data;
             _dataStartOffs = offset;

@@ -7,7 +7,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using Microsoft.Internal;
 
@@ -283,7 +282,7 @@ namespace System.ComponentModel.Composition.Hosting
             get
             {
                 ThrowIfDisposed();
-                Contract.Ensures(Contract.Result<ReadOnlyCollection<ExportProvider>>() != null);
+                Debug.Assert(_providers != null);
 
                 return _providers;
             }

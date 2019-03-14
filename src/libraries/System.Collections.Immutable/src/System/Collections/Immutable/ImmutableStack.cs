@@ -92,7 +92,6 @@ namespace System.Collections.Immutable
         public static IImmutableStack<T> Pop<T>(this IImmutableStack<T> stack, out T value)
         {
             Requires.NotNull(stack, nameof(stack));
-            Contract.Ensures(Contract.Result<IImmutableStack<T>>() != null);
 
             value = stack.Peek();
             return stack.Pop();

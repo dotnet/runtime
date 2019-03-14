@@ -5,7 +5,6 @@
 using Internal.Runtime.InteropServices.WindowsRuntime;
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -118,7 +117,6 @@ namespace System.Threading
         {
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
-            Contract.EndContractBlock();
 
             var ignored = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
         }
@@ -141,7 +139,6 @@ namespace System.Threading
         {
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
-            Contract.EndContractBlock();
 
             // We explicitly choose to ignore the return value here. This enqueue operation might fail if the 
             // dispatcher queue was shut down before we got here. In that case, we choose to just move on and
