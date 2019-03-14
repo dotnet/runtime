@@ -16,6 +16,16 @@
 
 #ifdef FEATURE_TIERED_COMPILATION
 
+CallCounterEntry CallCounterEntry::CreateWithTier0CallCountingDisabled(const MethodDesc *m)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(m != nullptr);
+
+    CallCounterEntry entry(m, INT_MAX);
+    _ASSERTE(!entry.IsTier0CallCountingEnabled());
+    return entry;
+}
+
 CallCounter::CallCounter()
 {
     LIMITED_METHOD_CONTRACT;
@@ -52,18 +62,25 @@ void CallCounter::DisableTier0CallCounting(MethodDesc* pMethodDesc)
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
     _ASSERTE(IsEligibleForTier0CallCounting(pMethodDesc));
 
-    SpinLockHolder holder(&m_lock);
-
-    CallCounterEntry *entry = const_cast<CallCounterEntry *>(m_methodToCallCount.LookupPtr(pMethodDesc));
-
     // Disabling call counting will affect the tier of the MethodDesc's first native code version. Callers must ensure that this
     // change is made deterministically and prior to or while jitting the first native code version such that the tier would not
     // be changed after it is already jitted. At that point, the call count threshold would already be initialized and the entry
     // would exist. To disable call counting at different points in time, it would be ok to do so if the method has not been
     // called yet (if the entry does not yet exist in the hash table), if necessary that could be a different function like
     // TryDisable...() that would fail to disable call counting if the method has already been called.
-    _ASSERTE(entry != nullptr);
-    entry->DisableTier0CallCounting();
+
+    SpinLockHolder holder(&m_lock);
+
+    CallCounterEntry *existingEntry = const_cast<CallCounterEntry *>(m_methodToCallCount.LookupPtr(pMethodDesc));
+    if (existingEntry != nullptr)
+    {
+        existingEntry->DisableTier0CallCounting();
+        return;
+    }
+
+    // Typically, the entry would already exist because OnMethodCalled() would have been called before this function on the same
+    // thread. With multi-core JIT, a function may be jitted before it is called, in which case the entry would not exist.
+    m_methodToCallCount.Add(CallCounterEntry::CreateWithTier0CallCountingDisabled(pMethodDesc));
 }
 
 // This is called by the prestub each time the method is invoked in a particular
