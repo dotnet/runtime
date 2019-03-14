@@ -1732,7 +1732,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         FireBulkTypeEvent();
     }
     
-    _ASSERTE(m_nBulkTypeValueCount < _countof(m_rgBulkTypeValues));
+    _ASSERTE(m_nBulkTypeValueCount < (int)_countof(m_rgBulkTypeValues));
 
     if (!th.IsTypeDesc() && th.GetMethodTable()->IsArray())
     {
@@ -6074,7 +6074,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
 
     LPCWSTR pEmptyString = W("");
-    SString moduleName = W("");
+    SString moduleName = SString::Empty();
 
     if(!bIsDynamicAssembly)
     {
