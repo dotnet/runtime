@@ -121,7 +121,6 @@ jobs:
           name: Hosted VS2017
 
       submitToHelix: true
-      enableMicrobuild: ${{ parameters.isOfficialBuild }}
       buildExtraArguments: /p:RuntimeOS=win10
 
       variables:
@@ -173,7 +172,6 @@ jobs:
         submitToHelix: true
         # azure pipelines reporter only supports xunit results based tests.
         enableAzurePipelinesReporter: false
-        enableMicrobuild: ${{ parameters.isOfficialBuild }}
 
         variables:
           - _outerloop: false
@@ -242,7 +240,6 @@ jobs:
             name: Hosted VS2017
 
         submitToHelix: false
-        enableMicrobuild: ${{ parameters.isOfficialBuild }}
         buildExtraArguments: /p:RuntimeOS=win10
 
         variables:
