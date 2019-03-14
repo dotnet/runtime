@@ -111,6 +111,9 @@
     <Compile Include="FindNativeDeps.cs" />
     <Compile Include="SetAssemblyActions.cs" />
     <Compile Include="Utils.cs" />
+    <Content Include="Sdk\Sdk.props">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <!-- Don't support enumerating runtime libraries in this version -->
     <None Include="GetRuntimeLibraries.cs" />
     <None Include="Microsoft.NET.Build.Tasks/LockFileCache.cs" />

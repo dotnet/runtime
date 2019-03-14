@@ -60,7 +60,7 @@ namespace Mono.Linker {
 				Driver driver = new Driver (args);
 				driver.Run (customLogger);
 
-			} catch (Exception e) {
+			} catch {
 				Console.Error.WriteLine ("Fatal error in {0}", _linker);
 				throw;
 			}
