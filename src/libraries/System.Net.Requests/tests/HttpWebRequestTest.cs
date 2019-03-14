@@ -1247,17 +1247,16 @@ namespace System.Net.Tests
             Assert.Equal(WebExceptionStatus.NameResolutionFailure, ex.Status);
         }
 
-        public static object[][] StatusCodeServers = {
-            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(false, 404) },
-            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(true, 404) },
-        };
-
-        [Theory, MemberData(nameof(StatusCodeServers))]
-        public async Task GetResponseAsync_ResourceNotFound_ThrowsWebException(Uri remoteServer)
+        [Fact]
+        public async Task GetResponseAsync_ResourceNotFound_ThrowsWebException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            WebException ex = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
-            Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                WebException ex = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
+                Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
+            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                $"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"));
         }
 
         [Theory, MemberData(nameof(EchoServers))]

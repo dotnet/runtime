@@ -187,7 +187,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketExceptionWithMessage(Uri server)
+        public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException(Uri server)
         {
             const string AcceptedProtocol = "CustomProtocol";
 
@@ -200,13 +200,13 @@ namespace System.Net.WebSockets.Client.Tests
 
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ConnectAsync(ub.Uri, cts.Token));
-
+                _output.WriteLine(ex.Message);
                 if (PlatformDetection.IsNetCore) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
                 {
-                    Assert.Equal(WebSocketError.Faulted, ex.WebSocketErrorCode);
+                    Assert.True(ex.WebSocketErrorCode == WebSocketError.Faulted ||
+                        ex.WebSocketErrorCode == WebSocketError.NotAWebSocket);
                 }
                 Assert.Equal(WebSocketState.Closed, cws.State);
-                Assert.Equal(ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure"), ex.Message);
             }
         }
 
