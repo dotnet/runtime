@@ -103,11 +103,13 @@ class Program
 	static int Main (string[] args)
 	{
 		if (args.Length < 3) {
-			Console.WriteLine ("Usage: <outfile> <corefx dir> <test assembly filename> <xunit console options>");
+			Console.WriteLine ("Usage: <out-dir> <corefx dir> <test assembly filename> <xunit console options>");
 			return 1;
 		}
 
-		var outfile_name = args [0];
+		var testAssemblyName = Path.GetFileNameWithoutExtension (args [2]);
+		var testAssemblyFull = Path.GetFullPath (args[2]);
+		var outdir_name = Path.Combine (args [0], testAssemblyName);
 		var sdkdir = args [1] + "/artifacts/bin/runtime/netcoreapp-OSX-Debug-x64";
 		args = args.Skip (2).ToArray ();
 		// Response file support
@@ -126,7 +128,7 @@ class Program
 		args = args.Where (s => s != String.Empty).Concat (extra_args).ToArray ();
 
 		// Despite a lot of effort, couldn't get dotnet to load these assemblies from the sdk dir, so copy them to our binary dir
-		File.Copy ($"{sdkdir}/Microsoft.DotNet.PlatformAbstractions.dll", AppContext.BaseDirectory, true);
+//		File.Copy ($"{sdkdir}/Microsoft.DotNet.PlatformAbstractions.dll", AppContext.BaseDirectory, true);
 		File.Copy ($"{sdkdir}/CoreFx.Private.TestUtilities.dll", AppContext.BaseDirectory, true);
 		File.Copy ($"{sdkdir}/Microsoft.DotNet.XUnitExtensions.dll", AppContext.BaseDirectory, true);
 
@@ -210,7 +212,6 @@ class Program
 		var statements = code_main.Statements;
 		statements.Add (new CodeVariableDeclarationStatement (typeof (int), "nrun", new CodePrimitiveExpression (0)));
 		statements.Add (new CodeVariableDeclarationStatement (typeof (int), "nfailed", new CodePrimitiveExpression (0)));
-		statements.Add (new CodeVariableDeclarationStatement (typeof (int), "nskip", new CodePrimitiveExpression (0)));
 
 		int nskipped = 0;
 
@@ -296,10 +297,21 @@ class Program
 				}));
 		statements.Add (new CodeMethodReturnStatement (new CodePrimitiveExpression (0)));
 
+
+		Directory.CreateDirectory (outdir_name);
+		var outfile_name = Path.Combine (outdir_name, "runner.cs");
 		var provider = new CSharpCodeProvider ();
 		using (var w2 = File.CreateText (outfile_name)) {
 			provider.GenerateCodeFromCompileUnit (cu, w2, new CodeGeneratorOptions ());
 		}
+
+		var csproj_template = File.ReadAllText ("gen-test.csproj.template");
+		csproj_template = csproj_template.Replace ("#XUNIT_LOCATION#", sdkdir);
+		csproj_template = csproj_template.Replace ("#TEST_ASSEMBLY#", testAssemblyName);
+		csproj_template = csproj_template.Replace ("#TEST_ASSEMBLY_LOCATION#", testAssemblyFull);
+		
+		File.WriteAllText (Path.Combine (outdir_name, testAssemblyName + "-runner.csproj"), csproj_template);
+
 		return 0;
 	}
 }
