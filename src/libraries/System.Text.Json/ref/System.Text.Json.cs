@@ -173,6 +173,8 @@ namespace System.Text.Json
         public System.Buffers.ReadOnlySequence<byte> ValueSequence { get { throw null; } }
         public System.ReadOnlySpan<byte> ValueSpan { get { throw null; } }
         public bool GetBoolean() { throw null; }
+        public DateTime GetDateTime() { throw null; }
+        public DateTimeOffset GetDateTimeOffset() { throw null; }
         public decimal GetDecimal() { throw null; }
         public double GetDouble() { throw null; }
         public int GetInt32() { throw null; }
@@ -184,6 +186,8 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public ulong GetUInt64() { throw null; }
         public bool Read() { throw null; }
+        public bool TryGetDateTime(out DateTime value) { throw null; }
+        public bool TryGetDateTimeOffset(out DateTimeOffset value) { throw null; }
         public bool TryGetDecimal(out decimal value) { throw null; }
         public bool TryGetDouble(out double value) { throw null; }
         public bool TryGetInt32(out int value) { throw null; }
