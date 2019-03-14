@@ -770,7 +770,9 @@ GetProcessAffinityMask(
 
     if (hProcess == GetCurrentProcess())
     {
-        DWORD_PTR systemMask = GetFullAffinityMask(g_cpuCount);
+        int cpuCountInMask = (g_cpuCount > 64) ? 64 : g_cpuCount;
+
+        DWORD_PTR systemMask = GetFullAffinityMask(cpuCountInMask);
 
 #if HAVE_SCHED_GETAFFINITY
         int pid = getpid();
@@ -778,28 +780,13 @@ GetProcessAffinityMask(
         int st = sched_getaffinity(pid, sizeof(cpu_set_t), &cpuSet);
         if (st == 0)
         {
-            WORD group = NO_GROUP;
             DWORD_PTR processMask = 0;
 
-            for (int i = 0; i < g_possibleCpuCount; i++)
+            for (int i = 0; i < cpuCountInMask; i++)
             {
                 if (CPU_ISSET(i, &cpuSet))
                 {
-                    WORD g = g_cpuToAffinity[i].Group;
-                    if (group == NO_GROUP || g == group)
-                    {
-                        group = g;
-                        processMask |= ((DWORD_PTR)1) << g_cpuToAffinity[i].Number;
-                    }
-                    else
-                    {
-                        // The process has affinity in more than one group, in such case
-                        // the function needs to return zero in both masks.
-                        processMask = 0;
-                        systemMask = 0;
-                        group = NO_GROUP;
-                        break;
-                    }
+                    processMask |= ((DWORD_PTR)1) << i;
                 }
             }
 
@@ -811,9 +798,9 @@ GetProcessAffinityMask(
         else if (errno == EINVAL)
         {
             // There are more processors than can fit in a cpu_set_t
-            // return zero in both masks.
-            *lpProcessAffinityMask = 0;
-            *lpSystemAffinityMask = 0;
+            // return all bits set for all processors (upto 64) for both masks.
+            *lpProcessAffinityMask = systemMask;
+            *lpSystemAffinityMask = systemMask;
             success = TRUE;
         }
         else

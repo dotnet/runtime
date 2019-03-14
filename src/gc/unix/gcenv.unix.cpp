@@ -467,14 +467,9 @@ static uintptr_t GetFullAffinityMask(int cpuCount)
 //  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
 bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processAffinityMask, uintptr_t* systemAffinityMask)
 {
-    if (g_logicalCpuCount > 64)
-    {
-        *processAffinityMask = 0;
-        *systemAffinityMask = 0;
-        return true;
-    }
+    unsigned int cpuCountInMask = (g_logicalCpuCount > 64) ? 64 : g_logicalCpuCount;
 
-    uintptr_t systemMask = GetFullAffinityMask(g_logicalCpuCount);
+    uintptr_t systemMask = GetFullAffinityMask(cpuCountInMask);
 
 #if HAVE_SCHED_GETAFFINITY
 
@@ -485,7 +480,7 @@ bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processAffinityMa
     {
         uintptr_t processMask = 0;
 
-        for (unsigned int i = 0; i < g_logicalCpuCount; i++)
+        for (unsigned int i = 0; i < cpuCountInMask; i++)
         {
             if (CPU_ISSET(i, &cpuSet))
             {
@@ -500,9 +495,9 @@ bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processAffinityMa
     else if (errno == EINVAL)
     {
         // There are more processors than can fit in a cpu_set_t
-        // return zero in both masks.
-        *processAffinityMask = 0;
-        *systemAffinityMask = 0;
+        // return all bits set for all processors (upto 64) for both masks
+        *processAffinityMask = systemMask;
+        *systemAffinityMask = systemMask;
         return true;
     }
     else
