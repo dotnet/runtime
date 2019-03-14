@@ -89,7 +89,7 @@ BYTE* EventPipeMetadataGenerator::GenerateEventMetadata(
         pCurrent += sizeof(WCHAR);
     }
 
-    _ASSERTE(metadataLength == (pCurrent - pMetadata));
+    _ASSERTE(metadataLength == (size_t)(pCurrent - pMetadata));
 
     return pMetadata;
 }

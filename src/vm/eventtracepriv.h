@@ -120,7 +120,7 @@ struct EventStaticEntry
         // sizeRemaining must be larger than the structure + 1 wchar for the struct and
         // null terminator of Name.  We will do a better bounds check when we know the
         // size of the field name.
-        if (sizeRemaining < sizeof(EventStaticEntry) + sizeof(wchar_t))
+        if (sizeRemaining < (int)(sizeof(EventStaticEntry) + sizeof(wchar_t)))
             return -1;
 
         // The location in the structure to write to.  We won't actually write here unless we have sufficient buffer.
