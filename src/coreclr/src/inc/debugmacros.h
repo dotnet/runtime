@@ -13,6 +13,7 @@
 
 #include "stacktrace.h"
 #include "debugmacrosext.h"
+#include "palclr.h"
 
 #undef _ASSERTE
 #undef VERIFY
@@ -29,7 +30,7 @@ bool GetStackTraceAtContext(SString & s, struct _CONTEXT * pContext);
 void _cdecl DbgWriteEx(LPCTSTR szFmt, ...);
 bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);
 
-extern VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);
+extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);
 
 #define TRACE_BUFF_SIZE (cchMaxAssertStackLevelStringLen * cfrMaxAssertStackLevels + cchMaxAssertExprLen + 1)
 extern char g_szExprWithStack[TRACE_BUFF_SIZE];

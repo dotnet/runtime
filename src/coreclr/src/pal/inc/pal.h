@@ -168,6 +168,12 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 
 #define DECLSPEC_NORETURN   PAL_NORETURN
 
+#ifdef __clang_analyzer__
+#define ANALYZER_NORETURN __attribute((analyzer_noreturn))
+#else
+#define ANALYZER_NORETURN
+#endif
+
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
 #define __assume(x) (void)0
 #define __annotation(x)
