@@ -324,6 +324,10 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
     if (pal::strcasecmp(own_name.c_str(), CURHOST_TYPE) != 0)
     {
+        // The reason for this check is security.
+        // dotnet.exe is signed by Microsoft. It is technically possible to rename the file MyApp.exe and include it in the application.
+        // Then one can create a shortcut for "MyApp.exe MyApp.dll" which works. The end result is that MyApp looks like it's signed by Microsoft.
+        // To prevent this dotnet.exe must not be renamed, otherwise it won't run.
         trace::error(_X("A fatal error was encountered. Cannot execute %s when renamed to %s."), CURHOST_TYPE, own_name.c_str());
         return StatusCode::CoreHostEntryPointFailure;
     }
