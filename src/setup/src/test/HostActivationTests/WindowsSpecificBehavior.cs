@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
-            dotnet.Exec(appDll)
+            dotnet.Exec(appDll, fixture.TestProject.Location)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
