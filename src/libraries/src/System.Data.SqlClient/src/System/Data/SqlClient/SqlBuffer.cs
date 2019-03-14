@@ -676,20 +676,13 @@ namespace System.Data.SqlClient
         {
             get
             {
-                if (StorageType.Guid==_type)
+                if (StorageType.Guid == _type)
                 {
                     return new SqlGuid(_value._guid); 
                 }
                 else if (StorageType.SqlGuid == _type)
                 {
-                    if (IsNull)
-                    {
-                        return SqlGuid.Null;
-                    }
-                    else
-                    {
-                        return (SqlGuid)_object;
-                    }
+                    return IsNull ? SqlGuid.Null : (SqlGuid)_object;
                 }
                 return (SqlGuid)this.SqlValue; // anything else we haven't thought of goes through boxing.
             }
