@@ -274,7 +274,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 50
+#define MINOR_VERSION 51
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -408,7 +408,8 @@ typedef enum {
 	CMD_ASSEMBLY_GET_IS_DYNAMIC = 9,
 	CMD_ASSEMBLY_GET_PDB_BLOB = 10,
 	CMD_ASSEMBLY_GET_TYPE_FROM_TOKEN = 11,
-	CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN = 12
+	CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN = 12,
+	CMD_ASSEMBLY_HAS_DEBUG_INFO = 13
 } CmdAssembly;
 
 typedef enum {
@@ -7401,6 +7402,10 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
         mono_error_cleanup (error);
         break;
     }
+	case CMD_ASSEMBLY_HAS_DEBUG_INFO: {
+		buffer_add_byte (buf, !ass->dynamic && mono_debug_image_has_debug_info (ass->image));
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9355,7 +9360,8 @@ static const char* assembly_cmds_str[] = {
 	"GET_OBJECT",
 	"GET_TYPE",
 	"GET_NAME",
-	"GET_DOMAIN"
+	"GET_DOMAIN",
+	"HAS_DEBUG_INFO"
 };
 
 static const char* module_cmds_str[] = {
