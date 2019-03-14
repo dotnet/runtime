@@ -10,7 +10,6 @@ namespace System.Net.Test.Common
     {
         public static partial class Http
         {
-            private static readonly string DefaultAzureServer = "corefx-net.cloudapp.net";
             private static readonly string DefaultHttp2AzureServer = "corefx-net-http2.azurewebsites.net";
 
             public static string Host => GetValue("COREFX_HTTPHOST", DefaultAzureServer);
@@ -49,7 +48,6 @@ namespace System.Net.Test.Common
 
             private const string EchoHandler = "Echo.ashx";
             private const string EmptyContentHandler = "EmptyContent.ashx";
-            private const string StatusCodeHandler = "StatusCode.ashx";
             private const string RedirectHandler = "Redirect.ashx";
             private const string VerifyUploadHandler = "VerifyUpload.ashx";
             private const string DeflateHandler = "Deflate.ashx";
@@ -97,29 +95,6 @@ namespace System.Net.Test.Common
                         EchoHandler,
                         userName,
                         password));
-            }
-
-            public static Uri StatusCodeUri(bool secure, int statusCode)
-            {
-                return new Uri(
-                    string.Format(
-                        "{0}://{1}/{2}?statuscode={3}",
-                        secure ? HttpsScheme : HttpScheme,
-                        Host,
-                        StatusCodeHandler,
-                        statusCode));
-            }
-
-            public static Uri StatusCodeUri(bool secure, int statusCode, string statusDescription)
-            {
-                return new Uri(
-                    string.Format(
-                        "{0}://{1}/{2}?statuscode={3}&statusDescription={4}",
-                        secure ? HttpsScheme : HttpScheme,
-                        Host,
-                        StatusCodeHandler,
-                        statusCode,
-                        statusDescription));
             }
 
             public static Uri RedirectUriForDestinationUri(bool secure, int statusCode, Uri destinationUri, int hops, bool relative = false)
