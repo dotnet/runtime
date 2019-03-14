@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 
 namespace System.Net.Http.Headers
@@ -100,8 +99,6 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(rangeCollection != null);
             Debug.Assert(startIndex >= 0);
-            Contract.Ensures((Contract.Result<int>() == 0) || (rangeCollection.Count > 0),
-                "If we can parse the string, then we expect to have at least one range item.");
 
             if ((string.IsNullOrEmpty(input)) || (startIndex >= input.Length))
             {

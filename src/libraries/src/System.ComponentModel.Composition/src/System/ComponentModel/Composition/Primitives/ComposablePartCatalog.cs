@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Threading;
 using Microsoft.Internal;
@@ -102,7 +101,6 @@ namespace System.ComponentModel.Composition.Primitives
             ThrowIfDisposed();
 
             Requires.NotNull(definition, nameof(definition));
-            Contract.Ensures(Contract.Result<IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>>() != null);
 
             List<Tuple<ComposablePartDefinition, ExportDefinition>> exports = null;
             var candidateParts = GetCandidateParts(definition);
@@ -120,6 +118,7 @@ namespace System.ComponentModel.Composition.Primitives
                 }
             }
 
+            Debug.Assert(exports != null || _EmptyExportsList != null);
             return exports ?? _EmptyExportsList;
         }
 

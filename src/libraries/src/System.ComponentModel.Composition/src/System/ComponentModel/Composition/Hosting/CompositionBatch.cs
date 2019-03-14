@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition.Primitives;
-using System.Diagnostics.Contracts;
 using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Hosting
@@ -72,11 +72,10 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Contract.Ensures(Contract.Result<ReadOnlyCollection<ComposablePart>>() != null);
-
                 lock (_lock)
                 {
                     _copyNeededForAdd = true;
+                    Debug.Assert(_readOnlyPartsToAdd != null);
                     return _readOnlyPartsToAdd;
                 }
             }
@@ -90,11 +89,10 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Contract.Ensures(Contract.Result <ReadOnlyCollection<ComposablePart>>() != null);
-
                 lock (_lock)
                 {
                     _copyNeededForRemove = true;
+                    Debug.Assert(_readOnlyPartsToRemove != null);
                     return _readOnlyPartsToRemove;
                 }
             }
@@ -166,7 +164,6 @@ namespace System.ComponentModel.Composition.Hosting
         public ComposablePart AddExport(Export export)
         {
             Requires.NotNull(export, nameof(export));
-            Contract.Ensures(Contract.Result<ComposablePart>() != null);
 
             ComposablePart part = new SingleExportComposablePart(export);
 

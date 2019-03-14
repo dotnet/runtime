@@ -6,7 +6,6 @@ using Internal.Runtime.InteropServices.WindowsRuntime;
 using Internal.Threading.Tasks;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -120,8 +119,6 @@ namespace System.Threading.Tasks
             if (asyncInfo == null)
                 throw new ArgumentNullException(nameof(asyncInfo));
 
-            Contract.EndContractBlock();
-            
             AsyncCausalitySupport.RemoveFromActiveTasks(this.Task);
 
             try

@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -702,8 +701,6 @@ namespace System.Net.Http.Headers
 
         private HeaderStoreItemInfo GetOrCreateHeaderInfo(HeaderDescriptor descriptor, bool parseRawValues)
         {
-            Contract.Ensures(Contract.Result<HeaderStoreItemInfo>() != null);
-
             HeaderStoreItemInfo result = null;
             bool found = false;
             if (parseRawValues)
@@ -720,6 +717,7 @@ namespace System.Net.Http.Headers
                 result = CreateAndAddHeaderToStore(descriptor);
             }
 
+            Debug.Assert(result != null);
             return result;
         }
 
@@ -1182,8 +1180,6 @@ namespace System.Net.Http.Headers
 
         private static string[] GetValuesAsStrings(HeaderDescriptor descriptor, HeaderStoreItemInfo info, object exclude = null)
         {
-            Contract.Ensures(Contract.Result<string[]>() != null);
-
             int length = GetValueCount(info);
             string[] values;
 
@@ -1212,6 +1208,7 @@ namespace System.Net.Http.Headers
                 values = Array.Empty<string>();
             }
 
+            Debug.Assert(values != null);
             return values;
         }
 

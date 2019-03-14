@@ -4,7 +4,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -495,9 +494,6 @@ namespace System.Net.Http
 
         private MemoryStream CreateMemoryStream(long maxBufferSize, out Exception error)
         {
-            Contract.Ensures((Contract.Result<MemoryStream>() != null) ||
-                (Contract.ValueAtReturn<Exception>(out error) != null));
-
             error = null;
 
             // If we have a Content-Length allocate the right amount of buffer up-front. Also check whether the

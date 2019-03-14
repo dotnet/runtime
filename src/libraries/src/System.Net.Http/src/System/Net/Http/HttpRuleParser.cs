@@ -75,7 +75,6 @@ namespace System.Net.Http
         internal static int GetTokenLength(string input, int startIndex)
         {
             Debug.Assert(input != null);
-            Contract.Ensures((Contract.Result<int>() >= 0) && (Contract.Result<int>() <= (input.Length - startIndex)));
 
             if (startIndex >= input.Length)
             {
@@ -133,7 +132,6 @@ namespace System.Net.Http
         internal static int GetWhitespaceLength(string input, int startIndex)
         {
             Debug.Assert(input != null);
-            Contract.Ensures((Contract.Result<int>() >= 0) && (Contract.Result<int>() <= (input.Length - startIndex)));
 
             if (startIndex >= input.Length)
             {
@@ -216,7 +214,6 @@ namespace System.Net.Http
         {
             Debug.Assert(input != null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
-            Contract.Ensures((Contract.Result<int>() >= 0) && (Contract.Result<int>() <= (input.Length - startIndex)));
 
             int current = startIndex;
             char c;
@@ -261,7 +258,6 @@ namespace System.Net.Http
         {
             Debug.Assert(input != null);
             Debug.Assert(startIndex >= 0);
-            Contract.Ensures((Contract.Result<int>() >= 0) && (Contract.Result<int>() <= (input.Length - startIndex)));
 
             host = null;
             if (startIndex >= input.Length)
@@ -326,8 +322,6 @@ namespace System.Net.Http
         {
             Debug.Assert(input != null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
-            Contract.Ensures((Contract.ValueAtReturn(out length) >= 0) &&
-                (Contract.ValueAtReturn(out length) <= (input.Length - startIndex)));
 
             length = 0;
 
@@ -364,8 +358,6 @@ namespace System.Net.Http
         {
             Debug.Assert(input != null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
-            Contract.Ensures((Contract.Result<HttpParseResult>() != HttpParseResult.Parsed) ||
-                (Contract.ValueAtReturn<int>(out length) > 0));
 
             length = 0;
 
