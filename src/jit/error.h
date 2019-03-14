@@ -73,12 +73,13 @@ extern void DECLSPEC_NORETURN noWayAssertBody(const char* cond, const char* file
 // Conditionally invoke the noway assert body. The conditional predicate is evaluated using a method on the tlsCompiler.
 // If a noway_assert is hit, we ask the Compiler whether to raise an exception (i.e., conditionally raise exception.)
 // To have backward compatibility between v4.5 and v4.0, in min-opts we take a shot at codegen rather than rethrow.
-extern void noWayAssertBodyConditional(
+extern void ANALYZER_NORETURN noWayAssertBodyConditional(
 #ifdef FEATURE_TRACELOGGING
     const char* file, unsigned line
 #endif
     );
-extern void noWayAssertBodyConditional(const char* cond, const char* file, unsigned line);
+
+extern void ANALYZER_NORETURN noWayAssertBodyConditional(const char* cond, const char* file, unsigned line);
 
 // Define MEASURE_NOWAY to 1 to enable code to count and rank individual noway_assert calls by occurrence.
 // These asserts would be dynamically executed, but not necessarily fail. The provides some insight into
