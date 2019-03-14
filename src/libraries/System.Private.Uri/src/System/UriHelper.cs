@@ -13,6 +13,9 @@ namespace System
                                    '0', '1', '2', '3', '4', '5', '6', '7',
                                    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
+        internal static readonly Encoding s_noFallbackCharUTF8 = Encoding.GetEncoding(
+            Encoding.UTF8.CodePage, new EncoderReplacementFallback(""), new DecoderReplacementFallback(""));
+
         // http://host/Path/Path/File?Query is the base of
         //      - http://host/Path/Path/File/ ...    (those "File" words may be different in semantic but anyway)
         //      - http://host/Path/Path/#Fragment
@@ -278,6 +281,7 @@ namespace System
             int next = start;
             bool iriParsing = Uri.IriParsingStatic(syntax)
                                 && ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.EscapeUnescape);
+            char[] unescapedChars = null;
 
             while (true)
             {
@@ -474,13 +478,12 @@ namespace System
                                 }
                             }
 
-                            Encoding noFallbackCharUTF8 = Encoding.GetEncoding(
-                                                                                Encoding.UTF8.CodePage,
-                                                                                new EncoderReplacementFallback(""),
-                                                                                new DecoderReplacementFallback(""));
+                            if (unescapedChars == null || unescapedChars.Length < bytes.Length)
+                            {
+                                unescapedChars = new char[bytes.Length];
+                            }
 
-                            char[] unescapedChars = new char[bytes.Length];
-                            int charCount = noFallbackCharUTF8.GetChars(bytes, 0, byteCount, unescapedChars, 0);
+                            int charCount = s_noFallbackCharUTF8.GetChars(bytes, 0, byteCount, unescapedChars, 0);
 
                             start = next;
 
@@ -488,7 +491,7 @@ namespace System
                             // Do not unescape chars not allowed by Iri
                             // need to check for invalid utf sequences that may not have given any chars
 
-                            MatchUTF8Sequence(pDest, dest, ref destPosition, unescapedChars, charCount, bytes,
+                            MatchUTF8Sequence(pDest, dest, ref destPosition, unescapedChars.AsSpan(0, charCount), charCount, bytes,
                                 byteCount, isQuery, iriParsing);
                         }
 
@@ -507,18 +510,20 @@ namespace System
         // We got the unescaped chars, we then re-encode them and match off the bytes
         // to get the invalid sequence bytes that we just copy off
         //
-        internal static unsafe void MatchUTF8Sequence(char* pDest, char[] dest, ref int destOffset, char[] unescapedChars,
+        internal static unsafe void MatchUTF8Sequence(char* pDest, char[] dest, ref int destOffset, Span<char> unescapedChars,
             int charCount, byte[] bytes, int byteCount, bool isQuery, bool iriParsing)
         {
+            Span<byte> maxUtf8EncodedSpan = stackalloc byte[4];
+
             int count = 0;
             fixed (char* unescapedCharsPtr = unescapedChars)
             {
                 for (int j = 0; j < charCount; ++j)
                 {
                     bool isHighSurr = char.IsHighSurrogate(unescapedCharsPtr[j]);
-
-                    byte[] encodedBytes = Encoding.UTF8.GetBytes(unescapedChars, j, isHighSurr ? 2 : 1);
-                    int encodedBytesLength = encodedBytes.Length;
+                    Span<byte> encodedBytes = maxUtf8EncodedSpan;
+                    int bytesWritten = Encoding.UTF8.GetBytes(unescapedChars.Slice(j, isHighSurr ? 2 : 1), encodedBytes);
+                    encodedBytes = encodedBytes.Slice(0, bytesWritten);
 
                     // we have to keep unicode chars outside Iri range escaped
                     bool inIriRange = false;
@@ -546,7 +551,7 @@ namespace System
                         // check if all bytes match
                         bool allBytesMatch = true;
                         int k = 0;
-                        for (; k < encodedBytesLength; ++k)
+                        for (; k < encodedBytes.Length; ++k)
                         {
                             if (bytes[count + k] != encodedBytes[k])
                             {
@@ -557,7 +562,7 @@ namespace System
 
                         if (allBytesMatch)
                         {
-                            count += encodedBytesLength;
+                            count += encodedBytes.Length;
                             if (iriParsing)
                             {
                                 if (!inIriRange)
