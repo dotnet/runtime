@@ -288,7 +288,7 @@ namespace System.Diagnostics.Tests
                 return false;
             if (id[52] != '-')
                 return false;
-            return Regex.IsMatch(id, "^[0-9a-f][0-9a-f]-[0-9a-f]*-[0-9a-f]*-[0-9a-f][0-9a-f]$");
+            return Regex.IsMatch(id, "^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$");
         }
 
         public static bool IsLowerCaseHex(string s)
@@ -341,13 +341,13 @@ namespace System.Diagnostics.Tests
 
             // Use in Dictionary (this does assume we have no collisions in IDs over 100 tries (very good).  
             var dict = new Dictionary<ActivityTraceId, string>();
-            for(int i = 0; i < 100; i++)
+            for (int i = 0; i < 100; i++)
             {
                 var newId7 = ActivityTraceId.CreateRandom();
                 dict[newId7] = newId7.ToHexString();
             }
             int ctr = 0;
-            foreach(string value in dict.Values)
+            foreach (string value in dict.Values)
             {
                 string valueInDict;
                 Assert.True(dict.TryGetValue(ActivityTraceId.CreateFromString(value.AsSpan()), out valueInDict));
