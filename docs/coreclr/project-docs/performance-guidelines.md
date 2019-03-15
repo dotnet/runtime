@@ -55,7 +55,7 @@ PerfView is available at the [Microsoft Download Center](http://www.microsoft.co
 
 2. After building the runtime you will need to generate a core root that contains all of the binaries we just built along with the required dependencies.  This can be done with the command `tests\runtest.cmd Release x64 GenerateLayoutOnly`, with the same caveat that x86 should be used if that is the platform that you are testing.
 
-3. Now we need to actually run the performance tests.  You can do that with the following command that should be run from the root of your repo `tests\scripts\run-xunit-perf.cmd -arch x64 -configuration Release -testBinLoc bin\tests\Windows_NT.x64.Release\Jit\Performance\CodeQuality`.  This will run all of the tests in the JIT CodeQuality directory as the script will walk all sub-directories and look for tests to run.  If you want to just run a single test, pass the path of the single test that you want to run.
+3. Now we need to actually run the performance tests.  You can do that with the following command that should be run from the root of your repo `python tests\scripts\run-xunit-perf.py -arch x64 -configuration Release -testBinLoc bin\tests\Windows_NT.x64.Release\Jit\Performance\CodeQuality`.  This will run all of the tests in the JIT CodeQuality directory as the script will walk all sub-directories and look for tests to run.  If you want to just run a single test, pass the path of the single test that you want to run.
 
 4. Navigate to the `sandbox` directory in the root of your repo.  Inside that directory you will find a bunch of files that follow the name Perf-*.md.  These will contain the results, formatted as Markdown files, for each test that was run.
 
