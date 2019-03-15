@@ -6,7 +6,7 @@ if [%PACKAGES_DIR%]==[] set PACKAGES_DIR=%~dp0packages
 if [%TOOLRUNTIME_DIR%]==[] set TOOLRUNTIME_DIR=%~dp0Tools
 set DOTNET_PATH=%TOOLRUNTIME_DIR%\dotnetcli\
 if [%DOTNET_CMD%]==[] set DOTNET_CMD=%DOTNET_PATH%dotnet.exe
-if [%BUILDTOOLS_SOURCE%]==[] set BUILDTOOLS_SOURCE=https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+if [%BUILDTOOLS_SOURCE%]==[] set BUILDTOOLS_SOURCE=https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json
 set /P BUILDTOOLS_VERSION=< "%~dp0BuildToolsVersion.txt"
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%\Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib
 set INIT_TOOLS_RESTORE_PROJECT=%~dp0init-tools.msbuild
