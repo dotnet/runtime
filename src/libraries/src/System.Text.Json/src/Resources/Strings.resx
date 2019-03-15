@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -301,6 +302,9 @@
   </data>
   <data name="EnumConverterNotImplemented" xml:space="preserve">
     <value>EnumConverter is not yet supported on .NET Standard 2.0.</value>
+  </data>
+  <data name="InvalidComparison" xml:space="preserve">
+    <value>Cannot compare the value of a token type '{0}' to text.</value>
   </data>
   <data name="FormatDateTime" xml:space="preserve">
     <value>The JSON value is of unsupported format for a DateTime.</value>

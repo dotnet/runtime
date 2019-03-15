@@ -249,7 +249,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void TestSingleStringsByOne()
+        public static void TestSingleStringsMultiSegmentByOne()
         {
             string jsonString = "\"Hello, \\u0041hson!\"";
             string expectedString = "Hello, \\u0041hson!, ";
@@ -277,7 +277,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void TestSingleStrings()
+        public static void TestSingleStringsMultiSegment()
         {
             string jsonString = "\"Hello, \\u0041hson!\"";
             string expectedString = "Hello, \\u0041hson!, ";
