@@ -3676,19 +3676,21 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 
 	sig = mono_method_signature_internal (method);
 
-	MonoCustomModContainer *ret_cmods = NULL;
+	int cmod_count = 0;
 	if (sig->ret)
-		ret_cmods = mono_type_get_cmods (sig->ret);
+		cmod_count = mono_type_custom_modifier_count (sig->ret);
 
 	/* Change default calling convention if needed */
 	/* Why is this a modopt ? */
-	if (!ret_cmods)
+	if (cmod_count == 0)
 		return;
 
-	for (i = 0; i < ret_cmods->count; ++i) {
+	for (i = 0; i < cmod_count; ++i) {
 		ERROR_DECL (error);
-		MonoClass *cmod_class = mono_class_get_checked (ret_cmods->image, ret_cmods->modifiers [i].token, error);
-		g_assert (mono_error_ok (error));
+		gboolean required;
+		MonoType *cmod_type = mono_type_get_custom_modifier (sig->ret, i, &required, error);
+		mono_error_assert_ok (error);
+		MonoClass *cmod_class = mono_class_from_mono_type_internal (cmod_type);
 		if ((m_class_get_image (cmod_class) == mono_defaults.corlib) && !strcmp (m_class_get_name_space (cmod_class), "System.Runtime.CompilerServices")) {
 			const char *cmod_class_name = m_class_get_name (cmod_class);
 			if (!strcmp (cmod_class_name, "CallConvCdecl"))

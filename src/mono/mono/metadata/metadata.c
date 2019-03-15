@@ -57,10 +57,10 @@ static void free_generic_inst (MonoGenericInst *ginst);
 static void free_generic_class (MonoGenericClass *ginst);
 static void free_inflated_method (MonoMethodInflated *method);
 static void free_inflated_signature (MonoInflatedMethodSignature *sig);
+static void free_aggregate_modifiers (MonoAggregateModContainer *amods);
 static void mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, MonoMarshalSpec **marshal_spec, gboolean alloc_from_image);
 
 static MonoType* mono_signature_get_params_internal (MonoMethodSignature *sig, gpointer *iter);
-
 
 /*
  * This enumeration is used to describe the data types in the metadata
@@ -1837,7 +1837,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 			return NULL;
 		}
 
-		size_t size = mono_sizeof_type_with_mods (count);
+		size_t size = mono_sizeof_type_with_mods (count, FALSE);
 		type = transient ? (MonoType *)g_malloc0 (size) : (MonoType *)mono_image_alloc0 (m, size);
 		type->has_cmods = TRUE;
 
@@ -1851,7 +1851,9 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 
 	/* Iterate again, but now parse pinned, byref and custom modifiers */
 	found = TRUE;
-	count = 0;
+	/* cmods are encoded in reverse order from how we normally see them.
+	 * "int32 modopt (Foo) modopt (Bar)" is encoded as "cmod_opt [typedef_or_ref "Bar"] cmod_opt [typedef_or_ref "Foo"] I4"
+	 */
 	while (found) {
 		switch (*ptr) {
 		case MONO_TYPE_PINNED:
@@ -1864,14 +1866,16 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 			break;
 		case MONO_TYPE_CMOD_REQD:
 		case MONO_TYPE_CMOD_OPT:
-			mono_metadata_parse_custom_mod (m, &(cmods->modifiers [count]), ptr, &ptr);
-			count ++;
+			mono_metadata_parse_custom_mod (m, &(cmods->modifiers [--count]), ptr, &ptr);
 			break;
 		default:
 			found = FALSE;
 		}
 	}
 	
+	// either there were no cmods, or else we iterated through all of cmods backwards to populate it.
+	g_assert (count == 0);
+
 	type->attrs = opt_attrs;
 	type->byref = byref;
 	type->pinned = pinned ? 1 : 0;
@@ -2426,7 +2430,40 @@ dump_ginst (MonoGenericInst *ginst)
 	g_print (">");
 }*/
 
+static gboolean
+aggregate_modifiers_equal (gconstpointer ka, gconstpointer kb)
+{
+	MonoAggregateModContainer *amods1 = (MonoAggregateModContainer *)ka;
+	MonoAggregateModContainer *amods2 = (MonoAggregateModContainer *)kb;
+	if (amods1->count != amods2->count)
+		return FALSE;
+	for (int i = 0; i < amods1->count; ++i) {
+		if (amods1->modifiers [i].required != amods2->modifiers [i].required)
+			return FALSE;
+		if (!mono_metadata_type_equal_full (amods1->modifiers [i].type, amods2->modifiers [i].type, TRUE))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static guint
+aggregate_modifiers_hash (gconstpointer a)
+{
+	const MonoAggregateModContainer *amods = (const MonoAggregateModContainer *)a;
+	guint hash = 0;
+	for (int i = 0; i < amods->count; ++i)
+	{
+		// hash details borrowed from mono_metadata_generic_inst_hash
+		hash *= 13;
+		hash ^= (amods->modifiers [i].required << 8);
+		hash += mono_metadata_type_hash (amods->modifiers [i].type);
+	}
+
+	return hash;
+}
+
 static gboolean type_in_image (MonoType *type, MonoImage *image);
+static gboolean aggregate_modifiers_in_image (MonoAggregateModContainer *amods, MonoImage *image);
 
 static gboolean
 signature_in_image (MonoMethodSignature *sig, MonoImage *image)
@@ -2465,6 +2502,10 @@ static gboolean
 type_in_image (MonoType *type, MonoImage *image)
 {
 retry:
+	if (type->has_cmods && mono_type_is_aggregate_mods (type))
+		if (aggregate_modifiers_in_image (mono_type_get_amods (type), image))
+			return TRUE;
+
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
 		return gclass_in_image (type->data.generic_class, image);
@@ -2492,6 +2533,15 @@ gboolean
 mono_type_in_image (MonoType *type, MonoImage *image)
 {
 	return type_in_image (type, image);
+}
+
+gboolean
+aggregate_modifiers_in_image (MonoAggregateModContainer *amods, MonoImage *image)
+{
+	for (int i = 0; i < amods->count; i++)
+		if (type_in_image (amods->modifiers [i].type, image))
+			return TRUE;
+	return FALSE;
 }
 
 static inline void
@@ -2670,6 +2720,8 @@ get_image_set (MonoImage **images, int nimages)
 		set->szarray_cache = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, NULL);
 		set->array_cache = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, NULL);
 
+		set->aggregate_modifiers_cache = g_hash_table_new_full (aggregate_modifiers_hash, aggregate_modifiers_equal, NULL, (GDestroyNotify)free_aggregate_modifiers);
+
 		for (i = 0; i < nimages; ++i)
 			set->images [i]->image_sets = g_slist_prepend (set->images [i]->image_sets, set);
 
@@ -2704,6 +2756,8 @@ delete_image_set (MonoImageSet *set)
 	g_hash_table_destroy (set->array_cache);
 	if (set->ptr_cache)
 		g_hash_table_destroy (set->ptr_cache);
+
+	g_hash_table_destroy (set->aggregate_modifiers_cache);
 
 	mono_wrapper_caches_free (&set->wrapper_caches);
 
@@ -2912,9 +2966,20 @@ collect_method_images (MonoMethodInflated *method, CollectData *data)
 }
 
 static void
+collect_aggregate_modifiers_images (MonoAggregateModContainer *amods, CollectData *data)
+{
+	for (int i = 0; i < amods->count; ++i)
+		collect_type_images (amods->modifiers [i].type, data);
+}
+	
+static void
 collect_type_images (MonoType *type, CollectData *data)
 {
 retry:
+	if (G_UNLIKELY (type->has_cmods && mono_type_is_aggregate_mods (type))) {
+		collect_aggregate_modifiers_images (mono_type_get_amods (type), data);
+	}
+
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
 		collect_gclass_images (type->data.generic_class, data);
@@ -2974,6 +3039,18 @@ steal_ginst_in_image (gpointer key, gpointer value, gpointer data)
 	//g_assert (ginst_in_image (ginst, user_data->image));
 
 	user_data->list = g_slist_prepend (user_data->list, ginst);
+	return TRUE;
+}
+
+static gboolean
+steal_aggregate_modifiers_in_image (gpointer key, gpointer value, gpointer data)
+{
+	MonoAggregateModContainer *amods = (MonoAggregateModContainer *)key;
+	CleanForImageUserData *user_data = (CleanForImageUserData *)data;
+
+	g_assert (aggregate_modifiers_in_image (amods, user_data->image));
+
+	user_data->list = g_slist_prepend (user_data->list, amods);
 	return TRUE;
 }
 
@@ -3054,7 +3131,7 @@ check_image_sets (MonoImage *image)
 void
 mono_metadata_clean_for_image (MonoImage *image)
 {
-	CleanForImageUserData ginst_data, gclass_data;
+	CleanForImageUserData ginst_data, gclass_data, amods_data;
 	GSList *l, *set_list;
 
 	//check_image_sets (image);
@@ -3065,6 +3142,8 @@ mono_metadata_clean_for_image (MonoImage *image)
 	 */
 	ginst_data.image = gclass_data.image = image;
 	ginst_data.list = gclass_data.list = NULL;
+	amods_data.image = image;
+	amods_data.list = NULL;
 
 	/* Collect the items to delete */
 	/* delete_image_set () modifies the lists so make a copy */
@@ -3081,6 +3160,9 @@ mono_metadata_clean_for_image (MonoImage *image)
 		g_hash_table_foreach_steal (set->array_cache, class_in_image, image);
 		if (set->ptr_cache)
 			g_hash_table_foreach_steal (set->ptr_cache, class_in_image, image);
+
+		g_hash_table_foreach_steal (set->aggregate_modifiers_cache, steal_aggregate_modifiers_in_image, &amods_data);
+
 		mono_image_set_unlock (set);
 	}
 
@@ -3089,6 +3171,8 @@ mono_metadata_clean_for_image (MonoImage *image)
 		free_generic_inst ((MonoGenericInst *)l->data);
 	for (l = gclass_data.list; l; l = l->next)
 		free_generic_class ((MonoGenericClass *)l->data);
+	for (l = amods_data.list; l; l = l->next)
+		free_aggregate_modifiers ((MonoAggregateModContainer *)l->data);
 	g_slist_free (ginst_data.list);
 	g_slist_free (gclass_data.list);
 	/* delete_image_set () modifies the lists so make a copy */
@@ -3138,6 +3222,14 @@ free_inflated_signature (MonoInflatedMethodSignature *sig)
 {
 	mono_metadata_free_inflated_signature (sig->sig);
 	g_free (sig);
+}
+
+static void
+free_aggregate_modifiers (MonoAggregateModContainer *amods)
+{
+	for (int i = 0; i < amods->count; i++)
+		mono_metadata_free_type (amods->modifiers [i].type);
+	/* the container itself is allocated in the image set mempool */
 }
 
 /*
@@ -3210,6 +3302,19 @@ mono_metadata_get_image_set_for_method (MonoMethodInflated *method)
 	return set;
 }
 
+MonoImageSet *
+mono_metadata_get_image_set_for_aggregate_modifiers (MonoAggregateModContainer *amods)
+{
+	MonoImageSet *set;
+	CollectData image_set_data;
+	collect_data_init (&image_set_data);
+	collect_aggregate_modifiers_images (amods, &image_set_data);
+	set = get_image_set (image_set_data.images, image_set_data.nimages);
+	collect_data_free (&image_set_data);
+
+	return set;
+}
+
 static gboolean
 type_is_gtd (MonoType *type)
 {
@@ -3258,7 +3363,6 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 
 	return mono_metadata_get_canonical_generic_inst (ginst);
 }
-
 
 /**
  * mono_metadata_get_canonical_generic_inst:
@@ -3309,6 +3413,30 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 
 	mono_image_set_unlock (set);
 	return ginst;
+}
+
+MonoAggregateModContainer *
+mono_metadata_get_canonical_aggregate_modifiers (MonoAggregateModContainer *candidate)
+{
+	g_assert (candidate->count > 0);
+	MonoImageSet *set = mono_metadata_get_image_set_for_aggregate_modifiers (candidate);
+	
+	mono_image_set_lock (set);
+
+	MonoAggregateModContainer *amods = (MonoAggregateModContainer *)g_hash_table_lookup (set->aggregate_modifiers_cache, candidate);
+	if (!amods) {
+		size_t size = mono_sizeof_aggregate_modifiers (candidate->count);
+		amods = (MonoAggregateModContainer *)mono_image_set_alloc0 (set, size);
+		amods->count = candidate->count;
+		for (int i = 0; i < candidate->count; ++i) {
+			amods->modifiers [i].required = candidate->modifiers [i].required;
+			amods->modifiers [i].type = mono_metadata_type_dup (NULL, candidate->modifiers [i].type);
+		}
+
+		g_hash_table_insert (set->aggregate_modifiers_cache, amods, amods);
+	}
+	mono_image_set_unlock (set);
+	return amods;
 }
 
 static gboolean
@@ -3925,6 +4053,9 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 void
 mono_metadata_free_type (MonoType *type)
 {
+	if (type->has_cmods && mono_type_is_aggregate_mods (type))
+		free_aggregate_modifiers (mono_type_get_amods (type));
+	
 	if (type >= builtin_types && type < builtin_types + NBUILTIN_TYPES ())
 		return;
 	
@@ -5493,6 +5624,36 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 	}
 }
 
+static gboolean
+mono_metadata_custom_modifiers_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
+{
+	// ECMA 335, 7.1.1:
+	// The CLI itself shall treat required and optional modifiers in the same manner.
+	// Two signatures that differ only by the addition of a custom modifier
+	// (required or optional) shall not be considered to match.
+	int count = mono_type_custom_modifier_count (t1);
+	if (count != mono_type_custom_modifier_count (t2))
+		return FALSE;
+
+	for (int i=0; i < count; i++) {
+		// FIXME: propagate error to caller
+		ERROR_DECL (error);
+		gboolean cm1_required, cm2_required;
+
+		MonoType *cm1_type = mono_type_get_custom_modifier (t1, i, &cm1_required, error);
+		mono_error_assert_ok (error);
+		MonoType *cm2_type = mono_type_get_custom_modifier (t2, i, &cm2_required, error);
+		mono_error_assert_ok (error);
+
+		if (cm1_required != cm2_required)
+			return FALSE;
+
+		if (!do_mono_metadata_type_equal (cm1_type, cm2_type, signature_only))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /*
  * mono_metadata_type_equal:
  * @t1: a type
@@ -5510,41 +5671,10 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 
 	gboolean cmod_reject = FALSE;
 
-	gboolean is_pointer = (t1->type == MONO_TYPE_PTR);
-
 	if (t1->has_cmods != t2->has_cmods)
 		cmod_reject = TRUE;
 	else if (t1->has_cmods && t2->has_cmods) {
-		MonoCustomModContainer *cm1 = mono_type_get_cmods (t1);
-		MonoCustomModContainer *cm2 = mono_type_get_cmods (t2);
-
-		g_assert (cm1);
-		g_assert (cm2);
-
-		// ECMA 335, 7.1.1:
-		// The CLI itself shall treat required and optional modifiers in the same manner.
-		// Two signatures that differ only by the addition of a custom modifier 
-		// (required or optional) shall not be considered to match.
-		if (cm1->count != cm2->count) {
-			cmod_reject = TRUE;
-		} else for (int i=0; i < cm1->count; i++) {
-			if (cm1->modifiers[i].required != cm2->modifiers[i].required) {
-				cmod_reject = TRUE;
-				break;
-			}
-
-			// FIXME: propagate error to caller
-			ERROR_DECL (error);
-			MonoClass *c1 = mono_class_get_checked (cm1->image, cm1->modifiers [i].token, error);
-			mono_error_assert_ok (error);
-			MonoClass *c2 = mono_class_get_checked (cm2->image, cm2->modifiers [i].token, error);
-			mono_error_assert_ok (error);
-
-			if (c1 != c2) {
-				cmod_reject = TRUE;
-				break;
-			}
-		}
+		cmod_reject = !mono_metadata_custom_modifiers_equal (t1, t2, signature_only);
 	}
 
 	gboolean result = FALSE;
@@ -5604,10 +5734,7 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 		return FALSE;
 	}
 
-	if (cmod_reject && is_pointer)
-		return FALSE;
-
-	return result;
+	return result && !cmod_reject;
 }
 
 /**
@@ -5681,6 +5808,30 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 	return TRUE;
 }
 
+MonoType *
+mono_type_get_custom_modifier (const MonoType *ty, uint8_t idx, gboolean *required, MonoError *error)
+{
+	g_assert (ty->has_cmods);
+	if (mono_type_is_aggregate_mods (ty)) {
+		MonoAggregateModContainer *amods = mono_type_get_amods (ty);
+		g_assert (idx < amods->count);
+		MonoSingleCustomMod *cmod = &amods->modifiers [idx];
+		if (required)
+			*required = !!cmod->required;
+		return cmod->type;
+	} else {
+		MonoCustomModContainer *cmods = mono_type_get_cmods (ty);
+		g_assert (idx < cmods->count);
+		MonoCustomMod *cmod = &cmods->modifiers [idx];
+		if (required)
+			*required = !!cmod->required;
+		MonoImage *image = cmods->image;
+		uint32_t token = cmod->token;
+		return mono_type_get_checked (image, token, NULL, error);
+	}
+}
+
+
 /**
  * mono_metadata_type_dup:
  * \param image image to alloc memory from
@@ -5693,25 +5844,160 @@ mono_metadata_type_dup (MonoImage *image, const MonoType *o)
 	return mono_metadata_type_dup_with_cmods (image, o, o);
 }
 
+static void
+deep_type_dup_fixup (MonoImage *image, MonoType *r, const MonoType *o);
+
+static uint8_t
+custom_modifier_copy (MonoAggregateModContainer *dest, uint8_t dest_offset, const MonoType *source)
+{
+	if (mono_type_is_aggregate_mods (source)) {
+		MonoAggregateModContainer *src_cmods = mono_type_get_amods (source);
+		memcpy (&dest->modifiers [dest_offset], &src_cmods->modifiers[0], src_cmods->count * sizeof (MonoSingleCustomMod));
+		dest_offset += src_cmods->count;
+	} else {
+		MonoCustomModContainer *src_cmods = mono_type_get_cmods (source);
+		for (int i = 0; i < src_cmods->count; i++) {
+			ERROR_DECL (error); // XXX FIXME: AK - propagate the error to the caller.
+			MonoSingleCustomMod *cmod = &dest->modifiers [dest_offset++];
+			cmod->type = mono_type_get_checked (src_cmods->image, src_cmods->modifiers [i].token, NULL, error);
+			mono_error_assert_ok (error);
+			cmod->required = src_cmods->modifiers [i].required;
+		}
+	}
+	return dest_offset;
+}
+
+/* makes a dup of 'o' but also appends the custom modifiers from 'cmods_source' */
+static MonoType *
+do_metadata_type_dup_append_cmods (MonoImage *image, const MonoType *o, const MonoType *cmods_source)
+{
+	g_assert (o != cmods_source);
+	g_assert (o->has_cmods);
+	g_assert (cmods_source->has_cmods);
+	if (!mono_type_is_aggregate_mods (o) &&
+	    !mono_type_is_aggregate_mods (cmods_source) &&
+	    mono_type_get_cmods (o)->image == mono_type_get_cmods (cmods_source)->image) {
+		/* the uniform case: all the cmods are from the same image. */
+		MonoCustomModContainer *o_cmods = mono_type_get_cmods (o);
+		MonoCustomModContainer *extra_cmods = mono_type_get_cmods (cmods_source);
+		uint8_t total_cmods = o_cmods->count + extra_cmods->count;
+		gboolean aggregate = FALSE;
+		size_t sizeof_dup = mono_sizeof_type_with_mods (total_cmods, aggregate);
+		MonoType *r = image ? (MonoType *)mono_image_alloc0 (image, sizeof_dup) : (MonoType *)g_malloc0 (sizeof_dup);
+
+		mono_type_with_mods_init (r, total_cmods, aggregate);
+
+		/* copy the original type o, not including its modifiers */
+		memcpy (r, o, mono_sizeof_type_with_mods (0, FALSE));
+		deep_type_dup_fixup (image, r, o);
+
+		/* The modifier order matters to Roslyn, they expect the extra cmods to come first:
+		 *
+		 * Suppose we substitute 'int32 modopt(IsLong)' for 'T' in 'void Test
+		 * (T modopt(IsConst))'.  Roslyn expects the result to be 'void Test
+		 * (int32 modopt(IsLong) modopt(IsConst))'.
+		 *
+		 * but! cmods are encoded in IL in reverse order, so 'int32 modopt(IsConst) modopt(IsLong)' is
+		 * encoded as `cmod_opt [typeref IsLong] cmod_opt [typeref IsConst] I4`
+		 * so in our array, extra_cmods (IsLong) come first, followed by o_cmods (IsConst)
+		 *
+		 * (Here 'o' is 'int32 modopt(IsLong)' and cmods_source is 'T modopt(IsConst)')
+		 */
+		/* append the modifiers from cmods_source and o */
+		MonoCustomModContainer *r_container = mono_type_get_cmods (r);
+		uint8_t dest_offset = 0;
+		r_container->image = extra_cmods->image;
+
+		memcpy (&r_container->modifiers [dest_offset], &o_cmods->modifiers [0], o_cmods->count * sizeof (MonoCustomMod));
+		dest_offset += o_cmods->count;
+		memcpy (&r_container->modifiers [dest_offset], &extra_cmods->modifiers [0], extra_cmods->count * sizeof (MonoCustomMod));
+		dest_offset += extra_cmods->count;
+		g_assert (dest_offset == total_cmods);
+
+		return r;
+	} else {
+		/* The aggregate case: either o_cmods or extra_cmods has aggregate cmods, or they're both simple but from different images. */
+		uint8_t total_cmods = 0;
+		total_cmods += mono_type_custom_modifier_count (o);
+		total_cmods += mono_type_custom_modifier_count (cmods_source);
+		    
+		gboolean aggregate = TRUE;
+		size_t sizeof_dup = mono_sizeof_type_with_mods (total_cmods, aggregate);
+
+		/* FIXME: if image, and the images of the custom modifiers from
+		 * o and cmods_source are all different, we need an image
+		 * set... */
+		MonoType *r = image ? (MonoType *)mono_image_alloc0 (image, sizeof_dup) : (MonoType*)g_malloc0 (sizeof_dup);
+
+		mono_type_with_mods_init (r, total_cmods, aggregate);
+
+		memcpy (r, o, mono_sizeof_type_with_mods (0, FALSE));
+		deep_type_dup_fixup (image, r, o);
+
+		/* Try not to blow up the stack. See comment on
+		 * MONO_MAX_EXPECTED_CMODS.  Since here we're appending all the
+		 * mods together, it's possible we'll end up with more than the
+		 * maximum allowed.  If that ever happens in practice, we
+		 * should redefine the bound and possibly make this function
+		 * fail dynamically instead of asserting.
+		 */
+		g_assert (total_cmods < MONO_MAX_EXPECTED_CMODS);
+		size_t r_container_size = mono_sizeof_aggregate_modifiers (total_cmods);
+		MonoAggregateModContainer *r_container_candidate = g_alloca (r_container_size);
+		memset (r_container_candidate, 0, r_container_size);
+		uint8_t dest_offset = 0;
+
+		dest_offset = custom_modifier_copy (r_container_candidate, dest_offset, o);
+		dest_offset = custom_modifier_copy (r_container_candidate, dest_offset, cmods_source);
+		g_assert (dest_offset == total_cmods);
+		r_container_candidate->count = total_cmods;
+
+		mono_type_set_amods (r, mono_metadata_get_canonical_aggregate_modifiers (r_container_candidate));
+
+		return r;
+	}
+}
+
 /**
  * Works the same way as mono_metadata_type_dup but pick cmods from @cmods_source
  */
 MonoType *
 mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o, const MonoType *cmods_source)
 {
-	MonoType *r = NULL;
-	size_t sizeof_o = mono_sizeof_type (cmods_source);
-
-	r = image ? (MonoType *)mono_image_alloc0 (image, sizeof_o) : (MonoType *)g_malloc (sizeof_o);
-
-	if (cmods_source->has_cmods) {
-		g_assert (!image || image == mono_type_get_cmods (cmods_source)->image);
-		memcpy (r, cmods_source, sizeof_o);
+	if (o->has_cmods && o != cmods_source && cmods_source->has_cmods) {
+		return do_metadata_type_dup_append_cmods (image, o, cmods_source);
 	}
 
-	memcpy (r, o, sizeof (MonoType));
-	r->has_cmods = cmods_source->has_cmods;
+	MonoType *r = NULL;
 
+	/* if we get here, either o and cmods_source alias, or else exactly one of them has cmods. */
+
+	uint8_t num_mods = MAX (mono_type_custom_modifier_count (o), mono_type_custom_modifier_count (cmods_source));
+	gboolean aggregate = mono_type_is_aggregate_mods (o) || mono_type_is_aggregate_mods (cmods_source);
+	size_t sizeof_r = mono_sizeof_type_with_mods (num_mods, aggregate);
+
+	r = image ? (MonoType *)mono_image_alloc0 (image, sizeof_r) : (MonoType *)g_malloc0 (sizeof_r);
+
+	if (cmods_source->has_cmods) {
+		/* FIXME: if it's aggregate what do we assert here? */
+		g_assert (!image || (!aggregate && image == mono_type_get_cmods (cmods_source)->image));
+		memcpy (r, cmods_source, mono_sizeof_type (cmods_source));
+	}
+
+	memcpy (r, o, mono_sizeof_type (o));
+
+	/* reset custom mod count and aggregateness to be correct. */
+	mono_type_with_mods_init (r, num_mods, aggregate);
+	if (aggregate)
+		mono_type_set_amods (r, mono_type_is_aggregate_mods (o) ? mono_type_get_amods (o) : mono_type_get_amods (cmods_source));
+	deep_type_dup_fixup (image, r, o);
+	return r;
+}
+
+
+static void
+deep_type_dup_fixup (MonoImage *image, MonoType *r, const MonoType *o)
+{
 	if (o->type == MONO_TYPE_PTR) {
 		r->data.type = mono_metadata_type_dup (image, o->data.type);
 	} else if (o->type == MONO_TYPE_ARRAY) {
@@ -5720,7 +6006,6 @@ mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o, const Mo
 		/*FIXME the dup'ed signature is leaked mono_metadata_free_type*/
 		r->data.method = mono_metadata_signature_deep_dup (image, o->data.method);
 	}
-	return r;
 }
 
 /**
@@ -7268,6 +7553,17 @@ mono_loader_get_strict_strong_names (void)
 }
 
 
+gboolean
+mono_type_is_aggregate_mods (const MonoType *t)
+{
+	if (!t->has_cmods)
+		return FALSE;
+
+	MonoTypeWithModifiers *full = (MonoTypeWithModifiers *)t;
+
+	return full->is_aggregate;
+}
+
 MonoCustomModContainer *
 mono_type_get_cmods (const MonoType *t)
 {
@@ -7276,30 +7572,70 @@ mono_type_get_cmods (const MonoType *t)
 
 	MonoTypeWithModifiers *full = (MonoTypeWithModifiers *)t;
 
-	return &full->cmods;
+	g_assert (!full->is_aggregate);
+	return &full->mods.cmods;
+}
+
+MonoAggregateModContainer *
+mono_type_get_amods (const MonoType *t)
+{
+	if (!t->has_cmods)
+		return NULL;
+
+	MonoTypeWithModifiers *full = (MonoTypeWithModifiers *)t;
+
+	g_assert (full->is_aggregate);
+	return full->mods.amods;
+}
+
+size_t
+mono_sizeof_aggregate_modifiers (uint8_t num_mods)
+{
+	size_t accum = 0;
+	accum += offsetof (MonoAggregateModContainer, modifiers);
+	accum += sizeof (MonoSingleCustomMod) * num_mods;
+	return accum;
 }
 
 size_t 
-mono_sizeof_type_with_mods (uint8_t num_mods)
+mono_sizeof_type_with_mods (uint8_t num_mods, gboolean is_aggregate)
 {
-	size_t accum = 0;
-	accum += sizeof (MonoType);
 	if (num_mods == 0)
-		return accum;
+		return sizeof (MonoType);
+	size_t accum = 0;
+	accum += offsetof (MonoTypeWithModifiers, mods);
 
-	accum += offsetof (struct _MonoCustomModContainer, modifiers);
-	accum += sizeof (MonoCustomMod) * num_mods;
+	if (!is_aggregate) {
+		accum += offsetof (struct _MonoCustomModContainer, modifiers);
+		accum += sizeof (MonoCustomMod) * num_mods;
+	} else {
+		accum += offsetof (MonoAggregateModContainer, modifiers);
+		accum += sizeof (MonoAggregateModContainer *);
+	}
 	return accum;
 }
 
 size_t 
 mono_sizeof_type (const MonoType *ty)
 {
-	MonoCustomModContainer *cmods = mono_type_get_cmods (ty);
-	if (cmods)
-		return mono_sizeof_type_with_mods (cmods->count);
-	else
+	if (ty->has_cmods) {
+		if (!mono_type_is_aggregate_mods (ty)) {
+			MonoCustomModContainer *cmods = mono_type_get_cmods (ty);
+			return mono_sizeof_type_with_mods (cmods->count, FALSE);
+		} else {
+			MonoAggregateModContainer *amods = mono_type_get_amods (ty);
+			return mono_sizeof_type_with_mods (amods->count, TRUE);
+		}
+	} else
 		return sizeof (MonoType);
 }
 
-
+void
+mono_type_set_amods (MonoType *t, MonoAggregateModContainer *amods)
+{
+	g_assert (t->has_cmods);
+	MonoTypeWithModifiers *t_full = (MonoTypeWithModifiers*)t;
+	g_assert (t_full->is_aggregate);
+	g_assert (t_full->mods.amods == NULL);
+	t_full->mods.amods = amods;
+}

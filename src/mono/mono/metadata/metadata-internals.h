@@ -37,12 +37,92 @@ struct _MonoType {
 };
 
 typedef struct {
+	unsigned int required : 1;
+	MonoType *type;
+} MonoSingleCustomMod;
+
+/* Aggregate custom modifiers can happen if a generic VAR or MVAR is inflated,
+ * and both the VAR and the type that will be used to inflated it have custom
+ * modifiers, but they come from different images.  (e.g. inflating 'class G<T>
+ * {void Test (T modopt(IsConst) t);}' with 'int32 modopt(IsLong)' where G is
+ * in image1 and the int32 is in image2.)
+ *
+ * Moreover, we can't just store an image and a type token per modifier, because
+ * Roslyn and C++/CLI sometimes create modifiers that mention generic parameters that must be inflated, like:
+ *     void .CL1`1.Test(!0 modopt(System.Nullable`1<!0>))
+ * So we have to store a resolved MonoType*.
+ *
+ * Because the types come from different images, we allocate the aggregate
+ * custom modifiers container object in the mempool of a MonoImageSet to ensure
+ * that it doesn't have dangling image pointers.
+ */
+typedef struct {
+	uint8_t count;
+	MonoSingleCustomMod modifiers[1]; /* Actual length is count */
+} MonoAggregateModContainer;
+
+/* ECMA says upto 64 custom modifiers.  It's possible we could see more at
+ * runtime due to modifiers being appended together when we inflate type.  In
+ * that case we should revisit the places where this define is used to make
+ * sure that we don't blow up the stack (or switch to heap allocation for
+ * temporaries).
+ */
+#define MONO_MAX_EXPECTED_CMODS 64
+
+typedef struct {
 	MonoType unmodified;
-	MonoCustomModContainer cmods;
+	gboolean is_aggregate;
+	union {
+		MonoCustomModContainer cmods;
+		/* the actual aggregate modifiers are in a MonoImageSet mempool
+		 * that includes all the images of all the modifier types and
+		 * also the type that this aggregate container is a part of.*/
+		MonoAggregateModContainer *amods;
+	} mods;
 } MonoTypeWithModifiers;
+
+gboolean
+mono_type_is_aggregate_mods (const MonoType *t);
+
+static inline void
+mono_type_with_mods_init (MonoType *dest, uint8_t num_mods, gboolean is_aggregate)
+{
+	if (num_mods == 0) {
+		dest->has_cmods = 0;
+		return;
+	}
+	dest->has_cmods = 1;
+	MonoTypeWithModifiers *dest_full = (MonoTypeWithModifiers *)dest;
+	dest_full->is_aggregate = !!is_aggregate;
+	if (is_aggregate)
+		dest_full->mods.amods = NULL;
+	else
+		dest_full->mods.cmods.count = num_mods;
+}
 
 MonoCustomModContainer *
 mono_type_get_cmods (const MonoType *t);
+
+MonoAggregateModContainer *
+mono_type_get_amods (const MonoType *t);
+
+void
+mono_type_set_amods (MonoType *t, MonoAggregateModContainer *amods);
+
+static inline uint8_t
+mono_type_custom_modifier_count (const MonoType *t)
+{
+	if (!t->has_cmods)
+		return 0;
+	MonoTypeWithModifiers *full = (MonoTypeWithModifiers *)t;
+	if (full->is_aggregate)
+		return full->mods.amods->count;
+	else
+		return full->mods.cmods.count;
+}
+
+MonoType *
+mono_type_get_custom_modifier (const MonoType *ty, uint8_t idx, gboolean *required, MonoError *error);
 
 // Note: sizeof (MonoType) is dangerous. It can copy the num_mods
 // field without copying the variably sized array. This leads to
@@ -54,10 +134,16 @@ mono_type_get_cmods (const MonoType *t);
 #define MONO_SIZEOF_TYPE sizeof (MonoType)
 
 size_t 
-mono_sizeof_type_with_mods (uint8_t num_mods);
+mono_sizeof_type_with_mods (uint8_t num_mods, gboolean aggregate);
 
 size_t 
 mono_sizeof_type (const MonoType *ty);
+
+size_t
+mono_sizeof_aggregate_modifiers (uint8_t num_mods);
+
+MonoAggregateModContainer *
+mono_metadata_get_canonical_aggregate_modifiers (MonoAggregateModContainer *candidate);
 
 #define MONO_SECMAN_FLAG_INIT(x)		(x & 0x2)
 #define MONO_SECMAN_FLAG_GET_VALUE(x)		(x & 0x1)
@@ -466,7 +552,7 @@ struct _MonoImage {
 };
 
 /*
- * Generic instances depend on many images, and they need to be deleted if one
+ * Generic instances and aggregated custom modifiers depend on many images, and they need to be deleted if one
  * of the images they depend on is unloaded. For example,
  * List<Foo> depends on both List's image and Foo's image.
  * A MonoImageSet is the owner of all generic instances depending on the same set of
@@ -484,6 +570,8 @@ typedef struct {
 	GHashTable *szarray_cache, *array_cache, *ptr_cache;
 
 	MonoWrapperCaches wrapper_caches;
+
+	GHashTable *aggregate_modifiers_cache;
 
 	mono_mutex_t    lock;
 
@@ -765,6 +853,9 @@ mono_image_set_unlock (MonoImageSet *set);
 
 char*
 mono_image_set_strdup (MonoImageSet *set, const char *s);
+
+MonoImageSet *
+mono_metadata_get_image_set_for_aggregate_modifiers (MonoAggregateModContainer *amods);
 
 #define mono_image_set_new0(image,type,size) ((type *) mono_image_set_alloc0 (image, sizeof (type)* (size)))
 

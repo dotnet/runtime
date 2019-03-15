@@ -326,10 +326,12 @@ typedef struct {
 	MonoException base;
 } MonoSystemException;
 
+#ifndef ENABLE_NETCORE
 typedef struct {
 	MonoSystemException base;
 	MonoString *param_name;
 } MonoArgumentException;
+#endif
 
 typedef struct {
 	MonoObject   object;

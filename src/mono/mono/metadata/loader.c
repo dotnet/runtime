@@ -85,6 +85,7 @@ static void dllmap_insert_image (MonoImage *assembly, const char *dll, const cha
 
 /* Class lazy loading functions */
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
 
 static void
 global_loader_data_lock (void)

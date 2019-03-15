@@ -1360,6 +1360,7 @@ elif test x$with_runtime_preset = xwinaot_llvm; then
    mono_feature_disable_reflection_emit='yes'
    mono_feature_disable_appdomains='yes'
 
+   INVARIANT_AOT_OPTIONS="llcopts=-mattr=sse4.1,$INVARIANT_AOT_OPTIONS"
    AOT_BUILD_FLAGS="--runtime=mobile -O=gsharedvt --llvm --aot=full,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--runtime=mobile --full-aot"
    AOT_MODE="full"
@@ -6382,7 +6383,6 @@ data/mono-2.pc
 data/monosgen-2.pc
 data/mono.pc
 data/mono-cairo.pc
-data/mono-nunit.pc
 data/mono-options.pc
 data/mono-lineeditor.pc
 data/monodoc.pc

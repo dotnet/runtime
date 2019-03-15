@@ -378,7 +378,7 @@ lookup_image_func (gpointer key, gpointer value, gpointer user_data)
 	if (data->found)
 		return;
 
-	if (handle->image == data->image && handle->symfile)
+	if (handle->image == data->image && (handle->symfile || handle->ppdb))
 		data->found = TRUE;
 }
 

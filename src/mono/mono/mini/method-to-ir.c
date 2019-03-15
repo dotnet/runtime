@@ -1229,8 +1229,12 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		break;
 	}
 
-	if (ins->type == STACK_MP)
-		ins->klass = mono_defaults.object_class;
+	if (ins->type == STACK_MP) {
+		if (src1->type == STACK_MP)
+			ins->klass = src1->klass;
+		else
+			ins->klass = mono_defaults.object_class;
+	}
 }
 
 void
