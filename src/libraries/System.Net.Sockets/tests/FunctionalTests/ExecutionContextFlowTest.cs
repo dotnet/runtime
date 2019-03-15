@@ -334,7 +334,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [InlineData(false, 0)]
         [InlineData(true, 0)]
         [InlineData(false, 1)]
@@ -450,7 +450,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(35493)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

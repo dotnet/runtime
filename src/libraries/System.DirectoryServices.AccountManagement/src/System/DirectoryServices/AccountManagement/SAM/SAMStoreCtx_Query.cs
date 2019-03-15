@@ -138,9 +138,9 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                Debug.Fail("SAMStoreCtx.GetSchemaFilter: fell off end looking for " + principalType.ToString());
+                Debug.Fail($"SAMStoreCtx.GetSchemaFilter: fell off end looking for {principalType}");
                 throw new InvalidOperationException(
-                                string.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForQuery, principalType.ToString()));
+                                SR.Format(SR.StoreCtxUnsupportedPrincipalTypeForQuery, principalType));
             }
 
             return schemaTypes;

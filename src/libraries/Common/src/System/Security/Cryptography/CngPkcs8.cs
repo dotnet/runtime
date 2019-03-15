@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
                 using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
                 {
                     AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                    len = reader.GetEncodedValue().Length;
+                    len = reader.ReadEncodedValue().Length;
                 }
             }
 
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography
                 using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
                 {
                     AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                    int len = reader.GetEncodedValue().Length;
+                    int len = reader.ReadEncodedValue().Length;
                     source = source.Slice(0, len);
 
                     try

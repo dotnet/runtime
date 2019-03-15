@@ -219,7 +219,7 @@ namespace System.Xml.Schema
                         case TypeCode.Int64: return valueConverter.ChangeType(_unionVal.i64Val, ValueType);
                         case TypeCode.Double: return valueConverter.ChangeType(_unionVal.dblVal, ValueType);
                         case TypeCode.DateTime: return valueConverter.ChangeType(_unionVal.dtVal, ValueType);
-                        default: Debug.Assert(false, "Should never get here"); break;
+                        default: Debug.Fail("Should never get here"); break;
                     }
                 }
                 return valueConverter.ChangeType(_objVal, ValueType, _nsPrefix);
@@ -241,7 +241,7 @@ namespace System.Xml.Schema
                         case TypeCode.Int64: return valueConverter.ToBoolean(_unionVal.i64Val);
                         case TypeCode.Double: return valueConverter.ToBoolean(_unionVal.dblVal);
                         case TypeCode.DateTime: return valueConverter.ToBoolean(_unionVal.dtVal);
-                        default: Debug.Assert(false, "Should never get here"); break;
+                        default: Debug.Fail("Should never get here"); break;
                     }
                 }
 
@@ -264,7 +264,7 @@ namespace System.Xml.Schema
                         case TypeCode.Int64: return valueConverter.ToDateTime(_unionVal.i64Val);
                         case TypeCode.Double: return valueConverter.ToDateTime(_unionVal.dblVal);
                         case TypeCode.DateTime: return _unionVal.dtVal;
-                        default: Debug.Assert(false, "Should never get here"); break;
+                        default: Debug.Fail("Should never get here"); break;
                     }
                 }
 
@@ -288,7 +288,7 @@ namespace System.Xml.Schema
                         case TypeCode.Int64: return valueConverter.ToDouble(_unionVal.i64Val);
                         case TypeCode.Double: return _unionVal.dblVal;
                         case TypeCode.DateTime: return valueConverter.ToDouble(_unionVal.dtVal);
-                        default: Debug.Assert(false, "Should never get here"); break;
+                        default: Debug.Fail("Should never get here"); break;
                     }
                 }
 
@@ -311,7 +311,7 @@ namespace System.Xml.Schema
                         case TypeCode.Int64: return valueConverter.ToInt32(_unionVal.i64Val);
                         case TypeCode.Double: return valueConverter.ToInt32(_unionVal.dblVal);
                         case TypeCode.DateTime: return valueConverter.ToInt32(_unionVal.dtVal);
-                        default: Debug.Assert(false, "Should never get here"); break;
+                        default: Debug.Fail("Should never get here"); break;
                     }
                 }
 
@@ -334,7 +334,7 @@ namespace System.Xml.Schema
                         case TypeCode.Int64: return _unionVal.i64Val;
                         case TypeCode.Double: return valueConverter.ToInt64(_unionVal.dblVal);
                         case TypeCode.DateTime: return valueConverter.ToInt64(_unionVal.dtVal);
-                        default: Debug.Assert(false, "Should never get here"); break;
+                        default: Debug.Fail("Should never get here"); break;
                     }
                 }
 
@@ -358,7 +358,7 @@ namespace System.Xml.Schema
                     case TypeCode.Int64: return valueConverter.ChangeType(_unionVal.i64Val, type);
                     case TypeCode.Double: return valueConverter.ChangeType(_unionVal.dblVal, type);
                     case TypeCode.DateTime: return valueConverter.ChangeType(_unionVal.dtVal, type);
-                    default: Debug.Assert(false, "Should never get here"); break;
+                    default: Debug.Fail("Should never get here"); break;
                 }
             }
 
@@ -380,7 +380,7 @@ namespace System.Xml.Schema
                         case TypeCode.Int64: return valueConverter.ToString(_unionVal.i64Val);
                         case TypeCode.Double: return valueConverter.ToString(_unionVal.dblVal);
                         case TypeCode.DateTime: return valueConverter.ToString(_unionVal.dtVal);
-                        default: Debug.Assert(false, "Should never get here"); break;
+                        default: Debug.Fail("Should never get here"); break;
                     }
                 }
                 return valueConverter.ToString(_objVal, _nsPrefix);

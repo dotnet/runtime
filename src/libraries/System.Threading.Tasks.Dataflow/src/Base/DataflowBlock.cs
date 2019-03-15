@@ -14,7 +14,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks.Dataflow.Internal;
 
@@ -43,7 +42,6 @@ namespace System.Threading.Tasks.Dataflow
             // Validate arguments
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
-            Contract.EndContractBlock();
 
             // This method exists purely to pass default DataflowLinkOptions 
             // to increase usability of the "90%" case.
@@ -88,7 +86,6 @@ namespace System.Threading.Tasks.Dataflow
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (linkOptions == null) throw new ArgumentNullException(nameof(linkOptions));
             if (predicate == null) throw new ArgumentNullException(nameof(predicate));
-            Contract.EndContractBlock();
 
             // Create the filter, which links to the real target, and then
             // link the real source to this intermediate filter.
@@ -142,7 +139,6 @@ namespace System.Threading.Tasks.Dataflow
                 // is an internal target that should only ever have source non-null.
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (source == null) throw new ArgumentNullException(nameof(source));
-                Contract.EndContractBlock();
 
                 // Run the filter.
                 bool passedFilter = RunPredicate(messageValue);
@@ -300,7 +296,6 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments.  No validation necessary for item.
             if (target == null) throw new ArgumentNullException(nameof(target));
-            Contract.EndContractBlock();
 
             // Fast path check for cancellation
             if (cancellationToken.IsCancellationRequested)
@@ -633,7 +628,6 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (target == null) throw new ArgumentNullException(nameof(target));
-                Contract.EndContractBlock();
 
                 // If the task has already completed, there's nothing to consume.  This could happen if
                 // cancellation was already requested and completed the task as a result.
@@ -679,7 +673,6 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (target == null) throw new ArgumentNullException(nameof(target));
-                Contract.EndContractBlock();
 
                 // If the task has already completed, such as due to cancellation, there's nothing to reserve.
                 if (Task.IsCompleted) return false;
@@ -697,7 +690,6 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (target == null) throw new ArgumentNullException(nameof(target));
-                Contract.EndContractBlock();
 
                 // If this is not the message we posted, bail
                 if (messageHeader.Id != Common.SINGLE_MESSAGE_ID)
@@ -786,7 +778,6 @@ namespace System.Threading.Tasks.Dataflow
         public static bool TryReceive<TOutput>(this IReceivableSourceBlock<TOutput> source, out TOutput item)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
-            Contract.EndContractBlock();
 
             return source.TryReceive(null, out item);
         }
@@ -1174,7 +1165,6 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, nameof(consumeToAccept));
-                Contract.EndContractBlock();
 
                 DataflowMessageStatus status = DataflowMessageStatus.NotAvailable;
 
@@ -1442,7 +1432,6 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (source == null) throw new ArgumentNullException(nameof(source));
-            Contract.EndContractBlock();
 
             // Fast path for cancellation
             if (cancellationToken.IsCancellationRequested)
@@ -1563,7 +1552,6 @@ namespace System.Threading.Tasks.Dataflow
             {
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (source == null) throw new ArgumentNullException(nameof(source));
-                Contract.EndContractBlock();
 
                 TrySetResult(true);
                 return DataflowMessageStatus.DecliningPermanently;
@@ -1579,7 +1567,6 @@ namespace System.Threading.Tasks.Dataflow
             void IDataflowBlock.Fault(Exception exception)
             {
                 if (exception == null) throw new ArgumentNullException(nameof(exception));
-                Contract.EndContractBlock();
                 TrySetResult(false);
             }
 
@@ -1620,7 +1607,6 @@ namespace System.Threading.Tasks.Dataflow
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (source == null) throw new ArgumentNullException(nameof(source));
-            Contract.EndContractBlock();
             return new EncapsulatingPropagator<TInput, TOutput>(target, source);
         }
 
@@ -1652,7 +1638,6 @@ namespace System.Threading.Tasks.Dataflow
             void IDataflowBlock.Fault(Exception exception)
             {
                 if (exception == null) throw new ArgumentNullException(nameof(exception));
-                Contract.EndContractBlock();
 
                 _target.Fault(exception);
             }
@@ -2227,7 +2212,6 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, nameof(consumeToAccept));
-                Contract.EndContractBlock();
 
                 lock (_completed)
                 {
@@ -2286,7 +2270,6 @@ namespace System.Threading.Tasks.Dataflow
         public static IObservable<TOutput> AsObservable<TOutput>(this ISourceBlock<TOutput> source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
-            Contract.EndContractBlock();
             return SourceObservable<TOutput>.From(source);
         }
 
@@ -2353,7 +2336,6 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Validate arguments
                 if (observer == null) throw new ArgumentNullException(nameof(observer));
-                Contract.EndContractBlock();
                 Common.ContractAssertMonitorStatus(_SubscriptionLock, held: false);
 
                 Task sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(_source);
@@ -2663,7 +2645,6 @@ namespace System.Threading.Tasks.Dataflow
         public static IObserver<TInput> AsObserver<TInput>(this ITargetBlock<TInput> target)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
-            Contract.EndContractBlock();
             return new TargetObserver<TInput>(target);
         }
 
@@ -2753,7 +2734,6 @@ namespace System.Threading.Tasks.Dataflow
             DataflowMessageStatus ITargetBlock<TInput>.OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, bool consumeToAccept)
             {
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
-                Contract.EndContractBlock();
 
                 // If the source requires an explicit synchronous consumption, do it
                 if (consumeToAccept)

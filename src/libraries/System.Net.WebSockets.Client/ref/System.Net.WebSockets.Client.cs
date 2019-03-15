@@ -10,7 +10,7 @@ namespace System.Net.WebSockets
     public sealed partial class ClientWebSocket : System.Net.WebSockets.WebSocket
     {
         public ClientWebSocket() { }
-        public override System.Nullable<System.Net.WebSockets.WebSocketCloseStatus> CloseStatus { get { throw null; } }
+        public override System.Net.WebSockets.WebSocketCloseStatus? CloseStatus { get { throw null; } }
         public override string CloseStatusDescription { get { throw null; } }
         public System.Net.WebSockets.ClientWebSocketOptions Options { get { throw null; } }
         public override System.Net.WebSockets.WebSocketState State { get { throw null; } }

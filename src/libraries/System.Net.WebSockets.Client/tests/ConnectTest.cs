@@ -18,7 +18,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(UnavailableWebSocketServers))]
-        public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage)
+        public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
         {
             using (var cws = new ClientWebSocket())
             {
@@ -26,7 +26,10 @@ namespace System.Net.WebSockets.Client.Tests
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ConnectAsync(server, cts.Token));
 
-                Assert.Equal(WebSocketError.Success, ex.WebSocketErrorCode);
+                if (PlatformDetection.IsNetCore && !PlatformDetection.IsUap) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
+                {
+                    Assert.Equal(errorCode, ex.WebSocketErrorCode);
+                }
                 Assert.Equal(WebSocketState.Closed, cws.State);
 
                 // .NET Framework and UAP implmentations have different exception message from .NET Core.
@@ -184,7 +187,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketExceptionWithMessage(Uri server)
+        public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException(Uri server)
         {
             const string AcceptedProtocol = "CustomProtocol";
 
@@ -197,10 +200,13 @@ namespace System.Net.WebSockets.Client.Tests
 
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ConnectAsync(ub.Uri, cts.Token));
-
-                Assert.Equal(WebSocketError.Success, ex.WebSocketErrorCode);
+                _output.WriteLine(ex.Message);
+                if (PlatformDetection.IsNetCore) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
+                {
+                    Assert.True(ex.WebSocketErrorCode == WebSocketError.Faulted ||
+                        ex.WebSocketErrorCode == WebSocketError.NotAWebSocket);
+                }
                 Assert.Equal(WebSocketState.Closed, cws.State);
-                Assert.Equal(ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure"), ex.Message);
             }
         }
 
@@ -224,6 +230,23 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketState.Open, cws.State);
                 Assert.Equal(AcceptedProtocol, cws.SubProtocol);
             }
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        public async Task ConnectAsync_NonStandardRequestHeaders_HeadersAddedWithoutValidation()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var clientSocket = new ClientWebSocket())
+                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                {
+                    clientSocket.Options.SetRequestHeader("Authorization", "AWS4-HMAC-SHA256 Credential= AKIAXXXXXXXXXXXYSZA /20190301/us-east-2/neptune-db/aws4_request, SignedHeaders=host;x-amz-date, Signature=b8155de54d9faab00000000000000000000000000a07e0d7dda49902e4d9202");
+                    await clientSocket.ConnectAsync(uri, cts.Token);
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                Assert.True(await LoopbackHelper.WebSocketHandshakeAsync(connection));
+            }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
     }
 }

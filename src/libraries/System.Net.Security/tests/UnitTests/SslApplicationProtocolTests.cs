@@ -30,12 +30,12 @@ namespace System.Net.Security.Tests
             SslApplicationProtocol defaultProtocol = default;
             Assert.True(defaultProtocol.Protocol.IsEmpty);
 
-            Assert.Throws<ArgumentNullException>(() => { new SslApplicationProtocol((byte[])null); });
-            Assert.Throws<ArgumentNullException>(() => { new SslApplicationProtocol((string)null); });
-            Assert.Throws<ArgumentException>(() => { new SslApplicationProtocol(new byte[] { }); });
-            Assert.Throws<ArgumentException>(() => { new SslApplicationProtocol(string.Empty); });
-            Assert.Throws<ArgumentException>(() => { new SslApplicationProtocol(Encoding.UTF8.GetBytes(new string('a', 256))); });
-            Assert.Throws<ArgumentException>(() => { new SslApplicationProtocol(new string('a', 256)); });
+            AssertExtensions.Throws<ArgumentNullException>("protocol", () => { new SslApplicationProtocol((byte[])null); });
+            AssertExtensions.Throws<ArgumentNullException>("protocol", () => { new SslApplicationProtocol((string)null); });
+            AssertExtensions.Throws<ArgumentException>("protocol", () => { new SslApplicationProtocol(new byte[] { }); });
+            AssertExtensions.Throws<ArgumentException>("protocol", () => { new SslApplicationProtocol(string.Empty); });
+            AssertExtensions.Throws<ArgumentException>("protocol", () => { new SslApplicationProtocol(Encoding.UTF8.GetBytes(new string('a', 256))); });
+            AssertExtensions.Throws<ArgumentException>("protocol", () => { new SslApplicationProtocol(new string('a', 256)); });
             Assert.Throws<EncoderFallbackException>(() => { new SslApplicationProtocol("\uDC00"); });
         }
 
@@ -74,16 +74,11 @@ namespace System.Net.Security.Tests
         [Fact]
         public void ToString_Rendering_Succeeds()
         {
-            const string expected = "hello";
-            SslApplicationProtocol protocol = new SslApplicationProtocol(expected);
-            Assert.Equal(expected, protocol.ToString());
-
-            byte[] bytes = new byte[] { 0x0B, 0xEE };
-            protocol = new SslApplicationProtocol(bytes);
-            Assert.Equal("0x0b 0xee", protocol.ToString());
-
-            protocol = default;
-            Assert.Null(protocol.ToString());
+            Assert.Equal("http/1.1", SslApplicationProtocol.Http11.ToString());
+            Assert.Equal("h2", SslApplicationProtocol.Http2.ToString());
+            Assert.Equal("hello", new SslApplicationProtocol("hello").ToString());
+            Assert.Equal("0x0b 0xee", new SslApplicationProtocol(new byte[] { 0x0B, 0xEE }).ToString());
+            Assert.Equal(string.Empty, default(SslApplicationProtocol).ToString());
         }
 
         public static IEnumerable<object[]> Protocol_Equality_TestData()

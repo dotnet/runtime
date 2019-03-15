@@ -73,7 +73,7 @@ namespace System.Data.Odbc
                 CNativeBuffer value = _cmdWrapper._dataReaderBuf;
                 if (null == value)
                 {
-                    Debug.Assert(false, "object is disposed");
+                    Debug.Fail("object is disposed");
                     throw new ObjectDisposedException(GetType().Name);
                 }
                 return value;
@@ -1666,7 +1666,7 @@ namespace System.Data.Odbc
             // APP_PARAM_DESC is a (ODBCVER >= 0x0300) attribute
             if (!Connection.IsV3Driver)
             {
-                Debug.Assert(false, "Non-V3 driver. Must not call GetDescFieldStr");
+                Debug.Fail("Non-V3 driver. Must not call GetDescFieldStr");
                 return null;
             }
 

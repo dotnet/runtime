@@ -122,7 +122,7 @@ class Program
 8. Apply the optimization that you want to test
 9. Rebuild System.Private.Corelib with your change (optionally adding `-skipnative` if the change is isolated to managed code):
 
-        C:\Projects\coreclr>build.cmd -release -skiptests -skipnative
+        C:\Projects\coreclr>build.cmd -release -skiptests -skipnative -skipbuildpackages
 
 10. For the next step, you have one of two options:
 
@@ -130,10 +130,9 @@ class Program
 
           C:\Projects\corefx>build.cmd -c Release /p:CoreCLROverridePath=C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
 
-  - OR manually copy over the relevant files from within the root of the coreclr output folder to where `CoreRun.exe` lives within corefx (excluding the subdirectories). This ends up being much faster than the first option and if the only thing that changed is   `System.Private.Corelib.dll`, just copy that over:
-
-          Copy from: C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
-          To: C:\Projects\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\
+  - Force refresh of CoreCLR hard-link copy (this ends up being much faster than the first option):
+   
+          C:\Projects\corefx>build.cmd -restore -c Release /p:CoreCLROverridePath=C:\Projects\coreclr\bin\Product\Windows_NT.x64.Release
 
 11. Run the benchmarks using `--coreRun` from the first step. Save the results in a dedicated folder.
 

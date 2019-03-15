@@ -34,7 +34,7 @@ namespace System.Runtime.Serialization
             set
             {
                 if (value < 0)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.OrderCannotBeNegative)));
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.OrderCannotBeNegative));
                 _order = value;
             }
         }

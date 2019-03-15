@@ -396,7 +396,7 @@ namespace System.Data.Odbc
                             }
                         }
 #if DEBUG
-                        else { Debug.Assert(false, "not expecting this"); }
+                        else { Debug.Fail("not expecting this"); }
 #endif
                         // Note: ColumnSize should never be 0,
                         // this represents the size of the column on the backend.
@@ -407,7 +407,7 @@ namespace System.Data.Odbc
                     }
                 }
             }
-            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), string.Format((IFormatProvider)null, "GetColumnSize: cch = {0} out of range, _internalShouldSerializeSize = {1}, _internalSize = {2}", cch, _internalShouldSerializeSize, _internalSize));
+            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), $"GetColumnSize: cch = {cch} out of range, _internalShouldSerializeSize = {_internalShouldSerializeSize}, _internalSize = {_internalSize}");
             return cch;
         }
 
@@ -452,7 +452,7 @@ namespace System.Data.Odbc
                     cch *= 2;
                 }
             }
-            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), string.Format((IFormatProvider)null, "GetValueSize: cch = {0} out of range, _internalShouldSerializeSize = {1}, _internalSize = {2}", cch, _internalShouldSerializeSize, _internalSize));
+            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), $"GetValueSize: cch = {cch} out of range, _internalShouldSerializeSize = {_internalShouldSerializeSize}, _internalSize = {_internalSize}");
             return cch;
         }
 
@@ -501,7 +501,7 @@ namespace System.Data.Odbc
                             ccb = ((byte[])value).Length - offset;
                         }
 #if DEBUG
-                        else { Debug.Assert(false, "not expecting this"); }
+                        else { Debug.Fail("not expecting this"); }
 #endif
                         if ((0 != (ParameterDirection.Output & _internalDirection)) && (0x3fffffff <= _internalSize))
                         {
@@ -1101,7 +1101,7 @@ namespace System.Data.Odbc
                 case ParameterDirection.InputOutput:
                     return ODBC32.SQL_PARAM.INPUT_OUTPUT;
                 default:
-                    Debug.Assert(false, "Unexpected Direction Property on Parameter");
+                    Debug.Fail("Unexpected Direction Property on Parameter");
                     return ODBC32.SQL_PARAM.INPUT;
             }
         }

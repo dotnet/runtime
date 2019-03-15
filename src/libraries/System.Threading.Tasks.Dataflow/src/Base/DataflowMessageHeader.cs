@@ -12,7 +12,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Threading.Tasks.Dataflow.Internal;
 
 namespace System.Threading.Tasks.Dataflow
@@ -29,7 +28,6 @@ namespace System.Threading.Tasks.Dataflow
         public DataflowMessageHeader(long id)
         {
             if (id == default(long)) throw new ArgumentException(SR.Argument_InvalidMessageId, nameof(id));
-            Contract.EndContractBlock();
 
             _id = id;
         }

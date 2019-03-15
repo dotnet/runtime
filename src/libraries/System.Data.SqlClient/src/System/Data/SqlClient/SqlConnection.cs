@@ -848,7 +848,7 @@ namespace System.Data.SqlClient
                 _recoverySessionData = null;
                 _suppressStateChangeForReconnection = false;
             }
-            Debug.Assert(false, "Should not reach this point");
+            Debug.Fail("Should not reach this point");
         }
 
         internal Task ValidateAndReconnect(Action beforeDisconnect, int timeout)

@@ -93,6 +93,7 @@
 #cmakedefine01 INOTIFY_RM_WATCH_WD_UNSIGNED
 #cmakedefine01 HAVE_IN_EXCL_UNLINK
 #cmakedefine01 HAVE_TCP_H_TCP_KEEPALIVE
+#cmakedefine01 HAVE_BUILTIN_MUL_OVERFLOW
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

@@ -142,8 +142,7 @@ void BrotliBuildCodeLengthsHuffmanTable(HuffmanCode* table,
 
   /* Special case: all symbols but one have 0 code length. */
   if (offset[0] == 0) {
-    code.bits = 0;
-    code.value = (uint16_t)sorted[0];
+    code = ConstructHuffmanCode(0, (uint16_t)sorted[0]);
     for (key = 0; key < (brotli_reg_t)table_size; ++key) {
       table[key] = code;
     }
@@ -157,9 +156,8 @@ void BrotliBuildCodeLengthsHuffmanTable(HuffmanCode* table,
   bits = 1;
   step = 2;
   do {
-    code.bits = (uint8_t)bits;
     for (bits_count = count[bits]; bits_count != 0; --bits_count) {
-      code.value = (uint16_t)sorted[symbol++];
+      code = ConstructHuffmanCode((uint8_t)bits, (uint16_t)sorted[symbol++]);
       ReplicateValue(&table[BrotliReverseBits(key)], step, table_size, code);
       key += key_step;
     }
@@ -211,11 +209,10 @@ uint32_t BrotliBuildHuffmanTable(HuffmanCode* root_table,
   bits = 1;
   step = 2;
   do {
-    code.bits = (uint8_t)bits;
     symbol = bits - (BROTLI_HUFFMAN_MAX_CODE_LENGTH + 1);
     for (bits_count = count[bits]; bits_count != 0; --bits_count) {
       symbol = symbol_lists[symbol];
-      code.value = (uint16_t)symbol;
+      code = ConstructHuffmanCode((uint8_t)bits, (uint16_t)symbol);
       ReplicateValue(&table[BrotliReverseBits(key)], step, table_size, code);
       key += key_step;
     }
@@ -244,14 +241,13 @@ uint32_t BrotliBuildHuffmanTable(HuffmanCode* root_table,
         total_size += table_size;
         sub_key = BrotliReverseBits(key);
         key += key_step;
-        root_table[sub_key].bits = (uint8_t)(table_bits + root_bits);
-        root_table[sub_key].value =
-            (uint16_t)(((size_t)(table - root_table)) - sub_key);
+        root_table[sub_key] = ConstructHuffmanCode(
+            (uint8_t)(table_bits + root_bits),
+            (uint16_t)(((size_t)(table - root_table)) - sub_key));
         sub_key = 0;
       }
-      code.bits = (uint8_t)(len - root_bits);
       symbol = symbol_lists[symbol];
-      code.value = (uint16_t)symbol;
+      code = ConstructHuffmanCode((uint8_t)(len - root_bits), (uint16_t)symbol);
       ReplicateValue(
           &table[BrotliReverseBits(sub_key)], step, table_size, code);
       sub_key += sub_key_step;
@@ -270,35 +266,28 @@ uint32_t BrotliBuildSimpleHuffmanTable(HuffmanCode* table,
   const uint32_t goal_size = 1U << root_bits;
   switch (num_symbols) {
     case 0:
-      table[0].bits = 0;
-      table[0].value = val[0];
+      table[0] = ConstructHuffmanCode(0, val[0]);
       break;
     case 1:
-      table[0].bits = 1;
-      table[1].bits = 1;
       if (val[1] > val[0]) {
-        table[0].value = val[0];
-        table[1].value = val[1];
+        table[0] = ConstructHuffmanCode(1, val[0]);
+        table[1] = ConstructHuffmanCode(1, val[1]);
       } else {
-        table[0].value = val[1];
-        table[1].value = val[0];
+        table[0] = ConstructHuffmanCode(1, val[1]);
+        table[1] = ConstructHuffmanCode(1, val[0]);
       }
       table_size = 2;
       break;
     case 2:
-      table[0].bits = 1;
-      table[0].value = val[0];
-      table[2].bits = 1;
-      table[2].value = val[0];
+      table[0] = ConstructHuffmanCode(1, val[0]);
+      table[2] = ConstructHuffmanCode(1, val[0]);
       if (val[2] > val[1]) {
-        table[1].value = val[1];
-        table[3].value = val[2];
+        table[1] = ConstructHuffmanCode(2, val[1]);
+        table[3] = ConstructHuffmanCode(2, val[2]);
       } else {
-        table[1].value = val[2];
-        table[3].value = val[1];
+        table[1] = ConstructHuffmanCode(2, val[2]);
+        table[3] = ConstructHuffmanCode(2, val[1]);
       }
-      table[1].bits = 2;
-      table[3].bits = 2;
       table_size = 4;
       break;
     case 3: {
@@ -312,33 +301,27 @@ uint32_t BrotliBuildSimpleHuffmanTable(HuffmanCode* table,
           }
         }
       }
-      for (i = 0; i < 4; ++i) {
-        table[i].bits = 2;
-      }
-      table[0].value = val[0];
-      table[2].value = val[1];
-      table[1].value = val[2];
-      table[3].value = val[3];
+      table[0] = ConstructHuffmanCode(2, val[0]);
+      table[2] = ConstructHuffmanCode(2, val[1]);
+      table[1] = ConstructHuffmanCode(2, val[2]);
+      table[3] = ConstructHuffmanCode(2, val[3]);
       table_size = 4;
       break;
     }
     case 4: {
-      int i;
       if (val[3] < val[2]) {
         uint16_t t = val[3];
         val[3] = val[2];
         val[2] = t;
       }
-      for (i = 0; i < 7; ++i) {
-        table[i].value = val[0];
-        table[i].bits = (uint8_t)(1 + (i & 1));
-      }
-      table[1].value = val[1];
-      table[3].value = val[2];
-      table[5].value = val[1];
-      table[7].value = val[3];
-      table[3].bits = 3;
-      table[7].bits = 3;
+      table[0] = ConstructHuffmanCode(1, val[0]);
+      table[1] = ConstructHuffmanCode(2, val[1]);
+      table[2] = ConstructHuffmanCode(1, val[0]);
+      table[3] = ConstructHuffmanCode(3, val[2]);
+      table[4] = ConstructHuffmanCode(1, val[0]);
+      table[5] = ConstructHuffmanCode(2, val[1]);
+      table[6] = ConstructHuffmanCode(1, val[0]);
+      table[7] = ConstructHuffmanCode(3, val[3]);
       table_size = 8;
       break;
     }

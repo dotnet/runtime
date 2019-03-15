@@ -12,13 +12,13 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void DefaultPauseWriterThresholdIsSet()
         {
-            Assert.Equal(32768, PipeOptions.Default.PauseWriterThreshold);
+            Assert.Equal(65536, PipeOptions.Default.PauseWriterThreshold);
         }
 
         [Fact]
         public void DefaultResumeWriterThresholdIsSet()
         {
-            Assert.Equal(16384, PipeOptions.Default.ResumeWriterThreshold);
+            Assert.Equal(32768, PipeOptions.Default.ResumeWriterThreshold);
         }
 
         [Fact]

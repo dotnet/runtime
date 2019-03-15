@@ -67,7 +67,7 @@ namespace System.Xml
                     return FinishInitTextReaderAsync();
                 default:
                     //should never hit here
-                    Debug.Assert(false, "Invalid InitInputType");
+                    Debug.Fail("Invalid InitInputType");
                     return Task.CompletedTask;
             }
         }
@@ -171,7 +171,7 @@ namespace System.Xml
                     // Needed only for XmlTextReader
                     //XmlTextReader can't execute Async method.
                     case ParsingFunction.OpenUrl:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected parsing function {_parsingFunction}");
                         break;
                     case ParsingFunction.SwitchToInteractive:
                         Debug.Assert(!_ps.appendMode);
@@ -260,7 +260,7 @@ namespace System.Xml
                     case ParsingFunction.InReadElementContentAsBinary:
                         return FinishReadElementContentAsBinaryAsync().CallBoolTaskFuncWhenFinishAsync(thisRef => thisRef.ReadAsync(), this);
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected parsing function {_parsingFunction}");
                         break;
                 }
             }
@@ -319,7 +319,7 @@ namespace System.Xml
                 switch (_parsingFunction)
                 {
                     case ParsingFunction.InReadAttributeValue:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected parsing function {_parsingFunction}");
                         break;
                     // Needed only for XmlTextReader (ReadChars, ReadBase64, ReadBinHex)
                     case ParsingFunction.InIncrementalRead:
@@ -1056,7 +1056,7 @@ namespace System.Xml
                     return ParseDtdFromParserContextAsync();
 
                 default:
-                    Debug.Assert(false, "Unhandled DtdProcessing enumeration value.");
+                    Debug.Fail("Unhandled DtdProcessing enumeration value.");
                     break;
             }
 
@@ -1492,7 +1492,7 @@ namespace System.Xml
                             xmlDeclState = 3;
                             break;
                         default:
-                            Debug.Assert(false);
+                            Debug.Fail($"Unexpected xmlDeclState {xmlDeclState}");
                             break;
                     }
                     sb.Append(chars, _ps.charPos, pos - _ps.charPos);
@@ -2356,7 +2356,7 @@ namespace System.Xml
                     ThrowUnexpectedToken(pos, ">");
                 }
 
-                Debug.Assert(false, "We should never get to this point.");
+                Debug.Fail("We should never get to this point.");
             }
 
             Debug.Assert(_index > 0);
@@ -2961,7 +2961,7 @@ namespace System.Xml
                     {
                         if (_ps.chars[_ps.charPos] != (char)0xD)
                         {
-                            Debug.Assert(false, "We should never get to this point.");
+                            Debug.Fail("We should never get to this point.");
                             Throw(SR.Xml_UnexpectedEOF1);
                         }
                         Debug.Assert(_ps.isEof);
@@ -2982,8 +2982,8 @@ namespace System.Xml
                         }
 
                         if (HandleEntityEnd(true))
-                        { // no EndEntity reporting while parsing attributes
-                            Debug.Assert(false);
+                        {
+                            Debug.Fail("no EndEntity reporting while parsing attributes");
                             Throw(SR.Xml_InternalError);
                         }
                         // update info for the next attribute value chunk
@@ -4935,7 +4935,7 @@ namespace System.Xml
                     {
                         if (_ps.chars[_ps.charPos] != (char)0xD)
                         {
-                            Debug.Assert(false, "We should never get to this point.");
+                            Debug.Fail("We should never get to this point.");
                             Throw(SR.Xml_UnexpectedEOF1);
                         }
                         Debug.Assert(_ps.isEof);
@@ -5041,7 +5041,7 @@ namespace System.Xml
                     }
                     if (_ps.chars[_ps.charPos] != (char)0xD)
                     {
-                        Debug.Assert(false, "We should never get to this point.");
+                        Debug.Fail("We should never get to this point.");
                         Throw(SR.Xml_UnexpectedEOF1);
                     }
                     Debug.Assert(_ps.isEof);

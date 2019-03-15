@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = inputHex.HexToByteArray();
 
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            DateTimeOffset value = reader.GetUtcTime();
+            DateTimeOffset value = reader.ReadUtcTime();
 
             Assert.Equal(year, value.Year);
             Assert.Equal(month, value.Month);
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 () =>
                 {
                     AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
-                    reader.GetUtcTime();
+                    reader.ReadUtcTime();
                 });
 
             Assert.NotNull(exception.InnerException);
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = "170D3132303130323233353935395A".HexToByteArray();
 
             AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
-            DateTimeOffset value = reader.GetUtcTime(maximum);
+            DateTimeOffset value = reader.ReadUtcTime(maximum);
 
             Assert.Equal(interpretedYear, value.Year);
         }
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
-            Assert.Throws<CryptographicException>(() => reader.GetUtcTime());
+            Assert.Throws<CryptographicException>(() => reader.ReadUtcTime());
         }
 
         [Fact]
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
 
-            Assert.Throws<CryptographicException>(() => reader.GetUtcTime());
+            Assert.Throws<CryptographicException>(() => reader.ReadUtcTime());
         }
 
         [Theory]
@@ -154,18 +154,18 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.GetUtcTime(Asn1Tag.Null));
+                () => reader.ReadUtcTime(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetUtcTime(new Asn1Tag(TagClass.ContextSpecific, 0)));
+                () => reader.ReadUtcTime(new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
             Assert.Equal(
                 new DateTimeOffset(1950, 1, 2, 12, 34, 56, TimeSpan.Zero),
-                reader.GetUtcTime());
+                reader.ReadUtcTime());
 
             Assert.False(reader.HasData, "HasData after read");
         }
@@ -181,27 +181,27 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.GetUtcTime(Asn1Tag.Null));
+                () => reader.ReadUtcTime(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.GetUtcTime());
+            Assert.Throws<CryptographicException>(() => reader.ReadUtcTime());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetUtcTime(new Asn1Tag(TagClass.Application, 5)));
+                () => reader.ReadUtcTime(new Asn1Tag(TagClass.Application, 5)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetUtcTime(new Asn1Tag(TagClass.ContextSpecific, 7)));
+                () => reader.ReadUtcTime(new Asn1Tag(TagClass.ContextSpecific, 7)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             Assert.Equal(
                 new DateTimeOffset(1950, 1, 2, 12, 34, 56, TimeSpan.Zero),
-                reader.GetUtcTime(new Asn1Tag(TagClass.ContextSpecific, 5)));
+                reader.ReadUtcTime(new Asn1Tag(TagClass.ContextSpecific, 5)));
 
             Assert.False(reader.HasData, "HasData after reading value");
         }
@@ -222,13 +222,13 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
-            DateTimeOffset val1 = reader.GetUtcTime(new Asn1Tag((TagClass)tagClass, tagValue, true));
+            DateTimeOffset val1 = reader.ReadUtcTime(new Asn1Tag((TagClass)tagClass, tagValue, true));
 
             Assert.False(reader.HasData);
 
             reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
-            DateTimeOffset val2 = reader.GetUtcTime(new Asn1Tag((TagClass)tagClass, tagValue, false));
+            DateTimeOffset val2 = reader.ReadUtcTime(new Asn1Tag((TagClass)tagClass, tagValue, false));
 
             Assert.False(reader.HasData);
 

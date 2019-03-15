@@ -84,9 +84,6 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedDictionary<TKey, TValue> Clear()
         {
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>() != null);
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>().IsEmpty);
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>().KeyComparer == ((ISortKeyCollection<TKey>)this).KeyComparer);
             return _root.IsEmpty ? this : Empty.WithComparers(_keyComparer, _valueComparer);
         }
 
@@ -263,7 +260,6 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> Add(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>() != null);
             bool mutated;
             var result = _root.Add(key, value, _keyComparer, _valueComparer, out mutated);
             return this.Wrap(result, _count + 1);
@@ -276,8 +272,6 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> SetItem(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>() != null);
-            Contract.Ensures(!Contract.Result<ImmutableSortedDictionary<TKey, TValue>>().IsEmpty);
             bool replacedExistingValue, mutated;
             var result = _root.SetItem(key, value, _keyComparer, _valueComparer, out replacedExistingValue, out mutated);
             return this.Wrap(result, replacedExistingValue ? _count : _count + 1);
@@ -293,7 +287,6 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> SetItems(IEnumerable<KeyValuePair<TKey, TValue>> items)
         {
             Requires.NotNull(items, nameof(items));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             return this.AddRange(items, overwriteOnCollision: true, avoidToSortedMap: false);
         }
@@ -306,7 +299,6 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items)
         {
             Requires.NotNull(items, nameof(items));
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>() != null);
 
             return this.AddRange(items, overwriteOnCollision: false, avoidToSortedMap: false);
         }
@@ -318,7 +310,6 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> Remove(TKey value)
         {
             Requires.NotNullAllowStructs(value, nameof(value));
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>() != null);
             bool mutated;
             var result = _root.Remove(value, _keyComparer, out mutated);
             return this.Wrap(result, _count - 1);
@@ -331,7 +322,6 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> RemoveRange(IEnumerable<TKey> keys)
         {
             Requires.NotNull(keys, nameof(keys));
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>() != null);
 
             var result = _root;
             int count = _count;
@@ -355,8 +345,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
         {
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>() != null);
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>().IsEmpty == this.IsEmpty);
             if (keyComparer == null)
             {
                 keyComparer = Comparer<TKey>.Default;
@@ -832,7 +820,6 @@ namespace System.Collections.Immutable
         private ImmutableSortedDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items, bool overwriteOnCollision, bool avoidToSortedMap)
         {
             Requires.NotNull(items, nameof(items));
-            Contract.Ensures(Contract.Result<ImmutableSortedDictionary<TKey, TValue>>() != null);
 
             // Some optimizations may apply if we're an empty set.
             if (this.IsEmpty && !avoidToSortedMap)
@@ -922,7 +909,7 @@ namespace System.Collections.Immutable
                         {
                             if (!_valueComparer.Equals(value, item.Value))
                             {
-                                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, item.Key));
+                                throw new ArgumentException(SR.Format(SR.DuplicateKey, item.Key));
                             }
                         }
                         else

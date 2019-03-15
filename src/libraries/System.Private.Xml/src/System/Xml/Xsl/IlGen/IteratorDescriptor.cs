@@ -519,7 +519,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    Debug.Assert(false, "Invalid location: " + _storage.Location);
+                    Debug.Fail($"Invalid location: {_storage.Location}");
                     break;
             }
         }
@@ -548,7 +548,7 @@ namespace System.Xml.Xsl.IlGen
                     break;
 
                 default:
-                    Debug.Assert(false, "Invalid location: " + _storage.Location);
+                    Debug.Fail($"Invalid location: {_storage.Location}");
                     break;
             }
 

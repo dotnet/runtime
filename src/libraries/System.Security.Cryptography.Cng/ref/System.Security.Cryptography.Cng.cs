@@ -10,7 +10,7 @@ namespace Microsoft.Win32.SafeHandles
     public abstract partial class SafeNCryptHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         protected SafeNCryptHandle() : base (default(bool)) { }
-        protected SafeNCryptHandle(System.IntPtr handle, System.Runtime.InteropServices.SafeHandle parentHandle) : base(default(bool)) { }
+        protected SafeNCryptHandle(System.IntPtr handle, System.Runtime.InteropServices.SafeHandle parentHandle) : base (default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
         protected abstract bool ReleaseNativeHandle();
@@ -165,9 +165,9 @@ namespace System.Security.Cryptography
     public sealed partial class CngKeyCreationParameters
     {
         public CngKeyCreationParameters() { }
-        public System.Nullable<System.Security.Cryptography.CngExportPolicies> ExportPolicy { get { throw null; } set { } }
+        public System.Security.Cryptography.CngExportPolicies? ExportPolicy { get { throw null; } set { } }
         public System.Security.Cryptography.CngKeyCreationOptions KeyCreationOptions { get { throw null; } set { } }
-        public System.Nullable<System.Security.Cryptography.CngKeyUsages> KeyUsage { get { throw null; } set { } }
+        public System.Security.Cryptography.CngKeyUsages? KeyUsage { get { throw null; } set { } }
         public System.Security.Cryptography.CngPropertyCollection Parameters { get { throw null; } }
         public System.IntPtr ParentWindowHandle { get { throw null; } set { } }
         public System.Security.Cryptography.CngProvider Provider { get { throw null; } set { } }
@@ -261,8 +261,8 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.CngKey Key { get { throw null; } }
         public override string KeyExchangeAlgorithm { get { throw null; } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
-        public override byte[] CreateSignature(byte[] rgbHash) { throw null; }
         public override string SignatureAlgorithm { get { throw null; } }
+        public override byte[] CreateSignature(byte[] rgbHash) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
 #if FEATURE_DSA_HASHDATA
@@ -272,6 +272,69 @@ namespace System.Security.Cryptography
         public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { throw null; }
     }
+    public sealed partial class ECDiffieHellmanCng : System.Security.Cryptography.ECDiffieHellman
+    {
+        public ECDiffieHellmanCng() { }
+        public ECDiffieHellmanCng(int keySize) { }
+        public ECDiffieHellmanCng(System.Security.Cryptography.CngKey key) { }
+#if FEATURE_ECPARAMETERS
+        public ECDiffieHellmanCng(System.Security.Cryptography.ECCurve curve) { }
+#endif
+        public System.Security.Cryptography.CngAlgorithm HashAlgorithm { get { throw null; } set { } }
+        public byte[] HmacKey { get { throw null; } set { } }
+        public System.Security.Cryptography.CngKey Key { get { throw null; } }
+        public System.Security.Cryptography.ECDiffieHellmanKeyDerivationFunction KeyDerivationFunction { get { throw null; } set { } }
+        public override int KeySize { get { throw null; } set { } }
+        public byte[] Label { get { throw null; } set { } }
+        public override System.Security.Cryptography.ECDiffieHellmanPublicKey PublicKey { get { throw null; } }
+        public byte[] SecretAppend { get { throw null; } set { } }
+        public byte[] SecretPrepend { get { throw null; } set { } }
+        public byte[] Seed { get { throw null; } set { } }
+        public bool UseSecretAgreementAsHmacKey { get { throw null; } }
+#if FEATURE_ECDH_DERIVEFROM
+        public override byte[] DeriveKeyFromHash(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] secretPrepend, byte[] secretAppend) { throw null; }
+        public override byte[] DeriveKeyFromHmac(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] hmacKey, byte[] secretPrepend, byte[] secretAppend) { throw null; }
+#endif
+        public byte[] DeriveKeyMaterial(System.Security.Cryptography.CngKey otherPartyPublicKey) { throw null; }
+        public override byte[] DeriveKeyMaterial(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
+#if FEATURE_ECDH_DERIVEFROM
+        public override byte[] DeriveKeyTls(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed) { throw null; }
+#endif
+        public Microsoft.Win32.SafeHandles.SafeNCryptSecretHandle DeriveSecretAgreementHandle(System.Security.Cryptography.CngKey otherPartyPublicKey) { throw null; }
+        public Microsoft.Win32.SafeHandles.SafeNCryptSecretHandle DeriveSecretAgreementHandle(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
+        protected override void Dispose(bool disposing) { }
+#if FEATURE_ECPARAMETERS
+        public override System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
+        public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
+#endif
+        public void FromXmlString(string xml, System.Security.Cryptography.ECKeyXmlFormat format) { }
+#if FEATURE_ECPARAMETERS
+        public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
+        public override void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
+#endif
+        public string ToXmlString(System.Security.Cryptography.ECKeyXmlFormat format) { throw null; }
+    }
+    public sealed partial class ECDiffieHellmanCngPublicKey : System.Security.Cryptography.ECDiffieHellmanPublicKey
+    {
+        // ECDiffieHellmanPublicKey parameter-less ctor only exist on netfx 4.7+
+        private ECDiffieHellmanCngPublicKey() : base(null) { }
+        public System.Security.Cryptography.CngKeyBlobFormat BlobFormat { get { throw null; } }
+        protected override void Dispose(bool disposing) { }
+#if FEATURE_ECPARAMETERS
+        public override System.Security.Cryptography.ECParameters ExportExplicitParameters() { throw null; }
+        public override System.Security.Cryptography.ECParameters ExportParameters() { throw null; }
+#endif
+        public static System.Security.Cryptography.ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob, System.Security.Cryptography.CngKeyBlobFormat format) { throw null; }
+        public static System.Security.Cryptography.ECDiffieHellmanCngPublicKey FromXmlString(string xml) { throw null; }
+        public System.Security.Cryptography.CngKey Import() { throw null; }
+        public override string ToXmlString() { throw null; }
+    }
+    public enum ECDiffieHellmanKeyDerivationFunction
+    {
+        Hash = 0,
+        Hmac = 1,
+        Tls = 2,
+    }
     public sealed partial class ECDsaCng : System.Security.Cryptography.ECDsa
     {
         public ECDsaCng() { }
@@ -280,7 +343,7 @@ namespace System.Security.Cryptography
 #if FEATURE_ECPARAMETERS // types missing from netfx and net462 targeting pack
         public ECDsaCng(System.Security.Cryptography.ECCurve curve) { }
 #endif
-        public CngAlgorithm HashAlgorithm { get { throw null; } set { } }
+        public System.Security.Cryptography.CngAlgorithm HashAlgorithm { get { throw null; } set { } }
         public System.Security.Cryptography.CngKey Key { get { throw null; } }
         public override int KeySize { get { throw null; } set { } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
@@ -288,9 +351,11 @@ namespace System.Security.Cryptography
 #if FEATURE_ECPARAMETERS // types missing from netfx and net462 targeting pack
         public override System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
         public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
+#endif
+        public void FromXmlString(string xml, System.Security.Cryptography.ECKeyXmlFormat format) { }
+#if FEATURE_ECPARAMETERS // types missing from netfx and net462 targeting pack
         public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
 #endif
-        public void FromXmlString(string xml, ECKeyXmlFormat format) { throw null; }
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
 #if FEATURE_ECPARAMETERS // types missing from netfx and net462 targeting pack
@@ -300,7 +365,7 @@ namespace System.Security.Cryptography
         public byte[] SignData(byte[] data, int offset, int count) { throw null; }
         public byte[] SignData(System.IO.Stream data) { throw null; }
         public override byte[] SignHash(byte[] hash) { throw null; }
-        public string ToXmlString(ECKeyXmlFormat format) { throw null; }
+        public string ToXmlString(System.Security.Cryptography.ECKeyXmlFormat format) { throw null; }
         public bool VerifyData(byte[] data, byte[] signature) { throw null; }
         public bool VerifyData(byte[] data, int offset, int count, byte[] signature) { throw null; }
         public bool VerifyData(System.IO.Stream data, byte[] signature) { throw null; }
@@ -308,10 +373,7 @@ namespace System.Security.Cryptography
     }
     public enum ECKeyXmlFormat
     {
-        /// <summary>
-        ///     Use the format described in RFC 4050
-        /// </summary>
-        Rfc4050
+        Rfc4050 = 0,
     }
     public sealed partial class RSACng : System.Security.Cryptography.RSA
     {

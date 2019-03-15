@@ -136,7 +136,7 @@ namespace System.Drawing
             if (image == null)
                 throw new ArgumentNullException(nameof(image));
             if ((image.PixelFormat & PixelFormat.Indexed) != 0)
-                throw new ArgumentException(SR.Format(SR.GdiplusCannotCreateGraphicsFromIndexedPixelFormat), nameof(image));
+                throw new ArgumentException(SR.GdiplusCannotCreateGraphicsFromIndexedPixelFormat, nameof(image));
 
             Gdip.CheckStatus(Gdip.GdipGetImageGraphicsContext(
                 new HandleRef(image, image.nativeImage),
@@ -1704,7 +1704,7 @@ namespace System.Drawing
 
             int count = destPoints.Length;
             if (count != 3 && count != 4)
-                throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
+                throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
 
             fixed (PointF* p = destPoints)
             {
@@ -1728,7 +1728,7 @@ namespace System.Drawing
 
             int count = destPoints.Length;
             if (count != 3 && count != 4)
-                throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
+                throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
 
             fixed (Point* p = destPoints)
             {
@@ -1826,7 +1826,7 @@ namespace System.Drawing
 
             int count = destPoints.Length;
             if (count != 3 && count != 4)
-                throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
+                throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
 
             fixed (PointF* p = destPoints)
             {
@@ -1880,7 +1880,7 @@ namespace System.Drawing
 
             int count = destPoints.Length;
             if (count != 3 && count != 4)
-                throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
+                throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
 
             fixed (PointF* p = destPoints)
             {
@@ -1945,7 +1945,7 @@ namespace System.Drawing
 
             int count = destPoints.Length;
             if (count != 3 && count != 4)
-                throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
+                throw new ArgumentException(SR.GdiplusDestPointsInvalidLength);
 
             fixed (Point* p = destPoints)
             {
@@ -2257,7 +2257,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
             if (destPoints.Length != 3)
-                throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidParallelogram));
+                throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
             fixed (PointF* p = destPoints)
             {
@@ -2295,7 +2295,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
             if (destPoints.Length != 3)
-                throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidParallelogram));
+                throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
             fixed (Point* p = destPoints)
             {
@@ -2526,7 +2526,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
             if (destPoints.Length != 3)
-                throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidParallelogram));
+                throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
             fixed (PointF* p = destPoints)
             {
@@ -2579,7 +2579,7 @@ namespace System.Drawing
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
             if (destPoints.Length != 3)
-                throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidParallelogram));
+                throw new ArgumentException(SR.GdiplusDestPointsInvalidParallelogram);
 
             fixed (Point* p = destPoints)
             {

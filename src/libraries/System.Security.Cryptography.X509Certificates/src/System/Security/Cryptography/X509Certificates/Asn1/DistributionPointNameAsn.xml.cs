@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -58,14 +62,14 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                 
                 // Validator for tag constraint for NameRelativeToCRLIssuer
                 {
-                    if (!Asn1Tag.TryParse(NameRelativeToCRLIssuer.Value.Span, out Asn1Tag validateTag, out _) ||
+                    if (!Asn1Tag.TryDecode(NameRelativeToCRLIssuer.Value.Span, out Asn1Tag validateTag, out _) ||
                         !validateTag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
                     {
                         throw new CryptographicException();
                     }
                 }
 
-                writer.WriteEncodedValue(NameRelativeToCRLIssuer.Value);
+                writer.WriteEncodedValue(NameRelativeToCRLIssuer.Value.Span);
                 wroteValue = true;
             }
 
@@ -114,7 +118,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
-                decoded.NameRelativeToCRLIssuer = reader.GetEncodedValue();
+                decoded.NameRelativeToCRLIssuer = reader.ReadEncodedValue();
             }
             else
             {

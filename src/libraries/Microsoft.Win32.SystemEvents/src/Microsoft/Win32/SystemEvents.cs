@@ -411,13 +411,12 @@ namespace Microsoft.Win32
             {
                 if (s_staticwndclass == null)
                 {
-                    const string classNameFormat = ".NET-BroadcastEventWindow.{0}.{1}";
-
                     IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
 
-                    s_className = string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                        classNameFormat,
-                        Convert.ToString(AppDomain.CurrentDomain.GetHashCode(), 16),
+                    s_className = string.Format(
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        ".NET-BroadcastEventWindow.{0:x}.{1}",
+                        AppDomain.CurrentDomain.GetHashCode(),
                         s_domainQualifier);
 
                     Interop.User32.WNDCLASS tempwndclass = new Interop.User32.WNDCLASS();
@@ -1285,7 +1284,7 @@ namespace Microsoft.Win32
                         }
                         catch (Exception e)
                         {
-                            Debug.Assert(false, "Exception occurred while freeing memory: " + e.ToString());
+                            Debug.Fail("Exception occurred while freeing memory: " + e.ToString());
                         }
                     }
                     break;

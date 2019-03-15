@@ -146,7 +146,7 @@ namespace System.Net
             {
                 if (value != null && value.Length > ushort.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(CultureInfo.InvariantCulture,SR.net_headers_toolong, ushort.MaxValue));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(CultureInfo.InvariantCulture,SR.net_headers_toolong, ushort.MaxValue));
                 }
             }
             InvalidateCachedArrays();
@@ -172,7 +172,7 @@ namespace System.Net
             {
                 if (value != null && value.Length > ushort.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
                 }
             }
             this.Set(header.GetName(), value);
@@ -345,7 +345,7 @@ namespace System.Net
             {
                 if (value != null && value.Length > ushort.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
                 }
             }
             this.Add(header.GetName(), value);
@@ -373,7 +373,7 @@ namespace System.Net
             {
                 if (value != null && value.Length > ushort.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, string.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
                 }
             }
             InvalidateCachedArrays();
@@ -399,7 +399,7 @@ namespace System.Net
             {
                 if (value != null && value.Length > ushort.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value,string.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
+                    throw new ArgumentOutOfRangeException(nameof(value), value,SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
                 }
             }
             InvalidateCachedArrays();
@@ -415,7 +415,7 @@ namespace System.Net
             {
                 if (headerValue != null && headerValue.Length > ushort.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(headerValue), headerValue, string.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
+                    throw new ArgumentOutOfRangeException(nameof(headerValue), headerValue, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
                 }
             }
             InvalidateCachedArrays();
@@ -428,14 +428,14 @@ namespace System.Net
             {
                 if (HeaderInfo[headerName].IsRequestRestricted)
                 {
-                    throw new ArgumentException(string.Format(SR.net_headerrestrict, headerName), nameof(headerName));
+                    throw new ArgumentException(SR.Format(SR.net_headerrestrict, headerName), nameof(headerName));
                 }
             }
             else if (_type == WebHeaderCollectionType.HttpListenerResponse)
             {
                 if (HeaderInfo[headerName].IsResponseRestricted)
                 {
-                    throw new ArgumentException(string.Format(SR.net_headerrestrict, headerName), nameof(headerName));
+                    throw new ArgumentException(SR.Format(SR.net_headerrestrict, headerName), nameof(headerName));
                 }
             }
         }
