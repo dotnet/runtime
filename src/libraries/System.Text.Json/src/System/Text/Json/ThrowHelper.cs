@@ -183,10 +183,21 @@ namespace System.Text.Json
             return GetInvalidOperationException("string", tokenType);
         }
 
+        public static InvalidOperationException GetInvalidOperationException_ExpectedStringComparison(JsonTokenType tokenType)
+        {
+            return GetInvalidOperationException(tokenType);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static InvalidOperationException GetInvalidOperationException(string message, JsonTokenType tokenType)
         {
             return new InvalidOperationException(SR.Format(SR.InvalidCast, tokenType, message));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static InvalidOperationException GetInvalidOperationException(JsonTokenType tokenType)
+        {
+            return new InvalidOperationException(SR.Format(SR.InvalidComparison, tokenType));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

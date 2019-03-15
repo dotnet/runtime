@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
@@ -213,6 +214,284 @@ namespace System.Text.Json
                 }
             }
             return retVal;
+        }
+
+        /// <summary>
+        /// Compares the UTF-8 encoded text to the unescaped JSON token value in the source and returns true if they match.
+        /// </summary>
+        /// <param name="otherUtf8Text">The UTF-8 encoded text to compare against.</param>
+        /// <returns>True if the JSON token value in the source matches the UTF-8 encoded look up text.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to find a text match on a JSON token that is not a string
+        /// (i.e. other than <see cref="JsonTokenType.String"/> or <see cref="JsonTokenType.PropertyName"/>).
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        /// <remarks>
+        /// If the look up text is invalid UTF-8 text, the method will return false since you cannot have 
+        /// invalid UTF-8 within the JSON payload.
+        /// </remarks>
+        /// <remarks>
+        /// The comparison of the JSON token value in the source and the look up text is done by first unescaping the JSON value in source,
+        /// if required. The look up text is matched as is, without any modifications to it.
+        /// </remarks>
+        public bool TextEquals(ReadOnlySpan<byte> otherUtf8Text)
+        {
+            if (!IsTokenTypeString(TokenType))
+            {
+                throw ThrowHelper.GetInvalidOperationException_ExpectedStringComparison(TokenType);
+            }
+            return TextEqualsHelper(otherUtf8Text);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TextEqualsHelper(ReadOnlySpan<byte> otherUtf8Text)
+        {
+            if (HasValueSequence)
+            {
+                return CompareToSequence(otherUtf8Text);
+            }
+
+            if (_stringHasEscaping)
+            {
+                return UnescapeAndCompare(otherUtf8Text);
+            }
+
+            return otherUtf8Text.SequenceEqual(ValueSpan);
+        }
+
+        /// <summary>
+        /// Compares the UTF-16 encoded text to the unescaped JSON token value in the source and returns true if they match.
+        /// </summary>
+        /// <param name="otherText">The UTF-16 encoded text to compare against.</param>
+        /// <returns>True if the JSON token value in the source matches the UTF-16 encoded look up text.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to find a text match on a JSON token that is not a string
+        /// (i.e. other than <see cref="JsonTokenType.String"/> or <see cref="JsonTokenType.PropertyName"/>).
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        /// <remarks>
+        /// If the look up text is invalid or incomplete UTF-16 text (i.e. unpaired surrogates), the method will return false
+        /// since you cannot have invalid UTF-16 within the JSON payload.
+        /// </remarks>
+        /// <remarks>
+        /// The comparison of the JSON token value in the source and the look up text is done by first unescaping the JSON value in source,
+        /// if required. The look up text is matched as is, without any modifications to it.
+        /// </remarks>
+        public bool TextEquals(ReadOnlySpan<char> otherText)
+        {
+            if (!IsTokenTypeString(TokenType))
+            {
+                throw ThrowHelper.GetInvalidOperationException_ExpectedStringComparison(TokenType);
+            }
+
+            if (MatchNotPossible(otherText.Length))
+            {
+                return false;
+            }
+
+            byte[] otherUtf8TextArray = null;
+
+            Span<byte> otherUtf8Text;
+
+            ReadOnlySpan<byte> utf16Text = MemoryMarshal.AsBytes(otherText);
+
+            int length = checked(utf16Text.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
+            if (length > JsonConstants.StackallocThreshold)
+            {
+                otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length);
+                otherUtf8Text = otherUtf8TextArray;
+            }
+            else
+            {
+                // Cannot create a span directly since it gets passed to instance methods on a ref struct.
+                unsafe
+                {
+                    byte* ptr = stackalloc byte[length];
+                    otherUtf8Text = new Span<byte>(ptr, length);
+                }
+            }
+
+            OperationStatus status = JsonWriterHelper.ToUtf8(utf16Text, otherUtf8Text, out int consumed, out int written);
+            Debug.Assert(status != OperationStatus.DestinationTooSmall);
+            if (status > OperationStatus.DestinationTooSmall)   // Equivalent to: (status == NeedMoreData || status == InvalidData)
+            {
+                return false;
+            }
+            Debug.Assert(status == OperationStatus.Done);
+            Debug.Assert(consumed == utf16Text.Length);
+
+            bool result = TextEqualsHelper(otherUtf8Text.Slice(0, written));
+
+            if (otherUtf8TextArray != null)
+            {
+                otherUtf8Text.Slice(0, written).Clear();
+                ArrayPool<byte>.Shared.Return(otherUtf8TextArray);
+            }
+
+            return result;
+        }
+
+        private bool CompareToSequence(ReadOnlySpan<byte> other)
+        {
+            Debug.Assert(HasValueSequence);
+
+            if (_stringHasEscaping)
+            {
+                return UnescapeSequenceAndCompare(other);
+            }
+
+            ReadOnlySequence<byte> localSequence = ValueSequence;
+
+            Debug.Assert(!localSequence.IsSingleSegment);
+
+            if (localSequence.Length != other.Length)
+            {
+                return false;
+            }
+
+            int matchedSoFar = 0;
+
+            foreach (ReadOnlyMemory<byte> memory in localSequence)
+            {
+                ReadOnlySpan<byte> span = memory.Span;
+
+                if (other.Slice(matchedSoFar).StartsWith(span))
+                {
+                    matchedSoFar += span.Length;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private bool UnescapeAndCompare(ReadOnlySpan<byte> other)
+        {
+            Debug.Assert(!HasValueSequence);
+            ReadOnlySpan<byte> localSpan = ValueSpan;
+
+            if (localSpan.Length < other.Length || localSpan.Length / JsonConstants.MaxExpansionFactorWhileEscaping > other.Length)
+            {
+                return false;
+            }
+
+            int idx = localSpan.IndexOf(JsonConstants.BackSlash);
+            Debug.Assert(idx != -1);
+
+            if (!other.StartsWith(localSpan.Slice(0, idx)))
+            {
+                return false;
+            }
+
+            return JsonReaderHelper.UnescapeAndCompare(localSpan.Slice(idx), other.Slice(idx));
+        }
+
+        private bool UnescapeSequenceAndCompare(ReadOnlySpan<byte> other)
+        {
+            Debug.Assert(HasValueSequence);
+            Debug.Assert(!ValueSequence.IsSingleSegment);
+
+            ReadOnlySequence<byte> localSequence = ValueSequence;
+            long sequenceLength = localSequence.Length;
+
+            // The JSON token value will at most shrink by 6 when unescaping.
+            // If it is still larger than the lookup string, there is no value in unescaping and doing the comparison.
+            if (sequenceLength < other.Length || sequenceLength / JsonConstants.MaxExpansionFactorWhileEscaping > other.Length)
+            {
+                return false;
+            }
+
+            int matchedSoFar = 0;
+
+            bool result = false;
+
+            foreach (ReadOnlyMemory<byte> memory in localSequence)
+            {
+                ReadOnlySpan<byte> span = memory.Span;
+
+                int idx = span.IndexOf(JsonConstants.BackSlash);
+
+                if (idx != -1)
+                {
+                    if (!other.Slice(matchedSoFar).StartsWith(span.Slice(0, idx)))
+                    {
+                        break;
+                    }
+                    matchedSoFar += idx;
+
+                    other = other.Slice(matchedSoFar);
+                    localSequence = localSequence.Slice(matchedSoFar);
+
+                    if (localSequence.IsSingleSegment)
+                    {
+                        result = JsonReaderHelper.UnescapeAndCompare(localSequence.First.Span, other);
+                    }
+                    else
+                    {
+                        result = JsonReaderHelper.UnescapeAndCompare(localSequence, other);
+                    }
+                    break;
+                }
+
+                if (!other.Slice(matchedSoFar).StartsWith(span))
+                {
+                    break;
+                }
+                matchedSoFar += span.Length;
+            }
+
+            return result;
+        }
+
+        // Returns true if the TokenType is a primitive string "value", i.e. PropertyName or String
+        // Otherwise, return false.
+        private static bool IsTokenTypeString(JsonTokenType tokenType) =>
+            (tokenType - JsonTokenType.PropertyName) <= (JsonTokenType.String - JsonTokenType.PropertyName);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool MatchNotPossible(int charTextLength)
+        {
+            if (HasValueSequence)
+            {
+                return MatchNotPossibleSequence(charTextLength);
+            }
+
+            int sourceLength = ValueSpan.Length;
+
+            // Transcoding from UTF-16 to UTF-8 will change the length by somwhere between 1x and 3x.
+            // Unescaping the token value will at most shrink its length by 6x.
+            // There is no point incurring the transcoding/unescaping/comparing cost if:
+            // - The token value is smaller than charTextLength
+            // - The token value needs to be transcoded AND unescaped and it is more than 6x larger than charTextLength
+            //      - For an ASCII UTF-16 characters, transcoding = 1x, escaping = 6x => 6x factor
+            //      - For non-ASCII UTF-16 characters within the BMP, transcoding = 2-3x, but they are represented as a single escaped hex value, \uXXXX => 6x factor
+            //      - For non-ASCII UTF-16 characters outside of the BMP, transcoding = 4x, but the surrogate pair (2 characters) are represented by 16 bytes \uXXXX\uXXXX => 6x factor
+            // - The token value needs to be transcoded, but NOT escaped and it is more than 3x larger than charTextLength
+            //      - For an ASCII UTF-16 characters, transcoding = 1x,
+            //      - For non-ASCII UTF-16 characters within the BMP, transcoding = 2-3x,
+            //      - For non-ASCII UTF-16 characters outside of the BMP, transcoding = 2x, (surrogate pairs - 2 characters transcode to 4 UTF-8 bytes)
+
+            if (sourceLength < charTextLength
+                || sourceLength / (_stringHasEscaping ? JsonConstants.MaxExpansionFactorWhileEscaping : JsonConstants.MaxExpansionFactorWhileTranscoding) > charTextLength)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private bool MatchNotPossibleSequence(int charTextLength)
+        {
+            long sourceLength = ValueSequence.Length;
+
+            if (sourceLength < charTextLength
+                || sourceLength / (_stringHasEscaping ? JsonConstants.MaxExpansionFactorWhileEscaping : JsonConstants.MaxExpansionFactorWhileTranscoding) > charTextLength)
+            {
+                return true;
+            }
+            return false;
         }
 
         private void StartObject()

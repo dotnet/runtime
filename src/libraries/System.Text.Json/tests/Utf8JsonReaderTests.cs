@@ -190,7 +190,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void TestPartialJsonReader()
+        public static void TestSingleStrings()
         {
             string jsonString = "\"Hello, \\u0041hson!\"";
             string expectedString = "Hello, \\u0041hson!, ";
