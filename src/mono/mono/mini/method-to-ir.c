@@ -182,7 +182,6 @@ static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 static MonoMethodSignature *helper_sig_jit_thread_attach;
 static MonoMethodSignature *helper_sig_get_tls_tramp;
 static MonoMethodSignature *helper_sig_set_tls_tramp;
-MonoMethodSignature *helper_sig_llvmonly_imt_trampoline;
 
 /* type loading helpers */
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnostics", "DebuggableAttribute")
@@ -393,7 +392,6 @@ mono_create_helper_signatures (void)
 {
 	helper_sig_domain_get = mono_create_icall_signature ("ptr");
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
-	helper_sig_llvmonly_imt_trampoline = mono_create_icall_signature ("ptr ptr ptr");
 	helper_sig_jit_thread_attach = mono_create_icall_signature ("ptr ptr");
 	helper_sig_get_tls_tramp = mono_create_icall_signature ("ptr");
 	helper_sig_set_tls_tramp = mono_create_icall_signature ("void ptr");
