@@ -3336,7 +3336,7 @@ namespace System.Data.SqlClient
                             {
                                 int length = parts.Length;
                                 if (
-                                    length > 3 && //require at least 3 parts
+                                    length >= 3 && //require at least 3 parts
                                     parts[length - 1] != null && // name must not be null
                                     parts[length - 2] != null && // schema must not be null
                                     parts[length - 3] != null && // server should not be null or we don't need to remove it
