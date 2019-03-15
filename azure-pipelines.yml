@@ -136,8 +136,8 @@ jobs:
 # Checked test builds
 #
 
-# Pull request
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+# The jobs that can be triggered in PR, manually from ADO and that are scheduled
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'Manual', 'Schedule')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
@@ -171,15 +171,6 @@ jobs:
       buildConfig: checked
       jobParameters:
         readyToRun: true
-        testGroup: outerloop
-
-# Schedule or Manual
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule', 'Manual')) }}:
-  - template: eng/platform-matrix.yml
-    parameters:
-      jobTemplate: test-job.yml
-      buildConfig: checked
-      jobParameters:
         testGroup: outerloop
 
 #
