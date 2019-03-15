@@ -110,7 +110,7 @@ the latest (likely) then these instructions will work without modification.
 
 As a side effect of creating the self-contained application the dotnet tool will download a nuget package 
 called runtime.linux-x64.microsoft.netcore.app and place it in 
-the directory ~/.nuget/package/sruntime.linux-x64.microsoft.netcore.app/VERSION, where VERSION is the version number of 
+the directory ~/.nuget/packages/runtime.linux-x64.microsoft.netcore.app/VERSION, where VERSION is the version number of 
 your .NET Core runtime (e.g. 2.1.0).   Under that is a tools directory and inside there is the crossgen tool you need.
 
 The crossgen tool needs to be put next to the runtime that is actually used by your application.   Typically your app uses the shared
