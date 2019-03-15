@@ -221,11 +221,11 @@ if (WIN32)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG /PDBCOMPRESS")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
 
-  # Temporarily disable incremental link due to incremental linking CFG bug crashing crossgen. 
+  # Temporarily disable incremental link due to incremental linking CFG bug crashing crossgen.
   # See https://github.com/dotnet/coreclr/issues/12592
   # This has been fixed in VS 2017 Update 5 but we're keeping this around until everyone is off
   # the versions that have the bug. The bug manifests itself as a bad crash.
-  set(NO_INCREMENTAL_LINKER_FLAGS "/INCREMENTAL:NO")  
+  set(NO_INCREMENTAL_LINKER_FLAGS "/INCREMENTAL:NO")
 
   # Debug build specific flags
   set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "/NOVCFEATURE ${NO_INCREMENTAL_LINKER_FLAGS}")
@@ -396,6 +396,8 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if (WIN32)
+  add_definitions(-DPLATFORM_WINDOWS=1)
+
   # Define the CRT lib references that link into Desktop imports
   set(STATIC_MT_CRT_LIB  "libcmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
   set(STATIC_MT_VCRT_LIB  "libvcruntime$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
@@ -469,7 +471,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     # and so the compiler thinks that there is a mistake.
     add_compile_options(-Wno-constant-logical-operand)
     # We use pshpack1/2/4/8.h and poppack.h headers to set and restore packing. However
-    # clang 6.0 complains when the packing change lifetime is not contained within 
+    # clang 6.0 complains when the packing change lifetime is not contained within
     # a header file.
     add_compile_options(-Wno-pragma-pack)
 
@@ -559,22 +561,22 @@ if (WIN32)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
   set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
 
-  # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid  
-  # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.  
-  #  
-  # For Release builds, we shall dynamically link into uCRT [ucrtbase.dll] (which is pushed down as a Windows Update on downlevel OS) but  
-  # wont do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not  
-  # production-time scenarios.  
-  add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/MT>)  
-  add_compile_options($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:/MTd>)  
+  # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
+  # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
+  #
+  # For Release builds, we shall dynamically link into uCRT [ucrtbase.dll] (which is pushed down as a Windows Update on downlevel OS) but
+  # wont do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not
+  # production-time scenarios.
+  add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/MT>)
+  add_compile_options($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:/MTd>)
 
   set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /ZH:SHA_256")
-  
+
   if (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
     # Contracts work too slow on ARM/ARM64 DEBUG/CHECKED.
     add_definitions(-DDISABLE_CONTRACTS)
-  endif (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)    
-  
+  endif (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
+
 endif (WIN32)
 
 if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
