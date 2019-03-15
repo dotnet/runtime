@@ -7,7 +7,7 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
-
+using System.Threading;
 
 namespace System.Data.SqlClient
 {
@@ -560,7 +560,7 @@ namespace System.Data.SqlClient
                     { SYNONYM.WSID, KEY.Workstation_Id }
                 };
                 Debug.Assert(synonyms.Count == count, "incorrect initial ParseSynonyms size");
-                s_sqlClientSynonyms = synonyms;
+                Interlocked.CompareExchange(ref s_sqlClientSynonyms, synonyms, null);
             }
             return synonyms;
         }
