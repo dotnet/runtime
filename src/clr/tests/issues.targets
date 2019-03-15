@@ -74,6 +74,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/22728/*">
             <Issue>23262</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/keyword/TwoKeywords/TwoKeywords/*">
+            <Issue>23224, often fails with timeout in release</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets -->
@@ -319,9 +322,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/keyword/TwoKeywords/TwoKeywords/*">
-            <Issue>23235, often fails with timeout in release</Issue>
         </ExcludeList>
     </ItemGroup>
 
