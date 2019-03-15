@@ -271,7 +271,7 @@ namespace System.Configuration
         internal void AddErrorUnrecognizedAttribute(ExceptionAction action)
         {
             ConfigurationErrorsException ex = new ConfigurationErrorsException(
-                string.Format(SR.Config_base_unrecognized_attribute, Reader.Name),
+                SR.Format(SR.Config_base_unrecognized_attribute, Reader.Name),
                 this);
 
             SchemaErrors.AddError(ex, action);
@@ -280,7 +280,7 @@ namespace System.Configuration
         internal void AddErrorRequiredAttribute(string attrib, ExceptionAction action)
         {
             ConfigurationErrorsException ex = new ConfigurationErrorsException(
-                string.Format(SR.Config_missing_required_attribute, attrib, Reader.Name),
+                SR.Format(SR.Config_missing_required_attribute, attrib, Reader.Name),
                 this);
 
             SchemaErrors.AddError(ex, action);
@@ -289,7 +289,7 @@ namespace System.Configuration
         internal void AddErrorReservedAttribute(ExceptionAction action)
         {
             ConfigurationErrorsException ex = new ConfigurationErrorsException(
-                string.Format(SR.Config_reserved_attribute, Reader.Name),
+                SR.Format(SR.Config_reserved_attribute, Reader.Name),
                 this);
 
             SchemaErrors.AddError(ex, action);
@@ -312,7 +312,7 @@ namespace System.Configuration
                 newValue = null;
 
                 ConfigurationException ex = new ConfigurationErrorsException(
-                    string.Format(SR.Empty_attribute, Reader.Name),
+                    SR.Format(SR.Empty_attribute, Reader.Name),
                     this);
 
                 SchemaErrors.AddError(ex, action);
@@ -337,7 +337,7 @@ namespace System.Configuration
                 default:
                     newValue = defaultValue;
                     SchemaErrors.AddError(
-                        new ConfigurationErrorsException(string.Format(SR.Config_invalid_boolean_attribute, Reader.Name), this),
+                        new ConfigurationErrorsException(SR.Format(SR.Config_invalid_boolean_attribute, Reader.Name), this),
                         action);
                     break;
             }

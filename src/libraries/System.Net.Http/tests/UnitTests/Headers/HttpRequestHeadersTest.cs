@@ -612,6 +612,17 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void UserAgent_TryGetValuesAndGetValues_Malformed()
+        {
+            string malformedUserAgent = "Mozilla/4.0 (compatible (compatible; MSIE 8.0; Windows NT 6.1; Trident/7.0)";
+            headers.TryAddWithoutValidation("User-Agent", malformedUserAgent);
+            Assert.True(headers.TryGetValues("User-Agent", out IEnumerable<string> ua));
+            Assert.Equal(1, ua.Count());
+            Assert.Equal(malformedUserAgent, ua.First());
+            Assert.Equal(malformedUserAgent, headers.GetValues("User-Agent").First());
+        }
+
+        [Fact]
         public void UserAgent_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
             headers.TryAddWithoutValidation("User-Agent", "custom\u4F1A");

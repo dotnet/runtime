@@ -91,7 +91,7 @@ namespace System.Net
             {
                 Exception inner = exception.InnerException;
                 string message = inner != null ?
-                    string.Format("{0} {1}", exception.Message, inner.Message) :
+                    exception.Message + " " + inner.Message :
                     exception.Message;
 
                 return new WebException(

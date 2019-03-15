@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  id which is a relative IRI produces an error
 Expect:       InvalidFullLink{element:id,parent:feed}

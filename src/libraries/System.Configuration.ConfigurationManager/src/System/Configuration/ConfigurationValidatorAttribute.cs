@@ -19,7 +19,7 @@ namespace System.Configuration
 
             if (!typeof(ConfigurationValidatorBase).IsAssignableFrom(validator))
             {
-                throw new ArgumentException(string.Format(SR.Validator_Attribute_param_not_validator,
+                throw new ArgumentException(SR.Format(SR.Validator_Attribute_param_not_validator,
                     "ConfigurationValidatorBase"));
             }
 

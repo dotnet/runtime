@@ -173,7 +173,7 @@ namespace System.Security.Cryptography.Pkcs
 
             // Read to ensure that there is precisely one legally encoded value.
             AsnReader reader = new AsnReader(secretValue, AsnEncodingRules.BER);
-            reader.GetEncodedValue();
+            reader.ReadEncodedValue();
             reader.ThrowIfNotEmpty();
 
             Pkcs12SecretBag bag = new Pkcs12SecretBag(secretType, secretValue);
@@ -438,7 +438,7 @@ namespace System.Security.Cryptography.Pkcs
                 ConfidentialityMode == Pkcs12ConfidentialityMode.PublicKey)
             {
                 writer = new AsnWriter(AsnEncodingRules.BER);
-                writer.WriteEncodedValue(_encrypted);
+                writer.WriteEncodedValue(_encrypted.Span);
                 return writer;
             }
 

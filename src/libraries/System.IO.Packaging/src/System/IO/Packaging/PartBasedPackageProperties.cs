@@ -587,7 +587,7 @@ namespace System.IO.Packaging
                     }
                     else  // An unexpected element is an error.
                     {
-                        Debug.Assert(false, "Unknown value type for properties");
+                        Debug.Fail("Unknown value type for properties");
                     }
                 }
             }

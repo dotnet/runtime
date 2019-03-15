@@ -12,11 +12,11 @@ namespace System.IO.Pipelines
     /// </summary>
     public class PipeOptions
     {
-        private const int DefaultMinimumSegmentSize = 2048;
+        private const int DefaultMinimumSegmentSize = 4096;
 
-        private const int DefaultResumeWriterThreshold = DefaultMinimumSegmentSize * Pipe.SegmentPoolSize / 2;
+        private const int DefaultResumeWriterThreshold = DefaultMinimumSegmentSize * Pipe.InitialSegmentPoolSize / 2;
 
-        private const int DefaultPauseWriterThreshold = DefaultMinimumSegmentSize * Pipe.SegmentPoolSize;
+        private const int DefaultPauseWriterThreshold = DefaultMinimumSegmentSize * Pipe.InitialSegmentPoolSize;
 
         /// <summary>
         /// Default instance of <see cref="PipeOptions"/>

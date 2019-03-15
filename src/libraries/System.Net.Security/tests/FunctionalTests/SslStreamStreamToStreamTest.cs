@@ -8,7 +8,6 @@ using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -326,6 +325,55 @@ namespace System.Net.Security.Tests
                 await clientSslStream.WriteAsync(new byte[] { 2 }, 0, 1);
                 await readTask;
                 Assert.Equal(2, serverBuffer[0]);
+            }
+        }
+
+        [OuterLoop("Executes for several seconds")]
+        [Fact]
+        public async Task SslStream_ConcurrentBidirectionalReadsWrites_Success()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new NotifyReadVirtualNetworkStream(network, isServer: true))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                await DoHandshake(clientSslStream, serverSslStream);
+
+                const int BytesPerSend = 100;
+                DateTime endTime = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+                await new Task[]
+                {
+                    Task.Run(async delegate
+                    {
+                        var buffer = new byte[BytesPerSend];
+                        while (DateTime.UtcNow < endTime)
+                        {
+                            await clientStream.WriteAsync(buffer, 0, buffer.Length);
+                            int received = 0, bytesRead = 0;
+                            while (received < BytesPerSend && (bytesRead = await serverStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                            {
+                                received += bytesRead;
+                            }
+                            Assert.NotEqual(0, bytesRead);
+                        }
+                    }),
+                    Task.Run(async delegate
+                    {
+                        var buffer = new byte[BytesPerSend];
+                        while (DateTime.UtcNow < endTime)
+                        {
+                            await serverStream.WriteAsync(buffer, 0, buffer.Length);
+                            int received = 0, bytesRead = 0;
+                            while (received < BytesPerSend && (bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                            {
+                                received += bytesRead;
+                            }
+                            Assert.NotEqual(0, bytesRead);
+                        }
+                    })
+                }.WhenAllOrAnyFailed();
             }
         }
 

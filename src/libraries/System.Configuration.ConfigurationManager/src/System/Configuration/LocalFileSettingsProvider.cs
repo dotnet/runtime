@@ -384,7 +384,7 @@ namespace System.Configuration
 
             if (!string.IsNullOrEmpty(key))
             {
-                sectionName = string.Format(CultureInfo.InvariantCulture, "{0}.{1}", sectionName, key);
+                sectionName = sectionName + "." + key;
             }
 
             return XmlConvert.EncodeLocalName(sectionName);
@@ -446,11 +446,11 @@ namespace System.Configuration
 
             if (isUser && isApp)
             {
-                throw new ConfigurationErrorsException(string.Format(SR.BothScopeAttributes, setting.Name));
+                throw new ConfigurationErrorsException(SR.Format(SR.BothScopeAttributes, setting.Name));
             }
             else if (!(isUser || isApp))
             {
-                throw new ConfigurationErrorsException(string.Format(SR.NoScopeAttributes, setting.Name));
+                throw new ConfigurationErrorsException(SR.Format(SR.NoScopeAttributes, setting.Name));
             }
 
             return isUser;

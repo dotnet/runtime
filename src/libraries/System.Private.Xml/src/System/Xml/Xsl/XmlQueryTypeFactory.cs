@@ -1917,7 +1917,7 @@ namespace System.Xml.Xsl
                 return XmlQueryCardinality.ZeroOrMore;
 
             default:
-                Debug.Assert(false);
+                Debug.Fail($"Unexpected type code {typeCode}");
                 return XmlQueryCardinality.None;
             }
         }

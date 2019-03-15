@@ -76,8 +76,6 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedSet<T> Clear()
         {
-            Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
-            Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>().IsEmpty);
             return _root.IsEmpty ? this : Empty.WithComparer(_comparer);
         }
 
@@ -198,7 +196,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableSortedSet<T> Add(T value)
         {
-            Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
             bool mutated;
             return this.Wrap(_root.Add(value, _comparer, out mutated));
         }
@@ -209,7 +206,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableSortedSet<T> Remove(T value)
         {
-            Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
             bool mutated;
             return this.Wrap(_root.Remove(value, _comparer, out mutated));
         }
@@ -249,7 +245,7 @@ namespace System.Collections.Immutable
         public ImmutableSortedSet<T> Intersect(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
-            Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
+
             var newSet = this.Clear();
             foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
             {
@@ -259,6 +255,7 @@ namespace System.Collections.Immutable
                 }
             }
 
+            Debug.Assert(newSet != null);
             return newSet;
         }
 
@@ -319,7 +316,6 @@ namespace System.Collections.Immutable
         public ImmutableSortedSet<T> Union(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
-            Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
 
             ImmutableSortedSet<T> immutableSortedSet;
             if (TryCastToImmutableSortedSet(other, out immutableSortedSet) && immutableSortedSet.KeyComparer == this.KeyComparer) // argument is a compatible immutable sorted set
@@ -360,7 +356,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableSortedSet<T> WithComparer(IComparer<T> comparer)
         {
-            Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
             if (comparer == null)
             {
                 comparer = Comparer<T>.Default;
@@ -374,6 +369,7 @@ namespace System.Collections.Immutable
             {
                 var result = new ImmutableSortedSet<T>(Node.EmptyNode, comparer);
                 result = result.Union(this);
+                Debug.Assert(result != null);
                 return result;
             }
         }
@@ -1064,7 +1060,6 @@ namespace System.Collections.Immutable
         private ImmutableSortedSet<T> UnionIncremental(IEnumerable<T> items)
         {
             Requires.NotNull(items, nameof(items));
-            Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
 
             // Let's not implement in terms of ImmutableSortedSet.Add so that we're
             // not unnecessarily generating a new wrapping set object for each item.
@@ -1105,7 +1100,6 @@ namespace System.Collections.Immutable
         private ImmutableSortedSet<T> LeafToRootRefill(IEnumerable<T> addedItems)
         {
             Requires.NotNull(addedItems, nameof(addedItems));
-            Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
 
             // Rather than build up the immutable structure in the incremental way,
             // build it in such a way as to generate minimal garbage, by assembling

@@ -464,6 +464,9 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
 
         private void ValidateSystemInfo(XmlDocument document, string eventId, TraceEventType eventType, DateTime date, TraceEventCache eventCache)
         {
+            // TraceEventCache uses DateTime.UtcNow, whereas XmlWriterTraceListener uses DateTime.Now.
+            date = date.ToLocalTime();
+
             XmlNode node = document.GetElementsByTagName("EventID")[0];
             Assert.Equal(eventId, node.InnerText);
 
@@ -484,7 +487,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
 
             node = document.GetElementsByTagName("TimeCreated")[0];
             var nodeDate = DateTime.Parse(node.Attributes.GetNamedItem("SystemTime").Value);
-            Assert.Equal(date.ToString("MM-DD-YY"), nodeDate.ToString("MM-DD-YY"));
+            Assert.InRange(date - nodeDate, TimeSpan.FromHours(-1), TimeSpan.FromHours(1)); // allow some wiggle room in how close the dates need to be
 
             node = document.GetElementsByTagName("Source")[0];
             Assert.Equal("Trace", node.Attributes.GetNamedItem("Name").Value);

@@ -32,7 +32,7 @@ namespace System.Configuration
 
             Match match = _regex.Match((string)value);
 
-            if (!match.Success) throw new ArgumentException(string.Format(SR.Regex_validator_error, _expression));
+            if (!match.Success) throw new ArgumentException(SR.Format(SR.Regex_validator_error, _expression));
         }
     }
 }

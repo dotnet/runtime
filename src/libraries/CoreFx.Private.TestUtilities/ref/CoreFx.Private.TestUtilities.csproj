@@ -3,7 +3,7 @@
     <ProjectGuid>{E2E59C98-998F-9965-991D-99411166AF6F}</ProjectGuid>
     <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
     <AllowReferenceFromRuntime>true</AllowReferenceFromRuntime>
-    <RuntimeProjectFile>$(ProjectDir)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
+    <RuntimeProjectFile>$(RepoRoot)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

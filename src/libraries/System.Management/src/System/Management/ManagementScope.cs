@@ -315,7 +315,7 @@ namespace System.Management
             if (hModule == IntPtr.Zero)
             {
                 // This is unlikely, so having the TypeInitializationException wrapping it is fine.
-                throw new Win32Exception(Marshal.GetLastWin32Error(), string.Format(SR.LoadLibraryFailed, wminet_utilsPath));
+                throw new Win32Exception(Marshal.GetLastWin32Error(), SR.Format(SR.LoadLibraryFailed, wminet_utilsPath));
             }
 
             if (LoadDelegate(ref ResetSecurity_f, hModule, "ResetSecurity") &&
@@ -375,7 +375,7 @@ namespace System.Management
             }
             else
             {
-                LoadPlatformNotSupportedDelegates(string.Format(SR.PlatformNotSupported_FrameworkUpdatedRequired, wminet_utilsPath));
+                LoadPlatformNotSupportedDelegates(SR.Format(SR.PlatformNotSupported_FrameworkUpdatedRequired, wminet_utilsPath));
             }
         }
         static bool LoadDelegate<TDelegate>(ref TDelegate delegate_f, IntPtr hModule, string procName) where TDelegate : class

@@ -129,7 +129,7 @@ namespace System.Data.SqlClient
 #if DEBUG
                 else
                 {
-                    Debug.Assert(false, "Removing a packet from the pending list that was never added to it");
+                    Debug.Fail("Removing a packet from the pending list that was never added to it");
                 }
 #endif
             }

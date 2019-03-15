@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  The kind of quotation marks (single or double) used to quote attribute values is not significant.
 Expect:       !Error

@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<RuleSet Name="Rules for Security Issues" Description="Code analysis rules for Security Issues." ToolsVersion="14.0">
+﻿<RuleSet Name="Rules for Security Issues" Description="Code analysis rules for Security Issues." ToolsVersion="14.0">
   <Rules AnalyzerId="Desktop.Analyzers" RuleNamespace="Desktop.Analyzers">
     <Rule Id="CA5350" Action="Error" /> <!-- Do not use Weak/Broken cryptographic algorithms -->
     <Rule Id="CA5351" Action="Error" />

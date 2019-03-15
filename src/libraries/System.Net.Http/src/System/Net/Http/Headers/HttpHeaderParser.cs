@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Net.Http.Headers
 {
@@ -71,7 +70,7 @@ namespace System.Net.Http.Headers
             object result = null;
             if (!TryParseValue(value, storeValue, ref index, out result))
             {
-                throw new FormatException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value,
+                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value,
                     value == null ? "<null>" : value.Substring(index)));
             }
             return result;

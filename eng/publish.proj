@@ -140,7 +140,7 @@
     <ItemGroup>
       <_ManifestToPush Remove="@(_ManifestToPush)" />
       <_ManifestToPush Include="$(AssetManifestFilePath)">
-        <RelativeBlobPath>$(_FileRelativePathBase)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+        <RelativeBlobPath>$(_FileRelativePathBase)$(AssetManifestFileName)</RelativeBlobPath>
       </_ManifestToPush>
     </ItemGroup>
 

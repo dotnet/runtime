@@ -284,9 +284,9 @@ namespace System.Drawing.Drawing2D
         public void SetSigmaBellShape(float focus, float scale)
         {
             if (focus < 0 || focus > 1)
-                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(focus));
+                throw new ArgumentException(SR.GdiplusInvalidParameter, nameof(focus));
             if (scale < 0 || scale > 1)
-                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(scale));
+                throw new ArgumentException(SR.GdiplusInvalidParameter, nameof(scale));
 
             Gdip.CheckStatus(Gdip.GdipSetLineSigmaBlend(new HandleRef(this, NativeBrush), focus, scale));
         }
@@ -296,9 +296,9 @@ namespace System.Drawing.Drawing2D
         public void SetBlendTriangularShape(float focus, float scale)
         {
             if (focus < 0 || focus > 1)
-                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(focus));
+                throw new ArgumentException(SR.GdiplusInvalidParameter, nameof(focus));
             if (scale < 0 || scale > 1)
-                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(scale));
+                throw new ArgumentException(SR.GdiplusInvalidParameter, nameof(scale));
 
             Gdip.CheckStatus(Gdip.GdipSetLineLinearBlend(new HandleRef(this, NativeBrush), focus, scale));
 
@@ -316,7 +316,7 @@ namespace System.Drawing.Drawing2D
             {
                 if (!_interpolationColorsWasSet)
                     throw new ArgumentException(SR.Format(SR.InterpolationColorsCommon,
-                                                SR.Format(SR.InterpolationColorsColorBlendNotSet), string.Empty));
+                                                SR.InterpolationColorsColorBlendNotSet, string.Empty));
 
                 // Figure out the size of blend factor array.
                 Gdip.CheckStatus(Gdip.GdipGetLinePresetBlendCount(new HandleRef(this, NativeBrush), out int retval));
@@ -372,31 +372,31 @@ namespace System.Drawing.Drawing2D
                 if (value == null)
                 {
                     throw new ArgumentException(SR.Format(SR.InterpolationColorsCommon,
-                                                SR.Format(SR.InterpolationColorsInvalidColorBlendObject), string.Empty));
+                                                SR.InterpolationColorsInvalidColorBlendObject, string.Empty));
                 }
                 else if (value.Colors.Length < 2)
                 {
                     throw new ArgumentException(SR.Format(SR.InterpolationColorsCommon,
-                                                SR.Format(SR.InterpolationColorsInvalidColorBlendObject),
-                                                SR.Format(SR.InterpolationColorsLength)));
+                                                SR.InterpolationColorsInvalidColorBlendObject,
+                                                SR.InterpolationColorsLength));
                 }
                 else if (value.Colors.Length != value.Positions.Length)
                 {
                     throw new ArgumentException(SR.Format(SR.InterpolationColorsCommon,
-                                                SR.Format(SR.InterpolationColorsInvalidColorBlendObject),
-                                                SR.Format(SR.InterpolationColorsLengthsDiffer)));
+                                                SR.InterpolationColorsInvalidColorBlendObject,
+                                                SR.InterpolationColorsLengthsDiffer));
                 }
                 else if (value.Positions[0] != 0.0f)
                 {
                     throw new ArgumentException(SR.Format(SR.InterpolationColorsCommon,
-                                                SR.Format(SR.InterpolationColorsInvalidColorBlendObject),
-                                                SR.Format(SR.InterpolationColorsInvalidStartPosition)));
+                                                SR.InterpolationColorsInvalidColorBlendObject,
+                                                SR.InterpolationColorsInvalidStartPosition));
                 }
                 else if (value.Positions[value.Positions.Length - 1] != 1.0f)
                 {
                     throw new ArgumentException(SR.Format(SR.InterpolationColorsCommon,
-                                                SR.Format(SR.InterpolationColorsInvalidColorBlendObject),
-                                                SR.Format(SR.InterpolationColorsInvalidEndPosition)));
+                                                SR.InterpolationColorsInvalidColorBlendObject,
+                                                SR.InterpolationColorsInvalidEndPosition));
                 }
 
 

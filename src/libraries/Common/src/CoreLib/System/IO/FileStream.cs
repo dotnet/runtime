@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -63,6 +64,9 @@ namespace System.IO
 
         /// <summary>Whether the file stream's handle has been exposed.</summary>
         private bool _exposedHandle;
+
+        /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
+        private static int s_cachedSerializationSwitch = 0;
 
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access)
@@ -227,6 +231,11 @@ namespace System.IO
 
             if ((options & FileOptions.Asynchronous) != 0)
                 _useAsyncIO = true;
+
+            if ((access & FileAccess.Write) == FileAccess.Write)
+            {
+                SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
+            }
 
             _fileHandle = OpenHandle(mode, share, options);
 

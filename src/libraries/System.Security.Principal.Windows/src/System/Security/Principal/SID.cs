@@ -540,7 +540,7 @@ nameof(binaryForm));
             }
             else if (Error != Interop.Errors.ERROR_SUCCESS)
             {
-                Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.CreateSidFromString returned unrecognized error {0}", Error));
+                Debug.Fail($"Win32.CreateSidFromString returned unrecognized error {Error}");
                 throw new Win32Exception(Error);
             }
 
@@ -635,7 +635,7 @@ nameof(binaryForm));
                 }
                 else if (ErrorCode != Interop.Errors.ERROR_SUCCESS)
                 {
-                    Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.GetWindowsAccountDomainSid returned unrecognized error {0}", ErrorCode));
+                    Debug.Fail($"Win32.GetWindowsAccountDomainSid returned unrecognized error {ErrorCode}");
                     throw new Win32Exception(ErrorCode);
                 }
 
@@ -658,7 +658,7 @@ nameof(binaryForm));
             }
             else if (Error != Interop.Errors.ERROR_SUCCESS)
             {
-                Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.CreateWellKnownSid returned unrecognized error {0}", Error));
+                Debug.Fail($"Win32.CreateWellKnownSid returned unrecognized error {Error}");
                 throw new Win32Exception(Error);
             }
 
@@ -882,7 +882,7 @@ nameof(binaryForm));
             }
             else if (Error != Interop.Errors.ERROR_SUCCESS)
             {
-                Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.GetWindowsAccountDomainSid returned unrecognized error {0}", Error));
+                Debug.Fail($"Win32.GetWindowsAccountDomainSid returned unrecognized error {Error}");
                 throw new Win32Exception(Error);
             }
             return ResultSid;
@@ -1120,7 +1120,7 @@ nameof(binaryForm));
                 {
                     uint win32ErrorCode = Interop.Advapi32.LsaNtStatusToWinError(ReturnCode);
 
-                    Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Interop.LsaLookupSids returned {0}", win32ErrorCode));
+                    Debug.Fail($"Interop.LsaLookupSids returned {win32ErrorCode}");
                     throw new Win32Exception(unchecked((int)win32ErrorCode));
                 }
 
