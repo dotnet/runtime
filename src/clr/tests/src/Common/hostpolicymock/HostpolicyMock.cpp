@@ -6,6 +6,7 @@
 // Used for testing CoreCLR/Corlib functionality which calls into hostpolicy.
 
 #include <string>
+#include <platformdefines.h>
 
 // dllexport
 #if defined _WIN32
