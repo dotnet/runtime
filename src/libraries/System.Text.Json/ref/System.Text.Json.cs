@@ -186,6 +186,8 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public ulong GetUInt64() { throw null; }
         public bool Read() { throw null; }
+        public bool TextEquals(ReadOnlySpan<char> otherText) { throw null; }
+        public bool TextEquals(ReadOnlySpan<byte> otherUtf8Text) { throw null; }
         public bool TryGetDateTime(out DateTime value) { throw null; }
         public bool TryGetDateTimeOffset(out DateTimeOffset value) { throw null; }
         public bool TryGetDecimal(out decimal value) { throw null; }
