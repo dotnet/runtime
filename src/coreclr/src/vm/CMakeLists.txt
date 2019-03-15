@@ -553,12 +553,14 @@ endif(FEATURE_STANDALONE_GC)
 if(WIN32)
 
 set(VM_SOURCES_DAC_AND_WKS_WIN32
+    amsi.cpp
     clrtocomcall.cpp
     rcwwalker.cpp
     winrttypenameconverter.cpp
 )
 
 set(VM_HEADERS_DAC_AND_WKS_WIN32
+    amsi.h
     clrtocomcall.h
     rcwwalker.h
     winrttypenameconverter.h
