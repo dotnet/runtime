@@ -148,6 +148,14 @@ case "$host" in
 		fi
 		HOST_CC="gcc"
 
+		# Boehm not supported on 64-bit Windows.
+		case "$host" in
+		x86_64-*-* | amd64-*-*)
+			support_boehm=no
+			with_gc=sgen
+			;;
+		esac
+
 		# Windows 7 or later is required
 		WIN32_CPPFLAGS="-DWINVER=0x0601 -D_WIN32_WINNT=0x0601 -D_WIN32_IE=0x0501 -D_UNICODE -DUNICODE -DWIN32_THREADS -DFD_SETSIZE=1024"
 		CPPFLAGS="$CPPFLAGS $WIN32_CPPFLAGS"
@@ -161,6 +169,7 @@ case "$host" in
 		with_tls=pthread
 		with_sgen_default_concurrent=yes
 		LN_S=cp
+
 		# This forces libgc to use the DllMain based thread registration code on win32
 		libgc_configure_args="$libgc_configure_args --enable-win32-dllmain=yes"
 		;;
