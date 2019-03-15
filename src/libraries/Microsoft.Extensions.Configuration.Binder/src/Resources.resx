@@ -121,7 +121,7 @@
     <value>Cannot create instance of type '{0}' because it is either abstract or an interface.</value>
   </data>
   <data name="Error_FailedBinding" xml:space="preserve">
-    <value>Failed to convert '{0}' to type '{1}'.</value>
+    <value>Failed to convert configuration value to type '{0}'.</value>
   </data>
   <data name="Error_FailedToActivate" xml:space="preserve">
     <value>Failed to create instance of type '{0}'.</value>
