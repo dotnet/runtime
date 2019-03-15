@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Microsoft.DotNet.Build.Bundle.Tests</Description>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <AssemblyName>Microsoft.DotNet.Build.Bundle.Tests</AssemblyName>
+    <PackageId>Microsoft.DotNet.Build.Bundle.Tests</PackageId>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
+    <PackageReference Include="xunit" Version="2.2.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
+    <ProjectReference Include="..\..\managed\Microsoft.DotNet.Build.Bundle\Microsoft.DotNet.Build.Bundle.csproj" />
+  </ItemGroup>
+
+</Project>
