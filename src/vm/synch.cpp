@@ -589,7 +589,7 @@ void CLRLifoSemaphore::Create(INT32 initialSignalCount, INT32 maximumSignalCount
     _ASSERTE(m_handle == nullptr);
 
 #ifdef FEATURE_PAL
-    HANDLE h = UnsafeCreateSemaphore(nullptr, initialSignalCount, maximumSignalCount, nullptr);
+    HANDLE h = UnsafeCreateSemaphore(nullptr, 0, maximumSignalCount, nullptr);
 #else // !FEATURE_PAL
     HANDLE h = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, maximumSignalCount);
 #endif // FEATURE_PAL
