@@ -2381,8 +2381,8 @@ TailCall:
                 {
 #if FEATURE_VN_TRACE_APPLY_SELECTORS
                     JITDUMP("      AX1: select([" FMT_VN "]store(" FMT_VN ", " FMT_VN ", " FMT_VN "), " FMT_VN
-                        ") ==> " FMT_VN ".\n",
-                        funcApp.m_args[0], arg0VN, funcApp.m_args[1], funcApp.m_args[2], arg1VN, funcApp.m_args[2]);
+                            ") ==> " FMT_VN ".\n",
+                            funcApp.m_args[0], arg0VN, funcApp.m_args[1], funcApp.m_args[2], arg1VN, funcApp.m_args[2]);
 #endif
                     return funcApp.m_args[2];
                 }
@@ -2393,9 +2393,9 @@ TailCall:
                     assert(funcApp.m_args[1] != arg1VN); // we already checked this above.
 #if FEATURE_VN_TRACE_APPLY_SELECTORS
                     JITDUMP("      AX2: " FMT_VN " != " FMT_VN " ==> select([" FMT_VN "]store(" FMT_VN ", " FMT_VN
-                        ", " FMT_VN "), " FMT_VN ") ==> select(" FMT_VN ", " FMT_VN ").\n",
-                        arg1VN, funcApp.m_args[1], arg0VN, funcApp.m_args[0], funcApp.m_args[1], funcApp.m_args[2],
-                        arg1VN, funcApp.m_args[0], arg1VN);
+                            ", " FMT_VN "), " FMT_VN ") ==> select(" FMT_VN ", " FMT_VN ").\n",
+                            arg1VN, funcApp.m_args[1], arg0VN, funcApp.m_args[0], funcApp.m_args[1], funcApp.m_args[2],
+                            arg1VN, funcApp.m_args[0], arg1VN);
 #endif
                     // This is the equivalent of the recursive tail call:
                     // return VNForMapSelect(vnk, typ, funcApp.m_args[0], arg1VN);
@@ -2406,19 +2406,19 @@ TailCall:
             }
             else if (funcApp.m_func == VNF_PhiDef || funcApp.m_func == VNF_PhiMemoryDef)
             {
-                unsigned  lclNum = BAD_VAR_NUM;
+                unsigned  lclNum   = BAD_VAR_NUM;
                 bool      isMemory = false;
                 VNFuncApp phiFuncApp;
                 bool      defArgIsFunc = false;
                 if (funcApp.m_func == VNF_PhiDef)
                 {
-                    lclNum = unsigned(funcApp.m_args[0]);
+                    lclNum       = unsigned(funcApp.m_args[0]);
                     defArgIsFunc = GetVNFunc(funcApp.m_args[2], &phiFuncApp);
                 }
                 else
                 {
                     assert(funcApp.m_func == VNF_PhiMemoryDef);
-                    isMemory = true;
+                    isMemory     = true;
                     defArgIsFunc = GetVNFunc(funcApp.m_args[1], &phiFuncApp);
                 }
                 if (defArgIsFunc && phiFuncApp.m_func == VNF_Phi)
@@ -2462,7 +2462,7 @@ TailCall:
                             VNFuncApp phiArgFuncApp;
                             if (GetVNFunc(argRest, &phiArgFuncApp) && phiArgFuncApp.m_func == VNF_Phi)
                             {
-                                cur = phiArgFuncApp.m_args[0];
+                                cur     = phiArgFuncApp.m_args[0];
                                 argRest = phiArgFuncApp.m_args[1];
                             }
                             else
@@ -2529,13 +2529,13 @@ TailCall:
         if (!GetVNFunc2Map()->Lookup(fstruct, &res))
         {
             // Otherwise, assign a new VN for the function application.
-            Chunk*   c = GetAllocChunk(typ, CEA_Func2);
-            unsigned offsetWithinChunk = c->AllocVN();
-            res = c->m_baseVN + offsetWithinChunk;
+            Chunk*   c                                                     = GetAllocChunk(typ, CEA_Func2);
+            unsigned offsetWithinChunk                                     = c->AllocVN();
+            res                                                            = c->m_baseVN + offsetWithinChunk;
             reinterpret_cast<VNDefFunc2Arg*>(c->m_defs)[offsetWithinChunk] = fstruct;
             GetVNFunc2Map()->Set(fstruct, res);
         }
-        return res;        
+        return res;
     }
 }
 
