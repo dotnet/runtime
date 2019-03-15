@@ -24,111 +24,6 @@ public static class VectorMgdMgd
 
     static Random random = new Random(12345);
 
-    public unsafe class HVATests<T> where T : struct
-    {
-        // We can have up to 4 vectors in an HVA, and we'll test structs with up to 5 of them
-        // (to ensure that even those that are too large are handled consistently).
-        // So we need 5 * the element count in the largest (128-bit) vector with the smallest
-        // element type (byte).
-        static T[] values;
-        static T[] check;
-        private int ElementCount = (Unsafe.SizeOf<Vector128<T>>() / sizeof(byte)) * 5;
-        public bool isPassing = true;
-
-        public struct HVA128_02
-        {
-            public Vector128<T> v0;
-            public Vector128<T> v1;
-        }
-
-        public HVATests()
-        {
-            values = new T[ElementCount];
-            for (int i = 0; i < values.Length; i++)
-            {
-                int data = random.Next(100);
-                values[i] = GetValueFromInt<T>(data);
-            }
-        }
-
-        public void doTests()
-        {
-            HVA128_02 hva128_02;
-            hva128_02.v0 = Unsafe.As<T, Vector128<T>>(ref values[0]);
-            hva128_02.v1 = Unsafe.As<T, Vector128<T>>(ref values[Vector128<T>.Count]);
-            test1Argument_HVA128_02(hva128_02);
-
-            testReturn_HFA128_02();
-
-            Type[] parameterTypes = new Type[] { typeof(HVA128_02) };
-            System.Reflection.MethodInfo methodInfo = typeof(HVATests<T>)
-                                    .GetMethod(nameof(HVATests<T>.test1Argument_HVA128_02), parameterTypes);
-            methodInfo.Invoke(this, new object[] { hva128_02 });
-
-            testReflectionReturn_HFA128_02();
-        }
-
-        // Checks that the values in v correspond to those in the values array starting
-        // with values[index]
-        private void checkValues(Vector128<T> v, int index)
-        {
-            for (int i = 0; i < Vector128<T>.Count; i++)
-            {
-                if (!CheckValue<T>(v.GetElement(i), values[index]))
-                {
-                    isPassing = false;
-                }
-                index++;
-            }
-        }
-
-        // Test the case where we've passed in a single argument HVA of 2 vectors.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public void test1Argument_HVA128_02(HVA128_02 s)
-        {
-            checkValues(s.v0, 0);
-            checkValues(s.v1, Vector128<T>.Count);
-        }
-
-        // Return an HVA of 2 vectors, with values from the 'values' array.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public HVA128_02 returnTest()
-        {
-            HVA128_02 hva128_02;
-            hva128_02.v0 = Unsafe.As<T, Vector128<T>>(ref values[0]);
-            hva128_02.v1 = Unsafe.As<T, Vector128<T>>(ref values[Vector128<T>.Count]);
-            return hva128_02;
-        }
-
-        public void testReturn_HFA128_02()
-        {
-            HVA128_02 s = returnTest();
-            checkValues(s.v0, 0);
-            checkValues(s.v1, Vector128<T>.Count);
-        }
-
-        public void testReflectionReturn_HFA128_02()
-        {
-            Type[] parameterTypes = new Type[] {};
-            System.Reflection.MethodInfo methodInfo = typeof(HVATests<T>)
-                                    .GetMethod(nameof(HVATests<T>.returnTest), parameterTypes);
-            object o = methodInfo.Invoke(this, new object[] { });
-            HVA128_02 s = (HVA128_02)o;
-            checkValues(s.v0, 0);
-            checkValues(s.v1, Vector128<T>.Count);
-        }
-    }
-
-    public static int Main(string[] args)
-    {
-        var isPassing = true;
-
-        HVATests<byte> byteTests = new HVATests<byte>();
-        byteTests.doTests();
-
-        return byteTests.isPassing ? PASS : FAIL;
-    }
-
     public static T GetValueFromInt<T>(int value)
     {
         if (typeof(T) == typeof(float))
@@ -210,5 +105,142 @@ public static class VectorMgdMgd
         return returnVal;
     }
 
+    public unsafe class HVATests<T> where T : struct
+    {
+        // We can have up to 4 vectors in an HVA, and we'll test structs with up to 5 of them
+        // (to ensure that even those that are too large are handled consistently).
+        // So we need 5 * the element count in the largest (128-bit) vector with the smallest
+        // element type (byte).
+        static T[] values;
+        static T[] check;
+        private int ElementCount = (Unsafe.SizeOf<Vector128<T>>() / sizeof(byte)) * 5;
+        public bool isPassing = true;
 
+        Type[] reflectionParameterTypes;
+        System.Reflection.MethodInfo reflectionMethodInfo;
+        object[] reflectionInvokeArgs;
+
+        public struct HVA128_02
+        {
+            public Vector128<T> v0;
+            public Vector128<T> v1;
+        }
+
+        private HVA128_02 hva128_02;
+
+        public void Init_HVAs()
+        {
+            hva128_02.v0 = Unsafe.As<T, Vector128<T>>(ref values[0]);
+            hva128_02.v1 = Unsafe.As<T, Vector128<T>>(ref values[Vector128<T>.Count]);
+        }
+
+        public HVATests()
+        {
+            values = new T[ElementCount];
+            for (int i = 0; i < values.Length; i++)
+            {
+                int data = random.Next(100);
+                values[i] = GetValueFromInt<T>(data);
+            }
+
+            Init_HVAs();
+        }
+
+        // Checks that the values in v correspond to those in the values array starting
+        // with values[index]
+        private void checkValues(Vector128<T> v, int index)
+        {
+            bool printedMsg = false;  // Print at most one message
+
+            for (int i = 0; i < Vector128<T>.Count; i++)
+            {
+                if (!CheckValue<T>(v.GetElement(i), values[index]))
+                {
+                    if (!printedMsg)
+                    {
+                        Console.WriteLine("FAILED: checkValues(index = {1}, i = {2})", index, i);
+                        printedMsg = true;
+                    }
+
+                    isPassing = false;
+                }
+                index++;
+            }
+        }
+
+        // Test the case where we've passed in a single argument HVA of 2 vectors.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void test1Argument_HVA128_02(HVA128_02 arg1)
+        {
+            checkValues(arg1.v0, 0);
+            checkValues(arg1.v1, Vector128<T>.Count);
+        }
+
+        // Return an HVA of 2 vectors, with values from the 'values' array.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public HVA128_02 returnTest_HVA128_02()
+        {
+            return hva128_02;
+        }
+
+        public void testReturn_HFA128_02()
+        {
+            HVA128_02 result = returnTest_HVA128_02();
+            checkValues(result.v0, 0);
+            checkValues(result.v1, Vector128<T>.Count);
+        }
+
+        public void Init_Reflection_Args_HVA128_02()
+        {
+            reflectionParameterTypes = new Type[] { typeof(HVA128_02) };
+            reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA128_02), reflectionParameterTypes);
+            reflectionInvokeArgs = new object[] { hva128_02 };
+        }
+
+        public void Init_Reflection_Return_HVA128_02()
+        {
+            reflectionParameterTypes = new Type[] { };
+            reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.returnTest_HVA128_02), reflectionParameterTypes);
+            reflectionInvokeArgs = new object[] { };
+        }
+
+        public void testReflectionReturn_HFA128_02()
+        {
+            Init_Reflection_Return_HVA128_02();
+
+            object objResult = reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
+
+            HVA128_02 result = (HVA128_02)objResult;
+
+            checkValues(result.v0, 0);
+            checkValues(result.v1, Vector128<T>.Count);
+        }
+
+        public void doTests()
+        {
+            // Test HVA Argumnets
+
+            test1Argument_HVA128_02(hva128_02);
+
+            Init_Reflection_Args_HVA128_02();
+            reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
+
+
+            // Test HVA Return values
+
+            testReturn_HFA128_02();
+
+            testReflectionReturn_HFA128_02();
+        }
+    }
+
+    public static int Main(string[] args)
+    {
+        var isPassing = true;
+
+        HVATests<byte> byteTests = new HVATests<byte>();
+        byteTests.doTests();
+
+        return byteTests.isPassing ? PASS : FAIL;
+    }
 }
