@@ -1,0 +1,88 @@
+# Not sure why these are not supported by coreclr
+-nomethod *IndexOf_ArrayOfPointers_ThrowsNotSupportedException
+-nomethod *LastIndexOf_ArrayOfPointers_ThrowsNotSupportedException
+-nomethod *Reverse_ArrayOfPointers_ThrowsNotSupportedException
+# No SRE yet
+-nomethod *CreateInstance_TypeNotRuntimeType_ThrowsArgumentException
+-nomethod *CreateInstance_NotRuntimeType_ThrowsArgumentException
+-nomethod *CreateInstance_NonPublicValueTypeWithPrivateDefaultConstructor_Success
+-nomethod *CreateInstance_TypeBuilder_ThrowsNotSupportedException
+-nomethod *CreateInstance_PublicOnlyValueTypeWithPrivateDefaultConstructor_ThrowsMissingMethodException
+-nomethod System.Tests.EnumTests.GetName_MultipleMatches
+-nomethod System.Tests.EnumTests.GetName_Invalid
+-nomethod System.Tests.EnumTests.GetName_NonIntegralTypes
+-nomethod System.Tests.EnumTests.GetTypeCode_Enum_ReturnsExpected
+-nomethod System.Tests.EnumTests.IsDefined_Invalid
+-nomethod System.Tests.EnumTests.HasFlag_Invalid
+-nomethod System.Tests.EnumTests.CompareTo_ObjectNotEnum_ThrowsArgumentException
+-nomethod System.Tests.EnumTests.GetUnderlyingType_Invalid
+-nomethod System.Tests.EnumTests.GetNames_Invalid
+-nomethod System.Tests.EnumTests.GetValues_Invalid
+-nomethod System.Tests.EnumTests.ToString_Format_MultipleMatches
+-nomethod System.Tests.EnumTests.ToString_InvalidFormat_ThrowsFormatException
+-nomethod System.Tests.EnumTests.Format_Invalid
+
+# Depends on coreclr behavior
+-nomethod System.Tests.GCTests.GetTotalMemoryTest_ForceCollection
+# Not supported
+-nomethod System.Tests.GCTests.LargeObjectHeapCompactionModeRoundTrips
+-nomethod System.Tests.GCTests.GetAllocatedBytesForCurrentThread
+-nomethod System.Tests.GCTests.LatencyRoundtrips
+# InternalGetSatelliteAssembly
+-nomethod System.Tests.UriCreateStringTests.Create_String_InvalidUriKind_ThrowsArgumentException
+-nomethod System.Tests.UriMethodTests.MakeRelative_Invalid
+-nomethod System.Tests.UriMethodTests.IsWellFormedUriString
+-nomethod System.Tests.UriMethodTests.EscapeDataString_Invalid
+-nomethod System.Tests.UriMethodTests.EscapeUriString_Invalid
+-nomethod System.Tests.UriMethodTests.GetComponents_Invalid
+
+# Remote test runner can't load System.Globalization.Native
+-nomethod System.Text.Tests.StringBuilderTests.Test_Insert_Float
+-nomethod System.Text.Tests.StringBuilderTests.Test_Insert_Double
+-nomethod System.Text.Tests.StringBuilderTests.Test_Insert_Decimal
+-nomethod System.Text.Tests.StringBuilderTests.Test_Append_Float
+-nomethod System.Text.Tests.StringBuilderTests.Test_Append_Double
+-nomethod System.Text.Tests.StringBuilderTests.Test_Append_Decimal
+
+# Works, but leads to a SIGSEGV under lldb even with explicit-null-checks
+-nomethod *Append_CharPointer_Null_ThrowsNullReferenceException
+
+-nomethod System.Tests.DelegateTests.DynamicInvoke_MissingTypeForDefaultParameter_Succeeds
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter*
+-nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter*
+-nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
+-nomethod System.Tests.CreateDelegateTests.CreateDelegate2_Target_GenericTypeParameter
+-nomethod System.Tests.MulticastDelegateTests.Equals
+-nomethod System.Tests.MulticastDelegateTests.Combine
+-nomethod System.Tests.MulticastDelegateTests.Remove
+
+-nomethod System.Tests.ExceptionTests.Ctor_Empty
+-nomethod System.Tests.ExceptionTests.Ctor_String
+-nomethod System.Tests.ExceptionTests.Ctor_String_Exception
+-nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineSameMethod
+-nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineOtherMethod
+-nomethod System.Tests.ExceptionDerivedTests.Exception_SerializeObjectState
+
+-nomethod *Copy_PointerArrayToNonPointerArray_ThrowsArrayTypeMismatchException
+-nomethod *ActivatorTests.CreateInstance_PrimitiveWidening_ThrowsInvalidCastException
+-nomethod System.Tests.ActivatorTests.CreateInstance_DesignatedOptionalParameters_ThrowsMissingMemberException
+-nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
+-nomethod System.Tests.StringTests.NormalizationTest
+-nomethod System.Tests.StringTests.IndexOf_HungarianDoubleCompression_HungarianCulture
+-nomethod *HideDetectionHappensBeforeBindingFlagChecks
+-nomethod *TestRefReturnNullableNoValue
+-nomethod *TestRefReturnOfPointer
+-nomethod *TestNullRefReturnOfPointer
+-nomethod *Assembly_IsCollectibleFalse_WhenUsingAssemblyLoad
+-nomethod *Assembly_IsCollectibleTrue_WhenUsingAssemblyLoadContext
+-nomethod *GenericWithCollectibleTypeParameter_IsCollectibleTrue_WhenUsingAssemblyLoadContext
+-nomethod *StaticThrow_UpdatesStackTraceAppropriately
+-nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnNullable
+-nomethod System.Runtime.Serialization.Tests.SerializationExceptionTests.Ctor_SerializationInfo_StreamingContext
+-nomethod System.Tests.BufferTests.BlockCopy_Invalid
+-nomethod System.Tests.GCTests.ReRegisterForFinalize
+-nomethod System.Tests.WeakReferenceTests.NonGeneric
+
+-nomethod *ConditionalWeakTableTests*
+-nomethod *IsCollectibleTests*
+-nomethod *ExitCodeTests*
