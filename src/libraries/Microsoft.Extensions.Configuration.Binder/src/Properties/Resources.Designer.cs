@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Configuration.Binder
             => string.Format(CultureInfo.CurrentCulture, GetString("Error_CannotActivateAbstractOrInterface"), p0);
 
         /// <summary>
-        /// Failed to convert '{0}' to type '{1}'.
+        /// Failed to convert configuration value to type '{0}'.
         /// </summary>
         internal static string Error_FailedBinding
         {
@@ -33,10 +33,10 @@ namespace Microsoft.Extensions.Configuration.Binder
         }
 
         /// <summary>
-        /// Failed to convert '{0}' to type '{1}'.
+        /// Failed to convert configuration value to type '{0}'.
         /// </summary>
-        internal static string FormatError_FailedBinding(object p0, object p1)
-            => string.Format(CultureInfo.CurrentCulture, GetString("Error_FailedBinding"), p0, p1);
+        internal static string FormatError_FailedBinding(object p0)
+            => string.Format(CultureInfo.CurrentCulture, GetString("Error_FailedBinding"), p0);
 
         /// <summary>
         /// Failed to create instance of type '{0}'.
