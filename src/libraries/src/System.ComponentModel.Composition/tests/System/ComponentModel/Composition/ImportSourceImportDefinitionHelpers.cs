@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq.Expressions;
 using Microsoft.Internal;
-using System.Diagnostics.Contracts;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -51,8 +50,6 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 get
                 {
-                    Contract.Ensures(Contract.Result<IDictionary<string, object>>() != null);
-
                     var reply = this._metadata;
                     if(reply == null)
                     {

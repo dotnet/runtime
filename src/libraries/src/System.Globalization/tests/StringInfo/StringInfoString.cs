@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
         [InlineData("")]
         [InlineData("abc")]
         [InlineData("\uD800\uDC00")]
-        public void String_Set(string value)
+        public void String_Set_GetReturnsExpected(string value)
         {
             StringInfo stringInfo = new StringInfo();
             stringInfo.String = value;
@@ -20,9 +20,10 @@ namespace System.Globalization.Tests
         }
         
         [Fact]
-        public void String_Set_Invalid()
+        public void String_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("String", () => new StringInfo().String = null);
+            var stringInfo = new StringInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "String", () => stringInfo.String = null);
         }
     }
 }

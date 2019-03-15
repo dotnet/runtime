@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
-  <Import Project="..\dir.traversal.targets" />
+<Project>
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
 
   <PropertyGroup Condition="'$(BuildingAnOfficialBuildLeg)' == 'true'">
     <!-- During an official build, only build identity packages in the AllConfigurations build -->

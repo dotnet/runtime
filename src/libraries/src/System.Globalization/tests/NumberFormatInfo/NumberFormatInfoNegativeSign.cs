@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(NegativeSign_TestData))]
-        public void NegativeSign_Get(NumberFormatInfo format, string expected)
+        public void NegativeSign_Get_ReturnsExpected(NumberFormatInfo format, string expected)
         {
             Assert.Equal(expected, format.NegativeSign);
         }
@@ -26,7 +26,7 @@ namespace System.Globalization.Tests
         [InlineData("string")]
         [InlineData("   ")]
         [InlineData("")]
-        public void NegativeSign_Set(string newNegativeSign)
+        public void NegativeSign_Set_GetReturnsExpected(string newNegativeSign)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.NegativeSign = newNegativeSign;
@@ -34,9 +34,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void NegativeSign_Set_Invalid()
+        public void NegativeSign_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("NegativeSign", () => new NumberFormatInfo().NegativeSign = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "NegativeSign", () => format.NegativeSign = null);
+        }
+
+        [Fact]
+        public void NegativeSign_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NegativeSign = "");
         }
     }

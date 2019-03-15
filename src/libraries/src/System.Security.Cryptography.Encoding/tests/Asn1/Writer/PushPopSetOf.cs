@@ -19,9 +19,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                // Maybe ArgumentException isn't right for this, since no argument was provided.
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
+                Assert.Throws<InvalidOperationException>(
                     () => writer.PopSetOf());
             }
         }
@@ -34,8 +32,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
+                Assert.Throws<InvalidOperationException>(
                     () => writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true)));
             }
         }
@@ -51,9 +48,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 writer.PushSetOf();
                 writer.PopSetOf();
 
-                // Maybe ArgumentException isn't right for this, since no argument was provided.
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
+                Assert.Throws<InvalidOperationException>(
                     () => writer.PopSetOf());
             }
         }
@@ -69,8 +64,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 writer.PushSetOf();
                 writer.PopSetOf();
 
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
+                Assert.Throws<InvalidOperationException>(
                     () => writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true)));
             }
         }
@@ -85,9 +79,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true));
 
-                // Maybe ArgumentException isn't right for this, since no argument was provided.
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
+                Assert.Throws<InvalidOperationException>(
                     () => writer.PopSetOf());
             }
         }
@@ -102,8 +94,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 writer.PushSetOf();
 
-                AssertExtensions.Throws<ArgumentException>(
-                    "tag",
+                Assert.Throws<InvalidOperationException>(
                     () => writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, (int)ruleSet, true)));
             }
         }
@@ -328,7 +319,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
         }
 
-        private static void SimpleContentShift(AsnWriter writer, string expectedHex)
+        private static void SimpleContentShiftCore(AsnWriter writer, string expectedHex)
         {
             writer.PushSetOf();
 
@@ -362,7 +353,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                SimpleContentShift(writer, ExpectedHex);
+                SimpleContentShiftCore(writer, ExpectedHex);
             }
         }
 
@@ -380,7 +371,81 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.CER))
             {
-                SimpleContentShift(writer, ExpectedHex);
+                SimpleContentShiftCore(writer, ExpectedHex);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Push_After_Dispose(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteNull();
+                }
+
+                writer.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(() => writer.PushSetOf());
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Push_Custom_After_Dispose(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteNull();
+                }
+
+                writer.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.PushSetOf(new Asn1Tag(TagClass.Application, 2)));
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Pop_After_Dispose(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteNull();
+                }
+
+                writer.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(() => writer.PopSetOf());
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Pop_Custom_After_Dispose(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteNull();
+                }
+
+                writer.Dispose();
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => writer.PopSetOf(new Asn1Tag(TagClass.Application, 2)));
             }
         }
 
@@ -534,6 +599,23 @@ namespace System.Security.Cryptography.Tests.Asn1
                 AssertExtensions.Throws<ArgumentException>(
                     "tag",
                     () => writer.PushSetOf(Asn1Tag.EndOfContents));
+            }
+        }
+
+        [Theory]
+        [InlineData(PublicEncodingRules.BER)]
+        [InlineData(PublicEncodingRules.CER)]
+        [InlineData(PublicEncodingRules.DER)]
+        public static void PushSequence_PopSetOf(PublicEncodingRules ruleSet)
+        {
+            using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
+            {
+                Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 3);
+
+                writer.PushSequence(tag);
+
+                Assert.Throws<InvalidOperationException>(
+                    () => writer.PopSetOf(tag));
             }
         }
     }

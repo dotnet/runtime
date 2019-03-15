@@ -16,6 +16,8 @@ using MSS = Microsoft.SqlServer.Server;
 using Microsoft.SqlServer.Server;
 
 using System.ComponentModel.Design.Serialization;
+using System.Text;
+using System.Threading;
 
 namespace System.Data.SqlClient
 {
@@ -35,11 +37,27 @@ namespace System.Data.SqlClient
 
     internal class TextDataFeed : DataFeed
     {
+        private static UnicodeEncoding s_defaultEncoding;
+
         internal TextReader _source;
 
         internal TextDataFeed(TextReader source)
         {
             _source = source;
+        }
+
+        internal static UnicodeEncoding DefaultEncoding
+        {
+            get
+            {
+                UnicodeEncoding encoding = s_defaultEncoding;
+                if (encoding is null)
+                {
+                    encoding = new UnicodeEncoding(false, false);
+                    encoding = Interlocked.CompareExchange(ref s_defaultEncoding, encoding, null) ?? encoding;
+                }
+                return encoding;
+            }
         }
     }
 
@@ -923,7 +941,7 @@ namespace System.Data.SqlClient
                             _actualSize = 5 + (isSqlVariant ? 5 : MetaType.GetTimeSizeFromScale(GetActualScale()));
                             break;
                         default:
-                            Debug.Assert(false, "Unknown variable length type!");
+                            Debug.Fail("Unknown variable length type!");
                             break;
                     }
 

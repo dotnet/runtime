@@ -42,7 +42,7 @@ namespace System.Net.WebSockets.Tests
             Assert.NotNull(CreateFromStream(new MemoryStream(), true, null, Timeout.InfiniteTimeSpan));
         }
 
-        [OuterLoop] // Connects to external server.
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CanSendReceiveData(Uri echoUri)
@@ -150,7 +150,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [OuterLoop] // Connects to external server.
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncClosesStream(Uri echoUri, bool explicitCloseAsync)
@@ -184,7 +184,8 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [OuterLoop] // Connects to external server.
+        [ActiveIssue(36016)]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncAfterCloseReceivedClosesStream(Uri echoUri, bool useCloseOutputAsync)

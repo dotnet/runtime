@@ -32,6 +32,7 @@ typedef struct
     int64_t BirthTimeNsec; // nanosecond part
     int64_t Dev;       // ID of the device containing the file
     int64_t Ino;       // inode number of the file
+    uint32_t UserFlags; // user defined flags
 } FileStatus;
 
 /* Provide consistent access to nanosecond fields, if they exist. */
@@ -317,6 +318,27 @@ typedef enum
     PAL_IN_EXCL_UNLINK = 0x04000000,
     PAL_IN_ISDIR = 0x40000000,
 } NotifyEvents;
+
+/**
+ * Get file status from a descriptor. Implemented as shim to fstat(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+DLLEXPORT int32_t SystemNative_FStat(intptr_t fd, FileStatus* output);
+
+/**
+ * Get file status from a full path. Implemented as shim to stat(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+DLLEXPORT int32_t SystemNative_Stat(const char* path, FileStatus* output);
+
+/**
+ * Get file stats from a full path. Implemented as shim to lstat(2).
+ *
+ * Returns 0 for success, -1 for failure. Sets errno on failure.
+ */
+DLLEXPORT int32_t SystemNative_LStat(const char* path, FileStatus* output);
 
 /**
  * Get file status from a descriptor. Implemented as shim to fstat(2).

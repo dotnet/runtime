@@ -167,7 +167,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 default:
                     // Should never call this with any other kind.
-                    Debug.Assert(false, "GetAssemblyID called on bad sym kind");
+                    Debug.Fail("GetAssemblyID called on bad sym kind");
                     return null;
             }
         }
@@ -190,7 +190,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return ((AggregateSymbol)this).InternalsVisibleTo(assembly);
                 default:
                     // Should never call this with any other kind.
-                    Debug.Assert(false, "InternalsVisibleTo called on bad sym kind");
+                    Debug.Fail("InternalsVisibleTo called on bad sym kind");
                     return false;
             }
         }

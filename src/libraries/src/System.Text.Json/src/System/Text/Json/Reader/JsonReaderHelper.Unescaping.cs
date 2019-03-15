@@ -39,6 +39,74 @@ namespace System.Text.Json
             return utf8String;
         }
 
+        public static bool UnescapeAndCompare(ReadOnlySpan<byte> utf8Source, ReadOnlySpan<byte> other)
+        {
+            Debug.Assert(utf8Source.Length >= other.Length && utf8Source.Length / JsonConstants.MaxExpansionFactorWhileEscaping <= other.Length);
+
+            byte[] unescapedArray = null;
+
+            Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[utf8Source.Length] :
+                (unescapedArray = ArrayPool<byte>.Shared.Rent(utf8Source.Length));
+
+            Unescape(utf8Source, utf8Unescaped, 0, out int written);
+            Debug.Assert(written > 0);
+
+            utf8Unescaped = utf8Unescaped.Slice(0, written);
+            Debug.Assert(!utf8Unescaped.IsEmpty);
+
+            bool result = other.SequenceEqual(utf8Unescaped);
+
+            if (unescapedArray != null)
+            {
+                utf8Unescaped.Clear();
+                ArrayPool<byte>.Shared.Return(unescapedArray);
+            }
+
+            return result;
+        }
+
+        public static bool UnescapeAndCompare(ReadOnlySequence<byte> utf8Source, ReadOnlySpan<byte> other)
+        {
+            Debug.Assert(!utf8Source.IsSingleSegment);
+            Debug.Assert(utf8Source.Length >= other.Length && utf8Source.Length / JsonConstants.MaxExpansionFactorWhileEscaping <= other.Length);
+
+            byte[] escapedArray = null;
+            byte[] unescapedArray = null;
+
+            int length = checked((int)utf8Source.Length);
+
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (unescapedArray = ArrayPool<byte>.Shared.Rent(length));
+
+            Span<byte> utf8Escaped = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (escapedArray = ArrayPool<byte>.Shared.Rent(length));
+
+            utf8Source.CopyTo(utf8Escaped);
+            utf8Escaped = utf8Escaped.Slice(0, length);
+
+            Unescape(utf8Escaped, utf8Unescaped, 0, out int written);
+            Debug.Assert(written > 0);
+
+            utf8Unescaped = utf8Unescaped.Slice(0, written);
+            Debug.Assert(!utf8Unescaped.IsEmpty);
+
+            bool result = other.SequenceEqual(utf8Unescaped);
+
+            if (unescapedArray != null)
+            {
+                Debug.Assert(escapedArray != null);
+                utf8Unescaped.Clear();
+                ArrayPool<byte>.Shared.Return(unescapedArray);
+                utf8Escaped.Clear();
+                ArrayPool<byte>.Shared.Return(escapedArray);
+            }
+
+            return result;
+        }
+
         public static string TranscodeHelper(ReadOnlySpan<byte> utf8Unescaped)
         {
             try

@@ -4,9 +4,9 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.ComponentModel.cs" />
     <Compile Include="System.ComponentModel.manual.cs" />
     <Compile Include="System.ComponentModel.TypeConverter.cs" />
+    <Compile Include="System.ComponentModel.TypeConverter.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />

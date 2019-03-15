@@ -129,7 +129,11 @@ namespace System.Net.WebSockets.Tests
         [InlineData(WebSocketState.Open, new WebSocketState[] { WebSocketState.Aborted, WebSocketState.CloseSent })]
         public static void ThrowOnInvalidState_ThrowsIfNotInValidList(WebSocketState state, WebSocketState[] validStates)
         {
-            Assert.Throws<WebSocketException>(() => ExposeProtectedWebSocket.ThrowOnInvalidState(state, validStates));
+            WebSocketException wse = Assert.Throws<WebSocketException>(() => ExposeProtectedWebSocket.ThrowOnInvalidState(state, validStates));
+            if (PlatformDetection.IsNetCore) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
+            {
+                Assert.Equal(WebSocketError.InvalidState, wse.WebSocketErrorCode);
+            }
         }
 
         [Theory]

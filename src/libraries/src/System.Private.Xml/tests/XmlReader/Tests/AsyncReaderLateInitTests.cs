@@ -87,7 +87,7 @@ namespace System.Xml.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public static void InitializationWithUriOnNonAsyncReaderTrows()
         {
             Assert.Throws<System.Net.WebException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));

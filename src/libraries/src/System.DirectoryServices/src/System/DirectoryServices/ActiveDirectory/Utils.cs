@@ -1732,7 +1732,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (hostName == null)
                 {
-                    Debug.Fail(string.Format(CultureInfo.InvariantCulture, "ConfigurationSet::GetReplicaList - no dnsHostName information for replica {0}", ntdsaName));
+                    Debug.Fail($"ConfigurationSet::GetReplicaList - no dnsHostName information for replica {ntdsaName}");
                     if (isADAM)
                     {
                         throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , ntdsaName));
@@ -1747,7 +1747,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (serverPorts[ntdsaName] == null)
                     {
-                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "ConfigurationSet::GetReplicaList - no port number  information for replica {0}", ntdsaName));
+                        Debug.Fail($"ConfigurationSet::GetReplicaList - no port number  information for replica {ntdsaName}");
                         throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , ntdsaName));
                     }
                 }
@@ -2246,8 +2246,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (err != 0)
                 {
                     throw new InvalidOperationException(
-                                    string.Format(
-                                            CultureInfo.CurrentCulture,
+                                    SR.Format(
                                             SR.UnableToRetrieveDomainInfo,
                                             err));
                 }

@@ -615,7 +615,7 @@ namespace System.Runtime.Serialization
                 if (type == Globals.TypeOfArray)
                     type = Globals.TypeOfObjectArray;
                 if (type.GetArrayRank() > 1)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.Format(SR.SupportForMultidimensionalArraysNotPresent)));
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.SupportForMultidimensionalArraysNotPresent));
                 this.StableName = DataContract.GetStableName(type);
                 Init(CollectionKind.Array, type.GetElementType(), null);
             }
@@ -1524,7 +1524,7 @@ namespace System.Runtime.Serialization
 #if uapaot
                 if (XmlFormatGetOnlyCollectionReaderDelegate == null)
                 {
-                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, UnderlyingType.ToString()));
+                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, UnderlyingType));
                 }
 #endif
                 XmlFormatGetOnlyCollectionReaderDelegate(xmlReader, context, CollectionItemName, Namespace, this);

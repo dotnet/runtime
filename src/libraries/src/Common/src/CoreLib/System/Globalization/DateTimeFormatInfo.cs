@@ -8,13 +8,13 @@ using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
-    //
-    // Flags used to indicate different styles of month names.
-    // This is an internal flag used by internalGetMonthName().
-    // Use flag here in case that we need to provide a combination of these styles
-    // (such as month name of a leap year in genitive form.  Not likely for now,
-    // but would like to keep the option open).
-    //
+    /// <summary>
+    /// Flags used to indicate different styles of month names.
+    /// This is an internal flag used by internalGetMonthName().
+    /// Use flag here in case that we need to provide a combination of these styles
+    /// (such as month name of a leap year in genitive form.  Not likely for now,
+    /// but would like to keep the option open).
+    /// </summary>
 
     [Flags]
     internal enum MonthNameStyles
@@ -24,15 +24,15 @@ namespace System.Globalization
         LeapYear = 0x00000002,
     }
 
-    //
-    // Flags used to indicate special rule used in parsing/formatting
-    // for a specific DateTimeFormatInfo instance.
-    // This is an internal flag.
-    //
-    // This flag is different from MonthNameStyles because this flag
-    // can be expanded to accommodate parsing behaviors like CJK month names
-    // or alternative month names, etc.
-
+    /// <summary>
+    /// Flags used to indicate special rule used in parsing/formatting
+    /// for a specific DateTimeFormatInfo instance.
+    /// This is an internal flag.
+    ///
+    /// This flag is different from MonthNameStyles because this flag
+    /// can be expanded to accommodate parsing behaviors like CJK month names
+    /// or alternative month names, etc.
+    /// </summary>
     [Flags]
     internal enum DateTimeFormatFlags
     {
@@ -46,7 +46,6 @@ namespace System.Globalization
 
         NotInitialized = -1,
     }
-
 
     public sealed class DateTimeFormatInfo : IFormatProvider, ICloneable
     {
@@ -69,10 +68,6 @@ namespace System.Globalization
         // Culture matches current DTFI. mainly used for string comparisons during parsing.
         private CultureInfo _cultureInfo = null;
 
-        //
-        // Caches for various properties.
-        //
-
         private string amDesignator = null;
         private string pmDesignator = null;
 
@@ -84,37 +79,29 @@ namespace System.Globalization
 
         private string timeSeparator = null;            // derived from long time (whidbey expects, arrowhead doesn't)
         private string monthDayPattern = null;
-        // added in .NET Framework Release {2.0SP1/3.0SP1/3.5RTM}
         private string dateTimeOffsetPattern = null;
 
-        //
-        // The following are constant values.
-        //
         private const string rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
 
         // The sortable pattern is based on ISO 8601.
         private const string sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
         private const string universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
 
-        //
-        // The following are affected by calendar settings.
-        //
         private Calendar calendar = null;
 
         private int firstDayOfWeek = -1;
         private int calendarWeekRule = -1;
 
-
         private string fullDateTimePattern = null;        // long date + long time (whidbey expects, arrowhead doesn't)
 
         private string[] abbreviatedDayNames = null;
-
 
         private string[] m_superShortDayNames = null;
 
         private string[] dayNames = null;
         private string[] abbreviatedMonthNames = null;
         private string[] monthNames = null;
+
         // Cache the genitive month names that we retrieve from the data table.
 
         private string[] genitiveMonthNames = null;
@@ -124,7 +111,6 @@ namespace System.Globalization
         private string[] m_genitiveAbbreviatedMonthNames = null;
 
         // Cache the month names of a leap year that we retrieve from the data table.
-
         private string[] leapYearMonthNames = null;
 
         // For our "patterns" arrays we have 2 variables, a string and a string[]
@@ -164,17 +150,7 @@ namespace System.Globalization
 
         private DateTimeFormatFlags formatFlags = DateTimeFormatFlags.NotInitialized;
 
-        private string CultureName
-        {
-            get
-            {
-                if (_name == null)
-                {
-                    _name = _cultureData.CultureName;
-                }
-                return (_name);
-            }
-        }
+        private string CultureName => _name ?? (_name = _cultureData.CultureName);
 
         private CultureInfo Culture
         {
@@ -182,116 +158,98 @@ namespace System.Globalization
             {
                 if (_cultureInfo == null)
                 {
-                    _cultureInfo = CultureInfo.GetCultureInfo(this.CultureName);
+                    _cultureInfo = CultureInfo.GetCultureInfo(CultureName);
                 }
                 return _cultureInfo;
             }
         }
 
-        // TODO: This ignores other cultures that might want to do something similar
         private string LanguageName
         {
             get
             {
                 if (_langName == null)
                 {
-                    _langName = _cultureData.SISO639LANGNAME;
+                    _langName = _cultureData.TwoLetterISOLanguageName;
                 }
-                return (_langName);
+                return _langName;
             }
         }
 
-        ////////////////////////////////////////////////////////////////////////////
-        //
-        // Create an array of string which contains the abbreviated day names.
-        //
-        ////////////////////////////////////////////////////////////////////////////
+        /// <summary>
+        /// Create an array of string which contains the abbreviated day names.
+        /// </summary>
+        private string[] InternalGetAbbreviatedDayOfWeekNames() => abbreviatedDayNames ?? InternalGetAbbreviatedDayOfWeekNamesCore();
 
-        private string[] internalGetAbbreviatedDayOfWeekNames() => this.abbreviatedDayNames ?? internalGetAbbreviatedDayOfWeekNamesCore();
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private string[] internalGetAbbreviatedDayOfWeekNamesCore()
+        private string[] InternalGetAbbreviatedDayOfWeekNamesCore()
         {
             // Get the abbreviated day names for our current calendar
-            this.abbreviatedDayNames = _cultureData.AbbreviatedDayNames(Calendar.ID);
-            Debug.Assert(this.abbreviatedDayNames.Length == 7, "[DateTimeFormatInfo.GetAbbreviatedDayOfWeekNames] Expected 7 day names in a week");
-            return this.abbreviatedDayNames;
+            abbreviatedDayNames = _cultureData.AbbreviatedDayNames(Calendar.ID);
+            Debug.Assert(abbreviatedDayNames.Length == 7, "[DateTimeFormatInfo.GetAbbreviatedDayOfWeekNames] Expected 7 day names in a week");
+            return abbreviatedDayNames;
         }
 
-        ////////////////////////////////////////////////////////////////////////
-        //
-        // Action: Returns the string array of the one-letter day of week names.
-        // Returns:
-        //  an array of one-letter day of week names
-        // Arguments:
-        //  None
-        // Exceptions:
-        //  None
-        //
-        ////////////////////////////////////////////////////////////////////////
+        /// <summary>
+        /// Returns the string array of the one-letter day of week names.
+        /// </summary>
+        private string[] InternalGetSuperShortDayNames() => m_superShortDayNames ?? InternalGetSuperShortDayNamesCore();
 
-        private string[] internalGetSuperShortDayNames() => this.m_superShortDayNames ?? internalGetSuperShortDayNamesCore();
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private string[] internalGetSuperShortDayNamesCore()
+        private string[] InternalGetSuperShortDayNamesCore()
         {
             // Get the super short day names for our current calendar
-            this.m_superShortDayNames = _cultureData.SuperShortDayNames(Calendar.ID);
-            Debug.Assert(this.m_superShortDayNames.Length == 7, "[DateTimeFormatInfo.internalGetSuperShortDayNames] Expected 7 day names in a week");
-            return this.m_superShortDayNames;
+            m_superShortDayNames = _cultureData.SuperShortDayNames(Calendar.ID);
+            Debug.Assert(m_superShortDayNames.Length == 7, "[DateTimeFormatInfo.InternalGetSuperShortDayNames] Expected 7 day names in a week");
+            return m_superShortDayNames;
         }
 
-        ////////////////////////////////////////////////////////////////////////////
-        //
-        // Create an array of string which contains the day names.
-        //
-        ////////////////////////////////////////////////////////////////////////////
+        /// <summary>
+        /// Create an array of string which contains the day names.
+        /// </summary>
+        private string[] InternalGetDayOfWeekNames() => dayNames ?? InternalGetDayOfWeekNamesCore();
 
-        private string[] internalGetDayOfWeekNames() => this.dayNames ?? internalGetDayOfWeekNamesCore();
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private string[] internalGetDayOfWeekNamesCore()
+        private string[] InternalGetDayOfWeekNamesCore()
         {
             // Get the day names for our current calendar
-            this.dayNames = _cultureData.DayNames(Calendar.ID);
-            Debug.Assert(this.dayNames.Length == 7, "[DateTimeFormatInfo.GetDayOfWeekNames] Expected 7 day names in a week");
-            return this.dayNames;
+            dayNames = _cultureData.DayNames(Calendar.ID);
+            Debug.Assert(dayNames.Length == 7, "[DateTimeFormatInfo.GetDayOfWeekNames] Expected 7 day names in a week");
+            return dayNames;
         }
 
-        ////////////////////////////////////////////////////////////////////////////
-        //
-        // Create an array of string which contains the abbreviated month names.
-        //
-        ////////////////////////////////////////////////////////////////////////////
+        /// <summary>
+        /// Create an array of string which contains the abbreviated month names.
+        /// </summary>
+        private string[] InternalGetAbbreviatedMonthNames() => abbreviatedMonthNames ?? InternalGetAbbreviatedMonthNamesCore();
 
-        private string[] internalGetAbbreviatedMonthNames() => this.abbreviatedMonthNames ?? internalGetAbbreviatedMonthNamesCore();
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private string[] internalGetAbbreviatedMonthNamesCore()
+        private string[] InternalGetAbbreviatedMonthNamesCore()
         {
             // Get the month names for our current calendar
-            this.abbreviatedMonthNames = _cultureData.AbbreviatedMonthNames(Calendar.ID);
-            Debug.Assert(this.abbreviatedMonthNames.Length == 12 || this.abbreviatedMonthNames.Length == 13,
+            abbreviatedMonthNames = _cultureData.AbbreviatedMonthNames(Calendar.ID);
+            Debug.Assert(abbreviatedMonthNames.Length == 12 || abbreviatedMonthNames.Length == 13,
                 "[DateTimeFormatInfo.GetAbbreviatedMonthNames] Expected 12 or 13 month names in a year");
-            return this.abbreviatedMonthNames;
+            return abbreviatedMonthNames;
         }
 
 
-        ////////////////////////////////////////////////////////////////////////////
-        //
-        // Create an array of string which contains the month names.
-        //
-        ////////////////////////////////////////////////////////////////////////////
+        /// <summary>
+        /// Create an array of string which contains the month names.
+        /// </summary>
+        private string[] InternalGetMonthNames() => monthNames ?? internalGetMonthNamesCore();
 
-        private string[] internalGetMonthNames() => this.monthNames ?? internalGetMonthNamesCore();
         [MethodImpl(MethodImplOptions.NoInlining)]
         private string[] internalGetMonthNamesCore()
         {
             // Get the month names for our current calendar
-            this.monthNames = _cultureData.MonthNames(Calendar.ID);
-            Debug.Assert(this.monthNames.Length == 12 || this.monthNames.Length == 13,
+            monthNames = _cultureData.MonthNames(Calendar.ID);
+            Debug.Assert(monthNames.Length == 12 || monthNames.Length == 13,
                 "[DateTimeFormatInfo.GetMonthNames] Expected 12 or 13 month names in a year");
-            return this.monthNames;
+            return monthNames;
         }
 
 
-        //
         // Invariant DateTimeFormatInfo doesn't have user-overriden values
         // Default calendar is gregorian
         public DateTimeFormatInfo()
@@ -307,7 +265,7 @@ namespace System.Globalization
             // Remember our culture
             _cultureData = cultureData;
 
-            this.Calendar = cal;
+            Calendar = cal;
         }
 
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
@@ -315,35 +273,52 @@ namespace System.Globalization
             Debug.Assert(cultureData != null);
             Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initalized calendarId");
 
-            if (this.firstDayOfWeek == -1) { this.firstDayOfWeek = cultureData.IFIRSTDAYOFWEEK; }
-            if (this.calendarWeekRule == -1) { this.calendarWeekRule = cultureData.IFIRSTWEEKOFYEAR; }
+            if (firstDayOfWeek == -1)
+            {
+                firstDayOfWeek = cultureData.FirstDayOfWeek;
+            }
+            if (calendarWeekRule == -1)
+            {
+                calendarWeekRule = cultureData.CalendarWeekRule;
+            }
 
-            if (this.amDesignator == null) { this.amDesignator = cultureData.SAM1159; }
-            if (this.pmDesignator == null) { this.pmDesignator = cultureData.SPM2359; }
-            if (this.timeSeparator == null) { this.timeSeparator = cultureData.TimeSeparator; }
-            if (this.dateSeparator == null) { this.dateSeparator = cultureData.DateSeparator(calendarId); }
+            if (amDesignator == null)
+            {
+                amDesignator = cultureData.AMDesignator;
+            }
+            if (pmDesignator == null)
+            {
+                pmDesignator = cultureData.PMDesignator;
+            }
+            if (timeSeparator == null)
+            {
+                timeSeparator = cultureData.TimeSeparator;
+            }
+            if (dateSeparator == null)
+            {
+                dateSeparator = cultureData.DateSeparator(calendarId);
+            }
 
-            this.allLongTimePatterns = _cultureData.LongTimes;
-            Debug.Assert(this.allLongTimePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some long time patterns");
+            allLongTimePatterns = _cultureData.LongTimes;
+            Debug.Assert(allLongTimePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some long time patterns");
 
-            this.allShortTimePatterns = _cultureData.ShortTimes;
-            Debug.Assert(this.allShortTimePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some short time patterns");
+            allShortTimePatterns = _cultureData.ShortTimes;
+            Debug.Assert(allShortTimePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some short time patterns");
 
-            this.allLongDatePatterns = cultureData.LongDates(calendarId);
-            Debug.Assert(this.allLongDatePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some long date patterns");
+            allLongDatePatterns = cultureData.LongDates(calendarId);
+            Debug.Assert(allLongDatePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some long date patterns");
 
-            this.allShortDatePatterns = cultureData.ShortDates(calendarId);
-            Debug.Assert(this.allShortDatePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some short date patterns");
+            allShortDatePatterns = cultureData.ShortDates(calendarId);
+            Debug.Assert(allShortDatePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some short date patterns");
 
-            this.allYearMonthPatterns = cultureData.YearMonths(calendarId);
-            Debug.Assert(this.allYearMonthPatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some year month patterns");
+            allYearMonthPatterns = cultureData.YearMonths(calendarId);
+            Debug.Assert(allYearMonthPatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some year month patterns");
         }
 
-        // Returns a default DateTimeFormatInfo that will be universally
-        // supported and constant irrespective of the current culture.
-        // Used by FromString methods.
-        //
-
+        /// <summary>
+        /// Returns a default DateTimeFormatInfo that will be universally
+        /// supported and constant irrespective of the current culture.
+        /// </summary>
         public static DateTimeFormatInfo InvariantInfo
         {
             get
@@ -355,12 +330,13 @@ namespace System.Globalization
                     info._isReadOnly = true;
                     s_invariantInfo = info;
                 }
-                return (s_invariantInfo);
+                return s_invariantInfo;
             }
         }
 
-        // Returns the current culture's DateTimeFormatInfo.  Used by Parse methods.
-        //
+        /// <summary>
+        /// Returns the current culture's DateTimeFormatInfo.
+        /// </summary>
 
         public static DateTimeFormatInfo CurrentInfo
         {
@@ -388,42 +364,42 @@ namespace System.Globalization
 
         public object GetFormat(Type formatType)
         {
-            return (formatType == typeof(DateTimeFormatInfo) ? this : null);
+            return formatType == typeof(DateTimeFormatInfo) ? this : null;
         }
-
 
         public object Clone()
         {
             DateTimeFormatInfo n = (DateTimeFormatInfo)MemberwiseClone();
             // We can use the data member calendar in the setter, instead of the property Calendar,
             // since the cloned copy should have the same state as the original copy.
-            n.calendar = (Calendar)this.Calendar.Clone();
+            n.calendar = (Calendar)Calendar.Clone();
             n._isReadOnly = false;
             return n;
         }
-
 
         public string AMDesignator
         {
             get
             {
-                if (this.amDesignator == null)
+                if (amDesignator == null)
                 {
-                    this.amDesignator = _cultureData.SAM1159;
+                    amDesignator = _cultureData.AMDesignator;
                 }
-                Debug.Assert(this.amDesignator != null, "DateTimeFormatInfo.AMDesignator, amDesignator != null");
-                return (this.amDesignator);
-            }
 
+                Debug.Assert(amDesignator != null, "DateTimeFormatInfo.AMDesignator, amDesignator != null");
+                return amDesignator;
+            }
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
+
                 ClearTokenHashTable();
                 amDesignator = value;
             }
@@ -434,36 +410,35 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(this.calendar != null, "DateTimeFormatInfo.Calendar: calendar != null");
-                return (this.calendar);
+                Debug.Assert(calendar != null, "DateTimeFormatInfo.Calendar: calendar != null");
+                return calendar;
             }
-
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
+
                 if (value == calendar)
                 {
                     return;
                 }
 
-                for (int i = 0; i < this.OptionalCalendars.Length; i++)
+                for (int i = 0; i < OptionalCalendars.Length; i++)
                 {
-                    if (this.OptionalCalendars[i] == value.ID)
+                    if (OptionalCalendars[i] == value.ID)
                     {
                         // We can use this one, so do so.
-
                         // Clean related properties if we already had a calendar set
                         if (calendar != null)
                         {
                             // clean related properties which are affected by the calendar setting,
                             // so that they will be refreshed when they are accessed next time.
-                            //
-
                             // These properites are in the order as appearing in calendar.xml.
                             m_eraNames = null;
                             m_abbrevEraNames = null;
@@ -521,7 +496,7 @@ namespace System.Globalization
                 }
 
                 // The assigned calendar is not a valid calendar for this culture, throw
-                throw new ArgumentOutOfRangeException(nameof(value), SR.Argument_InvalidCalendar);
+                throw new ArgumentOutOfRangeException(nameof(value), value, SR.Argument_InvalidCalendar);
             }
         }
 
@@ -529,29 +504,22 @@ namespace System.Globalization
         {
             get
             {
-                if (this.optionalCalendars == null)
+                if (optionalCalendars == null)
                 {
-                    this.optionalCalendars = _cultureData.CalendarIds;
+                    optionalCalendars = _cultureData.CalendarIds;
                 }
-                return (this.optionalCalendars);
+                return optionalCalendars;
             }
         }
 
-        /*=================================GetEra==========================
-        **Action: Get the era value by parsing the name of the era.
-        **Returns: The era value for the specified era name.
-        **      -1 if the name of the era is not valid or not supported.
-        **Arguments: eraName    the name of the era.
-        **Exceptions: None.
-        ============================================================================*/
-
-
+        /// <summary>
+        /// Get the era value by parsing the name of the era.
+        /// </summary>
         public int GetEra(string eraName)
         {
             if (eraName == null)
             {
-                throw new ArgumentNullException(nameof(eraName),
-                    SR.ArgumentNull_String);
+                throw new ArgumentNullException(nameof(eraName));
             }
 
             // The Era Name and Abbreviated Era Name
@@ -561,7 +529,7 @@ namespace System.Globalization
             // confer 85900 DTFI.GetEra("") should fail on all cultures
             if (eraName.Length == 0)
             {
-                return (-1);
+                return -1;
             }
 
             // The following is based on the assumption that the era value is starting from 1, and has a
@@ -575,18 +543,18 @@ namespace System.Globalization
                 // Compare the era name in a case-insensitive way for the appropriate culture.
                 if (m_eraNames[i].Length > 0)
                 {
-                    if (this.Culture.CompareInfo.Compare(eraName, m_eraNames[i], CompareOptions.IgnoreCase) == 0)
+                    if (Culture.CompareInfo.Compare(eraName, m_eraNames[i], CompareOptions.IgnoreCase) == 0)
                     {
-                        return (i + 1);
+                        return i + 1;
                     }
                 }
             }
             for (int i = 0; i < AbbreviatedEraNames.Length; i++)
             {
                 // Compare the abbreviated era name in a case-insensitive way for the appropriate culture.
-                if (this.Culture.CompareInfo.Compare(eraName, m_abbrevEraNames[i], CompareOptions.IgnoreCase) == 0)
+                if (Culture.CompareInfo.Compare(eraName, m_abbrevEraNames[i], CompareOptions.IgnoreCase) == 0)
                 {
-                    return (i + 1);
+                    return i + 1;
                 }
             }
             for (int i = 0; i < AbbreviatedEnglishEraNames.Length; i++)
@@ -595,35 +563,28 @@ namespace System.Globalization
                 // interesting characters.
                 if (CompareInfo.Invariant.Compare(eraName, m_abbrevEnglishEraNames[i], CompareOptions.IgnoreCase) == 0)
                 {
-                    return (i + 1);
+                    return i + 1;
                 }
             }
-            return (-1);
+            return -1;
         }
-
 
         internal string[] EraNames
         {
             get
             {
-                if (this.m_eraNames == null)
+                if (m_eraNames == null)
                 {
-                    this.m_eraNames = _cultureData.EraNames(Calendar.ID); ;
+                    m_eraNames = _cultureData.EraNames(Calendar.ID);
                 }
-                return (this.m_eraNames);
+                return m_eraNames;
             }
         }
 
-        /*=================================GetEraName==========================
-        **Action: Get the name of the era for the specified era value.
-        **Returns: The name of the specified era.
-        **Arguments:
-        **      era the era value.
-        **Exceptions:
-        **      ArguementException if the era valie is invalid.
-        ============================================================================*/
-
-        // Era names are 1 indexed
+        /// <summary>
+        /// Get the name of the era for the specified era value.
+        /// Era names are 1 indexed
+        /// </summary>
         public string GetEraName(int era)
         {
             if (era == Calendar.CurrentEra)
@@ -636,31 +597,34 @@ namespace System.Globalization
             // If that ever changes, the code has to be changed.
             if ((--era) < EraNames.Length && (era >= 0))
             {
-                return (m_eraNames[era]);
+                return m_eraNames[era];
             }
-            throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
+
+            throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
         }
 
         internal string[] AbbreviatedEraNames
         {
             get
             {
-                if (this.m_abbrevEraNames == null)
+                if (m_abbrevEraNames == null)
                 {
-                    this.m_abbrevEraNames = _cultureData.AbbrevEraNames(Calendar.ID);
+                    m_abbrevEraNames = _cultureData.AbbrevEraNames(Calendar.ID);
                 }
-                return (this.m_abbrevEraNames);
+                return m_abbrevEraNames;
             }
         }
 
-        // Era names are 1 indexed
+        /// <remarks>
+        /// Era names are 1 indexed
+        /// </remarks>
         public string GetAbbreviatedEraName(int era)
         {
             if (AbbreviatedEraNames.Length == 0)
             {
                 // If abbreviation era name is not used in this culture,
                 // return the full era name.
-                return (GetEraName(era));
+                return GetEraName(era);
             }
             if (era == Calendar.CurrentEra)
             {
@@ -668,26 +632,29 @@ namespace System.Globalization
             }
             if ((--era) < m_abbrevEraNames.Length && (era >= 0))
             {
-                return (m_abbrevEraNames[era]);
+                return m_abbrevEraNames[era];
             }
-            throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
+
+            throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
         }
 
         internal string[] AbbreviatedEnglishEraNames
         {
             get
             {
-                if (this.m_abbrevEnglishEraNames == null)
+                if (m_abbrevEnglishEraNames == null)
                 {
                     Debug.Assert(Calendar.ID > 0, "[DateTimeFormatInfo.AbbreviatedEnglishEraNames] Expected Calendar.ID > 0");
-                    this.m_abbrevEnglishEraNames = _cultureData.AbbreviatedEnglishEraNames(Calendar.ID);
+                    m_abbrevEnglishEraNames = _cultureData.AbbreviatedEnglishEraNames(Calendar.ID);
                 }
-                return (this.m_abbrevEnglishEraNames);
+                return m_abbrevEnglishEraNames;
             }
         }
 
-        // Note that cultureData derives this from the short date format (unless someone's set this previously)
-        // Note that this property is quite undesirable.
+        /// <remarks>
+        /// Note that cultureData derives this from the short date format (unless someone's set this previously)
+        /// Note that this property is quite undesirable.
+        /// </remarks>
         public string DateSeparator
         {
             get
@@ -696,18 +663,20 @@ namespace System.Globalization
                 {
                     dateSeparator = _cultureData.DateSeparator(Calendar.ID);
                 }
-                Debug.Assert(this.dateSeparator != null, "DateTimeFormatInfo.DateSeparator, dateSeparator != null");
+                Debug.Assert(dateSeparator != null, "DateTimeFormatInfo.DateSeparator, dateSeparator != null");
                 return dateSeparator;
             }
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
-
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
+
                 ClearTokenHashTable();
                 dateSeparator = value;
             }
@@ -717,29 +686,30 @@ namespace System.Globalization
         {
             get
             {
-                if (this.firstDayOfWeek == -1)
+                if (firstDayOfWeek == -1)
                 {
-                    this.firstDayOfWeek = _cultureData.IFIRSTDAYOFWEEK;
+                    firstDayOfWeek = _cultureData.FirstDayOfWeek;
                 }
-                Debug.Assert(this.firstDayOfWeek != -1, "DateTimeFormatInfo.FirstDayOfWeek, firstDayOfWeek != -1");
+                Debug.Assert(firstDayOfWeek != -1, "DateTimeFormatInfo.FirstDayOfWeek, firstDayOfWeek != -1");
 
-                return ((DayOfWeek)this.firstDayOfWeek);
+                return (DayOfWeek)firstDayOfWeek;
             }
-
             set
             {
                 if (IsReadOnly)
-                    throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
-                if (value >= DayOfWeek.Sunday && value <= DayOfWeek.Saturday)
                 {
-                    firstDayOfWeek = (int)value;
+                    throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                else
+
+                if (value < DayOfWeek.Sunday || value > DayOfWeek.Saturday)
                 {
                     throw new ArgumentOutOfRangeException(
-                        nameof(value), SR.Format(SR.ArgumentOutOfRange_Range,
-                        DayOfWeek.Sunday, DayOfWeek.Saturday));
+                        nameof(value),
+                        value,
+                        SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
                 }
+
+                firstDayOfWeek = (int)value;
             }
         }
 
@@ -747,28 +717,29 @@ namespace System.Globalization
         {
             get
             {
-                if (this.calendarWeekRule == -1)
+                if (calendarWeekRule == -1)
                 {
-                    this.calendarWeekRule = _cultureData.IFIRSTWEEKOFYEAR;
+                    calendarWeekRule = _cultureData.CalendarWeekRule;
                 }
-                Debug.Assert(this.calendarWeekRule != -1, "DateTimeFormatInfo.CalendarWeekRule, calendarWeekRule != -1");
-                return ((CalendarWeekRule)this.calendarWeekRule);
-            }
 
+                Debug.Assert(calendarWeekRule != -1, "DateTimeFormatInfo.CalendarWeekRule, calendarWeekRule != -1");
+                return (CalendarWeekRule)calendarWeekRule;
+            }
             set
             {
                 if (IsReadOnly)
-                    throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
-                if (value >= CalendarWeekRule.FirstDay && value <= CalendarWeekRule.FirstFourDayWeek)
                 {
-                    calendarWeekRule = (int)value;
+                    throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                else
+                if (value < CalendarWeekRule.FirstDay || value > CalendarWeekRule.FirstFourDayWeek)
                 {
                     throw new ArgumentOutOfRangeException(
-                        nameof(value), SR.Format(SR.ArgumentOutOfRange_Range,
-                        CalendarWeekRule.FirstDay, CalendarWeekRule.FirstFourDayWeek));
+                        nameof(value),
+                        value,
+                        SR.Format(SR.ArgumentOutOfRange_Range, CalendarWeekRule.FirstDay, CalendarWeekRule.FirstFourDayWeek));
                 }
+                
+                calendarWeekRule = (int)value;
             }
         }
 
@@ -780,200 +751,203 @@ namespace System.Globalization
                 {
                     fullDateTimePattern = LongDatePattern + " " + LongTimePattern;
                 }
-                return (fullDateTimePattern);
+                return fullDateTimePattern;
             }
 
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
+
                 fullDateTimePattern = value;
             }
         }
 
-
-        // For our "patterns" arrays we have 2 variables, a string and a string[]
-        //
-        // The string[] contains the list of patterns, EXCEPT the default may not be included.
-        // The string contains the default pattern.
-        // When we initially construct our string[], we set the string to string[0]
+        /// <summary>
+        /// For our "patterns" arrays we have 2 variables, a string and a string[]
+        /// The string[] contains the list of patterns, EXCEPT the default may not be included.
+        /// The string contains the default pattern.
+        /// When we initially construct our string[], we set the string to string[0]
+        /// </summary>
         public string LongDatePattern
         {
             get
             {
                 // Initialize our long date pattern from the 1st array value if not set
-                if (this.longDatePattern == null)
+                if (longDatePattern == null)
                 {
                     // Initialize our data
-                    this.longDatePattern = this.UnclonedLongDatePatterns[0];
+                    longDatePattern = UnclonedLongDatePatterns[0];
                 }
 
-                return this.longDatePattern;
+                return longDatePattern;
             }
-
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 // Remember the new string
-                this.longDatePattern = value;
+                longDatePattern = value;
 
                 // Clear the token hash table
                 ClearTokenHashTable();
 
                 // Clean up cached values that will be affected by this property.
-                this.fullDateTimePattern = null;
+                fullDateTimePattern = null;
             }
         }
 
-        // For our "patterns" arrays we have 2 variables, a string and a string[]
-        //
-        // The string[] contains the list of patterns, EXCEPT the default may not be included.
-        // The string contains the default pattern.
-        // When we initially construct our string[], we set the string to string[0]
+        /// <summary>
+        /// For our "patterns" arrays we have 2 variables, a string and a string[]
+        ///
+        /// The string[] contains the list of patterns, EXCEPT the default may not be included.
+        /// The string contains the default pattern.
+        /// When we initially construct our string[], we set the string to string[0]
+        /// </summary>
         public string LongTimePattern
         {
             get
             {
                 // Initialize our long time pattern from the 1st array value if not set
-                if (this.longTimePattern == null)
+                if (longTimePattern == null)
                 {
                     // Initialize our data
-                    this.longTimePattern = this.UnclonedLongTimePatterns[0];
+                    longTimePattern = UnclonedLongTimePatterns[0];
                 }
 
-                return this.longTimePattern;
+                return longTimePattern;
             }
-
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 // Remember the new string
-                this.longTimePattern = value;
+                longTimePattern = value;
 
                 // Clear the token hash table
                 ClearTokenHashTable();
 
                 // Clean up cached values that will be affected by this property.
-                this.fullDateTimePattern = null;     // Full date = long date + long Time
-                this.generalLongTimePattern = null;  // General long date = short date + long Time
-                this.dateTimeOffsetPattern = null;
+                fullDateTimePattern = null;     // Full date = long date + long Time
+                generalLongTimePattern = null;  // General long date = short date + long Time
+                dateTimeOffsetPattern = null;
             }
         }
 
-
-        // Note: just to be confusing there's only 1 month day pattern, not a whole list
+        /// <remarks>
+        /// Just to be confusing there's only 1 month day pattern, not a whole list
+        /// </remarks>
         public string MonthDayPattern
         {
             get
             {
-                if (this.monthDayPattern == null)
+                if (monthDayPattern == null)
                 {
                     Debug.Assert(Calendar.ID > 0, "[DateTimeFormatInfo.MonthDayPattern] Expected calID > 0");
-                    this.monthDayPattern = _cultureData.MonthDay(Calendar.ID);
+                    monthDayPattern = _cultureData.MonthDay(Calendar.ID);
                 }
-                Debug.Assert(this.monthDayPattern != null, "DateTimeFormatInfo.MonthDayPattern, monthDayPattern != null");
-                return (this.monthDayPattern);
-            }
 
+                Debug.Assert(monthDayPattern != null, "DateTimeFormatInfo.MonthDayPattern, monthDayPattern != null");
+                return monthDayPattern;
+            }
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
 
-                this.monthDayPattern = value;
+                monthDayPattern = value;
             }
         }
-
 
         public string PMDesignator
         {
             get
             {
-                if (this.pmDesignator == null)
+                if (pmDesignator == null)
                 {
-                    this.pmDesignator = _cultureData.SPM2359;
+                    pmDesignator = _cultureData.PMDesignator;
                 }
-                Debug.Assert(this.pmDesignator != null, "DateTimeFormatInfo.PMDesignator, pmDesignator != null");
-                return (this.pmDesignator);
-            }
 
+                Debug.Assert(pmDesignator != null, "DateTimeFormatInfo.PMDesignator, pmDesignator != null");
+                return pmDesignator;
+            }
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
-                ClearTokenHashTable();
 
+                ClearTokenHashTable();
                 pmDesignator = value;
             }
         }
 
+        public string RFC1123Pattern => rfc1123Pattern;
 
-        public string RFC1123Pattern
-        {
-            get
-            {
-                return (rfc1123Pattern);
-            }
-        }
-
-        // For our "patterns" arrays we have 2 variables, a string and a string[]
-        //
-        // The string[] contains the list of patterns, EXCEPT the default may not be included.
-        // The string contains the default pattern.
-        // When we initially construct our string[], we set the string to string[0]
+        /// <summary>
+        /// For our "patterns" arrays we have 2 variables, a string and a string[]
+        ///
+        /// The string[] contains the list of patterns, EXCEPT the default may not be included.
+        /// The string contains the default pattern.
+        /// When we initially construct our string[], we set the string to string[0]
+        /// </summary>
         public string ShortDatePattern
         {
             get
             {
                 // Initialize our short date pattern from the 1st array value if not set
-                if (this.shortDatePattern == null)
+                if (shortDatePattern == null)
                 {
                     // Initialize our data
-                    this.shortDatePattern = this.UnclonedShortDatePatterns[0];
+                    shortDatePattern = UnclonedShortDatePatterns[0];
                 }
 
-                return this.shortDatePattern;
+                return shortDatePattern;
             }
-
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_String);
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
 
                 // Remember the new string
-                this.shortDatePattern = value;
+                shortDatePattern = value;
 
                 // Clear the token hash table, note that even short dates could require this
                 ClearTokenHashTable();
@@ -985,37 +959,38 @@ namespace System.Globalization
             }
         }
 
-
-        // For our "patterns" arrays we have 2 variables, a string and a string[]
-        //
-        // The string[] contains the list of patterns, EXCEPT the default may not be included.
-        // The string contains the default pattern.
-        // When we initially construct our string[], we set the string to string[0]
+        /// <summary>
+        /// For our "patterns" arrays we have 2 variables, a string and a string[]
+        ///
+        /// The string[] contains the list of patterns, EXCEPT the default may not be included.
+        /// The string contains the default pattern.
+        /// When we initially construct our string[], we set the string to string[0]
+        /// </summary>
         public string ShortTimePattern
         {
             get
             {
                 // Initialize our short time pattern from the 1st array value if not set
-                if (this.shortTimePattern == null)
+                if (shortTimePattern == null)
                 {
                     // Initialize our data
-                    this.shortTimePattern = this.UnclonedShortTimePatterns[0];
+                    shortTimePattern = UnclonedShortTimePatterns[0];
                 }
-                return this.shortTimePattern;
+                return shortTimePattern;
             }
-
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 // Remember the new string
-                this.shortTimePattern = value;
+                shortTimePattern = value;
 
                 // Clear the token hash table, note that even short times could require this
                 ClearTokenHashTable();
@@ -1025,22 +1000,14 @@ namespace System.Globalization
             }
         }
 
+        public string SortableDateTimePattern => sortableDateTimePattern;
 
-        public string SortableDateTimePattern
-        {
-            get
-            {
-                return (sortableDateTimePattern);
-            }
-        }
-
-        /*=================================GeneralShortTimePattern=====================
-        **Property: Return the pattern for 'g' general format: shortDate + short time
-        **Note: This is used by DateTimeFormat.cs to get the pattern for 'g'
-        **      We put this internal property here so that we can avoid doing the
-        **      concatation every time somebody asks for the general format.
-        ==============================================================================*/
-
+        /// <summary>
+        /// Return the pattern for 'g' general format: shortDate + short time
+        /// This is used by DateTimeFormat.cs to get the pattern for 'g'.
+        /// We put this internal property here so that we can avoid doing the
+        /// concatation every time somebody asks for the general format.
+        /// </summary>
         internal string GeneralShortTimePattern
         {
             get
@@ -1049,17 +1016,15 @@ namespace System.Globalization
                 {
                     generalShortTimePattern = ShortDatePattern + " " + ShortTimePattern;
                 }
-                return (generalShortTimePattern);
+                return generalShortTimePattern;
             }
         }
 
-        /*=================================GeneralLongTimePattern=====================
-        **Property: Return the pattern for 'g' general format: shortDate + Long time
-        **Note: This is used by DateTimeFormat.cs to get the pattern for 'g'
-        **      We put this internal property here so that we can avoid doing the
-        **      concatation every time somebody asks for the general format.
-        ==============================================================================*/
-
+        /// <summary>
+        /// Return the pattern for 'g' general format: shortDate + Long time.
+        /// We put this internal property here so that we can avoid doing the
+        /// concatation every time somebody asks for the general format.
+        /// </summary>
         internal string GeneralLongTimePattern
         {
             get
@@ -1068,17 +1033,14 @@ namespace System.Globalization
                 {
                     generalLongTimePattern = ShortDatePattern + " " + LongTimePattern;
                 }
-                return (generalLongTimePattern);
+                return generalLongTimePattern;
             }
         }
 
-        /*=================================DateTimeOffsetPattern==========================
-        **Property: Return the default pattern DateTimeOffset : shortDate + long time + time zone offset
-        **Note: This is used by DateTimeFormat.cs to get the pattern for short Date + long time +  time zone offset
-        **      We put this internal property here so that we can avoid doing the
-        **      concatation every time somebody uses this form
-        ==============================================================================*/
-
+        /// Return the default pattern DateTimeOffset : shortDate + long time + time zone offset.
+        /// This is used by DateTimeFormat.cs to get the pattern for short Date + long time +  time zone offset
+        /// We put this internal property here so that we can avoid doing the
+        /// concatation every time somebody uses this form.
         internal string DateTimeOffsetPattern
         {
             get
@@ -1134,12 +1096,14 @@ namespace System.Globalization
 
                     dateTimeOffsetPattern = dateTimePattern;
                 }
-                return (dateTimeOffsetPattern);
+                return dateTimeOffsetPattern;
             }
         }
 
-        // Note that cultureData derives this from the long time format (unless someone's set this previously)
-        // Note that this property is quite undesirable.
+        /// <remarks>
+        /// Note that cultureData derives this from the long time format (unless someone's set this previously)
+        /// Note that this property is quite undesirable.
+        /// </remarks>
         public string TimeSeparator
         {
             get
@@ -1148,73 +1112,68 @@ namespace System.Globalization
                 {
                     timeSeparator = _cultureData.TimeSeparator;
                 }
-                Debug.Assert(this.timeSeparator != null, "DateTimeFormatInfo.TimeSeparator, timeSeparator != null");
-                return (timeSeparator);
+                Debug.Assert(timeSeparator != null, "DateTimeFormatInfo.TimeSeparator, timeSeparator != null");
+                return timeSeparator;
             }
-
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
-
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value), SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 ClearTokenHashTable();
-
                 timeSeparator = value;
             }
         }
 
-        public string UniversalSortableDateTimePattern
-        {
-            get
-            {
-                return (universalSortableDateTimePattern);
-            }
-        }
+        public string UniversalSortableDateTimePattern => universalSortableDateTimePattern;
 
-        // For our "patterns" arrays we have 2 variables, a string and a string[]
-        //
-        // The string[] contains the list of patterns, EXCEPT the default may not be included.
-        // The string contains the default pattern.
-        // When we initially construct our string[], we set the string to string[0]
+        /// <summary>
+        /// For our "patterns" arrays we have 2 variables, a string and a string[]
+        ///
+        /// The string[] contains the list of patterns, EXCEPT the default may not be included.
+        /// The string contains the default pattern.
+        /// When we initially construct our string[], we set the string to string[0]
+        /// </summary>
         public string YearMonthPattern
         {
             get
             {
                 // Initialize our year/month pattern from the 1st array value if not set
-                if (this.yearMonthPattern == null)
+                if (yearMonthPattern == null)
                 {
                     // Initialize our data
-                    this.yearMonthPattern = this.UnclonedYearMonthPatterns[0];
+                    yearMonthPattern = UnclonedYearMonthPatterns[0];
                 }
-                return this.yearMonthPattern;
+                return yearMonthPattern;
             }
-
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_String);
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 // Remember the new string
-                this.yearMonthPattern = value;
+                yearMonthPattern = value;
 
                 // Clear the token hash table, note that even short times could require this
                 ClearTokenHashTable();
             }
         }
 
-        //
-        // Check if a string array contains a null value, and throw ArgumentNullException with parameter name "value"
-        //
+        /// <summary>
+        /// Check if a string array contains a null value, and throw ArgumentNullException with parameter name "value"
+        /// </summary>
         private static void CheckNullValue(string[] values, int length)
         {
             Debug.Assert(values != null, "value != null");
@@ -1223,33 +1182,29 @@ namespace System.Globalization
             {
                 if (values[i] == null)
                 {
-                    throw new ArgumentNullException("value",
-                        SR.ArgumentNull_ArrayValue);
+                    throw new ArgumentNullException("value", SR.ArgumentNull_ArrayValue);
                 }
             }
         }
 
-
         public string[] AbbreviatedDayNames
         {
-            get
-            {
-                return ((string[])internalGetAbbreviatedDayOfWeekNames().Clone());
-            }
-
+            get => (string[])InternalGetAbbreviatedDayOfWeekNames().Clone();
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_Array);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length != 7)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
                 }
+
                 CheckNullValue(value, value.Length);
                 ClearTokenHashTable();
 
@@ -1257,53 +1212,50 @@ namespace System.Globalization
             }
         }
 
-        // Returns the string array of the one-letter day of week names.
+        /// <summary>
+        /// Returns the string array of the one-letter day of week names.
+        /// </summary>
         public string[] ShortestDayNames
         {
-            get
-            {
-                return ((string[])internalGetSuperShortDayNames().Clone());
-            }
-
+            get => (string[])InternalGetSuperShortDayNames().Clone();
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_Array);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length != 7)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
                 }
+
                 CheckNullValue(value, value.Length);
-                this.m_superShortDayNames = value;
+                m_superShortDayNames = value;
             }
         }
 
-
         public string[] DayNames
         {
-            get
-            {
-                return ((string[])internalGetDayOfWeekNames().Clone());
-            }
-
+            get => (string[])InternalGetDayOfWeekNames().Clone();
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_Array);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length != 7)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
                 }
+    
                 CheckNullValue(value, value.Length);
                 ClearTokenHashTable();
 
@@ -1311,54 +1263,48 @@ namespace System.Globalization
             }
         }
 
-
         public string[] AbbreviatedMonthNames
         {
-            get
-            {
-                return ((string[])internalGetAbbreviatedMonthNames().Clone());
-            }
-
+            get => (string[])InternalGetAbbreviatedMonthNames().Clone();
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_Array);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
                 }
+
                 CheckNullValue(value, value.Length - 1);
                 ClearTokenHashTable();
                 abbreviatedMonthNames = value;
             }
         }
 
-
         public string[] MonthNames
         {
-            get
-            {
-                return ((string[])internalGetMonthNames().Clone());
-            }
-
+            get => (string[])InternalGetMonthNames().Clone();
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_Array);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
                 }
+
                 CheckNullValue(value, value.Length - 1);
                 monthNames = value;
                 ClearTokenHashTable();
@@ -1369,147 +1315,125 @@ namespace System.Globalization
         // U+00a0 is non-breaking space.
         private static readonly char[] s_monthSpaces = { ' ', '\u00a0' };
 
-        internal bool HasSpacesInMonthNames
-        {
-            get
-            {
-                return (FormatFlags & DateTimeFormatFlags.UseSpacesInMonthNames) != 0;
-            }
-        }
+        internal bool HasSpacesInMonthNames =>(FormatFlags & DateTimeFormatFlags.UseSpacesInMonthNames) != 0;
 
-        internal bool HasSpacesInDayNames
-        {
-            get
-            {
-                return (FormatFlags & DateTimeFormatFlags.UseSpacesInDayNames) != 0;
-            }
-        }
+        internal bool HasSpacesInDayNames => (FormatFlags & DateTimeFormatFlags.UseSpacesInDayNames) != 0;
 
-
-        //
-        //  internalGetMonthName
-        //
-        // Actions: Return the month name using the specified MonthNameStyles in either abbreviated form
-        //      or full form.
-        // Arguments:
-        //      month
-        //      style           To indicate a form like regular/genitive/month name in a leap year.
-        //      abbreviated     When true, return abbreviated form.  Otherwise, return a full form.
-        //  Exceptions:
-        //      ArgumentOutOfRangeException When month name is invalid.
-        //
-        internal string internalGetMonthName(int month, MonthNameStyles style, bool abbreviated)
+        /// <summary>
+        /// Return the month name using the specified MonthNameStyles in either abbreviated form
+        /// or full form.
+        /// </summary>
+        internal string InternalGetMonthName(int month, MonthNameStyles style, bool abbreviated)
         {
-            //
-            // Right now, style is mutual exclusive, but I make the style to be flag so that
-            // maybe we can combine flag if there is such a need.
-            //
             string[] monthNamesArray = null;
             switch (style)
             {
                 case MonthNameStyles.Genitive:
-                    monthNamesArray = internalGetGenitiveMonthNames(abbreviated);
+                    monthNamesArray = InternalGetGenitiveMonthNames(abbreviated);
                     break;
                 case MonthNameStyles.LeapYear:
-                    monthNamesArray = internalGetLeapYearMonthNames(/*abbreviated*/);
+                    monthNamesArray = InternalGetLeapYearMonthNames();
                     break;
                 default:
-                    monthNamesArray = (abbreviated ? internalGetAbbreviatedMonthNames() : internalGetMonthNames());
+                    monthNamesArray = (abbreviated ? InternalGetAbbreviatedMonthNames() : InternalGetMonthNames());
                     break;
             }
-            // The month range is from 1 ~ this.m_monthNames.Length
+
+            // The month range is from 1 ~ m_monthNames.Length
             // (actually is 13 right now for all cases)
             if ((month < 1) || (month > monthNamesArray.Length))
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(month), SR.Format(SR.ArgumentOutOfRange_Range,
-                    1, monthNamesArray.Length));
+                    nameof(month),
+                    month,
+                    SR.Format(SR.ArgumentOutOfRange_Range, 1, monthNamesArray.Length));
             }
-            return (monthNamesArray[month - 1]);
+
+            return monthNamesArray[month - 1];
         }
 
-        //
-        //  internalGetGenitiveMonthNames
-        //
-        //  Action: Retrieve the array which contains the month names in genitive form.
-        //      If this culture does not use the gentive form, the normal month name is returned.
-        //  Arguments:
-        //      abbreviated     When true, return abbreviated form.  Otherwise, return a full form.
-        //
-        private string[] internalGetGenitiveMonthNames(bool abbreviated)
+        /// <summary>
+        /// Retrieve the array which contains the month names in genitive form.
+        /// If this culture does not use the gentive form, the normal month name is returned.
+        /// </summary>
+        private string[] InternalGetGenitiveMonthNames(bool abbreviated)
         {
             if (abbreviated)
             {
-                if (this.m_genitiveAbbreviatedMonthNames == null)
+                if (m_genitiveAbbreviatedMonthNames == null)
                 {
-                    this.m_genitiveAbbreviatedMonthNames = _cultureData.AbbreviatedGenitiveMonthNames(this.Calendar.ID);
-                    Debug.Assert(this.m_genitiveAbbreviatedMonthNames.Length == 13,
+                    m_genitiveAbbreviatedMonthNames = _cultureData.AbbreviatedGenitiveMonthNames(Calendar.ID);
+                    Debug.Assert(m_genitiveAbbreviatedMonthNames.Length == 13,
                         "[DateTimeFormatInfo.GetGenitiveMonthNames] Expected 13 abbreviated genitive month names in a year");
                 }
-                return (this.m_genitiveAbbreviatedMonthNames);
+
+                return m_genitiveAbbreviatedMonthNames;
             }
 
-            if (this.genitiveMonthNames == null)
+            if (genitiveMonthNames == null)
             {
-                this.genitiveMonthNames = _cultureData.GenitiveMonthNames(this.Calendar.ID);
-                Debug.Assert(this.genitiveMonthNames.Length == 13,
+                genitiveMonthNames = _cultureData.GenitiveMonthNames(Calendar.ID);
+                Debug.Assert(genitiveMonthNames.Length == 13,
                     "[DateTimeFormatInfo.GetGenitiveMonthNames] Expected 13 genitive month names in a year");
             }
-            return (this.genitiveMonthNames);
+
+            return genitiveMonthNames;
         }
 
-        //
-        //  internalGetLeapYearMonthNames
-        //
-        //  Actions: Retrieve the month names used in a leap year.
-        //      If this culture does not have different month names in a leap year, the normal month name is returned.
-        //  Arguments: None. (can use abbreviated later if needed)
-        //
-        internal string[] internalGetLeapYearMonthNames(/*bool abbreviated*/)
+        /// <summary>
+        /// Retrieve the month names used in a leap year.
+        /// If this culture does not have different month names in a leap year,
+        /// the normal month name is returned.
+        /// </summary>
+        internal string[] InternalGetLeapYearMonthNames()
         {
-            if (this.leapYearMonthNames == null)
+            if (leapYearMonthNames == null)
             {
-                Debug.Assert(Calendar.ID > 0, "[DateTimeFormatInfo.internalGetLeapYearMonthNames] Expected Calendar.ID > 0");
-                this.leapYearMonthNames = _cultureData.LeapYearMonthNames(Calendar.ID);
-                Debug.Assert(this.leapYearMonthNames.Length == 13,
-                    "[DateTimeFormatInfo.internalGetLeapYearMonthNames] Expepcted 13 leap year month names");
+                Debug.Assert(Calendar.ID > 0, "[DateTimeFormatInfo.InternalGetLeapYearMonthNames] Expected Calendar.ID > 0");
+                leapYearMonthNames = _cultureData.LeapYearMonthNames(Calendar.ID);
+                Debug.Assert(leapYearMonthNames.Length == 13,
+                    "[DateTimeFormatInfo.InternalGetLeapYearMonthNames] Expepcted 13 leap year month names");
             }
+
             return (leapYearMonthNames);
         }
 
-
         public string GetAbbreviatedDayName(DayOfWeek dayofweek)
         {
-            if ((int)dayofweek < 0 || (int)dayofweek > 6)
+            if (dayofweek < DayOfWeek.Sunday || dayofweek > DayOfWeek.Saturday)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(dayofweek), SR.Format(SR.ArgumentOutOfRange_Range,
-                    DayOfWeek.Sunday, DayOfWeek.Saturday));
+                    nameof(dayofweek),
+                    dayofweek,
+                    SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
-            //
+
             // Don't call the public property AbbreviatedDayNames here since a clone is needed in that
-            // property, so it will be slower.  Instead, use GetAbbreviatedDayOfWeekNames() directly.
-            //
-            return (internalGetAbbreviatedDayOfWeekNames()[(int)dayofweek]);
+            // property, so it will be slower. Instead, use GetAbbreviatedDayOfWeekNames() directly.
+            return InternalGetAbbreviatedDayOfWeekNames()[(int)dayofweek];
         }
 
-        // Returns the super short day of week names for the specified day of week.
+        /// <summary>
+        /// Returns the super short day of week names for the specified day of week.
+        /// </summary>
         public string GetShortestDayName(DayOfWeek dayOfWeek)
         {
-            if ((int)dayOfWeek < 0 || (int)dayOfWeek > 6)
+            if (dayOfWeek < DayOfWeek.Sunday || dayOfWeek > DayOfWeek.Saturday)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(dayOfWeek), SR.Format(SR.ArgumentOutOfRange_Range,
-                    DayOfWeek.Sunday, DayOfWeek.Saturday));
+                    nameof(dayOfWeek),
+                    dayOfWeek,
+                    SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
-            //
+
             // Don't call the public property SuperShortDayNames here since a clone is needed in that
-            // property, so it will be slower.  Instead, use internalGetSuperShortDayNames() directly.
-            //
-            return (internalGetSuperShortDayNames()[(int)dayOfWeek]);
+            // property, so it will be slower. Instead, use internalGetSuperShortDayNames() directly.
+            return InternalGetSuperShortDayNames()[(int)dayOfWeek];
         }
 
-        // Get all possible combination of inputs
+        /// <summary>
+        /// Get all possible combination of inputs
+        /// </summary>
         private static string[] GetCombinedPatterns(string[] patterns1, string[] patterns2, string connectString)
         {
             Debug.Assert(patterns1 != null);
@@ -1530,7 +1454,7 @@ namespace System.Globalization
             }
 
             // Return the combinations
-            return (result);
+            return result;
         }
 
         public string[] GetAllDateTimePatterns()
@@ -1555,10 +1479,10 @@ namespace System.Globalization
             switch (format)
             {
                 case 'd':
-                    result = this.AllShortDatePatterns;
+                    result = AllShortDatePatterns;
                     break;
                 case 'D':
-                    result = this.AllLongDatePatterns;
+                    result = AllLongDatePatterns;
                     break;
                 case 'f':
                     result = GetCombinedPatterns(AllLongDatePatterns, AllShortTimePatterns, " ");
@@ -1589,36 +1513,36 @@ namespace System.Globalization
                     result = new string[] { sortableDateTimePattern };
                     break;
                 case 't':
-                    result = this.AllShortTimePatterns;
+                    result = AllShortTimePatterns;
                     break;
                 case 'T':
-                    result = this.AllLongTimePatterns;
+                    result = AllLongTimePatterns;
                     break;
                 case 'u':
                     result = new string[] { UniversalSortableDateTimePattern };
                     break;
                 case 'y':
                 case 'Y':
-                    result = this.AllYearMonthPatterns;
+                    result = AllYearMonthPatterns;
                     break;
                 default:
                     throw new ArgumentException(SR.Format(SR.Format_BadFormatSpecifier, format), nameof(format));
             }
-            return (result);
+            return result;
         }
-
 
         public string GetDayName(DayOfWeek dayofweek)
         {
             if ((int)dayofweek < 0 || (int)dayofweek > 6)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(dayofweek), SR.Format(SR.ArgumentOutOfRange_Range,
-                    DayOfWeek.Sunday, DayOfWeek.Saturday));
+                    nameof(dayofweek),
+                    dayofweek,
+                    SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
 
             // Use the internal one so that we don't clone the array unnecessarily
-            return (internalGetDayOfWeekNames()[(int)dayofweek]);
+            return InternalGetDayOfWeekNames()[(int)dayofweek];
         }
 
         public string GetAbbreviatedMonthName(int month)
@@ -1626,11 +1550,13 @@ namespace System.Globalization
             if (month < 1 || month > 13)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(month), SR.Format(SR.ArgumentOutOfRange_Range,
-                    1, 13));
+                    nameof(month),
+                    month,
+                    SR.Format(SR.ArgumentOutOfRange_Range, 1, 13));
             }
+
             // Use the internal one so we don't clone the array unnecessarily
-            return (internalGetAbbreviatedMonthNames()[month - 1]);
+            return InternalGetAbbreviatedMonthNames()[month - 1];
         }
 
         public string GetMonthName(int month)
@@ -1638,20 +1564,24 @@ namespace System.Globalization
             if (month < 1 || month > 13)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(month), SR.Format(SR.ArgumentOutOfRange_Range,
-                    1, 13));
+                    nameof(month),
+                    month,
+                    SR.Format(SR.ArgumentOutOfRange_Range, 1, 13));
             }
+
             // Use the internal one so we don't clone the array unnecessarily
-            return (internalGetMonthNames()[month - 1]);
+            return InternalGetMonthNames()[month - 1];
         }
 
-        // For our "patterns" arrays we have 2 variables, a string and a string[]
-        //
-        // The string[] contains the list of patterns, EXCEPT the default may not be included.
-        // The string contains the default pattern.
-        // When we initially construct our string[], we set the string to string[0]
-        //
-        // The resulting [] can get returned to the calling app, so clone it.
+        /// <summary>
+        /// For our "patterns" arrays we have 2 variables, a string and a string[]
+        ///
+        /// The string[] contains the list of patterns, EXCEPT the default may not be included.
+        /// The string contains the default pattern.
+        /// When we initially construct our string[], we set the string to string[0]
+        ///
+        /// The resulting [] can get returned to the calling app, so clone it.
+        /// </summary>
         private static string[] GetMergedPatterns(string[] patterns, string defaultPattern)
         {
             Debug.Assert(patterns != null && patterns.Length > 0,
@@ -1707,50 +1637,25 @@ namespace System.Globalization
         internal const string RoundtripFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffffK";
         internal const string RoundtripDateTimeUnfixed = "yyyy'-'MM'-'ddTHH':'mm':'ss zzz";
 
-        // Default string isn't necessarily in our string array, so get the
-        // merged patterns of both
-        private string[] AllYearMonthPatterns
-        {
-            get
-            {
-                return GetMergedPatterns(this.UnclonedYearMonthPatterns, this.YearMonthPattern);
-            }
-        }
+        /// <summary>
+        /// Default string isn't necessarily in our string array, so get the
+        /// merged patterns of both
+        /// </summary>
+        private string[] AllYearMonthPatterns => GetMergedPatterns(UnclonedYearMonthPatterns, YearMonthPattern);
 
-        private string[] AllShortDatePatterns
-        {
-            get
-            {
-                return GetMergedPatterns(this.UnclonedShortDatePatterns, this.ShortDatePattern);
-            }
-        }
+        private string[] AllShortDatePatterns => GetMergedPatterns(UnclonedShortDatePatterns, ShortDatePattern);
 
-        private string[] AllShortTimePatterns
-        {
-            get
-            {
-                return GetMergedPatterns(this.UnclonedShortTimePatterns, this.ShortTimePattern);
-            }
-        }
+        private string[] AllShortTimePatterns => GetMergedPatterns(UnclonedShortTimePatterns, ShortTimePattern);
 
-        private string[] AllLongDatePatterns
-        {
-            get
-            {
-                return GetMergedPatterns(this.UnclonedLongDatePatterns, this.LongDatePattern);
-            }
-        }
+        private string[] AllLongDatePatterns => GetMergedPatterns(UnclonedLongDatePatterns, LongDatePattern);
 
-        private string[] AllLongTimePatterns
-        {
-            get
-            {
-                return GetMergedPatterns(this.UnclonedLongTimePatterns, this.LongTimePattern);
-            }
-        }
+        private string[] AllLongTimePatterns => GetMergedPatterns(UnclonedLongTimePatterns, LongTimePattern);
 
-        // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
-        // This won't include default, call AllYearMonthPatterns
+        /// <remarks>
+        /// Clone this string array if you want to return it to user.
+        /// Otherwise, you are returning a writable cache copy.
+        /// This won't include default, call AllYearMonthPatterns
+        /// </remarks>
         private string[] UnclonedYearMonthPatterns
         {
             get
@@ -1758,8 +1663,8 @@ namespace System.Globalization
                 if (allYearMonthPatterns == null)
                 {
                     Debug.Assert(Calendar.ID > 0, "[DateTimeFormatInfo.UnclonedYearMonthPatterns] Expected Calendar.ID > 0");
-                    this.allYearMonthPatterns = _cultureData.YearMonths(this.Calendar.ID);
-                    Debug.Assert(this.allYearMonthPatterns.Length > 0,
+                    allYearMonthPatterns = _cultureData.YearMonths(Calendar.ID);
+                    Debug.Assert(allYearMonthPatterns.Length > 0,
                         "[DateTimeFormatInfo.UnclonedYearMonthPatterns] Expected some year month patterns");
                 }
 
@@ -1767,9 +1672,11 @@ namespace System.Globalization
             }
         }
 
-
-        // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
-        // This won't include default, call AllShortDatePatterns
+        /// <remarks>
+        /// Clone this string array if you want to return it to user.
+        /// Otherwise, you are returning a writable cache copy.
+        /// This won't include default, call AllShortDatePatterns
+        /// </remarks>
         private string[] UnclonedShortDatePatterns
         {
             get
@@ -1777,17 +1684,20 @@ namespace System.Globalization
                 if (allShortDatePatterns == null)
                 {
                     Debug.Assert(Calendar.ID > 0, "[DateTimeFormatInfo.UnclonedShortDatePatterns] Expected Calendar.ID > 0");
-                    this.allShortDatePatterns = _cultureData.ShortDates(this.Calendar.ID);
-                    Debug.Assert(this.allShortDatePatterns.Length > 0,
+                    allShortDatePatterns = _cultureData.ShortDates(Calendar.ID);
+                    Debug.Assert(allShortDatePatterns.Length > 0,
                         "[DateTimeFormatInfo.UnclonedShortDatePatterns] Expected some short date patterns");
                 }
 
-                return this.allShortDatePatterns;
+                return allShortDatePatterns;
             }
         }
 
-        // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
-        // This won't include default, call AllLongDatePatterns
+        /// <remarks>
+        /// Clone this string array if you want to return it to user.
+        /// Otherwise, you are returning a writable cache copy.
+        /// This won't include default, call AllLongDatePatterns
+        /// </remarks>
         private string[] UnclonedLongDatePatterns
         {
             get
@@ -1795,46 +1705,52 @@ namespace System.Globalization
                 if (allLongDatePatterns == null)
                 {
                     Debug.Assert(Calendar.ID > 0, "[DateTimeFormatInfo.UnclonedLongDatePatterns] Expected Calendar.ID > 0");
-                    this.allLongDatePatterns = _cultureData.LongDates(this.Calendar.ID);
-                    Debug.Assert(this.allLongDatePatterns.Length > 0,
+                    allLongDatePatterns = _cultureData.LongDates(Calendar.ID);
+                    Debug.Assert(allLongDatePatterns.Length > 0,
                         "[DateTimeFormatInfo.UnclonedLongDatePatterns] Expected some long date patterns");
                 }
 
-                return this.allLongDatePatterns;
+                return allLongDatePatterns;
             }
         }
 
-        // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
-        // This won't include default, call AllShortTimePatterns
+        /// <remarks>
+        /// Clone this string array if you want to return it to user.
+        /// Otherwise, you are returning a writable cache copy.
+        /// This won't include default, call AllShortTimePatterns
+        /// </remarks>
         private string[] UnclonedShortTimePatterns
         {
             get
             {
-                if (this.allShortTimePatterns == null)
+                if (allShortTimePatterns == null)
                 {
-                    this.allShortTimePatterns = _cultureData.ShortTimes;
-                    Debug.Assert(this.allShortTimePatterns.Length > 0,
+                    allShortTimePatterns = _cultureData.ShortTimes;
+                    Debug.Assert(allShortTimePatterns.Length > 0,
                         "[DateTimeFormatInfo.UnclonedShortTimePatterns] Expected some short time patterns");
                 }
 
-                return this.allShortTimePatterns;
+                return allShortTimePatterns;
             }
         }
 
-        // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
-        // This won't include default, call AllLongTimePatterns
+        /// <remarks>
+        /// Clone this string array if you want to return it to user.
+        /// Otherwise, you are returning a writable cache copy.
+        /// This won't include default, call AllLongTimePatterns
+        /// </remarks>
         private string[] UnclonedLongTimePatterns
         {
             get
             {
-                if (this.allLongTimePatterns == null)
+                if (allLongTimePatterns == null)
                 {
-                    this.allLongTimePatterns = _cultureData.LongTimes;
-                    Debug.Assert(this.allLongTimePatterns.Length > 0,
+                    allLongTimePatterns = _cultureData.LongTimes;
+                    Debug.Assert(allLongTimePatterns.Length > 0,
                         "[DateTimeFormatInfo.UnclonedLongTimePatterns] Expected some long time patterns");
                 }
 
-                return this.allLongTimePatterns;
+                return allLongTimePatterns;
             }
         }
 
@@ -1844,32 +1760,30 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(dtfi));
             }
+
             if (dtfi.IsReadOnly)
             {
-                return (dtfi);
+                return dtfi;
             }
+
             DateTimeFormatInfo newInfo = (DateTimeFormatInfo)(dtfi.MemberwiseClone());
             // We can use the data member calendar in the setter, instead of the property Calendar,
             // since the cloned copy should have the same state as the original copy.
             newInfo.calendar = Calendar.ReadOnly(dtfi.Calendar);
             newInfo._isReadOnly = true;
-            return (newInfo);
+            return newInfo;
         }
 
-        public bool IsReadOnly
-        {
-            get
-            {
-                return (_isReadOnly);
-            }
-        }
+        public bool IsReadOnly => _isReadOnly;
 
-        // Return the native name for the calendar in DTFI.Calendar.  The native name is referred to
-        // the culture used to create the DTFI.  E.g. in the following example, the native language is Japanese.
-        // DateTimeFormatInfo dtfi = new CultureInfo("ja-JP", false).DateTimeFormat.Calendar = new JapaneseCalendar();
-        // String nativeName = dtfi.NativeCalendarName; // Get the Japanese name for the Japanese calendar.
-        // DateTimeFormatInfo dtfi = new CultureInfo("ja-JP", false).DateTimeFormat.Calendar = new GregorianCalendar(GregorianCalendarTypes.Localized);
-        // String nativeName = dtfi.NativeCalendarName; // Get the Japanese name for the Gregorian calendar.
+        /// <summary>
+        /// Return the native name for the calendar in DTFI.Calendar.  The native name is referred to
+        /// the culture used to create the DTFI.  E.g. in the following example, the native language is Japanese.
+        /// DateTimeFormatInfo dtfi = new CultureInfo("ja-JP", false).DateTimeFormat.Calendar = new JapaneseCalendar();
+        /// String nativeName = dtfi.NativeCalendarName; // Get the Japanese name for the Japanese calendar.
+        /// DateTimeFormatInfo dtfi = new CultureInfo("ja-JP", false).DateTimeFormat.Calendar = new GregorianCalendar(GregorianCalendarTypes.Localized);
+        /// String nativeName = dtfi.NativeCalendarName; // Get the Japanese name for the Gregorian calendar.
+        /// </summary>
         public string NativeCalendarName
         {
             get
@@ -1878,38 +1792,38 @@ namespace System.Globalization
             }
         }
 
-        //
-        // Used by custom cultures and others to set the list of available formats. Note that none of them are
-        // explicitly used unless someone calls GetAllDateTimePatterns and subsequently uses one of the items
-        // from the list.
-        //
-        // Most of the format characters that can be used in GetAllDateTimePatterns are
-        // not really needed since they are one of the following:
-        //
-        //  r/R/s/u     locale-independent constants -- cannot be changed!
-        //  m/M/y/Y     fields with a single string in them -- that can be set through props directly
-        //  f/F/g/G/U   derived fields based on combinations of various of the below formats
-        //
-        // NOTE: No special validation is done here beyond what is done when the actual respective fields
-        // are used (what would be the point of disallowing here what we allow in the appropriate property?)
-        //
-        // WARNING: If more validation is ever done in one place, it should be done in the other.
-        //
+        /// <summary>
+        /// Used by custom cultures and others to set the list of available formats. Note that none of them are
+        /// explicitly used unless someone calls GetAllDateTimePatterns and subsequently uses one of the items
+        /// from the list.
+        ///
+        /// Most of the format characters that can be used in GetAllDateTimePatterns are
+        /// not really needed since they are one of the following:
+        ///
+        ///  r/R/s/u     locale-independent constants -- cannot be changed!
+        ///  m/M/y/Y     fields with a single string in them -- that can be set through props directly
+        ///  f/F/g/G/U   derived fields based on combinations of various of the below formats
+        ///
+        /// NOTE: No special validation is done here beyond what is done when the actual respective fields
+        /// are used (what would be the point of disallowing here what we allow in the appropriate property?)
+        ///
+        /// WARNING: If more validation is ever done in one place, it should be done in the other.
+        /// </summary>
         public void SetAllDateTimePatterns(string[] patterns, char format)
         {
             if (IsReadOnly)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
-
+            }
             if (patterns == null)
             {
-                throw new ArgumentNullException(nameof(patterns), SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(patterns));
             }
 
             if (patterns.Length == 0)
             {
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(patterns));
             }
-
 
             for (int i = 0; i < patterns.Length; i++)
             {
@@ -1958,59 +1872,53 @@ namespace System.Globalization
 
         public string[] AbbreviatedMonthGenitiveNames
         {
-            get
-            {
-                return ((string[])internalGetGenitiveMonthNames(true).Clone());
-            }
-
+            get => (string[])InternalGetGenitiveMonthNames(true).Clone();
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_Array);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
                 }
+
                 CheckNullValue(value, value.Length - 1);
                 ClearTokenHashTable();
-                this.m_genitiveAbbreviatedMonthNames = value;
+                m_genitiveAbbreviatedMonthNames = value;
             }
         }
 
         public string[] MonthGenitiveNames
         {
-            get
-            {
-                return ((string[])internalGetGenitiveMonthNames(false).Clone());
-            }
-
+            get => (string[])InternalGetGenitiveMonthNames(false).Clone();
             set
             {
                 if (IsReadOnly)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+                }
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(value),
-                        SR.ArgumentNull_Array);
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
                 }
+
                 CheckNullValue(value, value.Length - 1);
                 genitiveMonthNames = value;
                 ClearTokenHashTable();
             }
         }
 
-        //
         // Decimal separator used by positive TimeSpan pattern
-        //
         private string _decimalSeparator;
         internal string DecimalSeparator
         {
@@ -2027,9 +1935,7 @@ namespace System.Globalization
             }
         }
 
-        //
         // Positive TimeSpan Pattern
-        //
         private string _fullTimeSpanPositivePattern;
         internal string FullTimeSpanPositivePattern
         {
@@ -2043,9 +1949,7 @@ namespace System.Globalization
             }
         }
 
-        //
         // Negative TimeSpan Pattern
-        //
         private string _fullTimeSpanNegativePattern;
         internal string FullTimeSpanNegativePattern
         {
@@ -2057,9 +1961,7 @@ namespace System.Globalization
             }
         }
 
-        //
         // Get suitable CompareInfo from current DTFI object.
-        //
         internal CompareInfo CompareInfo
         {
             get
@@ -2068,13 +1970,12 @@ namespace System.Globalization
                 {
                     // We use the regular GetCompareInfo here to make sure the created CompareInfo object is stored in the
                     // CompareInfo cache. otherwise we would just create CompareInfo using _cultureData.
-                    _compareInfo = CompareInfo.GetCompareInfo(_cultureData.SCOMPAREINFO);
+                    _compareInfo = CompareInfo.GetCompareInfo(_cultureData.SortName);
                 }
 
                 return _compareInfo;
             }
         }
-
 
         internal const DateTimeStyles InvalidDateTimeStyles = ~(DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite
                                                                | DateTimeStyles.AllowInnerWhite | DateTimeStyles.NoCurrentDateDefault
@@ -2098,20 +1999,22 @@ namespace System.Globalization
             }
         }
 
-        //
-        // Actions: Return the internal flag used in formatting and parsing.
-        //  The flag can be used to indicate things like if genitive forms is used in this DTFi, or if leap year gets different month names.
-        //
+        /// <summary>
+        /// Return the internal flag used in formatting and parsing.
+        /// The flag can be used to indicate things like if genitive forms is used in
+        /// this DTFi, or if leap year gets different month names.
+        /// </summary>
         internal DateTimeFormatFlags FormatFlags => formatFlags != DateTimeFormatFlags.NotInitialized ? formatFlags : InitializeFormatFlags();
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private DateTimeFormatFlags InitializeFormatFlags()
         {
             // Build the format flags from the data in this DTFI
             formatFlags =
                 (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagGenitiveMonth(
-                    MonthNames, internalGetGenitiveMonthNames(false), AbbreviatedMonthNames, internalGetGenitiveMonthNames(true)) |
+                    MonthNames, InternalGetGenitiveMonthNames(false), AbbreviatedMonthNames, InternalGetGenitiveMonthNames(true)) |
                 (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagUseSpaceInMonthNames(
-                    MonthNames, internalGetGenitiveMonthNames(false), AbbreviatedMonthNames, internalGetGenitiveMonthNames(true)) |
+                    MonthNames, InternalGetGenitiveMonthNames(false), AbbreviatedMonthNames, InternalGetGenitiveMonthNames(true)) |
                 (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagUseSpaceInDayNames(DayNames, AbbreviatedDayNames) |
                 (DateTimeFormatFlags)DateTimeFormatInfoScanner.GetFormatFlagUseHebrewCalendar((int)Calendar.ID);
             return formatFlags;
@@ -2139,20 +2042,21 @@ namespace System.Globalization
             }
         }
 
-        // Returns whether the YearMonthAdjustment function has any fix-up work to do for this culture/calendar.
+        /// <summary>
+        /// Returns whether the YearMonthAdjustment function has any fix-up work to do for this culture/calendar.
+        /// </summary>
         internal bool HasYearMonthAdjustment
         {
-            get
-            {
-                return ((FormatFlags & DateTimeFormatFlags.UseHebrewRule) != 0);
-            }
+            get => (FormatFlags & DateTimeFormatFlags.UseHebrewRule) != 0;
         }
 
-        // This is a callback that the parser can make back into the DTFI to let it fiddle with special
-        // cases associated with that culture or calendar. Currently this only has special cases for
-        // the Hebrew calendar, but this could be extended to other cultures.
-        //
-        // The return value is whether the year and month are actually valid for this calendar.
+        /// <summary>
+        /// This is a callback that the parser can make back into the DTFI to let it fiddle with special
+        /// cases associated with that culture or calendar. Currently this only has special cases for
+        /// the Hebrew calendar, but this could be extended to other cultures.
+        ///
+        /// The return value is whether the year and month are actually valid for this calendar.
+        /// </summary>
         internal bool YearMonthAdjustment(ref int year, ref int month, bool parsedMonthName)
         {
             if ((FormatFlags & DateTimeFormatFlags.UseHebrewRule) != 0)
@@ -2193,9 +2097,7 @@ namespace System.Globalization
             return true;
         }
 
-        //
         // DateTimeFormatInfo tokenizer.  This is used by DateTime.Parse() to break input string into tokens.
-        //
         private TokenHashValue[] _dtfiTokenHash;
 
         private const int TOKEN_HASH_SIZE = 199;
@@ -2204,15 +2106,11 @@ namespace System.Globalization
         private const string invariantDateSeparator = "/";
         private const string invariantTimeSeparator = ":";
 
-        //
         // Common Ignorable Symbols
-        //
         internal const string IgnorablePeriod = ".";
         internal const string IgnorableComma = ",";
 
-        //
         // Year/Month/Day suffixes
-        //
         internal const string CJKYearSuff = "\u5e74";
         internal const string CJKMonthSuff = "\u6708";
         internal const string CJKDaySuff = "\u65e5";
@@ -2245,12 +2143,12 @@ namespace System.Globalization
         private static volatile DateTimeFormatInfo s_jajpDTFI;
         private static volatile DateTimeFormatInfo s_zhtwDTFI;
 
-        //
-        // Create a Japanese DTFI which uses JapaneseCalendar.  This is used to parse
-        // date string with Japanese era name correctly even when the supplied DTFI
-        // does not use Japanese calendar.
-        // The created instance is stored in global s_jajpDTFI.
-        //
+        /// <summary>
+        /// Create a Japanese DTFI which uses JapaneseCalendar.  This is used to parse
+        /// date string with Japanese era name correctly even when the supplied DTFI
+        /// does not use Japanese calendar.
+        /// The created instance is stored in global s_jajpDTFI.
+        /// </summary>
         internal static DateTimeFormatInfo GetJapaneseCalendarDTFI()
         {
             DateTimeFormatInfo temp = s_jajpDTFI;
@@ -2260,13 +2158,15 @@ namespace System.Globalization
                 temp.Calendar = JapaneseCalendar.GetDefaultInstance();
                 s_jajpDTFI = temp;
             }
-            return (temp);
+            return temp;
         }
 
-        // Create a Taiwan DTFI which uses TaiwanCalendar.  This is used to parse
-        // date string with era name correctly even when the supplied DTFI
-        // does not use Taiwan calendar.
-        // The created instance is stored in global s_zhtwDTFI.
+        /// <summary>
+        /// Create a Taiwan DTFI which uses TaiwanCalendar.  This is used to parse
+        /// date string with era name correctly even when the supplied DTFI
+        /// does not use Taiwan calendar.
+        /// The created instance is stored in global s_zhtwDTFI.
+        /// </summary>
         internal static DateTimeFormatInfo GetTaiwanCalendarDTFI()
         {
             DateTimeFormatInfo temp = s_zhtwDTFI;
@@ -2276,11 +2176,12 @@ namespace System.Globalization
                 temp.Calendar = TaiwanCalendar.GetDefaultInstance();
                 s_zhtwDTFI = temp;
             }
-            return (temp);
+            return temp;
         }
 
-
-        // DTFI properties should call this when the setter are called.
+        /// <summary>
+        /// DTFI properties should call this when the setter are called.
+        /// </summary>
         private void ClearTokenHashTable()
         {
             _dtfiTokenHash = null;
@@ -2296,7 +2197,7 @@ namespace System.Globalization
 
                 bool koreanLanguage = LanguageName.Equals(KoreanLangName);
 
-                string sep = this.TimeSeparator.Trim();
+                string sep = TimeSeparator.Trim();
                 if (IgnorableComma != sep) InsertHash(temp, IgnorableComma, TokenType.IgnorableSymbol, 0);
                 if (IgnorablePeriod != sep) InsertHash(temp, IgnorablePeriod, TokenType.IgnorableSymbol, 0);
 
@@ -2308,18 +2209,17 @@ namespace System.Globalization
                     // DateTime.Parse behavior.  For instance, the DateTimeFormatInfo.Tokenize() method might return SEP_DateOrOffset for KoreanHourSuff
                     // instead of SEP_HourSuff.
                     //
-                    InsertHash(temp, this.TimeSeparator, TokenType.SEP_Time, 0);
+                    InsertHash(temp, TimeSeparator, TokenType.SEP_Time, 0);
                 }
 
-                InsertHash(temp, this.AMDesignator, TokenType.SEP_Am | TokenType.Am, 0);
-                InsertHash(temp, this.PMDesignator, TokenType.SEP_Pm | TokenType.Pm, 1);
+                InsertHash(temp, AMDesignator, TokenType.SEP_Am | TokenType.Am, 0);
+                InsertHash(temp, PMDesignator, TokenType.SEP_Pm | TokenType.Pm, 1);
 
-                // TODO: This ignores similar custom cultures
                 if (LanguageName.Equals("sq"))
                 {
                     // Albanian allows time formats like "12:00.PD"
-                    InsertHash(temp, IgnorablePeriod + this.AMDesignator, TokenType.SEP_Am | TokenType.Am, 0);
-                    InsertHash(temp, IgnorablePeriod + this.PMDesignator, TokenType.SEP_Pm | TokenType.Pm, 1);
+                    InsertHash(temp, IgnorablePeriod + AMDesignator, TokenType.SEP_Am | TokenType.Am, 0);
+                    InsertHash(temp, IgnorablePeriod + PMDesignator, TokenType.SEP_Pm | TokenType.Pm, 1);
                 }
 
                 // CJK suffix
@@ -2395,7 +2295,7 @@ namespace System.Globalization
                             case DateTimeFormatInfoScanner.IgnorableSymbolChar:
                                 string symbol = dateWords[i].Substring(1);
                                 InsertHash(temp, symbol, TokenType.IgnorableSymbol, 0);
-                                if (this.DateSeparator.Trim(null).Equals(symbol))
+                                if (DateSeparator.Trim(null).Equals(symbol))
                                 {
                                     // The date separator is the same as the ignorable symbol.
                                     useDateSepAsIgnorableSymbol = true;
@@ -2417,7 +2317,7 @@ namespace System.Globalization
                 if (!useDateSepAsIgnorableSymbol)
                 {
                     // Use the normal date separator.
-                    InsertHash(temp, this.DateSeparator, TokenType.SEP_Date, 0);
+                    InsertHash(temp, DateSeparator, TokenType.SEP_Date, 0);
                 }
                 // Add the regular month names.
                 AddMonthNames(temp);
@@ -2434,7 +2334,7 @@ namespace System.Globalization
                     for (int i = 1; i <= 13; i++)
                     {
                         string str;
-                        str = internalGetMonthName(i, MonthNameStyles.Genitive, false);
+                        str = InternalGetMonthName(i, MonthNameStyles.Genitive, false);
                         InsertHash(temp, str, TokenType.MonthToken, i);
                     }
                 }
@@ -2444,7 +2344,7 @@ namespace System.Globalization
                     for (int i = 1; i <= 13; i++)
                     {
                         string str;
-                        str = internalGetMonthName(i, MonthNameStyles.LeapYear, false);
+                        str = InternalGetMonthName(i, MonthNameStyles.LeapYear, false);
                         InsertHash(temp, str, TokenType.MonthToken, i);
                     }
                 }
@@ -2467,7 +2367,6 @@ namespace System.Globalization
                     InsertHash(temp, GetAbbreviatedEraName(i), TokenType.EraToken, i);
                 }
 
-                // TODO: This ignores other cultures that might want to do something similar
                 if (LanguageName.Equals(JapaneseLangName))
                 {
                     // Japanese allows day of week forms like: "(Tue)"
@@ -2476,7 +2375,7 @@ namespace System.Globalization
                         string specialDayOfWeek = "(" + GetAbbreviatedDayName((DayOfWeek)i) + ")";
                         InsertHash(temp, specialDayOfWeek, TokenType.DayOfWeekToken, i);
                     }
-                    if (this.Calendar.GetType() != typeof(JapaneseCalendar))
+                    if (Calendar.GetType() != typeof(JapaneseCalendar))
                     {
                         // Special case for Japanese.  If this is a Japanese DTFI, and the calendar is not Japanese calendar,
                         // we will check Japanese Era name as well when the calendar is Gregorian.
@@ -2573,19 +2472,15 @@ namespace System.Globalization
             }
         }
 
-        ////////////////////////////////////////////////////////////////////////
-        //
-        // Actions:
-        // Try to parse the current word to see if it is a Hebrew number.
-        // Tokens will be updated accordingly.
-        // This is called by the Lexer of DateTime.Parse().
-        //
-        // Unlike most of the functions in this class, the return value indicates
-        // whether or not it started to parse. The badFormat parameter indicates
-        // if parsing began, but the format was bad.
-        //
-        ////////////////////////////////////////////////////////////////////////
-
+        /// <summary>
+        /// Try to parse the current word to see if it is a Hebrew number.
+        /// Tokens will be updated accordingly.
+        /// This is called by the Lexer of DateTime.Parse().
+        ///
+        /// Unlike most of the functions in this class, the return value indicates
+        /// whether or not it started to parse. The badFormat parameter indicates
+        /// if parsing began, but the format was bad.
+        /// </summary>
         private static bool TryParseHebrewNumber(
             ref __DTString str,
             out bool badFormat,
@@ -2599,7 +2494,7 @@ namespace System.Globalization
             {
                 // If the current character is not a Hebrew digit, just return false.
                 // There is no chance that we can parse a valid Hebrew number from here.
-                return (false);
+                return false;
             }
             // The current character is a Hebrew digit.  Try to parse this word as a Hebrew number.
             HebrewNumberParsingContext context = new HebrewNumberParsingContext(0);
@@ -2613,7 +2508,7 @@ namespace System.Globalization
                     case HebrewNumberParsingState.InvalidHebrewNumber:    // Not a valid Hebrew number.
                     case HebrewNumberParsingState.NotHebrewDigit:         // The current character is not a Hebrew digit character.
                         // Break out so that we don't continue to try parse this as a Hebrew number.
-                        return (false);
+                        return false;
                 }
             } while (i < str.Value.Length && (state != HebrewNumberParsingState.FoundEndOfHebrewNumber));
 
@@ -2624,7 +2519,7 @@ namespace System.Globalization
             if (state != HebrewNumberParsingState.FoundEndOfHebrewNumber)
             {
                 // We reach end of the string but we can't find a terminal state in parsing Hebrew number.
-                return (false);
+                return false;
             }
 
             // We have found a valid Hebrew number.  Update the index.
@@ -2633,7 +2528,7 @@ namespace System.Globalization
             // Get the final Hebrew number value from the HebrewNumberParsingContext.
             number = context.result;
 
-            return (true);
+            return true;
         }
 
         private static bool IsHebrewChar(char ch)
@@ -2673,7 +2568,7 @@ namespace System.Globalization
             bool isLetter = char.IsLetter(ch);
             if (isLetter)
             {
-                ch = this.Culture.TextInfo.ToLower(ch);
+                ch = Culture.TextInfo.ToLower(ch);
                 if (IsHebrewChar(ch) && TokenMask == TokenType.RegularTokenMask)
                 {
                     bool badFormat;
@@ -2739,7 +2634,7 @@ namespace System.Globalization
                         tokenType = value.tokenType & TokenMask;
                         tokenValue = value.tokenValue;
                         str.Advance(value.tokenString.Length);
-                        return (true);
+                        return true;
                     }
                     else if ((value.tokenType == TokenType.MonthToken && HasSpacesInMonthNames) ||
                              (value.tokenType == TokenType.DayOfWeekToken && HasSpacesInDayNames))
@@ -2751,7 +2646,7 @@ namespace System.Globalization
                             tokenType = value.tokenType & TokenMask;
                             tokenValue = value.tokenValue;
                             str.Advance(matchStrLen);
-                            return (true);
+                            return true;
                         }
                     }
                 }
@@ -2760,7 +2655,7 @@ namespace System.Globalization
                 if (hashcode >= TOKEN_HASH_SIZE) hashcode -= TOKEN_HASH_SIZE;
             } while (i < TOKEN_HASH_SIZE);
 
-            return (false);
+            return false;
         }
 
         private void InsertAtCurrentHashNode(TokenHashValue[] hashTable, string str, char ch, TokenType tokenType, int tokenValue, int pos, int hashcode, int hashProbe)
@@ -2768,7 +2663,6 @@ namespace System.Globalization
             // Remember the current slot.
             TokenHashValue previousNode = hashTable[hashcode];
 
-            //// Console.WriteLine("   Insert Key: {0} in {1}", str, slotToInsert);
             // Insert the new node into the current slot.
             hashTable[hashcode] = new TokenHashValue(str, tokenType, tokenValue); ;
 
@@ -2779,13 +2673,12 @@ namespace System.Globalization
                 // Remember this slot
                 TokenHashValue temp = hashTable[hashcode];
 
-                if (temp != null && this.Culture.TextInfo.ToLower(temp.tokenString[0]) != ch)
+                if (temp != null && Culture.TextInfo.ToLower(temp.tokenString[0]) != ch)
                 {
                     continue;
                 }
                 // Put the previous slot into this slot.
                 hashTable[hashcode] = previousNode;
-                //// Console.WriteLine("  Move {0} to slot {1}", previousNode.tokenString, hashcode);
                 if (temp == null)
                 {
                     // Done
@@ -2812,9 +2705,11 @@ namespace System.Globalization
                 str = str.Trim(null);   // Trim white space characters.
                 // Could have space for separators
                 if (str.Length == 0)
+                {
                     return;
+                }
             }
-            char ch = this.Culture.TextInfo.ToLower(str[0]);
+            char ch = Culture.TextInfo.ToLower(str[0]);
             int hashcode = ch % TOKEN_HASH_SIZE;
             int hashProbe = 1 + ch % SECOND_PRIME;
             do
@@ -2822,7 +2717,6 @@ namespace System.Globalization
                 value = hashTable[hashcode];
                 if (value == null)
                 {
-                    //// Console.WriteLine("   Put Key: {0} in {1}", str, hashcode);
                     hashTable[hashcode] = new TokenHashValue(str, tokenType, tokenValue);
                     return;
                 }
@@ -2833,7 +2727,7 @@ namespace System.Globalization
                     {
                         // If there are two tokens with the same prefix, we have to make sure that the longer token should be at the front of
                         // the shorter ones.
-                        if (this.CompareStringIgnoreCaseOptimized(str, 0, value.tokenString.Length, value.tokenString, 0, value.tokenString.Length))
+                        if (CompareStringIgnoreCaseOptimized(str, 0, value.tokenString.Length, value.tokenString, 0, value.tokenString.Length))
                         {
                             if (str.Length > value.tokenString.Length)
                             {
@@ -2848,19 +2742,13 @@ namespace System.Globalization
                                 // If we have the same regular token or separator token in the hash already, do NOT update the hash.
                                 // Therefore, the order of inserting token is significant here regarding what tokenType will be kept in the hash.
 
-
-                                //
                                 // Check the current value of RegularToken (stored in the lower 8-bit of tokenType) , and insert the tokenType into the hash ONLY when we don't have a RegularToken yet.
                                 // Also check the current value of SeparatorToken (stored in the upper 8-bit of token), and insert the tokenType into the hash ONLY when we don't have the SeparatorToken yet.
-                                //
 
                                 int nTokenType = (int)tokenType;
                                 int nCurrentTokenTypeInHash = (int)value.tokenType;
 
-                                //
                                 // The folowing is the fix for the issue of throwing FormatException when "mar" is passed in string of the short date format dd/MMM/yyyy for es-MX
-                                //
-
                                 if (((nCurrentTokenTypeInHash & (int)TokenType.RegularTokenMask) == 0) && ((nTokenType & (int)TokenType.RegularTokenMask) != 0) ||
                                     ((nCurrentTokenTypeInHash & (int)TokenType.SeparatorTokenMask) == 0) && ((nTokenType & (int)TokenType.SeparatorTokenMask) != 0))
                                 {
@@ -2876,7 +2764,6 @@ namespace System.Globalization
                         }
                     }
                 }
-                //// Console.WriteLine("  COLLISION. Old Key: {0}, New Key: {1}", hashTable[hashcode].tokenString, str);
                 i++;
                 hashcode += hashProbe;
                 if (hashcode >= TOKEN_HASH_SIZE) hashcode -= TOKEN_HASH_SIZE;
@@ -2892,10 +2779,8 @@ namespace System.Globalization
                 return true;
             }
 
-            return (this.Culture.CompareInfo.Compare(string1, offset1, length1, string2, offset2, length2, CompareOptions.IgnoreCase) == 0);
+            return Culture.CompareInfo.Compare(string1, offset1, length1, string2, offset2, length2, CompareOptions.IgnoreCase) == 0;
         }
-
-        // class DateTimeFormatInfo
 
         internal class TokenHashValue
         {

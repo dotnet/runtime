@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Diagnostics.Tracing
 {
     [System.FlagsAttribute]
@@ -16,7 +15,7 @@ namespace System.Diagnostics.Tracing
         None = 0,
         Recursive = 4,
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
     public sealed partial class EventAttribute : System.Attribute
     {
         public EventAttribute(int eventId) { }
@@ -54,18 +53,19 @@ namespace System.Diagnostics.Tracing
         public bool DisableEvent(int eventId) { throw null; }
         public bool EnableEvent(int eventId) { throw null; }
     }
-    public class EventCounter : IDisposable {
-        public EventCounter(string name, EventSource eventSource) { }
-        public void WriteMetric(float value) { }
+    public partial class EventCounter : System.IDisposable
+    {
+        public EventCounter(string name, System.Diagnostics.Tracing.EventSource eventSource) { }
         public void Dispose() { }
+        public void WriteMetric(float value) { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=false)]
     public partial class EventDataAttribute : System.Attribute
     {
         public EventDataAttribute() { }
         public string Name { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(128))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public partial class EventFieldAttribute : System.Attribute
     {
         public EventFieldAttribute() { }
@@ -87,7 +87,7 @@ namespace System.Diagnostics.Tracing
     {
         None = 0,
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(128))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public partial class EventIgnoreAttribute : System.Attribute
     {
         public EventIgnoreAttribute() { }
@@ -100,11 +100,11 @@ namespace System.Diagnostics.Tracing
         AuditSuccess = (long)9007199254740992,
         CorrelationHint = (long)4503599627370496,
         EventLogClassic = (long)36028797018963968,
+        MicrosoftTelemetry = (long)562949953421312,
         None = (long)0,
         Sqm = (long)2251799813685248,
         WdiContext = (long)562949953421312,
         WdiDiagnostic = (long)1125899906842624,
-        MicrosoftTelemetry = (long)562949953421312,
     }
     public enum EventLevel
     {
@@ -117,9 +117,9 @@ namespace System.Diagnostics.Tracing
     }
     public abstract partial class EventListener : System.IDisposable
     {
-        public event EventHandler<EventSourceCreatedEventArgs> EventSourceCreated;
-        public event EventHandler<EventWrittenEventArgs> EventWritten;
         protected EventListener() { }
+        public event System.EventHandler<System.Diagnostics.Tracing.EventSourceCreatedEventArgs> EventSourceCreated { add { } remove { } }
+        public event System.EventHandler<System.Diagnostics.Tracing.EventWrittenEventArgs> EventWritten { add { } remove { } }
         public void DisableEvents(System.Diagnostics.Tracing.EventSource eventSource) { }
         public virtual void Dispose() { }
         public void EnableEvents(System.Diagnostics.Tracing.EventSource eventSource, System.Diagnostics.Tracing.EventLevel level) { }
@@ -166,7 +166,7 @@ namespace System.Diagnostics.Tracing
         public System.Guid Guid { get { throw null; } }
         public string Name { get { throw null; } }
         public System.Diagnostics.Tracing.EventSourceSettings Settings { get { throw null; } }
-        public event EventHandler<EventCommandEventArgs> EventCommandExecuted { add {} remove {} }
+        public event System.EventHandler<System.Diagnostics.Tracing.EventCommandEventArgs> EventCommandExecuted { add { } remove { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~EventSource() { }
@@ -186,10 +186,6 @@ namespace System.Diagnostics.Tracing
         public override string ToString() { throw null; }
         public void Write(string eventName) { }
         public void Write(string eventName, System.Diagnostics.Tracing.EventSourceOptions options) { }
-        public void Write<T>(string eventName, T data) { }
-        public void Write<T>(string eventName, System.Diagnostics.Tracing.EventSourceOptions options, T data) { }
-        public void Write<T>(string eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref T data) { }
-        public void Write<T>(string eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref System.Guid activityId, ref System.Guid relatedActivityId, ref T data) { }
         protected void WriteEvent(int eventId) { }
         protected void WriteEvent(int eventId, byte[] arg1) { }
         protected void WriteEvent(int eventId, int arg1) { }
@@ -213,15 +209,19 @@ namespace System.Diagnostics.Tracing
         protected void WriteEventWithRelatedActivityId(int eventId, System.Guid relatedActivityId, params object[] args) { }
         [System.CLSCompliantAttribute(false)]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, System.Guid* relatedActivityId, int eventDataCount, System.Diagnostics.Tracing.EventSource.EventData* data) { }
+        public void Write<T>(string eventName, System.Diagnostics.Tracing.EventSourceOptions options, T data) { }
+        public void Write<T>(string eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref System.Guid activityId, ref System.Guid relatedActivityId, ref T data) { }
+        public void Write<T>(string eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref T data) { }
+        public void Write<T>(string eventName, T data) { }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         protected internal partial struct EventData
         {
-            private int _dummy;
+            private int _dummyPrimitive;
             public System.IntPtr DataPointer { get { throw null; } set { } }
             public int Size { get { throw null; } set { } }
         }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
     public sealed partial class EventSourceAttribute : System.Attribute
     {
         public EventSourceAttribute() { }
@@ -229,22 +229,22 @@ namespace System.Diagnostics.Tracing
         public string LocalizationResources { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
     }
-    public class EventSourceCreatedEventArgs : EventArgs
+    public partial class EventSourceCreatedEventArgs : System.EventArgs
     {
         public EventSourceCreatedEventArgs() { }
-        public EventSource EventSource { get; }
+        public System.Diagnostics.Tracing.EventSource EventSource { get { throw null; } }
     }
     public partial class EventSourceException : System.Exception
     {
         public EventSourceException() { }
+        protected EventSourceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public EventSourceException(string message) { }
         public EventSourceException(string message, System.Exception innerException) { }
-        protected EventSourceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct EventSourceOptions
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public System.Diagnostics.Tracing.EventActivityOptions ActivityOptions { get { throw null; } set { } }
         public System.Diagnostics.Tracing.EventKeywords Keywords { get { throw null; } set { } }
         public System.Diagnostics.Tracing.EventLevel Level { get { throw null; } set { } }
@@ -280,16 +280,16 @@ namespace System.Diagnostics.Tracing
         public System.Diagnostics.Tracing.EventLevel Level { get { throw null; } }
         public string Message { get { throw null; } }
         public System.Diagnostics.Tracing.EventOpcode Opcode { get { throw null; } }
+        public long OSThreadId { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<object> Payload { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<string> PayloadNames { get { throw null; } }
         public System.Guid RelatedActivityId { get { throw null; } }
         public System.Diagnostics.Tracing.EventTags Tags { get { throw null; } }
         public System.Diagnostics.Tracing.EventTask Task { get { throw null; } }
+        public System.DateTime TimeStamp { get { throw null; } }
         public byte Version { get { throw null; } }
-        public long OSThreadId { get { throw null; } }
-        public DateTime TimeStamp { get { throw null; } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
     public sealed partial class NonEventAttribute : System.Attribute
     {
         public NonEventAttribute() { }

@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -34,14 +38,14 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             {
                 // Validator for tag constraint for SignedAttributes
                 {
-                    if (!Asn1Tag.TryParse(SignedAttributes.Value.Span, out Asn1Tag validateTag, out _) ||
+                    if (!Asn1Tag.TryDecode(SignedAttributes.Value.Span, out Asn1Tag validateTag, out _) ||
                         !validateTag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
                     {
                         throw new CryptographicException();
                     }
                 }
 
-                writer.WriteEncodedValue(SignedAttributes.Value);
+                writer.WriteEncodedValue(SignedAttributes.Value.Span);
             }
 
             SignatureAlgorithm.Encode(writer);
@@ -104,12 +108,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
-                decoded.SignedAttributes = sequenceReader.GetEncodedValue();
+                decoded.SignedAttributes = sequenceReader.ReadEncodedValue();
             }
 
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.SignatureAlgorithm);
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSignatureValue))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSignatureValue))
             {
                 decoded.SignatureValue = tmpSignatureValue;
             }

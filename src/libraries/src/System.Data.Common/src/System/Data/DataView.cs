@@ -1282,7 +1282,7 @@ namespace System.Data
                     }
                     else
                     {
-                        Debug.Assert(false, "ItemAdded DataRow already in view");
+                        Debug.Fail("ItemAdded DataRow already in view");
                     }
                     break;
                 case ListChangedType.ItemDeleted:
@@ -1299,12 +1299,12 @@ namespace System.Data
                         }
                         else
                         {
-                            Debug.Assert(false, "ItemDeleted DataRow not in view tracking");
+                            Debug.Fail("ItemDeleted DataRow not in view tracking");
                         }
                     }
                     if (!_rowViewCache.Remove(row))
                     {
-                        Debug.Assert(false, "ItemDeleted DataRow not in view");
+                        Debug.Fail("ItemDeleted DataRow not in view");
                     }
                     break;
                 case ListChangedType.Reset:
@@ -1317,7 +1317,7 @@ namespace System.Data
                 case ListChangedType.PropertyDescriptorAdded:
                 case ListChangedType.PropertyDescriptorChanged:
                 case ListChangedType.PropertyDescriptorDeleted:
-                    Debug.Assert(false, "unexpected");
+                    Debug.Fail("unexpected");
                     break;
             }
         }

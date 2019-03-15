@@ -280,7 +280,7 @@ namespace System.Runtime.Loader
             {
                 VerifyIsAlive();
 
-                return InternalLoadFromStream(arrAssembly, arrSymbols);
+                return InternalLoad(arrAssembly, arrSymbols);
             }
         }
 
@@ -364,6 +364,18 @@ namespace System.Runtime.Loader
         {
             // We were loading an assembly into TPA ALC that was not found on TPA list. As a result we are here.
             // Returning null will result in the AssemblyResolve event subscribers to be invoked to help resolve the assembly.
+            return null;
+        }
+    }
+
+    internal sealed class IndividualAssemblyLoadContext : AssemblyLoadContext
+    {
+        internal IndividualAssemblyLoadContext() : base(false, false)
+        {
+        }
+
+        protected override Assembly Load(AssemblyName assemblyName)
+        {
             return null;
         }
     }

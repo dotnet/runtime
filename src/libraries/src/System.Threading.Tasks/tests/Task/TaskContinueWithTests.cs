@@ -1211,34 +1211,50 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        public static void RunStackGuardTests()
+        public static void LongContinuationChain_ContinueWith_DoesNotStackOverflow()
         {
-            const int DIVE_DEPTH = 12000;
+            const int DiveDepth = 12_000;
 
-            // Test stack guard with ContinueWith.
+            var tcs = new TaskCompletionSource<bool>();
+            var t = (Task)tcs.Task;
+            for (int i = 0; i < DiveDepth; i++)
             {
-                Func<Task, Task> func = completed => completed.ContinueWith(delegate { }, TaskContinuationOptions.ExecuteSynchronously);
-                var tcs = new TaskCompletionSource<bool>();
-                var t = (Task)tcs.Task;
-                for (int i = 0; i < DIVE_DEPTH; i++) t = func(t);
-                tcs.TrySetResult(true);
-                t.Wait();
+                t = t.ContinueWith(_ => { }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
+            tcs.TrySetResult(true);
+            t.Wait();
+        }
 
-            // Test stack guard with Unwrap
+        [Fact]
+        public static void LongContinuationChain_Unwrap_DoesNotStackOverflow()
+        {
+            const int DiveDepth = 12_000;
+
+            Func<long, Task<long>> func = null;
+            func = iterationsRemaining =>
             {
-                Func<long, Task<long>> func = null;
-                func = iterationsRemaining =>
-                {
-                    --iterationsRemaining;
-                    return iterationsRemaining > 0 ?
-                        Task.Factory.StartNew(() => func(iterationsRemaining)).Unwrap() :
-                        Task.FromResult(iterationsRemaining);
-                };
-                func(DIVE_DEPTH).Wait();
-            }
+                --iterationsRemaining;
+                return iterationsRemaining > 0 ?
+                    Task.Factory.StartNew(() => func(iterationsRemaining)).Unwrap() :
+                    Task.FromResult(iterationsRemaining);
+            };
+            func(DiveDepth).Wait();
+        }
 
-            // These tests will have stack overflowed if they failed.
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/coreclr/pull/23152")]
+        public static void LongContinuationChain_Await_DoesNotStackOverflow()
+        {
+            const int DiveDepth = 12_000;
+
+            Func<int, Task<int>> func = null;
+            func = async count =>
+            {
+                return ++count < DiveDepth ?
+                    await await Task.Factory.StartNew(() => func(count), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default) :
+                    count;
+            };
+            func(0).Wait();
         }
 
         [Theory]

@@ -1892,11 +1892,11 @@ namespace System.Xml.Serialization
             {
                 if (name.Name == Soap.Array && name.Namespace == Soap.Encoding)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInvalidEncoding, name.ToString()));
+                    throw new InvalidOperationException(SR.Format(SR.XmlInvalidEncoding, name));
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlMissingDataType, name.ToString()));
+                    throw new InvalidOperationException(SR.Format(SR.XmlMissingDataType, name));
                 }
             }
         }
@@ -1919,7 +1919,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaElement element = (XmlSchemaElement)Schemas.Find(name, typeof(XmlSchemaElement));
             if (element == null)
-                throw new InvalidOperationException(SR.Format(SR.XmlMissingElement, name.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.XmlMissingElement, name));
             return element;
         }
 

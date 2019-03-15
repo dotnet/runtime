@@ -259,7 +259,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private NotifyCollectionChangedToManagedAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         internal event NotifyCollectionChangedEventHandler CollectionChanged
@@ -299,7 +299,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private NotifyCollectionChangedToWinRTAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         // An instance field typed as EventRegistrationTokenTable is injected into managed classed by the compiler when compiling for /t:winmdobj.
@@ -340,7 +340,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private NotifyPropertyChangedToManagedAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         internal event PropertyChangedEventHandler PropertyChanged
@@ -380,7 +380,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private NotifyPropertyChangedToWinRTAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         // An instance field typed as EventRegistrationTokenTable is injected into managed classed by the compiler when compiling for /t:winmdobj.
@@ -425,7 +425,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private ICommandToManagedAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         private event EventHandler CanExecuteChanged
@@ -486,7 +486,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private ICommandToWinRTAdapter()
         {
-            Debug.Assert(false, "This class is never instantiated");
+            Debug.Fail("This class is never instantiated");
         }
 
         // An instance field typed as EventRegistrationTokenTable is injected into managed classed by the compiler when compiling for /t:winmdobj.

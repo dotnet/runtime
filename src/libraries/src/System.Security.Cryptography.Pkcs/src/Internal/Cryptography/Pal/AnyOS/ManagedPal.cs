@@ -48,7 +48,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             // Certificates are DER encoded.
             AsnReader reader = new AsnReader(extension.RawData, AsnEncodingRules.DER);
 
-            if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
+            if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
             {
                 reader.ThrowIfNotEmpty();
                 return contents.ToArray();
@@ -115,7 +115,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 AsnReader reader = new AsnReader(contentEncryptionAlgorithm.Parameters.Value, AsnEncodingRules.BER);
 
-                if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveBytes))
+                if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveBytes))
                 {
                     alg.IV = primitiveBytes.ToArray();
                 }

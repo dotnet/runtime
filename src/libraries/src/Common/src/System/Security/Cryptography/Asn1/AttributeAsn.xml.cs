@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -26,7 +30,7 @@ namespace System.Security.Cryptography.Asn1
             writer.PushSetOf();
             for (int i = 0; i < AttrValues.Length; i++)
             {
-                writer.WriteEncodedValue(AttrValues[i]); 
+                writer.WriteEncodedValue(AttrValues[i].Span); 
             }
             writer.PopSetOf();
 
@@ -74,7 +78,7 @@ namespace System.Security.Cryptography.Asn1
 
                 while (collectionReader.HasData)
                 {
-                    tmpItem = collectionReader.GetEncodedValue(); 
+                    tmpItem = collectionReader.ReadEncodedValue(); 
                     tmpList.Add(tmpItem);
                 }
 

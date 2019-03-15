@@ -48,11 +48,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
-            
-            sb.Append(string.Format("\n\tExportFactory of: {0}", ProductImportDefinition.ToString()));
-            
-            return sb.ToString();
+            return "\n\tExportFactory of: " + ProductImportDefinition.ToString();
         }
 
     }

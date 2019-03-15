@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Net.Http.Headers;
 
 namespace System.Net.Http
@@ -31,7 +30,6 @@ namespace System.Net.Http
             {
                 throw new ArgumentNullException(nameof(content));
             }
-            Contract.EndContractBlock();
 
             if (content.Headers.ContentDisposition == null)
             {
@@ -51,7 +49,6 @@ namespace System.Net.Http
             {
                 throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
             }
-            Contract.EndContractBlock();
 
             AddInternal(content, name, null);
         }
@@ -70,7 +67,6 @@ namespace System.Net.Http
             {
                 throw new ArgumentException(SR.net_http_argument_empty_string, nameof(fileName));
             }
-            Contract.EndContractBlock();
 
             AddInternal(content, name, fileName);
         }

@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (!skipCopy)
             {
-                reader = new AsnReader(reader.GetEncodedValue().ToArray(), AsnEncodingRules.BER);
+                reader = new AsnReader(reader.ReadEncodedValue().ToArray(), AsnEncodingRules.BER);
             }
 
             int localRead = reader.PeekEncodedValue().Length;

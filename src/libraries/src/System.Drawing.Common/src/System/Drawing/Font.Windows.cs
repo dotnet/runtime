@@ -277,7 +277,7 @@ namespace System.Drawing
             // Special case this incredibly common error message to give more information
             if (status == Gdip.NotTrueTypeFont)
             {
-                throw new ArgumentException(SR.Format(SR.GdiplusNotTrueTypeFont_NoName));
+                throw new ArgumentException(SR.GdiplusNotTrueTypeFont_NoName);
             }
             else if (status != Gdip.Ok)
             {
@@ -307,7 +307,7 @@ namespace System.Drawing
             // Special case this incredibly common error message to give more information
             if (status == Gdip.NotTrueTypeFont)
             {
-                throw new ArgumentException(SR.Format(SR.GdiplusNotTrueTypeFont_NoName));
+                throw new ArgumentException(SR.GdiplusNotTrueTypeFont_NoName);
             }
             else if (status != Gdip.Ok)
             {
