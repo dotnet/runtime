@@ -5,6 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Config.Test.Common/Microsoft.Extensions.Configuration.Test.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Configuration.Binder" />
+    <Reference Include="Microsoft.Extensions.Configuration.CommandLine" />
+    <Reference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
     <Reference Include="Microsoft.Extensions.Configuration.Ini" />
     <Reference Include="Microsoft.Extensions.Configuration.Json" />
     <Reference Include="Microsoft.Extensions.Configuration.Xml" />
