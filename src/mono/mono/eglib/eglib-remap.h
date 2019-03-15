@@ -139,6 +139,7 @@
 #define g_async_safe_vprintf monoeg_g_async_safe_vprintf
 #define g_print monoeg_g_print
 #define g_printf monoeg_g_printf
+#define g_printv monoeg_g_printv
 #define g_printerr monoeg_g_printerr
 #define g_propagate_error monoeg_g_propagate_error
 #define g_ptr_array_add monoeg_g_ptr_array_add
@@ -286,6 +287,7 @@
 #define g_strdup monoeg_strdup
 #define g_ucs4_to_utf16_len monoeg_ucs4_to_utf16_len
 #define g_utf16_to_ucs4_len monoeg_utf16_to_ucs4_len
+#define g_utf16_len monoeg_utf16_len
 
 #define g_ascii_strcasecmp monoeg_ascii_strcasecmp
 #define g_ascii_strup monoeg_ascii_strup
