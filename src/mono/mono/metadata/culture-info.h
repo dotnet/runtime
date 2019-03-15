@@ -53,6 +53,7 @@ typedef struct {
 } DateTimeFormatEntry;
 
 typedef struct {
+	// 12x ushort -- 6 ints
 	const stridx_t currency_decimal_separator;
 	const stridx_t currency_group_separator;
 	const stridx_t number_decimal_separator;
@@ -68,6 +69,8 @@ typedef struct {
 	const stridx_t negative_sign;
 	const stridx_t positive_sign;
 
+	// 7x gint8 -- FIXME expand to 8, or sort by size.
+	// For this reason, copy the data to a simpler "managed" form.
 	const gint8 currency_negative_pattern;
 	const gint8 currency_positive_pattern;
 	const gint8 percent_negative_pattern;
@@ -77,9 +80,40 @@ typedef struct {
 	const gint8 currency_decimal_digits;
 	const gint8 number_decimal_digits;
 
-	const gint currency_group_sizes [GROUP_SIZE];
-	const gint number_group_sizes [GROUP_SIZE];	
+	const gint currency_group_sizes [2];
+	const gint number_group_sizes [2];
 } NumberFormatEntry;
+
+// Due to the questionable layout of NumberFormatEntry, in particular
+// 7x byte, make something more guaranteed to match between native and managed.
+// mono/metadta/culture-info.h NumberFormatEntryManaged must match
+// mcs/class/corlib/ReferenceSources/CultureData.cs NumberFormatEntryManaged.
+// This is sorted alphabetically.
+struct NumberFormatEntryManaged {
+	gint32 currency_decimal_digits;
+	gint32 currency_decimal_separator;
+	gint32 currency_group_separator;
+	gint32 currency_group_sizes0;
+	gint32 currency_group_sizes1;
+	gint32 currency_negative_pattern;
+	gint32 currency_positive_pattern;
+	gint32 currency_symbol;
+	gint32 nan_symbol;
+	gint32 negative_infinity_symbol;
+	gint32 negative_sign;
+	gint32 number_decimal_digits;
+	gint32 number_decimal_separator;
+	gint32 number_group_separator;
+	gint32 number_group_sizes0;
+	gint32 number_group_sizes1;
+	gint32 number_negative_pattern;
+	gint32 per_mille_symbol;
+	gint32 percent_negative_pattern;
+	gint32 percent_positive_pattern;
+	gint32 percent_symbol;
+	gint32 positive_infinity_symbol;
+	gint32 positive_sign;
+};
 
 typedef struct {
 	const gint ansi;

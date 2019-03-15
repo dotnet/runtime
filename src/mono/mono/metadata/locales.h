@@ -34,14 +34,17 @@ MonoBoolean ves_icall_System_Globalization_CalendarData_fill_calendar_data (Mono
 ICALL_EXPORT
 void ves_icall_System_Globalization_CultureData_fill_culture_data (MonoCultureData *this_obj, gint32 datetime_index);
 
+typedef struct NumberFormatEntryManaged NumberFormatEntryManaged;
+
 ICALL_EXPORT
-void ves_icall_System_Globalization_CultureData_fill_number_data (MonoNumberFormatInfo* number, gint32 number_index);
+gconstpointer
+ves_icall_System_Globalization_CultureData_fill_number_data (gint32 number_index, NumberFormatEntryManaged *managed);
 
 ICALL_EXPORT
 void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this_obj, MonoString *locale);
 
 ICALL_EXPORT
-MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this_obj, gint lcid);
+MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this_obj, gint32 lcid);
 
 ICALL_EXPORT
 MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfo *this_obj, MonoString *name);
@@ -52,7 +55,7 @@ MonoArray *ves_icall_System_Globalization_CultureInfo_internal_get_cultures (Mon
 ICALL_EXPORT
 void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale);
 
-ICALL_EXPORT int
+ICALL_EXPORT gint32
 ves_icall_System_Globalization_CompareInfo_internal_compare (const gunichar2 *str1, gint32 len1,
 	const gunichar2 *str2, gint32 len2, gint32 options);
 
@@ -64,9 +67,9 @@ MonoBoolean
 ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (MonoRegionInfo *this_obj,
  MonoString *name);
 
-ICALL_EXPORT int
+ICALL_EXPORT gint32
 ves_icall_System_Globalization_CompareInfo_internal_index (const gunichar2 *source, gint32 sindex,
-	gint32 count, const gunichar2 *value, int value_length, MonoBoolean first);
+	gint32 count, const gunichar2 *value, gint32 value_length, MonoBoolean first);
 
 #define MONO_LOCALE_INVARIANT (0x007F)
 
