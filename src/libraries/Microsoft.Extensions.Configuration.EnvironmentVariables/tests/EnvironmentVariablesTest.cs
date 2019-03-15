@@ -3,6 +3,9 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.Test;
 using Xunit;
 
@@ -148,6 +151,41 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
             Assert.Equal("connection", envConfigSrc.Get("data:ConnectionString"));
             Assert.Equal("System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:_db1_ProviderName"));
+        }
+
+        [Fact]
+        public void BindingDoesNotThrowIfReloadedDuringBinding()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Number", "-2"},
+                {"Text", "Foo"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            configurationBuilder.AddEnvironmentVariables();
+            var config = configurationBuilder.Build();
+
+            MyOptions options = null;
+
+            using (var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250)))
+            {
+                _ = Task.Run(() => { while (!cts.IsCancellationRequested) config.Reload(); });
+
+                while (!cts.IsCancellationRequested)
+                {
+                    options = config.Get<MyOptions>();
+                }
+            }
+
+            Assert.Equal(-2, options.Number);
+            Assert.Equal("Foo", options.Text);
+        }
+
+        private sealed class MyOptions
+        {
+            public int Number { get; set; }
+            public string Text { get; set; }
         }
     }
 }
