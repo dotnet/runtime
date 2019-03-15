@@ -11,16 +11,27 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 {
     public class DependencyContextJsonReaderTest
     {
-        private DependencyContext Read(string text)
+        // Same as the default for StreamWriter
+        private static readonly Encoding s_utf8NoPreamble =
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        private DependencyContext Read(string text, bool withPreamble = false)
         {
-            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(text)))
+            using (var stream = new MemoryStream(Encoding.UTF8.GetMaxByteCount(text.Length)))
+            using (var writer = new StreamWriter(stream, withPreamble ? Encoding.UTF8 : s_utf8NoPreamble))
             {
+                writer.Write(text);
+                writer.Flush();
+                stream.Seek(0, SeekOrigin.Begin);
+
                 return new DependencyContextJsonReader().Read(stream);
             }
         }
 
-        [Fact]
-        public void ReadsRuntimeTargetInfo()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ReadsRuntimeTargetInfo(bool withPreamble)
         {
             var context = Read(
 @"{
@@ -31,7 +42,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     ""targets"": {
         "".NETCoreApp,Version=v1.0/osx.10.10-x64"": {}
     }
-}");
+}",
+                withPreamble);
+
             context.Target.IsPortable.Should().BeFalse();
             context.Target.Framework.Should().Be(".NETCoreApp,Version=v1.0");
             context.Target.Runtime.Should().Be("osx.10.10-x64");
