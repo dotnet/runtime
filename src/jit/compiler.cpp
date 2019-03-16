@@ -2523,8 +2523,8 @@ void Compiler::compSetProcessor()
 #if defined(_TARGET_ARM64_)
     // There is no JitFlag for Base instructions handle manually
     opts.setSupportedISA(InstructionSet_Base);
-#define HARDWARE_INTRINSIC_CLASS(flag, isa)                                                                            \
-    if (jitFlags.IsSet(JitFlags::flag))                                                                                \
+#define HARDWARE_INTRINSIC_CLASS(flag, jit_config, isa)                                                                \
+    if (jitFlags.IsSet(JitFlags::flag) && JitConfig.jit_config())                                                      \
         opts.setSupportedISA(InstructionSet_##isa);
 #include "hwintrinsiclistArm64.h"
 
