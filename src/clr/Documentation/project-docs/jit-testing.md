@@ -25,7 +25,7 @@ all OS platforms.
 TBD).
 5. Tests in CI can be run on private changes (currently tied to PRs; this may
 be sufficient).
-6. Test strategy harmonious with other .Net repo test strategies.
+6. Test strategy harmonious with other .NET repo test strategies.
 7. Test harness behaves reasonably on test failure. Easy to get at repro steps 
 for subsequent debugging.
 8. Tests must allow fine-grained inspection of JIT outputs, for instance
@@ -58,7 +58,7 @@ formatting).
 2. Some have deep desktop CLR dependence (testing a desktop CLR feature that
 is not present in CoreCLR).
 3. Some require tools not yet available in CoreCLR (ilasm in particular).
-4. Some test windows features and won’t be relevant to other OS platforms.
+4. Some test windows features and won't be relevant to other OS platforms.
 5. Some tests may not be able to be freely redistributed.
 
 We have done an internal inventory and identified roughly 1000 tests that
@@ -68,7 +68,7 @@ moving these.
 ### Test script capabilities
 
 We need to ensure that the CoreCLR repo contains a suitably
-hookable test script. Core testing is driven by xunit but there’s typically a
+hookable test script. Core testing is driven by xunit but there's typically a
 wrapper around this (runtest.cmd today) to facilitate test execution. 
 
 The proposal is to implement platform-neutral variant of runtest.cmd that

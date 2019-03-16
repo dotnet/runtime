@@ -437,7 +437,7 @@ def do_pmi_diffs():
 
     # Download .NET CLI
 
-    log('Downloading .Net CLI')
+    log('Downloading .NET CLI')
 
     dotnetcliUrl = ""
     dotnetcliFilename = ""
@@ -469,12 +469,12 @@ def do_pmi_diffs():
         urlretrieve(dotnetcliUrl, dotnetcliFilename)
 
         if not os.path.isfile(dotnetcliFilename):
-            log('ERROR: Did not download .Net CLI')
+            log('ERROR: Did not download .NET CLI')
             return 1
 
-    # Install .Net CLI
+    # Install .NET CLI
 
-    log('Unpacking .Net CLI')
+    log('Unpacking .NET CLI')
 
     if not testing:
         if Is_windows:
@@ -486,7 +486,7 @@ def do_pmi_diffs():
             tar.close()
 
         if not os.path.isfile(os.path.join(dotnetcliPath, dotnet_tool)):
-            log('ERROR: did not extract .Net CLI from download')
+            log('ERROR: did not extract .NET CLI from download')
             return 1
 
     # Add dotnet CLI to PATH we'll use to spawn processes.

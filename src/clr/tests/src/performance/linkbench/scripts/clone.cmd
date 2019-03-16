@@ -17,7 +17,7 @@ popd
 exit /b %EXITCODE%
 
 :DotNet
-REM We clone different versions of .Net CLI in order to cope with 
+REM We clone different versions of .NET CLI in order to cope with 
 REM different runtimes that the benchmarks target, and certain limitations 
 REM in the ILLink/CLI integration and packaging.
 REM
