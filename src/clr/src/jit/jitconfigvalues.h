@@ -253,6 +253,35 @@ CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT
 // Enable AVX instruction set for wide operations as default
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
 #endif                                                       // !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+
+// clang-format off
+
+#if defined(_TARGET_ARM64_)
+CONFIG_INTEGER(EnableArm64Aes      , W("EnableArm64Aes"), 1)
+CONFIG_INTEGER(EnableArm64Atomics  , W("EnableArm64Atomics"), 1)
+CONFIG_INTEGER(EnableArm64Crc32    , W("EnableArm64Crc32"), 1)
+CONFIG_INTEGER(EnableArm64Dcpop    , W("EnableArm64Dcpop"), 1)
+CONFIG_INTEGER(EnableArm64Dp       , W("EnableArm64Dp"), 1)
+CONFIG_INTEGER(EnableArm64Fcma     , W("EnableArm64Fcma"), 1)
+CONFIG_INTEGER(EnableArm64Fp       , W("EnableArm64Fp"), 1)
+CONFIG_INTEGER(EnableArm64Fp16     , W("EnableArm64Fp16"), 1)
+CONFIG_INTEGER(EnableArm64Jscvt    , W("EnableArm64Jscvt"), 1)
+CONFIG_INTEGER(EnableArm64Lrcpc    , W("EnableArm64Lrcpc"), 1)
+CONFIG_INTEGER(EnableArm64Pmull    , W("EnableArm64Pmull"), 1)
+CONFIG_INTEGER(EnableArm64Sha1     , W("EnableArm64Sha1"), 1)
+CONFIG_INTEGER(EnableArm64Sha256   , W("EnableArm64Sha256"), 1)
+CONFIG_INTEGER(EnableArm64Sha512   , W("EnableArm64Sha512"), 1)
+CONFIG_INTEGER(EnableArm64Sha3     , W("EnableArm64Sha3"), 1)
+CONFIG_INTEGER(EnableArm64Simd     , W("EnableArm64Simd"), 1)
+CONFIG_INTEGER(EnableArm64Simd_v81 , W("EnableArm64Simd_v81"), 1)
+CONFIG_INTEGER(EnableArm64Simd_fp16, W("EnableArm64Simd_fp16"), 1)
+CONFIG_INTEGER(EnableArm64Sm3      , W("EnableArm64Sm3"), 1)
+CONFIG_INTEGER(EnableArm64Sm4      , W("EnableArm64Sm4"), 1)
+CONFIG_INTEGER(EnableArm64Sve      , W("EnableArm64Sve"), 1)
+#endif // defined(_TARGET_ARM64_)
+
+// clang-format on
+
 ///
 /// JIT
 ///
