@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include "comhost.h"
+#include <cstring>
 #include <trace.h>
 #include <utils.h>
 #include <error_codes.h>
@@ -16,15 +17,25 @@ namespace
 {
     HRESULT string_to_clsid(_In_ const pal::string_t &str, _Out_ CLSID &clsid)
     {
-        // If the first character of the GUID is not '{' then COM will
-        // attempt to look up the string in the CLSID table.
-        if (str[0] == _X('{'))
+        pal::char_t guid_buf[] = _X("{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}");
+        const pal::char_t *guid_maybe = str.data();
+
+        // If the first character of the GUID is not '{' COM will
+        // interpret the string as a ProgID. The COM host doesn't
+        // support ProgIDs so coerce strings into GUID format.
+        // The buffer size is minus 2 to account for null and first '{'.
+        if (str[0] != _X('{')
+            && str.size() < ((sizeof(guid_buf) / sizeof(pal::char_t)) - 2))
         {
-            if (SUCCEEDED(::CLSIDFromString(str.data(), &clsid)))
-                return S_OK;
+            // Increment the output buffer 1 to skip over the '{'.
+            std::memcpy(guid_buf + 1, str.data(), str.size() * sizeof(pal::char_t));
+            guid_maybe = guid_buf;
         }
 
-        return __HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+        if (FAILED(::CLSIDFromString(guid_maybe, &clsid)))
+            return __HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+
+        return S_OK;
     }
 
     clsid_map parse_stream(_Inout_ pal::istream_t &json_map_raw)
@@ -55,6 +66,7 @@ namespace
             if (FAILED(hr))
             {
                 assert(false && "Invalid CLSID");
+                trace::error(_X("Invalid CLSID format in .clsidmap"));
                 continue;
             }
 
