@@ -460,6 +460,12 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
+    public sealed class SocketsHttpHandler_HttpClientHandler_TrailingHeaders_Test : HttpClientHandlerTest_TrailingHeaders_Test
+    {
+        // PlatformHandlers don't support trailers.
+        protected override bool UseSocketsHttpHandler => true;
+    }
+
     public sealed class SocketsHttpHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
     {
         public SocketsHttpHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
