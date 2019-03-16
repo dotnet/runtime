@@ -2839,6 +2839,7 @@ MethodTable *AppDomain::LoadCOMClass(GUID clsid,
                                      BOOL* pfAssemblyInReg/*=NULL*/)
 {
     // @CORESYSTODO: what to do here?
+    // If implemented, this should handle checking that the type actually has the requested CLSID
     return NULL;
 }
 
