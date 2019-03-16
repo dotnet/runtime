@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Win32;
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -41,6 +42,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 return;
+            }
+
+            // Long paths must also be enabled via a machine-wide setting. Only run the test if it is enabled.
+            using (RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\FileSystem"))
+            {
+                if (key == null)
+                {
+                    return;
+                }
+
+                object longPathsSetting = key.GetValue("LongPathsEnabled", null);
+                if (longPathsSetting == null || !(longPathsSetting is int) || (int)longPathsSetting == 0)
+                {
+                    return;
+                }
             }
 
             var fixture = sharedTestState.PortableAppWithLongPathFixture
