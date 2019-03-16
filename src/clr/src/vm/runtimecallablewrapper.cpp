@@ -491,27 +491,6 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     else
     {
         // No server name is specified so we use CLSCTX_SERVER.
-
-#ifdef FEATURE_CLASSIC_COMINTEROP
-        // If the CLSID is hosted by the CLR itself, then we do not want to go through the COM registration
-        // entries, as this will trigger our COM activation code that may not activate against this runtime.
-        // In this scenario, we want to get the address of the DllGetClassObject method on this CLR or a DLL
-        // that lives in the same directory as the CLR and use it directly. The code falls back to
-        // CoGetClassObject if we fail on the call to DllGetClassObject, but it might be better to fail outright.
-        if (Clr::Util::Com::CLSIDHasMscoreeAsInprocServer32(m_rclsid))
-        {
-            typedef HRESULT (STDMETHODCALLTYPE *PDllGetClassObject)(REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv); 
-
-            StackSString ssServer;
-            if (FAILED(Clr::Util::Com::FindServerUsingCLSID(m_rclsid, ssServer)))
-            {
-            }
-            else
-            {   
-            }
-        }
-#endif // FEATURE_CLASSIC_COMINTEROP
-
         if (pClassFactory == NULL)
             hr = CoGetClassObject(m_rclsid, CLSCTX_SERVER, NULL, IID_IClassFactory, (void**)&pClassFactory);
     }
