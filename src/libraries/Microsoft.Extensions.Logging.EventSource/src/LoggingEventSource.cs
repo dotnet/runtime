@@ -1,10 +1,11 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 
@@ -74,13 +75,13 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// }
     /// </summary>
     [EventSource(Name = "Microsoft-Extensions-Logging")]
-    internal class LoggingEventSource : System.Diagnostics.Tracing.EventSource
+    public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
     {
         /// <summary>
         /// This is public from an EventSource consumer point of view, but since these defintions
         /// are not needed outside this class
         /// </summary>
-        public class Keywords
+        public static class Keywords
         {
             /// <summary>
             /// Meta events are evnets about the LoggingEventSource itself (that is they did not come from ILogger
@@ -105,12 +106,14 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// </summary>
         internal static readonly LoggingEventSource Instance = new LoggingEventSource();
 
-        private LoggerFilterRule[] _filterSpec;
+        // It's important to have _filterSpec initialization here rather than in ctor
+        // base ctor might call OnEventCommand and set filter spec
+        // having assingment in ctor would overwrite the value
+        private LoggerFilterRule[] _filterSpec = new LoggerFilterRule[0];
         private CancellationTokenSource _cancellationTokenSource;
 
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
-            _filterSpec = new LoggerFilterRule[0];
         }
 
         /// <summary>
@@ -118,9 +121,27 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// This only gives you the human reasable formatted message.
         /// </summary>
         [Event(1, Keywords = Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
-        internal void FormattedMessage(LogLevel Level, int FactoryID, string LoggerName, string EventId, string FormattedMessage)
+        internal unsafe void FormattedMessage(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, string FormattedMessage)
         {
-            WriteEvent(1, Level, FactoryID, LoggerName, EventId, FormattedMessage);
+            if (IsEnabled())
+            {
+                fixed (char* loggerName = LoggerName)
+                fixed (char* eventName = EventName)
+                fixed (char* formattedMessage = FormattedMessage)
+                {
+                    const int eventDataCount = 6;
+                    var eventData = stackalloc EventData[eventDataCount];
+
+                    SetEventData(ref eventData[0], ref Level);
+                    SetEventData(ref eventData[1], ref FactoryID);
+                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                    SetEventData(ref eventData[3], ref EventId);
+                    SetEventData(ref eventData[4], ref EventName, eventName);
+                    SetEventData(ref eventData[5], ref FormattedMessage, formattedMessage);
+
+                    WriteEventCore(1, eventDataCount, eventData);
+                }
+            }
         }
 
         /// <summary>
@@ -128,9 +149,12 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// This gives you the logged information in a programatic format (arguments are key-value pairs)
         /// </summary>
         [Event(2, Keywords = Keywords.Message, Level = EventLevel.LogAlways)]
-        internal void Message(LogLevel Level, int FactoryID, string LoggerName, string EventId, ExceptionInfo Exception, IEnumerable<KeyValuePair<string, string>> Arguments)
+        internal void Message(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, ExceptionInfo Exception, IEnumerable<KeyValuePair<string, string>> Arguments)
         {
-            WriteEvent(2, Level, FactoryID, LoggerName, EventId, Exception, Arguments);
+            if (IsEnabled())
+            {
+                WriteEvent(2, Level, FactoryID, LoggerName, EventId, EventName, Exception, Arguments);
+            }
         }
 
         /// <summary>
@@ -139,31 +163,95 @@ namespace Microsoft.Extensions.Logging.EventSource
         [Event(3, Keywords = Keywords.Message | Keywords.FormattedMessage, Level = EventLevel.LogAlways, ActivityOptions = EventActivityOptions.Recursive)]
         internal void ActivityStart(int ID, int FactoryID, string LoggerName, IEnumerable<KeyValuePair<string, string>> Arguments)
         {
-            WriteEvent(3, ID, FactoryID, LoggerName, Arguments);
+            if (IsEnabled())
+            {
+                WriteEvent(3, ID, FactoryID, LoggerName, Arguments);
+            }
         }
 
         [Event(4, Keywords = Keywords.Message | Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
-        internal void ActivityStop(int ID, int FactoryID, string LoggerName)
+        internal unsafe void ActivityStop(int ID, int FactoryID, string LoggerName)
         {
-            WriteEvent(4, ID, FactoryID, LoggerName);
+            if (IsEnabled())
+            {
+                fixed (char* loggerName = LoggerName)
+                {
+                    const int eventDataCount = 3;
+                    var eventData = stackalloc EventData[eventDataCount];
+
+                    SetEventData(ref eventData[0], ref ID);
+                    SetEventData(ref eventData[1], ref FactoryID);
+                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
+
+                    WriteEventCore(4, eventDataCount, eventData);
+                }
+            }
         }
 
         [Event(5, Keywords = Keywords.JsonMessage, Level = EventLevel.LogAlways)]
-        internal void MessageJson(LogLevel Level, int FactoryID, string LoggerName, string EventId, string ExceptionJson, string ArgumentsJson)
+        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, string ExceptionJson, string ArgumentsJson)
         {
-            WriteEvent(5, Level, FactoryID, LoggerName, EventId, ExceptionJson, ArgumentsJson);
+            if (IsEnabled())
+            {
+                fixed (char* loggerName = LoggerName)
+                fixed (char* eventName = EventName)
+                fixed (char* exceptionJson = ExceptionJson)
+                fixed (char* argumentsJson = ArgumentsJson)
+                {
+                    const int eventDataCount = 7;
+                    var eventData = stackalloc EventData[eventDataCount];
+
+                    SetEventData(ref eventData[0], ref Level);
+                    SetEventData(ref eventData[1], ref FactoryID);
+                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                    SetEventData(ref eventData[3], ref EventId);
+                    SetEventData(ref eventData[4], ref EventName, eventName);
+                    SetEventData(ref eventData[5], ref ExceptionJson, exceptionJson);
+                    SetEventData(ref eventData[6], ref ArgumentsJson, argumentsJson);
+
+                    WriteEventCore(5, eventDataCount, eventData);
+                }
+            }
         }
 
         [Event(6, Keywords = Keywords.JsonMessage | Keywords.FormattedMessage, Level = EventLevel.LogAlways, ActivityOptions = EventActivityOptions.Recursive)]
-        internal void ActivityJsonStart(int ID, int FactoryID, string LoggerName, string ArgumentsJson)
+        internal unsafe void ActivityJsonStart(int ID, int FactoryID, string LoggerName, string ArgumentsJson)
         {
-            WriteEvent(6, ID, FactoryID, LoggerName, ArgumentsJson);
+            if (IsEnabled())
+            {
+                fixed (char* loggerName = LoggerName)
+                fixed (char* argumentsJson = ArgumentsJson)
+                {
+                    const int eventDataCount = 4;
+                    var eventData = stackalloc EventData[eventDataCount];
+
+                    SetEventData(ref eventData[0], ref ID);
+                    SetEventData(ref eventData[1], ref FactoryID);
+                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                    SetEventData(ref eventData[3], ref ArgumentsJson, argumentsJson);
+
+                    WriteEventCore(6, eventDataCount, eventData);
+                }
+            }
         }
 
         [Event(7, Keywords = Keywords.JsonMessage | Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
-        internal void ActivityJsonStop(int ID, int FactoryID, string LoggerName)
+        internal unsafe void ActivityJsonStop(int ID, int FactoryID, string LoggerName)
         {
-            WriteEvent(7, ID, FactoryID, LoggerName);
+            if (IsEnabled())
+            {
+                fixed (char* loggerName = LoggerName)
+                {
+                    const int eventDataCount = 3;
+                    var eventData = stackalloc EventData[eventDataCount];
+
+                    SetEventData(ref eventData[0], ref ID);
+                    SetEventData(ref eventData[1], ref FactoryID);
+                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
+
+                    WriteEventCore(7, eventDataCount, eventData);
+                }
+            }
         }
 
         /// <inheritdoc />
@@ -207,7 +295,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         private void FireChangeToken()
         {
             var tcs = Interlocked.Exchange(ref _cancellationTokenSource, null);
-            tcs.Cancel();
+            tcs?.Cancel();
         }
 
          /// <summary>
@@ -222,7 +310,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// The first specification that 'loggers' Name matches is used.
         /// </summary>
         [NonEvent]
-        public static LoggerFilterRule[] ParseFilterSpec(string filterSpec, LogLevel defaultLevel)
+        private static LoggerFilterRule[] ParseFilterSpec(string filterSpec, LogLevel defaultLevel)
         {
             if (filterSpec == string.Empty)
             {
@@ -350,9 +438,41 @@ namespace Microsoft.Extensions.Logging.EventSource
         }
 
         [NonEvent]
-        public LoggerFilterRule[] GetFilterRules()
+        internal LoggerFilterRule[] GetFilterRules()
         {
             return _filterSpec;
+        }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void SetEventData<T>(ref EventData eventData, ref T value, void* pinnedString = null)
+        {
+            if (typeof(T) == typeof(string))
+            {
+                var str = value as string;
+#if DEBUG
+                fixed (char* rePinnedString = str)
+                {
+                    Debug.Assert(pinnedString == rePinnedString);
+                }
+#endif
+
+                if (pinnedString != null)
+                {
+                    eventData.DataPointer = (IntPtr)pinnedString;
+                    eventData.Size = checked((str.Length + 1) * sizeof(char)); // size is specified in bytes, including null wide char
+                }
+                else
+                {
+                    eventData.DataPointer = IntPtr.Zero;
+                    eventData.Size = 0;
+                }
+            }
+            else
+            {
+                eventData.DataPointer = (IntPtr)Unsafe.AsPointer(ref value);
+                eventData.Size = Unsafe.SizeOf<T>();
+            }
         }
     }
 }

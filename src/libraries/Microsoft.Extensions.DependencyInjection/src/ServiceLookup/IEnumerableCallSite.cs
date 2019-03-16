@@ -6,19 +6,19 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class IEnumerableCallSite : IServiceCallSite
+    internal class IEnumerableCallSite : ServiceCallSite
     {
         internal Type ItemType { get; }
-        internal IServiceCallSite[] ServiceCallSites { get; }
+        internal ServiceCallSite[] ServiceCallSites { get; }
 
-        public IEnumerableCallSite(Type itemType, IServiceCallSite[] serviceCallSites)
+        public IEnumerableCallSite(ResultCache cache, Type itemType, ServiceCallSite[] serviceCallSites) : base(cache)
         {
             ItemType = itemType;
             ServiceCallSites = serviceCallSites;
         }
 
-        public Type ServiceType => typeof(IEnumerable<>).MakeGenericType(ItemType);
-        public Type ImplementationType  => ItemType.MakeArrayType();
-        public CallSiteKind Kind { get; } = CallSiteKind.IEnumerable;
+        public override Type ServiceType => typeof(IEnumerable<>).MakeGenericType(ItemType);
+        public override Type ImplementationType  => ItemType.MakeArrayType();
+        public override CallSiteKind Kind { get; } = CallSiteKind.IEnumerable;
     }
 }

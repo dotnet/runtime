@@ -3,7 +3,12 @@
   <PropertyGroup>
     <Description>Extension methods for configuring file-based configuration providers for Microsoft.Extensions.Configuration.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Configuration.FileExtensions.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.Configuration" />

@@ -1,13 +1,19 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using Microsoft.Extensions.FileProviders;
 
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
     /// Provides information about the hosting environment an application is running in.
+    /// <para>
+    ///  This type is obsolete and will be removed in a future version.
+    ///  The recommended alternative is Microsoft.Extensions.Hosting.IHostEnvironment.
+    /// </para>
     /// </summary>
+    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.IHostEnvironment.", error: false)]
     public interface IHostingEnvironment
     {
         /// <summary>

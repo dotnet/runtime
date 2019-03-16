@@ -3,6 +3,7 @@
   <PropertyGroup>
     <Description>Configuration support for Microsoft.Extensions.Logging.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>

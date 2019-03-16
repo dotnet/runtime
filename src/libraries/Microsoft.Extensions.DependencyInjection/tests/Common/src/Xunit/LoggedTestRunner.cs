@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Testing.xunit;
-using Microsoft.Extensions.Logging.Testing;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -51,9 +50,11 @@ namespace Microsoft.Extensions.Logging.Testing
         private async Task<decimal> InvokeTestMethodAsync(ExceptionAggregator aggregator, ITestOutputHelper output)
         {
             var retryAttribute = GetRetryAttribute(TestMethod);
+            var collectDump = TestMethod.GetCustomAttribute<CollectDumpAttribute>() != null;
+
             if (!typeof(LoggedTestBase).IsAssignableFrom(TestClass) || retryAttribute == null)
             {
-                return await new LoggedTestInvoker(Test, MessageBus, TestClass, ConstructorArguments, TestMethod, TestMethodArguments, BeforeAfterAttributes, aggregator, CancellationTokenSource, output, null).RunAsync();
+                return await new LoggedTestInvoker(Test, MessageBus, TestClass, ConstructorArguments, TestMethod, TestMethodArguments, BeforeAfterAttributes, aggregator, CancellationTokenSource, output, null, collectDump).RunAsync();
             }
 
             var retryPredicateMethodName = retryAttribute.RetryPredicateName;
@@ -76,7 +77,7 @@ namespace Microsoft.Extensions.Logging.Testing
             };
 
             var retryAggregator = new ExceptionAggregator();
-            var loggedTestInvoker = new LoggedTestInvoker(Test, MessageBus, TestClass, ConstructorArguments, TestMethod, TestMethodArguments, BeforeAfterAttributes, retryAggregator, CancellationTokenSource, output, retryContext);
+            var loggedTestInvoker = new LoggedTestInvoker(Test, MessageBus, TestClass, ConstructorArguments, TestMethod, TestMethodArguments, BeforeAfterAttributes, retryAggregator, CancellationTokenSource, output, retryContext, collectDump);
             var totalTime = 0.0M;
 
             do
@@ -95,7 +96,6 @@ namespace Microsoft.Extensions.Logging.Testing
             aggregator.Aggregate(retryAggregator);
             return totalTime;
         }
-
 
         private RetryTestAttribute GetRetryAttribute(MethodInfo methodInfo)
         {

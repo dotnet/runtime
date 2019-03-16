@@ -573,7 +573,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="descriptor">The <see cref="ServiceDescriptor"/>.</param>
         /// <remarks>
-        /// Use <see cref="TryAddEnumerable(IServiceCollection, ServiceDescriptor)"/> when registing a service implementation of a
+        /// Use <see cref="TryAddEnumerable(IServiceCollection, ServiceDescriptor)"/> when registering a service implementation of a
         /// service type that
         /// supports multiple registrations of the same service type. Using
         /// <see cref="Add(IServiceCollection, ServiceDescriptor)"/> is not idempotent and can add
@@ -624,7 +624,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="descriptors">The <see cref="ServiceDescriptor"/>s.</param>
         /// <remarks>
-        /// Use <see cref="TryAddEnumerable(IServiceCollection, ServiceDescriptor)"/> when registing a service
+        /// Use <see cref="TryAddEnumerable(IServiceCollection, ServiceDescriptor)"/> when registering a service
         /// implementation of a service type that
         /// supports multiple registrations of the same service type. Using
         /// <see cref="Add(IServiceCollection, ServiceDescriptor)"/> is not idempotent and can add

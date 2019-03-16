@@ -1,8 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
-using Microsoft.Extensions.Logging.Debug;
+using Microsoft.Extensions.Logging.Test;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging
@@ -13,7 +12,7 @@ namespace Microsoft.Extensions.Logging
         public void CallingBeginScopeOnLogger_ReturnsNonNullableInstance()
         {
             // Arrange
-            var logger = new DebugLogger("Test");
+            var logger = CreateLogger();
 
             // Act
             var disposable = logger.BeginScope("Scope1");
@@ -26,7 +25,7 @@ namespace Microsoft.Extensions.Logging
         public void CallingLogWithCurlyBracesAfterFormatter_DoesNotThrow()
         {
             // Arrange
-            var logger = new DebugLogger("Test");
+            var logger = CreateLogger();
             var message = "{test string}";
 
             // Act
@@ -37,10 +36,15 @@ namespace Microsoft.Extensions.Logging
         public static void IsEnabledReturnsCorrectValue()
         {
             // Arrange
-            var logger = new DebugLogger("Test");
+            var logger = CreateLogger();
 
             // Assert
             Assert.False(logger.IsEnabled(LogLevel.None));
+        }
+
+        private static ILogger CreateLogger()
+        {
+            return TestLoggerBuilder.Create(builder => builder.AddDebug()).CreateLogger("Test");
         }
     }
 }

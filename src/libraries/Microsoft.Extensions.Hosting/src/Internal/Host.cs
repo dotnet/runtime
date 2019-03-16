@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -13,6 +13,9 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Hosting.Internal
 {
     internal class Host : IHost
+#if DISPOSE_ASYNC
+      , IAsyncDisposable
+#endif
     {
         private readonly ILogger<Host> _logger;
         private readonly IHostLifetime _hostLifetime;
@@ -20,7 +23,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly HostOptions _options;
         private IEnumerable<IHostedService> _hostedServices;
 
-        public Host(IServiceProvider services, IApplicationLifetime applicationLifetime, ILogger<Host> logger,
+        public Host(IServiceProvider services, IHostApplicationLifetime applicationLifetime, ILogger<Host> logger,
             IHostLifetime hostLifetime, IOptions<HostOptions> options)
         {
             Services = services ?? throw new ArgumentNullException(nameof(services));
@@ -47,7 +50,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 await hostedService.StartAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            // Fire IApplicationLifetime.Started
+            // Fire IHostApplicationLifetime.Started
             _applicationLifetime?.NotifyStarted();
 
             _logger.Started();
@@ -61,7 +64,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken))
             {
                 var token = linkedCts.Token;
-                // Trigger IApplicationLifetime.ApplicationStopping
+                // Trigger IHostApplicationLifetime.ApplicationStopping
                 _applicationLifetime?.StopApplication();
 
                 IList<Exception> exceptions = new List<Exception>();
@@ -84,7 +87,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 token.ThrowIfCancellationRequested();
                 await _hostLifetime.StopAsync(token);
 
-                // Fire IApplicationLifetime.Stopped
+                // Fire IHostApplicationLifetime.Stopped
                 _applicationLifetime?.NotifyStopped();
 
                 if (exceptions.Count > 0)
@@ -98,9 +101,29 @@ namespace Microsoft.Extensions.Hosting.Internal
             _logger.Stopped();
         }
 
+#if DISPOSE_ASYNC
+        public void Dispose()
+        {
+            DisposeAsync().GetAwaiter().GetResult();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            switch (Services)
+            {
+                case IAsyncDisposable asyncDisposable:
+                    await asyncDisposable.DisposeAsync();
+                    break;
+                case IDisposable disposable:
+                    disposable.Dispose();
+                    break;
+            }
+        }
+#else
         public void Dispose()
         {
             (Services as IDisposable)?.Dispose();
         }
+#endif
     }
 }

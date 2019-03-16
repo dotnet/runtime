@@ -9,6 +9,7 @@ Microsoft.Extensions.Configuration.IConfigurationBuilder
 Microsoft.Extensions.Configuration.IConfigurationProvider
 Microsoft.Extensions.Configuration.IConfigurationRoot
 Microsoft.Extensions.Configuration.IConfigurationSection</Description>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
