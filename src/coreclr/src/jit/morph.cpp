@@ -7372,6 +7372,12 @@ void Compiler::fgMorphTailCall(GenTreeCall* call, void* pfnCopyArgs)
     if (call->IsVirtualStub())
     {
         GenTree* stubAddrArg = fgGetStubAddrArg(call);
+
+        // We don't need this arg to be in the normal stub register, so
+        // clear out the register assignment.
+        assert(stubAddrArg->gtRegNum == virtualStubParamInfo->GetReg());
+        stubAddrArg->gtRegNum = REG_NA;
+
         // And push the stub address onto the list of arguments
         call->gtCallArgs = gtNewListNode(stubAddrArg, call->gtCallArgs);
     }
@@ -7606,6 +7612,12 @@ void Compiler::fgMorphTailCall(GenTreeCall* call, void* pfnCopyArgs)
     if (call->IsVirtualStub())
     {
         GenTree* stubAddrArg = fgGetStubAddrArg(call);
+
+        // We don't need this arg to be in the normal stub register, so
+        // clear out the register assignment.
+        assert(stubAddrArg->gtRegNum == virtualStubParamInfo->GetReg());
+        stubAddrArg->gtRegNum = REG_NA;
+
         // And push the stub address onto the list of arguments
         call->gtCallArgs = gtNewListNode(stubAddrArg, call->gtCallArgs);
     }
