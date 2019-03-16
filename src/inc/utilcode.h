@@ -4133,12 +4133,6 @@ inline HRESULT FakeCoCreateInstance(REFCLSID   rclsid,
     return FakeCoCreateInstanceEx(rclsid, NULL, riid, ppv, NULL);
 };
 
-HRESULT FakeCoCallDllGetClassObject(REFCLSID       rclsid,
-                               LPCWSTR        wszDllPath,
-                               REFIID riid,
-                               void **        ppv,
-                               HMODULE *      phmodDll);
-
 //*****************************************************************************
 // Gets the directory based on the location of the module. This routine
 // is called at COR setup time. Set is called during EEStartup and by the
@@ -5212,12 +5206,7 @@ namespace Reg
 #ifdef FEATURE_COMINTEROP
 namespace Com
 {
-    HRESULT FindServerUsingCLSID(REFCLSID rclsid, SString & ssServerName);
-    HRESULT FindServerUsingCLSID(REFCLSID rclsid, __deref_out __deref_out_z LPWSTR* pwszServerName);
     HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString & ssInprocServer32Name);
-    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, __deref_out __deref_out_z LPWSTR* pwszInprocServer32Name);
-    BOOL IsMscoreeInprocServer32(const SString & ssInprocServer32Name);
-    BOOL CLSIDHasMscoreeAsInprocServer32(REFCLSID rclsid);
 }
 #endif // FEATURE_COMINTEROP
 

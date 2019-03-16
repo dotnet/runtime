@@ -206,6 +206,84 @@ typedef HRESULT __stdcall DLLGETCLASSOBJECT(REFCLSID rclsid,
 EXTERN_C const IID _IID_IClassFactory = 
     {0x00000001, 0x0000, 0x0000, {0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
 
+namespace
+{
+    HRESULT FakeCoCallDllGetClassObject(
+        REFCLSID rclsid,
+        LPCWSTR wszDllPath,
+        REFIID riid,
+        void **ppv,
+        HMODULE *phmodDll)
+    {
+        CONTRACTL
+        {
+            THROWS;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(ppv != nullptr);
+
+        HRESULT hr = S_OK;
+
+        // Initialize [out] HMODULE (if it was requested)
+        if (phmodDll != nullptr)
+            *phmodDll = nullptr;
+
+        bool fIsDllPathPrefix = (wszDllPath != nullptr) && (wcslen(wszDllPath) > 0) && (wszDllPath[wcslen(wszDllPath) - 1] == W('\\'));
+
+        // - An empty string will be treated as NULL.
+        // - A string ending will a backslash will be treated as a prefix for where to look for the DLL
+        //   if the InProcServer32 value is just a DLL name and not a full path.
+        StackSString ssDllName;
+        if ((wszDllPath == nullptr) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
+        {
+#ifndef FEATURE_PAL
+            IfFailRet(Clr::Util::Com::FindInprocServer32UsingCLSID(rclsid, ssDllName));
+
+            EX_TRY
+            {
+                if (fIsDllPathPrefix)
+                {
+                    SString::Iterator i = ssDllName.Begin();
+                    if (!ssDllName.Find(i, W('\\')))
+                    {   // If the InprocServer32 is just a DLL name (not a fully qualified path), then
+                        // prefix wszFilePath with wszDllPath.
+                        ssDllName.Insert(i, wszDllPath);
+                    }
+                }
+            }
+            EX_CATCH_HRESULT(hr);
+            IfFailRet(hr);
+
+            wszDllPath = ssDllName.GetUnicode();
+#else // !FEATURE_PAL
+            return E_FAIL;
+#endif // !FEATURE_PAL
+        }
+        _ASSERTE(wszDllPath != nullptr);
+
+        // We've got the name of the DLL to load, so load it.
+        HModuleHolder hDll = WszLoadLibraryEx(wszDllPath, nullptr, GetLoadWithAlteredSearchPathFlag());
+        if (hDll == nullptr)
+            return HRESULT_FROM_GetLastError();
+
+        // We've loaded the DLL, so find the DllGetClassObject function.
+        DLLGETCLASSOBJECT *dllGetClassObject = (DLLGETCLASSOBJECT*)GetProcAddress(hDll, "DllGetClassObject");
+        if (dllGetClassObject == nullptr)
+            return HRESULT_FROM_GetLastError();
+
+        // Call the function to get a class object for the rclsid and riid passed in.
+        IfFailRet(dllGetClassObject(rclsid, riid, ppv));
+
+        hDll.SuppressRelease();
+
+        if (phmodDll != nullptr)
+            *phmodDll = hDll.GetValue();
+
+        return hr;
+    }
+}
+
 // ----------------------------------------------------------------------------
 // FakeCoCreateInstanceEx
 // 
@@ -223,8 +301,7 @@ EXTERN_C const IID _IID_IClassFactory =
 //        If the path ends in a backslash, FakeCoCreateInstanceEx will treat this as a prefix
 //        if the InprocServer32 found in the registry is a simple filename (not a full path).
 //        This allows the caller to specify the directory in which the InprocServer32 should
-//        be found. Also, if this path is provided and the InprocServer32 is MSCOREE.DLL, then
-//        the Server value is used instead, if it exists.
+//        be found.
 //    * riid - [in] IID of interface on object to return in ppv
 //    * ppv - [out] Pointer to implementation of requested interface
 //    * phmodDll - [out] HMODULE of DLL that was loaded to instantiate the COM object.
@@ -264,100 +341,6 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     // Ask the class factory to create an instance of the
     // necessary object.
     IfFailRet(classFactory->CreateInstance(NULL, riid, ppv));
-
-    hDll.SuppressRelease();
-
-    if (phmodDll != NULL)
-    {
-        *phmodDll = hDll.GetValue();
-    }
-
-    return hr;
-}
-
-HRESULT FakeCoCallDllGetClassObject(REFCLSID       rclsid,
-                               LPCWSTR        wszDllPath,
-                               REFIID riid,
-                               void **        ppv,
-                               HMODULE *      phmodDll)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(ppv != NULL);
-    
-    HRESULT hr = S_OK;
-    
-    if (phmodDll != NULL)
-    {   // Initialize [out] HMODULE (if it was requested)
-        *phmodDll = NULL;
-    }
-
-    bool fIsDllPathPrefix = (wszDllPath != NULL) && (wszDllPath[wcslen(wszDllPath) - 1] == W('\\'));
-
-    // - An empty string will be treated as NULL.
-    // - A string ending will a backslash will be treated as a prefix for where to look for the DLL
-    //   if the InProcServer32 value is just a DLL name and not a full path.
-    StackSString ssDllName;
-    if ((wszDllPath == NULL) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
-    {
-#ifndef FEATURE_PAL    
-        IfFailRet(Clr::Util::Com::FindInprocServer32UsingCLSID(rclsid, ssDllName));
-
-        EX_TRY
-        {
-            if (fIsDllPathPrefix)
-            {
-                if (Clr::Util::Com::IsMscoreeInprocServer32(ssDllName))
-                {   // If the InprocServer32 is mscoree.dll, then we skip the shim and look for
-                    // the corresponding server DLL (if it exists) in the directory provided.
-                    hr = Clr::Util::Com::FindServerUsingCLSID(rclsid, ssDllName);
-
-                    if (FAILED(hr))
-                    {   // We don't fail if there is no server object, because in this case we assume that
-                        // the clsid is implemented in the runtime itself (clr.dll) and we do not place 
-                        // entries in the registry for this case.
-                        ssDllName.Set(MAIN_CLR_MODULE_NAME_W);
-                    }
-                }
-
-                SString::Iterator i = ssDllName.Begin();
-                if (!ssDllName.Find(i, W('\\')))
-                {   // If the InprocServer32 is just a DLL name (not a fully qualified path), then
-                    // prefix wszFilePath with wszDllPath.
-                    ssDllName.Insert(i, wszDllPath);
-                }
-            }
-        }
-        EX_CATCH_HRESULT(hr);
-        IfFailRet(hr);
-
-        wszDllPath = ssDllName.GetUnicode();
-#else // !FEATURE_PAL
-        return E_FAIL;
-#endif // !FEATURE_PAL
-    }
-    _ASSERTE(wszDllPath != NULL);
-
-    // We've got the name of the DLL to load, so load it.
-    HModuleHolder hDll = WszLoadLibraryEx(wszDllPath, NULL, GetLoadWithAlteredSearchPathFlag());
-    if (hDll == NULL)
-    {
-        return HRESULT_FROM_GetLastError();
-    }
-
-    // We've loaded the DLL, so find the DllGetClassObject function.
-    DLLGETCLASSOBJECT *dllGetClassObject = (DLLGETCLASSOBJECT*)GetProcAddress(hDll, "DllGetClassObject");
-    if (dllGetClassObject == NULL)
-    {
-        return HRESULT_FROM_GetLastError();
-    }
-
-    // Call the function to get a class object for the rclsid and riid passed in.
-    IfFailRet(dllGetClassObject(rclsid, riid, ppv));
 
     hDll.SuppressRelease();
 
@@ -3128,6 +3111,101 @@ namespace Util
     }
 
 #ifndef FEATURE_PAL
+    // Struct used to scope suspension of client impersonation for the current thread.
+    // https://docs.microsoft.com/en-us/windows/desktop/secauthz/client-impersonation
+    class SuspendImpersonation
+    {
+    public:
+        SuspendImpersonation()
+            : _token(nullptr)
+        {
+            // The approach used here matches what is used elsewhere in CLR (RevertIfImpersonated).
+            // In general, OpenThreadToken fails with ERROR_NO_TOKEN if impersonation is not active,
+            // fails with ERROR_CANT_OPEN_ANONYMOUS if anonymous impersonation is active, and otherwise
+            // succeeds and returns the active impersonation token.
+            BOOL res = ::OpenThreadToken(::GetCurrentThread(), TOKEN_IMPERSONATE, /* OpenAsSelf */ TRUE, &_token);
+            if (res != FALSE)
+            {
+                ::RevertToSelf();
+            }
+            else
+            {
+                _token = nullptr;
+            }
+        }
+
+        ~SuspendImpersonation()
+        {
+            if (_token != nullptr)
+                ::SetThreadToken(nullptr, _token);
+        }
+
+    private:
+        HandleHolder _token;
+    };
+
+    struct ProcessIntegrityResult
+    {
+        BOOL Success;
+        DWORD Integrity;
+        HRESULT LastError;
+
+        HRESULT RecordAndReturnError(HRESULT hr)
+        {
+            LastError = hr;
+            return hr;
+        }
+    };
+
+    // The system calls in this code can fail if run with reduced privileges.
+    // It is the caller's responsibility to choose an appropriate default in the event
+    // that this function fails to retrieve the current process integrity.
+    HRESULT GetCurrentProcessIntegrity(DWORD *integrity)
+    {
+        static ProcessIntegrityResult s_Result = { FALSE, 0, S_FALSE };
+
+        if (FALSE != InterlockedCompareExchangeT(&s_Result.Success, FALSE, FALSE))
+        {
+            *integrity = s_Result.Integrity;
+            return S_OK;
+        }
+
+        // Temporarily suspend impersonation (if possible) while computing the integrity level.
+        // If impersonation is active, the OpenProcessToken call below will check the impersonation
+        // token against the process token ACL, and will generally fail with ERROR_ACCESS_DENIED if
+        // the impersonation token is less privileged than this process's primary token.
+        Clr::Util::SuspendImpersonation si;
+
+        HandleHolder hToken;
+        if(!OpenProcessToken(GetCurrentProcess(), TOKEN_READ, &hToken))
+            return s_Result.RecordAndReturnError(HRESULT_FROM_GetLastError());
+
+        DWORD dwSize = 0;
+        DWORD err = ERROR_SUCCESS;
+        if(!GetTokenInformation(hToken, (TOKEN_INFORMATION_CLASS)TokenIntegrityLevel, nullptr, 0, &dwSize))
+            err = GetLastError();
+
+        // We need to make sure that GetTokenInformation failed in a predictable manner so we know that
+        // dwSize has the correct buffer size in it.
+        if (err != ERROR_INSUFFICIENT_BUFFER || dwSize == 0)
+            return s_Result.RecordAndReturnError((err == ERROR_SUCCESS) ? E_FAIL : HRESULT_FROM_WIN32(err));
+
+        NewArrayHolder<BYTE> pLabel = new (nothrow) BYTE[dwSize];
+        if (pLabel == NULL)
+            return s_Result.RecordAndReturnError(E_OUTOFMEMORY);
+
+        if(!GetTokenInformation(hToken, (TOKEN_INFORMATION_CLASS)TokenIntegrityLevel, pLabel, dwSize, &dwSize))
+            return s_Result.RecordAndReturnError(HRESULT_FROM_GetLastError());
+
+        TOKEN_MANDATORY_LABEL *ptml = (TOKEN_MANDATORY_LABEL *)(void*)pLabel;
+        PSID psidIntegrityLevelLabel = ptml->Label.Sid;
+
+        s_Result.Integrity = *GetSidSubAuthority(psidIntegrityLevelLabel, (*GetSidSubAuthorityCount(psidIntegrityLevelLabel) - 1));
+        *integrity = s_Result.Integrity;
+        InterlockedExchangeT(&s_Result.Success, TRUE);
+        return S_OK;
+    }
+
 namespace Reg
 {
     HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKeyName, LPCWSTR wszValueName, SString & ssValue)
@@ -3223,8 +3301,6 @@ namespace Com
         {
             STANDARD_VM_CONTRACT;
 
-            HRESULT hr = S_OK;
-
             WCHAR wszClsid[39];
             if (GuidToLPWSTR(rclsid, wszClsid, NumItems(wszClsid)) == 0)
                 return E_UNEXPECTED;
@@ -3235,49 +3311,38 @@ namespace Com
             ssKeyName.Append(SL(W("\\")));
             ssKeyName.Append(wszSubKeyName);
 
-            return Clr::Util::Reg::ReadStringValue(HKEY_CLASSES_ROOT, ssKeyName.GetUnicode(), NULL, ssValue);
-        }
+            // Query HKCR first to retain backwards compat with previous implementation where HKCR was only queried.
+            // This is being done due to registry caching. This value will be used if the process integrity is medium or less.
+            HRESULT hkcrResult = Clr::Util::Reg::ReadStringValue(HKEY_CLASSES_ROOT, ssKeyName.GetUnicode(), nullptr, ssValue);
 
-        __success(return == S_OK)
-        static
-        HRESULT FindSubKeyDefaultValueForCLSID(REFCLSID rclsid, LPCWSTR wszSubKeyName, __deref_out __deref_out_z LPWSTR* pwszValue)
-        {
-            CONTRACTL {
-                NOTHROW;
-                GC_NOTRIGGER;
-            } CONTRACTL_END;
-
-            HRESULT hr = S_OK;
-            EX_TRY
+            // HKCR is a virtualized registry hive that weaves together HKCU\Software\Classes and HKLM\Software\Classes
+            // Processes with high integrity or greater should only read from HKLM to avoid being hijacked by medium
+            // integrity processes writing to HKCU.
+            DWORD integrity = SECURITY_MANDATORY_PROTECTED_PROCESS_RID;
+            HRESULT hr = Clr::Util::GetCurrentProcessIntegrity(&integrity);
+            if (hr != S_OK)
             {
-                StackSString ssValue;
-                if (SUCCEEDED(hr = FindSubKeyDefaultValueForCLSID(rclsid, wszSubKeyName, ssValue)))
-                {
-                    *pwszValue = new WCHAR[ssValue.GetCount() + 1];
-                    wcscpy_s(*pwszValue, ssValue.GetCount() + 1, ssValue.GetUnicode());
-                }
+                // In the event that we are unable to get the current process integrity,
+                // we assume that this process is running in an elevated state.
+                // GetCurrentProcessIntegrity may fail if the process has insufficient rights to get the integrity level
+                integrity = SECURITY_MANDATORY_PROTECTED_PROCESS_RID;
             }
-            EX_CATCH_HRESULT(hr);
-            return hr;
+
+            if (integrity > SECURITY_MANDATORY_MEDIUM_RID)
+            {
+                Clr::Util::SuspendImpersonation si;
+
+                // Clear the previous HKCR queried value
+                ssValue.Clear();
+
+                // Force to use HKLM
+                StackSString ssHklmKeyName(SL(W("SOFTWARE\\Classes\\")));
+                ssHklmKeyName.Append(ssKeyName);
+                return Clr::Util::Reg::ReadStringValue(HKEY_LOCAL_MACHINE, ssHklmKeyName.GetUnicode(), nullptr, ssValue);
+            }
+
+            return hkcrResult;
         }
-    }
-
-    HRESULT FindServerUsingCLSID(REFCLSID rclsid, __deref_out __deref_out_z LPWSTR* pwszServerName)
-    {
-        WRAPPER_NO_CONTRACT;
-        return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("Server"), pwszServerName);
-    }
-
-    HRESULT FindServerUsingCLSID(REFCLSID rclsid, SString & ssServerName)
-    {
-        WRAPPER_NO_CONTRACT;
-        return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("Server"), ssServerName);
-    }
-
-    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, __deref_out __deref_out_z LPWSTR* pwszInprocServer32Name)
-    {
-        WRAPPER_NO_CONTRACT;
-        return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("InprocServer32"), pwszInprocServer32Name);
     }
 
     HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString & ssInprocServer32Name)
@@ -3285,24 +3350,6 @@ namespace Com
         WRAPPER_NO_CONTRACT;
         return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("InprocServer32"), ssInprocServer32Name);
     }
-
-    BOOL IsMscoreeInprocServer32(const SString & ssInprocServer32Name)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return (ssInprocServer32Name.EqualsCaseInsensitive(SL(MSCOREE_SHIM_W)) ||
-                ssInprocServer32Name.EndsWithCaseInsensitive(SL(W("\\") MSCOREE_SHIM_W)));
-    }
-
-    BOOL CLSIDHasMscoreeAsInprocServer32(REFCLSID rclsid)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        StackSString ssInprocServer32;
-        FindInprocServer32UsingCLSID(rclsid, ssInprocServer32);
-        return IsMscoreeInprocServer32(ssInprocServer32);
-    }
-
 } // namespace Com
 #endif //  FEATURE_PAL
 
@@ -3385,7 +3432,6 @@ namespace Win32
         // Overly defensive? Perhaps.
         if (!(dwLengthWritten < dwLengthRequired))
             ThrowHR(E_UNEXPECTED);
-
     }
 } // namespace Win32
 
