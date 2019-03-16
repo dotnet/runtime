@@ -26,7 +26,7 @@ void DisplayArchive(__in_z __in wchar_t* szFile, ULONG DumpFilter, __in_z __in_o
 
 void PrintLogo()
 {
-    printf("Microsoft (R) .Net Frameworks Runtime Meta Data Dump Utility   Version %s\n", VER_FILEVERSION_STR);
+    printf("Microsoft (R) .NET Frameworks Runtime Meta Data Dump Utility   Version %s\n", VER_FILEVERSION_STR);
     printf("%S", VER_LEGALCOPYRIGHT_LOGO_STR_L);
     printf("\n");
 }// PrintLogo

@@ -6,7 +6,7 @@
 //
 
 //
-// Wrapper around Win32 Registry Functions allowing redirection of .Net 
+// Wrapper around Win32 Registry Functions allowing redirection of .NET 
 // Framework root registry location
 //
 // Notes on Offline Ngen Implementation:
@@ -55,7 +55,7 @@
 //      has made incompatible changes here, such as moving the location or redefining
 //      values, we would break.
 //  - Accesses from C:\Windows\System32 and C:\Windows\Syswow64 and HKCU
-//      HKCU does not contain any .Net Framework settings (Microsoft\.NETFramework
+//      HKCU does not contain any .NET Framework settings (Microsoft\.NETFramework
 //      is empty).
 //      There are various files accessed from C:\Windows\System32 and these are a
 //      function of the OS loader.  We load an executable and it automatically

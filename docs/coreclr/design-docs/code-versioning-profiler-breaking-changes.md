@@ -1,6 +1,6 @@
 # Code Versioning Profiler Breaking Changes #
 
-The runtime changes done as part of the code versioning feature will cause some (hopefully minor) breaking changes to be visible via the profiler API. My goal is to advertise these coming changes and solicit feedback about what will be easiest for profiler writers to absorb. Currently this feature is only under development in the .Net Core version of the runtime. If you solely support a profiler on full .Net Framework this change doesn't affect you.
+The runtime changes done as part of the code versioning feature will cause some (hopefully minor) breaking changes to be visible via the profiler API. My goal is to advertise these coming changes and solicit feedback about what will be easiest for profiler writers to absorb. Currently this feature is only under development in the .NET Core version of the runtime. If you solely support a profiler on full .NET Framework this change doesn't affect you.
 
 ## Underlying issue ##
 
