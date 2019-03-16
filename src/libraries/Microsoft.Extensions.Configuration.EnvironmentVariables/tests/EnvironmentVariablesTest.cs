@@ -170,7 +170,15 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
             using (var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250)))
             {
-                _ = Task.Run(() => { while (!cts.IsCancellationRequested) config.Reload(); });
+                void ReloadLoop()
+                {
+                    while (!cts.IsCancellationRequested)
+                    {
+                        config.Reload();
+                    }
+                }
+
+                _ = Task.Run(ReloadLoop);
 
                 while (!cts.IsCancellationRequested)
                 {

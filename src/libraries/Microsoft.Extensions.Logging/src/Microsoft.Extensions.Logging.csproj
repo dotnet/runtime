@@ -4,11 +4,18 @@
     <Description>Logging infrastructure default implementation for Microsoft.Extensions.Logging.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.Configuration" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../shared/*.cs" />
+
     <Reference Include="Microsoft.Extensions.Configuration.Binder" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection" />
     <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
     <Reference Include="Microsoft.Extensions.Options" />
   </ItemGroup>

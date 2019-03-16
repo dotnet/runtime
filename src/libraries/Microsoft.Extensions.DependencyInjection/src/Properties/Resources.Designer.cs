@@ -150,6 +150,48 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static string FormatDirectScopedResolvedFromRootException(object p0, object p1)
             => string.Format(CultureInfo.CurrentCulture, GetString("DirectScopedResolvedFromRootException"), p0, p1);
 
+        /// <summary>
+        /// Constant value of type '{0}' can't be converted to service type '{1}'
+        /// </summary>
+        internal static string ConstantCantBeConvertedToServiceType
+        {
+            get => GetString("ConstantCantBeConvertedToServiceType");
+        }
+
+        /// <summary>
+        /// Constant value of type '{0}' can't be converted to service type '{1}'
+        /// </summary>
+        internal static string FormatConstantCantBeConvertedToServiceType(object p0, object p1)
+            => string.Format(CultureInfo.CurrentCulture, GetString("ConstantCantBeConvertedToServiceType"), p0, p1);
+
+        /// <summary>
+        /// Implementation type '{0}' can't be converted to service type '{1}'
+        /// </summary>
+        internal static string ImplementationTypeCantBeConvertedToServiceType
+        {
+            get => GetString("ImplementationTypeCantBeConvertedToServiceType");
+        }
+
+        /// <summary>
+        /// Implementation type '{0}' can't be converted to service type '{1}'
+        /// </summary>
+        internal static string FormatImplementationTypeCantBeConvertedToServiceType(object p0, object p1)
+            => string.Format(CultureInfo.CurrentCulture, GetString("ImplementationTypeCantBeConvertedToServiceType"), p0, p1);
+
+        /// <summary>
+        /// '{0}' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.
+        /// </summary>
+        internal static string AsyncDisposableServiceDispose
+        {
+            get => GetString("AsyncDisposableServiceDispose");
+        }
+
+        /// <summary>
+        /// '{0}' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.
+        /// </summary>
+        internal static string FormatAsyncDisposableServiceDispose(object p0)
+            => string.Format(CultureInfo.CurrentCulture, GetString("AsyncDisposableServiceDispose"), p0);
+
         private static string GetString(string name, params string[] formatterNames)
         {
             var value = _resourceManager.GetString(name);

@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders.Composite</RootNamespace>
-    <TargetFrameworks>netcoreapp2.2;net461</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\shared\**\*.cs" />
+    <Compile Include="..\..\Shared\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

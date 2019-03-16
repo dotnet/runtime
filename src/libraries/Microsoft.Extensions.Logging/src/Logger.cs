@@ -3,44 +3,18 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging.Abstractions.Internal;
 
 namespace Microsoft.Extensions.Logging
 {
     internal class Logger : ILogger
     {
-        private readonly LoggerFactory _loggerFactory;
-
-        private LoggerInformation[] _loggers;
-
-        private int _scopeCount;
-
-        public Logger(LoggerFactory loggerFactory)
-        {
-            _loggerFactory = loggerFactory;
-        }
-
-        public LoggerInformation[] Loggers
-        {
-            get { return _loggers; }
-            set
-            {
-                var scopeSize = 0;
-                foreach (var loggerInformation in value)
-                {
-                    if (loggerInformation.CreateScopes)
-                    {
-                        scopeSize++;
-                    }
-                }
-                _scopeCount = scopeSize;
-                _loggers = value;
-            }
-        }
+        public LoggerInformation[] Loggers { get; set; }
+        public MessageLogger[] MessageLoggers { get; set; }
+        public ScopeLogger[] ScopeLoggers { get; set; }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            var loggers = Loggers;
+            var loggers = MessageLoggers;
             if (loggers == null)
             {
                 return;
@@ -78,7 +52,7 @@ namespace Microsoft.Extensions.Logging
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            var loggers = Loggers;
+            var loggers = MessageLoggers;
             if (loggers == null)
             {
                 return false;
@@ -122,56 +96,27 @@ namespace Microsoft.Extensions.Logging
 
         public IDisposable BeginScope<TState>(TState state)
         {
-            var loggers = Loggers;
+            var loggers = ScopeLoggers;
 
             if (loggers == null)
             {
                 return NullScope.Instance;
             }
 
-            var scopeProvider = _loggerFactory.ScopeProvider;
-            var scopeCount = _scopeCount;
-
-            if (scopeProvider != null)
+            if (loggers.Length == 1)
             {
-                // if external scope is used for all providers
-                // we can return it's IDisposable directly
-                // without wrapping and saving on allocation
-                if (scopeCount == 0)
-                {
-                    return scopeProvider.Push(state);
-                }
-                else
-                {
-                    scopeCount++;
-                }
-
+                return loggers[0].CreateScope(state);
             }
 
-            var scope = new Scope(scopeCount);
+            var scope = new Scope(loggers.Length);
             List<Exception> exceptions = null;
             for (var index = 0; index < loggers.Length; index++)
             {
-                var loggerInformation = loggers[index];
-                if (!loggerInformation.CreateScopes)
-                {
-                    continue;
-                }
+                var scopeLogger = loggers[index];
 
                 try
                 {
-                    scopeCount--;
-                    // _loggers and _scopeCount are not updated atomically
-                    // there might be a situation when count was updated with
-                    // lower value then we have loggers
-                    // This is small race that happens only on configuraiton reload
-                    // and we are protecting from it by checkig that there is enough space
-                    // in Scope
-                    if (scopeCount >= 0)
-                    {
-                        var disposable = loggerInformation.Logger.BeginScope(state);
-                        scope.SetDisposable(scopeCount, disposable);
-                    }
+                    scope.SetDisposable(index, scopeLogger.CreateScope(state));
                 }
                 catch (Exception ex)
                 {
@@ -182,11 +127,6 @@ namespace Microsoft.Extensions.Logging
 
                     exceptions.Add(ex);
                 }
-            }
-
-            if (scopeProvider != null)
-            {
-                scope.SetDisposable(0, scopeProvider.Push(state));
             }
 
             if (exceptions != null && exceptions.Count > 0)

@@ -3,7 +3,6 @@
 
 using System;
 using System.Linq;
-using Microsoft.Extensions.Logging.Internal;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Test

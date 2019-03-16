@@ -6,11 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Extensions.Logging.EventLog;
-using Microsoft.Extensions.Logging.EventLog.Internal;
 using Xunit;
-
-// EventLogLogger is obsolete
-#pragma warning disable CS0618 // Type or member is obsolete
 
 namespace Microsoft.Extensions.Logging
 {
@@ -41,7 +37,7 @@ namespace Microsoft.Extensions.Logging
         public void CallingBeginScopeOnLogger_ReturnsNonNullableInstance()
         {
             // Arrange
-            var logger = new EventLogLogger("Test");
+            var logger = new EventLogLogger("Test", new EventLogSettings());
 
             // Act
             var disposable = logger.BeginScope("Scope1");
@@ -72,7 +68,7 @@ namespace Microsoft.Extensions.Logging
         public void Constructor_CreatesWindowsEventLog_WithExpectedInformation()
         {
             // Arrange & Act
-            var eventLogLogger = new EventLogLogger("Test");
+            var eventLogLogger = new EventLogLogger("Test", new EventLogSettings());
 
             // Assert
             var windowsEventLog = Assert.IsType<WindowsEventLog>(eventLogLogger.EventLog);

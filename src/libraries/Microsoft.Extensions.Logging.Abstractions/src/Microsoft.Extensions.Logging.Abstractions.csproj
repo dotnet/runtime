@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>Logging abstractions for Microsoft.Extensions.Logging.
@@ -12,6 +12,16 @@ Microsoft.Extensions.Logging.LoggerMessage
 Microsoft.Extensions.Logging.Abstractions.NullLogger</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../shared/*.cs" />
+    <Compile Include="../../../Shared/src/TypeNameHelper/TypeNameHelper.cs" />
+  </ItemGroup>
 
 </Project>

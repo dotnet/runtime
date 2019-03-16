@@ -8,7 +8,12 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <PackageTags>files;filesystem;glob;globbing</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.FileSystemGlobbing.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(SharedSourceRoot)HashCodeCombiner\*.cs" />

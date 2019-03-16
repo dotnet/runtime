@@ -4,9 +4,16 @@
     <Description>Debug output logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a debugger monitor by writing messages with System.Diagnostics.Debug.WriteLine().</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../shared/*.cs" />
+
     <Reference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 
