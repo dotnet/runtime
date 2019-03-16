@@ -120,18 +120,36 @@ public static class VectorMgdMgd
         System.Reflection.MethodInfo reflectionMethodInfo;
         object[] reflectionInvokeArgs;
 
+        public struct HVA64_02
+        {
+            public Vector64<T> v0;
+            public Vector64<T> v1;
+        }
+
         public struct HVA128_02
         {
             public Vector128<T> v0;
             public Vector128<T> v1;
         }
 
+        private HVA64_02  hva64_02;
         private HVA128_02 hva128_02;
 
         public void Init_HVAs()
         {
-            hva128_02.v0 = Unsafe.As<T, Vector128<T>>(ref values[0]);
-            hva128_02.v1 = Unsafe.As<T, Vector128<T>>(ref values[Vector128<T>.Count]);
+            int i;
+
+            i = 0;
+            hva64_02.v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+	    i += Vector64<T>.Count;
+            hva64_02.v1 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+	    i += Vector64<T>.Count;
+
+            i = 0;
+            hva128_02.v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+	    i += Vector128<T>.Count;
+            hva128_02.v1 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+	    i += Vector128<T>.Count;
         }
 
         public HVATests()
@@ -145,6 +163,80 @@ public static class VectorMgdMgd
 
             Init_HVAs();
         }
+
+        //////  Vector64<T> tests
+
+        // Checks that the values in v correspond to those in the values array starting
+        // with values[index]
+        private void checkValues(Vector64<T> v, int index)
+        {
+            bool printedMsg = false;  // Print at most one message
+
+            for (int i = 0; i < Vector64<T>.Count; i++)
+            {
+                if (!CheckValue<T>(v.GetElement(i), values[index]))
+                {
+                    if (!printedMsg)
+                    {
+                        Console.WriteLine("FAILED: checkValues(index = {1}, i = {2})", index, i);
+                        printedMsg = true;
+                    }
+
+                    isPassing = false;
+                }
+                index++;
+            }
+        }
+
+        // Test the case where we've passed in a single argument HVA of 2 vectors.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void test1Argument_HVA64_02(HVA64_02 arg1)
+        {
+            checkValues(arg1.v0, 0);
+            checkValues(arg1.v1, Vector64<T>.Count);
+        }
+
+        // Return an HVA of 2 vectors, with values from the 'values' array.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public HVA64_02 returnTest_HVA64_02()
+        {
+            return hva64_02;
+        }
+
+        public void testReturn_HFA64_02()
+        {
+            HVA64_02 result = returnTest_HVA64_02();
+            checkValues(result.v0, 0);
+            checkValues(result.v1, Vector64<T>.Count);
+        }
+
+        public void Init_Reflection_Args_HVA64_02()
+        {
+            reflectionParameterTypes = new Type[] { typeof(HVA64_02) };
+            reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA64_02), reflectionParameterTypes);
+            reflectionInvokeArgs = new object[] { hva64_02 };
+        }
+
+        public void Init_Reflection_Return_HVA64_02()
+        {
+            reflectionParameterTypes = new Type[] { };
+            reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.returnTest_HVA64_02), reflectionParameterTypes);
+            reflectionInvokeArgs = new object[] { };
+        }
+
+        public void testReflectionReturn_HFA64_02()
+        {
+            Init_Reflection_Return_HVA64_02();
+
+            object objResult = reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
+
+            HVA64_02 result = (HVA64_02)objResult;
+
+            checkValues(result.v0, 0);
+            checkValues(result.v1, Vector64<T>.Count);
+        }
+
+        //////  Vector128<T> tests
 
         // Checks that the values in v correspond to those in the values array starting
         // with values[index]
@@ -218,6 +310,25 @@ public static class VectorMgdMgd
 
         public void doTests()
         {
+            //////  Vector64<T> tests
+
+            // Test HVA Argumnets
+
+            test1Argument_HVA64_02(hva64_02);
+
+            Init_Reflection_Args_HVA64_02();
+            reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
+
+
+            // Test HVA Return values
+
+            testReturn_HFA64_02();
+
+            testReflectionReturn_HFA64_02();
+
+
+            //////  Vector128<T> tests
+
             // Test HVA Argumnets
 
             test1Argument_HVA128_02(hva128_02);
