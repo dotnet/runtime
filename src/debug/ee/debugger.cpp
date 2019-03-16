@@ -977,7 +977,7 @@ Debugger::Debugger()
     //------------------------------------------------------------------------------
     // Metadata data structure version numbers
     //
-    // 1 - initial state of the layouts ( .Net 4.5.2 )
+    // 1 - initial state of the layouts ( .NET Framework 4.5.2 )
     //
     // as data structure layouts change, add a new version number
     // and comment the changes

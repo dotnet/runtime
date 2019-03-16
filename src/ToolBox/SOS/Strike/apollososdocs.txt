@@ -1208,8 +1208,8 @@ method of my application. How can I do this?"
      see the breakpoint listed.
 
 You can specify breakpoints by file and line number if:
-   a) You have some version of .Net Framework installed on your machine. Any OS from
-      Vista onwards should have .Net Framework installed by default.
+   a) You have some version of .NET Framework installed on your machine. Any OS from
+      Vista onwards should have .NET Framework installed by default.
    b) You have PDBs for the managed modules that need breakpoints, and your symbol
       path points to those PDBs.
 This is often easier than module and method name syntax. For example:

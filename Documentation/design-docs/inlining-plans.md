@@ -31,12 +31,12 @@ overhead. It is anticipated that this work will encompass Machinery,
 Ability, and Profitability.
 
 LLILC does no inlining today. Since we aspire to have LLILC be a
-high-performance .Net code generator, we need to enable inlining in
+high-performance .NET code generator, we need to enable inlining in
 LLILC. LLILC can likely leverage much of LLVM's built-in inlining
 Machinery and Ability, but will need new code for Legality and
 Profitability.
 
-We envision various scenarios for .Net Code generation that impact
+We envision various scenarios for .NET Code generation that impact
 inlining: a first-tier JIT compiler, a higher-tier JIT compiler, a
 fast AOT compiler, and an optimizing AOT compiler. Each scenario calls
 for inlining, but the tradeoffs are different. For a given scenario,
@@ -221,7 +221,7 @@ xml or json markup):
 ```
 
 where `[o]` is a successful inline, `[x]` a failed inline, and
-indentation shows the inlining tree. For .Net compilation we'll need
+indentation shows the inlining tree. For .NET compilation we'll need
 some kind of persistent ID for methods, which may not be all that easy
 to come by. 
 

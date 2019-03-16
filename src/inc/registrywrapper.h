@@ -4,7 +4,7 @@
 //*****************************************************************************
 // File: registrywrapper.h
 //
-// Wrapper around Win32 Registry Functions allowing redirection of .Net 
+// Wrapper around Win32 Registry Functions allowing redirection of .NET 
 // Framework root registry location
 //
 //*****************************************************************************

@@ -18,7 +18,7 @@ void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial stat
         THROWS;           
         GC_NOTRIGGER;
         // disallow creation of Crst before EE starts
-        // Can not assert here. ASP.Net uses our Threadpool before EE is started.
+        // Can not assert here. ASP.NET uses our Threadpool before EE is started.
         PRECONDITION((m_handle == INVALID_HANDLE_VALUE));        
         PRECONDITION((!IsOSEvent()));
     }
@@ -44,7 +44,7 @@ BOOL CLREventBase::CreateAutoEventNoThrow (BOOL bInitialState  // If TRUE, initi
         NOTHROW;
         GC_NOTRIGGER;
         // disallow creation of Crst before EE starts
-        // Can not assert here. ASP.Net uses our Threadpool before EE is started.
+        // Can not assert here. ASP.NET uses our Threadpool before EE is started.
         PRECONDITION((m_handle == INVALID_HANDLE_VALUE)); 
         PRECONDITION((!IsOSEvent()));
     }
@@ -70,7 +70,7 @@ void CLREventBase::CreateManualEvent (BOOL bInitialState  // If TRUE, initial st
         THROWS;           
         GC_NOTRIGGER;
         // disallow creation of Crst before EE starts
-        // Can not assert here. ASP.Net uses our Threadpool before EE is started.
+        // Can not assert here. ASP.NET uses our Threadpool before EE is started.
         PRECONDITION((m_handle == INVALID_HANDLE_VALUE));        
         PRECONDITION((!IsOSEvent()));
     }
@@ -93,7 +93,7 @@ BOOL CLREventBase::CreateManualEventNoThrow (BOOL bInitialState  // If TRUE, ini
         NOTHROW;
         GC_NOTRIGGER;
         // disallow creation of Crst before EE starts
-        // Can not assert here. ASP.Net uses our Threadpool before EE is started.
+        // Can not assert here. ASP.NET uses our Threadpool before EE is started.
         PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
         PRECONDITION((!IsOSEvent()));
     }
@@ -220,7 +220,7 @@ void CLREventBase::CreateOSAutoEvent (BOOL bInitialState  // If TRUE, initial st
     }
     CONTRACTL_END;
 
-    // Can not assert here. ASP.Net uses our Threadpool before EE is started.
+    // Can not assert here. ASP.NET uses our Threadpool before EE is started.
     //_ASSERTE (g_fEEStarted);
 
     SetOSEvent();
@@ -269,7 +269,7 @@ void CLREventBase::CreateOSManualEvent (BOOL bInitialState  // If TRUE, initial 
     }
     CONTRACTL_END;
 
-    // Can not assert here. ASP.Net uses our Threadpool before EE is started.
+    // Can not assert here. ASP.NET uses our Threadpool before EE is started.
     //_ASSERTE (g_fEEStarted);
 
     SetOSEvent();

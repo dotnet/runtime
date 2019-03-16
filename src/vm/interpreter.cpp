@@ -1658,7 +1658,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
                                                     &status);
             }
             // This used to be a synchronous jit and could be made so again if desired,
-            // but using ASP.Net MusicStore as an example scenario the performance is
+            // but using ASP .NET MusicStore as an example scenario the performance is
             // better doing the JIT asynchronously. Given the not-on-by-default nature of the
             // interpreter I didn't wring my hands too much trying to determine the ideal
             // policy.
