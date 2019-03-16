@@ -518,6 +518,9 @@ public:
         siVarLoc(const LclVarDsc* varDsc, regNumber baseReg, int offset, bool isFramePointerUsed);
         siVarLoc(){};
 
+        // An overload for the equality comparator
+        static bool Equals(const siVarLoc* lhs, const siVarLoc* rhs);
+
     private:
         // Fill "siVarLoc" properties indicating the register position of the variable
         // using "LclVarDsc" and "baseReg"/"offset" if it has a part in the stack (x64 bit float or long).
