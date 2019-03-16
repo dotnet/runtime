@@ -11,7 +11,7 @@ namespace IsaFlag
 {
 enum Flag
 {
-#define HARDWARE_INTRINSIC_CLASS(flag, isa) isa = 1ULL << InstructionSet_##isa,
+#define HARDWARE_INTRINSIC_CLASS(flag, jit_config, isa) isa = 1ULL << InstructionSet_##isa,
 #include "hwintrinsiclistArm64.h"
     None     = 0,
     Base     = 1ULL << InstructionSet_Base,
@@ -77,7 +77,7 @@ InstructionSet Compiler::lookupHWIntrinsicISA(const char* className)
     {
         if (strcmp(className, "Base") == 0)
             return InstructionSet_Base;
-#define HARDWARE_INTRINSIC_CLASS(flag, isa)                                                                            \
+#define HARDWARE_INTRINSIC_CLASS(flag, jit_config, isa)                                                                \
     if (strcmp(className, #isa) == 0)                                                                                  \
         return InstructionSet_##isa;
 #include "hwintrinsiclistArm64.h"
@@ -139,7 +139,7 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* className, const char* me
 //
 // Notes:
 //    This currently returns true for all partially-implemented ISAs.
-//    TODO-Bug: Set this to return the correct values as GH 20427 is resolved.
+//    TODO-Bug: Set this to return the correct values as https://github.com/dotnet/coreclr/issues/20427 is resolved.
 //
 bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
 {
