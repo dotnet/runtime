@@ -447,7 +447,7 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return JsonReaderHelper.TryParseAsISO(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            return JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
         }
 
         /// <summary>
@@ -468,7 +468,7 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return JsonReaderHelper.TryParseAsISO(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            return JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
         }
     }
 }

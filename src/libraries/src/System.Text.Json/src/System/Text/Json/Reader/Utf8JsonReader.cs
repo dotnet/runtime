@@ -720,7 +720,7 @@ namespace System.Text.Json
                 // Create local copy to avoid bounds checks.
                 ReadOnlySpan<byte> localBuffer = _buffer;
 
-                if (JsonReaderHelper.IsDigit(first) || first == '-')
+                if (JsonHelpers.IsDigit(first) || first == '-')
                 {
                     if (!TryGetNumber(localBuffer.Slice(_consumed), out int numberOfBytes))
                     {
@@ -835,7 +835,7 @@ namespace System.Text.Json
                 {
                     StartArray();
                 }
-                else if (JsonReaderHelper.IsDigit(marker) || marker == '-')
+                else if (JsonHelpers.IsDigit(marker) || marker == '-')
                 {
                     return ConsumeNumber();
                 }
@@ -1330,7 +1330,7 @@ namespace System.Text.Json
                 }
 
                 nextByte = data[i];
-                if (!JsonReaderHelper.IsDigit(nextByte))
+                if (!JsonHelpers.IsDigit(nextByte))
                 {
                     _bytePositionInLine += i;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundAfterSign, nextByte);
@@ -1382,7 +1382,7 @@ namespace System.Text.Json
             for (; i < data.Length; i++)
             {
                 nextByte = data[i];
-                if (!JsonReaderHelper.IsDigit(nextByte))
+                if (!JsonHelpers.IsDigit(nextByte))
                 {
                     break;
                 }
@@ -1421,7 +1421,7 @@ namespace System.Text.Json
                 return ConsumeNumberResult.NeedMoreData;
             }
             byte nextByte = data[i];
-            if (!JsonReaderHelper.IsDigit(nextByte))
+            if (!JsonHelpers.IsDigit(nextByte))
             {
                 _bytePositionInLine += i;
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundAfterDecimal, nextByte);
@@ -1459,7 +1459,7 @@ namespace System.Text.Json
                 nextByte = data[i];
             }
 
-            if (!JsonReaderHelper.IsDigit(nextByte))
+            if (!JsonHelpers.IsDigit(nextByte))
             {
                 _bytePositionInLine += i;
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundAfterSign, nextByte);
