@@ -55,7 +55,7 @@ namespace System.Reflection.Tests
                 if (!PlatformDetection.IsNetNative)
                     return true;
 
-                // Expected false but in case .Net Native ever changes its mind...
+                // Expected false but in case .NET Native ever changes its mind...
                 return typeof(MetadataTokenTests).HasMetadataToken();
             }
         }

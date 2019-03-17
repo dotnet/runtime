@@ -268,7 +268,7 @@ namespace System.Collections.Immutable.Tests
                 .Add("firstKey", "1").Add("secondKey", "2");
             var exception = AssertExtensions.Throws<ArgumentException>(null, () => map.Add("firstKey", "3"));
 
-            if (!PlatformDetection.IsNetNative) //.Net Native toolchain removes exception messages.
+            if (!PlatformDetection.IsNetNative) //.NET Native toolchain removes exception messages.
             {
                 Assert.Contains("firstKey", exception.Message);
             }
