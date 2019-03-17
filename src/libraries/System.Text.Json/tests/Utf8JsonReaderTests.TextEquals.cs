@@ -530,6 +530,7 @@ namespace System.Text.Json.Tests
             Assert.False(found);
         }
 
+        [ActiveIssue(36095)]
         [Fact]
         [OuterLoop]
         public static void ReallyLargeLookupUTF16()
@@ -560,6 +561,7 @@ namespace System.Text.Json.Tests
             Assert.False(found);
         }
 
+        [ActiveIssue(36095)]
         [Fact]
         public static void ReallyLargeLookupUTF8()
         {
