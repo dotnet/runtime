@@ -152,7 +152,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymWriter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\SymAddressKind.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Enum.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Enum.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
