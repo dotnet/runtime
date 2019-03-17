@@ -33,7 +33,7 @@ void ValidateHandleAssignment(OBJECTHANDLE handle, OBJECTREF objRef)
 #endif
 
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    ADIndex appDomainIndex = ADIndex(reinterpret_cast<DWORD>(mgr->GetHandleContext(handle)));
+    ADIndex appDomainIndex = ADIndex((DWORD)((SIZE_T)mgr->GetHandleContext(handle)));
 
     ValidateObjectAndAppDomain(objRef, appDomainIndex);
 #endif // _DEBUG_IMPL
