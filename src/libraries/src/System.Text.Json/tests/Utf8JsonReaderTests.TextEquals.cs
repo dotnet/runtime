@@ -563,6 +563,7 @@ namespace System.Text.Json.Tests
 
         [ActiveIssue(36095)]
         [Fact]
+        [OuterLoop]
         public static void ReallyLargeLookupUTF8()
         {
             string jsonString = "\"hello\"";
