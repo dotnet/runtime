@@ -6,9 +6,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 using Internal.Runtime.CompilerServices;
+
+#if CORERT
+using CorElementType = System.Runtime.RuntimeImports.RhCorElementType;
+using RuntimeType = System.Type;
+#endif
 
 // The code below includes partial support for float/double and
 // pointer sized enums.
@@ -26,34 +29,13 @@ namespace System
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
+    public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
         #region Private Constants
         private const char EnumSeparatorChar = ',';
         #endregion
 
         #region Private Static Methods
-        private static TypeValuesAndNames GetCachedValuesAndNames(RuntimeType enumType, bool getNames)
-        {
-            TypeValuesAndNames entry = enumType.GenericCache as TypeValuesAndNames;
-
-            if (entry == null || (getNames && entry.Names == null))
-            {
-                ulong[] values = null;
-                string[] names = null;
-                GetEnumValuesAndNames(
-                    enumType.GetTypeHandleInternal(),
-                    JitHelpers.GetObjectHandleOnStack(ref values),
-                    JitHelpers.GetObjectHandleOnStack(ref names),
-                    getNames);
-                bool isFlags = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
-
-                entry = new TypeValuesAndNames(isFlags, values, names);
-                enumType.GenericCache = entry;
-            }
-
-            return entry;
-        }
 
         private string ValueToString()
         {
@@ -153,12 +135,12 @@ namespace System
         internal static string GetEnumName(RuntimeType eT, ulong ulValue)
         {
             Debug.Assert(eT != null);
-            ulong[] ulValues = Enum.InternalGetValues(eT);
+            ulong[] ulValues = InternalGetValues(eT);
             int index = Array.BinarySearch(ulValues, ulValue);
 
             if (index >= 0)
             {
-                string[] names = Enum.InternalGetNames(eT);
+                string[] names = InternalGetNames(eT);
                 return names[index];
             }
 
@@ -174,7 +156,7 @@ namespace System
 
             if (!entry.IsFlag) // Not marked with Flags attribute
             {
-                return Enum.GetEnumName(eT, value);
+                return GetEnumName(eT, value);
             }
             else // These are flags OR'ed together (We treat everything as unsigned types)
             {
@@ -336,17 +318,6 @@ namespace System
             return result;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int InternalCompareTo(object o1, object o2);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType InternalGetUnderlyingType(RuntimeType enumType);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetEnumValuesAndNames(RuntimeTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, bool getNames);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern object InternalBoxEnum(RuntimeType enumType, long value);
         #endregion
 
         #region Public Static Methods
@@ -811,42 +782,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool StartsNumber(char c) => char.IsInRange(c, '0', '9') || c == '-' || c == '+';
 
-        public static Type GetUnderlyingType(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumUnderlyingType();
-        }
-
-        public static Array GetValues(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumValues();
-        }
-
         internal static ulong[] InternalGetValues(RuntimeType enumType)
         {
             // Get all of the values
             return GetCachedValuesAndNames(enumType, false).Values;
-        }
-
-        public static string GetName(Type enumType, object value)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumName(value);
-        }
-
-        public static string[] GetNames(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.GetEnumNames();
         }
 
         internal static string[] InternalGetNames(RuntimeType enumType)
@@ -918,7 +857,7 @@ namespace System
 
             if (format == null)
                 throw new ArgumentNullException(nameof(format));
-            
+
             // If the value is an Enum then we need to extract the underlying value from it
             Type valueType = value.GetType();
             if (valueType.IsEnum)
@@ -933,7 +872,7 @@ namespace System
                 }
                 return ((Enum)value).ToString(format);
             }
-            
+
             // The value must be of the same type as the Underlying type of the Enum
             Type underlyingType = GetUnderlyingType(enumType);
             if (valueType != underlyingType)
@@ -1060,17 +999,9 @@ namespace System
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern bool InternalHasFlag(Enum flags);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern CorElementType InternalGetCorElementType();
-
         #endregion
 
         #region Object Overrides
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern override bool Equals(object obj);
 
         public override int GetHashCode()
         {
@@ -1207,23 +1138,9 @@ namespace System
             return ToString();
         }
 
-        [Intrinsic]
-        public bool HasFlag(Enum flag)
-        {
-            if (flag == null)
-                throw new ArgumentNullException(nameof(flag));
-
-            if (!this.GetType().IsEquivalentTo(flag.GetType()))
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_EnumTypeDoesNotMatch, flag.GetType(), this.GetType()));
-            }
-
-            return InternalHasFlag(flag);
-        }
-
         #endregion
 
-        #region IConvertable
+        #region IConvertible
         public TypeCode GetTypeCode()
         {
             switch (InternalGetCorElementType())
@@ -1364,16 +1281,6 @@ namespace System
         private static object ToObject(Type enumType, bool value) =>
             InternalBoxEnum(ValidateRuntimeType(enumType), value ? 1 : 0);
 
-        private static RuntimeType ValidateRuntimeType(Type enumType)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-            if (!enumType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
-            if (!(enumType is RuntimeType rtType))
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
-            return rtType;
-        }
         #endregion
     }
 }
