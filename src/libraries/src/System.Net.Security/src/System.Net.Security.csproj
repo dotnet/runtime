@@ -25,7 +25,7 @@
     <Compile Include="System\Net\Security\SecureChannel.cs" />
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
     <Compile Include="System\Net\Security\SslStream.cs" />
-    <Compile Include="System\Net\Security\Sslstream.Implementation.cs" />
+    <Compile Include="System\Net\Security\SslStream.Implementation.cs" />
     <Compile Include="System\Net\Security\ProtectionLevel.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />
