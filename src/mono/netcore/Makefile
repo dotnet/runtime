@@ -1,10 +1,11 @@
 
 NETCORESDK_VERSION=3.0.100-preview4-010759
-URL:=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$(NETCORESDK_VERSION)/dotnet-sdk-$(NETCORESDK_VERSION)-osx-x64.tar.gz
+NETCORESDK_FILE=dotnet-sdk-$(NETCORESDK_VERSION)-osx-x64.tar.gz
+URL:=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$(NETCORESDK_VERSION)/$(NETCORESDK_FILE)
 
-download-sdk:
-	curl $(URL) --output dotnet-sdk-3.tar.gz
-	tar -xvf dotnet-sdk-3.tar.gz
+$(NETCORESDK_FILE):
+	curl $(URL) --output $(NETCORESDK_FILE)
+	tar -xvf $(NETCORESDK_FILE)
 
 build-sample:
 	dotnet build HelloWorld
@@ -25,7 +26,7 @@ link-mono:
 	cp ../mono/mini/.libs/libmonosgen-2.0.dylib $(SHAREDRUNTIME)/libcoreclr.dylib
 	cp ../mcs/class/System.Private.CoreLib/bin/x64/System.Private.CoreLib.dll $(SHAREDRUNTIME)
 
-prepare: download-sdk link-mono
+prepare: $(NETCORESDK_FILE) link-mono
 
 all: build-System.Runtime.Tests
 
@@ -61,5 +62,5 @@ run-System.Runtime.Tests: check-env
 	cd tests/System.Runtime.Tests && MONO_PATH=bin/Debug/netcoreapp3.0 MONO_ENV_OPTIONS="--debug --explicit-null-checks" COMPlus_DebugWriteToStdErr=1 ../../dotnet bin/Debug/netcoreapp3.0/System.Runtime.Tests-runner.dll
 
 clean:
-	rm -rf sdk shared host dotnet LICENSE.txt ThirdPartyNotices.txt dotnet-sdk-3.tar.gz
+	rm -rf sdk shared host dotnet LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE)
 
