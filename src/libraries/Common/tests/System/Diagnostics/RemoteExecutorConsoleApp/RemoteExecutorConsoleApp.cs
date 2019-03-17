@@ -96,7 +96,7 @@ namespace RemoteExecutorConsoleApp
                 (instance as IDisposable)?.Dispose();
             }
 
-            // Environment.Exit not supported on .Net Native - don't even call it to avoid the nuisance exception.
+            // Environment.Exit not supported on .NET Native - don't even call it to avoid the nuisance exception.
             if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native", StringComparison.OrdinalIgnoreCase))
             {
                 // Use Exit rather than simply returning the exit code so that we forcibly shut down

@@ -696,7 +696,7 @@ namespace System.Data.Tests
             drArrResult = drChild.GetParentRows("Parent-Child", DataRowVersion.Default);
             Assert.Equal(drArrExcepted, drArrResult);
 
-            /* .Net don't work as expected
+            /* .NET don't work as expected
                 //Check DataRowVersion.Proposed
                 // Teting: DataRow.GetParentRows_D_D ,DataRowVersion.Proposed
                 drArrExcepted = dtParent.Select("ParentId=" + drParent["ParentId"],"",DataViewRowState.ModifiedCurrent);

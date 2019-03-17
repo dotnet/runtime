@@ -108,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
             Stream stream = await content.ReadAsStreamAsync();
             string result = new StreamReader(stream).ReadToEnd().ToLowerInvariant();
 
-            // Result of UrlEncode invoked in .Net 4.6
+            // Result of UrlEncode invoked in .NET Framework 4.6
             // string expectedResult = "key=" + HttpUtility.UrlEncode(testString).ToLowerInvariant();
             // HttpUtility is not part of ProjectK.
 
