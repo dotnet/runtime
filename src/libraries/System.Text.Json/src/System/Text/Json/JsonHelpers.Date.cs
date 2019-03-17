@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
-    internal static partial class JsonReaderHelper
+    internal static partial class JsonHelpers
     {
         public static bool TryParseAsISO(ReadOnlySpan<byte> source, out DateTime value, out int bytesConsumed)
         {
