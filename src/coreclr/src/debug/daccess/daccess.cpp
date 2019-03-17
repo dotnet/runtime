@@ -7554,8 +7554,8 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
 
 #ifdef FEATURE_PAL
     // UNIXTODO: mikem 1/13/15 Need appropriate PAL functions for getting ids
-    *pPId = (DWORD)hProcess;
-    *pThreadId = (DWORD)hThread;
+    *pPId = (DWORD)(SIZE_T)hProcess;
+    *pThreadId = (DWORD)(SIZE_T)hThread;
 #else
 #if !defined(FEATURE_CORESYSTEM)
     HMODULE hKernel32 = WszGetModuleHandle(W("kernel32.dll"));
