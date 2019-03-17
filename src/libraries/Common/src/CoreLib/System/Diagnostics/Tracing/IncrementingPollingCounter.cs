@@ -71,8 +71,8 @@ namespace System.Diagnostics.Tracing
             {
                 IncrementingCounterPayload payload = new IncrementingCounterPayload();
                 payload.Name = _name;
-                payload.DisplayName = DisplayName;
-                payload.DisplayRateTimeScale = DisplayRateTimeScale;
+                payload.DisplayName = (DisplayName == null) ? "" : DisplayName;
+                payload.DisplayRateTimeScale = (DisplayRateTimeScale == TimeSpan.Zero) ? "" : DisplayRateTimeScale.ToString("c");
                 payload.IntervalSec = intervalSec;
                 payload.MetaData = GetMetaDataString();
                 payload.Increment = _increment - _prevIncrement;
