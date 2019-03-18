@@ -72,11 +72,12 @@ class Program
 		public MemberInfo Member;
 	}
 
-	static CodeExpression EncodeValue (object val)
+	static CodeExpression EncodeValue (object val, Type expectedType)
 	{
 		if (val is int || val is long || val is uint || val is ulong || val is byte || val is sbyte || val is short || val is ushort || val is bool || val is string || val is char || val is float || val is double)
-			//return new CodePrimitiveExpression (val);
-			return new CodeCastExpression (new CodeTypeReference (val.GetType ()), new CodePrimitiveExpression (val));
+		{
+			return new CodeCastExpression(new CodeTypeReference(expectedType), new CodePrimitiveExpression(val));
+		}
 		else if (val is Type)
 			return new CodeTypeOfExpression ((Type)val);
 		else if (val is Enum) {
@@ -93,7 +94,7 @@ class Program
 			var arr = (IEnumerable)val;
 			var arr_expr = new CodeArrayCreateExpression (new CodeTypeReference (val.GetType ()), new CodeExpression [] {});
 			foreach (var v in arr)
-				arr_expr.Initializers.Add (EncodeValue (v));
+				arr_expr.Initializers.Add (EncodeValue (v, v?.GetType()));
 			return arr_expr;
 		} else {
 			throw new Exception ("Unable to emit inline data: " + val.GetType () + " " + val);
@@ -259,9 +260,14 @@ class Program
 					else
 						call = new CodeMethodInvokeExpression (new CodeVariableReferenceExpression ("o"), m.Name, new CodeExpression [] {});
 
-					if (test.Values != null) {
-						foreach (var val in test.Values)
-							call.Parameters.Add (EncodeValue (val));
+					if (test.Values != null)
+					{
+						var parameters = m.GetParameters();
+						for (var index = 0; index < test.Values.Length; index++)
+						{
+							var val = test.Values[index];
+							call.Parameters.Add(EncodeValue(val, parameters[index].ParameterType));
+						}
 					}
 					try1.TryStatements.Add (call);
 				}
