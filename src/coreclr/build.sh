@@ -789,8 +789,20 @@ while :; do
             __GccBuild=1
             ;;
 
+        gcc6|-gcc6)
+            __GccMajorVersion=6
+            __GccMinorVersion=
+            __GccBuild=1
+            ;;
+
         gcc7|-gcc7)
             __GccMajorVersion=7
+            __GccMinorVersion=
+            __GccBuild=1
+            ;;
+
+        gcc8|-gcc8)
+            __GccMajorVersion=8
             __GccMinorVersion=
             __GccBuild=1
             ;;
